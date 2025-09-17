@@ -23,8 +23,8 @@ export const SPECIMEN_COLLECTION_METHODS: [string, string, { keywords: string[] 
   ["129304002", "Excision - action", { keywords: ["excision"] }],
   ["129323009", "Scraping - action", { keywords: ["scraping"] }],
   ["73416001", "Urine specimen collection, clean catch", { keywords: ["urine", "clean catch"] }],
-  ["225113003", "Timed urine collection", { keywords: ["urine", "timed"] }],
   ["70777001", "Urine specimen collection, catheterized", { keywords: ["urine", "catheterized"] }],
+  ["225113003", "Timed urine collection", { keywords: ["urine"] }],
   ["386089008", "Collection of coughed sputum", { keywords: ["sputum", "cough"] }],
   [
     "278450005",
@@ -33,7 +33,7 @@ export const SPECIMEN_COLLECTION_METHODS: [string, string, { keywords: string[] 
   ],
 ];
 
-export function getSpecimenCollectionKeywords(inputText: string): CodeableConcept | undefined {
+export function getSpecimenCollectionCode(inputText: string): CodeableConcept | undefined {
   const words = inputText.toLowerCase().split(" ");
   for (const method of SPECIMEN_COLLECTION_METHODS) {
     const [code, display, { keywords }] = method;
