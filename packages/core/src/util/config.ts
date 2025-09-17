@@ -2,6 +2,8 @@ import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
 import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
 
+const BAD_HL7_BASE64_SCRAMBLER_SEED = "Hl7Base64ScramblerSeed";
+
 /**
  * Shared configs, still defining how to work with this. For now:
  * - keep each config either here or on API
@@ -88,6 +90,10 @@ export class Config {
     return getEnvVarOrFail("HL7_BASE64_SCRAMBLER_SEED");
   }
 
+  static getBadHl7Base64ScramblerSeed(): string {
+    return BAD_HL7_BASE64_SCRAMBLER_SEED;
+  }
+  
   static getHl7Base64ScramblerSeedArn(): string {
     return getEnvVarOrFail("HL7_BASE64_SCRAMBLER_SEED_ARN");
   }
