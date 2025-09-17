@@ -20,9 +20,14 @@ export function asyncHandler(
     try {
       await f(req, res, next);
     } catch (err) {
-      const isLogErrorDetails = shouldLogErrorDetails
-        ? await shouldLogErrorDetails()
-        : !Config.isCloudEnv();
+      let isLogErrorDetails = !Config.isCloudEnv();
+      if (shouldLogErrorDetails) {
+        try {
+          isLogErrorDetails = await shouldLogErrorDetails();
+        } catch (e) {
+          log(`shouldLogErrorDetails() failed: ${removeNewLines(errorToString(e))}`);
+        }
+      }
       if (isLogErrorDetails) log("", err);
       else log(removeNewLines(errorToString(err)));
       next(err);
