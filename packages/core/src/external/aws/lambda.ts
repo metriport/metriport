@@ -1,6 +1,6 @@
 import { InvokeCommandOutput, LambdaClient as LambdaClientV3 } from "@aws-sdk/client-lambda";
 import { BadRequestError, MetriportError, NotFoundError } from "@metriport/shared";
-import { NodeHttpHandlerOptions } from "@smithy/node-http-handler";
+import { NodeHttpHandler } from "@smithy/node-http-handler";
 import * as AWS from "aws-sdk";
 import { PromiseResult } from "aws-sdk/lib/request";
 import { base64ToString } from "../../util/base64";
@@ -26,11 +26,11 @@ export function makeLambdaClient(region: string, timeoutInMillis?: number): Lamb
  * Note: callers are responsible for handling the error, usually by calling `getLambdaResultPayloadV3()`.
  */
 export function makeLambdaClientV3(region: string, timeoutInMillis?: number): LambdaClientV3 {
-  const requestHandler: NodeHttpHandlerOptions | object = timeoutInMillis
-    ? {
+  const requestHandler: NodeHttpHandler | object = timeoutInMillis
+    ? new NodeHttpHandler({
         connectionTimeout: timeoutInMillis,
         requestTimeout: timeoutInMillis,
-      }
+      })
     : {};
   const lambdaClient = new LambdaClientV3({
     region,
