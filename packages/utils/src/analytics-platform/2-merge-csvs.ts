@@ -107,10 +107,11 @@ async function main({ fhirToCsvJobId }: { fhirToCsvJobId: string }) {
 
   const failedPatientIds: string[][] = [];
   let amountOfPatientsProcessed = 0;
+  let index = 0;
 
   await executeAsynchronously(
     patientIdChunks,
-    async (ptIdsOfThisRun: string[], index: number) => {
+    async (ptIdsOfThisRun: string[]) => {
       const runTimestamp = buildDayjs().toISOString();
 
       try {
@@ -127,7 +128,7 @@ async function main({ fhirToCsvJobId }: { fhirToCsvJobId: string }) {
 
         amountOfPatientsProcessed += ptIdsOfThisRun.length;
         log(
-          `>>> Put message ${index + 1}/${
+          `>>> Put message ${++index}/${
             patientIdChunks.length
           } on queue (${amountOfPatientsProcessed}/${uniquePatientIds.length} patients)`
         );
