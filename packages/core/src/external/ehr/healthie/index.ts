@@ -234,10 +234,12 @@ class HealthieApi {
     cxId,
     patientId,
     link,
+    removeLink = false,
   }: {
     cxId: string;
     patientId: string;
     link: string;
+    removeLink?: boolean;
   }): Promise<void> {
     const { debug } = out(
       `Healthie updatePatientQuickNote - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
@@ -266,7 +268,7 @@ class HealthieApi {
     }`;
     const variables = {
       id: patientId,
-      quick_notes: `${scrubbedExistingQuickNotes ?? ""}${linkElement}`,
+      quick_notes: `${scrubbedExistingQuickNotes ?? ""}${removeLink ? "" : linkElement}`,
     };
     const patientUpdateQuickNotesGraphql = await this.makeRequest<PatientUpdateQuickNotesGraphql>({
       cxId,
