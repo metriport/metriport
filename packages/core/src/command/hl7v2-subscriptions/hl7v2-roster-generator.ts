@@ -267,6 +267,7 @@ export function createRosterRowInput(
   const july2025 = new Date(2025, 6, 1);
   const dateMid2025NoDelimiter = buildDayjs(july2025).format("YYYYMMDD");
   const patientExternalId = p.externalId;
+  const addAllCaps = "ADD" as const;
 
   return {
     id: p.id,
@@ -304,5 +305,6 @@ export function createRosterRowInput(
     dateTwoMonthsInFutureNoDelimiter,
     dateMid2025NoDelimiter,
     emptyString,
+    addAllCaps,
   };
 }
