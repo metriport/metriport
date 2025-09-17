@@ -134,6 +134,9 @@ export class MllpStack extends cdk.NestedStack {
       securityGroups: [mllpSecurityGroup],
     });
 
+    // Enable Availability Zone rebalancing for the underlying ECS service
+    (fargateService.node.defaultChild as ecs.CfnService).availabilityZoneRebalancing = "ENABLED";
+
     const logGroup = new LogGroup(this, "MllpServerLogGroup", {
       logGroupName: "/aws/ecs/mllp-server",
       retention: logs.RetentionDays.ONE_YEAR,

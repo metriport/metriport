@@ -71,8 +71,8 @@
   "dependencies": {
     "axios": ">=1.8.2",
     "form-data": ">=4.0.4",
-    "sharp": "^0.33.5",
-    "semver": ">=5.7.2"
+    "semver": ">=5.7.2",
+    "sharp": "^0.33.5"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.4.2",

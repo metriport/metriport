@@ -1,6 +1,6 @@
 import * as dotenv from "dotenv";
 dotenv.config();
-
+// keep that ^ on top
 import { Hl7Message } from "@medplum/core";
 import { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent } from "@medplum/hl7";
 import { S3Utils } from "@metriport/core/external/aws/s3";
@@ -9,12 +9,13 @@ import { Config } from "@metriport/core/util/config";
 import { Logger } from "@metriport/core/util/log";
 import { unpackUuid } from "@metriport/core/util/pack-uuid";
 import IPCIDR from "ip-cidr";
-
 import { HieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/node";
 
+/** @deprecated Instantiate objects that can hold state on local context, let's not reuse them. */
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
+/** @deprecated Instantiate objects that can hold state on local context, let's not reuse them. */
 export const s3Utils = new S3Utils(Config.getAWSRegion());
 export const bucketName = Config.getHl7IncomingMessageBucketName();
 
@@ -108,7 +109,11 @@ function isIpInRange(cidrBlock: string, ip: string): boolean {
   return cidr.contains(ip);
 }
 
-function keepOnlyVpnConfigs([hieName, config]: [string, HieConfigDictionary[string]]) {
+function keepOnlyVpnConfigs([hieName, config]: [string, HieConfigDictionary[string]]): {
+  hieName: string;
+  cidrBlocks: string[];
+  timezone: string;
+}[] {
   return "cidrBlocks" in config
     ? [{ hieName, cidrBlocks: config.cidrBlocks, timezone: config.timezone }]
     : [];

@@ -13,7 +13,7 @@ import { FilterPattern } from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
-import path from "path";
+import * as path from "path";
 import { EnvConfigNonSandbox } from "../../config/env-config";
 import { getConfig, METRICS_NAMESPACE } from "../shared/config";
 import { vCPU } from "../shared/fargate";
@@ -83,8 +83,14 @@ export function createFHIRConverterService(
       healthCheckGracePeriod: Duration.seconds(60),
       publicLoadBalancer: false,
       idleTimeout: maxExecutionTimeout,
+      minHealthyPercent: 70,
     }
   );
+
+  // Enable Availability Zone rebalancing for the underlying ECS service
+  (fargateService.service.node.defaultChild as ecs.CfnService).availabilityZoneRebalancing =
+    "ENABLED";
+
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
 
   fargateService.loadBalancer.logAccessLogs(

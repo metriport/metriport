@@ -106,6 +106,11 @@ export function createTermServerService(
       idleTimeout: maxExecutionTimeout,
     }
   );
+
+  // Enable Availability Zone rebalancing for the underlying ECS service
+  (fargateService.service.node.defaultChild as ecs.CfnService).availabilityZoneRebalancing =
+    "ENABLED";
+
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
 
   props.generalBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
