@@ -1,8 +1,8 @@
 import { Command } from "commander";
 import { out } from "@metriport/core/util/log";
-// import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
+import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
 import { SurescriptsDataMapper } from "@metriport/core/external/surescripts/data-mapper";
-// import { writeSurescriptsIdentifiersFile, getPatientIdsFromCsv } from "./shared";
+import { writeSurescriptsRunsFile, appendToSurescriptsRunsFile } from "./shared";
 
 /**
  * Sends a request for all patients of the given customer, batching requests by facility. This is the preferred method
@@ -24,30 +24,59 @@ program
     async ({
       cxId,
       batchSizeString,
+      csvOutput,
     }: {
       cxId: string;
       batchSizeString?: string;
       csvOutput: string;
     }) => {
       const batchSize = parseInt(batchSizeString ?? "100");
-      if (isNaN(batchSize)) {
+      if (!Number.isFinite(batchSize)) {
         throw new Error("Batch size must be a number");
       }
-
-      const dataMapper = new SurescriptsDataMapper();
       const { log } = out(`Surescripts sendCustomerRequest - cxId ${cxId}`);
-
+      const dataMapper = new SurescriptsDataMapper();
       const batchRequests = await dataMapper.getBatchRequestDataByFacility(cxId, batchSize);
       const facilityIds = Object.keys(batchRequests);
       log(`Customer has ${facilityIds.length} facilities`);
-      console.log(batchRequests);
 
-      // for (const facilityId in facilityIds) {
-      //   const batches = batchRequests[facilityId];
+      const client = new SurescriptsSftpClient({
+        logLevel: "info",
+      });
 
-      //   // log(`There are ${ batches.length } batches for facility ${facilityId}`);
-      //   // console.log(batches[0])
-      // }
+      const csvOutputPath = writeSurescriptsRunsFile(
+        csvOutput + ".csv",
+        `"facility_id","transmission_id","patient_id"\n`
+      );
+      let totalRequestedPatients = 0;
+
+      for (const facilityId of facilityIds) {
+        const batchesForFacility = batchRequests[facilityId];
+        if (!Array.isArray(batchesForFacility)) {
+          log(`No batches for facility ${facilityId}`);
+          continue;
+        }
+
+        for (const batchRequest of batchesForFacility) {
+          const identifiers = await client.sendBatchRequest(batchRequest);
+          if (!identifiers) {
+            log(`No identifiers sent for facility ${facilityId}`);
+            continue;
+          }
+
+          log(`Sent ${identifiers.requestedPatientIds.length} patients for facility ${facilityId}`);
+          totalRequestedPatients += identifiers.requestedPatientIds.length;
+
+          // Add each patient ID along with the batch transmission ID to the CSV output for later use in converting responses
+          for (const patientId of identifiers.requestedPatientIds) {
+            appendToSurescriptsRunsFile(
+              csvOutputPath,
+              `"${facilityId}","${identifiers.transmissionId}","${patientId}"\n`
+            );
+          }
+        }
+      }
+      log(`Wrote ${totalRequestedPatients} request identifiers to ${csvOutputPath}`);
     }
   );
 
