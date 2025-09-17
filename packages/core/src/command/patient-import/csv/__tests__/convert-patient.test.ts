@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { USState } from "@metriport/shared";
+import { toTitleCase, USState } from "@metriport/shared";
 import * as normalizeDobFile from "@metriport/shared/domain/dob";
 import { DriversLicense } from "../../../../domain/patient";
 import { mapCsvDriversLicense, mapCsvPatientToMetriportPatient } from "../convert-patient";
@@ -16,12 +16,12 @@ describe("convert-patient", () => {
 
     function makeCsv(): Record<string, string | undefined> {
       return {
-        firstName: faker.person.firstName(),
-        lastName: faker.person.lastName(),
+        firstName: toTitleCase(faker.person.firstName()),
+        lastName: toTitleCase(faker.person.lastName()),
         dob: faker.date.birthdate().toISOString(),
         gender: faker.helpers.arrayElement(["male", "female"]),
-        addressLine1: faker.location.streetAddress(),
-        city: faker.location.city(),
+        addressLine1: toTitleCase(faker.location.streetAddress()),
+        city: toTitleCase(faker.location.city()),
         state: faker.location.state({ abbreviated: true }),
         zip: faker.location.zipCode().slice(0, 5),
       };
