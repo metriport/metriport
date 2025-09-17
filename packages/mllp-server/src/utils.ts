@@ -108,7 +108,11 @@ function isIpInRange(cidrBlock: string, ip: string): boolean {
   return cidr.contains(ip);
 }
 
-function keepOnlyVpnConfigs([hieName, config]: [string, HieConfigDictionary[string]]) {
+function keepOnlyVpnConfigs([hieName, config]: [string, HieConfigDictionary[string]]): {
+  hieName: string;
+  cidrBlocks: string[];
+  timezone: string;
+}[] {
   return "cidrBlocks" in config
     ? [{ hieName, cidrBlocks: config.cidrBlocks, timezone: config.timezone }]
     : [];
