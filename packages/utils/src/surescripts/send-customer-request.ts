@@ -62,6 +62,7 @@ program
         `"facility_id","transmission_id","patient_id"\n`
       );
       let totalRequestedPatients = 0;
+      let totalBatches = 0;
 
       for (const facilityId of facilityIds) {
         const batchesForFacility = batchRequests[facilityId];
@@ -77,18 +78,23 @@ program
             continue;
           }
 
-          log(`Sent ${identifiers.requestedPatientIds.length} patients for facility ${facilityId}`);
+          const transmissionId = identifiers.transmissionId;
+          log(
+            `Sent ${identifiers.requestedPatientIds.length} patients for facility ${facilityId} (${transmissionId})`
+          );
           totalRequestedPatients += identifiers.requestedPatientIds.length;
+          totalBatches++;
 
           // Add each patient ID along with the batch transmission ID to the CSV output for later use in converting responses
           for (const patientId of identifiers.requestedPatientIds) {
             appendToSurescriptsRunsFile(
               csvOutputPath,
-              `"${facilityId}","${identifiers.transmissionId}","${patientId}"\n`
+              `"${facilityId}","${transmissionId}","${patientId}"\n`
             );
           }
         }
       }
+      log(`Sent ${totalBatches} batch requests`);
       log(`Wrote ${totalRequestedPatients} request identifiers to ${csvOutputPath}`);
     }
   );
