@@ -1,5 +1,5 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
-import { buildBundle } from "../../fhir/bundle/bundle";
+import { buildBundle, buildBundleEntry } from "../../fhir/bundle/bundle";
 import { LogFunction } from "../../../util/log";
 import { IncomingData } from "../schema/shared";
 import { ResponseDetail } from "../schema/response";
@@ -8,7 +8,8 @@ import { getPractitioner, getPractitionerRole } from "./practitioner";
 import { getOrganization } from "./organization";
 import { getLocation } from "./location";
 import { getConditions } from "./condition";
-import { addSpecimenToServiceRequest, getServiceRequest } from "./service-request";
+import { getServiceRequest, addSpecimenToServiceRequest } from "./service-request";
+import { getProcedure } from "./procedure";
 import { getObservation } from "./observation";
 import { getDiagnosticReport } from "./diagnostic-report";
 import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
@@ -56,6 +57,10 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
     requestingPractitioner: practitioner,
     location,
   });
+  const procedure = getProcedure(data, {
+    patient,
+    serviceRequest,
+  });
   const specimen = getSpecimen(data, {
     patient,
     practitioner,
@@ -82,18 +87,13 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
     location,
     observation,
     serviceRequest,
+    procedure,
     specimen,
     diagnosticReport,
     ...conditions,
   ];
 
-  return resources.flatMap(resource => {
-    if (!resource || !resource.id) return [];
-    return [
-      {
-        fullUrl: `urn:uuid:${resource.id}`,
-        resource,
-      },
-    ];
-  });
+  return resources.flatMap(resource =>
+    resource && resource.id ? [buildBundleEntry(resource)] : []
+  );
 }
