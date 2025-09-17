@@ -2,6 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
+import { HL7_NLB_CIDR, MLLP_DEFAULT_PORT } from "./hl7-notification-stack/constants";
 
 interface VpcPeeringStackProps extends cdk.StackProps {
   config: EnvConfig;
@@ -14,9 +15,9 @@ interface VpcPeeringStackProps extends cdk.StackProps {
  */
 
 const API_STACK_SUBNAME = "APIVpc";
-
 const HL7_NOTIFICATION_STACK_NAME = "Hl7NotificationStack";
 const HL7_NOTIFICATION_VPC_SUBNAME = "Vpc";
+
 export class VpcPeeringStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: VpcPeeringStackProps) {
     super(scope, id, props);
@@ -46,10 +47,8 @@ export class VpcPeeringStack extends cdk.Stack {
       ],
     });
 
-    this.addMinimalRoutesToApiVpc(apiVpc, vpcPeeringConnection);
-    this.addReturnRoutesToHl7Vpc(hl7Vpc, apiVpc.vpcCidrBlock, vpcPeeringConnection);
-
-    // Update HL7 VPC's Network ACL to allow egress traffic back to API VPC
+    this.addRoutesToApiVpc(apiVpc, vpcPeeringConnection);
+    this.addRoutesToHl7Vpc(hl7Vpc, apiVpc.vpcCidrBlock, vpcPeeringConnection);
     this.updateHl7NetworkAclForPeering(apiVpc.vpcCidrBlock);
 
     // Outputs
@@ -69,36 +68,25 @@ export class VpcPeeringStack extends cdk.Stack {
     });
   }
 
-  private addMinimalRoutesToApiVpc(
-    apiVpc: ec2.IVpc,
-    vpcPeeringConnection: ec2.CfnVPCPeeringConnection
-  ) {
-    // Only add routes for the specific HL7 server IPs (10.1.1.20-23)
-    const hl7NlbCidr = "10.1.1.20/30";
-
-    // Get route tables from API VPC (where VPN clients connect)
-    const apiVpcRouteTables = apiVpc.privateSubnets
-      .concat(apiVpc.publicSubnets)
-      .map(subnet => subnet.routeTable.routeTableId);
+  private addRoutesToApiVpc(apiVpc: ec2.IVpc, vpcPeeringConnection: ec2.CfnVPCPeeringConnection) {
+    const apiVpcRouteTables = apiVpc.privateSubnets.map(subnet => subnet.routeTable.routeTableId);
 
     apiVpcRouteTables.forEach((routeTableId, routeIndex) => {
       new ec2.CfnRoute(this, `ApiToHl7Route${routeIndex}`, {
         routeTableId,
-        destinationCidrBlock: hl7NlbCidr,
+        // Only add routes for the nlbs in front of the mllp-server ecs tasks (10.1.1.20-23)
+        destinationCidrBlock: HL7_NLB_CIDR,
         vpcPeeringConnectionId: vpcPeeringConnection.ref,
       });
     });
   }
 
-  private addReturnRoutesToHl7Vpc(
+  private addRoutesToHl7Vpc(
     hl7Vpc: ec2.IVpc,
     apiVpcCidrBlock: string,
     vpcPeeringConnection: ec2.CfnVPCPeeringConnection
   ) {
-    // Get all route tables in the HL7 VPC
-    const hl7VpcRouteTables = hl7Vpc.privateSubnets
-      .concat(hl7Vpc.publicSubnets)
-      .map(subnet => subnet.routeTable.routeTableId);
+    const hl7VpcRouteTables = hl7Vpc.privateSubnets.map(subnet => subnet.routeTable.routeTableId);
 
     hl7VpcRouteTables.forEach((routeTableId, index) => {
       new ec2.CfnRoute(this, `Hl7ToApiReturnRoute${index}`, {
@@ -110,17 +98,25 @@ export class VpcPeeringStack extends cdk.Stack {
   }
 
   private updateHl7NetworkAclForPeering(apiVpcCidrBlock: string) {
-    // Import the existing Network ACL from HL7 stack
     const networkAclId = cdk.Fn.importValue("NestedNetworkStack-NetworkAclId");
     const networkAcl = ec2.NetworkAcl.fromNetworkAclId(this, "ImportedHl7NetworkAcl", networkAclId);
 
-    // Allow egress traffic back to API VPC (for VPC peering response traffic)
-    networkAcl.addEntry("AllowApiVpcEgress", {
-      ruleNumber: 4500,
-      direction: ec2.TrafficDirection.EGRESS,
-      traffic: ec2.AclTraffic.tcpPortRange(1024, 65535), // Ephemeral ports for responses
+    const common = {
       ruleAction: ec2.Action.ALLOW,
-      cidr: ec2.AclCidr.ipv4(apiVpcCidrBlock),
+      ruleNumber: 4500,
+      cidr: ec2.AclCidr.ipv4(apiVpcCidrBlock), // VPN client CIDR
+    };
+
+    networkAcl.addEntry(`AllowVpnClientIngress`, {
+      ...common,
+      direction: ec2.TrafficDirection.INGRESS,
+      traffic: ec2.AclTraffic.tcpPort(MLLP_DEFAULT_PORT),
+    });
+
+    networkAcl.addEntry(`AllowVpnClientEgress`, {
+      ...common,
+      direction: ec2.TrafficDirection.EGRESS,
+      traffic: ec2.AclTraffic.tcpPortRange(32768, 65535),
     });
   }
 }
