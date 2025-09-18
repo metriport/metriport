@@ -137,9 +137,9 @@ export const stateToTimezone: Record<USState, string> = {
   [USState.FL]: "America/New_York",
   [USState.GA]: "America/New_York",
   [USState.HI]: "Pacific/Honolulu",
-  [USState.ID]: "America/Denver",
+  [USState.ID]: "America/Boise", // Covers most of Idaho.
   [USState.IL]: "America/Chicago",
-  [USState.IN]: "America/New_York",
+  [USState.IN]: "America/Indiana/Indianapolis", // Covers most of Indiana.
   [USState.IA]: "America/Chicago",
   [USState.KS]: "America/Chicago",
   [USState.KY]: "America/New_York",
