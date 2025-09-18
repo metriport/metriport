@@ -9,6 +9,11 @@ import {
   getSendingApplication,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { getCxIdAndPatientIdOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import {
+  SUPPORTED_MLLP_SERVER_PORTS,
+  getPccSourceHieNameByLocalPort,
+  isDataFromPccConnection,
+} from "@metriport/core/domain/hl7-notification/utils";
 import { getHieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 import { capture } from "@metriport/core/util";
 import type { Logger } from "@metriport/core/util/log";
@@ -19,8 +24,6 @@ import { asString, getCleanIpAddress, lookupHieTzEntryForIp, withErrorHandling }
 
 initSentry();
 
-import { SUPPORTED_MLLP_SERVER_PORTS } from "@metriport/core/command/hl7-notification/constants";
-
 async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const { log } = logger;
 
@@ -30,6 +33,10 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
       withErrorHandling(connection, logger, async ({ message: rawMessage }) => {
         const clientIp = getCleanIpAddress(connection.socket.remoteAddress);
         const clientPort = connection.socket.remotePort;
+        const localPort = connection.socket.localPort;
+        if (!localPort) {
+          throw new Error("Local port is undefined");
+        }
 
         log(`New message over connection ${clientIp}:${clientPort}`);
 
@@ -43,7 +50,10 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           `cx: ${cxId}, pt: ${patientId} Received ${triggerEvent} message from ${sendingApplication} at ${messageReceivedTimestamp} (messageId: ${messageId})`
         );
         const hieConfigDictionary = getHieConfigDictionary();
-        const { hieName } = lookupHieTzEntryForIp(hieConfigDictionary, clientIp);
+        const { hieName: rawHieName } = lookupHieTzEntryForIp(hieConfigDictionary, clientIp);
+        const hieName = isDataFromPccConnection(rawHieName)
+          ? getPccSourceHieNameByLocalPort(localPort)
+          : rawHieName;
 
         capture.setExtra({
           cxId,
