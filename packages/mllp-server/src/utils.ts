@@ -90,7 +90,7 @@ export function asString(message: Hl7Message) {
 }
 
 /**
- * 💡 Gets the HIE name given theconnection info.
+ * 💡 Gets the HIE name given the connection info.
  *
  * Most messages from simple HIE integrations can be identified by the sender's
  * internalCidrBlocks. However, messages from PCC connections are sent to the MLLP

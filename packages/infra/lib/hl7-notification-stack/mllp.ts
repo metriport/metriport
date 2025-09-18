@@ -49,8 +49,8 @@ const setupNlb = (
     },
   ];
 
-  // ❗️ BACKWARDS COMPATIBILITY
-  // Update the existing listener's post to 2574 so we can create our other listeners starting at port 2575
+  // ❗️ BACKWARDS COMPATIBILITY: TODO(ENG-1090)
+  // Update the existing listener's port to 2574 so we can create our other listeners starting at port 2575
   // with nice clean cdk identifiers.
   // TODO: Remove this once we've migrated all our infra to the listeners with new cdk identifiers.
   const listener = nlb.addListener(`MllpListener${identifier}`, {
