@@ -15,11 +15,11 @@ export function getBambooTimezone(hl7Message: Hl7Message, log: typeof console.lo
   log("HIE is Bamboo, getting timezone based off state in the facility");
   const customZfaSegment = hl7Message.getSegment("ZFA");
   if (!customZfaSegment) {
-    throw new Error("Custom ZFA.4 segment was not found in a bamboo hl7 message!");
+    throw new Error("Custom ZFA segment was not found in a bamboo hl7 message!");
   }
 
-  const customZfaSegment4 = customZfaSegment.getField(ZFA_STATE_INDEX);
-  if (!customZfaSegment4) {
+  const customZfaField = customZfaSegment.getField(ZFA_STATE_INDEX);
+  if (!customZfaField) {
     throw new MetriportError(
       "Custom ZFA.4 field was not found in a bamboo hl7 message!",
       undefined,
@@ -28,7 +28,7 @@ export function getBambooTimezone(hl7Message: Hl7Message, log: typeof console.lo
       }
     );
   }
-  const timezone = getTimezoneFromState(customZfaSegment4.toString());
+  const timezone = getTimezoneFromState(customZfaField.toString());
   log(`Bamboo timezone: ${timezone}`);
   return timezone;
 }
