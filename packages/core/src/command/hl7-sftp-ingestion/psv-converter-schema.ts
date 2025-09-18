@@ -5,6 +5,7 @@ import { normalizeSsnSafe } from "@metriport/shared/domain/patient/ssn";
 import { buildDayjs, isValidISODate } from "@metriport/shared/common/date";
 import { z } from "zod";
 import { log } from "./hl7-sftp-ingestion";
+import { isAdtPatientClass } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/adt/mappings";
 
 const UNKNOWN = "U";
 
@@ -34,7 +35,10 @@ const PatClassEnum = z.preprocess(
     return mapping[upperVal] ?? upperVal;
   },
   z
-    .enum(["B", "C", "E", "I", "N", "O", "P", "R", "U"])
+    .string()
+    .refine(isAdtPatientClass, {
+      message: "Invalid patient class code",
+    })
     .optional()
     .catch(ctx => {
       const input = ctx.input ?? "undefined";
