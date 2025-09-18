@@ -9,8 +9,7 @@ import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
 
 /**
  * Runs the psv -> hl7 converter on an inputted file.
- *
- * THIS SCRIPT DOESN'T DECRYPT GPG FILES! It expects a psv.
+ * Expects a lahie psv file.
  *
  * inputs:
  *  - Set env variable
