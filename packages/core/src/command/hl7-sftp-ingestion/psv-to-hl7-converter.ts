@@ -124,7 +124,6 @@ export class PsvToHl7Converter {
               extra: {
                 cxId,
                 patientId,
-                actualValues: trimmedRow,
                 validationErrors: parseResult.error.issues.map(issue => {
                   const fieldPath = issue.path.join(".");
                   const fieldValue = fieldPath
