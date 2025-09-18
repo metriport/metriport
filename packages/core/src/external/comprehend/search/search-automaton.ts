@@ -62,12 +62,13 @@ export class SearchAutomaton {
     let currentState = 0;
     for (let index = 0; index < text.length; index++) {
       const nextChar = text[index] as string;
-      currentState = this.findNextState(currentState, nextChar);
-      const currentStateOutput = this.output[currentState] as boolean[];
-      // If match not found, move to next state
-      if (currentStateOutput.every(output => !output)) continue;
 
-      // Match found, return the match to the callback function
+      // Get the next automaton state from the next character, and check if there
+      // are any search terms which should be output at this state
+      currentState = this.findNextState(currentState, nextChar);
+      const currentStateOutput = this.getOutput(currentState);
+
+      // Find each search term that is matched at the current state
       for (let termIndex = 0; termIndex < this.searchTerms.length; termIndex++) {
         if (currentStateOutput[termIndex]) {
           const searchTerm = this.searchTerms[termIndex];
@@ -98,10 +99,10 @@ export class SearchAutomaton {
     }
 
     // Transition to the most optimal next state
-    while (this.nextState[finalState]?.[char] === NOWHERE) {
-      finalState = this.failureState[finalState] as number;
+    while (this.getNextState(finalState, char) === NOWHERE) {
+      finalState = this.getFailureState(finalState);
     }
-    return this.nextState[finalState]?.[char] as number;
+    return this.getNextState(finalState, char);
   }
 
   // Below is a modified implementation of the Aho-Corasick algorithm, specifically optimized for working with the
@@ -181,7 +182,7 @@ export class SearchAutomaton {
     for (let char = 0; char < CHARACTER_SET.length; char++) {
       const firstState = nextStateFromInitialState[char] as number;
       if (firstState != INITIAL_STATE) {
-        this.failureState[firstState] = 0;
+        this.setFailureState(firstState, INITIAL_STATE);
         queue.push(firstState);
       }
     }
@@ -203,19 +204,16 @@ export class SearchAutomaton {
           }
 
           failure = this.getNextState(failure, char);
-          const nextStateIndex = this.getNextState(state, char);
-          this.failureState[nextStateIndex] = failure;
+          const nextState = this.getNextState(state, char);
+          this.setFailureState(nextState, failure);
 
           // Merge output values
-          const gotoOutput = this.output[nextStateIndex] as boolean[];
-          const failureOutput = this.output[failure] as boolean[];
-
-          for (let i = 0; i < gotoOutput.length; i++) {
-            gotoOutput[i] = gotoOutput[i] || failureOutput[i] || false;
-          }
+          const nextOutput = this.getOutput(nextState);
+          const failureOutput = this.getOutput(failure);
+          this.mergeOutputs(nextOutput, failureOutput);
 
           // Insert the next level node (of Trie) in Queue
-          queue.push(nextStateIndex);
+          queue.push(nextState);
         }
       }
     }
@@ -228,18 +226,47 @@ export class SearchAutomaton {
    */
 
   /**
-   *
+   * Given the current state index and the next character, returns the next state index.
    */
   private getNextState(state: number, char: number): number {
     return this.nextState[state]?.[char] as number;
   }
 
+  /**
+   * Returns true if there is a registered state transition for the given character from the given state
+   * (i.e. it does not point to NOWHERE).
+   */
   private hasNextState(state: number, char: number): boolean {
     return this.nextState[state]?.[char] !== NOWHERE;
   }
 
+  /**
+   * Returns the failure state for the given state.
+   */
   private getFailureState(state: number): number {
     return this.failureState[state] as number;
+  }
+
+  /**
+   * Sets the failure state for the given state. This function is called when optimizing the automaton for fastest
+   * path routing to avoid backtracking.
+   */
+  private setFailureState(state: number, failureState: number) {
+    this.failureState[state] = failureState;
+  }
+
+  /**
+   * Returns the boolean filter containing search terms that are matched at the given state.
+   */
+  private getOutput(state: number): boolean[] {
+    return this.output[state] as boolean[];
+  }
+
+  private mergeOutputs(target: boolean[], source: boolean[]): boolean[] {
+    for (let i = 0; i < target.length; i++) {
+      target[i] = target[i] || source[i] || false;
+    }
+    return target;
   }
 
   getSearchTerms() {
