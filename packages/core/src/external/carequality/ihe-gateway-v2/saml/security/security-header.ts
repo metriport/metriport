@@ -164,11 +164,15 @@ export function createSecurityHeader({
                 },
               },
             },
-            queryGrantorOid && {
-              "@_Name": "QueryAuthGrantor",
-              "@_NameFormat": "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
-              "saml2:AttributeValue": `Organization/${queryGrantorOid}`,
-            },
+            ...(queryGrantorOid
+              ? [
+                  {
+                    "@_Name": "QueryAuthGrantor",
+                    "@_NameFormat": "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
+                    "saml2:AttributeValue": `Organization/${queryGrantorOid}`,
+                  },
+                ]
+              : []),
           ],
         },
       },
