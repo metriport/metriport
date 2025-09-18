@@ -93,20 +93,16 @@ export async function processInboundXcpdRequest(
 
     await storeXcpdRequest({ request, inboundRequest });
     if (samlAttributes.principalOid) {
-      console.log(
-        "validating delegated request",
-        samlAttributes.homeCommunityId,
-        samlAttributes.principalOid
-      );
-      await validateDelegatedRequest(samlAttributes.homeCommunityId, samlAttributes.principalOid);
-      console.log("delegated request validated");
+      log("Validating delegated request");
+      await validateDelegatedRequest(samlAttributes.principalOid, samlAttributes.homeCommunityId);
+      log("Successfully validated");
     }
 
     return inboundRequest;
   } catch (error) {
     const msg = "Failed to parse ITI-55 request";
     log(
-      `${msg}: Error - ${errorToString(error)}, iti55Request: ${JSON.stringify(
+      `${msg}: Error - ${errorToString(error, { detailed: true })}, iti55Request: ${JSON.stringify(
         jsonObj
       )}, request: ${request}`
     );
@@ -116,14 +112,13 @@ export async function processInboundXcpdRequest(
         request,
       },
     });
-    throw new Error(`${msg}: ${error}`);
+    throw new Error(`${msg}: ${errorToString(error, { detailed: true })}`);
   }
 }
 
 async function validateDelegatedRequest(principal: string, delegate: string) {
   const principalAndDelegatesMap = await getCachedPrincipalAndDelegatesMap();
   const delegates = principalAndDelegatesMap.get(principal);
-  console.log("delegates", delegates);
   if (!delegates) {
     throw new BadRequestError(
       "Principal organization not found or has no listed delegates",
@@ -135,13 +130,9 @@ async function validateDelegatedRequest(principal: string, delegate: string) {
     );
   }
   if (!delegates.includes(delegate)) {
-    throw new BadRequestError(
-      "Delegate organization is not authorized by the principal",
-      undefined,
-      {
-        principalOid: principal,
-        delegateOid: delegate,
-      }
-    );
+    throw new BadRequestError("Delegate organization is not authorized by the grantor", undefined, {
+      principalOid: principal,
+      delegateOid: delegate,
+    });
   }
 }
