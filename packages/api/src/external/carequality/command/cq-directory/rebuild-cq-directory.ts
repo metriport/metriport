@@ -1,4 +1,6 @@
 import { Organization } from "@medplum/fhirtypes";
+import { uploadPrincipalAndDelegatesToS3 } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/principal-and-delegates";
+import { refreshPrincipalAndDelegatesCache } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/principal-and-delegates-cache";
 import { sendHeartbeatToMonitoringService } from "@metriport/core/external/monitoring/heartbeat";
 import { capture, executeAsynchronously } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
@@ -20,8 +22,6 @@ import {
   insertCqDirectoryEntries,
   updateCqDirectoryViewDefinition,
 } from "./rebuild-cq-directory-raw-sql";
-import { uploadPrincipalAndDelegatesToS3 } from "./upload-principal-and-delegates";
-import { refreshPrincipalAndDelegatesCache } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/principal-and-delegates-cache";
 
 dayjs.extend(duration);
 
@@ -74,7 +74,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
               try {
                 const parsed = await parseCQOrganization(org, cache);
                 parsedOrgs.push(parsed);
-                if (parsed.delegateOids.length > 0) {
+                if (parsed.delegateOids && parsed.delegateOids.length > 0) {
                   principalAndDelegatesMap.set(parsed.id, parsed.delegateOids);
                 }
               } catch (error) {

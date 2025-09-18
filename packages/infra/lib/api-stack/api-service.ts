@@ -440,6 +440,7 @@ export function createAPIService({
               createHieConfigDictionary(props.config.hl7Notification.hieConfigs)
             ),
           }),
+          GENERAL_BUCKET_NAME: generalBucket.bucketName,
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),
