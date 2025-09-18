@@ -1,10 +1,27 @@
 import { ASCII_START, ASCII_END, CHARACTER_SET, INITIAL_STATE, NOWHERE } from "./constants";
 import { characterSetMap } from "./utils";
 
-export class SearchAutomaton {
-  private searchTerms: string[];
-  private maxStates: number;
+interface SearchMatch {
+  // The search term that was matched
+  searchTerm: string;
+  // The index *after* the first character of the match
+  start: number;
+  // The index *after* the last character of the match
+  end: number;
+}
 
+/**
+ * A search automaton is a data structure that is used to simultaneously search for multiple search terms in a given text.
+ * It implements the Aho-Corasick algorithm, which is a trie-like automaton which is constructed with a fixed set of search terms.
+ * Searching a text for all occurrences of the search terms can be performed in O(n + m + k) time, where m is the total combined
+ * length of the search strings, and k is the size of the alphabet.
+ *
+ * This implementation is based on the Aho-Corasick algorithm, which is a trie-like data structure that is optimized for
+ * searching for multiple terms in a given text.
+ */
+export class SearchAutomaton {
+  private maxStates: number;
+  private searchTerms: string[];
   private nextState: number[][];
   private failureState: number[];
   private output: boolean[][];
@@ -25,21 +42,40 @@ export class SearchAutomaton {
     this.buildAutomaton();
   }
 
-  search(text: string, handler: (word: string, start: number, end: number) => void) {
+  /**
+   * Collects all matches in the given text into a single array
+   */
+  findAll(text: string): SearchMatch[] {
+    const matches: SearchMatch[] = [];
+    this.search(text, match => {
+      matches.push(match);
+    });
+    return matches;
+  }
+
+  /**
+   * Searches the given text for all occurrences of the search terms.
+   * @param text - The text to search.
+   * @param handler - The callback function to handle the matches.
+   */
+  search(text: string, handler: (match: SearchMatch) => void) {
     let currentState = 0;
-    for (let i = 0; i < text.length; i++) {
-      const nextChar = text[i] as string;
+    for (let end = 0; end < text.length; end++) {
+      const nextChar = text[end] as string;
       currentState = this.findNextState(currentState, nextChar);
       const currentStateOutput = this.output[currentState] as boolean[];
       // If match not found, move to next state
       if (currentStateOutput.every(output => !output)) continue;
 
       // Match found, return the match to the callback function
-      for (let j = 0; j < this.searchTerms.length; ++j) {
-        if (currentStateOutput[j]) {
-          const searchTerm = this.searchTerms[j];
+      for (let termIndex = 0; termIndex < this.searchTerms.length; termIndex++) {
+        if (currentStateOutput[termIndex]) {
+          const searchTerm = this.searchTerms[termIndex];
           if (!searchTerm) continue;
-          handler(searchTerm, i - searchTerm.length + 1, i);
+
+          // Compute the start index for this search term and execute the callback
+          const start = end - searchTerm.length + 1;
+          handler({ searchTerm, start, end });
         }
       }
     }
