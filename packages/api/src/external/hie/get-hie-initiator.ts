@@ -16,7 +16,8 @@ export type HieInitiator = {
 
 export async function getHieInitiator(
   patient: Pick<Patient, "id" | "cxId">,
-  facilityId?: string
+  facilityId?: string,
+  isDoaEnabled = false
 ): Promise<HieInitiator> {
   const { organization, facilities } = await getPatientWithDependencies(patient);
   const facility = getPatientsFacility(patient.id, facilities, facilityId);
@@ -28,7 +29,7 @@ export async function getHieInitiator(
       npi: facility.data.npi,
       facilityId: facility.id,
       orgName: organization.data.name,
-      queryGrantorOid: facility.cqOboOid ?? undefined,
+      queryGrantorOid: isDoaEnabled ? facility.cqOboOid ?? undefined : undefined,
     };
   }
   return {
