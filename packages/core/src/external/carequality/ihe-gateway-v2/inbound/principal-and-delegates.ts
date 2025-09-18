@@ -27,7 +27,7 @@ export async function uploadPrincipalAndDelegatesToS3(
   } catch (error) {
     const msg = `Error uploading Principal and Delegates map`;
     log(`${msg}: error - ${errorToString(error)}`);
-    capture.error(msg);
+    capture.error(msg, { extra: { error, context: "uploadPrincipalAndDelegatesToS3" } });
   }
 }
 
@@ -44,7 +44,7 @@ export async function getPrincipalAndDelegatesMap(): Promise<Map<string, string[
   } catch (error) {
     const msg = `Error downloading Principal and Delegates map`;
     log(`${msg}: error - ${errorToString(error)}`);
-    capture.error(msg);
+    capture.error(msg, { extra: { error, context: "getPrincipalAndDelegatesMap" } });
     throw error;
   }
 }

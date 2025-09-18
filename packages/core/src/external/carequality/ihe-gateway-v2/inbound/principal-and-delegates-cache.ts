@@ -55,12 +55,11 @@ class PrincipalAndDelegatesCache {
     const { log } = out(`PrincipalAndDelegatesCache.refresh`);
     log("Refreshing principal and delegates cache");
 
-    this.cache = undefined;
-    this.isLoading = false;
-    this.loadPromise = undefined;
-
     try {
-      await this.getMap();
+      const newMap = await this.loadMapFromS3();
+      this.cache = newMap;
+      this.isLoading = false;
+      this.loadPromise = undefined;
       log("Successfully refreshed principal and delegates cache");
     } catch (error) {
       const msg = "Failed to refresh principal and delegates cache";
