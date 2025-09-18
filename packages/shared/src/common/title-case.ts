@@ -11,3 +11,10 @@ export function toTitleCase(str: string): string {
     })
     .join(" ");
 }
+
+export function toTitleCaseIfNotMultiCase(str: string): string {
+  if (str.toLowerCase() === str || str.toUpperCase() === str) {
+    return toTitleCase(str);
+  }
+  return str;
+}
