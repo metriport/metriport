@@ -16,7 +16,7 @@ import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
  *  - Set filename to the file you want to convert.
  *
  * usage:
- *  - Run the script using: ts-node src/hl7v2-ingestion/hl7-psv-validator.ts
+ *  - Run the script using: ts-node src/hl7v2-ingestion/psv-to-hl7-lahie.ts
  */
 
 const hl7ScramblerSeedSecret = getEnvVarOrFail("HL7_BASE64_SCRAMBLER_SEED");
