@@ -13,6 +13,12 @@ export const securityHeaderTimestampId = "TS-7c229e85-d62b-471e-9112-a49d1c36500
 export const securityHeaderEnvelopedId = "TS_3e57269d-075d-4d3f-9f5d-c97ad6afc009";
 export const basicRequiredOid = "1.3.6.1.4.1.41800.100";
 
+/**
+ * Creates the security header for the SOAP envelope.
+ *
+ * The QueryAuthGrantor attribute is only added if the queryGrantorOid is provided.
+ * @see section 3.7.2 of this document: https://carequality.org/wp-content/uploads/2025/05/Carequality-Framework-Policies-Document-v3.0-FINAL-20250512.pdf
+ */
 export function createSecurityHeader({
   publicCert,
   createdTimestamp,

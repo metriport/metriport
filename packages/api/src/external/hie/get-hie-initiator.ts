@@ -29,6 +29,7 @@ export async function getHieInitiator(
       npi: facility.data.npi,
       facilityId: facility.id,
       orgName: organization.data.name,
+      // Used downstream to craft delegated requests
       queryGrantorOid: isDoaEnabled ? facility.cqOboOid ?? undefined : undefined,
     };
   }
