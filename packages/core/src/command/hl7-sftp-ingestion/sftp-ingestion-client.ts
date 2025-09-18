@@ -11,7 +11,7 @@ import {
 import { buildDayjs } from "@metriport/shared/common/date";
 
 export class LahieSftpIngestionClient extends SftpClient {
-  private readonly FILE_FORMAT = "YYYY-MM-DD";
+  private readonly FILE_FORMAT = "YYYY_MM_DD";
   protected override readonly log: typeof console.log;
 
   private constructor(sftpConfig: SftpConfig, log: typeof console.log) {

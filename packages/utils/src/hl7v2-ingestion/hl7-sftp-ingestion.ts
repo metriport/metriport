@@ -46,25 +46,32 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
  *   - In the "getAllRowsAsync()" function in this file: @metriport/core/command/hl7-sftp-ingestion/psv-to-hl7-converter.ts
  */
 
-// May comment all Config.[...] out if you want to use the cloud version.
+// May comment out all local or cloud configs depending on which enviornment you want to run.
+
+////// LOCAL //////
 const port = Config.getLahieIngestionPort();
 const host = Config.getLahieIngestionHost();
 const username = Config.getLahieIngestionUsername();
-// Password should not be an ARN for local execution.
 const remotePath = Config.getLahieIngestionRemotePath();
 const bucketName = Config.getLahieIngestionBucket();
 const awsRegion = Config.getAWSRegion();
 const hl7IncomingMessageBucketName = Config.getHl7IncomingMessageBucketName(); //eslint-disable-line @typescript-eslint/no-unused-vars
-const lambdaName = Config.getLahieIngestionLambdaName(); //eslint-disable-line @typescript-eslint/no-unused-vars
-
 // Note these two should point to an actual arn in aws secret manager.
 const privateKeyArn = Config.getLahieIngestionPrivateKeyArn(); //eslint-disable-line @typescript-eslint/no-unused-vars
 const privateKeyPassphraseArn = Config.getLahieIngestionPrivateKeyPassphraseArn(); //eslint-disable-line @typescript-eslint/no-unused-vars
 
+////// CLOUD //////
+const lambdaName = Config.getLahieIngestionLambdaName(); //eslint-disable-line @typescript-eslint/no-unused-vars
+
+/// GENERAL /////
+const envType = Config.getEnvType(); //eslint-disable-line @typescript-eslint/no-unused-vars
+
+// !!(Runs a contains so this might do multiple files at a time)!!
+const filename = ""; // usually done by YYYY_MM_DD but can actually be any filename.
+
+const password = ""; // Password to use for the SFTP client. ONLY WORKS LOCALLY.
 const deleteFiles = false; // Delete files from S3 after completetion
 const fileNames: string[] = [""]; // List of file names to delete from S3 after completetion
-const filename = ""; // usually done by YYYY-MM-DD but can actually be any filename.
-const password = ""; // Password to use for the SFTP client. ONLY WORKS LOCALLY.
 
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
@@ -81,13 +88,17 @@ async function main() {
     const handler = await buildHl7LahieSftpIngestion(password);
     await handler.execute({ dateTimestamp: filename });
   } finally {
-    if (deleteFiles) {
-      const s3Utils = new S3Utils(awsRegion);
-      await s3Utils.deleteFiles({
-        bucket: bucketName,
-        keys: getFileNames(),
-      });
-    }
+    await optionallyDeleteFiles();
+  }
+}
+
+async function optionallyDeleteFiles() {
+  if (deleteFiles) {
+    const s3Utils = new S3Utils(awsRegion);
+    await s3Utils.deleteFiles({
+      bucket: bucketName,
+      keys: getFileNames(),
+    });
   }
 }
 
