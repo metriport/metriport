@@ -65,18 +65,17 @@ const setupNlb = (
   // END BACKWARDS COMPATIBILITY
 
   SUPPORTED_MLLP_SERVER_PORTS.forEach(port => {
-    console.log("skipping");
-    // const listener = nlb.addListener(`MllpListener${identifier}-${port}`, {
-    //   port,
-    // });
+    const listener = nlb.addListener(`MllpListener${identifier}-${port}`, {
+      port,
+    });
 
-    // listener
-    //   .addTargets(`MllpTargets${identifier}-${port}`, {
-    //     port,
-    //     protocol: elbv2.Protocol.TCP,
-    //     preserveClientIp: true,
-    //   })
-    //   .addTarget(fargateService);
+    listener
+      .addTargets(`MllpTargets${identifier}-${port}`, {
+        port,
+        protocol: elbv2.Protocol.TCP,
+        preserveClientIp: true,
+      })
+      .addTarget(fargateService);
   });
 };
 
