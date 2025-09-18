@@ -55,16 +55,18 @@ const username = Config.getLahieIngestionUsername();
 const remotePath = Config.getLahieIngestionRemotePath();
 const bucketName = Config.getLahieIngestionBucket();
 const awsRegion = Config.getAWSRegion();
-const hl7IncomingMessageBucketName = Config.getHl7IncomingMessageBucketName(); //eslint-disable-line @typescript-eslint/no-unused-vars
+Config.getHl7IncomingMessageBucketName();
+Config.getLahieIngestionLambdaName();
+
 // Note these two should point to an actual arn in aws secret manager.
-const privateKeyArn = Config.getLahieIngestionPrivateKeyArn(); //eslint-disable-line @typescript-eslint/no-unused-vars
-const privateKeyPassphraseArn = Config.getLahieIngestionPrivateKeyPassphraseArn(); //eslint-disable-line @typescript-eslint/no-unused-vars
+Config.getLahieIngestionPrivateKeyArn();
+Config.getLahieIngestionPrivateKeyPassphraseArn();
 
 ////// CLOUD //////
-const lambdaName = Config.getLahieIngestionLambdaName(); //eslint-disable-line @typescript-eslint/no-unused-vars
+Config.getLahieIngestionLambdaName(); //eslint-disable-line @typescript-eslint/no-unused-vars
 
 /// GENERAL /////
-const envType = Config.getEnvType(); //eslint-disable-line @typescript-eslint/no-unused-vars
+Config.getEnvType(); //eslint-disable-line @typescript-eslint/no-unused-vars
 
 // !!(Runs a contains so this might do multiple files at a time)!!
 const filename = ""; // usually done by YYYY_MM_DD but can actually be any filename.
