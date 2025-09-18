@@ -39,7 +39,6 @@ const PatClassEnum = z.preprocess(
     .refine(isAdtPatientClass, {
       message: "Invalid patient class code",
     })
-    .optional()
     .catch(ctx => {
       const input = ctx.input ?? "undefined";
       log(`WARNING: Patient Class: Invalid value "${input}" mapped to "U"`);
