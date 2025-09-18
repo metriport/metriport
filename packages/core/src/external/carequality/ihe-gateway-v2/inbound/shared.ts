@@ -63,6 +63,16 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
     return undefined;
   };
 
+  const getPrincipalOidAttributevalue = (name: string): string | undefined => {
+    const attribute = attributes.find(attr => attr._Name === name);
+    if (!attribute) return undefined;
+    if (typeof attribute.AttributeValue === "string")
+      return removeOrganizationPrefix(attribute.AttributeValue);
+    if (istextSchema(attribute.AttributeValue))
+      return removeOrganizationPrefix(extractText(attribute.AttributeValue));
+    return undefined;
+  };
+
   const subjectId = getAttributeValue("urn:oasis:names:tc:xspa:1.0:subject:subject-id");
   const defaultSubjectId = "unknown";
 
@@ -91,6 +101,8 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
     "urn:oasis:names:tc:xspa:1.0:subject:purposeofuse"
   );
 
+  const principalOid = getPrincipalOidAttributevalue("QueryAuthGrantor");
+
   return {
     subjectId: subjectId ?? defaultSubjectId,
     organization: organization,
@@ -98,6 +110,7 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
     homeCommunityId: stripUrnPrefix(homeCommunityId),
     subjectRole: subjectRole ?? defaultSubjectRole,
     purposeOfUse: purposeOfUse ?? treatmentPurposeOfUse,
+    principalOid,
   };
 }
 
@@ -128,4 +141,8 @@ export function createSecurityHeader({
     },
   };
   return securityHeader;
+}
+
+function removeOrganizationPrefix(referenceValue: string): string {
+  return referenceValue.replace("Organization/", "");
 }

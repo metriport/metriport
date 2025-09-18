@@ -1,5 +1,5 @@
 import { InboundPatientDiscoveryReq, PatientResource } from "@metriport/ihe-gateway-sdk";
-import { errorToString, isEmail, isPhoneNumber, toArray } from "@metriport/shared";
+import { BadRequestError, errorToString, isEmail, isPhoneNumber, toArray } from "@metriport/shared";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import dayjs from "dayjs";
 import { capture } from "../../../../../../util";
@@ -7,6 +7,7 @@ import { out } from "../../../../../../util/log";
 import { mapIheGenderToFhir } from "../../../../shared";
 import { storeXcpdRequest } from "../../../monitor/store";
 import { extractText } from "../../../utils";
+import { getPrincipalAndDelegatesMap } from "../../principal-and-delegates";
 import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
 import { Iti55Request, iti55RequestSchema } from "./schema";
 
@@ -91,6 +92,15 @@ export async function processInboundXcpdRequest(
     };
 
     await storeXcpdRequest({ request, inboundRequest });
+    if (samlAttributes.principalOid) {
+      console.log(
+        "validating delegated request",
+        samlAttributes.organization,
+        samlAttributes.principalOid
+      );
+      await validateDelegatedRequest(samlAttributes.organization, samlAttributes.principalOid);
+      console.log("delegated request validated");
+    }
 
     return inboundRequest;
   } catch (error) {
@@ -107,5 +117,31 @@ export async function processInboundXcpdRequest(
       },
     });
     throw new Error(`${msg}: ${error}`);
+  }
+}
+
+async function validateDelegatedRequest(principal: string, delegate: string) {
+  const principalAndDelegatesMap = await getPrincipalAndDelegatesMap();
+  const delegates = principalAndDelegatesMap.get(principal);
+  console.log("delegates", delegates);
+  if (!delegates) {
+    throw new BadRequestError(
+      "Principal organization not found or has no listed delegates",
+      undefined,
+      {
+        principalOid: principal,
+        delegateOid: delegate,
+      }
+    );
+  }
+  if (!delegates.includes(delegate)) {
+    throw new BadRequestError(
+      "Delegate organization is not authorized by the principal",
+      undefined,
+      {
+        principalOid: principal,
+        delegateOid: delegate,
+      }
+    );
   }
 }
