@@ -8,12 +8,12 @@ import { PsvToHl7Converter } from "@metriport/core/command/hl7-sftp-ingestion/ps
 import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
 
 /**
- * Runs the psv converter on an inputted file.
+ * Runs the psv -> hl7 converter on an inputted file.
  *
- * THIS SCRIPT DOESN'T DECRYPT PGP FILES!
+ * THIS SCRIPT DOESN'T DECRYPT GPG FILES! It expects a psv.
  *
  * inputs:
- *  - Set env variables
+ *  - Set env variable
  *  - Set filename to the file you want to convert.
  *
  * usage:
