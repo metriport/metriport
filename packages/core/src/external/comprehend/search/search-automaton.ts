@@ -60,8 +60,8 @@ export class SearchAutomaton {
    */
   search(text: string, handler: (match: SearchMatch) => void) {
     let currentState = 0;
-    for (let end = 0; end < text.length; end++) {
-      const nextChar = text[end] as string;
+    for (let index = 0; index < text.length; index++) {
+      const nextChar = text[index] as string;
       currentState = this.findNextState(currentState, nextChar);
       const currentStateOutput = this.output[currentState] as boolean[];
       // If match not found, move to next state
@@ -74,7 +74,8 @@ export class SearchAutomaton {
           if (!searchTerm) continue;
 
           // Compute the start index for this search term and execute the callback
-          const start = end - searchTerm.length + 1;
+          const start = index - searchTerm.length + 1;
+          const end = index + 1;
           handler({ searchTerm, start, end });
         }
       }
@@ -93,17 +94,14 @@ export class SearchAutomaton {
     // Do not transition states for invalid characters that were ignored when the automaton was constructed
     const char = nextChar.charCodeAt(0) - ASCII_START;
     if (char < 0 || char >= CHARACTER_SET.length) {
-      return currentState;
+      return finalState;
     }
 
     // Transition to the most optimal next state
-    const stateTransition = this.nextState[finalState] as number[];
-    let finalStateTransition = stateTransition;
-    while (finalStateTransition[char] === NOWHERE) {
+    while (this.nextState[finalState]?.[char] === NOWHERE) {
       finalState = this.failureState[finalState] as number;
-      finalStateTransition = this.nextState[finalState] as number[];
     }
-    return finalStateTransition[char] as number;
+    return this.nextState[finalState]?.[char] as number;
   }
 
   // Below is a modified implementation of the Aho-Corasick algorithm, specifically optimized for working with the
@@ -195,25 +193,21 @@ export class SearchAutomaton {
 
       // For each character in the alphabet, find the failure state for the current state
       for (let char = 0; char < CHARACTER_SET.length; char++) {
-        const nextState = this.nextState[state];
-        if (!nextState) continue;
-
-        if (nextState[char] != NOWHERE) {
+        if (this.hasNextState(state, char)) {
           // Find failure state of removed state
-          let failure = this.failureState[state] as number;
+          let failure = this.getFailureState(state);
 
           // Find the deepest node labeled by proper suffix of string from root to current state.
-          const nextFailureState = this.nextState[failure] as number[];
-          while (nextFailureState[char] == NOWHERE) {
-            failure = this.failureState[failure] as number;
+          while (!this.hasNextState(failure, char)) {
+            failure = this.getFailureState(failure);
           }
 
-          failure = nextFailureState[char] as number;
-          const nextFailure = nextState[char] as number;
-          this.failureState[nextFailure] = failure;
+          failure = this.getNextState(failure, char);
+          const nextStateIndex = this.getNextState(state, char);
+          this.failureState[nextStateIndex] = failure;
 
           // Merge output values
-          const gotoOutput = this.output[nextFailure] as boolean[];
+          const gotoOutput = this.output[nextStateIndex] as boolean[];
           const failureOutput = this.output[failure] as boolean[];
 
           for (let i = 0; i < gotoOutput.length; i++) {
@@ -221,10 +215,31 @@ export class SearchAutomaton {
           }
 
           // Insert the next level node (of Trie) in Queue
-          queue.push(nextState[char] as number);
+          queue.push(nextStateIndex);
         }
       }
     }
+  }
+
+  /**
+   * The method by which the automaton is constructed ensures that the state is always a valid bounded integer
+   * when used within the context of this algorithm. This method therefore uses the Typescript "as" to cast certain
+   * referenced values as definitely integers, where it is mathematically certain that the values would be there.
+   */
+
+  /**
+   *
+   */
+  private getNextState(state: number, char: number): number {
+    return this.nextState[state]?.[char] as number;
+  }
+
+  private hasNextState(state: number, char: number): boolean {
+    return this.nextState[state]?.[char] !== NOWHERE;
+  }
+
+  private getFailureState(state: number): number {
+    return this.failureState[state] as number;
   }
 
   getSearchTerms() {
