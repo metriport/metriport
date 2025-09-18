@@ -7,7 +7,7 @@ import { out } from "../../../../../../util/log";
 import { mapIheGenderToFhir } from "../../../../shared";
 import { storeXcpdRequest } from "../../../monitor/store";
 import { extractText } from "../../../utils";
-import { getPrincipalAndDelegatesMap } from "../../principal-and-delegates";
+import { getCachedPrincipalAndDelegatesMap } from "../../principal-and-delegates-cache";
 import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
 import { Iti55Request, iti55RequestSchema } from "./schema";
 
@@ -121,7 +121,7 @@ export async function processInboundXcpdRequest(
 }
 
 async function validateDelegatedRequest(principal: string, delegate: string) {
-  const principalAndDelegatesMap = await getPrincipalAndDelegatesMap();
+  const principalAndDelegatesMap = await getCachedPrincipalAndDelegatesMap();
   const delegates = principalAndDelegatesMap.get(principal);
   console.log("delegates", delegates);
   if (!delegates) {

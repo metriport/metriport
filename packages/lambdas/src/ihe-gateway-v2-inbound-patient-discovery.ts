@@ -1,5 +1,6 @@
 import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
+import { getCachedPrincipalAndDelegatesMap } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/principal-and-delegates-cache";
 import { createInboundXcpdResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xcpd/create/xcpd-response";
 import { processInboundXcpdRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xcpd/process/xcpd-request";
 import { processInboundXcpd } from "@metriport/core/external/carequality/pd/process-inbound-pd";
@@ -23,6 +24,27 @@ const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const mpi = new InboundMpiMetriportApi(apiUrl);
 const { log } = out(`ihe-gateway-v2-inbound-patient-discovery`);
+
+// Initialize the principal and delegates cache on Lambda startup
+// This will be reused across invocations, reducing S3 calls
+let cacheInitialized = false;
+async function initializeCache(): Promise<void> {
+  if (!cacheInitialized) {
+    try {
+      await getCachedPrincipalAndDelegatesMap();
+      cacheInitialized = true;
+      log("Principal and delegates cache initialized successfully");
+    } catch (error) {
+      log(`Failed to initialize principal and delegates cache: ${errorToString(error)}`);
+      // Don't throw here - let the handler deal with cache loading on first use
+    }
+  }
+}
+
+// Initialize cache on module load
+initializeCache().catch(error => {
+  log(`Cache initialization failed: ${errorToString(error)}`);
+});
 
 export const handler = capture.wrapHandler(async (event: APIGatewayProxyEventV2) => {
   try {
