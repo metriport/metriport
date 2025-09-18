@@ -9,7 +9,7 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 import { SQSClient } from "@metriport/core/external/aws/sqs";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
-import { errorToString, getEnvVarOrFail, sleep } from "@metriport/shared";
+import { errorToString, getEnvVarOrFail, sleep, uuidv4 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { Command } from "commander";
@@ -51,7 +51,6 @@ const maxUncompressedSizePerFileInMB = 800;
 
 const mergeCsvJobId = "MRG_" + buildDayjs().toISOString().slice(0, 19).replace(/[:.]/g, "-");
 
-const messageGroupId = "merge-csvs";
 const numberOfParallelPutSqsOperations = 20;
 
 const cxId = getEnvVarOrFail("CX_ID");
@@ -123,7 +122,7 @@ async function main({ fhirToCsvJobId }: { fhirToCsvJobId: string }) {
         await sqsClient.sendMessageToQueue(queueUrl, payloadString, {
           fifo: true,
           messageDeduplicationId: createUuidFromText(ptIdsOfThisRun.join(",")),
-          messageGroupId,
+          messageGroupId: uuidv4(),
         });
 
         amountOfPatientsProcessed += ptIdsOfThisRun.length;
