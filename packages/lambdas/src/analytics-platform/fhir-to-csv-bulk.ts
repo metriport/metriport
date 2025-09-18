@@ -34,7 +34,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
     throw new MetriportError(msg, undefined, { cxId, patientId, jobId });
   }
 
-  const timeoutForCsvTransform = context.getRemainingTimeInMillis() - 200;
+  const timeoutForCsvTransform = Math.max(0, context.getRemainingTimeInMillis() - 200);
 
   log(`Invoking lambda ${lambdaName}... it has ${timeoutForCsvTransform}ms to run`);
   const startedAt = Date.now();
