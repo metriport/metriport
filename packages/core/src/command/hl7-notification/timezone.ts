@@ -3,13 +3,10 @@ import { MetriportError } from "@metriport/shared";
 import { normalizeState, stateToTimezone } from "@metriport/shared/domain/address/state";
 
 const ZFA_ADDRESS_INDEX = 4; // Field (1 indexed)
-const ZFA_STATE_INDEX = 3; // Arrat (0 indexed)
+const ZFA_STATE_INDEX = 4; // Component (1 indexed)
 
 function getTimezoneFromState(state: string): string {
-  console.log("extracted state", state);
   const stateEnum = normalizeState(state);
-  console.log("stateEnum", stateEnum);
-  console.log("stateToTimezone", stateToTimezone[stateEnum]);
   return stateToTimezone[stateEnum];
 }
 
@@ -30,8 +27,7 @@ export function getBambooTimezone(hl7Message: Hl7Message): string {
     );
   }
 
-  const addressParts = customZfaAddress.toString().split("^");
-  const state = addressParts[ZFA_STATE_INDEX];
+  const state = customZfaAddress.getComponent(ZFA_STATE_INDEX);
 
   if (!state) {
     throw new MetriportError(
@@ -39,7 +35,6 @@ export function getBambooTimezone(hl7Message: Hl7Message): string {
       undefined,
       {
         ZFASegment: customZfaAddress.toString(),
-        addressParts: addressParts.toString(),
         state,
       }
     );
