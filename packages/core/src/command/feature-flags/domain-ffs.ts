@@ -316,15 +316,6 @@ export async function isQuestFeatureFlagEnabledForCx(cxId: string): Promise<bool
   return cxIdsWithQuestEnabled.some(i => i === cxId);
 }
 
-export async function getCxsEnabledForCommonwellV2(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsEnabledForCommonwellV2");
-}
-
-export async function isCommonwellV2EnabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithCommonwellV2Enabled = await getCxsEnabledForCommonwellV2();
-  return cxIdsWithCommonwellV2Enabled.some(i => i === cxId);
-}
-
 export async function getCxsEnabledForAnalyticsIncrementalIngestion(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("analyticsIncrementalIngestion");
 }
