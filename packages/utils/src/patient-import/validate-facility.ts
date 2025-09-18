@@ -2,53 +2,97 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 
+import fs from "fs";
+import path from "path";
 import { Command } from "commander";
 import { SurescriptsDataMapper as DataMapper } from "@metriport/core/external/surescripts/data-mapper";
-import { Patient } from "@metriport/shared/domain/patient";
-import { readCsv, streamCsv } from "../shared/csv";
+import {
+  readCsv,
+  streamCsv,
+  writeOutputCsv,
+  appendToOutputCsv,
+  getCsvRunsPath,
+} from "../shared/csv";
 
 /**
  * This script reads a CSV roster and ensures that each patient is associated with the correct facility,
- * by inspecting a specific column and mapping it to a facility based on a CSV file.
+ * by inspecting a specific column and mapping it to a facility based on a CSV file. It expects a CSV
+ * directory with the following files:
+ *
+ * - roster.csv: The CSV roster to validate
+ * - facility.csv: The CSV with facility mapping
  */
 const program = new Command();
 program
   .name("validate-facility")
   .description("Validate the facility mapping")
   .requiredOption("--cx-id <cxId>", "CX ID")
-  .requiredOption("--csv-facility <csvFacility>", "Path to a CSV with facility mapping")
-  .requiredOption("--csv-roster <csvRoster>", "Path to the CSV roster")
+  .requiredOption("--csv-dir <csvDir>", "Relative name of runs directory containing the CSV files")
+  .option("--use-cache", "Use the cache of existing Metriport IDs")
   .action(validateFacility)
   .showHelpAfterError();
 
 async function validateFacility({
   cxId,
-  csvRoster,
-  csvFacility,
+  csvDir,
+  useCache,
 }: {
   cxId: string;
-  csvRoster: string;
-  csvFacility: string;
+  csvDir: string;
+  useCache?: boolean;
 }) {
-  const { facilityNameToId, facilityIdToName } = await buildFacilityMapping(csvFacility);
-  const externalIdToPatient = await buildExternalIdToPatientMapping(cxId, facilityIdToName);
+  // Prepare runs directory and references to file paths
+  const fullCsvDir = getCsvRunsPath(csvDir);
+  if (!fs.existsSync(fullCsvDir)) {
+    fs.mkdirSync(fullCsvDir, { recursive: true });
+  }
+  const csvFacility = path.join(fullCsvDir, "facility.csv");
+  const csvRoster = path.join(fullCsvDir, "roster.csv");
+  const csvOutput = path.join(fullCsvDir, `changeset-${new Date().toISOString()}.csv`);
+  const patientReferenceCachePath = useCache
+    ? path.join(fullCsvDir, "reference-cache.json")
+    : undefined;
 
+  // Construct mappings of existing Metriport IDs
+  const { facilityNameToId, facilityIdToName } = await buildFacilityMapping(csvFacility);
+  const externalIdToPatient = await buildExternalIdToPatientMapping(
+    cxId,
+    facilityIdToName,
+    patientReferenceCachePath
+  );
+
+  // Write output CSV with changes
+  const outputCsvPath = writeOutputCsv(csvOutput, [
+    "externalId",
+    "metriportPatientId",
+    "currentFacilityId",
+    "expectedFacilityId",
+  ]);
   let totalInstancesFound = 0;
+
   const { rowsProcessed, errorCount } = await streamCsv<CsvRosterRow>(csvRoster, row => {
     const { externalId, facilityName } = getExternalIdAndFacilityName(row);
-    const patient = externalIdToPatient[externalId];
-    if (!patient) {
-      throw new Error(`No patient found for external ID ${externalId}`);
+    const reference = externalIdToPatient[externalId];
+    if (!reference) {
+      console.log(`No patient found for external ID ${externalId}`);
+      return;
     }
-    const currentFacilityId = patient.facilityIds[0];
+    const currentFacilityId = reference.facilityId;
     if (!currentFacilityId) {
-      throw new Error(`Patient ${externalId} has no facility ID`);
+      console.log(`Patient ${externalId} has no facility ID`);
+      return;
     }
     const expectedFacilityId = facilityNameToId[facilityName];
     if (currentFacilityId !== expectedFacilityId) {
-      console.log(
-        `Patient ${externalId} has facility ID ${currentFacilityId} but expected ${expectedFacilityId}`
-      );
+      appendToOutputCsv(outputCsvPath, [
+        externalId,
+        reference.patientId,
+        currentFacilityId,
+        expectedFacilityId,
+      ]);
+      // console.log(
+      //   `Patient ${externalId} has facility ID ${currentFacilityId} but expected ${expectedFacilityId}`
+      // );
       totalInstancesFound++;
     }
   });
@@ -57,6 +101,9 @@ async function validateFacility({
   console.log(`Total facility changes required: ${totalInstancesFound}`);
 }
 
+/**
+ * Construct both mappings from facility name to ID, and ID to name.
+ */
 async function buildFacilityMapping(csvFacility: string) {
   const rows = await readCsv<{ facility_name: string; facility_id: string }>(csvFacility);
   const facilityNameToId = Object.fromEntries(
@@ -68,16 +115,26 @@ async function buildFacilityMapping(csvFacility: string) {
   return { facilityNameToId, facilityIdToName };
 }
 
+/**
+ * Constructs a mapping from external ID to patient reference by querying the internal
+ * API for each patient in parallel, and extracting the relevant ID fields.
+ */
+type PatientReference = { patientId: string; externalId: string; facilityId: string };
 async function buildExternalIdToPatientMapping(
   cxId: string,
-  facilityIdToName: Record<string, string>
-): Promise<Record<string, Patient>> {
+  facilityIdToName: Record<string, string>,
+  cachePath?: string
+): Promise<Record<string, PatientReference>> {
+  if (cachePath && fs.existsSync(cachePath)) {
+    const cache = JSON.parse(fs.readFileSync(cachePath, "utf8"));
+    return cache as Record<string, PatientReference>;
+  }
+
   const dataMapper = new DataMapper();
   const facilityIds = Object.keys(facilityIdToName);
-  const externalIdToPatient: Record<string, Patient> = {};
+  const externalIdToPatient: Record<string, PatientReference> = {};
 
   let totalCount = 0;
-  let totalWithoutExternalId = 0;
 
   for (const facilityId of facilityIds) {
     const facilityName = facilityIdToName[facilityId];
@@ -91,18 +148,19 @@ async function buildExternalIdToPatientMapping(
       externalIdToPatient,
       Object.fromEntries(
         patients.map(patient => {
-          if (!patient.externalId) {
-            console.log(`Patient ${patient.id} has no external ID`);
-            totalWithoutExternalId++;
-            return [patient.id, patient];
-          }
-          return [patient.externalId, patient];
+          const externalId = patient.externalId;
+          const patientId = patient.id;
+          const facilityId = patient.facilityIds[0];
+          return [externalId, { patientId, externalId, facilityId }];
         })
       )
     );
   }
   console.log(`Total patients processed: ${totalCount}`);
-  console.log(`Total patients without external ID: ${totalWithoutExternalId}`);
+  if (cachePath) {
+    fs.writeFileSync(cachePath, JSON.stringify(externalIdToPatient), "utf8");
+  }
+
   return externalIdToPatient;
 }
 

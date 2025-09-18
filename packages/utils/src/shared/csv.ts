@@ -55,3 +55,13 @@ export async function streamCsv<T>(
       });
   });
 }
+
+export function writeOutputCsv(csvPath: string, headers: string[]) {
+  const fullCsvPath = getCsvRunsPath(csvPath);
+  fs.writeFileSync(fullCsvPath, headers.map(h => `"${h}"`).join(",") + "\n");
+  return fullCsvPath;
+}
+
+export function appendToOutputCsv(fullCsvPath: string, row: string[]) {
+  fs.appendFileSync(fullCsvPath, row.map(cell => `"${cell}"`).join(",") + "\n");
+}
