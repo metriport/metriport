@@ -25,6 +25,51 @@ export class SearchAutomaton {
     this.buildAutomaton();
   }
 
+  search(text: string, handler: (word: string, start: number, end: number) => void) {
+    let currentState = 0;
+    for (let i = 0; i < text.length; i++) {
+      const nextChar = text[i] as string;
+      currentState = this.findNextState(currentState, nextChar);
+      const currentStateOutput = this.output[currentState] as boolean[];
+      // If match not found, move to next state
+      if (currentStateOutput.every(output => !output)) continue;
+
+      // Match found, return the match to the callback function
+      for (let j = 0; j < this.searchTerms.length; ++j) {
+        if (currentStateOutput[j]) {
+          const searchTerm = this.searchTerms[j];
+          if (!searchTerm) continue;
+          handler(searchTerm, i - searchTerm.length + 1, i);
+        }
+      }
+    }
+  }
+
+  /**
+   * Returns the state index that this automaton would transition to after encountering the given character.
+   * @param currentState
+   * @param nextChar
+   * @returns
+   */
+  findNextState(currentState: number, nextChar: string): number {
+    let finalState = currentState;
+
+    // Do not transition states for invalid characters that were ignored when the automaton was constructed
+    const char = nextChar.charCodeAt(0) - ASCII_START;
+    if (char < 0 || char >= CHARACTER_SET.length) {
+      return currentState;
+    }
+
+    // Transition to the most optimal next state
+    const stateTransition = this.nextState[finalState] as number[];
+    let finalStateTransition = stateTransition;
+    while (finalStateTransition[char] === NOWHERE) {
+      finalState = this.failureState[finalState] as number;
+      finalStateTransition = this.nextState[finalState] as number[];
+    }
+    return finalStateTransition[char] as number;
+  }
+
   // Below is a modified implementation of the Aho-Corasick algorithm, specifically optimized for working with the
   // ASCII character ranges that are typically found in medical text.
   // https://en.wikipedia.org/wiki/Aho%E2%80%93Corasick_algorithm
