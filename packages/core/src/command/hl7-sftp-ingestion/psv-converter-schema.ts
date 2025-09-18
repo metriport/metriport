@@ -91,7 +91,7 @@ export const rowSchema = z.object({
   AttendingPhysicianName: z.string().optional(),
   SendingToSystem: z.string().min(1, "Sending to system is required"),
   MetriplexPatID: z.string().min(1, "Metriplex patient ID is required"),
-  AdmitDateTime: z.string().optional(),
+  AdmitDateTime: z.string().min(1, "Admit date/time is required"),
   MiddleName: z.string().optional(),
   PrimaryPhoneNumber: phoneSchema,
   SSN: ssnSchema,
