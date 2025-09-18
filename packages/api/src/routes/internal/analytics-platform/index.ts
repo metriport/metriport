@@ -1,4 +1,4 @@
-import { buildFhirToCsvIncrementalHandler } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-incremantal/fhir-to-csv-incremental-factory";
+import { buildFhirToCsvIncrementalHandler } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-incremental/fhir-to-csv-incremental-factory";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";

@@ -15,7 +15,8 @@ export async function ingestPatientIntoAnalyticsPlatform({
   if (!isAnalyticsEnabled) return;
 
   // TODO ENG-743 implement this
-  log(`Ingesting pt consolidated into analytics platform`);
+  log(`WOULD BE ingesting pt consolidated into analytics platform`);
+  // log(`Ingesting pt consolidated into analytics platform`);
 
   // const fhirToCsvHandler = buildFhirToCsvHandler();
   // fhirToCsvHandler.processFhirToCsv({

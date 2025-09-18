@@ -1,4 +1,4 @@
-import { FhirToCsvIncrementalDirect } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-incremantal/fhir-to-csv-incremental-direct";
+import { FhirToCsvIncrementalDirect } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-incremental/fhir-to-csv-incremental-direct";
 import { doesConsolidatedDataExist } from "@metriport/core/command/consolidated/consolidated-get";
 import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { errorToString, getEnvVarOrFail, MetriportError } from "@metriport/shared";
