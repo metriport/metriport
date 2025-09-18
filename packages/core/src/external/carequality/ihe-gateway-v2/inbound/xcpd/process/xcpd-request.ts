@@ -95,10 +95,10 @@ export async function processInboundXcpdRequest(
     if (samlAttributes.principalOid) {
       console.log(
         "validating delegated request",
-        samlAttributes.organization,
+        samlAttributes.homeCommunityId,
         samlAttributes.principalOid
       );
-      await validateDelegatedRequest(samlAttributes.organization, samlAttributes.principalOid);
+      await validateDelegatedRequest(samlAttributes.homeCommunityId, samlAttributes.principalOid);
       console.log("delegated request validated");
     }
 
