@@ -137,6 +137,7 @@ export async function getCqInitiator(
   patient: Pick<Patient, "id" | "cxId">,
   facilityId?: string
 ): Promise<HieInitiator> {
+  // TODO: ENG-1089 - Remove this once we fully migrate to the new DOA flow on CQ.
   const isCqDoaFeatureFlagEnabled = await isCqDoaEnabled();
   return getHieInitiator(patient, facilityId, isCqDoaFeatureFlagEnabled);
 }
