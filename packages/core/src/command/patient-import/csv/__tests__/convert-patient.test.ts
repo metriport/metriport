@@ -51,20 +51,20 @@ describe("convert-patient", () => {
 
     it("keeps words with original capitalization", () => {
       const csv = makeCsv();
-      csv.firstName = "John O'Connor";
-      csv.lastName = "FrommageTheThird";
-      csv.addressLine1 = "123 VanBuren St";
-      csv.addressLine2 = "ApT 999";
+      csv.firstname = "John O'Connor";
+      csv.lastname = "FrommageTheThird";
+      csv.addressline1 = "123 VanBuren St";
+      csv.addressline2 = "ApT 999";
       const result = mapCsvPatientToMetriportPatient(csv);
       expect(result).toEqual(
         expect.objectContaining({
-          firstName: csv.firstName,
-          lastName: csv.lastName,
+          firstName: csv.firstname,
+          lastName: csv.lastname,
           dob: csv.dob?.slice(0, 10),
           genderAtBirth: csv.gender === "male" ? "M" : "F",
           address: [
             expect.objectContaining({
-              addressLine1: csv.addressLine1,
+              addressLine1: csv.addressline1,
               city: csv.city,
               state: csv.state,
               zip: csv.zip,
