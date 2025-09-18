@@ -7,13 +7,13 @@ import { S3Utils } from "../../../aws/s3";
 import { PRINCIPAL_AND_DELEGATES_FILE_NAME } from "../../shared";
 
 const region = Config.getAWSRegion();
-const bucket = Config.getGeneralBucketName();
 const s3Utils = new S3Utils(region);
 
 export async function uploadPrincipalAndDelegatesToS3(
   principalAndDelegatesMap: Map<string, string[]>
 ): Promise<void> {
   const { log } = out(`uploadPrincipalAndDelegatesToS3`);
+  const bucket = Config.getGeneralBucketName();
   try {
     await s3Utils.uploadFile({
       bucket,
@@ -33,6 +33,8 @@ export async function uploadPrincipalAndDelegatesToS3(
 
 export async function getPrincipalAndDelegatesMap(): Promise<Map<string, string[]>> {
   const { log } = out(`getPrincipalAndDelegatesMap`);
+  const bucket = Config.getGeneralBucketName();
+
   try {
     const file = await s3Utils.downloadFile({
       bucket,
