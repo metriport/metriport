@@ -1,7 +1,13 @@
-import { ASCII_START, ASCII_END, CHARACTER_SET, INITIAL_STATE, NOWHERE } from "./constants";
-import { characterSetMap } from "./utils";
+import {
+  ASCII_START,
+  ASCII_END,
+  CHARACTER_SET,
+  INITIAL_STATE,
+  NOWHERE,
+  characterSetMap,
+} from "./characters";
 
-interface SearchMatch {
+export interface SearchMatch {
   // The search term that was matched
   searchTerm: string;
   // The index *after* the first character of the match
