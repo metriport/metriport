@@ -1,6 +1,6 @@
 import { Hl7Message } from "@medplum/core";
 import { Bundle, CodeableConcept, Resource } from "@medplum/fhirtypes";
-import { executeWithNetworkRetries } from "@metriport/shared";
+import { executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
 import { CreateDischargeRequeryParams } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import { TcmEncounterUpsertInput } from "@metriport/shared/domain/tcm-encounter";
@@ -41,7 +41,7 @@ import {
   persistHl7MessageError,
   SupportedTriggerEvent,
 } from "./utils";
-import { getBambooTimezone, HIES_WITH_MULTIPLE_TIMEZONES } from "./timezone-controller";
+import { getBambooTimezone } from "./timezone";
 
 type HieConfig = { timezone: string };
 
@@ -50,20 +50,15 @@ function getTimezoneFromHieName(
   hl7Message: Hl7Message,
   log: typeof console.log
 ): string {
-  if (HIES_WITH_MULTIPLE_TIMEZONES.includes(hieName.toLowerCase())) {
-    log("HIE has multiple timezones");
-    switch (hieName.toLowerCase()) {
-      case "bamboo":
-        return getBambooTimezone(hl7Message, log);
-      default:
-        throw new Error(`HIE is not supported for multiple timezones: ${hieName}`);
-    }
+  if (hieName === "Bamboo") {
+    log("HIE is Bamboo, getting timezone based off state in the facility");
+    return getBambooTimezone(hl7Message);
   } else {
     const hieConfigDictionary = getHieConfigDictionary() as Record<string, HieConfig>;
     const hieConfig = hieConfigDictionary[hieName];
 
     if (!hieConfig?.timezone) {
-      throw new Error(`HIE timezone not found for HIE: ${hieName}`);
+      throw new MetriportError(`HIE timezone not found for HIE: ${hieName}`);
     }
 
     return hieConfig.timezone;

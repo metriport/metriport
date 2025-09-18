@@ -2,8 +2,6 @@ import { Hl7Message } from "@medplum/core";
 import { MetriportError } from "@metriport/shared/dist/error/metriport-error";
 import { normalizeState, stateToTimezone } from "@metriport/shared/domain/address/state";
 
-export const HIES_WITH_MULTIPLE_TIMEZONES = ["bamboo"];
-
 const ZFA_STATE_INDEX = 4;
 
 function getTimezoneFromState(state: string): string {
@@ -11,11 +9,10 @@ function getTimezoneFromState(state: string): string {
   return stateToTimezone[stateEnum];
 }
 
-export function getBambooTimezone(hl7Message: Hl7Message, log: typeof console.log): string {
-  log("HIE is Bamboo, getting timezone based off state in the facility");
+export function getBambooTimezone(hl7Message: Hl7Message): string {
   const customZfaSegment = hl7Message.getSegment("ZFA");
   if (!customZfaSegment) {
-    throw new Error("Custom ZFA segment was not found in a bamboo hl7 message!");
+    throw new MetriportError("Custom ZFA segment was not found in a bamboo hl7 message!");
   }
 
   const customZfaField = customZfaSegment.getField(ZFA_STATE_INDEX);
@@ -29,6 +26,5 @@ export function getBambooTimezone(hl7Message: Hl7Message, log: typeof console.lo
     );
   }
   const timezone = getTimezoneFromState(customZfaField.toString());
-  log(`Bamboo timezone: ${timezone}`);
   return timezone;
 }
