@@ -25,10 +25,25 @@ export class SearchAutomaton {
     this.buildAutomaton();
   }
 
+  // Below is a modified implementation of the Aho-Corasick algorithm, specifically optimized for working with the
+  // ASCII character ranges that are typically found in medical text.
+  // https://en.wikipedia.org/wiki/Aho%E2%80%93Corasick_algorithm
+
   /**
    * Constructs the search automaton by adding each word into the state transition tables.
    */
   private buildAutomaton() {
+    this.addSearchTermsToAutomaton();
+    this.addReferencesToInitialState();
+    this.computeOptimalFailureStates();
+  }
+
+  /**
+   * Adds each search term to the search automaton. This is effectively the same as the process of constructing a
+   * Trie, but with a more efficient space implementation which allows the optimal failure state to be efficiently
+   * computed.
+   */
+  private addSearchTermsToAutomaton() {
     // Initially, there is only one state (the "zero state")
     let totalStates = 1;
 
@@ -60,14 +75,73 @@ export class SearchAutomaton {
       const output = this.output[currentState] as boolean[];
       output[termIndex] = true;
     }
+  }
 
-    // Configures state 0 to be "self-referential", i.e. any character that was not configured in
-    // the state transitions above will automatically transition to state 0.
+  /**
+   * Configures state 0 to be "self-referential", i.e. any character that was not configured in
+   * the state transitions above will automatically transition to state 0.
+   */
+  private addReferencesToInitialState() {
     const nextStateFromInitialState = this.nextState[INITIAL_STATE] as number[];
     for (let char = 0; char < CHARACTER_SET.length; char++) {
       const firstState = nextStateFromInitialState[char];
       if (firstState == NOWHERE) {
         nextStateFromInitialState[char] = INITIAL_STATE;
+      }
+    }
+  }
+
+  /**
+   * Compresses the automaton by removing unnecessary states and transitions.
+   */
+  private computeOptimalFailureStates() {
+    const nextStateFromInitialState = this.nextState[INITIAL_STATE] as number[];
+    // Compute the "failure function", which finds the most efficient continuation point in the automaton
+    // when a "failure" (i.e. a character mismatch) occurs.
+    const queue: number[] = [];
+    for (let char = 0; char < CHARACTER_SET.length; char++) {
+      const firstState = nextStateFromInitialState[char] as number;
+      if (firstState != INITIAL_STATE) {
+        this.failureState[firstState] = 0;
+        queue.push(firstState);
+      }
+    }
+
+    // Iterate over all states to find failure transitions where there is not a defined
+    // state transition.
+    while (queue.length > 0) {
+      const state = queue.shift() as number;
+
+      // For each character in the alphabet, find the failure state for the current state
+      for (let char = 0; char < CHARACTER_SET.length; char++) {
+        const nextState = this.nextState[state];
+        if (!nextState) continue;
+
+        if (nextState[char] != NOWHERE) {
+          // Find failure state of removed state
+          let failure = this.failureState[state] as number;
+
+          // Find the deepest node labeled by proper suffix of string from root to current state.
+          const nextFailureState = this.nextState[failure] as number[];
+          while (nextFailureState[char] == NOWHERE) {
+            failure = this.failureState[failure] as number;
+          }
+
+          failure = nextFailureState[char] as number;
+          const nextFailure = nextState[char] as number;
+          this.failureState[nextFailure] = failure;
+
+          // Merge output values
+          const gotoOutput = this.output[nextFailure] as boolean[];
+          const failureOutput = this.output[failure] as boolean[];
+
+          for (let i = 0; i < gotoOutput.length; i++) {
+            gotoOutput[i] = gotoOutput[i] || failureOutput[i] || false;
+          }
+
+          // Insert the next level node (of Trie) in Queue
+          queue.push(nextState[char] as number);
+        }
       }
     }
   }
