@@ -83,7 +83,6 @@ export async function registerAndLinkPatientInCwV2({
   debug,
   initiator,
   update,
-  shouldUpdateDb = true,
 }: {
   patient: Patient;
   facilityId: string;
@@ -94,7 +93,6 @@ export async function registerAndLinkPatientInCwV2({
   debug: typeof console.log;
   initiator?: HieInitiator;
   update: (params: UpdatePatientCmd) => Promise<void>;
-  shouldUpdateDb?: boolean;
 }): Promise<{ commonwellPatientId: string } | void> {
   const { log } = out(`registerAndLinkPatientInCW.v2 - patientId ${patient.id}`);
   let commonWell: CommonWellAPI | undefined;
@@ -106,9 +104,7 @@ export async function registerAndLinkPatientInCwV2({
     });
     commonWell = commonWellAPI;
 
-    if (shouldUpdateDb) {
-      await updateCommonwellIdsAndStatus({ patient, cqLinkStatus: undefined });
-    }
+    await updateCommonwellIdsAndStatus({ patient, cqLinkStatus: undefined });
 
     debug(`Registering this Patient: `, () => JSON.stringify(commonwellPatient, null, 2));
 
@@ -116,7 +112,6 @@ export async function registerAndLinkPatientInCwV2({
       commonWell,
       commonwellPatient,
       patient,
-      shouldUpdateDb,
     });
 
     const { validLinks, invalidLinks } = await runPatientLinkingWithRetries({
@@ -125,7 +120,6 @@ export async function registerAndLinkPatientInCwV2({
       commonwellPatientId,
       context: createContext,
       getOrgIdExcludeList,
-      shouldUpdateDb,
     });
 
     if (rerunPdOnNewDemographics) {
@@ -136,46 +130,44 @@ export async function registerAndLinkPatientInCwV2({
         requestId,
         cwLinks: validLinks,
         update,
-        shouldUpdateDb,
       });
       if (startedNewPd) return;
     }
 
-    if (shouldUpdateDb) {
-      analytics({
-        distinctId: patient.cxId,
-        event: EventTypes.patientDiscovery,
-        properties: {
-          hie: MedicalDataSource.COMMONWELL,
-          patientId: patient.id,
-          requestId,
-          pdLinks: validLinks.length,
-          pdLinksInvalid: invalidLinks.length,
-          duration: elapsedTimeFromNow(startedAt),
-        },
-      });
-      const startedNewPd = await runNextPdIfScheduled({
-        patient,
+    analytics({
+      distinctId: patient.cxId,
+      event: EventTypes.patientDiscovery,
+      properties: {
+        hie: MedicalDataSource.COMMONWELL,
+        patientId: patient.id,
         requestId,
-        update,
-      });
-      if (startedNewPd) return;
+        pdLinks: validLinks.length,
+        pdLinksInvalid: invalidLinks.length,
+        duration: elapsedTimeFromNow(startedAt),
+      },
+    });
+    const startedNewPd = await runNextPdIfScheduled({
+      patient,
+      requestId,
+      update,
+    });
+    if (startedNewPd) return;
 
-      await updatePatientDiscoveryStatus({ patient, status: "completed" });
-      await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList });
-    }
+    await updatePatientDiscoveryStatus({ patient, status: "completed" });
+    await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList });
+
     debug("Completed.");
     return { commonwellPatientId };
   } catch (error) {
     // TODO 1646 Move to a single hit to the DB
-    if (shouldUpdateDb) {
-      await resetScheduledPatientDiscovery({
-        patient,
-        source: MedicalDataSource.COMMONWELL,
-      });
-      await updatePatientDiscoveryStatus({ patient, status: "failed" });
-      await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList, isFailed: true });
-    }
+
+    await resetScheduledPatientDiscovery({
+      patient,
+      source: MedicalDataSource.COMMONWELL,
+    });
+    await updatePatientDiscoveryStatus({ patient, status: "failed" });
+    await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList, isFailed: true });
+
     const msg = `Failure while creating patient @ CW`;
     const cwRef = commonWell?.lastTransactionId;
     log(
@@ -226,7 +218,6 @@ export async function updatePatientAndLinksInCwV2({
   startedAt,
   debug,
   update,
-  shouldUpdateDb = true,
 }: {
   patient: Patient;
   facilityId: string;
@@ -236,7 +227,6 @@ export async function updatePatientAndLinksInCwV2({
   startedAt: Date;
   debug: typeof console.log;
   update: (params: UpdatePatientCmd) => Promise<void>;
-  shouldUpdateDb?: boolean;
 }): Promise<void> {
   const { log } = out(`updatePatientAndLinksInCw.v2 - patientId ${patient.id}`);
   let commonWell: CommonWellAPI | undefined;
@@ -254,7 +244,6 @@ export async function updatePatientAndLinksInCwV2({
         startedAt,
         debug,
         update,
-        shouldUpdateDb,
       });
       return;
     }
@@ -278,7 +267,6 @@ export async function updatePatientAndLinksInCwV2({
       commonwellPatientId,
       context: updateContext,
       getOrgIdExcludeList,
-      shouldUpdateDb,
     });
 
     if (rerunPdOnNewDemographics) {
@@ -289,47 +277,43 @@ export async function updatePatientAndLinksInCwV2({
         requestId,
         cwLinks: validLinks,
         update,
-        shouldUpdateDb,
       });
       if (startedNewPd) return;
     }
 
-    if (shouldUpdateDb) {
-      analytics({
-        distinctId: patient.cxId,
-        event: EventTypes.patientDiscovery,
-        properties: {
-          hie: MedicalDataSource.COMMONWELL,
-          patientId: patient.id,
-          requestId,
-          pdLinks: validLinks.length,
-          pdLinksInvalid: invalidLinks.length,
-          duration: elapsedTimeFromNow(startedAt),
-        },
-      });
-
-      const startedNewPd = await runNextPdIfScheduled({
-        patient,
+    analytics({
+      distinctId: patient.cxId,
+      event: EventTypes.patientDiscovery,
+      properties: {
+        hie: MedicalDataSource.COMMONWELL,
+        patientId: patient.id,
         requestId,
-        update,
-      });
+        pdLinks: validLinks.length,
+        pdLinksInvalid: invalidLinks.length,
+        duration: elapsedTimeFromNow(startedAt),
+      },
+    });
 
-      if (startedNewPd) return;
+    const startedNewPd = await runNextPdIfScheduled({
+      patient,
+      requestId,
+      update,
+    });
 
-      await updatePatientDiscoveryStatus({ patient, status: "completed" });
-      await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList });
-    }
+    if (startedNewPd) return;
+
+    await updatePatientDiscoveryStatus({ patient, status: "completed" });
+    await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList });
+
     debug("Completed.");
   } catch (error) {
-    if (shouldUpdateDb) {
-      // TODO 1646 Move to a single hit to the DB
-      await resetScheduledPatientDiscovery({
-        patient,
-        source: MedicalDataSource.COMMONWELL,
-      });
-      await updatePatientDiscoveryStatus({ patient, status: "failed" });
-      await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList, isFailed: true });
-    }
+    // TODO 1646 Move to a single hit to the DB
+    await resetScheduledPatientDiscovery({
+      patient,
+      source: MedicalDataSource.COMMONWELL,
+    });
+    await updatePatientDiscoveryStatus({ patient, status: "failed" });
+    await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList, isFailed: true });
     const msg = `Failed to update patient @ CW`;
     const cwRef = commonWell?.lastTransactionId;
     log(`${msg} ${patient.id}:. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`);
@@ -354,7 +338,6 @@ async function runNextPdOnNewDemographics({
   requestId,
   cwLinks,
   update,
-  shouldUpdateDb,
 }: {
   patient: Patient;
   facilityId: string;
@@ -362,7 +345,6 @@ async function runNextPdOnNewDemographics({
   requestId: string;
   cwLinks: NetworkLink[];
   update: (params: UpdatePatientCmd) => Promise<void>;
-  shouldUpdateDb: boolean;
 }): Promise<boolean> {
   const updatedPatient = await getPatientOrFail(patient);
 
@@ -377,7 +359,7 @@ async function runNextPdOnNewDemographics({
     return false;
   }
 
-  if (foundNewDemographicsHere && shouldUpdateDb) {
+  if (foundNewDemographicsHere) {
     await Promise.all([
       updateCwPatientData({
         id: updatedPatient.id,
@@ -395,25 +377,24 @@ async function runNextPdOnNewDemographics({
       }),
     ]);
   }
-  if (shouldUpdateDb) {
-    update({
-      patient: updatedPatient,
-      facilityId,
-      getOrgIdExcludeList,
-      rerunPdOnNewDemographics: false,
-    }).catch(processAsyncError("CW update"));
-    analytics({
-      distinctId: updatedPatient.cxId,
-      event: EventTypes.rerunOnNewDemographics,
-      properties: {
-        hie: MedicalDataSource.COMMONWELL,
-        patientId: updatedPatient.id,
-        requestId,
-        foundNewDemographicsHere,
-        foundNewDemographicsAcrossHies,
-      },
-    });
-  }
+  update({
+    patient: updatedPatient,
+    facilityId,
+    getOrgIdExcludeList,
+    rerunPdOnNewDemographics: false,
+  }).catch(processAsyncError("CW update"));
+  analytics({
+    distinctId: updatedPatient.cxId,
+    event: EventTypes.rerunOnNewDemographics,
+    properties: {
+      hie: MedicalDataSource.COMMONWELL,
+      patientId: updatedPatient.id,
+      requestId,
+      foundNewDemographicsHere,
+      foundNewDemographicsAcrossHies,
+    },
+  });
+
   return true;
 }
 
@@ -584,12 +565,10 @@ async function registerPatient({
   commonWell,
   commonwellPatient,
   patient,
-  shouldUpdateDb,
 }: {
   commonWell: CommonWellAPI;
   commonwellPatient: CommonwellPatient;
   patient: Patient;
-  shouldUpdateDb: boolean;
 }): Promise<{ commonwellPatientId: string }> {
   const fnName = `CW.v2 registerPatient`;
   const { log, debug } = out(fnName);
@@ -607,9 +586,7 @@ async function registerPatient({
     throw new Error(msg);
   }
 
-  if (shouldUpdateDb) {
-    await updateCommonwellIdsAndStatus({ patient, commonwellPatientId });
-  }
+  await updateCommonwellIdsAndStatus({ patient, commonwellPatientId });
 
   return { commonwellPatientId };
 }
@@ -646,14 +623,12 @@ async function runPatientLinkingWithRetries({
   commonwellPatientId,
   context,
   getOrgIdExcludeList,
-  shouldUpdateDb,
 }: {
   commonWell: CommonWellAPI;
   patient: Patient;
   commonwellPatientId: string;
   context: string;
   getOrgIdExcludeList: () => Promise<string[]>;
-  shouldUpdateDb: boolean;
 }): Promise<{
   validLinks: NetworkLink[];
   invalidLinks: NetworkLink[];
@@ -694,7 +669,6 @@ async function runPatientLinkingWithRetries({
       probableLinks,
       context,
       getOrgIdExcludeList,
-      shouldUpdateDb,
     });
 
     validLinks = result.validLinks;
@@ -721,7 +695,6 @@ async function tryToImproveLinks({
   context,
   patient,
   getOrgIdExcludeList,
-  shouldUpdateDb,
 }: {
   commonWell: CommonWellAPI;
   commonwellPatientId: string;
@@ -730,7 +703,6 @@ async function tryToImproveLinks({
   context: string;
   patient: Patient;
   getOrgIdExcludeList: () => Promise<string[]>;
-  shouldUpdateDb: boolean;
 }): Promise<{
   validLinks: NetworkLink[];
   invalidLinks: NetworkLink[];
@@ -746,12 +718,7 @@ async function tryToImproveLinks({
   let validLinks: NetworkLink[] = [];
   let invalidLinks: NetworkLink[] = [];
   if (networkLinks && networkLinks.length > 0) {
-    const resp = await validateAndStoreCwLinks(
-      patient,
-      networkLinks,
-      getOrgIdExcludeList,
-      shouldUpdateDb
-    );
+    const resp = await validateAndStoreCwLinks(patient, networkLinks, getOrgIdExcludeList);
     validLinks = resp.validLinks;
     invalidLinks = resp.invalidLinks;
   }
@@ -907,8 +874,7 @@ function isInsideOrgExcludeList(link: NetworkLink, orgIdExcludeList: string[]): 
 async function validateAndStoreCwLinks(
   patient: Patient,
   networkLinks: NetworkLink[],
-  getOrgIdExcludeList: () => Promise<string[]>,
-  shouldUpdateDb: boolean
+  getOrgIdExcludeList: () => Promise<string[]>
 ): Promise<{
   validLinks: NetworkLink[];
   invalidLinks: NetworkLink[];
@@ -931,12 +897,12 @@ async function validateAndStoreCwLinks(
   const finalInvalidLinks = [...validLinksToDowngrade, ...invalidLinks];
 
   const validLinksV2: CwLinkV2[] = finalValidLinks.map(patientCollectionItemToCwLinkV2);
-  if (validLinksV2.length > 0 && shouldUpdateDb) {
+  if (validLinksV2.length > 0) {
     await createOrUpdateCwPatientData({ id, cxId, cwLinks: validLinksV2 });
   }
 
   const invalidLinksV2: CwLinkV2[] = finalInvalidLinks.map(patientCollectionItemToCwLinkV2);
-  if (invalidLinksV2.length > 0 && shouldUpdateDb) {
+  if (invalidLinksV2.length > 0) {
     await createOrUpdateInvalidLinks({
       id,
       cxId,

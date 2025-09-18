@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import { Bundle, BundleEntry, DiagnosticReport } from "@medplum/fhirtypes";
-import { createUploadFilePath } from "@metriport/core/domain/document/upload";
+import { createUploadFilePath } from "@metriport/core/shareback/file";
 import { HapiFhirClient } from "@metriport/core/external/fhir/api/api-hapi";
 import * as s3Upload from "@metriport/core/fhir-to-cda/upload";
 import { v4 as uuidv4 } from "uuid";

@@ -15,6 +15,9 @@ const numberOfParallelExecutions = 20;
 
 const columnSeparator = ",";
 const commaRegex = new RegExp(/,/g);
+const charsThatRequireQuotes = [columnSeparator, '"', "\n", "\r", "\t"];
+const charsToRemove = /[\n\r\t]/g;
+const charsToReplaceWithSpace = /\s{2,}/g;
 
 /**
  * Validates and parses a CSV file from S3 for bulk patient import.
@@ -46,16 +49,18 @@ export async function validateAndParsePatientImportCsvFromS3({
       contents: csvAsString,
     });
 
-    const createHeadersFilePromise = async () => {
+    // eslint-disable-next-line no-inner-declarations
+    async function createHeadersFilePromise() {
       await createHeadersFile({ cxId, jobId, headers, s3BucketName });
-    };
+    }
 
     const result: {
       rowNumber: number;
       status: PatientImportEntryStatus;
     }[] = [];
 
-    const getCreatePatientRecordPromises = () => {
+    // eslint-disable-next-line no-inner-declarations
+    function getCreatePatientRecordPromises() {
       return patients.map(p => {
         return async () => {
           const base = {
@@ -91,7 +96,7 @@ export async function validateAndParsePatientImportCsvFromS3({
           }
         };
       });
-    };
+    }
 
     await executeAsynchronously(
       [createHeadersFilePromise, ...getCreatePatientRecordPromises()],
@@ -154,6 +159,9 @@ export async function validateAndParsePatientImportCsv({
         headers.push(...parsedHeaders);
       })
       .on("data", async data => {
+        // Skip empty lines
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (Object.values(data).every((v: any) => (v ? String(v) : "").trim() === "")) return;
         try {
           if (++numberOfRows > MAX_NUMBER_ROWS) {
             throw new MetriportError(`CSV has more rows than max (${MAX_NUMBER_ROWS})`);
@@ -176,15 +184,34 @@ export function csvRecordToParsedPatient(
   data: Record<string, string>,
   rowNumber: number
 ): ParsedPatient {
-  const raw = Object.values(data) as string[];
-  const rawNormalized = raw.map(r => (r.includes(columnSeparator) ? `"${r}"` : r));
-  const result = mapCsvPatientToMetriportPatient(data);
+  const normalizedData = normalizeData(data);
+  const raw = Object.values(normalizedData) as string[];
+  const rawNormalized = raw.map(normalizeCsvRecord);
+  const result = mapCsvPatientToMetriportPatient(normalizedData);
   const baseParsedPatient = { rowNumber, raw: rawNormalized.join(",") };
   if (Array.isArray(result)) {
     return { ...baseParsedPatient, error: result.map(e => e.error).join("; ") };
   } else {
     return { ...baseParsedPatient, parsed: result };
   }
+}
+
+function normalizeData(data: Record<string, string>) {
+  return Object.fromEntries(
+    Object.entries(data).map(([key, value]) => [key, normalizeProperty(value)])
+  );
+}
+
+function normalizeProperty(record: string) {
+  // Replace chars to remove with space so new lines without any space on either side wouldn't
+  // result in merged words. Duplicate spaces are replaced with a single space on the second
+  // replace anyways.
+  return record.replace(charsToRemove, " ").replace(charsToReplaceWithSpace, " ");
+}
+
+function normalizeCsvRecord(record: string) {
+  if (record === "") return "";
+  return charsThatRequireQuotes.some(char => record.includes(char)) ? `"${record}"` : record;
 }
 
 function stripCommas(input: string, replacement = "") {

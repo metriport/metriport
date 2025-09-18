@@ -4,7 +4,7 @@ import {
   CCD_SUFFIX,
   createUploadFilePath,
   FHIR_BUNDLE_SUFFIX,
-} from "@metriport/core/domain/document/upload";
+} from "@metriport/core/shareback/file";
 import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";

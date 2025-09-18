@@ -137,3 +137,10 @@ export async function getConsolidatedPatientDataAsync({
     .execute(payload)
     .catch(processAsyncError("Failed to get consolidated patient data async", undefined, true));
 }
+
+export async function doesConsolidatedDataExist(cxId: string, patientId: string): Promise<boolean> {
+  const fileLocation = getConsolidatedLocation();
+  const fileName = createConsolidatedDataFilePath(cxId, patientId);
+  const exists = await s3Utils.fileExists(fileLocation, fileName);
+  return exists;
+}
