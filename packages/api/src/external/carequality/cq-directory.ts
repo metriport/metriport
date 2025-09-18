@@ -19,6 +19,7 @@ export type CQDirectoryEntryData = {
   managingOrganizationId?: string;
   active: boolean;
   lastUpdatedAtCQ: string;
+  delegateOids: string[];
 };
 
 export interface CQDirectoryEntryCreate extends BaseDomainCreate, CQDirectoryEntryData {}

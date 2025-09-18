@@ -20,6 +20,7 @@ import {
   insertCqDirectoryEntries,
   updateCqDirectoryViewDefinition,
 } from "./rebuild-cq-directory-raw-sql";
+import { uploadPrincipalAndDelegatesToS3 } from "./upload-principal-and-delegates";
 
 dayjs.extend(duration);
 
@@ -45,6 +46,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   const cq = makeCarequalityManagementApiOrFail();
   let parsedOrgsCount = 0;
   const parsingErrors: Error[] = [];
+  const principalAndDelegatesMap = new Map<string, string[]>();
   try {
     await createTempCqDirectoryTable(sequelize);
     const cache = new CachedCqOrgLoader(cq);
@@ -71,6 +73,9 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
               try {
                 const parsed = await parseCQOrganization(org, cache);
                 parsedOrgs.push(parsed);
+                if (parsed.delegateOids.length > 0) {
+                  principalAndDelegatesMap.set(parsed.id, parsed.delegateOids);
+                }
               } catch (error) {
                 parsingErrors.push(error as Error);
               }
@@ -122,7 +127,10 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
     throw error;
   }
   try {
-    await updateCqDirectoryViewDefinition(sequelize);
+    await Promise.all([
+      uploadPrincipalAndDelegatesToS3(principalAndDelegatesMap),
+      updateCqDirectoryViewDefinition(sequelize),
+    ]);
   } catch (error) {
     const msg = `Failed the last step of CQ directory rebuild`;
     log(`${msg}. Cause: ${errorToString(error)}`);
