@@ -74,6 +74,14 @@ const setupNlb = (
         port,
         protocol: elbv2.Protocol.TCP,
         preserveClientIp: true,
+        healthCheck: {
+          port: port.toString(),
+          protocol: elbv2.Protocol.TCP,
+          healthyThresholdCount: 3,
+          unhealthyThresholdCount: 2,
+          timeout: Duration.seconds(10),
+          interval: Duration.seconds(30),
+        },
       })
       .addTarget(fargateService);
   });
