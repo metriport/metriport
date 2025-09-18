@@ -18,31 +18,55 @@ const PatClassEnum = z
   .optional()
   .transform(val => {
     if (!val) return undefined;
-    //Test data has some common patient class names that we need to map to HL7 codes
     const mapping: Record<string, string> = {
-      OBSERVATION: "O",
+      OBSTETRICS: "B",
+      "COMMERCIAL ACCOUNT": "C",
       EMERGENCY: "E",
       INPATIENT: "I",
+      "NOT APPLICABLE": "N",
       OUTPATIENT: "O",
-      AMBULATORY: "A",
-      BIRTH: "B",
-      CLINIC: "C",
-      NEWBORN: "N",
-      "PRE-ADMISSION": "P",
-      RECURRING: "R",
+      PREADMIT: "P",
+      "RECURRING PATIENT": "R",
       UNKNOWN: "U",
     };
-    return mapping[val.toUpperCase()] ?? val;
-  })
-  .refine(val => !val || ["B", "C", "E", "I", "N", "O", "P", "R", "U"].includes(val), {
-    message: "Patient class must be a valid HL7 code (B, C, E, I, N, O, P, R, U)",
+    const mappedValue = mapping[val.toUpperCase()] ?? val;
+    const validCodes = ["B", "C", "E", "I", "N", "O", "P", "R", "U"];
+    const result = validCodes.includes(mappedValue) ? mappedValue : mapToU(val, "Patient Class");
+    return result;
   });
+
+function mapToU(val: string, fieldName: string): string {
+  console.log(`WARNING: ${fieldName}: Invalid value "${val}" mapped to "U"`);
+  return "U";
+}
 
 const MaritalStatusEnum = z
   .string()
   .optional()
-  .refine(val => !val || ["S", "M", "D", "W"].includes(val), {
-    message: "Marital status must be S, M, D, or W",
+  .transform(val => {
+    if (!val) return undefined;
+    const validCodes = [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "G",
+      "I",
+      "M",
+      "N",
+      "O",
+      "P",
+      "R",
+      "S",
+      "T",
+      "U",
+      "W",
+    ];
+    const upperVal = val.toUpperCase();
+    const result = validCodes.includes(upperVal) ? upperVal : mapToU(val, "Martial Status");
+
+    return result;
   });
 
 const dateSchema = z.string().min(1, "Date is required").refine(isValidISODate, {
@@ -57,7 +81,7 @@ export const rowSchema = z.object({
   LastName: z.string().min(1, "Last name is required"),
   FirstName: z.string().min(1, "First name is required"),
   StreetAddress: z.string().optional(),
-  City: z.string().min(1, "City is required"),
+  City: z.string().optional(),
   State: z
     .string()
     .min(2, "State must be at least 2 characters")
@@ -66,7 +90,7 @@ export const rowSchema = z.object({
   AttendingPhysicianName: z.string().optional(),
   SendingToSystem: z.string().min(1, "Sending to system is required"),
   MetriplexPatID: z.string().min(1, "Metriplex patient ID is required"),
-  AdmitDateTime: z.string().min(1, "Admit date/time is required"),
+  AdmitDateTime: z.string().optional(),
   MiddleName: z.string().optional(),
   PrimaryPhoneNumber: phoneSchema,
   SSN: ssnSchema,
