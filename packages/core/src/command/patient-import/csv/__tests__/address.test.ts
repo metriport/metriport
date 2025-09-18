@@ -274,7 +274,7 @@ Apt 1B`,
       const state = "CA";
       const zip = "90210";
       const { address, errors } = parseAddress({
-        addressLine1: "123 Main Street, Apt 456",
+        addressline1: "123 Main Street, Apt 456",
         city,
         state,
         zip,
@@ -290,14 +290,14 @@ Apt 1B`,
     });
 
     it("keeps the address line 2 even then there's an apt w/ comma on address line 1", () => {
-      const addressLine1 = "123 Main Street, Apt 456";
-      const addressLine2 = "Ri";
+      const addressline1 = "123 Main Street, Apt 456";
+      const addressline2 = "Ri";
       const city = "Springfield";
       const state = "CA";
       const zip = "90210";
       const { address, errors } = parseAddress({
-        addressLine1,
-        addressLine2,
+        addressline1,
+        addressline2,
         city,
         state,
         zip,
@@ -305,8 +305,8 @@ Apt 1B`,
       expect(address).toBeDefined();
       expect(errors.length).toEqual(0);
       if (!address) throw new Error("address is undefined");
-      expect(address.addressLine1).toEqual(addressLine1);
-      expect(address.addressLine2).toEqual(addressLine2);
+      expect(address.addressLine1).toEqual(addressline1);
+      expect(address.addressLine2).toEqual(addressline2);
       expect(address.city).toEqual(city);
       expect(address.state).toEqual(state);
       expect(address.zip).toEqual(zip);
@@ -317,7 +317,7 @@ Apt 1B`,
       const state = "CA";
       const zip = "90210";
       const { address, errors } = parseAddress({
-        addressLine1: "123 Main St, 2A",
+        addressline1: "123 Main St, 2A",
         city,
         state,
         zip,

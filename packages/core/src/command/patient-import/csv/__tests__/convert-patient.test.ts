@@ -16,11 +16,11 @@ describe("convert-patient", () => {
 
     function makeCsv(): Record<string, string | undefined> {
       return {
-        firstName: toTitleCase(faker.person.firstName()),
-        lastName: toTitleCase(faker.person.lastName()),
+        firstname: toTitleCase(faker.person.firstName()),
+        lastname: toTitleCase(faker.person.lastName()),
         dob: faker.date.birthdate().toISOString(),
         gender: faker.helpers.arrayElement(["male", "female"]),
-        addressLine1: toTitleCase(faker.location.streetAddress()),
+        addressline1: toTitleCase(faker.location.streetAddress()),
         city: toTitleCase(faker.location.city()),
         state: faker.location.state({ abbreviated: true }),
         zip: faker.location.zipCode().slice(0, 5),
@@ -32,13 +32,13 @@ describe("convert-patient", () => {
       const result = mapCsvPatientToMetriportPatient(csv);
       expect(result).toEqual(
         expect.objectContaining({
-          firstName: csv.firstName,
-          lastName: csv.lastName,
+          firstName: csv.firstname,
+          lastName: csv.lastname,
           dob: csv.dob?.slice(0, 10),
           genderAtBirth: csv.gender === "male" ? "M" : "F",
           address: [
             expect.objectContaining({
-              addressLine1: csv.addressLine1,
+              addressLine1: csv.addressline1,
               city: csv.city,
               state: csv.state,
               zip: csv.zip,
@@ -77,7 +77,7 @@ describe("convert-patient", () => {
 
     it("indicates missing first name", () => {
       const csv = makeCsv();
-      csv.firstName = undefined;
+      csv.firstname = undefined;
       const result = mapCsvPatientToMetriportPatient(csv);
       expect(result).toEqual(
         expect.arrayContaining([
@@ -91,7 +91,7 @@ describe("convert-patient", () => {
 
     it("indicates missing last name", () => {
       const csv = makeCsv();
-      csv.lastName = undefined;
+      csv.lastname = undefined;
       const result = mapCsvPatientToMetriportPatient(csv);
       expect(result).toEqual(
         expect.arrayContaining([
@@ -133,7 +133,7 @@ describe("convert-patient", () => {
 
     it("indicates missing address", () => {
       const csv = makeCsv();
-      csv.addressLine1 = undefined;
+      csv.addressline1 = undefined;
       const result = mapCsvPatientToMetriportPatient(csv);
       expect(result).toEqual(
         expect.arrayContaining([
@@ -147,8 +147,8 @@ describe("convert-patient", () => {
 
     it("indicates missing multiple fields", () => {
       const csv = makeCsv();
-      csv.firstName = undefined;
-      csv.lastName = undefined;
+      csv.firstname = undefined;
+      csv.lastname = undefined;
       csv.dob = undefined;
       csv.gender = undefined;
       const result = mapCsvPatientToMetriportPatient(csv);
@@ -273,6 +273,55 @@ describe("convert-patient", () => {
       });
       expect(driversLicense).toBeUndefined();
       expect(errors).toEqual([]);
+    });
+
+    describe("value field name variations", () => {
+      const valueFieldNames = [
+        "driverslicense",
+        "driverslicence",
+        "driverslicensevalue",
+        "driverslicencevalue",
+        "driverslicensenumber",
+        "driverslicencenumber",
+        "driverslicenseno",
+        "driverslicenceno",
+      ];
+      for (const valueFieldName of valueFieldNames) {
+        it("returns drivers license when all fields name is " + valueFieldName, () => {
+          const value = faker.number.int({ min: 100_000_000, max: 999_999_999 }).toString();
+          const state = faker.helpers.arrayElement(Object.values(USState));
+          const { driversLicense, errors } = mapCsvDriversLicense({
+            [valueFieldName]: value,
+            driverslicensestate: state,
+          });
+          expect(driversLicense).toBeTruthy();
+          expect(driversLicense?.type).toBe("driversLicense");
+          const dl = driversLicense as DriversLicense;
+          expect(dl.value).toBe(value);
+          expect(dl.state).toBe(state);
+          expect(errors).toEqual([]);
+        });
+      }
+    });
+
+    describe("state field name variations", () => {
+      const stateFieldNames = ["driverslicensestate", "driverslicencestate"];
+      for (const stateFieldName of stateFieldNames) {
+        it("returns drivers license when all fields name is " + stateFieldName, () => {
+          const value = faker.number.int({ min: 100_000_000, max: 999_999_999 }).toString();
+          const state = faker.helpers.arrayElement(Object.values(USState));
+          const { driversLicense, errors } = mapCsvDriversLicense({
+            [stateFieldName]: state,
+            driverslicenceno: value,
+          });
+          expect(driversLicense).toBeTruthy();
+          expect(driversLicense?.type).toBe("driversLicense");
+          const dl = driversLicense as DriversLicense;
+          expect(dl.value).toBe(value);
+          expect(dl.state).toBe(state);
+          expect(errors).toEqual([]);
+        });
+      }
     });
   });
 });

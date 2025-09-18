@@ -65,15 +65,15 @@ export function parseAddress(
   const cityName = `city${indexSuffix}`;
   const stateName = `state${indexSuffix}`;
   const zipName = `zip${indexSuffix}`;
+  const zipCodeName = `zipCode${indexSuffix}`;
 
   let foundAtLeastOneProperty = false;
   let addressLine1: string | undefined = undefined;
   let addressLine2: string | undefined = undefined;
   try {
     const res = normalizeAddressLine(
-      csvPatient[addressLine1Name] ??
-        csvPatient[addressLine1Name.toLowerCase()] ??
-        csvPatient[addressLine1AlternativeName],
+      csvPatient[addressLine1Name.toLowerCase()] ??
+        csvPatient[addressLine1AlternativeName.toLowerCase()],
       addressLine1Name,
       true
     );
@@ -87,9 +87,8 @@ export function parseAddress(
 
   try {
     const dedicatedAddressLine2 = normalizeAddressLine(
-      csvPatient[addressLine2Name] ??
-        csvPatient[addressLine2Name.toLowerCase()] ??
-        csvPatient[addressLine2AlternativeName],
+      csvPatient[addressLine2Name.toLowerCase()] ??
+        csvPatient[addressLine2AlternativeName.toLowerCase()],
       addressLine2Name,
       false,
       false
@@ -113,7 +112,7 @@ export function parseAddress(
 
   let city: string | undefined = undefined;
   try {
-    city = normalizeCity(csvPatient[cityName]);
+    city = normalizeCity(csvPatient[cityName.toLowerCase()]);
     if (!city) throw new BadRequestError(`Missing ${cityName}`);
     foundAtLeastOneProperty = true;
   } catch (error) {
@@ -122,7 +121,7 @@ export function parseAddress(
 
   let state: USStateForAddress | undefined = undefined;
   try {
-    state = normalizeUSStateForAddressSafe(csvPatient[stateName] ?? "");
+    state = normalizeUSStateForAddressSafe(csvPatient[stateName.toLowerCase()] ?? "");
     if (!state) throw new BadRequestError(`Missing ${stateName}`);
     foundAtLeastOneProperty = true;
   } catch (error) {
@@ -131,7 +130,9 @@ export function parseAddress(
 
   let zip: string | undefined = undefined;
   try {
-    zip = normalizeZipCodeNewSafe(csvPatient[zipName] ?? "");
+    zip = normalizeZipCodeNewSafe(
+      csvPatient[zipName.toLowerCase()] ?? csvPatient[zipCodeName.toLowerCase()] ?? ""
+    );
     if (!zip) throw new BadRequestError(`Missing ${zipName}`);
     foundAtLeastOneProperty = true;
   } catch (error) {
