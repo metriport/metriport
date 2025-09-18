@@ -63,10 +63,10 @@ Config.getLahieIngestionPrivateKeyArn();
 Config.getLahieIngestionPrivateKeyPassphraseArn();
 
 ////// CLOUD //////
-Config.getLahieIngestionLambdaName(); //eslint-disable-line @typescript-eslint/no-unused-vars
+Config.getLahieIngestionLambdaName();
 
 /// GENERAL /////
-Config.getEnvType(); //eslint-disable-line @typescript-eslint/no-unused-vars
+Config.getEnvType();
 
 // !!(Runs a contains so this might do multiple files at a time)!!
 const filename = ""; // usually done by YYYY_MM_DD but can actually be any filename.
