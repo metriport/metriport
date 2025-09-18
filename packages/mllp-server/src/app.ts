@@ -19,7 +19,7 @@ import { asString, getCleanIpAddress, lookupHieTzEntryForIp, withErrorHandling }
 
 initSentry();
 
-const MLLP_DEFAULT_PORT = 2575;
+import { SUPPORTED_MLLP_SERVER_PORTS } from "@metriport/core/command/hl7-notification/constants";
 
 async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const { log } = logger;
@@ -84,7 +84,9 @@ async function main() {
   const logger = out("MLLP Server");
   try {
     const server = await createHl7Server(logger);
-    server.start(MLLP_DEFAULT_PORT);
+    SUPPORTED_MLLP_SERVER_PORTS.forEach(port => {
+      server.start(port);
+    });
   } catch (error) {
     logger.log("Error starting MLLP server", error);
     capture.error(error);
