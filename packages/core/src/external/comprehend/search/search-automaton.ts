@@ -1,4 +1,4 @@
-import { ASCII_START, ASCII_END, INITIAL_STATE, NOWHERE } from "./constants";
+import { ASCII_START, ASCII_END, CHARACTER_SET, INITIAL_STATE, NOWHERE } from "./constants";
 import { characterSetMap } from "./utils";
 
 export class SearchAutomaton {
@@ -59,6 +59,16 @@ export class SearchAutomaton {
       // Add reference to current word at final state
       const output = this.output[currentState] as boolean[];
       output[termIndex] = true;
+    }
+
+    // Configures state 0 to be "self-referential", i.e. any character that was not configured in
+    // the state transitions above will automatically transition to state 0.
+    const nextStateFromInitialState = this.nextState[INITIAL_STATE] as number[];
+    for (let char = 0; char < CHARACTER_SET.length; char++) {
+      const firstState = nextStateFromInitialState[char];
+      if (firstState == NOWHERE) {
+        nextStateFromInitialState[char] = INITIAL_STATE;
+      }
     }
   }
 
