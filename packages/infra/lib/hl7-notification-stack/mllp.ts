@@ -57,27 +57,26 @@ const setupNlb = (
     port: 2574,
   });
 
-  listener
-    .addTargets(`MllpTargets${identifier}`, {
-      port: 2574,
-      protocol: elbv2.Protocol.TCP,
-      preserveClientIp: true,
-    })
-    .addTarget(fargateService);
+  listener.addTargets(`MllpTargets${identifier}`, {
+    port: 2574,
+    protocol: elbv2.Protocol.TCP,
+    preserveClientIp: true,
+  });
   // END BACKWARDS COMPATIBILITY
 
   SUPPORTED_MLLP_SERVER_PORTS.forEach(port => {
-    const listener = nlb.addListener(`MllpListener${identifier}-${port}`, {
-      port,
-    });
+    console.log("skipping");
+    // const listener = nlb.addListener(`MllpListener${identifier}-${port}`, {
+    //   port,
+    // });
 
-    listener
-      .addTargets(`MllpTargets${identifier}-${port}`, {
-        port,
-        protocol: elbv2.Protocol.TCP,
-        preserveClientIp: true,
-      })
-      .addTarget(fargateService);
+    // listener
+    //   .addTargets(`MllpTargets${identifier}-${port}`, {
+    //     port,
+    //     protocol: elbv2.Protocol.TCP,
+    //     preserveClientIp: true,
+    //   })
+    //   .addTarget(fargateService);
   });
 };
 
