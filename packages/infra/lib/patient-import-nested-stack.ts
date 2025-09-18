@@ -14,7 +14,7 @@ import { LambdaLayers } from "./shared/lambda-layers";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 
-const waitTimePatientCreate = Duration.seconds(12); // 5 patients/min
+const waitTimePatientCreate = Duration.seconds(6); // 10 patients/min (assumes single virtual queue across all customers)
 const waitTimePatientQuery = Duration.seconds(0);
 
 function settings() {
