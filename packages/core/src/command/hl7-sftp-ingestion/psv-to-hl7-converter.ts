@@ -138,7 +138,7 @@ export class PsvToHl7Converter {
                 }),
               },
             });
-            rows.push(trimmedRow as Row);
+            // Skip Row.
           }
         })
         .on("end", () => resolve())
