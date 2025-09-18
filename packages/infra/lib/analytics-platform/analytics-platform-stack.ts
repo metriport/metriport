@@ -15,6 +15,7 @@ import { addErrorAlarmToLambdaFunc, createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { LambdaSettingsWithNameAndEntry, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
+import { isProdEnv } from "../shared/util";
 import { AnalyticsPlatformsAssets } from "./types";
 
 type DockerImageLambdaSettings = Omit<LambdaSettingsWithNameAndEntry, "entry">;
@@ -26,7 +27,7 @@ interface AnalyticsPlatformsSettings {
   mergeCsvs: QueueAndLambdaSettings;
 }
 
-function settings(): AnalyticsPlatformsSettings {
+function settings(envType: EnvType): AnalyticsPlatformsSettings {
   const fhirToCsvTransformLambdaTimeout = Duration.minutes(10);
   const fhirToCsvBulkLambdaTimeout = fhirToCsvTransformLambdaTimeout.plus(Duration.seconds(10));
   const fhirToCsvIncrementalLambdaTimeout = fhirToCsvTransformLambdaTimeout.plus(
@@ -66,7 +67,7 @@ function settings(): AnalyticsPlatformsSettings {
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(fhirToCsvIncrementalLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
-      deliveryDelay: Duration.minutes(5),
+      deliveryDelay: isProdEnv(envType) ? Duration.minutes(5) : Duration.seconds(30),
     },
     eventSource: {
       batchSize: 1,
@@ -269,7 +270,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     fhirToCsvTransformLambda: lambda.DockerImageFunction;
   } {
     const { lambda: fhirToCsvTransformLambdaSettings, name: fhirToCsvTransformLambdaName } =
-      settings().fhirToCsvTransform;
+      settings(ownProps.envType).fhirToCsvTransform;
 
     // TODO Try to make this lambda to read from and write to SQS, then we don't need the FhirToCsv one
     const fhirToCsvTransformLambda = new lambda.DockerImageFunction(
@@ -337,7 +338,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       queue: queueSettings,
       eventSource: eventSourceSettings,
       waitTime,
-    } = settings().fhirToCsvBulk;
+    } = settings(envType).fhirToCsvBulk;
 
     const queue = createQueue({
       ...queueSettings,
@@ -411,7 +412,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       queue: queueSettings,
       eventSource: eventSourceSettings,
       waitTime,
-    } = settings().fhirToCsvIncremental;
+    } = settings(envType).fhirToCsvIncremental;
 
     const queue = createQueue({
       ...queueSettings,
@@ -475,7 +476,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       queue: queueSettings,
       eventSource: eventSourceSettings,
       waitTime,
-    } = settings().mergeCsvs;
+    } = settings(envType).mergeCsvs;
 
     const queue = createQueue({
       ...queueSettings,
