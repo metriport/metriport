@@ -183,9 +183,10 @@ export function normalizeAddressLine(
     return splitUnit ? [] : undefined;
   }
 
-  const withoutInstructions = addressLine.replace(/\(.*?\)/g, " ").replace(/\s+/g, " ");
+  const withoutInstructions = addressLine.replace(/\(.*?\)/g, " ");
   const withoutPunctuation = withoutInstructions.replace(/[.,;]/g, " ");
-  const normalized = toTitleCaseIfNotMultiCase(withoutPunctuation);
+  const withoutSpecialChars = withoutPunctuation.replace(/[\t\n\r]+/g, " ").replace(/\s{2,}/g, " ");
+  const normalized = toTitleCaseIfNotMultiCase(withoutSpecialChars).trim();
 
   if (!splitUnit) return normalized;
 

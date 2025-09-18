@@ -77,11 +77,11 @@ describe("mapCsvAddresses", () => {
           },
           {
             input: `123 Main st Apt 1-1`,
-            output: [`123 Main St`, `Apt 1-1`],
+            output: [`123 Main st`, `Apt 1-1`],
           },
           {
             input: `123 S Main Hwy Apt 456, Building 7A`,
-            output: [`123 S Main Hwy`, `Apt 456 Building 7a`],
+            output: [`123 S Main Hwy`, `Apt 456 Building 7A`],
           },
           {
             input: `12345 Main Ct #9`,
@@ -93,7 +93,7 @@ describe("mapCsvAddresses", () => {
           },
           {
             input: `4567 Cloud Ave, Apt Simple CT apt B2`,
-            output: [`4567 Cloud Ave`, `Apt Simple Ct Apt B2`],
+            output: [`4567 Cloud Ave`, `Apt Simple CT apt B2`],
           },
           {
             input: `999 W 6th St, Apt 0 `,
@@ -101,7 +101,7 @@ describe("mapCsvAddresses", () => {
           },
           {
             input: `100 Joseph CT APT G`,
-            output: [`100 Joseph Ct`, `Apt G`],
+            output: [`100 Joseph CT`, `APT G`],
           },
           {
             input: `123 E. Wave Street Apartment A`,
@@ -141,11 +141,11 @@ describe("mapCsvAddresses", () => {
           },
           {
             input: `Most Western Flat 4567 E Mediterranean RD RM 123`,
-            output: [`Most Western Flat 4567 E Mediterranean Rd`, `Rm 123`],
+            output: [`Most Western Flat 4567 E Mediterranean RD`, `RM 123`],
           },
           {
             input: `145 MAPLE Elm LN LOT 45`,
-            output: [`145 Maple Elm Ln`, `Lot 45`],
+            output: [`145 MAPLE Elm LN`, `LOT 45`],
           },
           {
             input: `420 W UNION RD `,
@@ -161,7 +161,7 @@ describe("mapCsvAddresses", () => {
           },
           {
             input: `12345 High Peak TRL`,
-            output: [`12345 High Peak Trl`],
+            output: [`12345 High Peak TRL`],
           },
           {
             input: `1 Limestone Ln, Apt 421 , -2178`,
@@ -175,15 +175,15 @@ describe("mapCsvAddresses", () => {
             // Intentionally with a new line
             input: `2512 Cedar Stone Dr
 Apt 1B`,
-            output: [`2512 Cedar Stone Dr`, `Apt 1b`],
+            output: [`2512 Cedar Stone Dr`, `Apt 1B`],
           },
           {
             input: `777 Alexander CT/Lane Apt. 4C`,
-            output: [`777 Alexander Ct/lane`, `Apt 4c`],
+            output: [`777 Alexander CT/Lane`, `Apt 4C`],
           },
           {
             input: `1480 W 3th st Apt A-9`,
-            output: [`1480 W 3th St`, `Apt A-9`],
+            output: [`1480 W 3th st`, `Apt A-9`],
           },
           {
             input: `505 PERSIAN RUG LN APT 123. . .`,
@@ -207,6 +207,10 @@ Apt 1B`,
           },
           {
             input: `1 SUMMERTOWN NORTH CT Minneapolis`,
+            output: [`1 SUMMERTOWN NORTH CT Minneapolis`],
+          },
+          {
+            input: `1 SUMMERTOWN NORTH CT MINNEAPOLIS`,
             output: [`1 Summertown North Ct Minneapolis`],
           },
         ];
@@ -235,7 +239,7 @@ Apt 1B`,
           },
           {
             input: `420 CARVING LN APT I4 Sacramento`,
-            output: [`420 Carving Ln`, `Apt I4 Sacramento`], // Sacramento is the city/state
+            output: [`420 CARVING LN`, `APT I4 Sacramento`], // Sacramento is the city/state
           },
           {
             input: `101 king avenue 12345`,
@@ -247,11 +251,11 @@ Apt 1B`,
           },
           {
             input: `123 Meridian St b23`,
-            output: [`123 Meridian St B23`], // b23 is the unit
+            output: [`123 Meridian St b23`], // b23 is the unit
           },
           {
             input: `123 red knight manor dr # A`,
-            output: [`123 Red Knight Manor Dr # A`],
+            output: [`123 red knight manor dr # A`],
           },
         ];
         addresses.forEach(address => {
@@ -321,7 +325,7 @@ Apt 1B`,
       expect(address).toBeDefined();
       expect(errors.length).toEqual(0);
       if (!address) throw new Error("address is undefined");
-      expect(address.addressLine1).toEqual("123 Main St 2a");
+      expect(address.addressLine1).toEqual("123 Main St 2A");
       expect(address.addressLine2).not.toBeDefined();
       expect(address.city).toEqual(city);
       expect(address.state).toEqual(state);
