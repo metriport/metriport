@@ -4,6 +4,7 @@ import { normalizeGenderSafe } from "@metriport/shared/domain/gender";
 import { normalizeSsnSafe } from "@metriport/shared/domain/patient/ssn";
 import { buildDayjs, isValidISODate } from "@metriport/shared/common/date";
 import { z } from "zod";
+import { log } from "./hl7-sftp-ingestion";
 
 const genderSchema = z.string().transform(normalizeGenderSafe).optional();
 const ssnSchema = z
@@ -36,7 +37,7 @@ const PatClassEnum = z
   });
 
 function mapToU(val: string, fieldName: string): string {
-  console.log(`WARNING: ${fieldName}: Invalid value "${val}" mapped to "U"`);
+  log(`WARNING: ${fieldName}: Invalid value "${val}" mapped to "U"`);
   return "U";
 }
 
