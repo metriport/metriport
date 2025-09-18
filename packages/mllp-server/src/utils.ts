@@ -18,7 +18,7 @@ import {
 } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 import {
   getPccSourceHieNameByLocalPort,
-  isDataFromPccConnection,
+  isPccConnection,
 } from "@metriport/core/domain/hl7-notification/utils";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
@@ -103,7 +103,7 @@ export function asString(message: Hl7Message) {
 export function getHieNameByConnectionInfo(remoteIp: string, localPort: number) {
   const hieConfigDictionary = getHieConfigDictionary();
   const { hieName: rawHieName } = lookupHieTzEntryForIp(hieConfigDictionary, remoteIp);
-  const hieName = isDataFromPccConnection(rawHieName)
+  const hieName = isPccConnection(rawHieName)
     ? getPccSourceHieNameByLocalPort(localPort)
     : rawHieName;
   return hieName;

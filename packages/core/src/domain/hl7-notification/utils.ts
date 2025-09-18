@@ -14,7 +14,7 @@ export const MLLP_SERVER_LAST_VALID_PORT = SUPPORTED_MLLP_SERVER_PORTS[
  * @param hieName
  * @returns true if the data is from a PCC connection, false otherwise
  */
-export function isDataFromPccConnection(hieName: string): boolean {
+export function isPccConnection(hieName: string): boolean {
   return hieName === "HieTexasPcc";
 }
 export function getPccSourceHieNameByLocalPort(port: number): string {

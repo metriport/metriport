@@ -2,7 +2,7 @@ import { HieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 import {
   MLLP_SERVER_FIRST_VALID_PORT,
   MLLP_SERVER_LAST_VALID_PORT,
-  isDataFromPccConnection,
+  isPccConnection,
 } from "@metriport/core/domain/hl7-notification/utils";
 import * as cdk from "aws-cdk-lib";
 import { Fn } from "aws-cdk-lib";
@@ -58,7 +58,7 @@ export class VpnStack extends cdk.Stack {
        **/
       const offset = props.index * 10 + internalCidrBlockIndex * 3;
 
-      const permittedIngressPorts = isDataFromPccConnection(hieName)
+      const permittedIngressPorts = isPccConnection(hieName)
         ? ec2.AclTraffic.tcpPortRange(MLLP_SERVER_FIRST_VALID_PORT, MLLP_SERVER_LAST_VALID_PORT)
         : ec2.AclTraffic.tcpPort(MLLP_SERVER_FIRST_VALID_PORT);
 
