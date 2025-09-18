@@ -1,7 +1,9 @@
 <Info>
-  You may provide a comma/space delimited string to specify multiple first and last names. For
-  example, the following inputs would be equivalent: `"John,Jonathan"` & `"John Jonathan"` - these
-  would translate to `["John", "Jonathan"]`.
+  You may provide a comma/space delimited string to specify
+  multiple first and last names. For example, the following
+  inputs would be equivalent: `"John,Jonathan"` & `"John
+  Jonathan"` - these would translate to `["John",
+  "Jonathan"]`.
 </Info>
 
 <ParamField body="firstName" type="string" required>
@@ -13,12 +15,16 @@
 </ParamField>
 
 <ParamField body="dob" type="string" required>
-  The Patient's date of birth (DOB), formatted `YYYY-MM-DD` as per [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601).
+  The Patient's date of birth (DOB), formatted `YYYY-MM-DD`
+  as per [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601).
 </ParamField>
 
 <ParamField body="genderAtBirth" type="string" required>
-  The Patient's gender at birth, can be one of `M` or `F` or `O` or `U`. Use `O` (other) when the patient's gender is known but it is not `M` or `F`, i.e intersex or hermaphroditic. 
-  Use U (unknown) when the patient's gender is not known.
+  The Patient's gender at birth, can be one of `M` or `F` or
+  `O` or `U`. Use `O` (other) when the patient's gender is
+  known but it is not `M` or `F`, i.e intersex or
+  hermaphroditic. Use U (unknown) when the patient's gender
+  is not known.
 </ParamField>
 
 <ParamField body="personalIdentifiers" type="PersonalIdentifier[]" optional>
@@ -54,7 +60,22 @@
     </ParamField>
 
     <ParamField body="email" type="string">
-      The Patient's email address.
+      The Patient's email address. Supports a wide range of valid email formats including special characters.
+
+      **Valid email examples:**
+      - `user@example.com`
+      - `test!user@example.com`
+      - `user+tag@example.com`
+      - `user_name@example.com`
+      - `user-name@example.com`
+      - `user.name@example.com`
+
+      **Invalid email examples:**
+      - `invalid-email` (missing @ and domain)
+      - `user@` (missing domain)
+      - `@example.com` (missing local part)
+      - `+1234567890@example.com` (phone number format)
+      - `mailto:user@example.com` (mailto: prefix not allowed)
     </ParamField>
 
   </Expandable>

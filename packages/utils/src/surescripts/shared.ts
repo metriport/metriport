@@ -82,6 +82,35 @@ export async function getTransmissionsFromCsv(
   });
 }
 
+export async function getPatientIdsFromCsv(csvFileName: string): Promise<string[]> {
+  const dir = getSurescriptsDirOrFail();
+  const csvFilePath = path.join(dir, csvFileName);
+  if (!fs.existsSync(csvFilePath)) {
+    throw new Error(`CSV file ${csvFilePath} not found`);
+  }
+
+  return new Promise((resolve, reject) => {
+    const patientIds: string[] = [];
+    fs.createReadStream(csvFilePath)
+      .pipe(csv())
+      .on("data", function (row) {
+        if (
+          row.patientId != null &&
+          typeof row.patientId === "string" &&
+          row.patientId.length == 36
+        ) {
+          patientIds.push(row.patientId);
+        }
+      })
+      .on("end", function () {
+        resolve(patientIds);
+      })
+      .on("error", function (error) {
+        reject(error);
+      });
+  });
+}
+
 export async function getConsolidatedBundle(
   cxId: string,
   patientId: string

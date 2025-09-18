@@ -156,16 +156,23 @@ export class SftpClient implements SftpClientImpl {
       content = await decompressGzip(content);
     }
 
-    if (this.replica && overrideReplica) {
-      try {
-        const replicaPath = this.replica.getReplicaPath(remotePath);
-        await this.replica.writeFile(replicaPath, content);
-      } catch (error) {
-        this.log(`Error writing file to replica: ${errorToString(error)}`);
-      }
+    if (overrideReplica && this.replica) {
+      await this.syncFileToReplica(content, remotePath);
     }
 
     return content;
+  }
+
+  protected async syncFileToReplica(content: Buffer, remotePath: string) {
+    if (!this.replica) {
+      throw new BadRequestError("Replica is not set.");
+    }
+    try {
+      const replicaPath = this.replica.getReplicaPath(remotePath);
+      await this.replica.writeFile(replicaPath, content);
+    } catch (error) {
+      this.log(`Error writing file to replica: ${errorToString(error)}`);
+    }
   }
 
   /**
@@ -192,12 +199,7 @@ export class SftpClient implements SftpClientImpl {
     this.log(`Finished writing file to ${remotePath}`);
 
     if (this.replica) {
-      try {
-        const replicaPath = this.replica.getReplicaPath(remotePath);
-        await this.replica.writeFile(replicaPath, contentToUse);
-      } catch (error) {
-        this.log(`Error writing file to replica: ${errorToString(error)}`);
-      }
+      await this.syncFileToReplica(content, remotePath);
     }
   }
 

@@ -123,22 +123,22 @@ async function _addHieSubscriptionToPatients({
     }
   );
 
-  // Add HIE name to existing subscriptions (only if not already present)
-  // SQL explanation: If HIE already in array, keep current array, otherwise append HIE to array
+  const hieNameExistsInArray = `COALESCE(subscriptions->'adt', '[]'::jsonb) @> to_jsonb(:hieName::text)`;
+  const appendHieNameToArray = `COALESCE(subscriptions->'adt', '[]'::jsonb) || to_jsonb(:hieName::text)`;
+
   const addSubscriptionQuery = `
-    UPDATE patient_settings 
+    UPDATE patient_settings
     SET 
-        subscriptions = jsonb_set(subscriptions, '{adt}', 
-            CASE 
-                WHEN subscriptions->'adt' @> to_jsonb(:hieName::text) 
-                THEN subscriptions->'adt'
-                ELSE COALESCE(subscriptions->'adt', '[]'::jsonb) || to_jsonb(:hieName::text)
-            END
-        ),
+        subscriptions = 
+            COALESCE(subscriptions, '{}'::jsonb) ||
+            jsonb_build_object(
+                'adt',
+                ${appendHieNameToArray}
+            ),
         updated_at = NOW()
     WHERE cx_id = :cxId::uuid 
-      AND patient_id in (:patientIds)
-      AND NOT (subscriptions->'adt' @> to_jsonb(:hieName::text))
+    AND patient_id in (:patientIds)
+    AND NOT (${hieNameExistsInArray}); 
   `;
 
   await sequelize.query(addSubscriptionQuery, {
