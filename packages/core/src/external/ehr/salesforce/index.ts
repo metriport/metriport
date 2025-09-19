@@ -106,7 +106,7 @@ class SalesforceApi {
     debug,
     emptyResponse = false,
   }: MakeRequestParamsInEhr<T>): Promise<T> {
-    const response = await makeRequest<T>({
+    return await makeRequest<T>({
       ehr: EhrSources.salesforce,
       cxId,
       practiceId: this.orgId,
@@ -122,8 +122,6 @@ class SalesforceApi {
       debug,
       emptyResponse,
     });
-    console.log("response ===>", response);
-    return response;
   }
 }
 
