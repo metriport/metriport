@@ -276,6 +276,12 @@ type EnvConfigBase = {
     eclinicalworks: {
       env: string;
     };
+    salesforce: {
+      env: string;
+      secrets: {
+        EHR_CANVAS_CLIENT_KEY_AND_SECRET_MAP: string;
+      };
+    };
   };
   surescripts?: {
     surescriptsSenderId: string;
