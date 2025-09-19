@@ -83,8 +83,8 @@ async function validateFacility({
     : undefined;
 
   // Construct mappings of existing Metriport IDs
-  const { facilityNameToId } = await buildFacilityMapping(csvFacility);
-  const facilityIds = Object.keys(facilityNameToId);
+  const { facilityIdToName, facilityNameToId } = await buildFacilityMapping(csvFacility);
+  const facilityIds = Object.keys(facilityIdToName);
   const externalIdToPatient = await buildExternalIdToPatientMapping(
     cxId,
     facilityIds,
@@ -118,6 +118,10 @@ async function validateFacility({
     }
 
     const expectedFacilityId = facilityNameToId[facilityName];
+    if (!expectedFacilityId) {
+      totalFacilityIdsNotFound++;
+      return;
+    }
     if (currentFacilityId !== expectedFacilityId) {
       facilityChanges.push({
         externalId,

@@ -37,18 +37,14 @@ export async function readCsv<T>(csvPath: string): Promise<T[]> {
 }
 
 export async function readCsvFromString<T>(csvString: string): Promise<T[]> {
-  const s = new stream.Readable();
-  s.push(csvString);
-  s.push(null); // indicates end-of-file
+  const s = stream.Readable.from([csvString]);
   return new Promise((resolve, reject) => {
     const rows: T[] = [];
     s.pipe(csv())
-      .on("data", async data => {
+      .on("data", async (data: T) => {
         rows.push(data);
       })
-      .on("end", async () => {
-        return resolve(rows);
-      })
+      .on("end", () => resolve(rows))
       .on("error", reject);
   });
 }
