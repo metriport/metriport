@@ -10,16 +10,16 @@ const suspectRouter = Router();
  */
 suspectRouter.post("/import", async function (req, res, next) {
   try {
-    const { cxId, bucket, key } = req.body ?? {};
+    const { cxId, key } = req.body ?? {};
 
-    if (!cxId || !bucket || !key) {
+    if (!cxId || !key) {
       // Only explain why: ensure all required fields are present for S3 import
       return res.status(400).json({
-        error: "Missing required fields: cxId, bucket, and key are required.",
+        error: "Missing required fields: cxId, and key are required.",
       });
     }
 
-    await createSuspectsFromS3({ cxId, bucket, key });
+    await createSuspectsFromS3({ cxId, key });
 
     return res.status(204).send();
   } catch (error) {

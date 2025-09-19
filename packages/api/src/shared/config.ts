@@ -315,4 +315,8 @@ export class Config {
   static getCqDirRebuildHeartbeatUrl() {
     return getEnvVar("CQ_DIR_REBUILD_HEARTBEAT_URL");
   }
+
+  static getAnalyticsPlatformBucketName(): string | undefined {
+    return getEnvVar("ANALYTICS_PLATFORM_BUCKET_NAME");
+  }
 }

@@ -428,6 +428,8 @@ export function createAPIService({
           }),
           ...(analyticsPlatformAssets && {
             FHIR_TO_CSV_QUEUE_URL: analyticsPlatformAssets.fhirToCsvQueue.queueUrl,
+            ANALYTICS_PLATFORM_BUCKET_NAME:
+              analyticsPlatformAssets.analyticsPlatformBucket.bucketName,
           }),
           ...(props.config.hl7Notification?.hieConfigs && {
             HIE_CONFIG_DICTIONARY: JSON.stringify(

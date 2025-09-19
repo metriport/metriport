@@ -14,12 +14,10 @@ const region = Config.getAWSRegion();
  * Fetches a CSV file from S3 and inserts the data into the suspect table.
  *
  * @param cxId - The customer ID.
- * @param bucket - The S3 bucket name.
  * @param key - The S3 object key (CSV file path).
  */
 export type CreateSuspectsFromS3Params = {
   cxId: string;
-  bucket: string;
   key: string;
 };
 
@@ -29,9 +27,10 @@ export type CreateSuspectsFromS3Params = {
  */
 export async function createSuspectsFromS3({
   cxId,
-  bucket,
   key,
 }: CreateSuspectsFromS3Params): Promise<void> {
+  const bucket = Config.getAnalyticsPlatformBucketName();
+  if (!bucket) throw new MetriportError("Analytics platform bucket name is not set");
   const s3Client = new S3Utils(region);
   const csvAsString = await s3Client.getFileContentsAsString(bucket, key);
   let numberOfRows = 0;
