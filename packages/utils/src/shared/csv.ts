@@ -1,8 +1,7 @@
 import csv from "csv-parser";
 import fs from "fs";
 import path from "path";
-
-type CsvRow = Record<string, string>;
+import * as stream from "stream";
 
 export function getCsvRunsPath(csvPath: string): string {
   if (path.isAbsolute(csvPath)) {
@@ -11,7 +10,15 @@ export function getCsvRunsPath(csvPath: string): string {
   return path.join(__dirname, "../../runs", csvPath);
 }
 
-export async function readCsv<T extends CsvRow>(csvPath: string): Promise<T[]> {
+export function startOutputCsv(fullCsvPath: string, headers: string[]): void {
+  fs.writeFileSync(fullCsvPath, headers.map(h => `"${h}"`).join(",") + "\n");
+}
+
+export function appendToOutputCsv(fullCsvPath: string, row: string[]) {
+  fs.appendFileSync(fullCsvPath, row.map(cell => `"${cell}"`).join(",") + "\n");
+}
+
+export async function readCsv<T>(csvPath: string): Promise<T[]> {
   const fullCsvPath = getCsvRunsPath(csvPath);
   return new Promise((resolve, reject) => {
     const rows: T[] = [];
@@ -26,6 +33,23 @@ export async function readCsv<T extends CsvRow>(csvPath: string): Promise<T[]> {
       .on("error", error => {
         reject(error);
       });
+  });
+}
+
+export async function readCsvFromString<T>(csvString: string): Promise<T[]> {
+  const s = new stream.Readable();
+  s.push(csvString);
+  s.push(null); // indicates end-of-file
+  return new Promise((resolve, reject) => {
+    const rows: T[] = [];
+    s.pipe(csv())
+      .on("data", async data => {
+        rows.push(data);
+      })
+      .on("end", async () => {
+        return resolve(rows);
+      })
+      .on("error", reject);
   });
 }
 
@@ -50,18 +74,6 @@ export async function streamCsv<T>(
       .on("end", () => {
         resolve({ rowsProcessed, errorCount });
       })
-      .on("error", error => {
-        reject(error);
-      });
+      .on("error", reject);
   });
-}
-
-export function writeOutputCsv(csvPath: string, headers: string[]) {
-  const fullCsvPath = getCsvRunsPath(csvPath);
-  fs.writeFileSync(fullCsvPath, headers.map(h => `"${h}"`).join(",") + "\n");
-  return fullCsvPath;
-}
-
-export function appendToOutputCsv(fullCsvPath: string, row: string[]) {
-  fs.appendFileSync(fullCsvPath, row.map(cell => `"${cell}"`).join(",") + "\n");
 }

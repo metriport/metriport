@@ -11,7 +11,7 @@ import { SurescriptsDataMapper as DataMapper } from "@metriport/core/external/su
 import {
   readCsv,
   streamCsv,
-  writeOutputCsv,
+  startOutputCsv,
   appendToOutputCsv,
   getCsvRunsPath,
 } from "../shared/csv";
@@ -67,15 +67,16 @@ async function validateFacility({
     : undefined;
 
   // Construct mappings of existing Metriport IDs
-  const { facilityNameToId, facilityIdToName } = await buildFacilityMapping(csvFacility);
+  const { facilityNameToId } = await buildFacilityMapping(csvFacility);
+  const facilityIds = Object.keys(facilityNameToId);
   const externalIdToPatient = await buildExternalIdToPatientMapping(
     cxId,
-    facilityIdToName,
+    facilityIds,
     patientReferenceCachePath
   );
 
   // Write output CSV with changes
-  const outputCsvPath = writeOutputCsv(csvOutput, [
+  startOutputCsv(csvOutput, [
     "externalId",
     "metriportPatientId",
     "currentFacilityId",
@@ -101,15 +102,12 @@ async function validateFacility({
 
     const expectedFacilityId = facilityNameToId[facilityName];
     if (currentFacilityId !== expectedFacilityId) {
-      appendToOutputCsv(outputCsvPath, [
+      appendToOutputCsv(csvOutput, [
         externalId,
         reference.patientId,
         currentFacilityId,
         expectedFacilityId,
       ]);
-      // console.log(
-      //   `Patient ${externalId} has facility ID ${currentFacilityId} but expected ${expectedFacilityId}`
-      // );
       totalInstancesFound++;
     }
   });
@@ -147,7 +145,7 @@ async function buildFacilityMapping(csvFacility: string) {
 type PatientReference = { patientId: string; externalId: string; facilityId: string };
 async function buildExternalIdToPatientMapping(
   cxId: string,
-  facilityIdToName: Record<string, string>,
+  facilityIds: string[],
   cachePath?: string
 ): Promise<Record<string, PatientReference>> {
   if (cachePath && fs.existsSync(cachePath)) {
@@ -156,15 +154,13 @@ async function buildExternalIdToPatientMapping(
   }
 
   const dataMapper = new DataMapper();
-  const facilityIds = Object.keys(facilityIdToName);
   const externalIdToPatient: Record<string, PatientReference> = {};
 
   let totalCount = 0;
 
   for (const facilityId of facilityIds) {
-    const facilityName = facilityIdToName[facilityId];
     const existingPatientIds = await dataMapper.getPatientIdsForFacility({ cxId, facilityId });
-    console.log(`Existing patient IDs for facility ${facilityName}: ${existingPatientIds.length}`);
+    console.log(`Existing patient IDs for facility ${facilityId}: ${existingPatientIds.length}`);
     totalCount += existingPatientIds.length;
 
     // Retrieve each patient to construct a mapping of external IDs
