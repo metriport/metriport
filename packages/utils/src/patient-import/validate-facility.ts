@@ -6,6 +6,8 @@ import fs from "fs";
 import path from "path";
 import { Command } from "commander";
 import { SurescriptsDataMapper as DataMapper } from "@metriport/core/external/surescripts/data-mapper";
+// import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
+// import { MetriportMedicalApi } from "@metriport/api-sdk";
 import {
   readCsv,
   streamCsv,
@@ -29,25 +31,36 @@ program
   .requiredOption("--cx-id <cxId>", "CX ID")
   .requiredOption("--csv-dir <csvDir>", "Relative name of runs directory containing the CSV files")
   .option("--use-cache", "Use the cache of existing Metriport IDs")
+  .option("--dry-run", "Just validate the CSV without actually requesting any facility changes")
   .action(validateFacility)
   .showHelpAfterError();
+
+// const apiUrl = getEnvVarOrFail("API_URL");
+// const apiKey = getEnvVarOrFail("API_KEY");
 
 async function validateFacility({
   cxId,
   csvDir,
   useCache,
+  dryRun,
 }: {
   cxId: string;
   csvDir: string;
   useCache?: boolean;
+  dryRun?: boolean;
 }) {
   // Prepare runs directory and references to file paths
   const fullCsvDir = getCsvRunsPath(csvDir);
   if (!fs.existsSync(fullCsvDir)) {
-    fs.mkdirSync(fullCsvDir, { recursive: true });
+    throw new Error(`CSV directory ${fullCsvDir} does not exist in "runs" directory`);
   }
   const csvFacility = path.join(fullCsvDir, "facility.csv");
   const csvRoster = path.join(fullCsvDir, "roster.csv");
+  if (!fs.existsSync(csvFacility) || !fs.existsSync(csvRoster)) {
+    throw new Error(`CSV files ${csvFacility} and ${csvRoster} must be present in ${fullCsvDir}`);
+  }
+  const isDryRun = Boolean(dryRun);
+
   const csvOutput = path.join(fullCsvDir, `changeset-${new Date().toISOString()}.csv`);
   const patientReferenceCachePath = useCache
     ? path.join(fullCsvDir, "reference-cache.json")
@@ -69,19 +82,23 @@ async function validateFacility({
     "expectedFacilityId",
   ]);
   let totalInstancesFound = 0;
+  let totalReferencesNotFound = 0;
+  let totalFacilityIdsNotFound = 0;
 
   const { rowsProcessed, errorCount } = await streamCsv<CsvRosterRow>(csvRoster, row => {
     const { externalId, facilityName } = getExternalIdAndFacilityName(row);
     const reference = externalIdToPatient[externalId];
     if (!reference) {
-      console.log(`No patient found for external ID ${externalId}`);
+      totalReferencesNotFound++;
       return;
     }
+
     const currentFacilityId = reference.facilityId;
     if (!currentFacilityId) {
-      console.log(`Patient ${externalId} has no facility ID`);
+      totalFacilityIdsNotFound++;
       return;
     }
+
     const expectedFacilityId = facilityNameToId[facilityName];
     if (currentFacilityId !== expectedFacilityId) {
       appendToOutputCsv(outputCsvPath, [
@@ -98,7 +115,15 @@ async function validateFacility({
   });
   console.log(`Rows processed: ${rowsProcessed}`);
   console.log(`Error count: ${errorCount}`);
+  console.log(`Total references not found: ${totalReferencesNotFound}`);
+  console.log(`Total facility IDs not found: ${totalFacilityIdsNotFound}`);
   console.log(`Total facility changes required: ${totalInstancesFound}`);
+
+  if (isDryRun) return;
+
+  // const metriportAPI = new MetriportMedicalApi(apiKey, {
+  //   baseAddress: apiUrl,
+  // });
 }
 
 /**
