@@ -37,7 +37,7 @@ export function createAddresses(patient: SalesforcePatient): Address[] {
   const addresses = [patient].flatMap(address => {
     const addressLine1 = address.MailingStreet?.trim();
     if (!addressLine1) return [];
-    const addressLine2 = undefined; // Salesforce has single MailingStreet field
+    const addressLine2 = undefined; // for now parsing only 1 line of address
     const city = address.MailingCity?.trim();
     if (!city) return [];
     const country = address.MailingCountry?.trim() ?? normalizedCountryUsa;
