@@ -397,6 +397,10 @@ export class Config {
   static getAnalyticsBucketName(): string {
     return getEnvVarOrFail("ANALYTICS_S3_BUCKET");
   }
+  /** For development only - cloud should call a lambda that has it setup differently */
+  static getAnalyticsDbCreds(): string {
+    return getEnvVarOrFail("ANALYTICS_DB_CREDS");
+  }
 
   // ENG-536 remove this once we automatically find the discharge summary
   static getDischargeNotificationSlackUrl(): string {

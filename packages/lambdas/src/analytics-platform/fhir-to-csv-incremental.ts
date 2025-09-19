@@ -1,3 +1,5 @@
+import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
+import { dbCredsForLambdaSchema } from "@metriport/core/command/analytics-platform/config";
 import { FhirToCsvIncrementalDirect } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-incremental/fhir-to-csv-incremental-direct";
 import { doesConsolidatedDataExist } from "@metriport/core/command/consolidated/consolidated-get";
 import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
@@ -8,6 +10,7 @@ import { capture } from "../shared/capture";
 import { prefixedLog } from "../shared/log";
 import { parseBody } from "../shared/parse-body";
 import { getSingleMessageOrFail } from "../shared/sqs";
+import { DbCreds } from "@metriport/shared";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -18,6 +21,8 @@ const region = getEnvVarOrFail("AWS_REGION");
 // Set by us
 const featureFlagsTableName = getEnvVarOrFail("FEATURE_FLAGS_TABLE_NAME");
 const analyticsBucketName = getEnvVarOrFail("ANALYTICS_S3_BUCKET");
+const dbCredsRaw = getEnvVarOrFail("DB_CREDS");
+const dbCreds = dbCredsForLambdaSchema.parse(JSON.parse(dbCredsRaw));
 
 FeatureFlags.init(region, featureFlagsTableName);
 
@@ -30,6 +35,9 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
     const parsedBody = parseBody(fhirToCsvSchema, message.body);
     const { jobId, cxId, patientId } = parsedBody;
 
+    // read the db user password from the secret
+    const dbPassword = await (getSecret(dbCreds.passwordSecretArn) as Promise<string>);
+
     const log = prefixedLog(`jobId ${jobId}, cxId ${cxId}, patientId ${patientId}`);
     log(`Parsed: ${JSON.stringify(parsedBody)}`);
 
@@ -41,10 +49,22 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
     }
 
     const timeoutForCsvTransform = Math.max(0, context.getRemainingTimeInMillis() - 200);
+    const dbCredsForFunction: DbCreds = {
+      host: dbCreds.host,
+      port: dbCreds.port,
+      dbname: dbCreds.dbname,
+      username: dbCreds.username,
+      engine: dbCreds.engine,
+      password: dbPassword,
+    };
 
     log(`Invoking lambda ${lambdaName}... it has ${timeoutForCsvTransform}ms to run`);
     const startedAt = Date.now();
-    const fhirToCsvHandler = new FhirToCsvIncrementalDirect(analyticsBucketName, region);
+    const fhirToCsvHandler = new FhirToCsvIncrementalDirect(
+      analyticsBucketName,
+      region,
+      dbCredsForFunction
+    );
     await fhirToCsvHandler.processFhirToCsvIncremental({
       ...parsedBody,
       timeoutInMillis: timeoutForCsvTransform,
