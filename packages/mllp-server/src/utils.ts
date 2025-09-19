@@ -12,14 +12,7 @@ import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/node";
 import { Hl7Message } from "@medplum/core";
 import IPCIDR from "ip-cidr";
-import {
-  getHieConfigDictionary,
-  HieConfigDictionary,
-} from "@metriport/core/external/hl7-notification/hie-config-dictionary";
-import {
-  getPccSourceHieNameByLocalPort,
-  isPccConnection,
-} from "@metriport/core/domain/hl7-notification/utils";
+import { HieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 export const s3Utils = new S3Utils(Config.getAWSRegion());
@@ -87,26 +80,6 @@ export function getCleanIpAddress(address: string | undefined): string {
  */
 export function asString(message: Hl7Message) {
   return message.segments.map(s => s.toString()).join("\n");
-}
-
-/**
- * 💡 Gets the HIE name given the connection info.
- *
- * Most messages from simple HIE integrations can be identified by the sender's
- * internalCidrBlocks. However, messages from PCC connections are sent to the MLLP
- * server over a single tunnel. The PCC integration is set up to send each HIE's
- * messages through the single tunnel to a unique port on the MLLP server.
- * @param remoteIp The remote IP address - the IP address of the sender's internalCidrBlock.
- * @param localPort The local port - the port the MLLP server is listening on..
- * @returns The hie name for the message.
- */
-export function getHieNameByConnectionInfo(remoteIp: string, localPort: number) {
-  const hieConfigDictionary = getHieConfigDictionary();
-  const { hieName: rawHieName } = lookupHieTzEntryForIp(hieConfigDictionary, remoteIp);
-  const hieName = isPccConnection(rawHieName)
-    ? getPccSourceHieNameByLocalPort(localPort)
-    : rawHieName;
-  return hieName;
 }
 
 /**
