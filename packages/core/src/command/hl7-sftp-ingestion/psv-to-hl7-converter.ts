@@ -3,7 +3,10 @@ import { MetriportError } from "@metriport/shared";
 import { buildDayjs, buildDayjsTz } from "@metriport/shared/common/date";
 import csv from "csv-parser";
 import { Readable } from "stream";
-import { getCxIdAndPatientIdOrFail } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import {
+  getCxIdAndPatientIdOrFail,
+  unpackPidFieldOrFail,
+} from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { capture } from "../../util/notifications";
 import { Row, rowSchema } from "./psv-converter-schema";
 
@@ -113,9 +116,29 @@ export class PsvToHl7Converter {
           if (parseResult.success) {
             rows.push(parseResult.data);
           } else {
-            console.log("Parse error:", parseResult.error);
-            capture.error(parseResult.error);
-            rows.push(trimmedRow as Row);
+            if (!trimmedRow.MetriplexPatID) {
+              throw new Error("No 'MetriplexPatId' found for this hl7 message");
+            }
+            const { cxId, patientId } = unpackPidFieldOrFail(trimmedRow.MetriplexPatID);
+            capture.error(parseResult.error, {
+              extra: {
+                cxId,
+                patientId,
+                validationErrors: parseResult.error.issues.map(issue => {
+                  const fieldPath = issue.path.join(".");
+                  const fieldValue = fieldPath
+                    ? trimmedRow[fieldPath as keyof typeof trimmedRow]
+                    : "unknown";
+                  return {
+                    field: fieldPath,
+                    received: fieldValue,
+                    expected: issue.message,
+                    code: issue.code,
+                  };
+                }),
+              },
+            });
+            // Skip Row.
           }
         })
         .on("end", () => resolve())

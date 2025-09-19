@@ -25,7 +25,7 @@ import { getCqInitiator } from "../shared";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
 import { filterCqLinksByManagingOrg } from "./filter-oids-by-managing-org";
 
-const staleLookbackHours = 24;
+const staleLookbackWeeks = 1;
 
 export async function getDocumentsFromCQ({
   requestId,
@@ -89,7 +89,7 @@ export async function getDocumentsFromCQ({
       : undefined;
     const isStale =
       updateStalePatients &&
-      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
+      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackWeeks, "weeks");
 
     if (hasNoCQStatus || isProcessing || forcePatientDiscovery || isStale) {
       log(
