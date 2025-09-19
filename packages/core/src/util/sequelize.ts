@@ -1,6 +1,9 @@
 import { PoolOptions, Sequelize } from "sequelize";
 import { z } from "zod";
 
+/**
+ * @deprecated Use dbCredsSchema from @metriport/shared/domain/db.ts instead
+ */
 export const dbCredsSchema = z.object({
   dbname: z.string(),
   username: z.string(),
@@ -9,6 +12,9 @@ export const dbCredsSchema = z.object({
   port: z.number(),
   engine: z.literal("postgres"),
 });
+/**
+ * @deprecated Use DbCreds from @metriport/shared/domain/db.ts instead
+ */
 export type DbCreds = z.infer<typeof dbCredsSchema>;
 
 /**
