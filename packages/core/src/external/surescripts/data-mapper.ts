@@ -53,11 +53,11 @@ export class SurescriptsDataMapper {
 
   async getBatchRequestDataByFacility(
     cxId: string,
-    batchSize = 100
-  ): Promise<Record<string, SurescriptsBatchRequestData[]>> {
+    batchSize = 1000
+  ): Promise<SurescriptsBatchRequestData[]> {
     const customer = await this.getCustomerData(cxId);
     const facilities = customer.facilities;
-    const batchRequests: Record<string, SurescriptsBatchRequestData[]> = {};
+    const batchRequests: SurescriptsBatchRequestData[] = [];
     for (const facility of facilities) {
       const patientIds = await this.getPatientIdsForFacility({ cxId, facilityId: facility.id });
       const allPatients = await this.getEachPatientById(cxId, patientIds);
@@ -67,7 +67,7 @@ export class SurescriptsDataMapper {
         org: customer.org,
         patients: patientsInBatch,
       }));
-      batchRequests[facility.id] = batchesForFacility;
+      batchRequests.push(...batchesForFacility);
     }
     return batchRequests;
   }
