@@ -61,7 +61,7 @@ import {
   getDocPrintableDetails,
 } from "./shared";
 
-const staleLookbackHours = 24;
+const staleLookbackWeeks = 1;
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -155,7 +155,7 @@ export async function queryAndProcessDocuments({
       : undefined;
     const isStale =
       updateStalePatients &&
-      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
+      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackWeeks, "weeks");
 
     if (hasNoCWStatus || isProcessing || forcePatientDiscovery || isStale) {
       log(

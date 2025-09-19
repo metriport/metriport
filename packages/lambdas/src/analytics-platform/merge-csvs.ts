@@ -25,7 +25,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
   capture.setExtra({ event, context: lambdaName });
   const message = getSingleMessageOrFail(event.Records, lambdaName);
   if (!message) return;
-  const parsedBody = parseBody(inputSchema, message.body);
+  const parsedBody: GroupAndMergeCSVsParamsLambda = parseBody(inputSchema, message.body);
   const { cxId, fhirToCsvJobId, mergeCsvJobId, patientIds, targetGroupSizeMB } = parsedBody;
   capture.setExtra({
     cxId,
@@ -45,7 +45,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
     })}`
   );
 
-  const results = await groupAndMergeCSVs({
+  await groupAndMergeCSVs({
     cxId,
     fhirToCsvJobId,
     mergeCsvJobId,
@@ -55,8 +55,6 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
     destinationBucket: bucket,
     region,
   });
-
-  return results;
 });
 
 export const inputSchema = z.object({

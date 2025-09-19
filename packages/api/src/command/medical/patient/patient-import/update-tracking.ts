@@ -2,7 +2,7 @@ import { out } from "@metriport/core/util/log";
 import { BadRequestError, emptyFunction } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import {
-  PatientImportJobStatus,
+  PatientImportJobUpdatableStatus,
   validateNewStatus,
 } from "@metriport/shared/domain/patient/patient-import/status";
 import { PatientImportJob } from "@metriport/shared/domain/patient/patient-import/types";
@@ -16,7 +16,8 @@ dayjs.extend(duration);
 export type PatientImportUpdateStatusCmd = {
   cxId: string;
   jobId: string;
-  status?: PatientImportJobStatus;
+  status?: PatientImportJobUpdatableStatus;
+  reason?: string | undefined;
   total?: number | undefined;
   /**
    * Only to be set on dry run mode - on regular mode, the successful count is incremented
@@ -38,6 +39,7 @@ export type PatientImportUpdateStatusCmd = {
  * @param cxId - The customer ID.
  * @param jobId - The bulk import job ID.
  * @param status - The new status of the job.
+ * @param reason - The reason for the status update.
  * @param total - The total number of patients in the job. If provided, the `successful` and
  *                `failed` counters are reset.
  * @param failed - The number of failed patients in the job.
@@ -54,6 +56,7 @@ export async function updatePatientImportTracking({
   total,
   successful,
   failed,
+  reason,
   forceStatusUpdate = false,
 }: PatientImportUpdateStatusCmd): Promise<PatientImportJob> {
   const { log } = out(`updatePatientImportTracking - cxId ${cxId} jobId ${jobId}`);
@@ -78,6 +81,7 @@ export async function updatePatientImportTracking({
   const jobToUpdate: PatientImportJob = {
     ...job.dataValues,
     status: newStatus ?? oldStatus,
+    reason,
   };
   if (total != undefined) {
     jobToUpdate.total = total;
