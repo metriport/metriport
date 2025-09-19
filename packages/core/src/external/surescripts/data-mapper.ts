@@ -53,7 +53,7 @@ export class SurescriptsDataMapper {
 
   async getBatchRequestDataByFacility(
     cxId: string,
-    batchSize = 1000
+    batchSize = 100
   ): Promise<SurescriptsBatchRequestData[]> {
     const customer = await this.getCustomerData(cxId);
     const facilities = customer.facilities;
