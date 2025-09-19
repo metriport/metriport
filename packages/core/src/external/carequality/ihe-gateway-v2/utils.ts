@@ -3,8 +3,12 @@ import { TextOrTextObject } from "./schema";
 import { Slot } from "./schema";
 import { Name } from "./outbound/xca/process/schema";
 
-export function timestampToSoapBody(createdTimestamp: string): string {
-  return dayjs(createdTimestamp).toISOString();
+export function timestampToHl7v3DateTime(createdTimestamp: string): string {
+  return dayjs(createdTimestamp).format("YYYYMMDDHHmmss");
+}
+
+export function dateToHl7v3Date(date: string): string {
+  return dayjs(date).format("YYYYMMDD");
 }
 
 export function extractText(textOrTextObject: TextOrTextObject): string {
