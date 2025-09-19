@@ -44,7 +44,6 @@ function createSoapBodyContent({
   identifiers,
   providerId,
   useUrn = true,
-  isDelegated = false,
 }: {
   messageId: string;
   homeCommunityId: string;
@@ -59,7 +58,6 @@ function createSoapBodyContent({
   identifiers: PersonalIdentifier[] | undefined;
   providerId: string | undefined;
   useUrn?: boolean;
-  isDelegated?: boolean;
 }): object {
   const prefix = useUrn ? "urn:" : "";
   const soapBody = {
@@ -123,7 +121,7 @@ function createSoapBodyContent({
               "@_classCode": "ORG",
               "@_determinerCode": "INSTANCE",
               [`${prefix}id`]: {
-                "@_root": isDelegated ? homeCommunityId : METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
+                "@_root": METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
               },
               [`${prefix}name`]: metriportOrganization,
             },
@@ -241,11 +239,9 @@ function createSoapBodyContent({
 function createSoapBody({
   bodyData,
   createdTimestamp,
-  isDelegated,
 }: {
   bodyData: OutboundPatientDiscoveryReq;
   createdTimestamp: string;
-  isDelegated: boolean;
 }): object {
   const gateway = bodyData.gateways?.[0];
   if (!gateway) {
@@ -279,7 +275,6 @@ function createSoapBody({
       identifiers,
       providerId,
       useUrn,
-      isDelegated,
     }),
   };
   return soapBody;
@@ -318,7 +313,7 @@ export function createITI5SoapEnvelope({
     queryGrantorOid,
   });
 
-  const soapBody = createSoapBody({ bodyData, createdTimestamp, isDelegated: !!queryGrantorOid });
+  const soapBody = createSoapBody({ bodyData, createdTimestamp });
 
   const soapEnvelope = {
     "soap:Envelope": {
