@@ -2,6 +2,7 @@ import { BadRequestError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 
+// TODO ENG-954 review this, likely don't need to have this structure
 export function buildTrainInputPrefix({
   cxId,
   patientId,

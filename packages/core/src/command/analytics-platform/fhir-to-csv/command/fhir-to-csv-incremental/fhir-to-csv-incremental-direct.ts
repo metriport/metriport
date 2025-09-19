@@ -1,17 +1,18 @@
-import { sleep } from "@metriport/shared";
+import { DbCreds, sleep } from "@metriport/shared";
 import { out } from "../../../../../util/log";
-import { addPatientCsvsToTrain } from "../../../train-builder/incremental-to-train";
+import { sendPatientCsvsToDb } from "../../../csv-to-db/send-csvs-to-db";
+import { buildFhirToCsvIncrementalJobPrefix } from "../../file-name";
 import { startFhirToCsvTransform } from "../fhir-to-csv-transform";
 import {
   FhirToCsvIncrementalHandler,
   ProcessFhirToCsvIncrementalRequest,
 } from "./fhir-to-csv-incremental";
-import { buildFhirToCsvIncrementalJobPrefix } from "../../file-name";
 
 export class FhirToCsvIncrementalDirect implements FhirToCsvIncrementalHandler {
   constructor(
     private readonly analyticsBucketName: string,
     private readonly region: string,
+    private readonly dbCreds: DbCreds,
     private readonly waitTimeInMillis: number = 0
   ) {}
 
@@ -35,13 +36,14 @@ export class FhirToCsvIncrementalDirect implements FhirToCsvIncrementalHandler {
       timeoutInMillis,
     });
 
-    log(`Done in ${Date.now() - startedAt}ms, copying files to the ingestion train...`);
-    await addPatientCsvsToTrain({
+    log(`Done in ${Date.now() - startedAt}ms, storing flattened data in the DB...`);
+    await sendPatientCsvsToDb({
       cxId,
       patientId,
       patientCsvsS3Prefix: outputPrefix,
       analyticsBucketName: this.analyticsBucketName,
       region: this.region,
+      dbCreds: this.dbCreds,
     });
 
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
