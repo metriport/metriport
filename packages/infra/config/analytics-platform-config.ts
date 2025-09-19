@@ -1,7 +1,11 @@
+import { RDSConfigExtended } from "./aws/rds";
+
 export interface AnalyticsPlatformConfig {
   bucketName: string;
-  secrets: {
+  secretNames: {
     SNOWFLAKE_CREDS: string;
+    FHIR_TO_CSV_DB_PASSWORD: string;
+    CORE_TRANSFORMER_DB_PASSWORD: string;
   };
   snowflake: {
     warehouse: string;
@@ -9,5 +13,9 @@ export interface AnalyticsPlatformConfig {
     integrationName: string;
     integrationUserArn: string;
     integrationExternalId: string;
+  };
+  rds: RDSConfigExtended & {
+    fhirToCsvDbUsername: string;
+    coreTransformerDbUsername: string;
   };
 }
