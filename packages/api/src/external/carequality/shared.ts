@@ -15,6 +15,7 @@ import {
   normalizeEmailNewSafe,
 } from "@metriport/shared";
 import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
+import { isCqDoaEnabled } from "@metriport/core/command/feature-flags/domain-ffs";
 import { errorToString } from "@metriport/shared/common/error";
 import z from "zod";
 import { getAddressWithCoordinates } from "../../domain/medical/address";
@@ -136,7 +137,9 @@ export async function getCqInitiator(
   patient: Pick<Patient, "id" | "cxId">,
   facilityId?: string
 ): Promise<HieInitiator> {
-  return getHieInitiator(patient, facilityId);
+  // TODO: ENG-1089 - Remove this once we fully migrate to the new DOA flow on CQ.
+  const isCqDoaFeatureFlagEnabled = await isCqDoaEnabled();
+  return getHieInitiator(patient, facilityId, isCqDoaFeatureFlagEnabled);
 }
 
 export async function isFacilityEnabledToQueryCQ(

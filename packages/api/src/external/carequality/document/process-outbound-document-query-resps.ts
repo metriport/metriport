@@ -40,7 +40,6 @@ const parallelUpsertsToFhir = 10;
 export async function processOutboundDocumentQueryResps({
   requestId,
   patientId,
-
   cxId,
   response,
   forceDownload,

@@ -63,7 +63,7 @@ async function updateCqOrganization(
   cq: CarequalityManagementApi
 ): Promise<CQDirectoryEntryData> {
   const { log, debug } = out(`CQ updateCQOrganization - CQ Org OID ${orgDetails.oid}`);
-  const carequalityOrg = getOrganizationFhirTemplate(orgDetails);
+  const carequalityOrg = await getOrganizationFhirTemplate(orgDetails);
   try {
     const resp = await cq.updateOrganization(carequalityOrg);
     debug(`resp updateOrganization: `, () => JSON.stringify(resp));
@@ -94,7 +94,7 @@ async function createCqOrganization(
   cq: CarequalityManagementApi
 ): Promise<CQDirectoryEntryData> {
   const { log, debug } = out(`CQ registerOrganization - CQ Org OID ${orgDetails.oid}`);
-  const carequalityOrg = getOrganizationFhirTemplate(orgDetails);
+  const carequalityOrg = await getOrganizationFhirTemplate(orgDetails);
   try {
     const resp = await cq.registerOrganization(carequalityOrg);
     debug(`resp registerOrganization: `, () => JSON.stringify(resp));
