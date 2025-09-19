@@ -52,6 +52,10 @@ export class Config {
     return getEnvVarOrFail("AWS_REGION");
   }
 
+  static getGeneralBucketName(): string {
+    return getEnvVarOrFail("GENERAL_BUCKET_NAME");
+  }
+
   static getSearchEndpoint(): string {
     return getEnvVarOrFail("SEARCH_ENDPOINT");
   }

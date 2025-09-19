@@ -41,7 +41,7 @@ export function createITI39SoapEnvelope({
   const subjectRole = bodyData.samlAttributes.subjectRole.display;
   const homeCommunityId = getHomeCommunityId(bodyData.gateway, bodyData.samlAttributes);
   const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
-
+  const queryGrantorOid = bodyData.samlAttributes.queryGrantorOid;
   const createdTimestamp = dayjs().toISOString();
   const expiresTimestamp = dayjs(createdTimestamp).add(expiresIn, "minute").toISOString();
 
@@ -54,6 +54,7 @@ export function createITI39SoapEnvelope({
     metriportOrganization,
     homeCommunityId,
     purposeOfUse,
+    queryGrantorOid,
   });
 
   const getDocumentUniqueIdFn = getDocumentUniqueIdFunctionByGateway(bodyData.gateway);
@@ -102,7 +103,10 @@ export function createAndSignDRRequest(
   bodyData: OutboundDocumentRetrievalReq,
   samlCertsAndKeys: SamlCertsAndKeys
 ): string {
-  const xmlString = createITI39SoapEnvelope({ bodyData, publicCert: samlCertsAndKeys.publicCert });
+  const xmlString = createITI39SoapEnvelope({
+    bodyData,
+    publicCert: samlCertsAndKeys.publicCert,
+  });
   const useSha1 = doesGatewayUseSha1(bodyData.gateway.homeCommunityId);
   const fullySignedSaml = signFullSaml({ xmlString, samlCertsAndKeys, useSha1 });
   return fullySignedSaml;

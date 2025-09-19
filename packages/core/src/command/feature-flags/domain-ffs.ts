@@ -315,3 +315,8 @@ export async function isQuestFeatureFlagEnabledForCx(cxId: string): Promise<bool
   const cxIdsWithQuestEnabled = await getCxsWithQuestFeatureFlag();
   return cxIdsWithQuestEnabled.some(i => i === cxId);
 }
+
+// TODO: ENG-1089 - Remove this once we fully migrate to the new DOA flow on CQ.
+export async function isCqDoaEnabled(): Promise<boolean> {
+  return isFeatureFlagEnabled("cqDoaFeatureFlag");
+}
