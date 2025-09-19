@@ -113,7 +113,10 @@ function csvRecordToSuspect(data: Record<string, string>, rowNumber: number): Su
     );
   }
 
-  const lastRunDate = buildDayjs(lastRun).toDate();
+  const lastRunDate = buildDayjs(lastRun);
+  if (!lastRunDate.isValid()) {
+    throw new MetriportError(`Invalid lastRun date`, undefined, { lastRun, rowNumber });
+  }
 
   return {
     cxId,
@@ -122,6 +125,6 @@ function csvRecordToSuspect(data: Record<string, string>, rowNumber: number): Su
     suspectIcd10Code,
     suspectIcd10ShortDescription,
     responsibleResources,
-    lastRun: lastRunDate,
+    lastRun: lastRunDate.toDate(),
   };
 }
