@@ -4,23 +4,25 @@ import { capture } from "../../../../util/notifications";
 import { getPrincipalAndDelegatesMap } from "./principal-and-delegates";
 
 /**
- * Cache for principal and delegates map to avoid repeated S3 calls in Lambda.
+ * Cache for principal and delegates map to avoid repeated S3 calls in each Lambda invocation.
  * This data is only updated during CQ directory rebuilds, so it's safe to cache
  * at the Lambda level and reuse across invocations.
  */
-class PrincipalAndDelegatesCache {
-  private static instance: PrincipalAndDelegatesCache;
+class LambdaOnlyDelegateCache {
+  private static instance: LambdaOnlyDelegateCache;
   private cache: Map<string, string[]> | undefined;
 
-  static getInstance(): PrincipalAndDelegatesCache {
-    if (!PrincipalAndDelegatesCache.instance) {
-      PrincipalAndDelegatesCache.instance = new PrincipalAndDelegatesCache();
+  static getInstance(): LambdaOnlyDelegateCache {
+    if (!LambdaOnlyDelegateCache.instance) {
+      LambdaOnlyDelegateCache.instance = new LambdaOnlyDelegateCache();
     }
-    return PrincipalAndDelegatesCache.instance;
+    return LambdaOnlyDelegateCache.instance;
   }
 
   /**
    * Get the principal and delegates map from cache or load it if not cached.
+   *
+   * Since this is only used in Lambda, we don't need to worry about multiple calls issueing separate requests to S3.
    */
   async getMap(): Promise<Map<string, string[]>> {
     if (this.cache) {
@@ -54,5 +56,5 @@ class PrincipalAndDelegatesCache {
  * in Lambda functions to benefit from caching.
  */
 export async function getCachedPrincipalAndDelegatesMap(): Promise<Map<string, string[]>> {
-  return PrincipalAndDelegatesCache.getInstance().getMap();
+  return LambdaOnlyDelegateCache.getInstance().getMap();
 }
