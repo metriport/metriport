@@ -5,15 +5,15 @@ import { SuspectModel } from "../../../models/suspect";
 export type GetSuspectParams = {
   cxId: string;
   patientId: string;
-  suspectGroup: string;
+  group: string;
 };
 
 export async function getSuspect({
   cxId,
   patientId,
-  suspectGroup,
+  group,
 }: GetSuspectParams): Promise<Suspect | undefined> {
-  const existing = await SuspectModel.findOne({ where: { cxId, patientId, suspectGroup } });
+  const existing = await SuspectModel.findOne({ where: { cxId, patientId, group } });
   if (existing) return existing.dataValues;
   return undefined;
 }
@@ -21,11 +21,11 @@ export async function getSuspect({
 export async function getSuspectOrFail({
   cxId,
   patientId,
-  suspectGroup,
+  group,
 }: GetSuspectParams): Promise<Suspect> {
-  const suspect = await getSuspect({ cxId, patientId, suspectGroup });
+  const suspect = await getSuspect({ cxId, patientId, group });
   if (!suspect) {
-    throw new NotFoundError("Suspect not found", undefined, { cxId, patientId, suspectGroup });
+    throw new NotFoundError("Suspect not found", undefined, { cxId, patientId, group });
   }
   return suspect;
 }
@@ -33,11 +33,11 @@ export async function getSuspectOrFail({
 export async function getLatestSuspectsBySuspectGroup({
   cxId,
   patientId,
-}: Omit<GetSuspectParams, "suspectGroup">): Promise<Suspect[]> {
+}: Omit<GetSuspectParams, "group">): Promise<Suspect[]> {
   const suspects = await SuspectModel.findAll({
     where: { cxId, patientId },
     order: [
-      ["suspectGroup", "ASC"],
+      ["group", "ASC"],
       ["lastRun", "DESC"],
     ],
   });
@@ -46,7 +46,7 @@ export async function getLatestSuspectsBySuspectGroup({
 
   // TODO: ENG-1093
   const latestByGroup = suspects.reduce((acc, suspect) => {
-    const group = suspect.suspectGroup;
+    const group = suspect.group;
     if (!acc[group]) {
       acc[group] = suspect.dataValues;
     }

@@ -3,12 +3,10 @@ import type { Migration } from "..";
 import * as shared from "../migrations-shared";
 
 const tableName = "suspect";
-const indexPatientIdSuspectGroupColumns = ["patient_id", "suspect_group"];
-const indexNamePatientIdSuspectGroup = `${tableName}_${indexPatientIdSuspectGroupColumns.join(
-  "_"
-)}_idx`;
-const constraintPatientIdSuspectGroupLastRunColumns = ["patient_id", "suspect_group", "last_run"];
-const constraintNamePatientIdSuspectGroupLastRun = `${tableName}_${constraintPatientIdSuspectGroupLastRunColumns.join(
+const indexPatientIdGroupColumns = ["patient_id", "group"];
+const indexNamePatientIdGroup = `${tableName}_${indexPatientIdGroupColumns.join("_")}_idx`;
+const constraintPatientIdGroupLastRunColumns = ["patient_id", "group", "last_run"];
+const constraintNamePatientIdGroupLastRun = `${tableName}_${constraintPatientIdGroupLastRunColumns.join(
   "_"
 )}_constraint`;
 
@@ -33,19 +31,19 @@ export const up: Migration = async ({ context: queryInterface }) => {
           field: "patient_id",
           allowNull: false,
         },
-        suspectGroup: {
+        group: {
           type: DataTypes.STRING,
-          field: "suspect_group",
+          field: "group",
           allowNull: false,
         },
-        suspectIcd10Code: {
+        icd10Code: {
           type: DataTypes.STRING,
-          field: "suspect_icd10_code",
+          field: "icd10_code",
           allowNull: true,
         },
-        suspectIcd10ShortDescription: {
+        icd10ShortDescription: {
           type: DataTypes.STRING,
-          field: "suspect_icd10_short_description",
+          field: "icd10_short_description",
           allowNull: true,
         },
         responsibleResources: {
@@ -61,13 +59,13 @@ export const up: Migration = async ({ context: queryInterface }) => {
       },
       { transaction, addVersion: true }
     );
-    await queryInterface.addIndex(tableName, indexPatientIdSuspectGroupColumns, {
-      name: indexNamePatientIdSuspectGroup,
+    await queryInterface.addIndex(tableName, indexPatientIdGroupColumns, {
+      name: indexNamePatientIdGroup,
       transaction,
     });
     await queryInterface.addConstraint(tableName, {
-      name: constraintNamePatientIdSuspectGroupLastRun,
-      fields: constraintPatientIdSuspectGroupLastRunColumns,
+      name: constraintNamePatientIdGroupLastRun,
+      fields: constraintPatientIdGroupLastRunColumns,
       type: "unique",
       transaction,
     });
@@ -76,10 +74,10 @@ export const up: Migration = async ({ context: queryInterface }) => {
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
-    await queryInterface.removeConstraint(tableName, constraintNamePatientIdSuspectGroupLastRun, {
+    await queryInterface.removeConstraint(tableName, constraintNamePatientIdGroupLastRun, {
       transaction,
     });
-    await queryInterface.removeIndex(tableName, indexNamePatientIdSuspectGroup, { transaction });
+    await queryInterface.removeIndex(tableName, indexNamePatientIdGroup, { transaction });
     await queryInterface.dropTable(tableName, { transaction });
   });
 };

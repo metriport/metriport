@@ -2,10 +2,14 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 import { MetriportError, uuidv7 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import csv from "csv-parser";
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import * as stream from "stream";
 import { SuspectCreate } from "../../../domain/suspect";
 import { SuspectModel } from "../../../models/suspect";
 import { Config } from "../../../shared/config";
+
+dayjs.extend(customParseFormat);
 
 const MAX_NUMBER_ROWS = 100_000;
 const region = Config.getAWSRegion();
@@ -73,16 +77,21 @@ export async function createSuspectsFromS3({
 
   const { suspects } = await promise;
 
-  const suspectsToInsert = suspects.map((s: SuspectCreate) => ({
-    id: uuidv7(),
-    cxId,
-    patientId: s.patientId,
-    suspectGroup: s.suspectGroup,
-    suspectIcd10Code: s.suspectIcd10Code,
-    suspectIcd10ShortDescription: s.suspectIcd10ShortDescription,
-    responsibleResources: s.responsibleResources,
-    lastRun: s.lastRun,
-  }));
+  const suspectsToInsert = suspects.map((s: SuspectCreate) => {
+    if (cxId !== s.cxId) {
+      throw new MetriportError("CXID mismatch", undefined, { cxId, sCxId: s.cxId });
+    }
+    return {
+      id: uuidv7(),
+      cxId: s.cxId,
+      patientId: s.patientId,
+      group: s.group,
+      icd10Code: s.icd10Code,
+      icd10ShortDescription: s.icd10ShortDescription,
+      responsibleResources: s.responsibleResources,
+      lastRun: s.lastRun,
+    };
+  });
 
   await SuspectModel.bulkCreate(suspectsToInsert, {
     ignoreDuplicates: false,
@@ -100,9 +109,7 @@ function csvRecordToSuspect(data: Record<string, string>, rowNumber: number): Su
   const lastRun = data.LASTRUN;
 
   if (!cxId || !patientId || !suspectGroup || !responsibleResources || !lastRun) {
-    throw new MetriportError(
-      `Missing required fields at row ${rowNumber}: patientId or suspectGroup`
-    );
+    throw new MetriportError("Missing required fields", undefined, { cxId, patientId });
   }
 
   const lastRunDate = buildDayjs(lastRun);
@@ -113,11 +120,9 @@ function csvRecordToSuspect(data: Record<string, string>, rowNumber: number): Su
   return {
     cxId,
     patientId,
-    suspectGroup,
-    suspectIcd10Code: suspectIcd10Code ? suspectIcd10Code : null,
-    suspectIcd10ShortDescription: suspectIcd10ShortDescription
-      ? suspectIcd10ShortDescription
-      : null,
+    group: suspectGroup,
+    icd10Code: suspectIcd10Code ? suspectIcd10Code : null,
+    icd10ShortDescription: suspectIcd10ShortDescription ? suspectIcd10ShortDescription : null,
     responsibleResources,
     lastRun: lastRunDate.toDate(),
   };

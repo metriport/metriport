@@ -6,9 +6,9 @@ export class SuspectModel extends BaseModel<SuspectModel> implements Suspect {
   static NAME = "suspect";
   declare cxId: string;
   declare patientId: string;
-  declare suspectGroup: string;
-  declare suspectIcd10Code: string | null;
-  declare suspectIcd10ShortDescription: string | null;
+  declare group: string;
+  declare icd10Code: string | null;
+  declare icd10ShortDescription: string | null;
   declare responsibleResources: ResponsibleResources;
   declare lastRun: Date;
 
@@ -22,13 +22,13 @@ export class SuspectModel extends BaseModel<SuspectModel> implements Suspect {
         patientId: {
           type: DataTypes.STRING,
         },
-        suspectGroup: {
+        group: {
           type: DataTypes.STRING,
         },
-        suspectIcd10Code: {
+        icd10Code: {
           type: DataTypes.STRING,
         },
-        suspectIcd10ShortDescription: {
+        icd10ShortDescription: {
           type: DataTypes.STRING,
         },
         responsibleResources: {
