@@ -4,10 +4,10 @@ WITH diabetes_observations AS (
     o.observation_id AS resource_id,
     'observation' AS resource_type,
     CASE
-      WHEN o.normalized_code = '4548-4' AND CAST(o.result AS FLOAT) >= 6.5 THEN 'diabetes_hba1c'
-      WHEN o.normalized_code = '14743-9' AND CAST(o.result AS FLOAT) >= 126 THEN 'diabetes_fpg'
-      WHEN o.normalized_code = '14941-1' AND CAST(o.result AS FLOAT) >= 200 THEN 'diabetes_ogtt'
-      WHEN o.normalized_code = '15074-8' AND CAST(o.result AS FLOAT) >= 200 THEN 'diabetes_random'
+      WHEN o.normalized_code = '4548-4' AND TRY_CAST(o.result AS FLOAT) >= 6.5 THEN 'diabetes_hba1c'
+      WHEN o.normalized_code = '14743-9' AND TRY_CAST(o.result AS FLOAT) >= 126 THEN 'diabetes_fpg'
+      WHEN o.normalized_code = '14941-1' AND TRY_CAST(o.result AS FLOAT) >= 200 THEN 'diabetes_ogtt'
+      WHEN o.normalized_code = '15074-8' AND TRY_CAST(o.result AS FLOAT) >= 200 THEN 'diabetes_random'
       ELSE NULL
     END AS suspect_group
   FROM OBSERVATION o
