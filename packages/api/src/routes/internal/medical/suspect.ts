@@ -1,6 +1,6 @@
-import { Router } from "express";
-import { createSuspectsFromS3 } from "../../../command/medical/patient/create-suspect-from-s3";
 import { MetriportError } from "@metriport/shared";
+import { Router } from "express";
+import { createSuspectsFromS3 } from "../../../command/medical/patient/create-suspects-from-s3";
 
 const suspectRouter = Router();
 

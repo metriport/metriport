@@ -74,8 +74,6 @@ export async function createSuspectsFromS3({
 
   const { suspects } = await promise;
 
-  console.log(`>>> Suspects: ${JSON.stringify(suspects, null, 2)}`);
-
   const suspectsToInsert = suspects.map((s: SuspectCreate) => ({
     id: uuidv7(),
     cxId,
