@@ -51,7 +51,7 @@ select
     , cast(pat.id as {{ dbt.type_string() }} )                                                      as patient_id
     , cast(null as {{ dbt.type_string() }} )                                                        as encounter_id
     , cast(null as date)                                                                            as dispensing_date
-    , {{ try_to_cast_date('cast( medstmt.effectiveperiod_Start as ' ~ dbt.type_string() ~ ')', 'YYYY-MM-DD') }} as prescribing_date
+    , {{ try_to_cast_date('cast( medstmt.effectiveperiod_start as ' ~ dbt.type_string() ~ ')', 'YYYY-MM-DD') }} as prescribing_date
     , cast(sources.source_code_type as {{ dbt.type_string() }} )                                    as source_code_type
     , cast(sources.source_code as {{ dbt.type_string() }} )                                         as source_code
     , cast(sources.source_display as {{ dbt.type_string() }} )                                      as source_description

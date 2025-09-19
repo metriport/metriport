@@ -3,12 +3,14 @@ import type { Migration } from "..";
 import * as shared from "../migrations-shared";
 
 const tableName = "suspect";
-const indexSuspectGroupColumns = ["cx_id", "suspect_group"];
-const indexNameSuspectGroup = `${tableName}_${indexSuspectGroupColumns.join("_")}_idx`;
-const indexPatientIdSuspectGroupLastRunColumns = ["patient_id", "suspect_group", "last_run"];
-const indexNamePatientIdSuspectGroupLastRun = `${tableName}_${indexPatientIdSuspectGroupLastRunColumns.join(
+const indexPatientIdSuspectGroupColumns = ["patient_id", "suspect_group"];
+const indexNamePatientIdSuspectGroup = `${tableName}_${indexPatientIdSuspectGroupColumns.join(
   "_"
 )}_idx`;
+const constraintPatientIdSuspectGroupLastRunColumns = ["patient_id", "suspect_group", "last_run"];
+const constraintNamePatientIdSuspectGroupLastRun = `${tableName}_${constraintPatientIdSuspectGroupLastRunColumns.join(
+  "_"
+)}_constraint`;
 
 export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
@@ -59,12 +61,14 @@ export const up: Migration = async ({ context: queryInterface }) => {
       },
       { transaction, addVersion: true }
     );
-    await queryInterface.addIndex(tableName, indexSuspectGroupColumns, {
-      name: indexNameSuspectGroup,
+    await queryInterface.addIndex(tableName, indexPatientIdSuspectGroupColumns, {
+      name: indexNamePatientIdSuspectGroup,
       transaction,
     });
-    await queryInterface.addIndex(tableName, indexPatientIdSuspectGroupLastRunColumns, {
-      name: indexNamePatientIdSuspectGroupLastRun,
+    await queryInterface.addConstraint(tableName, {
+      name: constraintNamePatientIdSuspectGroupLastRun,
+      fields: constraintPatientIdSuspectGroupLastRunColumns,
+      type: "unique",
       transaction,
     });
   });
@@ -72,10 +76,10 @@ export const up: Migration = async ({ context: queryInterface }) => {
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
-    await queryInterface.removeIndex(tableName, indexNamePatientIdSuspectGroupLastRun, {
+    await queryInterface.removeConstraint(tableName, constraintNamePatientIdSuspectGroupLastRun, {
       transaction,
     });
-    await queryInterface.removeIndex(tableName, indexNameSuspectGroup, { transaction });
+    await queryInterface.removeIndex(tableName, indexNamePatientIdSuspectGroup, { transaction });
     await queryInterface.dropTable(tableName, { transaction });
   });
 };

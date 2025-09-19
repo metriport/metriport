@@ -614,8 +614,6 @@ router.get(
  *
  * Returns the suspects for a patient.
  *
- * USED WITHIN EHR INTEGRATION.
- *
  * @param   req.cxId      The customer ID.
  * @param   req.param.id  The ID of the patient to be returned.
  * @return  The suspects for the patient.

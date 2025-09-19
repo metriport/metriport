@@ -103,7 +103,7 @@ select
     , cast(obvs.referencerange_0_low_value as {{ dbt.type_string() }} ) as source_reference_range_low
     , cast(obvs.referencerange_0_high_value as {{ dbt.type_string() }} ) as source_reference_range_high
     , cast(obvs.interpretation_0_coding_0_display as {{ dbt.type_string() }}) as source_abnormal_flag
-    , obvs.category_0_coding_0_code as category
+    , cast(obvs.category_0_coding_0_code as {{ dbt.type_string() }}) as category
     , loinc.loinc as loinc_code
     , loinc.long_common_name as loinc_description
     , snomed.snomed_ct as snomed_code

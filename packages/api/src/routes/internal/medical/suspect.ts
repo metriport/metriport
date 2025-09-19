@@ -1,9 +1,12 @@
 import { MetriportError } from "@metriport/shared";
 import { Router } from "express";
-import { createSuspectsFromS3 } from "../../../command/medical/patient/create-suspects-from-s3";
+import status from "http-status";
 import { z } from "zod";
+import { createSuspectsFromS3 } from "../../../command/medical/patient/create-suspects-from-s3";
+import { requestLogger } from "../../helpers/request-logger";
+import { asyncHandler } from "../../util";
 
-const suspectRouter = Router();
+const router = Router();
 
 const importSuspectsSchema = z.object({
   cxId: z.string(),
@@ -11,20 +14,29 @@ const importSuspectsSchema = z.object({
 });
 
 /**
- * POST /internal/medical/suspect/import
- * Body: { cxId: string, key: string }
+ * Handles importing suspect patients from an S3 bucket.
+ *
+ * @route POST /internal/medical/suspect/import
+ * @param req.body.cxId - The customer ID as a string.
+ * @param req.body.key - The S3 object key as a string.
+ * @returns 200 OK with { status: "success" } if import is successful.
+ * @throws {MetriportError} If the import fails, with the original error as the cause.
  */
-suspectRouter.post("/import", async function (req, res, next) {
-  try {
-    const { cxId, key } = importSuspectsSchema.parse(req.body);
+router.post(
+  "/import",
+  requestLogger,
+  asyncHandler(async (req, res, next) => {
+    try {
+      const { cxId, key } = importSuspectsSchema.parse(req.body);
 
-    await createSuspectsFromS3({ cxId, key });
+      await createSuspectsFromS3({ cxId, key });
 
-    return res.status(204).send();
-  } catch (error) {
-    // Keep stack trace for upstream error handling
-    next(new MetriportError("Failed to import suspects from S3", { cause: error }));
-  }
-});
+      return res.status(status.OK).json({ status: "success" });
+    } catch (error) {
+      // Keep stack trace for upstream error handling
+      next(new MetriportError("Failed to import suspects from S3", { cause: error }));
+    }
+  })
+);
 
-export default suspectRouter;
+export default router;
