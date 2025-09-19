@@ -3,8 +3,6 @@ import type { Migration } from "..";
 import * as shared from "../migrations-shared";
 
 const tableName = "suspect";
-const indexPatientIdGroupColumns = ["patient_id", "group"];
-const indexNamePatientIdGroup = `${tableName}_${indexPatientIdGroupColumns.join("_")}_idx`;
 const constraintPatientIdGroupLastRunColumns = ["patient_id", "group", "last_run"];
 const constraintNamePatientIdGroupLastRun = `${tableName}_${constraintPatientIdGroupLastRunColumns.join(
   "_"
@@ -59,10 +57,6 @@ export const up: Migration = async ({ context: queryInterface }) => {
       },
       { transaction, addVersion: true }
     );
-    await queryInterface.addIndex(tableName, indexPatientIdGroupColumns, {
-      name: indexNamePatientIdGroup,
-      transaction,
-    });
     await queryInterface.addConstraint(tableName, {
       name: constraintNamePatientIdGroupLastRun,
       fields: constraintPatientIdGroupLastRunColumns,
@@ -77,7 +71,6 @@ export const down: Migration = ({ context: queryInterface }) => {
     await queryInterface.removeConstraint(tableName, constraintNamePatientIdGroupLastRun, {
       transaction,
     });
-    await queryInterface.removeIndex(tableName, indexNamePatientIdGroup, { transaction });
     await queryInterface.dropTable(tableName, { transaction });
   });
 };
