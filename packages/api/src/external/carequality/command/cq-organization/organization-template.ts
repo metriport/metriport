@@ -9,11 +9,14 @@ import {
 import { normalizeState } from "@metriport/shared/domain/address/state";
 import { CQOrgDetailsWithUrls } from "../../shared";
 import { metriportOid } from "./constants";
+import { isCqDoaEnabled } from "@metriport/core/command/feature-flags/domain-ffs";
 
 export const transactionUrl =
   "https://sequoiaproject.org/fhir/sphd/StructureDefinition/Transaction";
 
-export function getOrganizationFhirTemplate(orgDetails: CQOrgDetailsWithUrls): OrganizationWithId {
+export async function getOrganizationFhirTemplate(
+  orgDetails: CQOrgDetailsWithUrls
+): Promise<OrganizationWithId> {
   const { oid, role, urlXCPD, urlDQ, urlDR } = orgDetails;
   const urnOid = "urn:oid:" + oid;
   const endpoints: Endpoint[] = [];
@@ -25,15 +28,15 @@ export function getOrganizationFhirTemplate(orgDetails: CQOrgDetailsWithUrls): O
     if (!urlDR) throw new Error("DR URL is required for Implementer role");
     endpoints.push(getFhirEndpoint(urnOid, XCA_DR_STRING, urlDR));
   }
-  const org = getFhirOrganization(urnOid, orgDetails, endpoints);
+  const org = await getFhirOrganization(urnOid, orgDetails, endpoints);
   return org;
 }
 
-function getFhirOrganization(
+async function getFhirOrganization(
   urnOid: string,
   orgDetails: CQOrgDetailsWithUrls,
   endpoints: Endpoint[]
-): OrganizationWithId {
+): Promise<OrganizationWithId> {
   const {
     oid,
     active,
@@ -49,9 +52,17 @@ function getFhirOrganization(
     lat,
     lon,
     parentOrgOid,
-    oboOid,
     oboName,
   } = orgDetails;
+
+  const isDoaFeatureFlagEnabled = await isCqDoaEnabled();
+
+  /**
+   * TODO: ENG-1089 - Remove this once we fully migrate to the new DOA flow on CQ.
+   *
+   * No extension needed after the migration - it will be added on the principal instead of the delegate.
+   */
+  const oboOid = isDoaFeatureFlagEnabled ? undefined : orgDetails.oboOid;
 
   const state = normalizeState(stateRaw);
   const addressText = `${addressLine1} ${city} ${state} ${postalCode} US`;
