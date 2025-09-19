@@ -6,6 +6,7 @@ import {
   XCA_DR_STRING,
   XCPD_STRING,
 } from "@metriport/carequality-sdk/common/util";
+import { DOA_EXTENSION_URL } from "@metriport/core/external/carequality/extension";
 import { normalizeState } from "@metriport/shared/domain/address/state";
 import { CQOrgDetailsWithUrls } from "../../shared";
 import { metriportOid } from "./constants";
@@ -139,7 +140,7 @@ async function getFhirOrganization(
       ...(oboOid
         ? [
             {
-              url: "https://sequoiaproject.org/fhir/sphd/StructureDefinition/DOA",
+              url: DOA_EXTENSION_URL,
               valueReference: {
                 reference: `Organization/${oboOid}`,
               },

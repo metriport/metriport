@@ -27,6 +27,7 @@ export const SamlAttributesSchema = z.object({
   organizationId: z.string(),
   homeCommunityId: z.string(),
   purposeOfUse: z.string(),
+  principalOid: z.string().optional(),
 });
 export type SamlAttributes = z.infer<typeof SamlAttributesSchema>;
 

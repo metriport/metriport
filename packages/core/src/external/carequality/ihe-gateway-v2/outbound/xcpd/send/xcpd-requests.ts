@@ -37,12 +37,6 @@ export async function sendSignedXcpdRequest({
         request.gateway.oid
       }`
     );
-    // ENG-1048 Disable S3 storage for IHE raw requests/responses
-    // await storeXcpdResponses({
-    //   response,
-    //   outboundRequest: request.outboundRequest,
-    //   gateway: request.gateway,
-    // });
     return {
       gateway: request.gateway,
       response,
