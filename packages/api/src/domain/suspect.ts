@@ -7,8 +7,8 @@ export interface SuspectCreate extends Omit<BaseDomainCreate, "id"> {
   cxId: string;
   patientId: string;
   suspectGroup: string;
-  suspectIcd10Code: string;
-  suspectIcd10ShortDescription: string;
+  suspectIcd10Code: string | null;
+  suspectIcd10ShortDescription: string | null;
   responsibleResources: ResponsibleResources;
   lastRun: Date;
 }

@@ -205,7 +205,7 @@ async function executeQueriesAndSaveResults(queryFiles: QueryFile[]): Promise<vo
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getSnowflakeType(value: any): string {
-  if (value === null) {
+  if (value === null || (typeof value === "string" && value.toLowerCase() === "null")) {
     return "NULL";
   }
   if (typeof value === "string") {
@@ -384,19 +384,7 @@ async function callApiEndpoint(bucket: string, key: string): Promise<void> {
     const apiStartTime = Date.now();
     const url = `${apiUrl}/internal/suspect/import`;
     console.log(`>>> Calling API endpoint with URL: ${url}`);
-    const response = await axios.post(
-      url,
-      {
-        key,
-        bucket,
-        cxId,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = await axios.post(url, { key, cxId });
 
     console.log(`API call successful: ${response.status} in ${elapsedTimeAsStr(apiStartTime)}`);
   } catch (error) {

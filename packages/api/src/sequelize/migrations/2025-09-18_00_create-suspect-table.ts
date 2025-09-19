@@ -41,12 +41,12 @@ export const up: Migration = async ({ context: queryInterface }) => {
         suspectIcd10Code: {
           type: DataTypes.STRING,
           field: "suspect_icd10_code",
-          allowNull: false,
+          allowNull: true,
         },
         suspectIcd10ShortDescription: {
           type: DataTypes.STRING,
           field: "suspect_icd10_short_description",
-          allowNull: false,
+          allowNull: true,
         },
         responsibleResources: {
           type: DataTypes.JSONB,

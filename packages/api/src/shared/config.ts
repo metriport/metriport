@@ -317,6 +317,6 @@ export class Config {
   }
 
   static getAnalyticsPlatformBucketName(): string | undefined {
-    return getEnvVar("ANALYTICS_PLATFORM_BUCKET_NAME");
+    return getEnvVar("ANALYTICS_BUCKET_NAME");
   }
 }

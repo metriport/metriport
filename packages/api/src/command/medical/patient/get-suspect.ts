@@ -44,6 +44,7 @@ export async function getLatestSuspectsBySuspectGroup({
 
   if (!suspects.length) return [];
 
+  // TODO: ENG-1093
   const latestByGroup = suspects.reduce((acc, suspect) => {
     const group = suspect.suspectGroup;
     if (!acc[group]) {

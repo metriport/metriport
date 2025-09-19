@@ -99,15 +99,7 @@ function csvRecordToSuspect(data: Record<string, string>, rowNumber: number): Su
   const responsibleResources = JSON.parse(data.RESPONSIBLERESOURCES);
   const lastRun = data.LASTRUN;
 
-  if (
-    !cxId ||
-    !patientId ||
-    !suspectGroup ||
-    !suspectIcd10Code ||
-    !suspectIcd10ShortDescription ||
-    !responsibleResources ||
-    !lastRun
-  ) {
+  if (!cxId || !patientId || !suspectGroup || !responsibleResources || !lastRun) {
     throw new MetriportError(
       `Missing required fields at row ${rowNumber}: patientId or suspectGroup`
     );
@@ -122,8 +114,10 @@ function csvRecordToSuspect(data: Record<string, string>, rowNumber: number): Su
     cxId,
     patientId,
     suspectGroup,
-    suspectIcd10Code,
-    suspectIcd10ShortDescription,
+    suspectIcd10Code: suspectIcd10Code ? suspectIcd10Code : null,
+    suspectIcd10ShortDescription: suspectIcd10ShortDescription
+      ? suspectIcd10ShortDescription
+      : null,
     responsibleResources,
     lastRun: lastRunDate.toDate(),
   };

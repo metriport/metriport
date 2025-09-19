@@ -7,8 +7,8 @@ export class SuspectModel extends BaseModel<SuspectModel> implements Suspect {
   declare cxId: string;
   declare patientId: string;
   declare suspectGroup: string;
-  declare suspectIcd10Code: string;
-  declare suspectIcd10ShortDescription: string;
+  declare suspectIcd10Code: string | null;
+  declare suspectIcd10ShortDescription: string | null;
   declare responsibleResources: ResponsibleResources;
   declare lastRun: Date;
 

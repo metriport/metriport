@@ -44,6 +44,8 @@ all_diabetes_flags AS (
 SELECT
   patient_id,
   suspect_group,
+  '' as suspect_icd10_code,
+  '' as suspect_icd10_short_description,
   ARRAY_AGG(
     OBJECT_CONSTRUCT(
       'id', resource_id,
