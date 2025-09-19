@@ -17,4 +17,5 @@ WORKDIR /app
 # TODO: #1810 remove below comment if not needed after some time - this should no longer be needed after cleaning up unused fhir converter code
 # RUN ["chmod", "+x", "/app/deploy/webapp.sh"]
 EXPOSE 8080
-ENTRYPOINT /app/docker-entrypoint.sh
+# Use exec-form ENTRYPOINT (not 'ENTRYPOINT /app/docker-entrypoint.sh') so PID 1 is our script and signals (SIGTERM/SIGINT) reach the app reliably.
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

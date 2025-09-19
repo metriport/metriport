@@ -48,3 +48,11 @@ server.setTimeout(timeout);
 var keepalive = loadbalancerTimeout + oneSecond;
 server.keepAliveTimeout = keepalive;
 server.headersTimeout = keepalive + oneSecond;
+
+/** Graceful shutdown: close the server on SIGTERM/SIGINT so the container stops cleanly. */
+function shutdown(s) { 
+  server.close(() => process.exit(0)); 
+  setTimeout(() => process.exit(0), 5000); 
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
