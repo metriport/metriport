@@ -9,10 +9,10 @@ import { PRINCIPAL_AND_DELEGATES_FILE_NAME } from "../../shared";
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
 
-export async function uploadPrincipalAndDelegatesToS3(
+export async function safelyUploadPrincipalAndDelegatesToS3(
   principalAndDelegatesMap: Map<string, string[]>
 ): Promise<void> {
-  const { log } = out(`uploadPrincipalAndDelegatesToS3`);
+  const { log } = out(`safelyUploadPrincipalAndDelegatesToS3`);
   const bucket = Config.getGeneralBucketName();
   try {
     await s3Utils.uploadFile({
@@ -27,7 +27,7 @@ export async function uploadPrincipalAndDelegatesToS3(
   } catch (error) {
     const msg = `Error uploading Principal and Delegates map`;
     log(`${msg}: error - ${errorToString(error)}`);
-    capture.error(msg, { extra: { error, context: "uploadPrincipalAndDelegatesToS3" } });
+    capture.error(msg, { extra: { error, context: "safelyUploadPrincipalAndDelegatesToS3" } });
   }
 }
 

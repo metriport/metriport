@@ -1,8 +1,9 @@
 import { getCachedPrincipalAndDelegatesMap } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/principal-and-delegates-cache";
-import { log } from "@metriport/core/util/log";
+import { out } from "@metriport/core/util/log";
 import { errorToString } from "@metriport/shared";
 
 export async function initializeCache(cacheInitialized: boolean): Promise<boolean> {
+  const { log } = out("initializeCache");
   if (!cacheInitialized) {
     try {
       await getCachedPrincipalAndDelegatesMap();

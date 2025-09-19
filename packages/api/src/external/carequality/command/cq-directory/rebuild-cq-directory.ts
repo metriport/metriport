@@ -1,5 +1,5 @@
 import { Organization } from "@medplum/fhirtypes";
-import { uploadPrincipalAndDelegatesToS3 } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/principal-and-delegates";
+import { safelyUploadPrincipalAndDelegatesToS3 } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/principal-and-delegates";
 import { sendHeartbeatToMonitoringService } from "@metriport/core/external/monitoring/heartbeat";
 import { capture, executeAsynchronously } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
@@ -128,7 +128,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   }
   try {
     await Promise.all([
-      uploadPrincipalAndDelegatesToS3(principalAndDelegatesMap),
+      safelyUploadPrincipalAndDelegatesToS3(principalAndDelegatesMap),
       updateCqDirectoryViewDefinition(sequelize),
     ]);
   } catch (error) {
