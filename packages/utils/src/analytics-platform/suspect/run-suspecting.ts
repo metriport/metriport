@@ -154,7 +154,7 @@ async function executeQueriesAndSaveResults(queryFiles: QueryFile[]): Promise<vo
     clientSessionKeepAlive: true,
   });
   try {
-    // console.log(">>> Connecting to Snowflake...");
+    //console.log(">>> Connecting to Snowflake...");
     const connectAsync = promisifyConnect(connection);
     await connectAsync();
     //console.log("Connected to Snowflake.");

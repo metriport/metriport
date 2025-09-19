@@ -58,6 +58,7 @@ export function createOutboundDocumentRetrievalReqs({
           organizationId: initiator.oid,
           homeCommunityId: initiator.oid,
           purposeOfUse: createPurposeOfUse(),
+          queryGrantorOid: initiator.queryGrantorOid,
         },
         gateway: {
           homeCommunityId: gateway.homeCommunityId,

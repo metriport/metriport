@@ -33,6 +33,7 @@ export function createOutboundPatientDiscoveryReq({
     gateways: xcpdGateways,
     principalCareProviderIds: [initiator.npi],
     samlAttributes: {
+      queryGrantorOid: initiator.queryGrantorOid,
       subjectId: user,
       // TODO https://github.com/metriport/metriport/pull/1302#discussion_r1422876830
       subjectRole: {

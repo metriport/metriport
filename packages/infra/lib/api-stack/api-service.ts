@@ -441,6 +441,7 @@ export function createAPIService({
               createHieConfigDictionary(props.config.hl7Notification.hieConfigs)
             ),
           }),
+          GENERAL_BUCKET_NAME: generalBucket.bucketName,
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),
@@ -527,6 +528,7 @@ export function createAPIService({
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  generalBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   analyticsPlatformAssets?.analyticsPlatformBucket.grantRead(
     fargateService.taskDefinition.taskRole
   );
