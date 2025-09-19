@@ -40,9 +40,8 @@ export function writeSurescriptsRunsFile(filePath: string, content: string): str
   return fullFilePath;
 }
 
-export function appendToSurescriptsRunsFile(fullFilePath: string, content: string): string {
+export function appendToSurescriptsRunsFile(fullFilePath: string, content: string): void {
   fs.appendFileSync(fullFilePath, content, "utf-8");
-  return fullFilePath;
 }
 
 export function writeSurescriptsIdentifiersFile(
