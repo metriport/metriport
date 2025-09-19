@@ -4,15 +4,15 @@ WITH bmi_observations AS (
     o.observation_id AS resource_id,
     'observation' AS resource_type,
     CASE
-      WHEN o.normalized_code = '39156-5' AND CAST(o.result AS FLOAT) >= 40 THEN 'morbid_obesity'
+      WHEN o.normalized_code = '39156-5' AND TRY_CAST(o.result AS FLOAT) >= 40 THEN 'morbid_obesity'
       ELSE NULL
     END AS suspect_group,
     CASE
-      WHEN o.normalized_code = '39156-5' AND CAST(o.result AS FLOAT) >= 40 THEN 'E66.01'
+      WHEN o.normalized_code = '39156-5' AND TRY_CAST(o.result AS FLOAT) >= 40 THEN 'E66.01'
       ELSE NULL
     END AS suspect_icd10_code,
     CASE
-      WHEN o.normalized_code = '39156-5' AND CAST(o.result AS FLOAT) >= 40 THEN 'Morbid (severe) obesity due to excess calories'
+      WHEN o.normalized_code = '39156-5' AND TRY_CAST(o.result AS FLOAT) >= 40 THEN 'Morbid (severe) obesity due to excess calories'
       ELSE NULL
     END AS suspect_icd10_short_description
   FROM OBSERVATION o

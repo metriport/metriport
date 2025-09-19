@@ -4,10 +4,10 @@ WITH bp_observations AS (
     o.observation_id AS resource_id,
     'observation' AS resource_type,
     CASE
-      WHEN o.normalized_code = '8480-6' AND CAST(o.result AS FLOAT) >= 140 THEN 'stage2_systolic'
-      WHEN o.normalized_code = '8462-4' AND CAST(o.result AS FLOAT) >= 90  THEN 'stage2_diastolic'
-      WHEN o.normalized_code = '8480-6' AND CAST(o.result AS FLOAT) >= 130 THEN 'stage1_systolic'
-      WHEN o.normalized_code = '8462-4' AND CAST(o.result AS FLOAT) >= 80  THEN 'stage1_diastolic'
+      WHEN o.normalized_code = '8480-6' AND TRY_CAST(o.result AS FLOAT) >= 140 THEN 'stage2_systolic'
+      WHEN o.normalized_code = '8462-4' AND TRY_CAST(o.result AS FLOAT) >= 90  THEN 'stage2_diastolic'
+      WHEN o.normalized_code = '8480-6' AND TRY_CAST(o.result AS FLOAT) >= 130 THEN 'stage1_systolic'
+      WHEN o.normalized_code = '8462-4' AND TRY_CAST(o.result AS FLOAT) >= 80  THEN 'stage1_diastolic'
       ELSE NULL
     END AS suspect_group
   FROM OBSERVATION o

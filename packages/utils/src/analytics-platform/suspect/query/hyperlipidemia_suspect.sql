@@ -6,7 +6,7 @@ WITH lipid_observations AS (
     CASE
       WHEN o.normalized_code = '13457-7' AND CAST(o.result AS FLOAT) >= 190 THEN 'severe_ldl'
       WHEN o.normalized_code = '13457-7' AND CAST(o.result AS FLOAT) >= 160 THEN 'moderate_ldl'
-      WHEN o.normalized_code = '2093-3' AND CAST(o.result AS FLOAT) >= 240 THEN 'high_total'
+      WHEN o.normalized_code = '2093-3' AND CAST(o.result AS FLOAT) >= 240 THEN 'mixed_hyperlipidemia'
       ELSE NULL
     END AS suspect_group,
     CASE

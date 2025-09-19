@@ -23,22 +23,22 @@ ckd_observations AS (
     l.patient_id,
     l.resource_id,
     CASE
-      WHEN l.egfr BETWEEN 30 AND 44 THEN 'ckd_stage3b_or_higher'
+      WHEN l.egfr BETWEEN 30 AND 44 THEN 'ckd_stage3b'
       WHEN l.egfr BETWEEN 15 AND 29 THEN 'ckd_stage4'
-      WHEN l.egfr < 15 THEN 'ckd_stage5_or_esrd'
-      ELSE 'ckd_stage3_or_higher'
+      WHEN l.egfr < 15 THEN 'ckd_stage5'
+      ELSE 'ckd_stage3a'
     END AS suspect_group,
     CASE
       WHEN l.egfr BETWEEN 30 AND 44 THEN 'N18.32'
       WHEN l.egfr BETWEEN 15 AND 29 THEN 'N18.4'
       WHEN l.egfr < 15 THEN 'N18.5'
-      ELSE 'N18.3'
+      ELSE 'N18.31'
     END AS suspect_icd10_code,
     CASE
       WHEN l.egfr BETWEEN 30 AND 44 THEN 'Chronic kidney disease, stage 3b'
       WHEN l.egfr BETWEEN 15 AND 29 THEN 'Chronic kidney disease, stage 4'
       WHEN l.egfr < 15 THEN 'Chronic kidney disease, stage 5'
-      ELSE 'Chronic kidney disease, stage 3'
+      ELSE 'Chronic kidney disease, stage 3a'
     END AS suspect_icd10_short_description
   FROM low_egfr l
   WHERE l.patient_id IN (SELECT patient_id FROM chronic_ckd_patients)
@@ -48,6 +48,7 @@ ckd_conditions AS (
     c.patient_id,
     c.condition_id AS resource_id,
     CASE
+      WHEN c.normalized_code = 'N18.31' THEN 'ckd_stage3a'
       WHEN c.normalized_code = 'N18.32' THEN 'ckd_stage3b'
       WHEN c.normalized_code = 'N18.3'  THEN 'ckd_stage3'
       WHEN c.normalized_code = 'N18.4'  THEN 'ckd_stage4'
@@ -57,6 +58,7 @@ ckd_conditions AS (
     END AS suspect_group,
     c.normalized_code AS suspect_icd10_code,
     CASE
+      WHEN c.normalized_code = 'N18.31' THEN 'Chronic kidney disease, stage 3a'
       WHEN c.normalized_code = 'N18.32' THEN 'Chronic kidney disease, stage 3b'
       WHEN c.normalized_code = 'N18.3'  THEN 'Chronic kidney disease, stage 3'
       WHEN c.normalized_code = 'N18.4'  THEN 'Chronic kidney disease, stage 4'
@@ -67,7 +69,7 @@ ckd_conditions AS (
   FROM CONDITION c
   WHERE
     c.normalized_code_type = 'icd-10-cm'
-    AND c.normalized_code IN ('N18.32','N18.3','N18.4','N18.5','N18.6')
+    AND c.normalized_code IN ('N18.31', 'N18.32','N18.3','N18.4','N18.5','N18.6')
 ),
 all_ckd_flags AS (
   SELECT * FROM ckd_observations

@@ -4,9 +4,9 @@ WITH prediabetes_observations AS (
     o.observation_id AS resource_id,
     'observation' AS resource_type,
     CASE
-      WHEN o.normalized_code = '4548-4' AND CAST(o.result AS FLOAT) BETWEEN 5.7 AND 6.4 THEN 'prediabetes_hba1c'
-      WHEN o.normalized_code = '14743-9' AND CAST(o.result AS FLOAT) BETWEEN 100 AND 125 THEN 'prediabetes_fpg'
-      WHEN o.normalized_code = '14941-1' AND CAST(o.result AS FLOAT) BETWEEN 140 AND 199 THEN 'prediabetes_ogtt'
+      WHEN o.normalized_code = '4548-4' AND CAST(o.result AS FLOAT) BETWEEN 5.7 AND 6.4 THEN 'prediabetes'
+      WHEN o.normalized_code = '14743-9' AND CAST(o.result AS FLOAT) BETWEEN 100 AND 125 THEN 'prediabetes'
+      WHEN o.normalized_code = '14941-1' AND CAST(o.result AS FLOAT) BETWEEN 140 AND 199 THEN 'prediabetes'
       ELSE NULL
     END AS suspect_group,
     CASE
