@@ -9,17 +9,20 @@ import {
   getSendingApplication,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { getCxIdAndPatientIdOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
-import { getHieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
+import { SUPPORTED_MLLP_SERVER_PORTS } from "@metriport/core/domain/hl7-notification/utils";
 import { capture } from "@metriport/core/util";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { initSentry } from "./sentry";
-import { asString, getCleanIpAddress, lookupHieTzEntryForIp, withErrorHandling } from "./utils";
+import {
+  asString,
+  getCleanIpAddress,
+  getHieNameByConnectionInfo,
+  withErrorHandling,
+} from "./utils";
 
 initSentry();
-
-const MLLP_DEFAULT_PORT = 2575;
 
 async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const { log } = logger;
@@ -28,10 +31,14 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
     connection.addEventListener(
       "message",
       withErrorHandling(connection, logger, async ({ message: rawMessage }) => {
-        const clientIp = getCleanIpAddress(connection.socket.remoteAddress);
-        const clientPort = connection.socket.remotePort;
+        const remoteIp = getCleanIpAddress(connection.socket.remoteAddress);
+        const remotePort = connection.socket.remotePort;
+        const localPort = connection.socket.localPort;
+        if (!localPort) {
+          throw new Error("Local port is undefined");
+        }
 
-        log(`New message over connection ${clientIp}:${clientPort}`);
+        log(`New message over connection ${remoteIp}:${remotePort}`);
 
         const { cxId, patientId } = getCxIdAndPatientIdOrFail(rawMessage);
 
@@ -42,8 +49,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         log(
           `cx: ${cxId}, pt: ${patientId} Received ${triggerEvent} message from ${sendingApplication} at ${messageReceivedTimestamp} (messageId: ${messageId})`
         );
-        const hieConfigDictionary = getHieConfigDictionary();
-        const { hieName } = lookupHieTzEntryForIp(hieConfigDictionary, clientIp);
+        const hieName = getHieNameByConnectionInfo(remoteIp, localPort);
 
         capture.setExtra({
           cxId,
@@ -71,7 +77,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           logger.log("Connection error:", error);
           capture.error(error);
         } else {
-          logger.log("Connection terminated by client");
+          logger.log("Connection terminated by remote");
         }
       })
     );
@@ -84,7 +90,9 @@ async function main() {
   const logger = out("MLLP Server");
   try {
     const server = await createHl7Server(logger);
-    server.start(MLLP_DEFAULT_PORT);
+    SUPPORTED_MLLP_SERVER_PORTS.forEach(port => {
+      server.start(port);
+    });
   } catch (error) {
     logger.log("Error starting MLLP server", error);
     capture.error(error);
