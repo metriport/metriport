@@ -1,6 +1,7 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
 import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
+import { SftpConfig } from "../external/sftp/types";
 
 /**
  * Shared configs, still defining how to work with this. For now:
@@ -456,5 +457,38 @@ export class Config {
 
   static getInternalServerUrl(): string {
     return getEnvVarOrFail("INTERNAL_SERVER_BASE_URL");
+  }
+
+  static getAlohrIngestionBucket(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_BUCKET_NAME");
+  }
+
+  static getAlohrIngestionRemotePath(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_REMOTE_PATH");
+  }
+
+  static getAlohrIngestionPasswordArn(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_PASSWORD_ARN");
+  }
+
+  static getAlohrIngestionSftpConfig(): Partial<SftpConfig> {
+    const record = getEnvVarAsRecordOrFail("ALOHR_INGESTION_SFTP_CONFIG");
+
+    if (
+      !record.host ||
+      typeof record.host !== "string" ||
+      !record.port ||
+      typeof record.port !== "number" ||
+      !record.username ||
+      typeof record.username !== "string"
+    ) {
+      throw new Error("ALOHR_INGESTION_SFTP_CONFIG is not a valid SftpConfig");
+    }
+
+    return {
+      host: record.host,
+      port: record.port,
+      username: record.username,
+    };
   }
 }
