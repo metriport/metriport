@@ -156,6 +156,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
         HL7_BASE64_SCRAMBLER_SEED_ARN: hl7Base64ScramblerSeed.secretArn,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         HIE_CONFIG_DICTIONARY: JSON.stringify(createHieConfigDictionary(hieConfigs)),
+        POST_HOG_API_KEY_SECRET: analyticsSecret.secretArn,
       },
     });
 
