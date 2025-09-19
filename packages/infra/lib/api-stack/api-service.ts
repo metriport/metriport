@@ -527,6 +527,7 @@ export function createAPIService({
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  generalBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
 
   incomingHl7NotificationBucket?.grantRead(fargateService.taskDefinition.taskRole);
 

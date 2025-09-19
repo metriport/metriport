@@ -1,5 +1,5 @@
 import { InboundPatientDiscoveryReq, PatientResource } from "@metriport/ihe-gateway-sdk";
-import { BadRequestError, errorToString, isEmail, isPhoneNumber, toArray } from "@metriport/shared";
+import { errorToString, isEmail, isPhoneNumber, toArray } from "@metriport/shared";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import dayjs from "dayjs";
 import { capture } from "../../../../../../util";
@@ -7,8 +7,11 @@ import { out } from "../../../../../../util/log";
 import { mapIheGenderToFhir } from "../../../../shared";
 import { storeXcpdRequest } from "../../../monitor/store";
 import { extractText } from "../../../utils";
-import { getCachedPrincipalAndDelegatesMap } from "../../principal-and-delegates-cache";
-import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
+import {
+  convertSamlHeaderToAttributes,
+  extractTimestamp,
+  validateDelegatedRequest,
+} from "../../shared";
 import { Iti55Request, iti55RequestSchema } from "./schema";
 
 export function transformIti55RequestToPatientResource(
@@ -63,6 +66,7 @@ export function transformIti55RequestToPatientResource(
 
   return patientResource;
 }
+
 export async function processInboundXcpdRequest(
   request: string
 ): Promise<InboundPatientDiscoveryReq> {
@@ -80,7 +84,6 @@ export async function processInboundXcpdRequest(
     const iti55Request = iti55RequestSchema.parse(jsonObj);
     const samlAttributes = convertSamlHeaderToAttributes(iti55Request.Envelope.Header);
     const patientResource = transformIti55RequestToPatientResource(iti55Request);
-
     const inboundRequest = {
       id: extractText(iti55Request.Envelope.Header.MessageID),
       timestamp: extractTimestamp(iti55Request.Envelope.Header),
@@ -93,7 +96,9 @@ export async function processInboundXcpdRequest(
 
     await storeXcpdRequest({ request, inboundRequest });
     if (samlAttributes.principalOid) {
-      log("Validating delegated request");
+      log(
+        `Validating delegated request: principal - ${samlAttributes.principalOid}, delegate -${samlAttributes.homeCommunityId}`
+      );
       await validateDelegatedRequest(samlAttributes.principalOid, samlAttributes.homeCommunityId);
       log("Successfully validated");
     }
@@ -113,26 +118,5 @@ export async function processInboundXcpdRequest(
       },
     });
     throw new Error(`${msg}: ${errorToString(error, { detailed: true })}`);
-  }
-}
-
-async function validateDelegatedRequest(principal: string, delegate: string) {
-  const principalAndDelegatesMap = await getCachedPrincipalAndDelegatesMap();
-  const delegates = principalAndDelegatesMap.get(principal);
-  if (!delegates) {
-    throw new BadRequestError(
-      "Principal organization not found or has no listed delegates",
-      undefined,
-      {
-        principalOid: principal,
-        delegateOid: delegate,
-      }
-    );
-  }
-  if (!delegates.includes(delegate)) {
-    throw new BadRequestError("Delegate organization is not authorized by the grantor", undefined, {
-      principalOid: principal,
-      delegateOid: delegate,
-    });
   }
 }

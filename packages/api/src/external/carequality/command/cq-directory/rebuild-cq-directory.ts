@@ -1,6 +1,5 @@
 import { Organization } from "@medplum/fhirtypes";
 import { uploadPrincipalAndDelegatesToS3 } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/principal-and-delegates";
-import { refreshPrincipalAndDelegatesCache } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/principal-and-delegates-cache";
 import { sendHeartbeatToMonitoringService } from "@metriport/core/external/monitoring/heartbeat";
 import { capture, executeAsynchronously } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
@@ -132,18 +131,6 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
       uploadPrincipalAndDelegatesToS3(principalAndDelegatesMap),
       updateCqDirectoryViewDefinition(sequelize),
     ]);
-
-    // Refresh the cache in running Lambda instances
-    try {
-      await refreshPrincipalAndDelegatesCache();
-      log("Successfully refreshed principal and delegates cache in Lambda instances");
-    } catch (cacheError) {
-      // Don't fail the rebuild if cache refresh fails
-      log(`Warning: Failed to refresh cache in Lambda instances: ${errorToString(cacheError)}`);
-      capture.message("Failed to refresh principal and delegates cache", {
-        extra: { context: "rebuildCQDirectory", error: cacheError },
-      });
-    }
   } catch (error) {
     const msg = `Failed the last step of CQ directory rebuild`;
     log(`${msg}. Cause: ${errorToString(error)}`);

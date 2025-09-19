@@ -47,35 +47,6 @@ class PrincipalAndDelegatesCache {
     }
   }
 
-  /**
-   * Force refresh the cache by reloading from S3.
-   * This should be called when the principal and delegates data is updated.
-   */
-  async refresh(): Promise<void> {
-    const { log } = out(`PrincipalAndDelegatesCache.refresh`);
-    log("Refreshing principal and delegates cache");
-
-    try {
-      const newMap = await this.loadMapFromS3();
-      this.cache = newMap;
-      this.isLoading = false;
-      this.loadPromise = undefined;
-      log("Successfully refreshed principal and delegates cache");
-    } catch (error) {
-      const msg = "Failed to refresh principal and delegates cache";
-      log(`${msg}: ${errorToString(error)}`);
-      capture.error(msg, { extra: { error } });
-      throw error;
-    }
-  }
-
-  /**
-   * Check if the cache is currently loaded.
-   */
-  isLoaded(): boolean {
-    return this.cache !== undefined;
-  }
-
   private async loadMapFromS3(): Promise<Map<string, string[]>> {
     const { log } = out(`PrincipalAndDelegatesCache.loadMapFromS3`);
     log("Loading principal and delegates map from S3");
@@ -100,19 +71,4 @@ class PrincipalAndDelegatesCache {
  */
 export async function getCachedPrincipalAndDelegatesMap(): Promise<Map<string, string[]>> {
   return PrincipalAndDelegatesCache.getInstance().getMap();
-}
-
-/**
- * Refresh the cached principal and delegates map.
- * This should be called when the data is updated (e.g., after CQ directory rebuild).
- */
-export async function refreshPrincipalAndDelegatesCache(): Promise<void> {
-  return PrincipalAndDelegatesCache.getInstance().refresh();
-}
-
-/**
- * Check if the principal and delegates cache is loaded.
- */
-export function isPrincipalAndDelegatesCacheLoaded(): boolean {
-  return PrincipalAndDelegatesCache.getInstance().isLoaded();
 }
