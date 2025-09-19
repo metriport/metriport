@@ -3,8 +3,12 @@ import type { Migration } from "..";
 import * as shared from "../migrations-shared";
 
 const tableName = "suspect";
-const indexColumns = ["cx_id", "suspect_group"];
-const indexName = `${tableName}_${indexColumns.join("_")}_idx`;
+const indexSuspectGroupColumns = ["cx_id", "suspect_group"];
+const indexNameSuspectGroup = `${tableName}_${indexSuspectGroupColumns.join("_")}_idx`;
+const indexPatientIdSuspectGroupLastRunColumns = ["patient_id", "suspect_group", "last_run"];
+const indexNamePatientIdSuspectGroupLastRun = `${tableName}_${indexPatientIdSuspectGroupLastRunColumns.join(
+  "_"
+)}_idx`;
 
 export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
@@ -55,9 +59,12 @@ export const up: Migration = async ({ context: queryInterface }) => {
       },
       { transaction, addVersion: true }
     );
-
-    await queryInterface.addIndex(tableName, indexColumns, {
-      name: indexName,
+    await queryInterface.addIndex(tableName, indexSuspectGroupColumns, {
+      name: indexNameSuspectGroup,
+      transaction,
+    });
+    await queryInterface.addIndex(tableName, indexPatientIdSuspectGroupLastRunColumns, {
+      name: indexNamePatientIdSuspectGroupLastRun,
       transaction,
     });
   });
@@ -65,6 +72,10 @@ export const up: Migration = async ({ context: queryInterface }) => {
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
+    await queryInterface.removeIndex(tableName, indexNamePatientIdSuspectGroupLastRun, {
+      transaction,
+    });
+    await queryInterface.removeIndex(tableName, indexNameSuspectGroup, { transaction });
     await queryInterface.dropTable(tableName, { transaction });
   });
 };

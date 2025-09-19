@@ -1,23 +1,22 @@
 import { MetriportError } from "@metriport/shared";
 import { Router } from "express";
 import { createSuspectsFromS3 } from "../../../command/medical/patient/create-suspects-from-s3";
+import { z } from "zod";
 
 const suspectRouter = Router();
 
+const importSuspectsSchema = z.object({
+  cxId: z.string(),
+  key: z.string(),
+});
+
 /**
  * POST /internal/medical/suspect/import
- * Body: { cxId: string, bucket: string, key: string }
+ * Body: { cxId: string, key: string }
  */
 suspectRouter.post("/import", async function (req, res, next) {
   try {
-    const { cxId, key } = req.body ?? {};
-
-    if (!cxId || !key) {
-      // Only explain why: ensure all required fields are present for S3 import
-      return res.status(400).json({
-        error: "Missing required fields: cxId, and key are required.",
-      });
-    }
+    const { cxId, key } = importSuspectsSchema.parse(req.body);
 
     await createSuspectsFromS3({ cxId, key });
 

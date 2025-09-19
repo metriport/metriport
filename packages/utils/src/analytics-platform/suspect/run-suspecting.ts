@@ -177,8 +177,6 @@ async function executeQueriesAndSaveResults(queryFiles: QueryFile[]): Promise<vo
           columns,
         };
 
-        console.log(`>>> Result: ${JSON.stringify(result)}`);
-
         // Save to Snowflake table
         await saveToSnowflakeTable(result, executeAsync);
 
@@ -207,6 +205,9 @@ async function executeQueriesAndSaveResults(queryFiles: QueryFile[]): Promise<vo
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getSnowflakeType(value: any): string {
+  if (value === null) {
+    return "NULL";
+  }
   if (typeof value === "string") {
     return "STRING";
   }
@@ -230,6 +231,9 @@ function getValuesForInsert(result: QueryResult): string[][] {
       const value = row[col];
       const type = getSnowflakeType(value);
       switch (type) {
+        case "NULL":
+          rowValues.push("NULL");
+          break;
         case "VARIANT":
           rowValues.push(JSON.stringify(value));
           break;
@@ -293,7 +297,6 @@ async function saveToSnowflakeTable(
     const insertSql = `INSERT INTO ${fullTableName} (${columns}) SELECT ${columnSelects} FROM VALUES ${values
       .map(v => `(${v.map(v => `'${v.replace(/'/g, "''")}'`).join(",")})`)
       .join(", ")}`;
-    console.log(`>>> Insert SQL: ${insertSql}`);
     await executeAsync(insertSql);
 
     console.log(
@@ -322,7 +325,7 @@ async function saveToCsvFile(result: QueryResult): Promise<string> {
     console.log(`>>> Saving CSV file: ${filePath}`);
     const csvStartTime = Date.now();
 
-    const csvHeader = ["CXID", ...result.columns].join(",");
+    const csvHeader = ["cx_id", ...result.columns].join(",");
     const values = getValuesForInsert(result);
 
     const csvContent = [

@@ -22,14 +22,15 @@ export async function getSuspectOrFail({
   cxId,
   patientId,
   suspectGroup,
-}: GetSuspectParams): Promise<Suspect | undefined> {
+}: GetSuspectParams): Promise<Suspect> {
   const suspect = await getSuspect({ cxId, patientId, suspectGroup });
-  if (!suspect)
+  if (!suspect) {
     throw new NotFoundError("Suspect not found", undefined, { cxId, patientId, suspectGroup });
+  }
   return suspect;
 }
 
-export async function getLatestSuspectsByPatient({
+export async function getLatestSuspectsBySuspectGroup({
   cxId,
   patientId,
 }: Omit<GetSuspectParams, "suspectGroup">): Promise<Suspect[]> {
