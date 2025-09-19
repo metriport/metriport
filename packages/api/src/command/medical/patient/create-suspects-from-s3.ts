@@ -46,7 +46,7 @@ export async function createSuspectsFromS3({
     s.pipe(
       csv({
         mapHeaders: ({ header }: { header: string }) => {
-          return header.replace(/[!@#$%^&*()+=\[\]\\';,./{}|":<>?~_\s]/gi, ""); //eslint-disable-line
+          return header.replace(/[!@#$%^&*()+=\[\]\\';,./{}|":<>?~_\s]/gi, "").toUpperCase(); //eslint-disable-line
         },
       })
     )
