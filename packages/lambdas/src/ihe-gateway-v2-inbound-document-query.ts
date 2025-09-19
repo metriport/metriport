@@ -9,12 +9,26 @@ import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/p
 import { getEnvVarOrFail, getEnvVar } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import { getEnvOrFail } from "./shared/env";
+import { initializeCache } from "./shared";
 
 const region = getEnvVarOrFail("AWS_REGION");
 const engineeringCxId = getEnvVar("ENGINEERING_CX_ID");
 const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const { log } = out(`ihe-gateway-v2-inbound-document-query`);
+
+// Initialize the principal and delegates cache on Lambda startup
+// This will be reused across invocations, reducing S3 calls
+let cacheInitialized = false;
+
+// Initialize cache on module load
+initializeCache(cacheInitialized)
+  .then(initialized => {
+    cacheInitialized = initialized;
+  })
+  .catch(error => {
+    log(`Cache initialization failed: ${errorToString(error)}`);
+  });
 
 // TODO move to capture.wrapHandler()
 export async function handler(event: APIGatewayProxyEventV2) {
