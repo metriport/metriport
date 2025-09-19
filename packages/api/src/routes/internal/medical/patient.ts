@@ -1,4 +1,5 @@
 import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
+import { ingestPatientIntoAnalyticsPlatform } from "@metriport/core/command/analytics-platform/incremental-ingestion";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import {
   getCxsWithCQDirectFeatureFlagValue,
@@ -1115,6 +1116,29 @@ router.post(
       throw new MetriportError(msg, undefined, { patientId: id, cxId });
     }
     return res.status(status.OK).json({ requestId });
+  })
+);
+
+/**
+ * POST /internal/patient/:id/analytics/ingest
+ *
+ * Ingests a patient into the analytics platform.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ */
+router.post(
+  "/:id/analytics/ingest",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFromParamsOrFail("id", req);
+    const patient = await getPatientOrFail({ id, cxId });
+
+    await ingestPatientIntoAnalyticsPlatform({ cxId, patientId: patient.id });
+
+    return res.status(status.OK).json({ message: "Ingestion initiated" });
   })
 );
 
