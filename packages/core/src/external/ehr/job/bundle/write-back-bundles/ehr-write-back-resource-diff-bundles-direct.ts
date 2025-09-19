@@ -12,6 +12,7 @@ import {
   createBundleFromResourceList,
   errorToString,
   JwtTokenInfo,
+  MetriportError,
   NotFoundError,
   sleep,
 } from "@metriport/shared";
@@ -279,26 +280,26 @@ function groupObservationsByDiagnosticReport({
   diagnosticReports: DiagnosticReport[];
   observations: Observation[];
 }): { diagnosticReport: DiagnosticReport; observations: Observation[] }[] {
-  const hydratedMetriportOnlyResources: {
+  const groupedResources: {
     diagnosticReport: DiagnosticReport;
     observations: Observation[];
   }[] = [];
   for (const diagnosticReport of diagnosticReports) {
     if (!diagnosticReport.result || diagnosticReport.result.length < 1) {
-      hydratedMetriportOnlyResources.push({ diagnosticReport, observations: [] });
+      groupedResources.push({ diagnosticReport, observations: [] });
       continue;
     }
-    const hydratedObservations: Observation[] = [];
+    const observationsList: Observation[] = [];
     for (const observationReference of diagnosticReport.result) {
       const observation = observations.find(
         observation => `Observation/${observation.id}` === observationReference.reference
       );
       if (!observation || observation.resourceType !== "Observation") continue;
-      hydratedObservations.push(observation);
+      observationsList.push(observation);
     }
-    hydratedMetriportOnlyResources.push({ diagnosticReport, observations: hydratedObservations });
+    groupedResources.push({ diagnosticReport, observations: observationsList });
   }
-  return hydratedMetriportOnlyResources;
+  return groupedResources;
 }
 
 function groupMedicationStatementsByMedication({
@@ -308,25 +309,26 @@ function groupMedicationStatementsByMedication({
   medications: Medication[];
   statements: MedicationStatement[];
 }): { medication: Medication; statements: MedicationStatement[] }[] {
-  const hydratedMetriportOnlyResources: {
+  const groupedResources: {
     medication: Medication;
     statements: MedicationStatement[];
   }[] = [];
   for (const medication of medications) {
-    if (!medication.id) {
-      hydratedMetriportOnlyResources.push({ medication, statements: [] });
+    const medicationId = medication.id;
+    if (!medicationId) {
+      groupedResources.push({ medication, statements: [] });
       continue;
     }
-    const hydratedStatements: MedicationStatement[] = [];
+    const statementsList: MedicationStatement[] = [];
     for (const statement of statements) {
       if (!statement.medicationReference || !statement.medicationReference.reference) continue;
       const ref = statement.medicationReference.reference;
-      if (ref !== `Medication/${medication.id}`) continue;
-      hydratedStatements.push(statement);
+      if (ref !== `Medication/${medicationId}`) continue;
+      statementsList.push(statement);
     }
-    hydratedMetriportOnlyResources.push({ medication, statements: hydratedStatements });
+    groupedResources.push({ medication, statements: statementsList });
   }
-  return hydratedMetriportOnlyResources;
+  return groupedResources;
 }
 
 async function getWriteBackFilters({
@@ -466,7 +468,7 @@ export function shouldWriteBackResource({
     if (skipVitalLoinCode(observation, writeBackFilters)) return false;
     return true;
   } else if (writeBackResourceType === "medication-statement") {
-    if (writeBackFilters.medicationstatement?.disabled) return false;
+    if (writeBackFilters.medicationStatement?.disabled) return false;
     if (!isMedicationStatement(resource)) return false;
     const medicationStatement = resource;
     if (skipMedicationStatementDateAbsolute(medicationStatement, writeBackFilters)) return false;
@@ -687,7 +689,7 @@ export function skipMedicationRxnormCode(
   medication: Medication,
   writeBackFilters: WriteBackFiltersPerResourceType
 ): boolean {
-  const rxnormCodes = writeBackFilters?.medicationstatement?.rxnormCodes;
+  const rxnormCodes = writeBackFilters?.medicationStatement?.rxnormCodes;
   if (!rxnormCodes) return false;
   const rxnormCode = getMedicationRxnormCode(medication);
   if (!rxnormCode) return true;
@@ -698,7 +700,7 @@ export function skipMedicationStatementDateAbsolute(
   medicationStatement: MedicationStatement,
   writeBackFilters: WriteBackFiltersPerResourceType
 ): boolean {
-  const absoluteDate = writeBackFilters.medicationstatement?.absoluteDate;
+  const absoluteDate = writeBackFilters.medicationStatement?.absoluteDate;
   if (!absoluteDate) return false;
   const startDate = getMedicationStatementStartDate(medicationStatement);
   if (!startDate) return true;
@@ -871,10 +873,10 @@ async function filterConditions({
   conditions: Condition[];
   writeBackFilters: WriteBackFiltersPerResourceType | undefined;
 }): Promise<Condition[]> {
-  if (conditions.length < 1) return [];
-  if (writeBackFilters?.problem?.latestOnly === undefined || !writeBackFilters.problem.latestOnly) {
-    return conditions;
-  }
+  if (writeBackFilters === undefined || writeBackFilters.problem === undefined) return conditions;
+  const { latestOnly, earliestOnly } = writeBackFilters.problem;
+  const direction = getDateFilterDirection(latestOnly, earliestOnly);
+  if (direction === DateFilterDirection.NEITHER) return conditions;
   const primaryCodeSystem = getEhrWriteBackConditionPrimaryCode(ehr);
   const getCode =
     primaryCodeSystem === SNOMED_CODE ? getConditionSnomedCode : getConditionIcd10Code;
@@ -890,13 +892,35 @@ async function filterConditions({
       } else {
         const currentDate = getConditionStartDate(current);
         if (!currentDate) return acc;
-        if (buildDayjs(conditionDate).isAfter(buildDayjs(currentDate))) {
+        if (
+          direction === DateFilterDirection.LATEST
+            ? buildDayjs(conditionDate).isAfter(buildDayjs(currentDate))
+            : buildDayjs(conditionDate).isBefore(buildDayjs(currentDate))
+        ) {
           acc[code] = condition;
         }
       }
       return acc;
     }, {})
   );
+}
+
+enum DateFilterDirection {
+  LATEST = "latest",
+  EARLIEST = "earliest",
+  NEITHER = "neither",
+}
+
+function getDateFilterDirection(
+  latestOnly: boolean | undefined,
+  earliestOnly: boolean | undefined
+): DateFilterDirection {
+  if (latestOnly && earliestOnly) {
+    throw new MetriportError("Latest and earliest only cannot be true at the same time");
+  }
+  if (latestOnly) return DateFilterDirection.LATEST;
+  if (earliestOnly) return DateFilterDirection.EARLIEST;
+  return DateFilterDirection.NEITHER;
 }
 
 async function filterObservations({
@@ -906,10 +930,9 @@ async function filterObservations({
   observations: Observation[];
   writeBackFilters: WriteBackFiltersPerResourceType | undefined;
 }): Promise<Observation[]> {
-  if (observations.length < 1) return [];
-  if (writeBackFilters?.vital?.latestOnly === undefined || !writeBackFilters.vital.latestOnly) {
-    return observations;
-  }
+  if (writeBackFilters === undefined || writeBackFilters.vital === undefined) return observations;
+  const { latestOnly } = writeBackFilters.vital;
+  if (latestOnly === undefined || !latestOnly) return observations;
   return Object.values(
     observations.reduce<Record<string, Observation>>((acc, observation) => {
       const loincCode = getObservationLoincCode(observation);

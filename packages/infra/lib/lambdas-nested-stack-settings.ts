@@ -1,12 +1,12 @@
 import { Duration, Size } from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import { LambdaSettings, QueueAndLambdaSettings } from "./shared/settings";
+import { LambdaSettings, QueueAndLambdaSettingsFifo } from "./shared/settings";
 
 // Single timeout for both lambdas b/c ingestion needs more time, and currently search might also ingest
 const lambdaTimeout = Duration.minutes(15).minus(Duration.seconds(5));
 
 export function getConsolidatedIngestionConnectorSettings(): Omit<
-  QueueAndLambdaSettings,
+  QueueAndLambdaSettingsFifo,
   "lambda" | "entry" | "waitTime"
 > & { lambda: LambdaSettings } {
   return {

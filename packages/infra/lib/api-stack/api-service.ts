@@ -283,8 +283,14 @@ export function createAPIService({
           ...props.config.commonwell.envVars,
           ...(props.config.slack ? props.config.slack : undefined),
           ...(props.config.sentryDSN ? { SENTRY_DSN: props.config.sentryDSN } : undefined),
+          ...(props.config.internalServerUrl && {
+            INTERNAL_SERVER_BASE_URL: props.config.internalServerUrl,
+          }),
           ...(props.config.usageReportUrl && {
             USAGE_URL: props.config.usageReportUrl,
+          }),
+          ...(props.config.cxBillingUrl && {
+            CX_BILLING_URL: props.config.cxBillingUrl,
           }),
           ...(incomingHl7NotificationBucket && {
             HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,

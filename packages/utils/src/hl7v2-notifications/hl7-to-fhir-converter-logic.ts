@@ -62,9 +62,7 @@ function invokeLambdaLogic() {
         cxId,
         patientId,
         message,
-        sourceTimestamp: timestamp,
         messageReceivedTimestamp: new Date().toISOString(),
-        rawDataFileKey: `${cxId}/${patientId}/hl7-to-fhir-converter-script-${timestamp}.hl7`,
         hieName,
       });
     } catch (err) {

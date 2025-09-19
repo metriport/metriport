@@ -1,6 +1,5 @@
-import { z } from "zod";
 import { BadRequestError } from "../../error/bad-request";
-
+import validator from "validator";
 export const exampleEmail = "test@test.com";
 const mailtoPrefix = "mailto:";
 
@@ -11,9 +10,26 @@ export function isEmail(email: string): boolean {
 export function isEmailValid(email: string): boolean {
   if (!email) return false;
   if (email.length === 0) return false;
-  const safeParseEmail = z.string().email().safeParse(email);
-  if (!safeParseEmail.success) return false;
-  return true;
+
+  // Check for phone number format (+1 prefix)
+  if (isEmailAPhoneNumber(email)) {
+    return false;
+  }
+
+  // Use our enhanced regex instead of Zod's potentially too-strict validation
+  return validator.isEmail(email, {
+    allow_utf8_local_part: true,
+    blacklisted_chars: "",
+  });
+}
+
+/**
+ * Checks if an email appears to be a phone number (starts with +1)
+ * This has been decided by the team to be an invalid email, and we should not allow it.
+ * This means the +1iamarealuser@example.com is an invalid email to us, even though it is technically a valid email.
+ */
+export function isEmailAPhoneNumber(email: string): boolean {
+  return email.trim().startsWith("+1");
 }
 
 /**
@@ -29,7 +45,16 @@ export function normalizeEmail(email: string): string {
  */
 export function normalizeEmailStrict(email: string): string {
   const normalEmail = normalizeEmail(email);
-  if (!isEmailValid(normalEmail)) throw new Error("Invalid email.");
+  if (!isEmailValid(normalEmail)) {
+    if (isEmailAPhoneNumber(email)) {
+      throw new BadRequestError(
+        "Invalid email: appears to be a phone number (starts with +1). Please enter a valid email address.",
+        undefined,
+        { email }
+      );
+    }
+    throw new Error("Invalid email.");
+  }
   return normalEmail;
 }
 
@@ -67,6 +92,13 @@ export function normalizeEmailNewSafe(
 export function normalizeEmailNew(email: string): string {
   const emailOrUndefined = normalizeEmailNewSafe(email);
   if (!emailOrUndefined) {
+    if (isEmailAPhoneNumber(email)) {
+      throw new BadRequestError(
+        "Invalid email: appears to be a phone number (starts with +1). Please enter a valid email address.",
+        undefined,
+        { email }
+      );
+    }
     throw new BadRequestError("Invalid email", undefined, { email });
   }
   return emailOrUndefined;

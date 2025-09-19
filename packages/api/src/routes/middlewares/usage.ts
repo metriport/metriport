@@ -1,5 +1,5 @@
 import { NextFunction, Request } from "express";
-import { reportUsage as reportUsageCmd } from "../../command/usage/report-usage";
+import { reportUsage as reportUsageCmd } from "../../command/internal-server/report-usage";
 import { Product } from "../../domain/product";
 import { isHttpOK } from "../../shared/http";
 import { Util } from "../../shared/util";
@@ -12,10 +12,7 @@ const log = Util.log("USAGE");
  * Adds a listener on Response close/finish, executing the logic on 'reportIt'.
  * Thanks to https://stackoverflow.com/questions/20175806/before-and-after-hooks-for-a-request-in-express-to-be-executed-before-any-req-a
  */
-export const reportUsage = (
-  product: Product,
-  getEntityIdFn: (req: Request) => string | undefined
-) => {
+export function reportUsage(product: Product, getEntityIdFn: (req: Request) => string | undefined) {
   return async (
     req: Request,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -31,7 +28,7 @@ export const reportUsage = (
     res.on("close", afterResponse);
     next();
   };
-};
+}
 
 /**
  * Reports usage base on the the customer ID on the Request, property 'cxId', and
@@ -39,11 +36,11 @@ export const reportUsage = (
  */
 export const reportDeviceUsage = reportUsage(Product.devices, getDevicesEntityId);
 
-const reportIt = async (
+async function reportIt(
   req: Request,
   product: Product,
   entityId: string | undefined
-): Promise<void> => {
+): Promise<void> {
   const cxId = getCxId(req);
   if (!cxId) {
     log(`Skipped, missing cxId`);
@@ -54,7 +51,7 @@ const reportIt = async (
     return;
   }
   reportUsageCmd({ cxId, entityId, product });
-};
+}
 
 function getDevicesEntityId(req: Request): string | undefined {
   return getUserIdFrom("params", req).optional() ?? getUserIdFrom("query", req).optional();

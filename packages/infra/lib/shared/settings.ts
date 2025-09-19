@@ -12,7 +12,7 @@ export type LambdaSettings = {
   runtime: Runtime;
 };
 
-export type QueueAndLambdaSettings = {
+type QueueAndLambdaSettingsBase = {
   name: string;
   /** @deprecated Move this to the lambda settings or out of this wrapper type. */
   entry: string;
@@ -46,6 +46,10 @@ export type QueueAndLambdaSettings = {
   };
   /** @deprecated Move this to the lambda settings or out of this wrapper type. */
   waitTime: Duration;
+};
+export type QueueAndLambdaSettings = QueueAndLambdaSettingsBase;
+export type QueueAndLambdaSettingsFifo = QueueAndLambdaSettingsBase & {
+  queue: QueueAndLambdaSettingsBase["queue"] & { fifo: true };
 };
 
 export type LambdaSettingsWithNameAndEntry = Pick<

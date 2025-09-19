@@ -1,8 +1,6 @@
 import {
   AdtSubscriptionRequest,
   adtSubscriptionRequestSchema,
-  BulkPatientSettingsRequest,
-  bulkPatientSettingsRequestSchema,
   createQueryMetaSchema,
   PatientSettingsRequest,
   patientSettingsRequestSchema,
@@ -57,21 +55,6 @@ export function parsePatientSettingsRequest(data: unknown): PatientSettingsReque
   }
 
   const result = patientSettingsRequestSchema.parse(data);
-  result.settings.subscriptions?.adt?.forEach(throwOnInvalidHieName);
-  return result;
-}
-
-export function parseBulkPatientSettingsRequest(data: unknown): BulkPatientSettingsRequest {
-  try {
-    getHieConfigDictionary();
-  } catch (error) {
-    log(
-      "parseBulkPatientSettingsRequest - No HIE config dictionary found, skipping HIE name validation"
-    );
-    return bulkPatientSettingsRequestSchema.parse(data);
-  }
-
-  const result = bulkPatientSettingsRequestSchema.parse(data);
   result.settings.subscriptions?.adt?.forEach(throwOnInvalidHieName);
   return result;
 }

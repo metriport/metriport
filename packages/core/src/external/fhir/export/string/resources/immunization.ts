@@ -54,7 +54,7 @@ export class ImmunizationToString implements FHIRResourceToString<Immunization> 
       parts.push(manufacturerStr);
     }
 
-    const lotNumber = emptyIfDenied(immunization.lotNumber);
+    const lotNumber = emptyIfDenied(immunization.lotNumber?.toString());
     if (lotNumber) {
       parts.push(isDebug ? `Lot Number: ${lotNumber}` : lotNumber);
       hasMinimumData = true;
