@@ -168,6 +168,7 @@ export const config: EnvConfigNonSandbox = {
       LAHIE_INGESTION_PASSPHRASE: "your-lahie-ingestion-passphrase",
       LAHIE_INGESTION_PRIVATE_KEY: "your-lahie-ingestion-private-key",
       LAHIE_INGESTION_PASSWORD: "your-lahie-ingestion-password",
+      ALOHR_INGESTION_PASSWORD: "your-alohr-ingestion-password",
     },
     mllpServer: {
       sentryDSN: "your-sentry-dsn",
@@ -182,6 +183,15 @@ export const config: EnvConfigNonSandbox = {
       bucketName: "your-roster-bucket",
     },
     LahieSftpIngestionLambda: {
+      sftpConfig: {
+        host: "your-sftp-host",
+        port: 22,
+        username: "your-sftp-username",
+        remotePath: "your-directory-path",
+      },
+      bucketName: "your-bucket-name",
+    },
+    AlohrSftpIngestionLambda: {
       sftpConfig: {
         host: "your-sftp-host",
         port: 22,
