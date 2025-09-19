@@ -16,6 +16,8 @@ import * as fs from "fs";
 import * as path from "path";
 import * as snowflake from "snowflake-sdk";
 import { elapsedTimeAsStr } from "../../shared/duration";
+import { buildGetDirPathInside, initRunsFolder } from "../../shared/folder";
+import { initFile } from "../../shared/file";
 
 dayjs.extend(duration);
 
@@ -48,7 +50,7 @@ const database = getEnvVarOrFail("SNOWFLAKE_DB");
 const schema = getEnvVarOrFail("SNOWFLAKE_SCHEMA");
 const warehouse = getEnvVarOrFail("SNOWFLAKE_WH");
 
-const confirmationTime = dayjs.duration(10, "seconds");
+const confirmationTime = dayjs.duration(1, "seconds");
 
 snowflake.configure({
   ocspFailOpen: false,
@@ -67,12 +69,17 @@ interface QueryResult {
   columns: string[];
 }
 
+const getFolderName = buildGetDirPathInside(`suspecting`);
+const executionTimestamp = dayjs().format("YYYY-MM-DD_HH-mm-ss");
+
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
   const startedAt = Date.now();
   console.log(`############## Started at ${buildDayjs().toISOString()} ##############`);
 
   try {
+    initRunsFolder();
+
     // Read query files from /query folder
     const queryFiles = await readQueryFiles();
     console.log(`Found ${queryFiles.length} query files`);
@@ -90,9 +97,9 @@ async function main() {
   } catch (error) {
     console.error("Error in main execution:", errorToString(error));
     throw error;
+  } finally {
+    console.log(`>>>>>>> Done after ${elapsedTimeAsStr(startedAt)}`);
   }
-
-  console.log(`>>>>>>> Done after ${elapsedTimeAsStr(startedAt)}`);
 }
 
 async function readQueryFiles(): Promise<QueryFile[]> {
@@ -311,15 +318,8 @@ async function saveToSnowflakeTable(
 }
 
 async function saveToCsvFile(result: QueryResult): Promise<string> {
-  const runsDir = path.join(__dirname, "runs");
-
-  if (!fs.existsSync(runsDir)) {
-    fs.mkdirSync(runsDir, { recursive: true });
-  }
-
-  const timestamp = buildDayjs().format("YYYY-MM-DD_HH-mm-ss");
-  const fileName = `${result.queryName}_${timestamp}.csv`;
-  const filePath = path.join(runsDir, fileName);
+  const filePath = getOutputFilePath(result.queryName);
+  initFile(filePath);
 
   try {
     console.log(`>>> Saving CSV file: ${filePath}`);
@@ -392,6 +392,11 @@ async function callApiEndpoint(bucket: string, key: string): Promise<void> {
     // Don't throw error - continue with other queries even if API call fails
     console.log("Continuing with next query despite API call failure...");
   }
+}
+
+function getOutputFilePath(tableName: string): string {
+  const folderName = getFolderName();
+  return `${folderName}/${tableName}-${executionTimestamp}.csv`;
 }
 
 main();
