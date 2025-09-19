@@ -1,34 +1,20 @@
-import { APIGatewayProxyEventV2 } from "aws-lambda";
-import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
-import { errorToString } from "@metriport/shared";
+import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
 import { processInboundDq } from "@metriport/core/external/carequality/dq/process-inbound-dq";
-import { processInboundDqRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/process/dq-request";
 import { createInboundDqResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/create/dq-response";
-import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { getEnvVarOrFail, getEnvVar } from "@metriport/core/util/env-var";
+import { processInboundDqRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/process/dq-request";
+import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
+import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
+import { errorToString } from "@metriport/shared";
+import { APIGatewayProxyEventV2 } from "aws-lambda";
 import { getEnvOrFail } from "./shared/env";
-import { initializeCache } from "./shared";
 
 const region = getEnvVarOrFail("AWS_REGION");
 const engineeringCxId = getEnvVar("ENGINEERING_CX_ID");
 const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const { log } = out(`ihe-gateway-v2-inbound-document-query`);
-
-// Initialize the principal and delegates cache on Lambda startup
-// This will be reused across invocations, reducing S3 calls
-let cacheInitialized = false;
-
-// Initialize cache on module load
-initializeCache(cacheInitialized)
-  .then(initialized => {
-    cacheInitialized = initialized;
-  })
-  .catch(error => {
-    log(`Cache initialization failed: ${errorToString(error)}`);
-  });
 
 // TODO move to capture.wrapHandler()
 export async function handler(event: APIGatewayProxyEventV2) {

@@ -11,8 +11,6 @@ import { getPrincipalAndDelegatesMap } from "./principal-and-delegates";
 class PrincipalAndDelegatesCache {
   private static instance: PrincipalAndDelegatesCache;
   private cache: Map<string, string[]> | undefined;
-  private isLoading = false;
-  private loadPromise: Promise<Map<string, string[]>> | undefined;
 
   static getInstance(): PrincipalAndDelegatesCache {
     if (!PrincipalAndDelegatesCache.instance) {
@@ -23,28 +21,14 @@ class PrincipalAndDelegatesCache {
 
   /**
    * Get the principal and delegates map from cache or load it if not cached.
-   * This method is safe to call multiple times - it will only load once.
    */
   async getMap(): Promise<Map<string, string[]>> {
     if (this.cache) {
       return this.cache;
     }
 
-    if (this.isLoading && this.loadPromise) {
-      return this.loadPromise;
-    }
-
-    this.isLoading = true;
-    this.loadPromise = this.loadMapFromS3();
-
-    try {
-      this.cache = await this.loadPromise;
-      return this.cache;
-    } catch (error) {
-      this.isLoading = false;
-      this.loadPromise = undefined;
-      throw error;
-    }
+    this.cache = await this.loadMapFromS3();
+    return this.cache;
   }
 
   private async loadMapFromS3(): Promise<Map<string, string[]>> {
@@ -58,7 +42,7 @@ class PrincipalAndDelegatesCache {
     } catch (error) {
       const msg = "Failed to load principal and delegates map from S3";
       log(`${msg}: ${errorToString(error)}`);
-      capture.error(msg, { extra: { error } });
+      capture.setExtra({ loadMapFromS3Error: errorToString(error) });
       throw error;
     }
   }

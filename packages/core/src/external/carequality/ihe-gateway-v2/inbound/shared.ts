@@ -67,10 +67,12 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
   const getPrincipalOidAttributevalue = (name: string): string | undefined => {
     const attribute = attributes.find(attr => attr._Name === name);
     if (!attribute) return undefined;
-    if (typeof attribute.AttributeValue === "string")
+    if (typeof attribute.AttributeValue === "string") {
       return removeOrganizationPrefix(attribute.AttributeValue);
-    if (istextSchema(attribute.AttributeValue))
+    }
+    if (istextSchema(attribute.AttributeValue)) {
       return removeOrganizationPrefix(extractText(attribute.AttributeValue));
+    }
     return undefined;
   };
 

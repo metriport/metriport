@@ -17,7 +17,6 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "@metriport/shared";
 import { APIGatewayProxyEventV2 } from "aws-lambda";
-import { initializeCache } from "./shared";
 import { getEnvOrFail } from "./shared/env";
 
 const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
@@ -25,19 +24,6 @@ const engineeringCxId = getEnvVar("ENGINEERING_CX_ID");
 const region = getEnvVarOrFail("AWS_REGION");
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const { log } = out(`ihe-gateway-v2-inbound-document-retrieval`);
-
-// Initialize the principal and delegates cache on Lambda startup
-// This will be reused across invocations, reducing S3 calls
-let cacheInitialized = false;
-
-// Initialize cache on module load
-initializeCache(cacheInitialized)
-  .then(initialized => {
-    cacheInitialized = initialized;
-  })
-  .catch(error => {
-    log(`Cache initialization failed: ${errorToString(error)}`);
-  });
 
 // TODO move to capture.wrapHandler()
 export async function handler(event: APIGatewayProxyEventV2) {
