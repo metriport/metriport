@@ -41,7 +41,7 @@ import {
   persistHl7MessageError,
   SupportedTriggerEvent,
 } from "./utils";
-import { getBambooTimezone } from "./timezone";
+import { getBambooTimezone, getKonzaTimezone } from "./timezone";
 
 type HieConfig = { timezone: string };
 
@@ -53,6 +53,9 @@ function getTimezoneFromHieName(
   if (hieName === "Bamboo") {
     log("HIE is Bamboo, getting timezone based off state in the facility");
     return getBambooTimezone(hl7Message);
+  } else if (hieName === "Konza") {
+    log("HIE is Konza, getting timezone based off state in the facility");
+    return getKonzaTimezone(hl7Message);
   } else {
     const hieConfigDictionary = getHieConfigDictionary() as Record<string, HieConfig>;
     const hieConfig = hieConfigDictionary[hieName];
