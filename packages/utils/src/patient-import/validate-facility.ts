@@ -20,9 +20,18 @@ import {
  * This script reads a CSV roster and ensures that each patient is associated with the correct facility,
  * by inspecting a specific column and mapping it to a facility based on a CSV file. It expects a CSV
  * directory with the following files:
- *
  * - roster.csv: The CSV roster to validate
  * - facility.csv: The CSV with facility mapping
+ *
+ * Usage:
+ *
+ * ts-node src/patient-import/validate-facility.ts --cx-id <cxId> --csv-dir <csvDir>
+ *
+ * Notes:
+ * - csvDir is a relative path within the "runs" directory.
+ * - The roster CSV header definition below must match the headers of the roster CSV.
+ * - The --use-cache flag is optional and will use a cache of existing Metriport IDs to speed up the process.
+ * - The --dry-run flag is optional and will just validate the CSV without actually requesting any facility changes.
  */
 const program = new Command();
 program
@@ -37,6 +46,13 @@ program
 
 // const apiUrl = getEnvVarOrFail("API_URL");
 // const apiKey = getEnvVarOrFail("API_KEY");
+
+interface FacilityChange {
+  externalId: string;
+  metriportPatientId: string;
+  currentFacilityId: string;
+  expectedFacilityId: string;
+}
 
 async function validateFacility({
   cxId,
@@ -85,6 +101,7 @@ async function validateFacility({
   let totalInstancesFound = 0;
   let totalReferencesNotFound = 0;
   let totalFacilityIdsNotFound = 0;
+  const facilityChanges: FacilityChange[] = [];
 
   const { rowsProcessed, errorCount } = await streamCsv<CsvRosterRow>(csvRoster, row => {
     const { externalId, facilityName } = getExternalIdAndFacilityName(row);
@@ -102,6 +119,12 @@ async function validateFacility({
 
     const expectedFacilityId = facilityNameToId[facilityName];
     if (currentFacilityId !== expectedFacilityId) {
+      facilityChanges.push({
+        externalId,
+        metriportPatientId: reference.patientId,
+        currentFacilityId,
+        expectedFacilityId,
+      });
       appendToOutputCsv(csvOutput, [
         externalId,
         reference.patientId,
@@ -119,9 +142,21 @@ async function validateFacility({
 
   if (isDryRun) return;
 
-  // const metriportAPI = new MetriportMedicalApi(apiKey, {
-  //   baseAddress: apiUrl,
-  // });
+  await applyFacilityChanges(facilityChanges);
+}
+
+async function applyFacilityChanges(facilityChanges: FacilityChange[]) {
+  console.log(`Applying ${facilityChanges.length} facility changes`);
+
+  for (const change of facilityChanges) {
+    console.log(
+      `Applying change for ${change.externalId} from ${change.currentFacilityId} to ${change.expectedFacilityId}`
+    );
+    // TODO: request to /patient/{metriportPatientId}/facility, how to authenticate/track this
+    // const metriportAPI = new MetriportMedicalApi(apiKey, {
+    //   baseAddress: apiUrl,
+    // });
+  }
 }
 
 /**
