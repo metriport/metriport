@@ -10,7 +10,7 @@ export function getCsvRunsPath(csvPath: string): string {
   return path.join(__dirname, "../../runs", csvPath);
 }
 
-export function startOutputCsv(fullCsvPath: string, headers: string[]): void {
+export function startOutputCsv(fullCsvPath: string, headers: readonly string[]): void {
   fs.writeFileSync(fullCsvPath, headers.map(h => `"${h}"`).join(",") + "\n");
 }
 

@@ -14,7 +14,15 @@ import {
 /**
  * This script finds missing patients from bulk imports, by searching for patients from recent
  * bulk imports that do not have a corresponding patient with the same externalId in the Metriport API.
- * It outputs a CSV file with the missing patients.
+ * It outputs a CSV file with the missing patients using the same headers as the bulk import raw CSV.
+ *
+ * Usage:
+ *
+ * ts-node src/patient-import/find-missing-patients.ts --cx-id <cxId> --csv-output <csvOutput>
+ *
+ * Notes:
+ * - csvOutput is a relative path within the "runs" directory.
+ * - The bulk import header definition below must match the headers of the bulk import raw CSV.
  */
 const program = new Command();
 program
@@ -25,19 +33,23 @@ program
   .action(findMissingPatients)
   .showHelpAfterError();
 
-interface BulkImportRow {
-  externalid: string;
-  firstname: string;
-  lastname: string;
-  dob: string;
-  gender: string;
-  zip: string;
-  city: string;
-  state: string;
-  addressline1: string;
-  phone1: string;
-  email1: string;
-}
+// IMPORTANT:
+// Change this to match the bulk import headers of the raw CSV
+const BULK_IMPORT_HEADERS = [
+  "externalid",
+  "firstname",
+  "lastname",
+  "dob",
+  "gender",
+  "zip",
+  "city",
+  "state",
+  "addressline1",
+  "phone1",
+  "email1",
+] as const;
+type BulkImportHeader = (typeof BULK_IMPORT_HEADERS)[number];
+type BulkImportRow = Record<BulkImportHeader, string>;
 
 async function findMissingPatients({ cxId, csvOutput }: { cxId: string; csvOutput: string }) {
   console.log(`Finding missing patients for ${cxId}...`);
@@ -80,33 +92,10 @@ async function findMissingPatients({ cxId, csvOutput }: { cxId: string; csvOutpu
   console.log(`========================================`);
 
   const fullCsvPath = getCsvRunsPath(csvOutput);
-  startOutputCsv(fullCsvPath, [
-    "externalId",
-    "firstname",
-    "lastname",
-    "dob",
-    "gender",
-    "zip",
-    "city",
-    "state",
-    "addressline1",
-    "phone1",
-    "email1",
-  ]);
+  startOutputCsv(fullCsvPath, BULK_IMPORT_HEADERS);
   for (const missingPatient of missingPatients) {
-    appendToOutputCsv(fullCsvPath, [
-      missingPatient.externalid,
-      missingPatient.firstname,
-      missingPatient.lastname,
-      missingPatient.dob,
-      missingPatient.gender,
-      missingPatient.zip,
-      missingPatient.city,
-      missingPatient.state,
-      missingPatient.addressline1,
-      missingPatient.phone1,
-      missingPatient.email1,
-    ]);
+    const missingPatientRow = BULK_IMPORT_HEADERS.map(header => missingPatient[header]);
+    appendToOutputCsv(fullCsvPath, missingPatientRow);
   }
   console.log(`Wrote missing patients to ${fullCsvPath}`);
 }
