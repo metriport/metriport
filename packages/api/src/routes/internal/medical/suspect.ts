@@ -1,5 +1,4 @@
-import { MetriportError } from "@metriport/shared";
-import { Router } from "express";
+import { Request, Response, Router } from "express";
 import status from "http-status";
 import { z } from "zod";
 import { createSuspectsFromS3 } from "../../../command/medical/patient/create-suspects-from-s3";
@@ -25,17 +24,12 @@ const importSuspectsSchema = z.object({
 router.post(
   "/import",
   requestLogger,
-  asyncHandler(async (req, res, next) => {
-    try {
-      const { cxId, key } = importSuspectsSchema.parse(req.body);
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, key } = importSuspectsSchema.parse(req.body);
 
-      await createSuspectsFromS3({ cxId, key });
+    await createSuspectsFromS3({ cxId, key });
 
-      return res.status(status.OK).json({ status: "success" });
-    } catch (error) {
-      // Keep stack trace for upstream error handling
-      next(new MetriportError("Failed to import suspects from S3", { cause: error }));
-    }
+    return res.status(status.OK).json({ status: "success" });
   })
 );
 
