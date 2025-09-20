@@ -46,6 +46,7 @@ const ehrWriteBackGroupedVitalsMap: WriteBackGroupedVitalsFnMap = {
   [EhrSources.elation]: writeBackGroupedVitalsElation,
   [EhrSources.healthie]: undefined,
   [EhrSources.eclinicalworks]: undefined,
+  [EhrSources.salesforce]: undefined,
 };
 
 function getEhrWriteBackGroupedVitalsHandler(ehr: EhrSource): WriteBackGroupedVitalsFn {

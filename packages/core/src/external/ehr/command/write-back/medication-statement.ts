@@ -41,6 +41,7 @@ const ehrWriteBackMedicationStatementMap: WriteBackMedicationStatementFnMap = {
   [EhrSources.elation]: undefined,
   [EhrSources.healthie]: undefined,
   [EhrSources.eclinicalworks]: undefined,
+  [EhrSources.salesforce]: undefined,
 };
 
 function getEhrWriteBackMedicationStatementHandler(ehr: EhrSource): WriteBackMedicationStatementFn {

@@ -30,6 +30,7 @@ const ehrWriteBackLabMap: WriteBackLabFnMap = {
   [EhrSources.elation]: writeBackLabElation,
   [EhrSources.healthie]: undefined,
   [EhrSources.eclinicalworks]: undefined,
+  [EhrSources.salesforce]: undefined,
 };
 
 function getEhrWriteBackLabHandler(ehr: EhrSource): WriteBackLabFn {

@@ -276,6 +276,9 @@ type EnvConfigBase = {
     eclinicalworks: {
       env: string;
     };
+    salesforce: {
+      env: string;
+    };
   };
   surescripts?: {
     surescriptsSenderId: string;

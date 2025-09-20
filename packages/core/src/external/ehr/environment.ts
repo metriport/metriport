@@ -5,8 +5,15 @@ import CanvasApi, { CanvasEnv } from "./canvas";
 import { EClinicalWorksEnv } from "./eclinicalworks";
 import ElationApi, { ElationEnv } from "./elation";
 import { HealthieEnv } from "./healthie";
+import { SalesforceEnv } from "./salesforce";
 
-export type EhrEnv = AthenaEnv | ElationEnv | CanvasEnv | HealthieEnv | EClinicalWorksEnv;
+export type EhrEnv =
+  | AthenaEnv
+  | ElationEnv
+  | CanvasEnv
+  | HealthieEnv
+  | EClinicalWorksEnv
+  | SalesforceEnv;
 
 const ehrSourcesWithClientCredentials = [
   EhrSources.canvas,
