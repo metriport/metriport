@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
@@ -14,41 +15,66 @@ import { addErrorAlarmToLambdaFunc, createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { LambdaSettingsWithNameAndEntry, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
+import { isProdEnv } from "../shared/util";
 import { AnalyticsPlatformsAssets } from "./types";
-
-const waitTimeFhirToCsv = Duration.seconds(0); // No limit
 
 type DockerImageLambdaSettings = Omit<LambdaSettingsWithNameAndEntry, "entry">;
 
 interface AnalyticsPlatformsSettings {
-  fhirToCsv: QueueAndLambdaSettings;
+  fhirToCsvBulk: QueueAndLambdaSettings;
+  fhirToCsvIncremental: QueueAndLambdaSettings;
   fhirToCsvTransform: DockerImageLambdaSettings;
   mergeCsvs: QueueAndLambdaSettings;
 }
 
-function settings(): AnalyticsPlatformsSettings {
+function settings(envType: EnvType): AnalyticsPlatformsSettings {
   const fhirToCsvTransformLambdaTimeout = Duration.minutes(10);
-  const fhirToCsvLambdaTimeout = fhirToCsvTransformLambdaTimeout.plus(Duration.seconds(10));
-  const fhirToCsv: QueueAndLambdaSettings = {
-    name: "FhirToCsv",
-    entry: "analytics-platform/fhir-to-csv",
+  const fhirToCsvBulkLambdaTimeout = fhirToCsvTransformLambdaTimeout.plus(Duration.seconds(10));
+  const fhirToCsvIncrementalLambdaTimeout = fhirToCsvTransformLambdaTimeout.plus(
+    Duration.seconds(10)
+  );
+  const fhirToCsvBulk: QueueAndLambdaSettings = {
+    name: "FhirToCsvBulk",
+    entry: "analytics-platform/fhir-to-csv-bulk",
     lambda: {
       memory: 512,
-      timeout: fhirToCsvLambdaTimeout,
+      timeout: fhirToCsvBulkLambdaTimeout,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(6),
       maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 1,
-      visibilityTimeout: Duration.seconds(fhirToCsvLambdaTimeout.toSeconds() * 2 + 1),
+      visibilityTimeout: Duration.seconds(fhirToCsvBulkLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
     },
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 5,
+      // maxConcurrency: 15,
     },
-    waitTime: waitTimeFhirToCsv,
+    waitTime: Duration.seconds(0),
+  };
+  const fhirToCsvIncremental: QueueAndLambdaSettings = {
+    name: "FhirToCsvIncremental",
+    entry: "analytics-platform/fhir-to-csv-incremental",
+    lambda: {
+      memory: 512,
+      timeout: fhirToCsvIncrementalLambdaTimeout,
+    },
+    queue: {
+      alarmMaxAgeOfOldestMessage: Duration.hours(6),
+      maxMessageCountAlarmThreshold: 5_000,
+      maxReceiveCount: 3,
+      visibilityTimeout: Duration.seconds(fhirToCsvIncrementalLambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
+      deliveryDelay: isProdEnv(envType) ? Duration.minutes(5) : Duration.seconds(30),
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+      // maxConcurrency: 5,
+    },
+    waitTime: Duration.seconds(0),
   };
   const fhirToCsvTransform: DockerImageLambdaSettings = {
     name: "FhirToCsvTransform",
@@ -78,10 +104,11 @@ function settings(): AnalyticsPlatformsSettings {
       reportBatchItemFailures: true,
       maxConcurrency: 20,
     },
-    waitTime: waitTimeFhirToCsv,
+    waitTime: Duration.seconds(0),
   };
   return {
-    fhirToCsv,
+    fhirToCsvBulk,
+    fhirToCsvIncremental,
     fhirToCsvTransform,
     mergeCsvs,
   };
@@ -93,11 +120,14 @@ interface AnalyticsPlatformsNestedStackProps extends NestedStackProps {
   alarmAction?: SnsAction;
   lambdaLayers: LambdaLayers;
   medicalDocumentsBucket: s3.Bucket;
+  featureFlagsTable: dynamodb.Table;
 }
 
 export class AnalyticsPlatformsNestedStack extends NestedStack {
-  readonly fhirToCsvLambda: lambda.DockerImageFunction;
-  readonly fhirToCsvQueue: Queue;
+  readonly fhirToCsvBulkLambda: lambda.DockerImageFunction;
+  readonly fhirToCsvBulkQueue: Queue;
+  readonly fhirToCsvIncrementalLambda: lambda.DockerImageFunction;
+  readonly fhirToCsvIncrementalQueue: Queue;
   readonly mergeCsvsLambda: lambda.DockerImageFunction;
   readonly mergeCsvsQueue: Queue;
   readonly analyticsPlatformBucket: s3.Bucket;
@@ -157,7 +187,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       },
     });
 
-    const { fhirToCsvLambda, queue: fhirToCsvQueue } = this.setupFhirToCsvLambda({
+    const { fhirToCsvTransformLambda } = this.setupFhirToCsvTransformLambda({
       config: props.config,
       envType: props.config.environmentType,
       awsRegion: props.config.region,
@@ -168,8 +198,39 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       analyticsPlatformBucket,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
     });
-    this.fhirToCsvLambda = fhirToCsvLambda;
-    this.fhirToCsvQueue = fhirToCsvQueue;
+
+    const { lambda: fhirToCsvBulkLambda, queue: fhirToCsvBulkQueue } =
+      this.setupFhirToCsvBulkLambda({
+        config: props.config,
+        envType: props.config.environmentType,
+        awsRegion: props.config.region,
+        lambdaLayers: props.lambdaLayers,
+        vpc: props.vpc,
+        sentryDsn: props.config.sentryDSN,
+        alarmAction: props.alarmAction,
+        fhirToCsvTransformLambda,
+        featureFlagsTable: props.featureFlagsTable,
+        medicalDocumentsBucket: props.medicalDocumentsBucket,
+      });
+    this.fhirToCsvBulkLambda = fhirToCsvBulkLambda;
+    this.fhirToCsvBulkQueue = fhirToCsvBulkQueue;
+
+    const { lambda: fhirToCsvIncrementalLambda, queue: fhirToCsvIncrementalQueue } =
+      this.setupFhirToCsvIncrementalLambda({
+        config: props.config,
+        envType: props.config.environmentType,
+        awsRegion: props.config.region,
+        lambdaLayers: props.lambdaLayers,
+        vpc: props.vpc,
+        sentryDsn: props.config.sentryDSN,
+        alarmAction: props.alarmAction,
+        analyticsPlatformBucket,
+        fhirToCsvTransformLambda,
+        featureFlagsTable: props.featureFlagsTable,
+        medicalDocumentsBucket: props.medicalDocumentsBucket,
+      });
+    this.fhirToCsvIncrementalLambda = fhirToCsvIncrementalLambda;
+    this.fhirToCsvIncrementalQueue = fhirToCsvIncrementalQueue;
 
     const { mergeCsvsLambda, queue: mergeCsvsQueue } = this.setupMergeCsvsLambda({
       config: props.config,
@@ -187,15 +248,17 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
 
   getAssets(): AnalyticsPlatformsAssets {
     return {
-      fhirToCsvLambda: this.fhirToCsvLambda,
-      fhirToCsvQueue: this.fhirToCsvQueue,
+      fhirToCsvBulkLambda: this.fhirToCsvBulkLambda,
+      fhirToCsvBulkQueue: this.fhirToCsvBulkQueue,
+      fhirToCsvIncrementalLambda: this.fhirToCsvIncrementalLambda,
+      fhirToCsvIncrementalQueue: this.fhirToCsvIncrementalQueue,
       mergeCsvsLambda: this.mergeCsvsLambda,
       mergeCsvsQueue: this.mergeCsvsQueue,
       analyticsPlatformBucket: this.analyticsPlatformBucket,
     };
   }
 
-  private setupFhirToCsvLambda(ownProps: {
+  private setupFhirToCsvTransformLambda(ownProps: {
     config: EnvConfigNonSandbox;
     envType: EnvType;
     awsRegion: string;
@@ -206,11 +269,10 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     analyticsPlatformBucket: s3.Bucket;
     medicalDocumentsBucket: s3.Bucket;
   }): {
-    fhirToCsvLambda: lambda.DockerImageFunction;
-    queue: Queue;
+    fhirToCsvTransformLambda: lambda.DockerImageFunction;
   } {
     const { lambda: fhirToCsvTransformLambdaSettings, name: fhirToCsvTransformLambdaName } =
-      settings().fhirToCsvTransform;
+      settings(ownProps.envType).fhirToCsvTransform;
 
     // TODO Try to make this lambda to read from and write to SQS, then we don't need the FhirToCsv one
     const fhirToCsvTransformLambda = new lambda.DockerImageFunction(
@@ -240,19 +302,45 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       ownProps.alarmAction
     );
 
-    // Grant read to medical document bucket set on the api-stack
     ownProps.analyticsPlatformBucket.grantReadWrite(fhirToCsvTransformLambda);
+    ownProps.medicalDocumentsBucket.grantRead(fhirToCsvTransformLambda);
 
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    return { fhirToCsvTransformLambda };
+  }
+
+  private setupFhirToCsvBulkLambda(ownProps: {
+    config: EnvConfigNonSandbox;
+    envType: EnvType;
+    awsRegion: string;
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+    fhirToCsvTransformLambda: lambda.Function;
+    featureFlagsTable: dynamodb.Table;
+    medicalDocumentsBucket: s3.Bucket;
+  }): {
+    lambda: lambda.DockerImageFunction;
+    queue: Queue;
+  } {
+    const {
+      lambdaLayers,
+      vpc,
+      envType,
+      sentryDsn,
+      alarmAction,
+      fhirToCsvTransformLambda,
+      featureFlagsTable,
+    } = ownProps;
 
     const {
       name,
       entry,
-      lambda: fhirToCsvLambdaSettings,
+      lambda: lambdaSettings,
       queue: queueSettings,
       eventSource: eventSourceSettings,
       waitTime,
-    } = settings().fhirToCsv;
+    } = settings(envType).fhirToCsvBulk;
 
     const queue = createQueue({
       ...queueSettings,
@@ -260,13 +348,12 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       name,
       fifo: true,
       createDLQ: true,
-      lambdaLayers: [lambdaLayers.shared],
       envType,
       alarmSnsAction: alarmAction,
     });
 
-    const fhirToCsvLambda = createLambda({
-      ...fhirToCsvLambdaSettings,
+    const lambda = createLambda({
+      ...lambdaSettings,
       stack: this,
       name,
       entry,
@@ -275,6 +362,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         // API_URL set on the api-stack after the OSS API is created
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME: fhirToCsvTransformLambda.functionName,
+        FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
         MEDICAL_DOCUMENTS_BUCKET_NAME: ownProps.medicalDocumentsBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
@@ -283,12 +371,90 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    fhirToCsvLambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
-    fhirToCsvTransformLambda.grantInvoke(fhirToCsvLambda);
-    ownProps.medicalDocumentsBucket.grantRead(fhirToCsvTransformLambda);
-    ownProps.medicalDocumentsBucket.grantRead(fhirToCsvLambda);
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
-    return { fhirToCsvLambda, queue };
+    fhirToCsvTransformLambda.grantInvoke(lambda);
+    featureFlagsTable.grantReadData(lambda);
+    ownProps.medicalDocumentsBucket.grantRead(lambda);
+
+    return { lambda, queue };
+  }
+
+  private setupFhirToCsvIncrementalLambda(ownProps: {
+    config: EnvConfigNonSandbox;
+    envType: EnvType;
+    awsRegion: string;
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+    analyticsPlatformBucket: s3.Bucket;
+    fhirToCsvTransformLambda: lambda.Function;
+    featureFlagsTable: dynamodb.Table;
+    medicalDocumentsBucket: s3.Bucket;
+  }): {
+    lambda: lambda.DockerImageFunction;
+    queue: Queue;
+  } {
+    const {
+      lambdaLayers,
+      vpc,
+      envType,
+      sentryDsn,
+      alarmAction,
+      fhirToCsvTransformLambda,
+      analyticsPlatformBucket,
+      featureFlagsTable,
+    } = ownProps;
+
+    const {
+      name,
+      entry,
+      lambda: lambdaSettings,
+      queue: queueSettings,
+      eventSource: eventSourceSettings,
+      waitTime,
+    } = settings(envType).fhirToCsvIncremental;
+
+    const queue = createQueue({
+      ...queueSettings,
+      stack: this,
+      name,
+      fifo: true,
+      createDLQ: true,
+      envType,
+      alarmSnsAction: alarmAction,
+      deliveryDelay: queueSettings.deliveryDelay,
+    });
+
+    const lambda = createLambda({
+      ...lambdaSettings,
+      stack: this,
+      name,
+      entry,
+      envType,
+      envVars: {
+        // API_URL set on the api-stack after the OSS API is created
+        WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
+        FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME: fhirToCsvTransformLambda.functionName,
+        ANALYTICS_S3_BUCKET: analyticsPlatformBucket.bucketName,
+        FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
+        MEDICAL_DOCUMENTS_BUCKET_NAME: ownProps.medicalDocumentsBucket.bucketName,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared, lambdaLayers.langchain],
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+
+    fhirToCsvTransformLambda.grantInvoke(lambda);
+    analyticsPlatformBucket.grantReadWrite(fhirToCsvTransformLambda);
+    ownProps.medicalDocumentsBucket.grantRead(fhirToCsvTransformLambda);
+    featureFlagsTable.grantReadData(lambda);
+
+    return { lambda, queue };
   }
 
   private setupMergeCsvsLambda(ownProps: {
@@ -312,7 +478,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       queue: queueSettings,
       eventSource: eventSourceSettings,
       waitTime,
-    } = settings().mergeCsvs;
+    } = settings(envType).mergeCsvs;
 
     const queue = createQueue({
       ...queueSettings,
@@ -320,7 +486,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       name,
       fifo: true,
       createDLQ: true,
-      lambdaLayers: [lambdaLayers.shared],
       envType,
       alarmSnsAction: alarmAction,
     });

@@ -31,14 +31,9 @@ def transform_and_upload_data(
     cx_id: str,
     patient_id: str,
     job_id: str,
-    input_bundle: str | None,
+    output_file_prefix: str,
 ) -> list[tuple[str, str, str]]:
-    bundle_key = ""
-    if input_bundle is not None and input_bundle != "":
-        bundle_key = input_bundle.strip()
-    else:
-        bundle_key = create_consolidated_key(cx_id, patient_id)
-
+    bundle_key = create_consolidated_key(cx_id, patient_id)
     local_cx_path = f"/tmp/{transform_name}/output/{cx_id}"
     os.makedirs(local_cx_path, exist_ok=True)
     local_patient_path = f"{local_cx_path}/{patient_id}"
@@ -68,12 +63,12 @@ def transform_and_upload_data(
     local_output_files = parseNdjsonBundle.parse(local_ndjson_bundle_key, local_patient_path)
 
     output_bucket_and_file_keys_and_table_names = []
-    output_file_prefix = create_output_file_prefix(dwh, transform_name, cx_id, patient_id, job_id)
     
     with ThreadPoolExecutor(max_workers=3) as executor:
         future_to_file = {}
         for file in local_output_files:
-            output_file_key = f"{output_file_prefix}/{file.replace('/', '_')}"
+            file_name = file.split("/")[-1].replace("/", "_")
+            output_file_key = f"{output_file_prefix}/{file_name}"
             future = executor.submit(upload_file_to_s3, file, output_bucket, output_file_key)
             future_to_file[future] = file
         
@@ -96,9 +91,9 @@ def handler(event: dict, context: dict):
     cx_id = event.get("CX_ID") or os.getenv("CX_ID")
     patient_id = event.get("PATIENT_ID") or os.getenv("PATIENT_ID")
     job_id = event.get("JOB_ID") or os.getenv("JOB_ID")
-    input_bundle = event.get("INPUT_BUNDLE") or os.getenv("INPUT_BUNDLE")
     input_bucket = event.get("INPUT_S3_BUCKET") or os.getenv("INPUT_S3_BUCKET")
     output_bucket = os.getenv("OUTPUT_S3_BUCKET")
+    output_file_prefix = os.getenv("OUTPUT_PREFIX") # Will append '/<cx_id>_<patient_id>_<table_name>.csv' to it
     if not cx_id:
         raise ValueError("CX_ID is not set") 
     if not patient_id:
@@ -110,6 +105,8 @@ def handler(event: dict, context: dict):
         raise ValueError("INPUT_S3_BUCKET is not set")
     if not output_bucket:
         raise ValueError("OUTPUT_S3_BUCKET is not set")
+    if not output_file_prefix:
+        raise ValueError("OUTPUT_PREFIX is not set")
 
     print(f">>> Parsing data and uploading it to S3 for Snowflake - {cx_id}, patient_id {patient_id}, job_id {job_id}")
     output_bucket_and_file_keys_and_table_names = transform_and_upload_data(
@@ -118,7 +115,7 @@ def handler(event: dict, context: dict):
         cx_id,
         patient_id,
         job_id,
-        input_bundle,
+        output_file_prefix,
     )
 
     if len(output_bucket_and_file_keys_and_table_names) < 1:
