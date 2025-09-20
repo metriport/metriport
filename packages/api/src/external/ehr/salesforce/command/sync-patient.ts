@@ -16,7 +16,7 @@ import { createAddresses, createContacts, createNames, createSalesforceClient } 
 
 export type SyncSalesforcePatientIntoMetriportParams = {
   cxId: string;
-  salesforceOrgId: string;
+  salesforcePracticeId: string;
   salesforcePatientId: string;
   salesforceInstanceUrl: string;
   salesforceTokenId: string;
@@ -26,7 +26,7 @@ export type SyncSalesforcePatientIntoMetriportParams = {
 
 export async function syncSalesforcePatientIntoMetriport({
   cxId,
-  salesforceOrgId,
+  salesforcePracticeId,
   salesforcePatientId,
   salesforceInstanceUrl,
   salesforceTokenId,
@@ -34,7 +34,7 @@ export async function syncSalesforcePatientIntoMetriport({
   triggerDq = false,
 }: SyncSalesforcePatientIntoMetriportParams): Promise<string> {
   const { log } = out(
-    `syncSalesforcePatientIntoMetriport - orgId: ${salesforceOrgId} ptId: ${salesforcePatientId}`
+    `syncSalesforcePatientIntoMetriport - practiceId: ${salesforcePracticeId} ptId: ${salesforcePatientId}`
   );
 
   const existingPatient = await getPatientMapping({
@@ -59,11 +59,11 @@ export async function syncSalesforcePatientIntoMetriport({
     api ??
     (await createSalesforceClientFromTokenId({
       cxId,
-      orgId: salesforceOrgId,
+      practiceId: salesforcePracticeId,
       instanceUrl: salesforceInstanceUrl,
       tokenId: salesforceTokenId,
     }));
-  const salesforcePatient = await salesforceApi.getPatient({
+  const salesforcePatient = await salesforceApi.getPatientFromContact({
     cxId,
     patientId: salesforcePatientId,
   });
@@ -72,7 +72,7 @@ export async function syncSalesforcePatientIntoMetriport({
   const metriportPatient = await getOrCreateMetriportPatient({
     cxId,
     source: EhrSources.salesforce,
-    practiceId: salesforceOrgId,
+    practiceId: salesforcePracticeId,
     demographics,
     externalId: salesforcePatientId,
   });
@@ -95,9 +95,7 @@ export async function syncSalesforcePatientIntoMetriport({
     patientId: metriportPatient.id,
     externalId: salesforcePatientId,
     source: EhrSources.salesforce,
-    secondaryMappings: {
-      practiceId: salesforceOrgId,
-    },
+    secondaryMappings: { practiceId: salesforcePracticeId },
   });
 
   return metriportPatient.id;
@@ -122,28 +120,35 @@ function createMetriportPatientDemographics(patient: SalesforcePatient): Patient
 
 async function createSalesforceClientFromTokenId({
   cxId,
-  orgId,
+  practiceId,
   instanceUrl,
   tokenId,
 }: {
   cxId: string;
-  orgId: string;
+  practiceId: string;
   instanceUrl: string;
   tokenId: string;
 }): Promise<SalesforceApi> {
-  const jwtToken = await getJwtTokenByIdOrFail(tokenId);
-  if (!jwtToken.data) throw new MetriportError("No token data found");
-
-  const tokenData = jwtToken.data;
-  if (tokenData.source !== salesforceDashSource) {
-    throw new MetriportError("Invalid token source");
+  const token = await getJwtTokenByIdOrFail(tokenId);
+  if (token.data.source !== salesforceDashSource) {
+    throw new MetriportError("Invalid token source", undefined, {
+      tokenId,
+      source: token.data.source,
+    });
   }
-
+  const tokenPracticeId = token.data.practiceId;
+  if (tokenPracticeId !== practiceId) {
+    throw new MetriportError("Invalid token practiceId", undefined, {
+      tokenId,
+      source: token.data.source,
+      tokenPracticeId,
+      practiceId,
+    });
+  }
   return await createSalesforceClient({
     cxId,
-    practiceId: orgId,
-    authToken: jwtToken.token,
+    practiceId,
+    authToken: token.token,
     instanceUrl,
-    orgId,
   });
 }

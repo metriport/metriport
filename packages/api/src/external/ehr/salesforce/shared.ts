@@ -17,7 +17,7 @@ import { Patient as SalesforcePatient } from "@metriport/shared/interface/extern
 type SalesforcePerPracticeParams = EhrPerPracticeParams & {
   authToken: string;
   instanceUrl: string;
-  orgId: string;
+  practiceId: string;
 };
 
 export async function createSalesforceClient(
@@ -29,31 +29,30 @@ export async function createSalesforceClient(
     environment,
     authToken: perPracticeParams.authToken,
     instanceUrl: perPracticeParams.instanceUrl,
-    orgId: perPracticeParams.orgId,
   });
 }
 
 export function createAddresses(patient: SalesforcePatient): Address[] {
-  const addresses = [patient].flatMap(address => {
-    const addressLine1 = address.MailingStreet?.trim();
-    if (!addressLine1) return [];
-    const addressLine2 = undefined; // for now parsing only 1 line of address
-    const city = address.MailingCity?.trim();
-    if (!city) return [];
-    const country = address.MailingCountry?.trim() ?? normalizedCountryUsa;
-    const state = normalizeUSStateForAddressSafe(address.MailingState ?? "");
-    if (!state) return [];
-    const zip = normalizeZipCodeNewSafe(address.MailingPostalCode ?? "");
-    if (!zip) return [];
-    return {
+  const addressLine1 = patient.MailingStreet?.trim();
+  if (!addressLine1) return [];
+  const addressLine2 = undefined; // for now parsing only 1 line of address
+  const city = patient.MailingCity?.trim();
+  if (!city) return [];
+  const country = patient.MailingCountry?.trim() ?? normalizedCountryUsa;
+  const state = normalizeUSStateForAddressSafe(patient.MailingState ?? "");
+  if (!state) return [];
+  const zip = normalizeZipCodeNewSafe(patient.MailingPostalCode ?? "");
+  if (!zip) return [];
+  const addresses = [
+    {
       addressLine1,
       addressLine2,
       city,
       state,
       zip,
       country,
-    };
-  });
+    },
+  ];
   if (addresses.length === 0) {
     throw new BadRequestError("Patient has no valid addresses", undefined, {
       address: JSON.stringify(patient),
@@ -74,12 +73,12 @@ export function createContacts(patient: SalesforcePatient): Contact[] {
 }
 
 export function createNames(patient: SalesforcePatient): { firstName: string; lastName: string } {
-  if (!patient.FirstName) throw new BadRequestError("Patient has no first_name");
+  if (!patient.FirstName) throw new BadRequestError("Patient first name is empty");
   const firstName = toTitleCase(patient.FirstName.trim());
-  if (firstName === "") throw new BadRequestError("Patient first_name is empty");
-  if (!patient.LastName) throw new BadRequestError("Patient has no last_name");
+  if (firstName === "") throw new BadRequestError("Patient first name is empty");
+  if (!patient.LastName) throw new BadRequestError("Patient last name is empty");
   const lastName = toTitleCase(patient.LastName.trim());
-  if (lastName === "") throw new BadRequestError("Patient last_name is empty");
+  if (lastName === "") throw new BadRequestError("Patient last name is empty");
   return {
     firstName,
     lastName,

@@ -4,7 +4,12 @@ import medicalDocument from "../../../medical/document";
 import medicalPatient from "../../../medical/patient";
 import { patientAuthorization } from "../../../middlewares/patient-authorization";
 import settings from "../../../settings";
-import { processDocumentRoute, processPatientRoute } from "../auth/middleware";
+import { processEhrPatientId } from "../../shared";
+import {
+  processDocumentRoute,
+  processPatientRoute,
+  tokenEhrPatientIdQueryParam,
+} from "../auth/middleware";
 import patient from "../patient";
 
 const routes = Router();
@@ -14,6 +19,7 @@ routes.use(
   "/medical/v1/patient/:id",
   handleParams,
   processPatientRoute,
+  processEhrPatientId(tokenEhrPatientIdQueryParam, "query"),
   patientAuthorization("query"),
   medicalPatient
 );

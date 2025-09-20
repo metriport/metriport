@@ -1,7 +1,8 @@
+import { MetriportError, NotFoundError } from "@metriport/shared";
 import {
-  Patient as SalesforcePatient,
   PatientSOQL,
   patientSOQLSchema,
+  Patient as SalesforcePatient,
 } from "@metriport/shared/interface/external/ehr/salesforce/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
@@ -13,10 +14,11 @@ interface SalesforceApiConfig
   environment: SalesforceEnv;
   authToken: string;
   instanceUrl: string;
-  orgId: string;
+  practiceId: string;
 }
 
 const salesforceEnv = ["production", "staging"] as const;
+const SALESFORCE_API_VERSION = "v64.0";
 
 export type SalesforceEnv = (typeof salesforceEnv)[number];
 export function isSalesforceEnv(env: string): env is SalesforceEnv {
@@ -24,15 +26,15 @@ export function isSalesforceEnv(env: string): env is SalesforceEnv {
 }
 
 class SalesforceApi {
-  private axiosFhirInstance: AxiosInstance;
-  private baseFhirUrl: string;
-  private orgId: string;
+  private axiosInstanceProprietary: AxiosInstance;
+  private baseUrl: string;
   private token: string;
+  private practiceId: string;
 
   private constructor(config: SalesforceApiConfig) {
-    this.orgId = config.orgId;
-    this.baseFhirUrl = config.instanceUrl;
-    this.axiosFhirInstance = axios.create({});
+    this.practiceId = config.practiceId;
+    this.baseUrl = config.instanceUrl;
+    this.axiosInstanceProprietary = axios.create({});
     this.token = config.authToken;
   }
 
@@ -43,8 +45,8 @@ class SalesforceApi {
   }
 
   async initialize(): Promise<void> {
-    this.axiosFhirInstance = axios.create({
-      baseURL: `${this.baseFhirUrl}`,
+    this.axiosInstanceProprietary = axios.create({
+      baseURL: `${this.baseUrl}`,
       headers: {
         Authorization: `Bearer ${this.token}`,
         "Content-Type": "application/json",
@@ -52,7 +54,7 @@ class SalesforceApi {
     });
   }
 
-  async getPatient({
+  async getPatientFromContact({
     cxId,
     patientId,
   }: {
@@ -60,12 +62,32 @@ class SalesforceApi {
     patientId: string;
   }): Promise<SalesforcePatient> {
     const { debug } = out(
-      `Salesforce getPatient - cxId ${cxId} orgId ${this.orgId} patientId ${patientId}`
+      `Salesforce getPatientFromContact - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
+
+    const CONTACT_FIELDS = [
+      "Id",
+      "FirstName",
+      "LastName",
+      "Email",
+      "Phone",
+      "MobilePhone",
+      "OtherPhone",
+      "MailingStreet",
+      "MailingCity",
+      "MailingState",
+      "MailingPostalCode",
+      "MailingCountry",
+      "Birthdate",
+      "GenderIdentity",
+    ] as const;
+
     const contactId = this.getPatientId(patientId);
-    const query = `SELECT Id, FirstName, LastName, Email, Phone, MobilePhone, OtherPhone, MailingStreet, MailingCity, MailingState, MailingPostalCode, MailingCountry, Birthdate, GenderIdentity FROM Contact WHERE Id = '${contactId}'`;
-    const patientGetUrl = `/services/data/v64.0/query?q=${query}`;
-    const additionalInfo = { cxId, orgId: this.orgId, patientId };
+    const query = `SELECT ${CONTACT_FIELDS.join(", ")} FROM Contact WHERE Id = '${contactId}'`;
+    const patientGetUrl = `/services/data/${SALESFORCE_API_VERSION}/query?q=${encodeURIComponent(
+      query
+    )}`;
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
     const salesforcePatient = await this.makeRequest<PatientSOQL>({
       cxId,
       patientId,
@@ -78,19 +100,30 @@ class SalesforceApi {
       emptyResponse: false,
     });
 
-    return this.getPatientRecord(salesforcePatient);
+    return this.getPatientRecord(salesforcePatient, cxId, patientId);
   }
 
-  private getPatientRecord(patient: PatientSOQL): SalesforcePatient {
+  private getPatientRecord(
+    patient: PatientSOQL,
+    cxId: string,
+    patientId: string
+  ): SalesforcePatient {
     const [record] = patient.records;
-    if (!record) throw new Error("Patient not found");
+    if (!record) throw new NotFoundError("Patient not found", undefined, { cxId, patientId });
     return record;
   }
 
   getPatientId(patientId: string): string {
     const [type, id] = patientId.split("_");
-    if (type?.toLowerCase() === "contact") return `${id}`;
-    throw new Error(`Invalid patient ID: ${patientId}`);
+    if (type?.toLowerCase() !== "contact") {
+      throw new MetriportError("Invalid patient ID prefix", undefined, { patientId });
+    }
+    // Salesforce IDs are 15 or 18 alphanumeric characters
+    const isValidId = typeof id === "string" && /^[a-zA-Z0-9]{15}$|^[a-zA-Z0-9]{18}$/.test(id);
+    if (!isValidId) {
+      throw new MetriportError("Invalid Salesforce ID format", undefined, { patientId });
+    }
+    return id;
   }
 
   private async makeRequest<T>({
@@ -109,10 +142,10 @@ class SalesforceApi {
     return await makeRequest<T>({
       ehr: EhrSources.salesforce,
       cxId,
-      practiceId: this.orgId,
+      practiceId: this.practiceId,
       patientId,
       s3Path,
-      axiosInstance: this.axiosFhirInstance,
+      axiosInstance: this.axiosInstanceProprietary,
       url,
       method,
       data,

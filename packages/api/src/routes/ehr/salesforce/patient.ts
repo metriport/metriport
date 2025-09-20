@@ -13,8 +13,8 @@ const router = Router();
  *
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of Salesforce Patient.
- * @param req.query.sfOrgId The ID of Salesforce Organization.
- * @param req.query.sfInstanceUrl The Salesforce instance URL.
+ * @param req.query.practiceId The ID of Salesforce Practice.
+ * @param req.query.instanceUrl The Salesforce instance URL.
  * @param req.query.tokenId The ID of Salesforce Token.
  * @returns Metriport Patient if found.
  */
@@ -25,12 +25,12 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const salesforcePatientId = getFrom("params").orFail("id", req);
-    const salesforceOrgId = getFromQueryOrFail("sfOrgId", req);
-    const salesforceInstanceUrl = getFromQueryOrFail("sfInstanceUrl", req);
+    const salesforcePracticeId = getFromQueryOrFail("practiceId", req);
+    const salesforceInstanceUrl = getFromQueryOrFail("instanceUrl", req);
     const salesforceTokenId = getFromQueryOrFail("tokenId", req);
     const patientId = await syncSalesforcePatientIntoMetriport({
       cxId,
-      salesforceOrgId,
+      salesforcePracticeId,
       salesforcePatientId,
       salesforceInstanceUrl,
       salesforceTokenId,
@@ -44,7 +44,7 @@ router.get(
  *
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of Salesforce Patient.
- * @param req.query.sfOrgId The ID of Salesforce Organization.
+ * @param req.query.practiceId The ID of Salesforce Practice.
  * @param req.query.sfInstanceUrl The Salesforce instance URL.
  * @param req.query.tokenId The ID of Salesforce Token.
  * @returns Metriport Patient if found.
@@ -56,12 +56,12 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const salesforcePatientId = getFrom("params").orFail("id", req);
-    const salesforceOrgId = getFromQueryOrFail("sfOrgId", req);
+    const salesforcePracticeId = getFromQueryOrFail("practiceId", req);
     const salesforceInstanceUrl = getFromQueryOrFail("sfInstanceUrl", req);
     const salesforceTokenId = getFromQueryOrFail("tokenId", req);
     const patientId = await syncSalesforcePatientIntoMetriport({
       cxId,
-      salesforceOrgId,
+      salesforcePracticeId,
       salesforcePatientId,
       salesforceInstanceUrl,
       salesforceTokenId,

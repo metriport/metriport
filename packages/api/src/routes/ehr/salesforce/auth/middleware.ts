@@ -9,18 +9,23 @@ import {
   processPatientRoute as processPatientRouteShared,
 } from "../../shared";
 
+export const tokenEhrPatientIdQueryParam = "salesforcePatientIdFromToken";
+
 function parseSalesforcePracticeIdDash(tokenData: JwtTokenData, tokenId: string): ParseResponse {
   if (tokenData.source !== salesforceDashSource) throw new ForbiddenError();
-  const sfOrgId = tokenData.sfOrgId;
-  if (!sfOrgId) throw new ForbiddenError();
-  const sfInstanceUrl = tokenData.sfInstanceUrl;
-  if (!sfInstanceUrl) throw new ForbiddenError();
+  const practiceId = tokenData.practiceId;
+  if (!practiceId) throw new ForbiddenError();
+  const instanceUrl = tokenData.instanceUrl;
+  if (!instanceUrl) throw new ForbiddenError();
+  const patientId = tokenData.patientId;
+  if (!patientId) throw new ForbiddenError();
   return {
-    externalId: sfOrgId,
+    externalId: practiceId,
     queryParams: {
-      sfOrgId,
-      sfInstanceUrl,
+      practiceId,
+      instanceUrl,
       tokenId,
+      [tokenEhrPatientIdQueryParam]: patientId,
     },
   };
 }
