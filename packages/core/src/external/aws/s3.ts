@@ -1,4 +1,5 @@
 import {
+  _Object,
   CommonPrefix,
   CopyObjectCommand,
   DeleteObjectCommand,
@@ -8,7 +9,6 @@ import {
   ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
-  _Object,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl as getPresignedUrl } from "@aws-sdk/s3-request-presigner";
 import {
@@ -19,16 +19,17 @@ import {
   MetriportError,
   NotFoundError,
 } from "@metriport/shared";
+import { StreamingBlobPayloadOutputTypes } from "@smithy/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import * as stream from "stream";
-import * as util from "util";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
+import { pipeline } from "node:stream/promises";
+import { Readable } from "node:stream";
 
 dayjs.extend(duration);
 
-const pipeline = util.promisify(stream.pipeline);
 const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
 const defaultS3RetriesConfig = {
   maxAttempts: 5,
@@ -169,6 +170,9 @@ export class S3Utils {
     writeStream,
   }: GetFileContentsIntoStreamParams): Promise<void> {
     const readStream = await this.getReadStream({ bucket, key });
+    if (!(readStream instanceof Readable)) {
+      throw new Error(`Invalid read stream for ${key}`);
+    }
     return await pipeline(readStream, writeStream);
   }
 
@@ -180,7 +184,7 @@ export class S3Utils {
     return hydrateErrors(
       async () => {
         const stream = await this.getReadStream({ bucket: s3BucketName, key: s3FileName });
-        return await this.streamToString(stream, encoding);
+        return await stream.transformToString(encoding);
       },
       {
         bucket: s3BucketName,
@@ -194,7 +198,7 @@ export class S3Utils {
     return hydrateErrors(
       async () => {
         const stream = await this.getReadStream({ bucket, key });
-        return await this.streamToBuffer(stream);
+        return Buffer.from(await stream.transformToByteArray());
       },
       {
         bucket,
@@ -204,30 +208,12 @@ export class S3Utils {
     );
   }
 
-  async getReadStream({ bucket, key }: BucketAndKey): Promise<stream.Readable> {
+  async getReadStream({ bucket, key }: BucketAndKey): Promise<StreamingBlobPayloadOutputTypes> {
     const resp = await executeWithRetriesS3(() =>
       this.s3Client.send(new GetObjectCommand({ Bucket: bucket, Key: key }))
     );
     if (!resp.Body) throw new Error(`No body found for ${key}`);
-    return resp.Body as stream.Readable;
-  }
-
-  streamToBuffer(stream: stream.Readable): Promise<Buffer> {
-    const chunks: Buffer[] = [];
-    return new Promise((resolve, reject) => {
-      stream.on("data", chunk => chunks.push(Buffer.from(chunk)));
-      stream.on("error", err => reject(err));
-      // TODO ENG-1064 Try to idenfity the encoding from the Buffer before converting it to string
-      stream.on("end", () => resolve(Buffer.concat(chunks)));
-    });
-  }
-
-  async streamToString(
-    stream: stream.Readable,
-    encoding: BufferEncoding = "utf-8"
-  ): Promise<string> {
-    const buffer = await this.streamToBuffer(stream);
-    return buffer.toString(encoding);
+    return resp.Body;
   }
 
   async getFileInfoFromS3(

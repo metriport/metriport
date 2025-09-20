@@ -7,8 +7,12 @@ import {
   S3Client,
 } from "@aws-sdk/client-s3";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { Writable } from "stream";
 import { S3Utils } from "../s3";
 
+// KEEP THIS DISABLED
+// KEEP THIS DISABLED
+// KEEP THIS DISABLED
 // Integration tests for S3Utils - these tests interact with real AWS S3
 // To run these tests, you need AWS credentials configured, a test bucket, and
 // re-enable tests (remove .skip)
@@ -52,16 +56,7 @@ describe.skip("S3Utils Integration Tests", () => {
     const getCommand = new GetObjectCommand({ Bucket: bucket, Key: key });
     const response = await s3Client.send(getCommand);
     if (!response.Body) throw new Error("No body in response");
-    const chunks: Uint8Array[] = [];
-    const reader = response.Body.transformToWebStream().getReader();
-    let done = false;
-    do {
-      const { done: localDone, value } = await reader.read();
-      done = localDone;
-      if (!done) chunks.push(value);
-    } while (!done);
-    const buffer = Buffer.concat(chunks);
-    return buffer.toString(encoding ?? "utf-8");
+    return await response.Body.transformToString(encoding ?? "utf-8");
   }
 
   async function checkFilesExist(bucket: string, keys: string[]): Promise<boolean[]> {
@@ -164,6 +159,124 @@ describe.skip("S3Utils Integration Tests", () => {
     it("should download file contents as buffer", async () => {
       const buffer = await s3Utils.getFileContentsAsBuffer({ bucket: TEST_BUCKET, key: testKey });
       expect(buffer.toString("utf-8")).toBe(testContent);
+    });
+  });
+
+  describe("getFileContentsIntoStream", () => {
+    it("should stream file contents to a writable stream", async () => {
+      const chunks: Buffer[] = [];
+      const writeStream = new Writable({
+        write(chunk, encoding, callback) {
+          chunks.push(Buffer.from(chunk));
+          callback();
+        },
+      });
+
+      await s3Utils.getFileContentsIntoStream({
+        bucket: TEST_BUCKET,
+        key: testKey,
+        writeStream,
+      });
+
+      const streamedContent = Buffer.concat(chunks).toString("utf-8");
+      expect(streamedContent).toBe(testContent);
+    });
+
+    it("should handle large file streaming", async () => {
+      const largeContent = "A".repeat(10000); // 10KB content
+      const largeTestKey = `${testPrefix}/${timestamp}/large-file.txt`;
+      const largeFileBuffer = Buffer.from(largeContent, "utf-8");
+      await s3Client.send(
+        new PutObjectCommand({
+          Bucket: TEST_BUCKET,
+          Key: largeTestKey,
+          Body: largeFileBuffer,
+          ContentType: "text/plain",
+          Metadata: testMetadata,
+        })
+      );
+
+      const chunks: Buffer[] = [];
+      const writeStream = new Writable({
+        write(chunk, _, callback) {
+          chunks.push(Buffer.from(chunk));
+          callback();
+        },
+      });
+
+      await s3Utils.getFileContentsIntoStream({
+        bucket: TEST_BUCKET,
+        key: largeTestKey,
+        writeStream,
+      });
+
+      const streamedContent = Buffer.concat(chunks).toString("utf-8");
+      expect(streamedContent).toBe(largeContent);
+      expect(streamedContent.length).toBe(10000);
+    });
+
+    it("should handle binary file streaming", async () => {
+      const binaryContent = Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x00, 0xff, 0xfe]); // "Hello" + null + binary
+      const binaryTestKey = `${testPrefix}/${timestamp}/binary-file.bin`;
+      await s3Client.send(
+        new PutObjectCommand({
+          Bucket: TEST_BUCKET,
+          Key: binaryTestKey,
+          Body: binaryContent,
+          ContentType: "application/octet-stream",
+          Metadata: testMetadata,
+        })
+      );
+      const chunks: Buffer[] = [];
+      const writeStream = new Writable({
+        write(chunk, encoding, callback) {
+          chunks.push(Buffer.from(chunk));
+          callback();
+        },
+      });
+
+      await s3Utils.getFileContentsIntoStream({
+        bucket: TEST_BUCKET,
+        key: binaryTestKey,
+        writeStream,
+      });
+
+      const streamedContent = Buffer.concat(chunks);
+      expect(streamedContent).toEqual(binaryContent);
+    });
+
+    it("should throw error for non-existing file", async () => {
+      const chunks: Buffer[] = [];
+      const writeStream = new Writable({
+        write(chunk, encoding, callback) {
+          chunks.push(Buffer.from(chunk));
+          callback();
+        },
+      });
+
+      await expect(
+        s3Utils.getFileContentsIntoStream({
+          bucket: TEST_BUCKET,
+          key: "non-existing-key",
+          writeStream,
+        })
+      ).rejects.toThrow();
+    });
+
+    it("should handle stream errors gracefully", async () => {
+      const errorStream = new Writable({
+        write(chunk, encoding, callback) {
+          callback(new Error("Stream write error"));
+        },
+      });
+
+      await expect(
+        s3Utils.getFileContentsIntoStream({
+          bucket: TEST_BUCKET,
+          key: testKey,
+          writeStream: errorStream,
+        })
+      ).rejects.toThrow("Stream write error");
     });
   });
 
