@@ -1,4 +1,4 @@
-import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
+import { S3Utils } from "../../external/aws/s3";
 import { XDSRegistryError } from "../../external/carequality/error";
 import { Config } from "../../util/config";
 import { capture } from "../../util/notifications";
@@ -29,21 +29,14 @@ async function retrieveXmlContentsFromMetadataFilesOnS3(
 ): Promise<string[]> {
   const prefix = createSharebackFolderName({ cxId, patientId });
 
-  const data = await executeWithRetriesS3(() => s3Utils.listObjects(bucketName, prefix));
+  const data = await s3Utils.listObjects(bucketName, prefix);
   const documentContents = (
     await Promise.all(
       data
         .filter(item => item.Key && item.Key.endsWith(METADATA_SUFFIX))
         .map(async item => {
-          if (item.Key) {
-            const params = {
-              Bucket: bucketName,
-              Key: item.Key,
-            };
-
-            const data = await executeWithRetriesS3(() => s3Utils._s3.getObject(params).promise());
-            return data.Body?.toString();
-          }
+          const key = item.Key;
+          if (key) return await s3Utils.getFileContentsAsString(bucketName, key);
           return undefined;
         }) || []
     )
