@@ -15,7 +15,7 @@ import { stringify } from "csv-stringify/sync";
 import _ from "lodash";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
-import { out } from "../../util";
+import { capture, out } from "../../util";
 import { stripInvalidCharactersFromPatientData } from "../../domain/character-sanitizer";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
@@ -52,7 +52,7 @@ export class Hl7v2RosterGenerator {
     this.s3Utils = new S3Utils(region);
   }
 
-  async execute(config: HieConfig | VpnlessHieConfig): Promise<string> {
+  async execute(config: HieConfig | VpnlessHieConfig): Promise<void> {
     const { log } = out("Hl7v2RosterGenerator");
     const { states } = config;
     const hieName = config.name;
@@ -73,9 +73,11 @@ export class Hl7v2RosterGenerator {
     const patients = rawPatients.map(stripInvalidCharactersFromPatientData);
 
     if (patients.length === 0) {
-      throw new MetriportError("No patients found, skipping roster generation", {
+      capture.message(`No patients found for ${hieName}, skipping roster generation`, {
         extra: loggingDetails,
+        level: "warning",
       });
+      return;
     }
 
     const cxIds = new Set(patients.map(p => p.cxId));
@@ -140,8 +142,6 @@ export class Hl7v2RosterGenerator {
       log,
     };
     await trackRosterSizePerCustomer(trackRosterSizePerCustomerParams);
-
-    return rosterCsv;
   }
 
   private async getAllSubscribedPatients(hieName: string): Promise<Patient[]> {
