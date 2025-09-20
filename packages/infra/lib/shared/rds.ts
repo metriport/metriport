@@ -3,7 +3,7 @@ import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as rds from "aws-cdk-lib/aws-rds";
 import { Construct } from "constructs";
-import { EnvConfig } from "../../config/env-config";
+import { RDSConfig } from "../../config/aws/rds";
 import { mbToBytes } from "../shared/util";
 
 const DEFAULT_MIN_LOCAL_STORAGE_MB_ALARM = 10_000;
@@ -23,7 +23,7 @@ export function addDBClusterPerformanceAlarms(
   scope: Construct,
   dbCluster: rds.DatabaseCluster,
   dbClusterName: string,
-  dbConfig: EnvConfig["apiDatabase"],
+  dbConfig: RDSConfig,
   alarmAction?: SnsAction
 ) {
   if (!dbConfig.alarmThresholds) return;
