@@ -5,7 +5,7 @@ import { Hl7AlohrSftpIngestion, Hl7AlohrSftpIngestionParams } from "./hl7-alohr-
 export class Hl7AlohrSftpIngestionCloud implements Hl7AlohrSftpIngestion {
   constructor(
     private readonly lambdaClient = makeLambdaClient(Config.getAWSRegion()),
-    private readonly lambdaName: string = Config.getLahieIngestionLambdaName()
+    private readonly lambdaName: string = Config.getAlohrIngestionLambdaName()
   ) {}
 
   async execute(params: Hl7AlohrSftpIngestionParams): Promise<void> {

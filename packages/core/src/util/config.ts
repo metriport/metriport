@@ -491,4 +491,8 @@ export class Config {
       username: record.username,
     };
   }
+
+  static getAlohrIngestionLambdaName(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_LAMBDA_NAME");
+  }
 }
