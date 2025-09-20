@@ -1,4 +1,5 @@
-import { Patient } from "../../domain/patient";
+import { Address } from "./address";
+import { Patient } from "./patient";
 
 /**
  * Regex to match invalid UTF-8 characters that should be stripped from patient data.
@@ -30,7 +31,7 @@ export function stripInvalidCharactersFromPatientData(patient: Patient): Patient
     ...patient,
     data: {
       ...patient.data,
-      address: patient.data.address.map(address => ({
+      address: patient.data.address.map((address: Address) => ({
         ...address,
         addressLine1: stripBadCharactersFromString(address.addressLine1),
         addressLine2: stripBadCharactersFromString(address.addressLine2),
