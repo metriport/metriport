@@ -394,8 +394,8 @@ export class Config {
     return getEnvVarOrFail("FHIR_CONVERTER_BUCKET_NAME");
   }
 
-  static getAnalyticsBucketName(): string {
-    return getEnvVarOrFail("ANALYTICS_S3_BUCKET");
+  static getAnalyticsBucketName(): string | undefined {
+    return getEnvVar("ANALYTICS_BUCKET_NAME");
   }
   /** For development only - cloud should call a lambda that has it setup differently */
   static getAnalyticsDbCreds(): string {
