@@ -20,7 +20,7 @@ const lambdaName = getEnvVarOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvVarOrFail("AWS_REGION");
 // Set by us
 const featureFlagsTableName = getEnvVarOrFail("FEATURE_FLAGS_TABLE_NAME");
-const analyticsBucketName = getEnvVarOrFail("ANALYTICS_S3_BUCKET");
+const analyticsBucketName = getEnvVarOrFail("ANALYTICS_BUCKET_NAME");
 const dbCredsRaw = getEnvVarOrFail("DB_CREDS");
 const dbCreds = dbCredsForLambdaSchema.parse(JSON.parse(dbCredsRaw));
 
