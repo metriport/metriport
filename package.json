@@ -24,6 +24,7 @@
     "lint-fix": "npm run lint-fix --workspaces --if-present",
     "lint-staged": "npx lint-staged",
     "prettier-fix": "npm run prettier-fix --workspaces --if-present",
+    "prettier-fix-modified": "(git diff --name-only --cached && git diff --name-only && git ls-files --others --exclude-standard) | sort -u | grep -E '\\.(js|jsx|ts|tsx|css|scss|json|md)$' | xargs npx prettier --write",
     "test": "./packages/scripts/run-tests.sh",
     "test:e2e": "npm run test:e2e --workspaces --if-present",
     "lambdas:no-run": "cd packages/lambdas && npm $SCRIPT && cd ../..",

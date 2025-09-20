@@ -1,12 +1,12 @@
 import { PatientUpdater } from "@metriport/core/command/patient-updater";
 import { Patient } from "@metriport/core/domain/patient";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { getPatients } from "../../command/medical/patient/get-patient";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
+import { getPatients } from "../../command/medical/patient/get-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
-import { discover } from "./patient";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
+import { discover } from "./patient";
 
 const maxNumberOfParallelRequestsToCQ = 10;
 
@@ -26,7 +26,7 @@ export class PatientUpdaterCarequality extends PatientUpdater {
     });
 
     // Promise that will be executed for each patient
-    const updatePatient = async (patient: Patient) => {
+    async function updatePatient(patient: Patient) {
       try {
         const facilityId = getFacilityIdOrFail(patient);
         await getFacilityOrFail({ cxId, id: facilityId });
@@ -39,7 +39,7 @@ export class PatientUpdaterCarequality extends PatientUpdater {
         console.log(`${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}`);
         capture.message(msg, { extra: { cxId, patientId: patient.id }, level: "error" });
       }
-    };
+    }
     // Execute the promises in parallel
     await executeAsynchronously(patients, async patient => updatePatient(patient), {
       numberOfParallelExecutions: maxNumberOfParallelRequestsToCQ,

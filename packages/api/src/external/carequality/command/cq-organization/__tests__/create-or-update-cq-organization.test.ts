@@ -89,7 +89,7 @@ describe("createOrUpdateCqOrganization", () => {
       ? `${address.addressLine1}, ${address.addressLine2}`
       : address.addressLine1;
 
-    const epectedOrgDetails = {
+    const expectedOrgDetails = {
       name: orgName,
       addressLine1: addressLine,
       lat: mockedAddress.coordinates.lat.toString(),
@@ -105,7 +105,7 @@ describe("createOrUpdateCqOrganization", () => {
       parentOrgOid,
       role: "Connection" as const,
     };
-    const expectedCqOrg = getOrganizationFhirTemplate(epectedOrgDetails);
+    const expectedCqOrg = await getOrganizationFhirTemplate(expectedOrgDetails);
 
     const apiImpl = makeApiImpl({
       single: makeOrganization({
@@ -158,7 +158,7 @@ describe("createOrUpdateCqOrganization", () => {
       ? `${address.addressLine1}, ${address.addressLine2}`
       : address.addressLine1;
 
-    const epectedOrgDetails = {
+    const expectedOrgDetails = {
       name: orgName,
       addressLine1: addressLine,
       lat: mockedAddress.coordinates.lat.toString(),
@@ -176,7 +176,7 @@ describe("createOrUpdateCqOrganization", () => {
       oboName,
       role: "Connection" as const,
     };
-    const expectedCqOrg = getOrganizationFhirTemplate(epectedOrgDetails);
+    const expectedCqOrg = await getOrganizationFhirTemplate(expectedOrgDetails);
 
     const apiImpl = makeApiImpl({
       single: makeOrganization({

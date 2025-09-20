@@ -1,16 +1,17 @@
-import dayjs from "dayjs";
 import { SamlAttributes } from "@metriport/ihe-gateway-sdk";
-import { toArray } from "@metriport/shared";
+import { BadRequestError, toArray } from "@metriport/shared";
+import dayjs from "dayjs";
+import { stripUrnPrefix } from "../../../../util/urn";
+import { expiresIn, namespaces } from "../constants";
 import {
-  SamlHeader,
-  Code,
-  treatmentPurposeOfUse,
-  TextOrTextObject,
   AttributeValue,
+  Code,
+  SamlHeader,
+  TextOrTextObject,
+  treatmentPurposeOfUse,
 } from "../schema";
 import { extractText } from "../utils";
-import { namespaces, expiresIn } from "../constants";
-import { stripUrnPrefix } from "../../../../util/urn";
+import { getCachedPrincipalAndDelegatesMap } from "./principal-and-delegates-cache";
 
 export const successStatus = "urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success";
 export const failureStatus = "urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Failure";
@@ -63,6 +64,18 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
     return undefined;
   };
 
+  const getPrincipalOidAttributevalue = (name: string): string | undefined => {
+    const attribute = attributes.find(attr => attr._Name === name);
+    if (!attribute) return undefined;
+    if (typeof attribute.AttributeValue === "string") {
+      return removeOrganizationPrefix(attribute.AttributeValue);
+    }
+    if (istextSchema(attribute.AttributeValue)) {
+      return removeOrganizationPrefix(extractText(attribute.AttributeValue));
+    }
+    return undefined;
+  };
+
   const subjectId = getAttributeValue("urn:oasis:names:tc:xspa:1.0:subject:subject-id");
   const defaultSubjectId = "unknown";
 
@@ -91,6 +104,8 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
     "urn:oasis:names:tc:xspa:1.0:subject:purposeofuse"
   );
 
+  const principalOid = getPrincipalOidAttributevalue("QueryAuthGrantor");
+
   return {
     subjectId: subjectId ?? defaultSubjectId,
     organization: organization,
@@ -98,6 +113,7 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
     homeCommunityId: stripUrnPrefix(homeCommunityId),
     subjectRole: subjectRole ?? defaultSubjectRole,
     purposeOfUse: purposeOfUse ?? treatmentPurposeOfUse,
+    principalOid,
   };
 }
 
@@ -128,4 +144,29 @@ export function createSecurityHeader({
     },
   };
   return securityHeader;
+}
+
+function removeOrganizationPrefix(referenceValue: string): string {
+  return referenceValue.replace("Organization/", "");
+}
+
+export async function validateDelegatedRequest(principal: string, delegate: string) {
+  const principalAndDelegatesMap = await getCachedPrincipalAndDelegatesMap();
+  const delegates = principalAndDelegatesMap.get(principal);
+  if (!delegates) {
+    throw new BadRequestError(
+      "Principal organization not found or has no listed delegates",
+      undefined,
+      {
+        principalOid: principal,
+        delegateOid: delegate,
+      }
+    );
+  }
+  if (!delegates.includes(delegate)) {
+    throw new BadRequestError("Delegate organization is not authorized by the grantor", undefined, {
+      principalOid: principal,
+      delegateOid: delegate,
+    });
+  }
 }
