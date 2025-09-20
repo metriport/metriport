@@ -1,5 +1,4 @@
 import { Organization as CWSdkOrganization } from "@metriport/commonwell-sdk-v1";
-import { isEnhancedCoverageEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
 import { Organization } from "@metriport/core/domain/organization";
 import { getOrgsByPrio } from "@metriport/core/external/commonwell-v1/cq-bridge/get-orgs";
@@ -137,11 +136,6 @@ export async function create(cxId: string, org: CWOrganization, isObo = false): 
       org.oid
     );
     debug(`resp addCertificateToOrg: `, () => JSON.stringify(respAddCert));
-
-    if (await isEnhancedCoverageEnabledForCx(cxId)) {
-      // update the CQ bridge include list
-      await initCQOrgIncludeList(org.oid);
-    }
   } catch (error) {
     const msg = `Failure while creating org @ CW`;
     const cwRef = commonWell.lastReferenceHeader;

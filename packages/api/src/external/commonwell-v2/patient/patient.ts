@@ -104,8 +104,6 @@ export async function registerAndLinkPatientInCwV2({
     });
     commonWell = commonWellAPI;
 
-    await updateCommonwellIdsAndStatus({ patient, cqLinkStatus: undefined });
-
     debug(`Registering this Patient: `, () => JSON.stringify(commonwellPatient, null, 2));
 
     const { commonwellPatientId } = await registerPatient({
