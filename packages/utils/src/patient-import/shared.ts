@@ -52,14 +52,13 @@ export async function buildExternalIdToPatientMap(
 
 export async function buildExternalIdToPatientMapForFacility(
   cxId: string,
-  facilityId: string,
-  parallelExecutions = 25
+  facilityId: string
 ): Promise<Record<string, Patient>> {
   const dataMapper = new DataMapper();
   const patientIds = await dataMapper.getPatientIdsForFacility({ cxId, facilityId });
 
   // Retrieve each patient to construct a mapping of external IDs
-  const patients = await dataMapper.getEachPatientById(cxId, patientIds, parallelExecutions);
+  const patients = await dataMapper.getEachPatientById(cxId, patientIds);
   return Object.fromEntries(
     patients
       .filter(patient => patient.externalId != null)
