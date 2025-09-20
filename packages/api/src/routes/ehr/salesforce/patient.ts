@@ -45,7 +45,7 @@ router.get(
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of Salesforce Patient.
  * @param req.query.practiceId The ID of Salesforce Practice.
- * @param req.query.sfInstanceUrl The Salesforce instance URL.
+ * @param req.query.instanceUrl The Salesforce instance URL.
  * @param req.query.tokenId The ID of Salesforce Token.
  * @returns Metriport Patient if found.
  */
@@ -57,7 +57,7 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const salesforcePatientId = getFrom("params").orFail("id", req);
     const salesforcePracticeId = getFromQueryOrFail("practiceId", req);
-    const salesforceInstanceUrl = getFromQueryOrFail("sfInstanceUrl", req);
+    const salesforceInstanceUrl = getFromQueryOrFail("instanceUrl", req);
     const salesforceTokenId = getFromQueryOrFail("tokenId", req);
     const patientId = await syncSalesforcePatientIntoMetriport({
       cxId,
