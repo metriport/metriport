@@ -30,6 +30,8 @@ export function stripInvalidCharactersFromPatientData(patient: Patient): Patient
     ...patient,
     data: {
       ...patient.data,
+      firstName: stripBadCharactersFromString(patient.data.firstName),
+      lastName: stripBadCharactersFromString(patient.data.lastName),
       address: patient.data.address.map((address: Address) => ({
         ...address,
         addressLine1: stripBadCharactersFromString(address.addressLine1),

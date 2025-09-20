@@ -70,7 +70,6 @@ export class Hl7v2RosterGenerator {
     );
     log(`Found ${rawPatients.length} total patients`);
 
-    // Clean patient data and capture warnings for any patients with invalid characters
     const patients = rawPatients.map(stripInvalidCharactersFromPatientData);
 
     if (patients.length === 0) {
