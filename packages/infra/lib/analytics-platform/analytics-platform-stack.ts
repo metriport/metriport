@@ -130,11 +130,11 @@ interface AnalyticsPlatformsNestedStackProps extends NestedStackProps {
 }
 
 export class AnalyticsPlatformsNestedStack extends NestedStack {
-  readonly fhirToCsvBulkLambda: lambda.DockerImageFunction;
+  readonly fhirToCsvBulkLambda: lambda.Function;
   readonly fhirToCsvBulkQueue: Queue;
-  readonly fhirToCsvIncrementalLambda: lambda.DockerImageFunction;
+  readonly fhirToCsvIncrementalLambda: lambda.Function;
   readonly fhirToCsvIncrementalQueue: Queue;
-  readonly mergeCsvsLambda: lambda.DockerImageFunction;
+  readonly mergeCsvsLambda: lambda.Function;
   readonly mergeCsvsQueue: Queue;
   readonly analyticsPlatformBucket: s3.Bucket;
 
@@ -402,11 +402,11 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-    fhirToCsvTransformLambda: lambda.Function;
+    fhirToCsvTransformLambda: lambda.DockerImageFunction;
     featureFlagsTable: dynamodb.Table;
     medicalDocumentsBucket: s3.Bucket;
   }): {
-    lambda: lambda.DockerImageFunction;
+    lambda: lambda.Function;
     queue: Queue;
   } {
     const {
@@ -475,12 +475,12 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     analyticsPlatformBucket: s3.Bucket;
-    fhirToCsvTransformLambda: lambda.Function;
+    fhirToCsvTransformLambda: lambda.DockerImageFunction;
     featureFlagsTable: dynamodb.Table;
     medicalDocumentsBucket: s3.Bucket;
     dbCluster: rds.DatabaseCluster;
   }): {
-    lambda: lambda.DockerImageFunction;
+    lambda: lambda.Function;
     queue: Queue;
   } {
     const {
@@ -573,7 +573,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     alarmAction: SnsAction | undefined;
     bucket: s3.Bucket;
   }): {
-    mergeCsvsLambda: lambda.DockerImageFunction;
+    mergeCsvsLambda: lambda.Function;
     queue: Queue;
   } {
     const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
