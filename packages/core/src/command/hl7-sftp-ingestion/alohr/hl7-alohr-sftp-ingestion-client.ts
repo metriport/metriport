@@ -98,10 +98,9 @@ export class AlohrSftpIngestionClient extends SftpClient {
       const exists = await this.exists(`${remotePath}/`);
       if (!exists) {
         throw new MetriportError(`Remote path does not exist`, undefined, {
-          remotePath: remotePath,
+          remotePath,
         });
       }
-      ``;
       this.log("Syncing from remote path to Replica");
       const fileNames = await this.syncWithDate(remotePath, now);
       return fileNames;
