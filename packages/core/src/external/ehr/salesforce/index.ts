@@ -14,7 +14,6 @@ interface SalesforceApiConfig
   environment: SalesforceEnv;
   authToken: string;
   instanceUrl: string;
-  practiceId: string;
 }
 
 const salesforceEnv = ["production", "staging"] as const;

@@ -4,7 +4,7 @@ import medicalDocument from "../../../medical/document";
 import medicalPatient from "../../../medical/patient";
 import { patientAuthorization } from "../../../middlewares/patient-authorization";
 import settings from "../../../settings";
-import { processEhrPatientId } from "../../shared";
+import { documentDownloadUrlRegex, processEhrPatientId } from "../../shared";
 import {
   processDocumentRoute,
   processPatientRoute,
@@ -13,6 +13,8 @@ import {
 import patient from "../patient";
 
 const routes = Router();
+
+const documentSkipPathsForSalesforceIdCheck = [documentDownloadUrlRegex];
 
 routes.use("/patient", patient);
 routes.use(
@@ -23,7 +25,12 @@ routes.use(
   patientAuthorization("query"),
   medicalPatient
 );
-routes.use("/medical/v1/document", processDocumentRoute, medicalDocument);
+routes.use(
+  "/medical/v1/document",
+  processDocumentRoute,
+  processEhrPatientId(tokenEhrPatientIdQueryParam, "query", documentSkipPathsForSalesforceIdCheck),
+  medicalDocument
+);
 routes.use("/settings", settings);
 
 export default routes;

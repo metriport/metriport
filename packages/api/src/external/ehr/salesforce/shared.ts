@@ -5,6 +5,7 @@ import { getSalesforceEnv } from "@metriport/core/external/ehr/salesforce/enviro
 import SalesforceApi from "@metriport/core/external/ehr/salesforce/index";
 import {
   BadRequestError,
+  normalizeCountrySafe,
   normalizedCountryUsa,
   normalizeEmailNewSafe,
   normalizePhoneNumberSafe,
@@ -17,7 +18,6 @@ import { Patient as SalesforcePatient } from "@metriport/shared/interface/extern
 type SalesforcePerPracticeParams = EhrPerPracticeParams & {
   authToken: string;
   instanceUrl: string;
-  practiceId: string;
 };
 
 export async function createSalesforceClient(
@@ -38,7 +38,8 @@ export function createAddresses(patient: SalesforcePatient): Address[] {
   const addressLine2 = undefined; // for now parsing only 1 line of address
   const city = patient.MailingCity?.trim();
   if (!city) return [];
-  const country = patient.MailingCountry?.trim() ?? normalizedCountryUsa;
+  const country =
+    normalizeCountrySafe(patient.MailingCountry?.trim() ?? "") ?? normalizedCountryUsa;
   const state = normalizeUSStateForAddressSafe(patient.MailingState ?? "");
   if (!state) return [];
   const zip = normalizeZipCodeNewSafe(patient.MailingPostalCode ?? "");
