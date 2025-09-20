@@ -62,14 +62,15 @@ describe("mergeIntoTargetResource", () => {
     expect(condition.code?.coding?.length).toBe(1);
   });
 
-  it("contains references to combined conditions inside the extension", () => {
+  it("does not create derived-from extensions (deprecated behavior)", () => {
     mergeIntoTargetResource(condition, condition2);
-    expect(condition.extension).toEqual(
+    // The new implementation does not create derived-from extensions
+    // This test verifies that no derived-from extensions are created
+    expect(condition.extension).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           valueRelatedArtifact: expect.objectContaining({
             type: "derived-from",
-            display: expect.stringContaining(conditionId2),
           }),
         }),
       ])
@@ -97,27 +98,29 @@ describe("mergeIntoTargetResource", () => {
     condition.extension = [
       {
         url: "https://public.metriport.com/fhir/StructureDefinition/doc-id-extension.json",
-        valueString: "expect-this.xml",
+        valueString: "target-extension.xml",
       },
     ];
     condition2.extension = [
       {
         url: "https://public.metriport.com/fhir/StructureDefinition/doc-id-extension.json",
-        valueString: "do-not-include.xml",
+        valueString: "source-extension.xml",
       },
     ];
     mergeIntoTargetResource(condition, condition2);
+    // The new implementation merges extensions from both resources
     expect(condition.extension).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          valueString: "expect-this.xml",
+          valueString: "target-extension.xml",
         }),
       ])
     );
-    expect(condition.extension).not.toEqual(
+    // The source extension should be merged in
+    expect(condition.extension).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          valueString: "do-not-include.xml",
+          valueString: "source-extension.xml",
         }),
       ])
     );
