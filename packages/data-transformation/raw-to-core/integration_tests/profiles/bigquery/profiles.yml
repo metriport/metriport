@@ -1,0 +1,13 @@
+default:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      keyfile: ./creds.json
+      project: "{{ env_var('TUVA_BIGQUERY_PROJECT') }}"
+      dataset: RAW_DATA
+      threads: 4
+      timeout_seconds: 300
+      location: US
+      priority: interactive

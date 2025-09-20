@@ -4,6 +4,10 @@ import { normalizeGenderSafe } from "@metriport/shared/domain/gender";
 import { normalizeSsnSafe } from "@metriport/shared/domain/patient/ssn";
 import { buildDayjs, isValidISODate } from "@metriport/shared/common/date";
 import { z } from "zod";
+import { log } from "./hl7-sftp-ingestion";
+import { isAdtPatientClass } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/adt/mappings";
+
+const UNKNOWN = "U";
 
 const genderSchema = z.string().transform(normalizeGenderSafe).optional();
 const ssnSchema = z
@@ -13,37 +17,46 @@ const ssnSchema = z
 const phoneSchema = z.string().transform(normalizePhoneNumberSafe).optional();
 const zipSchema = z.string().transform(normalizeZipCodeNewSafe).optional();
 
-const PatClassEnum = z
-  .string()
-  .optional()
-  .transform(val => {
-    if (!val) return undefined;
-    //Test data has some common patient class names that we need to map to HL7 codes
+const PatClassEnum = z.preprocess(
+  val => {
+    if (!val || typeof val !== "string") return val;
     const mapping: Record<string, string> = {
-      OBSERVATION: "O",
+      OBSTETRICS: "B",
+      "COMMERCIAL ACCOUNT": "C",
       EMERGENCY: "E",
       INPATIENT: "I",
+      "NOT APPLICABLE": "N",
       OUTPATIENT: "O",
-      AMBULATORY: "A",
-      BIRTH: "B",
-      CLINIC: "C",
-      NEWBORN: "N",
-      "PRE-ADMISSION": "P",
-      RECURRING: "R",
+      PREADMIT: "P",
+      "RECURRING PATIENT": "R",
       UNKNOWN: "U",
     };
-    return mapping[val.toUpperCase()] ?? val;
-  })
-  .refine(val => !val || ["B", "C", "E", "I", "N", "O", "P", "R", "U"].includes(val), {
-    message: "Patient class must be a valid HL7 code (B, C, E, I, N, O, P, R, U)",
-  });
+    const upperVal = val.toUpperCase();
+    return mapping[upperVal] ?? upperVal;
+  },
+  z
+    .string()
+    .refine(isAdtPatientClass, {
+      message: "Invalid patient class code",
+    })
+    .catch(ctx => {
+      const input = ctx.input ?? "undefined";
+      log(`WARNING: Patient Class: Invalid value "${input}" mapped to "U"`);
+      return UNKNOWN;
+    })
+);
 
-const MaritalStatusEnum = z
-  .string()
-  .optional()
-  .refine(val => !val || ["S", "M", "D", "W"].includes(val), {
-    message: "Marital status must be S, M, D, or W",
-  });
+const MaritalStatusEnum = z.preprocess(
+  val => (typeof val === "string" ? val.toUpperCase() : val),
+  z
+    .enum(["A", "B", "C", "D", "E", "G", "I", "M", "N", "O", "P", "R", "S", "T", "U", "W"])
+    .optional()
+    .catch(ctx => {
+      const input = ctx.input ?? "undefined";
+      log(`WARNING: Marital Status: Invalid value "${input}" mapped to "U"`);
+      return UNKNOWN;
+    })
+);
 
 const dateSchema = z.string().min(1, "Date is required").refine(isValidISODate, {
   message: "Date must be a valid ISO 8601 date (YYYY-MM-DD format)",
@@ -57,7 +70,7 @@ export const rowSchema = z.object({
   LastName: z.string().min(1, "Last name is required"),
   FirstName: z.string().min(1, "First name is required"),
   StreetAddress: z.string().optional(),
-  City: z.string().min(1, "City is required"),
+  City: z.string().optional(),
   State: z
     .string()
     .min(2, "State must be at least 2 characters")

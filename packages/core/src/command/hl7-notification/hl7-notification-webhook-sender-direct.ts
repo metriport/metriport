@@ -1,6 +1,6 @@
 import { Hl7Message } from "@medplum/core";
 import { Bundle, CodeableConcept, Resource } from "@medplum/fhirtypes";
-import { executeWithNetworkRetries } from "@metriport/shared";
+import { executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
 import { CreateDischargeRequeryParams } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import { TcmEncounterUpsertInput } from "@metriport/shared/domain/tcm-encounter";
@@ -13,9 +13,9 @@ import {
   saveAdtConversionBundle,
 } from "../../external/fhir/adt-encounters";
 import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion";
+import { getHieConfigDictionary } from "../../external/hl7-notification/hie-config-dictionary";
 import { capture, out } from "../../util";
 import { Config } from "../../util/config";
-import { getHieConfigDictionary } from "../../external/hl7-notification/hie-config-dictionary";
 import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
 import { getEncounterClass } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/adt/encounter";
 import {
@@ -41,18 +41,28 @@ import {
   persistHl7MessageError,
   SupportedTriggerEvent,
 } from "./utils";
+import { getBambooTimezone } from "./timezone";
 
 type HieConfig = { timezone: string };
 
-function getTimezoneFromHieName(hieName: string): string {
-  const hieConfigDictionary = getHieConfigDictionary() as Record<string, HieConfig>;
-  const hieConfig = hieConfigDictionary[hieName];
+function getTimezoneFromHieName(
+  hieName: string,
+  hl7Message: Hl7Message,
+  log: typeof console.log
+): string {
+  if (hieName === "Bamboo") {
+    log("HIE is Bamboo, getting timezone based off state in the facility");
+    return getBambooTimezone(hl7Message);
+  } else {
+    const hieConfigDictionary = getHieConfigDictionary() as Record<string, HieConfig>;
+    const hieConfig = hieConfigDictionary[hieName];
 
-  if (!hieConfig?.timezone) {
-    throw new Error(`HIE timezone not found for HIE: ${hieName}`);
+    if (!hieConfig?.timezone) {
+      throw new MetriportError(`HIE timezone not found for HIE: ${hieName}`);
+    }
+
+    return hieConfig.timezone;
   }
-
-  return hieConfig.timezone;
 }
 
 export const dischargeEventCode = "A03";
@@ -93,7 +103,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     const hl7Message = Hl7Message.parse(params.message);
     let parsedData: ParsedHl7Data;
-    const timezone = getTimezoneFromHieName(params.hieName);
+    const timezone = getTimezoneFromHieName(params.hieName, hl7Message, log);
     try {
       parsedData = await parseHl7Message(hl7Message, timezone);
     } catch (parseError: unknown) {
