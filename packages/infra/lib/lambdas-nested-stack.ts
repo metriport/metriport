@@ -1063,21 +1063,18 @@ export class LambdasNestedStack extends NestedStack {
   }): Lambda {
     const envType = ownProps.config.environmentType;
     const alohrProps = ownProps.config.hl7Notification?.AlohrSftpIngestionLambda;
+    const sftpPasswordSecret = ownProps.secrets["ALOHR_INGESTION_PASSWORD"];
+    const queue = ownProps.config.hl7Notification?.notificationWebhookSenderQueue;
+
     if (!alohrProps) {
       throw new Error("AlohrSftpIngestionLambda is undefined in config.");
     }
-
-    const sftpPasswordSecret = ownProps.secrets["ALOHR_INGESTION_PASSWORD"];
-
     if (!ownProps.config.hl7Notification) {
       throw new Error("HL7Notification is undefined in config.");
     }
-    const queue = ownProps.config.hl7Notification.notificationWebhookSenderQueue;
-
     if (!queue) {
       throw new Error("HL7NotificationWebhookSenderQueue is undefined in config.");
     }
-
     if (!sftpPasswordSecret) {
       throw new Error("ALOHR_INGESTION_PASSWORD is not defined in config.");
     }
