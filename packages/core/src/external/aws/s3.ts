@@ -183,7 +183,10 @@ export class S3Utils {
   ): Promise<string> {
     return hydrateErrors(
       async () => {
-        const stream = await this.getReadStream({ bucket: s3BucketName, key: s3FileName });
+        const stream = await this.getReadStreamAsStreamingBlob({
+          bucket: s3BucketName,
+          key: s3FileName,
+        });
         return await stream.transformToString(encoding);
       },
       {
@@ -197,7 +200,7 @@ export class S3Utils {
   async getFileContentsAsBuffer({ bucket, key }: BucketAndKey): Promise<Buffer> {
     return hydrateErrors(
       async () => {
-        const stream = await this.getReadStream({ bucket, key });
+        const stream = await this.getReadStreamAsStreamingBlob({ bucket, key });
         return Buffer.from(await stream.transformToByteArray());
       },
       {
@@ -208,12 +211,21 @@ export class S3Utils {
     );
   }
 
-  async getReadStream({ bucket, key }: BucketAndKey): Promise<StreamingBlobPayloadOutputTypes> {
+  async getReadStreamAsStreamingBlob({
+    bucket,
+    key,
+  }: BucketAndKey): Promise<StreamingBlobPayloadOutputTypes> {
     const resp = await executeWithRetriesS3(() =>
       this.s3Client.send(new GetObjectCommand({ Bucket: bucket, Key: key }))
     );
     if (!resp.Body) throw new Error(`No body found for ${key}`);
     return resp.Body;
+  }
+
+  async getReadStream({ bucket, key }: BucketAndKey): Promise<stream.Readable> {
+    const resp = await this.getReadStreamAsStreamingBlob({ bucket, key });
+    if (!(resp instanceof Readable)) throw new Error(`Invalid read stream for ${key}`);
+    return resp;
   }
 
   async getFileInfoFromS3(
