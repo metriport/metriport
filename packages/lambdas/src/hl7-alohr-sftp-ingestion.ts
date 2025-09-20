@@ -7,7 +7,7 @@ import {
   log,
 } from "@metriport/core/command/hl7-sftp-ingestion/alohr/hl7-alohr-sftp-ingestion";
 import { AlohrSftpIngestionClient } from "@metriport/core/command/hl7-sftp-ingestion/alohr/hl7-alohr-sftp-ingestion-client";
-import { Hl7AlohrSftpIngestionDirect } from "@metriport/core/command/hl7-sftp-ingestion/alohr/hl7-alhor-sftp-ingestion-direct";
+import { Hl7AlohrSftpIngestionDirect } from "@metriport/core/command/hl7-sftp-ingestion/alohr/hl7-alohr-sftp-ingestion-direct";
 
 capture.init();
 

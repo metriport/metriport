@@ -1,5 +1,5 @@
 import { Config } from "../../../util/config";
-import { Hl7AlohrSftpIngestionDirect } from "./hl7-alhor-sftp-ingestion-direct";
+import { Hl7AlohrSftpIngestionDirect } from "./hl7-alohr-sftp-ingestion-direct";
 import { Hl7AlohrSftpIngestion, log } from "./hl7-alohr-sftp-ingestion";
 import { AlohrSftpIngestionClient } from "./hl7-alohr-sftp-ingestion-client";
 import { Hl7AlohrSftpIngestionCloud } from "./hl7-alohr-sftp-ingestion-cloud";
