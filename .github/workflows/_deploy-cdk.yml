@@ -122,6 +122,9 @@ jobs:
         working-directory: metriport
         shell: bash
 
+      - name: If branch to staging, rebase against develop
+        uses: ./.github/actions/rebase-develop
+
       # INSTALL DEPENDENCIES
       - name: Install root dependencies
         run: npm run install-deps
