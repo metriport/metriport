@@ -5,7 +5,6 @@ dotenv.config();
 import fs from "fs";
 import path from "path";
 import { Command } from "commander";
-import { SurescriptsDataMapper as DataMapper } from "@metriport/core/external/surescripts/data-mapper";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
 import { MetriportMedicalApi } from "@metriport/api-sdk";
@@ -16,6 +15,7 @@ import {
   appendToOutputCsv,
   getCsvRunsPath,
 } from "../shared/csv";
+import { buildExternalIdToPatientMap } from "./shared";
 
 /**
  * This script reads a CSV roster and ensures that each patient is associated with the correct facility,
@@ -31,8 +31,8 @@ import {
  * Notes:
  * - csvDir is a relative path within the "runs" directory.
  * - The roster CSV header definition below must match the headers of the roster CSV.
- * - The --use-cache flag is optional and will use a cache of existing Metriport IDs to speed up the process.
  * - The --dry-run flag is optional and will just validate the CSV without actually requesting any facility changes.
+ * - The facility CSV headers are "facility_name" and "facility_id", where the facility name is matched against a column in the roster CSV.
  */
 const program = new Command();
 program
@@ -40,9 +40,8 @@ program
   .description("Validate the facility mapping")
   .requiredOption("--cx-id <cxId>", "CX ID")
   .requiredOption("--csv-dir <csvDir>", "Relative name of runs directory containing the CSV files")
-  .option("--use-cache", "Use the cache of existing Metriport IDs")
   .option("--dry-run", "Just validate the CSV without actually requesting any facility changes")
-  .action(validateFacility)
+  .action(main)
   .showHelpAfterError();
 
 const apiUrl = getEnvVarOrFail("API_URL");
@@ -52,6 +51,39 @@ const { api: metriportAPI } = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
 });
 
+/**
+ * Specific headers for the roster CSV that can be adapted to other CSV header formats,
+ * as long as the corresponding function below to retrieve the headers is also updated.
+ */
+const CSV_ROSTER_HEADERS = [
+  "PRACTICE_ID",
+  "PATIENT_ID",
+  "PATIENT_FIRST_NAME",
+  "PATIENT_LAST_NAME",
+  "PATIENT_DOB",
+  "PATIENT_SEX",
+  "PATIENT_ZIP",
+  "PATIENT_CITY",
+  "PATIENT_STATE",
+  "PATIENT_ADDRESS_1",
+  "PATIENT_ADDRESS_2",
+  "PATIENT_HOME_PHONE",
+  "PATIENT_WORK_PHONE",
+  "PATIENT_MOBILE_PHONE",
+  "PATIENT_EMAIL",
+] as const;
+type CsvRosterHeader = (typeof CSV_ROSTER_HEADERS)[number];
+type CsvRosterRow = Record<CsvRosterHeader, string>;
+
+// Retrieve the external ID and facility name from the roster CSV row.
+// Can be adapted to other CSV header formats.
+function getExternalIdAndFacilityName(row: CsvRosterRow): {
+  externalId: string;
+  facilityName: string;
+} {
+  return { externalId: row.PATIENT_ID, facilityName: row.PRACTICE_ID };
+}
+
 interface FacilityChange {
   externalId: string;
   metriportPatientId: string;
@@ -59,42 +91,30 @@ interface FacilityChange {
   expectedFacilityId: string;
 }
 
-async function validateFacility({
-  cxId,
-  csvDir,
-  useCache,
-  dryRun,
-}: {
-  cxId: string;
-  csvDir: string;
-  useCache?: boolean;
-  dryRun?: boolean;
-}) {
+/**
+ * Main script that validates the facility mapping for the given customer roster.
+ */
+async function main({ cxId, csvDir, dryRun }: { cxId: string; csvDir: string; dryRun?: boolean }) {
   // Prepare runs directory and references to file paths
   const fullCsvDir = getCsvRunsPath(csvDir);
   if (!fs.existsSync(fullCsvDir)) {
     throw new Error(`CSV directory ${fullCsvDir} does not exist in "runs" directory`);
   }
+
+  // CSV input and output file locations
   const csvFacility = path.join(fullCsvDir, "facility.csv");
   const csvRoster = path.join(fullCsvDir, "roster.csv");
+  const csvOutput = path.join(fullCsvDir, `changeset-${new Date().toISOString()}.csv`);
+
+  // Validate that both CSV input files exist
   if (!fs.existsSync(csvFacility) || !fs.existsSync(csvRoster)) {
     throw new Error(`CSV files ${csvFacility} and ${csvRoster} must be present in ${fullCsvDir}`);
   }
   const isDryRun = Boolean(dryRun);
 
-  const csvOutput = path.join(fullCsvDir, `changeset-${new Date().toISOString()}.csv`);
-  const patientReferenceCachePath = useCache
-    ? path.join(fullCsvDir, "reference-cache.json")
-    : undefined;
-
   // Construct mappings of existing Metriport IDs
-  const { facilityIdToName, facilityNameToId } = await buildFacilityMapping(csvFacility);
-  const facilityIds = Object.keys(facilityIdToName);
-  const externalIdToPatient = await buildExternalIdToPatientMapping(
-    cxId,
-    facilityIds,
-    patientReferenceCachePath
-  );
+  const { facilityNameToId } = await buildFacilityMapping(csvFacility);
+  const externalIdToPatient = await buildExternalIdToPatientMap(cxId);
 
   // Write output CSV with changes
   startOutputCsv(csvOutput, [
@@ -103,57 +123,58 @@ async function validateFacility({
     "currentFacilityId",
     "expectedFacilityId",
   ]);
-  let totalInstancesFound = 0;
-  let totalReferencesNotFound = 0;
+  let totalFacilityChanges = 0;
+  let totalPatientsNotFound = 0;
   let totalFacilityIdsNotFound = 0;
   const facilityChanges: FacilityChange[] = [];
 
   const { rowsProcessed, errorCount } = await streamCsv<CsvRosterRow>(csvRoster, row => {
     const { externalId, facilityName } = getExternalIdAndFacilityName(row);
-    const reference = externalIdToPatient[externalId];
-    if (!reference) {
-      totalReferencesNotFound++;
+    const patient = externalIdToPatient[externalId];
+    if (!patient) {
+      totalPatientsNotFound++;
       return;
     }
 
-    const currentFacilityId = reference.facilityId;
+    const currentFacilityId = patient.facilityIds[0];
     if (!currentFacilityId) {
       totalFacilityIdsNotFound++;
       return;
     }
 
+    // If the facility name is not being handled by the mapping, skip this row
     const expectedFacilityId = facilityNameToId[facilityName];
     if (!expectedFacilityId) {
-      totalFacilityIdsNotFound++;
       return;
     }
+
+    // Creates a change object if the current facility ID does not match the expected facility ID
     if (currentFacilityId !== expectedFacilityId) {
       facilityChanges.push({
         externalId,
-        metriportPatientId: reference.patientId,
+        metriportPatientId: patient.id,
         currentFacilityId,
         expectedFacilityId,
       });
-      appendToOutputCsv(csvOutput, [
-        externalId,
-        reference.patientId,
-        currentFacilityId,
-        expectedFacilityId,
-      ]);
-      totalInstancesFound++;
+      appendToOutputCsv(csvOutput, [externalId, patient.id, currentFacilityId, expectedFacilityId]);
+      totalFacilityChanges++;
     }
   });
   console.log(`Rows processed: ${rowsProcessed}`);
   console.log(`Error count: ${errorCount}`);
-  console.log(`Total references not found: ${totalReferencesNotFound}`);
+  console.log(`Total references not found: ${totalPatientsNotFound}`);
   console.log(`Total facility IDs not found: ${totalFacilityIdsNotFound}`);
-  console.log(`Total facility changes required: ${totalInstancesFound}`);
+  console.log(`Total facility changes required: ${totalFacilityChanges}`);
 
+  // Apply the facility changes if not in dry run mode
   if (isDryRun) return;
-
   await applyFacilityChanges(facilityChanges);
 }
 
+/**
+ * Applies the facility changes in parallel to the MAPI route:
+ * POST /medical/v1/patient/:id/facility
+ */
 async function applyFacilityChanges(facilityChanges: FacilityChange[]) {
   await executeAsynchronously(
     facilityChanges,
@@ -166,7 +187,10 @@ async function applyFacilityChanges(facilityChanges: FacilityChange[]) {
   );
 }
 
-async function applyFacilityChange(change: FacilityChange) {
+/**
+ * Applies the facility change for the given change.
+ */
+async function applyFacilityChange(change: FacilityChange): Promise<boolean> {
   console.log(
     `Applying change for ${change.externalId} from ${change.currentFacilityId} to ${change.expectedFacilityId}`
   );
@@ -176,7 +200,7 @@ async function applyFacilityChange(change: FacilityChange) {
       facilityIds: [change.expectedFacilityId],
     }
   );
-  console.log(result.data);
+  return result.status === 200;
 }
 
 /**
@@ -191,82 +215,6 @@ async function buildFacilityMapping(csvFacility: string) {
     rows.map(row => [row.facility_id, row.facility_name])
   );
   return { facilityNameToId, facilityIdToName };
-}
-
-/**
- * Constructs a mapping from external ID to patient reference by querying the internal
- * API for each patient in parallel, and extracting the relevant ID fields.
- */
-type PatientReference = { patientId: string; externalId: string; facilityId: string };
-async function buildExternalIdToPatientMapping(
-  cxId: string,
-  facilityIds: string[],
-  cachePath?: string
-): Promise<Record<string, PatientReference>> {
-  if (cachePath && fs.existsSync(cachePath)) {
-    const cache = JSON.parse(fs.readFileSync(cachePath, "utf8"));
-    return cache as Record<string, PatientReference>;
-  }
-
-  const dataMapper = new DataMapper();
-  const externalIdToPatient: Record<string, PatientReference> = {};
-
-  let totalCount = 0;
-
-  for (const facilityId of facilityIds) {
-    const existingPatientIds = await dataMapper.getPatientIdsForFacility({ cxId, facilityId });
-    console.log(`Existing patient IDs for facility ${facilityId}: ${existingPatientIds.length}`);
-    totalCount += existingPatientIds.length;
-
-    // Retrieve each patient to construct a mapping of external IDs
-    const patients = await dataMapper.getEachPatientById(cxId, existingPatientIds, 25);
-    Object.assign(
-      externalIdToPatient,
-      Object.fromEntries(
-        patients.map(patient => {
-          const externalId = patient.externalId;
-          const patientId = patient.id;
-          const facilityId = patient.facilityIds[0];
-          return [externalId, { patientId, externalId, facilityId }];
-        })
-      )
-    );
-  }
-  console.log(`Total patients processed: ${totalCount}`);
-  if (cachePath) {
-    fs.writeFileSync(cachePath, JSON.stringify(externalIdToPatient), "utf8");
-  }
-
-  return externalIdToPatient;
-}
-
-/**
- * Specific headers for the roster CSV that can be adapted to other CSV header formats,
- * as long as the corresponding function below to retrieve the headers is also updated.
- */
-interface CsvRosterRow {
-  PRACTICE_ID: string;
-  PATIENT_ID: string;
-  PATIENT_FIRST_NAME: string;
-  PATIENT_LAST_NAME: string;
-  PATIENT_DOB: string;
-  PATIENT_SEX: string;
-  PATIENT_ZIP: string;
-  PATIENT_CITY: string;
-  PATIENT_STATE: string;
-  PATIENT_ADDRESS_1: string;
-  PATIENT_ADDRESS_2: string;
-  PATIENT_HOME_PHONE: string;
-  PATIENT_WORK_PHONE: string;
-  PATIENT_MOBILE_PHONE: string;
-  PATIENT_EMAIL: string;
-}
-
-function getExternalIdAndFacilityName(row: CsvRosterRow): {
-  externalId: string;
-  facilityName: string;
-} {
-  return { externalId: row.PATIENT_ID, facilityName: row.PRACTICE_ID };
 }
 
 program.parse(process.argv);
