@@ -88,11 +88,7 @@ export class SurescriptsDataMapper {
     return validPatientIds.filter(id => requestedPatientIds.has(id));
   }
 
-  async getEachPatientById(
-    cxId: string,
-    patientIds: string[],
-    numberOfParallelExecutions = 10
-  ): Promise<Patient[]> {
+  async getEachPatientById(cxId: string, patientIds: string[]): Promise<Patient[]> {
     const patients: Patient[] = [];
     await executeAsynchronously(
       patientIds,
@@ -101,7 +97,7 @@ export class SurescriptsDataMapper {
         patients.push(patient);
       },
       {
-        numberOfParallelExecutions,
+        numberOfParallelExecutions: 10,
       }
     );
     return patients;
