@@ -29,14 +29,23 @@ export function getSurescriptsDirOrFail(): string {
   return dir;
 }
 
-export function writeSurescriptsRunsFile(filePath: string, content: string): void {
+export function getSurescriptsRunsFilePath(filePath: string): string {
   const dir = getSurescriptsDirOrFail();
-  const fullFilePath = path.join(dir, filePath);
+  return path.join(dir, filePath);
+}
+
+export function writeSurescriptsRunsFile(filePath: string, content: string): string {
+  const fullFilePath = getSurescriptsRunsFilePath(filePath);
   const fileDir = path.dirname(fullFilePath);
   if (!fs.existsSync(fileDir)) {
     fs.mkdirSync(fileDir, { recursive: true });
   }
   fs.writeFileSync(fullFilePath, content, "utf-8");
+  return fullFilePath;
+}
+
+export function appendToSurescriptsRunsFile(fullFilePath: string, content: string): void {
+  fs.appendFileSync(fullFilePath, content, "utf-8");
 }
 
 export function writeSurescriptsIdentifiersFile(

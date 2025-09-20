@@ -23,6 +23,7 @@ import findLargest from "./find-largest";
 import bundleVerification from "./bundle-verification";
 import generateCsv from "./generate-csv";
 import sendBatchPatientRequest from "./send-batch-patient-request";
+import sendCustomerRequest from "./send-customer-request";
 
 /**
  * This is the main command registry for the Surescripts CLI. You should add any new
@@ -49,4 +50,5 @@ program.addCommand(findLargest);
 program.addCommand(bundleVerification);
 program.addCommand(generateCsv);
 program.addCommand(sendBatchPatientRequest);
+program.addCommand(sendCustomerRequest);
 program.parse();
