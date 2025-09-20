@@ -13,8 +13,7 @@ const badCharactersRegex = /[�]/g;
  * @param str - The string to sanitize
  * @returns The sanitized string with invalid characters removed, or undefined if input is falsy
  */
-function stripBadCharactersFromString(str: string | undefined): string | undefined {
-  if (!str) return str;
+function stripBadCharactersFromString(str: string): string {
   return str.replace(badCharactersRegex, "");
 }
 
@@ -34,7 +33,9 @@ export function stripInvalidCharactersFromPatientData(patient: Patient): Patient
       address: patient.data.address.map((address: Address) => ({
         ...address,
         addressLine1: stripBadCharactersFromString(address.addressLine1),
-        addressLine2: stripBadCharactersFromString(address.addressLine2),
+        ...(address.addressLine2
+          ? { addressLine2: stripBadCharactersFromString(address.addressLine2) }
+          : {}),
       })),
     },
   };
