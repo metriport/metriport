@@ -16,15 +16,14 @@ import _ from "lodash";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
 import { out } from "../../util";
-import { stripInvalidCharactersFromPatientData } from "../../domain/character-sanitizer";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
 import { METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER } from "./constants";
+import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
 import {
   trackRosterSizePerCustomer,
   TrackRosterSizePerCustomerParams,
 } from "./hl7v2-roster-analytics";
-import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
 import {
   HieConfig,
   HiePatientRosterMapping,
@@ -64,13 +63,11 @@ export class Hl7v2RosterGenerator {
 
     log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
     log(`Getting all subscribed patients...`);
-    const rawPatients = await simpleExecuteWithRetries(
+    const patients = await simpleExecuteWithRetries(
       () => this.getAllSubscribedPatients(hieName),
       log
     );
-    log(`Found ${rawPatients.length} total patients`);
-
-    const patients = rawPatients.map(stripInvalidCharactersFromPatientData);
+    log(`Found ${patients.length} total patients`);
 
     if (patients.length === 0) {
       throw new MetriportError("No patients found, skipping roster generation", {
