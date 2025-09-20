@@ -6,8 +6,9 @@ import fs from "fs";
 import path from "path";
 import { Command } from "commander";
 import { SurescriptsDataMapper as DataMapper } from "@metriport/core/external/surescripts/data-mapper";
-// import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
-// import { MetriportMedicalApi } from "@metriport/api-sdk";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
+import { MetriportMedicalApi } from "@metriport/api-sdk";
 import {
   readCsv,
   streamCsv,
@@ -44,8 +45,12 @@ program
   .action(validateFacility)
   .showHelpAfterError();
 
-// const apiUrl = getEnvVarOrFail("API_URL");
-// const apiKey = getEnvVarOrFail("API_KEY");
+const apiUrl = getEnvVarOrFail("API_URL");
+const apiKey = getEnvVarOrFail("API_KEY");
+const numberOfParallelRequests = 10;
+const { api: metriportAPI } = new MetriportMedicalApi(apiKey, {
+  baseAddress: apiUrl,
+});
 
 interface FacilityChange {
   externalId: string;
@@ -150,17 +155,28 @@ async function validateFacility({
 }
 
 async function applyFacilityChanges(facilityChanges: FacilityChange[]) {
-  console.log(`Applying ${facilityChanges.length} facility changes`);
+  await executeAsynchronously(
+    facilityChanges,
+    async change => {
+      await applyFacilityChange(change);
+    },
+    {
+      numberOfParallelExecutions: numberOfParallelRequests,
+    }
+  );
+}
 
-  for (const change of facilityChanges) {
-    console.log(
-      `Applying change for ${change.externalId} from ${change.currentFacilityId} to ${change.expectedFacilityId}`
-    );
-    // TODO: request to /patient/{metriportPatientId}/facility, how to authenticate/track this
-    // const metriportAPI = new MetriportMedicalApi(apiKey, {
-    //   baseAddress: apiUrl,
-    // });
-  }
+async function applyFacilityChange(change: FacilityChange) {
+  console.log(
+    `Applying change for ${change.externalId} from ${change.currentFacilityId} to ${change.expectedFacilityId}`
+  );
+  const result = await metriportAPI.post(
+    `/medical/v1/patient/${change.metriportPatientId}/facility`,
+    {
+      facilityIds: [change.expectedFacilityId],
+    }
+  );
+  console.log(result.data);
 }
 
 /**
