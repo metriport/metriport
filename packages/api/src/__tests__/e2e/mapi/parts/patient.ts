@@ -19,7 +19,7 @@ export const createPatient: PatientCreate = {
     addressLine1: "123 test ave",
     city: "Miami",
     state: USState.FL,
-    zip: "12345",
+    zip: "45485",
     country: "USA",
   },
 };

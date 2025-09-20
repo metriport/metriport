@@ -15,15 +15,16 @@ import { stringify } from "csv-stringify/sync";
 import _ from "lodash";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
-import { out } from "../../util";
+import { capture, out } from "../../util";
+import { stripInvalidCharactersFromPatientData } from "../../domain/character-sanitizer";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
 import { METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER } from "./constants";
-import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
 import {
   trackRosterSizePerCustomer,
   TrackRosterSizePerCustomerParams,
 } from "./hl7v2-roster-analytics";
+import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
 import {
   HieConfig,
   HiePatientRosterMapping,
@@ -51,7 +52,7 @@ export class Hl7v2RosterGenerator {
     this.s3Utils = new S3Utils(region);
   }
 
-  async execute(config: HieConfig | VpnlessHieConfig): Promise<string> {
+  async execute(config: HieConfig | VpnlessHieConfig): Promise<void> {
     const { log } = out("Hl7v2RosterGenerator");
     const { states } = config;
     const hieName = config.name;
@@ -63,16 +64,20 @@ export class Hl7v2RosterGenerator {
 
     log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
     log(`Getting all subscribed patients...`);
-    const patients = await simpleExecuteWithRetries(
+    const rawPatients = await simpleExecuteWithRetries(
       () => this.getAllSubscribedPatients(hieName),
       log
     );
-    log(`Found ${patients.length} total patients`);
+    log(`Found ${rawPatients.length} total patients`);
+
+    const patients = rawPatients.map(stripInvalidCharactersFromPatientData);
 
     if (patients.length === 0) {
-      throw new MetriportError("No patients found, skipping roster generation", {
+      capture.message(`No patients found for ${hieName}, skipping roster generation`, {
         extra: loggingDetails,
+        level: "warning",
       });
+      return;
     }
 
     const cxIds = new Set(patients.map(p => p.cxId));
@@ -137,8 +142,6 @@ export class Hl7v2RosterGenerator {
       log,
     };
     await trackRosterSizePerCustomer(trackRosterSizePerCustomerParams);
-
-    return rosterCsv;
   }
 
   private async getAllSubscribedPatients(hieName: string): Promise<Patient[]> {

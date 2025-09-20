@@ -1,5 +1,5 @@
 select
-      cast(eenc.id as {{ dbt.type_string() }} ) as encounter_id      
+      cast(enc.id as {{ dbt.type_string() }} ) as encounter_id      
     , cast(right(enc.subject_reference, 36) as {{ dbt.type_string() }} ) as patient_id
     , coalesce(etm.tuva_type, 'other') as encounter_type
     , {{ try_to_cast_date('enc.period_start', 'YYYY-MM-DD') }}  as encounter_start_date
