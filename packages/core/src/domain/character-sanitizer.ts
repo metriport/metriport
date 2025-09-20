@@ -24,8 +24,6 @@ function stripBadCharactersFromString(str: string): string {
  * @returns A new patient object with sanitized address data
  */
 export function stripInvalidCharactersFromPatientData(patient: Patient): Patient {
-  if (!patient.data.address) return patient;
-
   return {
     ...patient,
     data: {
