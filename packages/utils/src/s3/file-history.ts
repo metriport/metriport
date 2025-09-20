@@ -93,7 +93,7 @@ async function getFileInfo(
     Bucket: bucketName,
     Prefix: s3FilePrefix,
   });
-  const response = await s3Client._s3Client.send(command);
+  const response = await s3Client.s3Client.send(command);
 
   const previous = !!response.Versions || !!response.DeleteMarkers;
 
@@ -102,7 +102,7 @@ async function getFileInfo(
     Key: s3FilePrefix,
   });
   try {
-    await s3Client._s3Client.send(command2);
+    await s3Client.s3Client.send(command2);
     return { previous, current: true };
   } catch (e) {
     return { previous, current: false };

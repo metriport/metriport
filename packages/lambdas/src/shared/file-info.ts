@@ -1,8 +1,8 @@
-import { makeS3Client } from "@metriport/core/external/aws/s3";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { getEnvOrFail } from "./env";
 
 const region = getEnvOrFail("AWS_REGION");
-const s3client = makeS3Client(region);
+const s3client = new S3Utils(region);
 
 /** @deprecated Use { S3Utils } from "@metriport/core/external/aws/s3" */
 export async function getFileInfoFromS3(
@@ -13,13 +13,8 @@ export async function getFileInfoFromS3(
   | { exists: false; size?: never; contentType?: never }
 > {
   try {
-    const head = await s3client
-      .headObject({
-        Bucket: bucket,
-        Key: key,
-      })
-      .promise();
-    return { exists: true, size: head.ContentLength ?? 0, contentType: head.ContentType ?? "" };
+    const head = await s3client.getFileInfoFromS3(key, bucket);
+    return { exists: true, size: head.size ?? 0, contentType: head.contentType ?? "" };
   } catch (err) {
     return { exists: false };
   }

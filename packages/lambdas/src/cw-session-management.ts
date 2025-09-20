@@ -1,7 +1,7 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { CodeChallengeFromSecretManager } from "@metriport/core/domain/auth/code-challenge/code-challenge-on-secrets";
 import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
-import { makeS3Client } from "@metriport/core/external/aws/s3";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { CommonWellManagementAPIImpl } from "@metriport/core/external/commonwell-v1/management/api-impl";
 import {
   SessionManagement,
@@ -10,7 +10,6 @@ import {
 import { base64ToBuffer } from "@metriport/core/util/base64";
 import { AdditionalInfo, MetriportError } from "@metriport/core/util/error/metriport-error";
 import * as Sentry from "@sentry/serverless";
-
 import * as playwright from "playwright-aws-lambda";
 // import playwright from 'playwright-aws-lambda';
 import { capture } from "./shared/capture";
@@ -30,7 +29,7 @@ const cwCredsSecretName = getEnvOrFail("CW_MGMT_CREDS_SECRET_NAME");
 const baseUrl = getEnvOrFail("CW_MGMT_URL");
 const errorBucketName = getEnvOrFail("ERROR_BUCKET_NAME");
 
-const s3Client = makeS3Client(region);
+const s3Client = new S3Utils(region);
 const cookieManager = new CookieManagerOnSecrets(cookieSecretArn, region);
 const cwManagementApi = new CommonWellManagementAPIImpl({ cookieManager, baseUrl });
 // TODO 1195 move this to an email based code challenge, so it can be fully automated.
@@ -55,13 +54,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(async () => {
   let screenshotIdx = 0;
   const screenshot = async (screenshotAsB64: string, title: string) => {
     console.log(`Screenshot!`);
-    await s3Client
-      .putObject({
-        Bucket: errorBucketName,
-        Key: `lambdas/${lambdaName}/run_${new Date().toISOString()}/screenshot${++screenshotIdx}_${title}.jpg`,
-        Body: base64ToBuffer(screenshotAsB64),
-      })
-      .promise();
+    await s3Client.uploadFile({
+      bucket: errorBucketName,
+      key: `lambdas/${lambdaName}/run_${new Date().toISOString()}/screenshot${++screenshotIdx}_${title}.jpg`,
+      file: base64ToBuffer(screenshotAsB64),
+    });
   };
 
   try {
@@ -120,13 +117,11 @@ async function reportErrorToS3(error: MetriportError, additional: AdditionalInfo
       | string
       | undefined;
     if (contents) {
-      await s3Client
-        .putObject({
-          Bucket: errorBucketName,
-          Key: `lambdas/${lambdaName}/error_${new Date().toISOString()}.jpg`,
-          Body: base64ToBuffer(contents),
-        })
-        .promise();
+      await s3Client.uploadFile({
+        bucket: errorBucketName,
+        key: `lambdas/${lambdaName}/error_${new Date().toISOString()}.jpg`,
+        file: base64ToBuffer(contents),
+      });
     } else {
       console.log(`MetriportError but no b64 screenshot`);
     }
