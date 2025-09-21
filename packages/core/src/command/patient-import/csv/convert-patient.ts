@@ -1,3 +1,4 @@
+import { patientCreateSchema } from "@metriport/api-sdk";
 import {
   BadRequestError,
   errorToString,
@@ -7,6 +8,7 @@ import {
   normalizeExternalId as normalizeExternalIdFromShared,
   normalizeGenderSafe,
   normalizeUSStateForAddressSafe,
+  zodIssueToObject,
 } from "@metriport/shared";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
 import { toTitleCaseIfNotMultiCase } from "@metriport/shared/common/title-case";
@@ -136,8 +138,16 @@ export function mapCsvPatientToMetriportPatient(
     contact: contacts,
     personalIdentifiers,
   };
-  // TODO ENG-467 Enable this when we move the validate to packages/core
+  const schemaErrors = validateAgainstSchema(ptCreate);
+  errors.push(...schemaErrors);
+
+  // TODO ENG-467 Enable this when we move the validate() function from
+  // packages/api/src/command/medical/patient/shared.ts to packages/core
   // validate(ptCreate);
+
+  if (errors.length > 0) {
+    return errors;
+  }
   return ptCreate;
 }
 
@@ -222,4 +232,22 @@ function getDriversLicenseState(
     }
   }
   return value;
+}
+
+function validateAgainstSchema(ptCreate: PatientPayload): ParsingError[] {
+  const { success, error } = patientCreateSchema.safeParse(ptCreate);
+  if (!success) {
+    return error.issues.map(zodIssueToObject).map(objectErrorToParsingError);
+  }
+  return [];
+}
+
+function objectErrorToParsingError(objectError: {
+  field: string;
+  expected: string;
+  code: string;
+}): ParsingError {
+  const error = `${objectError.field} ${objectError.expected}`;
+  const errorSafeForCsv = error.replace(",", "").replace(",", " -");
+  return { field: objectError.field, error: errorSafeForCsv };
 }

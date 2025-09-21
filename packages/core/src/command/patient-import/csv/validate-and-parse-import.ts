@@ -151,7 +151,10 @@ export async function validateAndParsePatientImportCsv({
     s.pipe(
       csv({
         mapHeaders: ({ header }: { header: string }) => {
-          return header.replace(/[!@#$%^&*()+=\[\]\\';,./{}|":<>?~_\s]/gi, "").toLowerCase(); //eslint-disable-line
+          //eslint-disable-next-line
+          const headerCleaned = header.replace(/[!@#$%^&*()+=\[\]\\';,./{}|":<>?~_\s]/gi, "");
+          const headerLower = headerCleaned.toLowerCase();
+          return headerLower;
         },
       })
     )
