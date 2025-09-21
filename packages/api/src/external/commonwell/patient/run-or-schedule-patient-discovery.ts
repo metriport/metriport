@@ -1,10 +1,11 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { AsyncOperationStatus } from "@metriport/core/external";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { schedulePatientDiscovery } from "../../hie/schedule-patient-discovery";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { getCWData } from "../../commonwell-v1/patient";
+import { validateCWEnabled } from "../../commonwell-v1/shared";
+import { schedulePatientDiscovery } from "../../hie/schedule-patient-discovery";
 import { update } from "./patient";
-import { processAsyncError } from "@metriport/core/util/error/shared";
 
 export async function runOrScheduleCwPatientDiscovery({
   patient,
@@ -22,7 +23,7 @@ export async function runOrScheduleCwPatientDiscovery({
   // START TODO #1572 - remove
   forceCommonwell?: boolean;
   // END TODO #1572 - remove
-}): Promise<void> {
+}): Promise<AsyncOperationStatus> {
   const existingPatient = await getPatientOrFail({
     id: patient.id,
     cxId: patient.cxId,
@@ -31,6 +32,14 @@ export async function runOrScheduleCwPatientDiscovery({
 
   const statusCw = cwData?.status;
   const scheduledPdRequestCw = cwData?.scheduledPdRequest;
+
+  const isCwEnabled = await validateCWEnabled({
+    patient,
+    facilityId,
+    forceCW: forceCommonwell,
+    log: console.log,
+  });
+  if (!isCwEnabled) return "disabled";
 
   if (statusCw === "processing" && !scheduledPdRequestCw) {
     await schedulePatientDiscovery({
@@ -43,13 +52,14 @@ export async function runOrScheduleCwPatientDiscovery({
       forceCommonwell,
     });
   } else if (statusCw !== "processing") {
-    update({
+    await update({
       patient: existingPatient,
       facilityId,
       requestId,
       getOrgIdExcludeList,
       forceCWUpdate: forceCommonwell,
       rerunPdOnNewDemographics,
-    }).catch(processAsyncError("CW create"));
+    });
   }
+  return "triggered";
 }
