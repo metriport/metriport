@@ -21,7 +21,7 @@ export class InMemoryCache<T> implements Cache<T> {
       return entry.value;
     }
     const newValue = await this.getNewValue({ age });
-    if (!newValue) return undefined;
+    if (!newValue) return entry?.value;
     this.cache.set(key, { value: newValue, timestamp: now });
     return newValue;
   }
