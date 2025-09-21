@@ -1,3 +1,4 @@
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NotFoundError } from "@metriport/shared";
 import { Request, Response } from "express";
@@ -142,14 +143,14 @@ router.post(
     const facilityId = patient.facilityIds[0];
     const requestId = uuidv7();
 
-    await runOrScheduleCwPatientDiscovery({
+    runOrScheduleCwPatientDiscovery({
       patient,
       facilityId,
       requestId,
       getOrgIdExcludeList: () => Promise.resolve([]),
       rerunPdOnNewDemographics,
       forceCommonwell,
-    });
+    }).catch(processAsyncError("CW runOrScheduleCwPatientDiscovery"));
 
     return res.status(httpStatus.OK).json({ requestId });
   })
