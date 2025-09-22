@@ -3,7 +3,7 @@ import { ConsolidationConversionType, ResourceTypeForConsolidation } from "@metr
 import { parseFhirBundle, SearchSetBundle } from "@metriport/shared/medical";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { Patient } from "../../domain/patient";
-import { executeWithRetriesS3, returnUndefinedOn404, S3Utils } from "../../external/aws/s3";
+import { returnUndefinedOn404, S3Utils } from "../../external/aws/s3";
 import { out } from "../../util";
 import { Config } from "../../util/config";
 import { processAsyncError } from "../../util/error/shared";
@@ -13,11 +13,6 @@ import { buildConsolidatedSnapshotConnector } from "./get-snapshot-factory";
 import { getConsolidatedSnapshotFromS3 } from "./snapshot-on-s3";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
-
-const defaultS3RetriesConfig = {
-  maxAttempts: 3,
-  initialDelay: 500,
-};
 
 export type Consolidated = {
   bundle: Bundle<Resource> | undefined;
@@ -51,9 +46,8 @@ export async function getConsolidatedFile({
   const { log } = out(`getConsolidated - cx ${cxId}, pat ${patientId}`);
   const fileName = createConsolidatedDataFilePath(cxId, patientId);
 
-  const consolidatedDataRaw = await executeWithRetriesS3<string | undefined>(
-    async () => returnUndefinedOn404(() => s3Utils.getFileContentsAsString(fileLocation, fileName)),
-    { ...defaultS3RetriesConfig, log }
+  const consolidatedDataRaw = await returnUndefinedOn404(() =>
+    s3Utils.getFileContentsAsString(fileLocation, fileName)
   );
   const bundle = parseConsolidatedRaw(consolidatedDataRaw, log);
   return { bundle, fileLocation, fileName };
