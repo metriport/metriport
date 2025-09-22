@@ -59,10 +59,7 @@ WITH bp_observations AS (
       FROM CONDITION c
       WHERE c.PATIENT_ID = o.PATIENT_ID
         AND c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
-        AND c.NORMALIZED_CODE IN (
-          'I10','I11.0','I11.9','I12.0','I12.9',
-          'I13.0','I13.10','I13.11','I13.2'
-        )
+        AND LEFT(c.NORMALIZED_CODE,3) IN ('I10','I11','I12','I13','I15')
     )
 ),
 
