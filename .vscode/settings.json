@@ -3,6 +3,20 @@
   "workbench.colorCustomizations": {
     "statusBar.background": "#007acc"
   },
+  "prettier.configPath": ".prettierrc.yaml",
+  "prettier.requireConfig": true,
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
   "typescript.tsdk": "node_modules/typescript/lib",
   "githubPullRequests.ignoredPullRequestBranches": ["develop"],
   "java.configuration.updateBuildConfiguration": "automatic",

@@ -101,6 +101,10 @@ export async function getCxsWithFeatureFlagEnabled(
   return [];
 }
 
+export async function isDebugFeatureFlagEnabled(): Promise<boolean> {
+  return await isFeatureFlagEnabled("debugFeatureFlag");
+}
+
 export async function isCommonwellEnabled(): Promise<boolean> {
   return isFeatureFlagEnabled("commonwellFeatureFlag");
 }
