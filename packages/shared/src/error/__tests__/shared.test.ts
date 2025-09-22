@@ -1,7 +1,6 @@
 import { faker } from "@faker-js/faker";
-import { inspect } from "node:util";
-import MetriportError from "../../errors/metriport-error";
-import { errorToString } from "../log";
+import { MetriportError } from "../metriport-error";
+import { errorToString } from "../shared";
 
 beforeEach(() => {
   jest.restoreAllMocks();
@@ -64,7 +63,7 @@ describe("errorToString", () => {
     const message = faker.lorem.sentence();
     const additionalInfo = { foo: faker.lorem.sentence(), bar: faker.number.int().toString() };
     const error = new MetriportError(message, undefined, additionalInfo);
-    const expectedMessage = `${message} (${inspect(additionalInfo)})`;
+    const expectedMessage = `${message} (${JSON.stringify(additionalInfo)})`;
     const res = errorToString(error, { detailed: true });
     expect(res).toEqual(expectedMessage);
   });
@@ -85,9 +84,9 @@ describe("errorToString", () => {
     const message = faker.lorem.sentence();
     const additionalInfo = { foo: faker.lorem.sentence(), bar: faker.number.int().toString() };
     const error = new MetriportError(message, errorParent, additionalInfo);
-    const expectedMessage = `${message} (${inspect(
+    const expectedMessage = `${message} (${JSON.stringify(
       additionalInfo
-    )}); caused by ${messageParent}; caused by ${messageGrandparent} (${inspect(
+    )}); caused by ${messageParent}; caused by ${messageGrandparent} (${JSON.stringify(
       additionalInfoGrandParent
     )})`;
     const res = errorToString(error, { detailed: true });
