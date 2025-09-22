@@ -14,13 +14,21 @@ export function asyncHandler(
     next: NextFunction
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) => Promise<Response<any, Record<string, any>> | void>,
-  logErrorDetails = !Config.isCloudEnv()
+  shouldLogErrorDetails?: () => Promise<boolean>
 ) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await f(req, res, next);
     } catch (err) {
-      if (logErrorDetails) log("", err);
+      let isLogErrorDetails = !Config.isCloudEnv();
+      if (shouldLogErrorDetails) {
+        try {
+          isLogErrorDetails = await shouldLogErrorDetails();
+        } catch (e) {
+          log(`shouldLogErrorDetails() failed: ${removeNewLines(errorToString(e))}`);
+        }
+      }
+      if (isLogErrorDetails) log("", err);
       else log(removeNewLines(errorToString(err)));
       next(err);
     }

@@ -15,6 +15,7 @@ export const booleanFFsSchema = z.object({
   commonwellFeatureFlag: ffBooleanSchema,
   carequalityFeatureFlag: ffBooleanSchema,
   cqDoaFeatureFlag: ffBooleanSchema,
+  debugFeatureFlag: ffBooleanSchema,
 });
 export type BooleanFeatureFlags = z.infer<typeof booleanFFsSchema>;
 
