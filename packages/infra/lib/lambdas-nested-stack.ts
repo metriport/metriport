@@ -1113,7 +1113,7 @@ export class LambdasNestedStack extends NestedStack {
 
     ownProps.alohrSftpIngestionBucket.grantReadWrite(lambda);
     hl7Base64ScramblerSeed.grantRead(lambda);
-    const webhookSenderQueue = Queue.fromQueueArn(this, "Hl7WebhookSenderQueue", queue.arn);
+    const webhookSenderQueue = Queue.fromQueueArn(this, "Hl7WebhookSenderQueueAlohr", queue.arn);
     webhookSenderQueue.grantSendMessages(lambda);
     return lambda;
   }
