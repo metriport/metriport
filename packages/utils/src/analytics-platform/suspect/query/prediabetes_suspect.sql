@@ -3,17 +3,18 @@
             glucose results (LOINC 2345-7: Serum/Plasma Glucose),
             while excluding anyone already diagnosed with R73.03.
 
-   Criteria / Thresholds
-   ---------------------
+   Criteria / Thresholds (single-observation flags; screening only)
+   ----------------------------------------------------------------
    - FPG 100–125 mg/dL  -> prediabetes_fpg
    - 2-hr OGTT 140–199  -> prediabetes_ogtt
-     (Note: if your feed does not distinguish fasting vs 2-hr values
-      for 2345-7, these flags are screening signals, not diagnoses.)
+     (If the feed doesn’t distinguish fasting vs 2-hr for 2345-7,
+      these are screening signals, not diagnoses.)
 
    Safety / Implementation
    -----------------------
    - Uses TRY_TO_DOUBLE(...) to avoid errors on non-numeric RESULT.
-   - Limits to plausible 100–199 mg/dL range.
+   - Glucose is normalized to mg/dL for comparisons and display:
+       mg/dL = mmol/L * 18.0182 when units indicate mmol/L.
    - Embeds minimal FHIR in responsible_resources so the UI
      can render without a consolidated bundle.
    ============================================================ */
@@ -23,14 +24,26 @@ WITH prediabetes_observations AS (
     /* Who the flag applies to */
     o.PATIENT_ID,
 
-    /* Resource metadata we’ll return for traceability */
+    /* Resource metadata we’ll return for traceability (UI expects capitalized FHIR type) */
     o.OBSERVATION_ID              AS resource_id,
     'Observation'                 AS resource_type,
 
-    /* Assign suspect group buckets (single-observation flags) */
+    /* Normalize glucose to mg/dL for comparisons, then bucket */
     CASE
-      WHEN TRY_TO_DOUBLE(o.RESULT) BETWEEN 100 AND 125 THEN 'prediabetes_fpg'
-      WHEN TRY_TO_DOUBLE(o.RESULT) BETWEEN 140 AND 199 THEN 'prediabetes_ogtt'
+      WHEN (
+        CASE
+          WHEN COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) ILIKE '%mmol/L%'
+            THEN TRY_TO_DOUBLE(o.RESULT) * 18.0182
+          ELSE TRY_TO_DOUBLE(o.RESULT)
+        END
+      ) BETWEEN 100 AND 125 THEN 'prediabetes_fpg'
+      WHEN (
+        CASE
+          WHEN COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) ILIKE '%mmol/L%'
+            THEN TRY_TO_DOUBLE(o.RESULT) * 18.0182
+          ELSE TRY_TO_DOUBLE(o.RESULT)
+        END
+      ) BETWEEN 140 AND 199 THEN 'prediabetes_ogtt'
       ELSE NULL
     END AS suspect_group,
 
@@ -43,7 +56,6 @@ WITH prediabetes_observations AS (
     o.NORMALIZED_DESCRIPTION,
     o.OBSERVATION_DATE,
     o.RESULT,
-    /* Prefer normalized units if present, else source units */
     COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) AS units,
     o.DATA_SOURCE
   FROM OBSERVATION o
@@ -52,8 +64,14 @@ WITH prediabetes_observations AS (
     o.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND o.NORMALIZED_CODE = '2345-7'
 
-    /* Numeric guardrail: only values in the candidate ranges */
-    AND TRY_TO_DOUBLE(o.RESULT) BETWEEN 100 AND 199
+    /* Numeric guardrail in mg/dL */
+    AND (
+      CASE
+        WHEN COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) ILIKE '%mmol/L%'
+          THEN TRY_TO_DOUBLE(o.RESULT) * 18.0182
+        ELSE TRY_TO_DOUBLE(o.RESULT)
+      END
+    ) BETWEEN 100 AND 199
 
     /* Exclude patients already diagnosed with prediabetes */
     AND NOT EXISTS (
@@ -95,12 +113,17 @@ obs_with_fhir AS (
       /* effective[x]: we have only a DATE → FHIR date string */
       'effectiveDateTime', TO_CHAR(p.OBSERVATION_DATE, 'YYYY-MM-DD'),
 
-      /* Value: numeric Quantity with units if parseable, else String */
+      /* Value: emit mg/dL after normalization for display; fallback string if non-numeric */
       'valueQuantity',
         IFF(TRY_TO_DOUBLE(p.RESULT) IS NOT NULL,
             OBJECT_CONSTRUCT(
-              'value', TRY_TO_DOUBLE(p.RESULT),
-              'unit',  COALESCE(NULLIF(p.units,''), 'mg/dL')
+              'value',
+                CASE
+                  WHEN COALESCE(NULLIF(p.units,''), 'mg/dL') ILIKE '%mmol/L%'
+                    THEN TRY_TO_DOUBLE(p.RESULT) * 18.0182
+                  ELSE TRY_TO_DOUBLE(p.RESULT)
+                END,
+              'unit',  'mg/dL'
             ),
             NULL),
       'valueString',

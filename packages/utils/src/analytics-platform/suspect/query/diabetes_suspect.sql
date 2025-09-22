@@ -2,7 +2,7 @@
    Purpose
    -------
    Flag "diabetes suspects" from lab observations using LOINC
-   codes present in your CSV (plasma/serum glucose 2345-7),
+   codes present (plasma/serum glucose 2345-7),
    while EXCLUDING anyone already diagnosed with diabetes.
 
    Criteria (single-observation flags)
@@ -19,6 +19,7 @@
    Safety
    ------
    - TRY_TO_DOUBLE is used to avoid errors on non-numeric RESULT.
+   - Glucose values are normalized to mg/dL for comparisons and display.
    - Embeds minimal FHIR in responsible_resources so the UI
      can render without a consolidated bundle.
    ============================================================ */
@@ -32,10 +33,22 @@ WITH diabetes_observations AS (
     o.OBSERVATION_ID              AS resource_id,
     'Observation'                 AS resource_type,
 
-    /* Assign suspect buckets based on glucose value */
+    /* Normalize glucose to mg/dL for comparisons, then bucket */
     CASE
-      WHEN TRY_TO_DOUBLE(o.RESULT) >= 200 THEN 'diabetes_glucose_200plus'
-      WHEN TRY_TO_DOUBLE(o.RESULT) BETWEEN 126 AND 199 THEN 'diabetes_fpg_126_199'
+      WHEN (
+        CASE
+          WHEN COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) ILIKE '%mmol/L%'
+            THEN TRY_TO_DOUBLE(o.RESULT) * 18.0182        -- mmol/L -> mg/dL
+          ELSE TRY_TO_DOUBLE(o.RESULT)
+        END
+      ) >= 200 THEN 'diabetes_glucose_200plus'
+      WHEN (
+        CASE
+          WHEN COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) ILIKE '%mmol/L%'
+            THEN TRY_TO_DOUBLE(o.RESULT) * 18.0182
+          ELSE TRY_TO_DOUBLE(o.RESULT)
+        END
+      ) BETWEEN 126 AND 199 THEN 'diabetes_fpg_126_199'
       ELSE NULL
     END AS suspect_group,
 
@@ -50,15 +63,20 @@ WITH diabetes_observations AS (
     o.RESULT,
     COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) AS units,
     o.DATA_SOURCE
-
   FROM OBSERVATION o
   WHERE
     /* Only normalized LOINC plasma/serum glucose */
     o.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND o.NORMALIZED_CODE = '2345-7'                -- Glucose [Mass/volume] in Serum/Plasma
 
-    /* Numeric guardrail */
-    AND TRY_TO_DOUBLE(o.RESULT) >= 126
+    /* Numeric guardrail in mg/dL */
+    AND (
+      CASE
+        WHEN COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) ILIKE '%mmol/L%'
+          THEN TRY_TO_DOUBLE(o.RESULT) * 18.0182
+        ELSE TRY_TO_DOUBLE(o.RESULT)
+      END
+    ) >= 126
 
     /* Exclude patients already diagnosed with diabetes (any E08–E13) */
     AND NOT EXISTS (
@@ -100,12 +118,17 @@ obs_with_fhir AS (
       /* effective[x]: we have only a DATE → FHIR date string */
       'effectiveDateTime', TO_CHAR(d.OBSERVATION_DATE, 'YYYY-MM-DD'),
 
-      /* Value: numeric Quantity with units if parseable, else String */
+      /* Value: emit mg/dL after normalization for display */
       'valueQuantity',
         IFF(TRY_TO_DOUBLE(d.RESULT) IS NOT NULL,
             OBJECT_CONSTRUCT(
-              'value', TRY_TO_DOUBLE(d.RESULT),
-              'unit',  COALESCE(NULLIF(d.units,''), 'mg/dL')
+              'value',
+                CASE
+                  WHEN COALESCE(NULLIF(d.units,''), 'mg/dL') ILIKE '%mmol/L%'
+                    THEN TRY_TO_DOUBLE(d.RESULT) * 18.0182
+                  ELSE TRY_TO_DOUBLE(d.RESULT)
+                END,
+              'unit',  'mg/dL'
             ),
             NULL),
       'valueString',
