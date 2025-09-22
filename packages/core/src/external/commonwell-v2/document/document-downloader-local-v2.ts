@@ -1,3 +1,4 @@
+import { PutObjectCommand, PutObjectCommandOutput } from "@aws-sdk/client-s3";
 import { CommonWellAPI, CommonwellError } from "@metriport/commonwell-sdk";
 import {
   emptyFunction,
@@ -14,7 +15,6 @@ import { detectFileType } from "../../../util/file-type";
 import { out } from "../../../util/log";
 import { isMimeTypeXML } from "../../../util/mime";
 import { S3Utils } from "../../aws/s3";
-import { PutObjectCommand, PutObjectCommandOutput } from "@aws-sdk/client-s3";
 import {
   Document,
   DocumentDownloader,
@@ -30,13 +30,11 @@ export type DocumentDownloaderLocalConfig = DocumentDownloaderConfig & {
 };
 
 export class DocumentDownloaderLocalV2 extends DocumentDownloader {
-  readonly s3client: S3Utils;
   readonly s3Utils: S3Utils;
   readonly cwApi: CommonWellAPI;
 
   constructor(config: DocumentDownloaderLocalConfig) {
     super(config);
-    this.s3client = new S3Utils(config.region);
     this.cwApi = config.commonWell.api;
     this.s3Utils = new S3Utils(config.region);
   }
@@ -201,7 +199,7 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     const { mimeType, fileExtension } = detectFileType(b64Buff);
     const newFileName = this.getNewFileName(requestedFileInfo.name, fileExtension);
 
-    const b64Upload = await this.s3client.uploadFile({
+    const b64Upload = await this.s3Utils.uploadFile({
       bucket: this.config.bucketName,
       key: newFileName,
       file: b64Buff,
@@ -313,7 +311,7 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
     });
     return {
       writeStream: pass,
-      promise: this.s3client.s3Client.send(command),
+      promise: this.s3Utils.s3Client.send(command),
     };
   }
 
