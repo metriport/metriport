@@ -32,18 +32,14 @@ export function patientCreationToString(request: PatientPayload) {
   return JSON.stringify(request);
 }
 
-export async function buildExternalIdToPatientMap(
-  cxId: string,
-  parallelExecutions = 25
-): Promise<Record<string, Patient>> {
+export async function buildExternalIdToPatientMap(cxId: string): Promise<Record<string, Patient>> {
   const dataMapper = new DataMapper();
   const customer = await dataMapper.getCustomerData(cxId);
   const externalIdToPatient: Record<string, Patient> = {};
   for (const facility of customer.facilities) {
     const externalIdToPatientForFacility = await buildExternalIdToPatientMapForFacility(
       cxId,
-      facility.id,
-      parallelExecutions
+      facility.id
     );
     Object.assign(externalIdToPatient, externalIdToPatientForFacility);
   }
