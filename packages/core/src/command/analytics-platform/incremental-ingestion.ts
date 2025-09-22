@@ -1,6 +1,6 @@
 import { out } from "../../util/log";
 import { isAnalyticsIncrementalIngestionEnabledForCx } from "../feature-flags/domain-ffs";
-// import { buildFhirToCsvHandler } from "./fhir-to-csv/command/fhir-to-csv/fhir-to-csv-factory";
+// import { buildFhirToCsvHandler } from "./fhir-to-csv/command/fhir-to-csv/fhir-to-csv-incremental-factory";
 
 export async function ingestPatientIntoAnalyticsPlatform({
   cxId,
@@ -21,7 +21,7 @@ export async function ingestPatientIntoAnalyticsPlatform({
   log(`WOULD BE ingesting pt consolidated into analytics platform`);
   // log(`Ingesting pt consolidated into analytics platform`);
 
-  // const fhirToCsvHandler = buildFhirToCsvHandler();
+  // const fhirToCsvHandler = buildFhirToCsvIncrementalHandler();
   // fhirToCsvHandler.processFhirToCsv({
   //   cxId,
   //   patientId,
