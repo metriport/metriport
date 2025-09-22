@@ -37,6 +37,7 @@ export async function buildExternalIdToPatientMap(cxId: string): Promise<Record<
   const customer = await dataMapper.getCustomerData(cxId);
   const externalIdToPatient: Record<string, Patient> = {};
   for (const facility of customer.facilities) {
+    console.log(`Building external ID to patient map for facility ${facility.id}...`);
     const externalIdToPatientForFacility = await buildExternalIdToPatientMapForFacility(
       cxId,
       facility.id

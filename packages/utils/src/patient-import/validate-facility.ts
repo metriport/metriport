@@ -4,10 +4,10 @@ dotenv.config();
 
 import fs from "fs";
 import path from "path";
+import axios from "axios";
 import { Command } from "commander";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
-import { MetriportMedicalApi } from "@metriport/api-sdk";
 import {
   readCsv,
   streamCsv,
@@ -16,6 +16,7 @@ import {
   getCsvRunsPath,
 } from "../shared/csv";
 import { buildExternalIdToPatientMap } from "./shared";
+import { errorToString } from "@metriport/shared";
 
 /**
  * This script reads a CSV roster and ensures that each patient is associated with the correct facility,
@@ -40,6 +41,7 @@ program
   .description("Validate the facility mapping")
   .requiredOption("--cx-id <cxId>", "CX ID")
   .requiredOption("--csv-dir <csvDir>", "Relative name of runs directory containing the CSV files")
+  .option("--changeset <changeset>", "The precomputed changeset file to apply")
   .option("--dry-run", "Just validate the CSV without actually requesting any facility changes")
   .action(main)
   .showHelpAfterError();
@@ -47,8 +49,9 @@ program
 const apiUrl = getEnvVarOrFail("API_URL");
 const apiKey = getEnvVarOrFail("API_KEY");
 const numberOfParallelRequests = 10;
-const { api: metriportAPI } = new MetriportMedicalApi(apiKey, {
-  baseAddress: apiUrl,
+const metriportAPI = axios.create({
+  baseURL: apiUrl,
+  headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
 });
 
 /**
@@ -94,17 +97,37 @@ interface FacilityChange {
 /**
  * Main script that validates the facility mapping for the given customer roster.
  */
-async function main({ cxId, csvDir, dryRun }: { cxId: string; csvDir: string; dryRun?: boolean }) {
+async function main({
+  cxId,
+  csvDir,
+  dryRun,
+  changeset,
+}: {
+  cxId: string;
+  csvDir: string;
+  dryRun?: boolean;
+  changeset?: string;
+}) {
   // Prepare runs directory and references to file paths
   const fullCsvDir = getCsvRunsPath(csvDir);
   if (!fs.existsSync(fullCsvDir)) {
     throw new Error(`CSV directory ${fullCsvDir} does not exist in "runs" directory`);
   }
 
+  if (changeset) {
+    const changesetFile = path.join(fullCsvDir, `changeset-${changeset}.csv`);
+    if (!fs.existsSync(changesetFile)) {
+      throw new Error(`Changeset file ${changesetFile} does not exist in ${fullCsvDir}`);
+    }
+    await applyFacilityChangesFromFile(changesetFile);
+    return;
+  }
+
   // CSV input and output file locations
   const csvFacility = path.join(fullCsvDir, "facility.csv");
   const csvRoster = path.join(fullCsvDir, "roster.csv");
-  const csvOutput = path.join(fullCsvDir, `changeset-${new Date().toISOString()}.csv`);
+  const changesetTimestamp = new Date().toISOString();
+  const csvOutput = path.join(fullCsvDir, `changeset-${changesetTimestamp}.csv`);
 
   // Validate that both CSV input files exist
   if (!fs.existsSync(csvFacility) || !fs.existsSync(csvRoster)) {
@@ -168,9 +191,24 @@ async function main({ cxId, csvDir, dryRun }: { cxId: string; csvDir: string; dr
   console.log(`Total facility IDs not found: ${totalFacilityIdsNotFound}`);
   console.log(`Total facility changes required: ${totalFacilityChanges}`);
 
-  // Apply the facility changes if not in dry run mode
-  if (isDryRun) return;
-  await applyFacilityChanges(facilityChanges);
+  if (isDryRun) {
+    console.log(`Wrote dry run changes to ${csvOutput}`);
+    console.log(
+      `Run this script again with "--changeset ${changesetTimestamp}" to apply the changes`
+    );
+  } else {
+    await applyFacilityChanges(facilityChanges);
+  }
+}
+
+/**
+ * Applies the facility changes from a changeset file that was precomputed by a dry run.
+ * @param changesetFile The file containing the facility changes to apply.
+ */
+async function applyFacilityChangesFromFile(changesetFile: string) {
+  const changeset = await readCsv<FacilityChange>(changesetFile);
+  console.log(`Applying ${changeset.length} facility changes from ${changesetFile}`);
+  await applyFacilityChanges(changeset);
 }
 
 /**
@@ -178,15 +216,21 @@ async function main({ cxId, csvDir, dryRun }: { cxId: string; csvDir: string; dr
  * POST /medical/v1/patient/:id/facility
  */
 async function applyFacilityChanges(facilityChanges: FacilityChange[]) {
+  let totalSuccess = 0;
   await executeAsynchronously(
     facilityChanges,
     async change => {
-      await applyFacilityChange(change);
+      const success = await applyFacilityChange(change);
+      if (success) {
+        totalSuccess++;
+      }
     },
     {
       numberOfParallelExecutions: numberOfParallelRequests,
     }
   );
+
+  console.log(`Total successful changes: ${totalSuccess} / ${facilityChanges.length}`);
 }
 
 /**
@@ -196,13 +240,18 @@ async function applyFacilityChange(change: FacilityChange): Promise<boolean> {
   console.log(
     `Applying change for ${change.externalId} from ${change.currentFacilityId} to ${change.expectedFacilityId}`
   );
-  const result = await metriportAPI.post(
-    `/medical/v1/patient/${change.metriportPatientId}/facility`,
-    {
-      facilityIds: [change.expectedFacilityId],
-    }
-  );
-  return result.status === 200;
+  try {
+    const result = await metriportAPI.post(
+      `/medical/v1/patient/${change.metriportPatientId}/facility`,
+      {
+        facilityIds: [change.expectedFacilityId],
+      }
+    );
+    return result.status === 200;
+  } catch (error) {
+    console.error(`Error applying change for ${change.externalId}: ${errorToString(error)}`);
+    return false;
+  }
 }
 
 /**
