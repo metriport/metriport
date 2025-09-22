@@ -113,6 +113,7 @@ async function main({ cxId, csvDir, dryRun }: { cxId: string; csvDir: string; dr
   const isDryRun = Boolean(dryRun);
 
   // Construct mappings of existing Metriport IDs
+  console.log("Building facility and external ID to patient mapping...");
   const { facilityNameToId } = await buildFacilityMapping(csvFacility);
   const externalIdToPatient = await buildExternalIdToPatientMap(cxId);
 
@@ -128,6 +129,7 @@ async function main({ cxId, csvDir, dryRun }: { cxId: string; csvDir: string; dr
   let totalFacilityIdsNotFound = 0;
   const facilityChanges: FacilityChange[] = [];
 
+  console.log("Processing roster to find facility changes...");
   const { rowsProcessed, errorCount } = await streamCsv<CsvRosterRow>(csvRoster, row => {
     const { externalId, facilityName } = getExternalIdAndFacilityName(row);
     const patient = externalIdToPatient[externalId];
