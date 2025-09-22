@@ -1,5 +1,5 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { MedicalDataSource } from "@metriport/core/external";
+import { MedicalDataSource, AsyncOperationStatus } from "@metriport/core/external";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -9,7 +9,7 @@ import { runOrScheduleCqPatientDiscovery } from "../carequality/command/run-or-s
 import { runOrScheduleCwPatientDiscovery } from "../commonwell/patient/run-or-schedule-patient-discovery";
 
 type PdStateSingleHie = {
-  status: "triggered" | "disabled";
+  status: AsyncOperationStatus;
 };
 
 type PdStateAcrossHies = Partial<Record<MedicalDataSource, PdStateSingleHie>>;
