@@ -1,9 +1,10 @@
+import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { out } from "../../../util/log";
 import { uuidv4 } from "../../../util/uuid-v7";
 import * as xml from "../../../util/xml";
-import { S3Utils } from "../../aws/s3";
+import { makeS3Client } from "../../aws/s3";
 import { SQSClient } from "../../aws/sqs";
 import {
   IngestRequest,
@@ -30,14 +31,14 @@ const entryClose = xml.close(entryName);
 
 export class OpenSearchFileIngestorSQS extends OpenSearchFileIngestor {
   private sqsClient: SQSClient;
-  private s3Utils: S3Utils;
+  private s3Client: AWS.S3;
   private queueUrl: string;
 
   constructor(config: OpenSearchFileIngestorSQSConfig) {
     super(config);
     this.queueUrl = config.queueUrl;
     this.sqsClient = new SQSClient({ region: config.region });
-    this.s3Utils = new S3Utils(config.region);
+    this.s3Client = makeS3Client(config.region);
   }
 
   async ingest({
@@ -75,12 +76,14 @@ export class OpenSearchFileIngestorSQS extends OpenSearchFileIngestor {
       typeof content === "string" ? content : this.multipleContentToSingleString(content);
     const s3FileName = this.getIngestionFileName(originalFileName);
     log(`Uploading to ${s3BucketName}/${s3FileName}...`);
-    await this.s3Utils.uploadFile({
-      bucket: s3BucketName,
-      key: s3FileName,
-      file: Buffer.from(contentToIngest),
-      contentType: "text/plain",
-    });
+    await this.s3Client
+      .upload({
+        Bucket: s3BucketName,
+        Key: s3FileName,
+        Body: contentToIngest,
+        ContentType: "text/plain",
+      })
+      .promise();
     log(`Done, sending message to SQS...`);
     await this.ingest({
       cxId,

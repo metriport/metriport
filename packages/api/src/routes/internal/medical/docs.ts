@@ -278,12 +278,14 @@ router.post(
     const docRefId = uuidv7();
     const fileName = createDocumentFilePath(cxId, patientId, docRefId, file.mimetype);
 
-    const uploadRes = await s3Utils.uploadFile({
-      bucket: bucketName,
-      key: fileName,
-      file: file.buffer,
-      contentType: file.mimetype,
-    });
+    const uploadRes = await s3Utils.s3
+      .upload({
+        Bucket: bucketName,
+        Key: fileName,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      })
+      .promise();
 
     const docRef = await createAndUploadDocReference({
       cxId,
@@ -293,7 +295,7 @@ router.post(
         ...file,
         originalname: fileName,
       },
-      location: uploadRes.location,
+      location: uploadRes.Location,
       metadata,
     });
 

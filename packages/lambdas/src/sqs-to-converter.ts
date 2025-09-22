@@ -23,10 +23,10 @@ import {
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
 import { MedicalDataSource } from "@metriport/core/external";
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
-import { isConvertibleFromS3 } from "@metriport/core/external/cda/is-convertible";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
+import { isConvertibleFromS3 } from "@metriport/core/external/cda/is-convertible";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
@@ -455,12 +455,14 @@ async function sendConversionResult({
 
   await executeWithRetriesS3(
     () =>
-      s3Utils.uploadFile({
-        bucket: conversionResultBucketName,
-        key: fileName,
-        file: Buffer.from(JSON.stringify(conversionPayload)),
-        contentType: FHIR_APP_MIME_TYPE,
-      }),
+      s3Utils.s3
+        .upload({
+          Bucket: conversionResultBucketName,
+          Key: fileName,
+          Body: JSON.stringify(conversionPayload),
+          ContentType: FHIR_APP_MIME_TYPE,
+        })
+        .promise(),
     {
       ...defaultS3RetriesConfig,
       log,

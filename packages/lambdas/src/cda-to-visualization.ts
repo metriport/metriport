@@ -3,7 +3,7 @@ import { sanitizeXmlProcessingInstructions } from "@metriport/core/external/cda/
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import * as Sentry from "@sentry/serverless";
 import chromium from "@sparticuz/chromium";
-import { S3Utils } from "@metriport/core/external/aws/s3";
+import AWS from "aws-sdk";
 import fs from "fs";
 import puppeteer from "puppeteer-core";
 import SaxonJS from "saxon-js";
@@ -23,13 +23,14 @@ const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
 const cdaToVisTimeoutInMillis = getEnvOrFail("CDA_TO_VIS_TIMEOUT_MS");
 const GRACEFUL_SHUTDOWN_ALLOWANCE_MS = 3_000;
 const SIGNED_URL_DURATION_SECONDS = 60;
-const region = getEnvOrFail("AWS_REGION");
 
 let cda10: unknown;
 let narrative: unknown;
 const styleSheetTextStringified = JSON.stringify(styleSheetText);
 
-const s3client = new S3Utils(region);
+const s3client = new AWS.S3({
+  signatureVersion: "v4",
+});
 
 // TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(
@@ -102,8 +103,13 @@ const downloadDocumentFromS3 = async ({
   fileName: string;
   bucketName: string;
 }): Promise<string | undefined> => {
-  const file = await s3client.downloadFile({ bucket: bucketName, key: fileName });
-  const data = file.toString("utf-8");
+  const file = await s3client
+    .getObject({
+      Bucket: bucketName,
+      Key: fileName,
+    })
+    .promise();
+  const data = file.Body?.toString("utf-8");
   return data;
 };
 
@@ -120,12 +126,14 @@ const convertStoreAndReturnHtmlDocUrl = async ({
 
   const newFileName = fileName.concat(".html");
 
-  await s3client.uploadFile({
-    bucket: bucketName,
-    key: newFileName,
-    file: Buffer.from(convertDoc.toString()),
-    contentType: "text/html",
-  });
+  await s3client
+    .putObject({
+      Bucket: bucketName,
+      Key: newFileName,
+      Body: convertDoc.toString(),
+      ContentType: "text/html",
+    })
+    .promise();
 
   const urlHtml = await getSignedUrl({ fileName: newFileName, bucketName });
 
@@ -196,12 +204,14 @@ const convertStoreAndReturnPdfDocUrl = async ({
     console.log(`Finished generating the PDF, took ${Date.now() - before}ms`);
 
     // Upload generated PDF to S3 bucket
-    await s3client.uploadFile({
-      bucket: bucketName,
-      key: pdfFilename,
-      file: fs.readFileSync(pdfFilepath),
-      contentType: "application/pdf",
-    });
+    await s3client
+      .putObject({
+        Bucket: bucketName,
+        Key: pdfFilename,
+        Body: fs.readFileSync(pdfFilepath),
+        ContentType: "application/pdf",
+      })
+      .promise();
   } catch (error) {
     console.log(`Error while converting to pdf: `, error);
 
@@ -281,9 +291,10 @@ async function getNarrative() {
 }
 
 async function getSignedUrl({ fileName, bucketName }: { fileName: string; bucketName: string }) {
-  return s3client.getSignedUrl({
-    bucketName,
-    fileName,
-    durationSeconds: SIGNED_URL_DURATION_SECONDS,
+  const url = s3client.getSignedUrl("getObject", {
+    Bucket: bucketName,
+    Key: fileName,
+    Expires: SIGNED_URL_DURATION_SECONDS,
   });
+  return url;
 }

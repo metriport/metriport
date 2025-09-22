@@ -102,7 +102,7 @@ async function downloadDocsFor(
     const filePath = path.join(folderName ?? "", fileName);
     fs.openSync(filePath, "w");
     const writeStream = fs.createWriteStream(filePath, { flags: "a+" });
-    await s3Client.getFileContentsIntoStream({ bucket: bucketName, key: objName, writeStream });
+    await s3Client.getFileContentsIntoStream(bucketName, objName, writeStream);
   }
 }
 
