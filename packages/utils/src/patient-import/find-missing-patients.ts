@@ -53,7 +53,7 @@ type BulkImportRow = Record<BulkImportHeader, string>;
 
 async function findMissingPatients({ cxId, csvOutput }: { cxId: string; csvOutput: string }) {
   console.log(`Finding missing patients for ${cxId}...`);
-  const externalIdToPatient = await buildExternalIdToPatientMap(cxId, 50);
+  const externalIdToPatient = await buildExternalIdToPatientMap(cxId);
   console.log(
     `Found ${Object.keys(externalIdToPatient).length} externalId to patient mappings for ${cxId}`
   );
