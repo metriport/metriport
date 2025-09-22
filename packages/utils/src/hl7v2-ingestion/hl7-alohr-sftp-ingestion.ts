@@ -48,7 +48,6 @@ const remotePath = Config.getAlohrIngestionRemotePath();
 const bucketName = Config.getAlohrIngestionBucket();
 const awsRegion = Config.getAWSRegion();
 Config.getHl7IncomingMessageBucketName();
-Config.getAlohrIngestionLambdaName();
 
 // Note this should point to an actual arn in aws secret manager. (Or use the local only password)
 Config.getAlohrIngestionPasswordArn();
@@ -82,7 +81,6 @@ async function main() {
   } finally {
     await optionallyDeleteFiles();
   }
-  F;
 }
 
 async function optionallyDeleteFiles() {
