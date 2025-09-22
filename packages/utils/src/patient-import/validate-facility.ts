@@ -25,13 +25,23 @@ import { errorToString } from "@metriport/shared";
  * - roster.csv: The CSV roster to validate
  * - facility.csv: The CSV with facility mapping
  *
+ * It will produce a file in the same directory with the name "changeset-<timestamp>.csv", that contains
+ * the facility changes that will be applied. If the --dry-run flag is provided, it will only produce this
+ * changeset file without applying any changes.
+ *
  * Usage:
  *
- * ts-node src/patient-import/validate-facility.ts --cx-id <cxId> --csv-dir <csvDir>
+ * ts-node src/patient-import/validate-facility.ts --cx-id <cxId> --csv-dir <csvDir> --dry-run
+ *
+ * After validating the changeset, you can run this script again with the --changeset flag to immediately start
+ * applying the changes.
+ *
+ * ts-node src/patient-import/validate-facility.ts --cx-id <cxId> --csv-dir <csvDir> --changeset "<changesetTimestamp>"
  *
  * Notes:
  * - csvDir is a relative path within the "runs" directory.
  * - The roster CSV header definition below must match the headers of the roster CSV.
+ * - The changeset timestamp is a UTC timestamp in the format "YYYY-MM-DDTHH:MM:SS.SSSZ", and is the final output of the dry run.
  * - The --dry-run flag is optional and will just validate the CSV without actually requesting any facility changes.
  * - The facility CSV headers are "facility_name" and "facility_id", where the facility name is matched against a column in the roster CSV.
  */
