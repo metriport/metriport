@@ -19,7 +19,11 @@ export const handler = capture.wrapHandler(
     const secretArn = Config.getHl7Base64ScramblerSeedArn();
     const hl7Base64ScramblerSeed = await getSecretValueOrFail(secretArn, Config.getAWSRegion());
     process.env["HL7_BASE64_SCRAMBLER_SEED"] = hl7Base64ScramblerSeed;
-    capture.setExtra({ context: lambdaName, dateTimestamp: params.dateTimestamp });
+    capture.setExtra({
+      context: lambdaName,
+      dateTimestamp: params.startingDate,
+      endingDate: params.endingDate,
+    });
     log("Starting ingestion of Alohr ADTs");
     const sftpClient = await AlohrSftpIngestionClient.create(log);
     const handler = new Hl7AlohrSftpIngestionDirect(sftpClient);
