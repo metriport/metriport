@@ -27,7 +27,11 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
     const remotePath = Config.getAlohrIngestionRemotePath();
 
     log("Beginning ingestion from Alohr");
-    const fileNames = await this.sftpClient.safeSyncWithDate(remotePath, params.dateTimestamp);
+    const fileNames = await this.sftpClient.safeSyncWithDate(
+      remotePath,
+      params.startingDate,
+      params.endingDate
+    );
 
     log(`Reading synced files`);
     const timestampedMessages: TimestampedMessage[] = [];
