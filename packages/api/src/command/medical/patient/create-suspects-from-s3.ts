@@ -2,14 +2,10 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 import { MetriportError, uuidv7 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import csv from "csv-parser";
-import dayjs from "dayjs";
-import customParseFormat from "dayjs/plugin/customParseFormat";
 import * as stream from "stream";
 import { SuspectCreate } from "../../../domain/suspect";
 import { SuspectModel } from "../../../models/suspect";
 import { Config } from "../../../shared/config";
-
-dayjs.extend(customParseFormat);
 
 const MAX_NUMBER_ROWS = 100_000;
 const region = Config.getAWSRegion();
