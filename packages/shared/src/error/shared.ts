@@ -1,11 +1,11 @@
-export type ErrorToStringOptions = { detailed: boolean };
+export type ErrorToStringOptions = { detailed: boolean; includeStackTrace?: boolean };
 
 export function errorToString(
   err: unknown,
-  options: ErrorToStringOptions = { detailed: true }
+  options: ErrorToStringOptions = { detailed: true, includeStackTrace: false }
 ): string {
   if (options.detailed) {
-    return detailedErrorToString(err);
+    return detailedErrorToString(err, options.includeStackTrace);
   }
   return genericErrorToString(err);
 }
@@ -22,14 +22,15 @@ export function genericErrorToString(err: any): string {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function detailedErrorToString(err: any): string {
+export function detailedErrorToString(err: any, includeStackTrace?: boolean): string {
   const thisErrorMessage = genericErrorToString(err);
   const additionalInfo = err.additionalInfo ? JSON.stringify(err.additionalInfo) : undefined;
   const causeMessage = err.cause ? detailedErrorToString(err.cause) : undefined;
   return (
     `${thisErrorMessage}` +
     `${additionalInfo ? ` (${additionalInfo})` : ""}` +
-    `${causeMessage ? `; caused by ${causeMessage}` : ""}`
+    `${causeMessage ? `; caused by ${causeMessage}` : ""}` +
+    `${includeStackTrace ? `; stack trace: ${err.stack}` : ""}`
   );
 }
 

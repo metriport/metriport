@@ -10,14 +10,14 @@ import {
   MetriportError,
   NotFoundError,
 } from "@metriport/shared";
+import AWS from "aws-sdk";
 import path from "path";
 import * as stream from "stream";
 import { DOMParser } from "xmldom";
 import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
 import { out } from "../../../util/log";
 import { isMimeTypeXML } from "../../../util/mime";
-import { S3Utils } from "../../aws/s3";
-import { PutObjectCommand, PutObjectCommandOutput } from "@aws-sdk/client-s3";
+import { makeS3Client, S3Utils } from "../../aws/s3";
 import {
   Document,
   DocumentDownloader,
@@ -34,14 +34,14 @@ export type DocumentDownloaderLocalConfig = DocumentDownloaderConfig & {
 };
 
 export class DocumentDownloaderLocal extends DocumentDownloader {
-  readonly s3client: S3Utils;
+  readonly s3client: AWS.S3;
   readonly s3Utils: S3Utils;
   readonly cwApi: CommonWellAPI;
   readonly cwQueryMeta: ReturnType<typeof organizationQueryMeta>;
 
   constructor(config: DocumentDownloaderLocalConfig) {
     super(config);
-    this.s3client = new S3Utils(config.region);
+    this.s3client = makeS3Client(config.region);
     this.cwApi = config.commonWell.api;
     this.cwQueryMeta = config.commonWell.queryMeta;
     this.s3Utils = new S3Utils(config.region);
@@ -200,18 +200,20 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     const { mimeType, fileExtension } = detectFileType(b64Buff);
     const newFileName = this.getNewFileName(requestedFileInfo.name, fileExtension);
 
-    const b64Upload = await this.s3client.uploadFile({
-      bucket: this.config.bucketName,
-      key: newFileName,
-      file: b64Buff,
-      contentType: mimeType,
-    });
-    const b64FileInfo = await this.s3Utils.getFileInfoFromS3(b64Upload.key, b64Upload.bucket);
+    const b64Upload = await this.s3client
+      .upload({
+        Bucket: this.config.bucketName,
+        Key: newFileName,
+        Body: b64Buff,
+        ContentType: mimeType,
+      })
+      .promise();
+    const b64FileInfo = await this.s3Utils.getFileInfoFromS3(b64Upload.Key, b64Upload.Bucket);
 
     return {
-      bucket: b64Upload.bucket,
-      key: b64Upload.key,
-      location: b64Upload.location,
+      bucket: b64Upload.Bucket,
+      key: b64Upload.Key,
+      location: b64Upload.Location,
       size: b64FileInfo.size,
       contentType: b64FileInfo.contentType,
     };
@@ -245,17 +247,22 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
       stream: writeStream,
     });
 
-    await promise;
+    const uploadResult = await promise;
 
-    const key = fileInfo.name;
-    const bucket = fileInfo.location;
+    log(`Uploaded ${document.id}, ${document.mimeType}, to ${uploadResult.Location}`);
 
-    const location = this.s3Utils.getLocation({ key, bucket });
-    log(`Uploaded ${document.id}, ${document.mimeType}, to ${location}`);
+    const { size, contentType } = await this.s3Utils.getFileInfoFromS3(
+      uploadResult.Key,
+      uploadResult.Bucket
+    );
 
-    const { size, contentType } = await this.s3Utils.getFileInfoFromS3(key, bucket);
-
-    return { key, bucket, location, size, contentType };
+    return {
+      key: uploadResult.Key,
+      bucket: uploadResult.Bucket,
+      location: uploadResult.Location,
+      size,
+      contentType,
+    };
   }
 
   private getNewFileName(fileName: string, newExtension: string) {
@@ -264,24 +271,19 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     return fileNameParts.join(".") + "." + newExtension;
   }
 
-  protected getUploadStreamToS3(
-    s3FileName: string,
-    s3FileLocation: string,
-    contentType?: string
-  ): {
-    writeStream: stream.PassThrough;
-    promise: Promise<PutObjectCommandOutput>;
-  } {
+  protected getUploadStreamToS3(s3FileName: string, s3FileLocation: string, contentType?: string) {
     const pass = new stream.PassThrough();
-    const command = new PutObjectCommand({
-      Bucket: s3FileLocation,
-      Key: s3FileName,
-      Body: pass,
-      ContentType: contentType ? contentType : "text/xml",
-    });
     return {
       writeStream: pass,
-      promise: this.s3client.s3Client.send(command),
+      promise: this.s3client
+        .upload({
+          Bucket: s3FileLocation,
+          Key: s3FileName,
+          Body: pass,
+          // TODO #1258
+          ContentType: contentType ? contentType : "text/xml",
+        })
+        .promise(),
     };
   }
 

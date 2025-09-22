@@ -4,8 +4,6 @@ import * as AWS from "aws-sdk";
 export function makeS3Client(region: string): AWS.S3 {
   return new AWS.S3({ signatureVersion: "v4", region });
 }
-
-/** @deprecated Use S3Utils from @metriport/core/external/aws/s3 or update this to use AWS SDK v3. */
 export class S3Utils {
   /**
    * @deprecated This is v2 of the S3 client. Use `s3Client` instead.

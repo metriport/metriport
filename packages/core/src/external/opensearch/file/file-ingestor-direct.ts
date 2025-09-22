@@ -3,7 +3,7 @@ import { Client } from "@opensearch-project/opensearch";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { out } from "../../../util/log";
-import { S3Utils } from "../../aws/s3";
+import { makeS3Client } from "../../aws/s3";
 import { removeHtmlTags } from "../../html/remove-tags";
 import { IndexFields } from "../index-based-on-file";
 import {
@@ -76,10 +76,15 @@ export class OpenSearchFileIngestorDirect extends OpenSearchFileIngestor {
   }
 
   protected async getFileContents(s3FileName: string, s3BucketName: string, log = console.log) {
-    const s3 = new S3Utils(this.config.region);
+    const s3 = makeS3Client(this.config.region);
     log(`Downloading from ${s3BucketName}...`);
-    const obj = await s3.getFileContentsAsString(s3BucketName, s3FileName);
-    return obj;
+    const obj = await s3
+      .getObject({
+        Bucket: s3BucketName,
+        Key: s3FileName,
+      })
+      .promise();
+    return obj.Body?.toString("utf-8");
   }
 
   // IMPORTANT: keep this in sync w/ the Lambda's sqs-to-opensearch-xml.ts version of it.

@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { CommonWellAPI } from "@metriport/commonwell-sdk";
 import * as AWS from "aws-sdk";
+import { ManagedUpload } from "aws-sdk/clients/s3";
 import {
   JPEG_MIME_TYPE,
   OCTET_MIME_TYPE,
@@ -33,13 +34,17 @@ describe("document-downloader-local", () => {
     let s3Upload_mock: jest.SpyInstance;
     const capture = mockCapture();
     beforeEach(() => {
-      s3Upload_mock = jest.spyOn(S3Utils.prototype, "uploadFile").mockResolvedValue({
-        location: faker.internet.url(),
-        eTag: faker.string.alphanumeric(10),
-        bucket: faker.lorem.word(),
-        key: faker.lorem.word(),
-        versionId: faker.string.alphanumeric(10),
-      });
+      s3Upload_mock = jest.spyOn(AWS.S3.prototype, "upload").mockReturnValue({
+        promise: jest.fn().mockResolvedValue({
+          Location: faker.internet.url(),
+          ETag: faker.string.alphanumeric(10),
+          Bucket: faker.lorem.word(),
+          Key: faker.lorem.word(),
+        }),
+        abort: jest.fn(),
+        send: jest.fn(),
+        on: jest.fn(),
+      } as ManagedUpload);
       jest.spyOn(S3Utils.prototype, "getFileInfoFromS3").mockResolvedValue({
         exists: true,
         size: 0,
@@ -87,7 +92,7 @@ describe("document-downloader-local", () => {
       });
       expect(res).toBeTruthy();
       expect(s3Upload_mock).toHaveBeenCalledWith(
-        expect.objectContaining({ contentType: TIFF_MIME_TYPE })
+        expect.objectContaining({ ContentType: TIFF_MIME_TYPE })
       );
       expect(capture.message).toHaveBeenCalledWith(
         `Multiple nonXmlBody inside CDA`,
@@ -106,7 +111,7 @@ describe("document-downloader-local", () => {
       });
       expect(res).toBeTruthy();
       expect(s3Upload_mock).toHaveBeenCalledWith(
-        expect.objectContaining({ contentType: TIFF_MIME_TYPE })
+        expect.objectContaining({ ContentType: TIFF_MIME_TYPE })
       );
       expect(capture.message).toHaveBeenCalledWith(
         `Multiple text inside CDA.nonXmlBody`,
@@ -136,7 +141,7 @@ describe("document-downloader-local", () => {
       });
       expect(res).toBeTruthy();
       expect(s3Upload_mock).toHaveBeenCalledWith(
-        expect.objectContaining({ contentType: TXT_MIME_TYPE })
+        expect.objectContaining({ ContentType: TXT_MIME_TYPE })
       );
     });
 
@@ -148,7 +153,7 @@ describe("document-downloader-local", () => {
       });
       expect(res).toBeTruthy();
       expect(s3Upload_mock).toHaveBeenCalledWith(
-        expect.objectContaining({ contentType: TIFF_MIME_TYPE })
+        expect.objectContaining({ ContentType: TIFF_MIME_TYPE })
       );
     });
 
@@ -160,7 +165,7 @@ describe("document-downloader-local", () => {
       });
       expect(res).toBeTruthy();
       expect(s3Upload_mock).toHaveBeenCalledWith(
-        expect.objectContaining({ contentType: PDF_MIME_TYPE })
+        expect.objectContaining({ ContentType: PDF_MIME_TYPE })
       );
     });
 
@@ -172,7 +177,7 @@ describe("document-downloader-local", () => {
       });
       expect(res).toBeTruthy();
       expect(s3Upload_mock).toHaveBeenCalledWith(
-        expect.objectContaining({ contentType: PNG_MIME_TYPE })
+        expect.objectContaining({ ContentType: PNG_MIME_TYPE })
       );
     });
 
@@ -184,7 +189,7 @@ describe("document-downloader-local", () => {
       });
       expect(res).toBeTruthy();
       expect(s3Upload_mock).toHaveBeenCalledWith(
-        expect.objectContaining({ contentType: JPEG_MIME_TYPE })
+        expect.objectContaining({ ContentType: JPEG_MIME_TYPE })
       );
     });
 
@@ -196,7 +201,7 @@ describe("document-downloader-local", () => {
       });
       expect(res).toBeTruthy();
       expect(s3Upload_mock).toHaveBeenCalledWith(
-        expect.objectContaining({ contentType: OCTET_MIME_TYPE })
+        expect.objectContaining({ ContentType: OCTET_MIME_TYPE })
       );
     });
   });
@@ -206,7 +211,6 @@ describe("document-downloader-local", () => {
       const mockS3Client = { upload: jest.fn().mockReturnValue({ promise: jest.fn() }) };
       const mockS3Utils = {
         getFileInfoFromS3: jest.fn().mockResolvedValue({ size: 1, contentType: "text/xml" }),
-        getLocation: jest.fn().mockReturnValue("location"),
       };
       const mockCwApi = { retrieveDocument: jest.fn() };
       const config: DocumentDownloaderLocalConfig = {
