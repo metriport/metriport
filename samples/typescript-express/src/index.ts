@@ -5,10 +5,11 @@ import { MetriportMedicalApi, USState } from "@metriport/api-sdk";
 import { getEnvVarOrFail } from "@metriport/shared";
 
 const apiKey = getEnvVarOrFail("METRIPORT_API_KEY");
-const isProd = getEnvVarOrFail("IS_PROD") === "true";
+// const isProd = getEnvVarOrFail("IS_PROD") === "true";
 
 const metriportClient = new MetriportMedicalApi(apiKey, {
-  baseAddress: isProd ? "https://api.metriport.com" : "https://api.sandbox.metriport.com",
+  // baseAddress: isProd ? "https://api.metriport.com" : "https://api.sandbox.metriport.com",
+  baseAddress: "http://localhost:8080",
 });
 
 async function main() {
@@ -51,9 +52,10 @@ async function main() {
 
   let page = 1;
   // const { meta, patients } = await metriportClient.listPatients({ facilityId });
-  const { meta, patients } = await metriportClient.listPatients();
+  const { meta, patients } = await metriportClient.listPatients({ pagination: { count: 10 } });
   console.log(`Page ${page++} has ${patients.length} patients`);
   // do something with the patients...
+  console.log(await metriportClient.listPatients());
   let nextPage = meta.nextPage;
   while (nextPage) {
     const { meta, patients } = await metriportClient.listPatientsPage(nextPage);
