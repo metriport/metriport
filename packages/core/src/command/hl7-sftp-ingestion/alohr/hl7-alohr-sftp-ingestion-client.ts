@@ -1,14 +1,13 @@
 import { BadRequestError, MetriportError } from "@metriport/shared";
 import { getSecretValueOrFail } from "../../../external/aws/secret-manager";
 import { SftpClient } from "../../../external/sftp/client";
-import { SftpConfig, SftpListFilterFunction } from "../../../external/sftp/types";
-import { makeSftpListFilter } from "../../../external/sftp/client";
+import { SftpConfig } from "../../../external/sftp/types";
 import { Config } from "../../../util/config";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { sftpConfigSchema } from "../sftp-config";
 
 export class AlohrSftpIngestionClient extends SftpClient {
-  private readonly FILE_FORMAT = "YYYY_MM_DD";
+  private readonly FILE_FORMAT = "YYYYMMDD";
   protected override readonly log: typeof console.log;
 
   private constructor(sftpConfig: SftpConfig, log: typeof console.log) {
@@ -45,22 +44,25 @@ export class AlohrSftpIngestionClient extends SftpClient {
     return await getSecretValueOrFail(passwordArn, region);
   }
 
-  async syncWithDate(remotePath: string, dateTimestamp: string): Promise<string[]> {
+  async syncWithDate(remotePath: string, start: string, end: string): Promise<string[]> {
     if (!this.replica) {
       throw new BadRequestError("Replica not set", undefined, {
         context: "sftp.client.sync",
       });
     }
-    this.log(`Syncing files in ${remotePath} for files containing ${dateTimestamp}`);
-    const filter: SftpListFilterFunction | undefined = makeSftpListFilter({
-      contains: dateTimestamp,
+    this.log(`Syncing files in ${remotePath} for files between ${start} and ${end}`);
+
+    const allFileNames = await this.list(remotePath);
+    const sftpFileNames = allFileNames.filter(fileName => {
+      const dateMatch = fileName.match(/\d{8}/);
+      if (!dateMatch) return false;
+
+      const fileDate = dateMatch[0];
+      return fileDate >= start && fileDate < end;
     });
-    if (!filter) {
-      throw new Error(`No filter was created. Date: ${dateTimestamp}`);
-    }
-    const sftpFileNames = await this.list(remotePath, filter);
+
     if (sftpFileNames.length === 0) {
-      this.log(`No files found in ${remotePath} for date ${dateTimestamp}`);
+      this.log(`No files found in ${remotePath} for date range ${start} to ${end}`);
       return [];
     }
     const replicaDirectory = this.replica.getReplicaPath(remotePath);
@@ -81,10 +83,15 @@ export class AlohrSftpIngestionClient extends SftpClient {
     return filesSynced;
   }
 
-  async safeSyncWithDate(remotePath: string, dateTimestamp?: string): Promise<string[]> {
+  async safeSyncWithDate(
+    remotePath: string,
+    startingDate?: string,
+    endingDate?: string
+  ): Promise<string[]> {
     this.log(`Syncing from remotePath: ${remotePath}`);
 
-    const now = dateTimestamp ? dateTimestamp : buildDayjs(Date.now()).format(this.FILE_FORMAT);
+    const start = startingDate ? startingDate : buildDayjs(Date.now()).format(this.FILE_FORMAT);
+    const end = endingDate ? endingDate : buildDayjs().add(1, "day").format(this.FILE_FORMAT);
     try {
       await this.connect();
 
@@ -95,7 +102,7 @@ export class AlohrSftpIngestionClient extends SftpClient {
         });
       }
       this.log("Syncing from remote path to Replica");
-      const fileNames = await this.syncWithDate(remotePath, now);
+      const fileNames = await this.syncWithDate(remotePath, start, end);
       return fileNames;
     } finally {
       await this.disconnect();

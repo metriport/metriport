@@ -9,7 +9,8 @@ export interface Hl7AlohrSftpIngestion {
 }
 
 export interface Hl7AlohrSftpIngestionParams {
-  dateTimestamp?: string;
+  startingDate?: string; // YYYYMMDD INCLUSIVE
+  endingDate?: string; // YYYYMMDD EXCLUSIVE
 }
 
 export interface TimestampedMessage {
