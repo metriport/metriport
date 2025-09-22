@@ -5,6 +5,7 @@ import { SftpConfig, SftpListFilterFunction } from "../../../external/sftp/types
 import { makeSftpListFilter } from "../../../external/sftp/client";
 import { Config } from "../../../util/config";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { sftpConfigSchema } from "../sftp-config";
 
 export class AlohrSftpIngestionClient extends SftpClient {
   private readonly FILE_FORMAT = "YYYY_MM_DD";
@@ -24,16 +25,8 @@ export class AlohrSftpIngestionClient extends SftpClient {
     log: typeof console.log,
     givenPassword?: string
   ): Promise<AlohrSftpIngestionClient> {
-    const sftpConfig = Config.getAlohrIngestionSftpConfig();
+    const sftpConfig = sftpConfigSchema.parse(Config.getAlohrIngestionSftpConfig());
     const password = givenPassword ? givenPassword : await this.getAlohrPassword();
-
-    if (!sftpConfig.host || !sftpConfig.port || !sftpConfig.username) {
-      throw new MetriportError("Missing required SFTP configuration", undefined, {
-        host: sftpConfig.host,
-        port: sftpConfig.port,
-        username: sftpConfig.username,
-      });
-    }
 
     return new AlohrSftpIngestionClient(
       {

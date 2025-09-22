@@ -472,24 +472,7 @@ export class Config {
   }
 
   static getAlohrIngestionSftpConfig(): Partial<SftpConfig> {
-    const record = getEnvVarAsRecordOrFail("ALOHR_INGESTION_SFTP_CONFIG");
-
-    if (
-      !record.host ||
-      typeof record.host !== "string" ||
-      !record.port ||
-      typeof record.port !== "number" ||
-      !record.username ||
-      typeof record.username !== "string"
-    ) {
-      throw new Error("ALOHR_INGESTION_SFTP_CONFIG is not a valid SftpConfig");
-    }
-
-    return {
-      host: record.host,
-      port: record.port,
-      username: record.username,
-    };
+    return getEnvVarAsRecordOrFail("ALOHR_INGESTION_SFTP_CONFIG");
   }
 
   static getAlohrIngestionLambdaName(): string {
