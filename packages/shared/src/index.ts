@@ -16,6 +16,7 @@ export { toTitleCase } from "./common/title-case";
 export { AtLeastOne, stringToBoolean } from "./common/types";
 export { validateNPI } from "./common/validate-npi";
 export * from "./domain/address/city";
+export * from "./domain/address/zip";
 export * from "./domain/address/country";
 export * from "./domain/address/index";
 export * from "./domain/address/state";
