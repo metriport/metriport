@@ -1,11 +1,10 @@
-import { CopyObjectCommand } from "@aws-sdk/client-s3";
 import { DocumentReference } from "@medplum/fhirtypes";
 import { errorToString, executeWithNetworkRetries, executeWithRetries } from "@metriport/shared";
 import axios from "axios";
 import { createDocumentFileName } from "../../../domain/document/filename";
+import { createUploadFilePath, createUploadMetadataFilePath } from "../../../shareback/file";
 import { parseFilePath } from "../../../domain/filename";
 import { createAndUploadDocumentMetadataFile } from "../../../shareback/create-and-upload-extrinsic-object";
-import { createUploadFilePath, createUploadMetadataFilePath } from "../../../shareback/file";
 import { MetriportError } from "../../../util/error/metriport-error";
 import { out } from "../../../util/log";
 import { S3Utils } from "../s3";
@@ -53,7 +52,7 @@ export async function documentUploaderHandler(
 
   // Make a copy of the file to the general medical documents bucket
   try {
-    await executeWithRetries(() => s3Utils.s3Client.send(new CopyObjectCommand(params)), {
+    await executeWithRetries(() => s3Utils.s3.copyObject(params).promise(), {
       maxAttempts: 3,
       initialDelay: 500,
       log,

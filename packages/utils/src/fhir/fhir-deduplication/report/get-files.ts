@@ -65,16 +65,8 @@ export async function getFilesToProcessFromS3({
       const writeStreamDedup = fs.createWriteStream(localDedupFilePath, { flags: "a+" });
 
       await Promise.all([
-        s3.getFileContentsIntoStream({
-          bucket: bucketName,
-          key: original.Key,
-          writeStream: writeStreamOriginal,
-        }),
-        s3.getFileContentsIntoStream({
-          bucket: bucketName,
-          key: dedup.Key,
-          writeStream: writeStreamDedup,
-        }),
+        s3.getFileContentsIntoStream(bucketName, original.Key, writeStreamOriginal),
+        s3.getFileContentsIntoStream(bucketName, dedup.Key, writeStreamDedup),
       ]);
 
       res.push({

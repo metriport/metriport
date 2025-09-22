@@ -44,7 +44,7 @@ export * from "./domain/pagination-v2";
 export { BadRequestError } from "./error/bad-request";
 export { AdditionalInfo, MetriportError } from "./error/metriport-error";
 export { NotFoundError } from "./error/not-found";
-export { errorToString } from "./error/shared";
+export * from "./error/shared";
 export { TooManyRequestsError } from "./error/too-many-requests";
 export * from "./external";
 export * from "./interface";

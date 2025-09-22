@@ -28,8 +28,11 @@ export function asyncHandler(
           log(`shouldLogErrorDetails() failed: ${removeNewLines(errorToString(e))}`);
         }
       }
-      if (isLogErrorDetails) log("", err);
-      else log(removeNewLines(errorToString(err)));
+      if (isLogErrorDetails) {
+        const errorAsString = errorToString(err, { includeStackTrace: true, detailed: true });
+        if (Config.isCloudEnv()) log(removeNewLines(errorAsString));
+        else log(errorAsString);
+      } else log(removeNewLines(errorToString(err)));
       next(err);
     }
   };

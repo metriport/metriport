@@ -1,7 +1,8 @@
 import { faker } from "@faker-js/faker";
-import { CommonWellAPI } from "@metriport/commonwell-sdk";
+import { CommonWellAPI, organizationQueryMeta } from "@metriport/commonwell-sdk-v1";
 import * as AWS from "aws-sdk";
 import { ManagedUpload } from "aws-sdk/clients/s3";
+import { mockCapture } from "../../../../util/__tests__/capture";
 import {
   JPEG_MIME_TYPE,
   OCTET_MIME_TYPE,
@@ -10,7 +11,6 @@ import {
   TIFF_MIME_TYPE,
   TXT_MIME_TYPE,
 } from "../../../../util/mime";
-import { mockCapture } from "../../../../util/__tests__/capture";
 import { S3Utils } from "../../../aws/s3";
 import {
   getCdaWithB64EncodedJpeg,
@@ -23,11 +23,8 @@ import {
   getCdaWithTwoNonXmlBodyTags,
   getCdaWithTwoTextTagsUnderNonXmlBodyTag,
 } from "../../../cda/__tests__/examples";
-import {
-  DocumentDownloaderLocalConfig,
-  DocumentDownloaderLocalV2,
-} from "../../../commonwell-v2/document/document-downloader-local-v2";
 import { FileInfo } from "../../../commonwell/document/document-downloader";
+import { DocumentDownloaderLocal } from "../document-downloader-local";
 
 describe("document-downloader-local", () => {
   describe("parseXmlFile", () => {
@@ -64,11 +61,15 @@ describe("document-downloader-local", () => {
       jest.restoreAllMocks();
     });
 
-    const downloader = new DocumentDownloaderLocalV2({
+    const queryMeta = organizationQueryMeta(faker.company.name(), {
+      npi: faker.string.alpha(10),
+    });
+    const downloader = new DocumentDownloaderLocal({
       region: "us-east-1",
       bucketName: faker.lorem.word(),
       commonWell: {
         api: {} as CommonWellAPI,
+        queryMeta,
       },
       capture,
     });
@@ -77,6 +78,7 @@ describe("document-downloader-local", () => {
       key: faker.lorem.sentence(),
       location: faker.internet.url(),
       size: faker.number.int(),
+      sizeInBytes: faker.number.int(),
       contentType: faker.system.mimeType(),
     };
     const requestedFileInfo: FileInfo = {
@@ -203,62 +205,6 @@ describe("document-downloader-local", () => {
       expect(s3Upload_mock).toHaveBeenCalledWith(
         expect.objectContaining({ ContentType: OCTET_MIME_TYPE })
       );
-    });
-  });
-
-  describe("downloadFromCommonwellIntoS3", () => {
-    it("resets the stream if downloadDocumentFromCW fails and triggers resetStream", async () => {
-      const mockS3Client = { upload: jest.fn().mockReturnValue({ promise: jest.fn() }) };
-      const mockS3Utils = {
-        getFileInfoFromS3: jest.fn().mockResolvedValue({ size: 1, contentType: "text/xml" }),
-      };
-      const mockCwApi = { retrieveDocument: jest.fn() };
-      const config: DocumentDownloaderLocalConfig = {
-        region: "us-east-1",
-        bucketName: "bucket",
-        commonWell: { api: mockCwApi as unknown as CommonWellAPI },
-      };
-
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { DocumentDownloaderLocalV2 } = require("../document-downloader-local-v2");
-      const downloader = new DocumentDownloaderLocalV2(config);
-
-      downloader.s3client = mockS3Client as unknown as AWS.S3;
-      downloader.s3Utils = mockS3Utils as unknown as S3Utils;
-
-      const getUploadStreamToS3Spy = jest
-        .spyOn(downloader, "getUploadStreamToS3")
-        .mockImplementation(() => ({
-          // eslint-disable-next-line @typescript-eslint/no-var-requires
-          writeStream: new (require("stream").PassThrough)(),
-          promise: Promise.resolve({
-            Key: "key",
-            Bucket: "bucket",
-            Location: "location",
-          }),
-        }));
-
-      // Simulate downloadDocumentFromCW calling resetStream
-      const downloadDocumentFromCWSpy = jest
-        .spyOn(downloader, "downloadDocumentFromCW")
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .mockImplementation(async (...args: any[]) => {
-          const arg = args[0] || {};
-          if (typeof arg.resetStream === "function") {
-            arg.resetStream();
-          }
-        });
-
-      const document = { location: "loc", mimeType: "text/xml", id: "id" } as unknown as Document;
-      const fileInfo: import("../../../commonwell/document/document-downloader").FileInfo = {
-        name: "file.xml",
-        location: "bucket",
-      };
-
-      await downloader.downloadFromCommonwellIntoS3(document, fileInfo);
-
-      expect(getUploadStreamToS3Spy).toHaveBeenCalledTimes(2); // initial + reset
-      expect(downloadDocumentFromCWSpy).toHaveBeenCalled();
     });
   });
 });

@@ -7,8 +7,7 @@ import { generateAiBriefBundleEntry } from "../../domain/ai-brief/generate";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
-import { S3Utils } from "../../external/aws/s3";
-import { getAllAdtSourcedResources } from "../../external/fhir/adt-encounters";
+import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
 import {
   buildBundleEntry,
   buildCollectionBundle,
@@ -18,8 +17,8 @@ import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/dedupli
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
-import { getBundleResources as getLabResources } from "../../external/quest/command/bundle/get-bundle";
 import { getBundleResources as getPharmacyResources } from "../../external/surescripts/command/bundle/get-bundle";
+import { getBundleResources as getLabResources } from "../../external/quest/command/bundle/get-bundle";
 import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { processAsyncError } from "../../util/error/shared";
@@ -29,6 +28,7 @@ import { ingestPatientIntoAnalyticsPlatform } from "../analytics-platform/increm
 import { isAiBriefFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
 import { makeIngestConsolidated } from "./search/fhir-resource/ingest-consolidated-factory";
+import { getAllAdtSourcedResources } from "../../external/fhir/adt-encounters";
 
 dayjs.extend(duration);
 
@@ -38,6 +38,10 @@ const TIMED_OUT = Symbol("TIMED_OUT");
 
 export const conversionBundleSuffix = ".xml.json";
 const numberOfParallelExecutions = 10;
+const defaultS3RetriesConfig = {
+  maxAttempts: 3,
+  initialDelay: 500,
+};
 
 export type ConsolidatePatientDataCommand = {
   cxId: string;
@@ -198,7 +202,10 @@ async function getConversions({
     async inputBundle => {
       const { bucket, key } = inputBundle;
       log(`Getting conversion bundle from bucket ${bucket}, key ${key}`);
-      const contents = await s3Utils.getFileContentsAsString(bucket, key);
+      const contents = await executeWithRetriesS3(
+        () => s3Utils.getFileContentsAsString(bucket, key),
+        { ...defaultS3RetriesConfig, log }
+      );
       log(`Merging entries from bundle ${key} into the consolidated one`);
       const singleConversion = parseFhirBundle(contents);
       if (!singleConversion) {

@@ -15,7 +15,11 @@ import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bund
 import { bundleToHtmlBmi } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-bmi";
 import { bundleToHtmlSimple } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-simple";
 import { bundleToHtmlDerm } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-derm";
-import { S3Utils } from "@metriport/core/external/aws/s3";
+import {
+  getSignedUrl as coreGetSignedUrl,
+  makeS3Client,
+  S3Utils,
+} from "@metriport/core/external/aws/s3";
 import { wkHtmlToPdf, WkOptions } from "@metriport/core/external/wk-html-to-pdf/index";
 import { out } from "@metriport/core/util/log";
 import { errorToString, MetriportError } from "@metriport/shared";
@@ -45,7 +49,7 @@ const featureFlagsTableName = getEnvOrFail("FEATURE_FLAGS_TABLE_NAME");
 // Call this before reading FFs
 FeatureFlags.init(region, featureFlagsTableName);
 
-const s3Client = new S3Utils(region);
+const s3Client = makeS3Client(region);
 const newS3Client = new S3Utils(region);
 const ossApi = apiClient(apiUrl);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
@@ -171,11 +175,18 @@ export const handler = capture.wrapHandler(
 );
 
 async function getSignedUrl(fileName: string) {
-  return s3Client.getSignedUrl({ bucketName, fileName });
+  return coreGetSignedUrl({ fileName, bucketName, awsRegion: region });
 }
 
 async function getBundleFromS3(fileName: string) {
-  const objectBody = await s3Client.downloadFile({ bucket: bucketName, key: fileName });
+  const getResponse = await s3Client
+    .getObject({
+      Bucket: bucketName,
+      Key: fileName,
+    })
+    .promise();
+  const objectBody = getResponse.Body;
+  if (!objectBody) throw new Error(`No body found for ${fileName}`);
   return JSON.parse(objectBody.toString());
 }
 
@@ -211,12 +222,14 @@ async function convertAndStorePdf({
 
   // Upload generated PDF to S3 bucket
   const uploadStartedAt = Date.now();
-  await s3Client.uploadFile({
-    bucket: bucketName,
-    key: fileName,
-    file: pdfData,
-    contentType: "application/pdf",
-  });
+  await s3Client
+    .putObject({
+      Bucket: bucketName,
+      Key: fileName,
+      Body: pdfData,
+      ContentType: "application/pdf",
+    })
+    .promise();
   metrics.pdfUpload = {
     duration: Date.now() - uploadStartedAt,
     timestamp: new Date(),

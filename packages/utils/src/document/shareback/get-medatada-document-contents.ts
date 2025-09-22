@@ -41,7 +41,7 @@ async function main() {
   console.log("s3Key: ", s3Key);
   console.log("bucketName: ", bucketName);
   const cmd = new ListObjectsCommand({ Bucket: bucketName, Prefix: prefix });
-  const data = await s3Utils.s3Client.send(cmd);
+  const data = await s3Utils._s3Client.send(cmd);
   console.log(`Found ${data.Contents?.length} files:`);
   data.Contents?.forEach(item => {
     console.log(`- ${item.Key}`);

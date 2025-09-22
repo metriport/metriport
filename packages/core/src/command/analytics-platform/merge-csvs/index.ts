@@ -191,7 +191,7 @@ async function listAllFiles({
 
   // Going through each patient (concurrently) instead of listing all files in in the customer's
   // because listing all files of all patients in one go was very slow.
-  const rawFileList: { Key?: string | undefined; Size?: number | undefined }[] = [];
+  const rawFileList: { Key?: string; Size?: number }[] = [];
   await executeAsynchronously(
     patientIds,
     async patientId => {
@@ -405,7 +405,12 @@ async function mergeFileGroup(
   let amountOfFilesProcessed = 0;
   for (const file of files) {
     // Get S3 read stream and pipe directly to gzip
-    const s3ReadStream = await s3Utils.getReadStream({ bucket: sourceBucket, key: file.key });
+    const s3ReadStream = s3Utils.s3
+      .getObject({
+        Bucket: sourceBucket,
+        Key: file.key,
+      })
+      .createReadStream();
 
     // Pipe S3 stream directly to gzip without loading into memory
     s3ReadStream.pipe(gzip, { end: false });
