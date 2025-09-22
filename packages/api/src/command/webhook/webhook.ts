@@ -93,7 +93,7 @@ export async function processRequest(
     const payload = webhookRequest.payload;
     const meta: WebhookMetadata = {
       messageId: webhookRequest.id,
-      requestId: webhookRequest.requestId,
+      ...(webhookRequest.requestId ? { requestId: webhookRequest.requestId } : {}),
       when: buildDayjs(webhookRequest.createdAt).toISOString(),
       type: webhookRequest.type,
       data: cxWHRequestMeta,

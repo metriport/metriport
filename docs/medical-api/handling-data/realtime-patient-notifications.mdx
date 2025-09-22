@@ -138,7 +138,7 @@ A Patient Admit event is emitted when a patient undergoes the admission process,
     <ResponseField name="messageId" type="string" required>
       A unique identifier for this webhook message. Use this only for debugging purposes.
     </ResponseField>
-    <ResponseField name="requestId" type="string" required>
+    <ResponseField name="requestId" type="string">
       The ID of the request that initiated the async flow for this webhook;
     </ResponseField>
     <ResponseField name="when" type="string" required>
@@ -236,7 +236,7 @@ A Patient Transfer event indicates that a patient has been moved from one locati
     <ResponseField name="messageId" type="string" required>
       A unique identifier for this webhook message. Use this only for debugging purposes.
     </ResponseField>
-    <ResponseField name="requestId" type="string" required>
+    <ResponseField name="requestId" type="string">
       The ID of the request that initiated the async flow for this webhook;
     </ResponseField>
     <ResponseField name="when" type="string" required>
@@ -394,7 +394,7 @@ A Patient Discharge event indicates the end of a patient's stay in a healthcare 
     <ResponseField name="messageId" type="string" required>
       A unique identifier for this webhook message. Use this only for debugging purposes.
     </ResponseField>
-    <ResponseField name="requestId" type="string" required>
+    <ResponseField name="requestId" type="string">
       The ID of the request that initiated the async flow for this webhook;
     </ResponseField>
     <ResponseField name="when" type="string" required>
