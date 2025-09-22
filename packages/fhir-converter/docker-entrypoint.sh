@@ -24,5 +24,6 @@ MEMORY_LIMIT="${MEM_LIMIT:=3584}";
 export NODE_OPTIONS="--max-old-space-size=${MEMORY_LIMIT}"
 echo "NODE_OPTIONS: ${NODE_OPTIONS}"
 
-# Run prestart, then exec Node as PID 1 (not npm) so SIGTERM is handled properly.
-exec node --experimental-worker src/index.js
+# Run Node as PID 1 (not npm) so SIGTERM/SIGINT are handled and exit codes are clean.
+# Workers are stable on Node 18+, so no experimental flags are needed.
+exec node src/index.js
