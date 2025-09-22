@@ -8,11 +8,8 @@ import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/extern
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Config as CoreConfig } from "@metriport/core/util/config";
 import { BadRequestError, MetriportError, NotFoundError } from "@metriport/shared";
-import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";
 
-/** @deprecated Use S3Utils instead */
-const s3client = makeS3Client();
 const s3Utils = new S3Utils(Config.getAWSRegion());
 const lambdaClient = makeLambdaClient(Config.getAWSRegion());
 const conversionLambdaName = Config.getConvertDocLambdaName();
@@ -105,16 +102,11 @@ async function doesObjExist({
     try {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const bucketName = Config.getSandboxSeedBucketName()!;
-      const head = await s3client
-        .headObject({
-          Bucket: bucketName,
-          Key: fileName,
-        })
-        .promise();
+      const head = await s3Utils.getFileInfoFromS3(fileName, bucketName);
 
       return {
         exists: true,
-        contentType: head.ContentType ?? "",
+        contentType: head.contentType ?? "",
         bucketName: bucketName,
       };
     } catch (error) {
@@ -126,16 +118,11 @@ async function doesObjExist({
 
   try {
     const bucketName = Config.getMedicalDocumentsBucketName();
-    const head = await s3client
-      .headObject({
-        Bucket: bucketName,
-        Key: fileName,
-      })
-      .promise();
+    const head = await s3Utils.getFileInfoFromS3(fileName, bucketName);
 
     return {
       exists: true,
-      contentType: head.ContentType ?? "",
+      contentType: head.contentType ?? "",
       bucketName: bucketName,
     };
   } catch (error) {

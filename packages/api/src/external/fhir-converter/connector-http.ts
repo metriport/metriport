@@ -1,6 +1,6 @@
 import axios from "axios";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Config } from "../../shared/config";
-import { makeS3Client } from "../aws/s3";
 import { FHIRConverterConnector, FHIRConverterRequest } from "./connector";
 
 export function buildUrl(url: string, sourceType: string, template: string): string {
@@ -27,7 +27,7 @@ export class FHIRConverterConnectorHTTP implements FHIRConverterConnector {
     const url = buildUrl(fhirConverterUrl, sourceType, template);
 
     // Gotta download the contents from S3 since the payload is just a reference to the actual file
-    const s3 = makeS3Client();
+    const s3 = new S3Utils(Config.getAWSRegion());
     const payloadJson = JSON.parse(payload);
     const s3BucketName = payloadJson.s3BucketName;
     if (!s3BucketName) throw new Error(`Missing s3BucketName in payload: ${payload}`);
@@ -35,14 +35,7 @@ export class FHIRConverterConnectorHTTP implements FHIRConverterConnector {
     if (!s3FileName) throw new Error(`Missing s3FileName in payload: ${payload}`);
 
     console.log(`Downloading ${s3FileName} from ${s3BucketName}...`);
-    const obj = await s3
-      .getObject({
-        Bucket: s3BucketName,
-        Key: s3FileName,
-      })
-      .promise();
-    const data = obj.Body?.toString("utf-8");
-
+    const data = await s3.getFileContentsAsString(s3BucketName, s3FileName);
     console.log(`Sending payload to ${url}...`);
     const resp = await axios.post(url, data, {
       params: {
