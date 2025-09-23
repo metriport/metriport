@@ -14,7 +14,7 @@ import {
   OrganizationBizType,
   TreatmentType,
   USStateForAddress,
-  uuidv7,
+  uuidv4,
 } from "@metriport/shared";
 import { makeNPI } from "@metriport/shared/common/__tests__/npi";
 import { makeOid } from "@metriport/shared/common/__tests__/oid";
@@ -46,7 +46,7 @@ dayjs.extend(duration);
  * Options:
  * -o, --org-name <name>         Organization name (optional, auto-generated if not provided)
  * -t, --org-type <type>         Organization type: healthcare_provider or healthcare_it_vendor (required)
- * -f, --facility-type <type>    Type of facility: initiator-and-responder or initiator-only
+ * -f, --facility-type <type>    Type of facility: initiator_and_responder or initiator_only
  * --facility-count <number>     Number of facilities to create (1-50) (default: 3)
  * --cq-approved                 Set CareQuality approved status (default: false)
  * --cq-active                   Set CareQuality active status (default: false)
@@ -137,7 +137,7 @@ async function main() {
   }
 
   // Set configuration from command line arguments
-  cxId = options.cxId || uuidv7();
+  cxId = options.cxId || uuidv4();
   orgName = options.orgName || makeShortName();
   orgType = options.orgType as OrganizationBizType;
   orgTreatmentType = faker.helpers.enumValue(TreatmentType);
