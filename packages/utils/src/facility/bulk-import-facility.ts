@@ -107,13 +107,12 @@ async function main({ cxId, inputPath, dryrun }: FacilityImportParams) {
 
   const createdFacilities: FacilityInternalDetails[] = [];
 
-  let success = true;
-
   const rowPromises: Promise<void>[] = [];
 
   parser.on("data", async (row: InputRowFacilityImport) => {
     parser.pause();
     const p = (async () => {
+      let rowSuccess = true;
       const messages: string[] = [];
       try {
         const npiFacility = await getFacilityByNpiOrFail(row.npi);
@@ -155,7 +154,7 @@ async function main({ cxId, inputPath, dryrun }: FacilityImportParams) {
         console.log(`Successfully created facility with npi: ${row.npi}`);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
-        success = false;
+        rowSuccess = false;
         if (axios.isAxiosError(err) && err.response?.status === 400) {
           const message = err.response.data?.detail ?? err.response.data?.title ?? err.message;
           console.log(message);
@@ -167,7 +166,7 @@ async function main({ cxId, inputPath, dryrun }: FacilityImportParams) {
         }
       } finally {
         const combinedMessage = messages.length > 0 ? messages.join("; ") : undefined;
-        await writeToCsv(logsFilePath, success, combinedMessage, row);
+        await writeToCsv(logsFilePath, rowSuccess, combinedMessage, row);
         await sleep(60);
         parser.resume();
       }
