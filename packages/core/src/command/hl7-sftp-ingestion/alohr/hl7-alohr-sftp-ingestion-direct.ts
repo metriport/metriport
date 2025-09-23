@@ -1,4 +1,4 @@
-import { Hl7Message } from "@medplum/core";
+import { Hl7Message, Hl7Segment, Hl7Field } from "@medplum/core";
 import { S3Utils } from "../../../external/aws/s3";
 import { Config } from "../../../util/config";
 import {
@@ -12,9 +12,16 @@ import { AlohrSftpIngestionClient } from "./hl7-alohr-sftp-ingestion-client";
 import { buildHl7NotificationWebhookSender } from "../../hl7-notification/hl7-notification-webhook-sender-factory";
 import { Hl7NotificationSenderParams } from "../../hl7-notification/hl7-notification-webhook-sender";
 import { buildDayjs } from "@metriport/shared/common/date";
-import { getCxIdAndPatientIdOrFail } from "../../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import {
+  getCxIdAndPatientIdOrFail,
+  getSegmentByNameOrFail,
+} from "../../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { asString } from "../../hl7-notification/utils";
 
 export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
+  private readonly ALTERNATE_PATIENT_ID_FIELD_INDEX = 4; // 1 indexed
+  private readonly PATIENT_ID_FIELD_INDEX = 3; // 1 indexed
+
   private sftpClient: AlohrSftpIngestionClient;
 
   constructor(sftpClient: AlohrSftpIngestionClient) {
@@ -45,12 +52,14 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
 
       const message = await s3Utils.getFileContentsAsString(bucketName, filePath);
       const recievedAt = buildDayjs(Date.now()).toISOString();
-
       const hl7Message = Hl7Message.parse(message);
-      const { cxId, patientId } = getCxIdAndPatientIdOrFail(hl7Message);
+
+      const remappedMessage = this.remapMessage(hl7Message);
+      const remappedMessageString = asString(remappedMessage);
+      const { cxId, patientId } = getCxIdAndPatientIdOrFail(remappedMessage);
 
       timestampedMessages.push({
-        message: message,
+        message: remappedMessageString,
         timestamp: recievedAt,
         cxId: cxId,
         patientId: patientId,
@@ -78,5 +87,41 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
 
   private getFilePath(remotePath: string, fileName: string): string {
     return `${remotePath}/${fileName}`.replace(/^\//, "");
+  }
+
+  private remapMessage(message: Hl7Message): Hl7Message {
+    const remappedPid = this.remapPidField(message);
+    const newSegments = message.segments.map(segment => {
+      if (segment.name === "PID") {
+        return remappedPid;
+      }
+      return segment;
+    });
+
+    return new Hl7Message(newSegments, message.context);
+  }
+
+  /**
+   * Remaps the PID field by swapping the patient id (index 3) with the alternate patient id (index 4)
+   * @param message The HL7 Message to remap
+   * @returns The remapped PID segment
+   */
+  private remapPidField(message: Hl7Message): Hl7Segment {
+    const pid = getSegmentByNameOrFail(message, "PID");
+
+    const patientIdField = pid.getField(this.PATIENT_ID_FIELD_INDEX);
+    const alternatePatientIdField = pid.getField(this.ALTERNATE_PATIENT_ID_FIELD_INDEX);
+
+    const originalPatientId = patientIdField.getComponent(1).toString();
+    const metriportId = alternatePatientIdField.getComponent(1).toString();
+
+    const newPatientIdField = new Hl7Field([[metriportId]], pid.context);
+    const newAlternatePatientIdField = new Hl7Field([[originalPatientId]], pid.context);
+
+    const newFields = [...pid.fields];
+    newFields[this.PATIENT_ID_FIELD_INDEX] = newPatientIdField;
+    newFields[this.ALTERNATE_PATIENT_ID_FIELD_INDEX] = newAlternatePatientIdField;
+
+    return new Hl7Segment(newFields, pid.context);
   }
 }
