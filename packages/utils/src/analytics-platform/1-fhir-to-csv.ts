@@ -117,6 +117,8 @@ async function main({
         localStartedAt
       )}`
     );
+    const difference = uniquePatientIds.filter(id => !filtererdPatientIds.includes(id));
+    log(`>>> Patients without consolidated data (${difference.length}):\n${difference.join(", ")}`);
   } else {
     filtererdPatientIds = uniquePatientIds;
   }
