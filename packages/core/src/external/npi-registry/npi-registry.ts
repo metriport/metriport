@@ -102,6 +102,8 @@ export function translateNpiFacilityToMetriportFacility(
 
   const type = isObo ? FacilityType.initiatorOnly : FacilityType.initiatorAndResponder;
   const zip = normalizeZipCodeNew(address.postal_code);
+  const cqActive = additionalInfo.cqActive;
+  const cwActive = additionalInfo.cwActive;
 
   const internalFacility: FacilityInternalDetails = {
     city: normalizeCity(address.city),
@@ -110,6 +112,10 @@ export function translateNpiFacilityToMetriportFacility(
     npi: npiFacility.number,
     cqType: type,
     cwType: type,
+    cqApproved: cqActive,
+    cwApproved: cwActive,
+    cqActive,
+    cwActive,
     addressLine1: toTitleCase(address.address_1),
     zip,
     country: "USA",

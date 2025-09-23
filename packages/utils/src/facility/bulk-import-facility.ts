@@ -7,6 +7,7 @@ import {
   getFacilityByNpiOrFail,
   translateNpiFacilityToMetriportFacility,
 } from "@metriport/core/external/npi-registry/npi-registry";
+import { validateNPI } from "@metriport/shared/common/validate-npi";
 import { errorToString, getEnvVarOrFail, MetriportError, sleep } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import axios from "axios";
@@ -43,6 +44,9 @@ import { z } from "zod";
 
 const internalUrl = getEnvVarOrFail("API_URL");
 
+const cqActive = true; // CHANGE IF NEEDED
+const cwActive = true; // CHANGE IF NEEDED
+
 interface FacilityImportParams {
   cxId: string;
   inputPath: string;
@@ -61,6 +65,17 @@ export type InputRowFacilityImport = z.infer<typeof InputRowSchema>;
 const CSV_HEADER =
   ["npi", "facilityName", "facilityType", "cqOboOid", "cwOboOid", "success", "reason"].join(",") +
   "\n";
+
+function normalizeFacilityName(name: string): string {
+  return name.toLowerCase().trim();
+}
+
+function facilityNamesMatch(registryName: string, csvName: string): boolean {
+  const normalizedRegistry = normalizeFacilityName(registryName);
+  const normalizedCsv = normalizeFacilityName(csvName);
+
+  return normalizedRegistry.includes(normalizedCsv) || normalizedCsv.includes(normalizedRegistry);
+}
 
 async function main({ cxId, inputPath, dryrun }: FacilityImportParams) {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
@@ -93,18 +108,45 @@ async function main({ cxId, inputPath, dryrun }: FacilityImportParams) {
   const createdFacilities: FacilityInternalDetails[] = [];
 
   let success = true;
-  let errorMessage: string | undefined;
 
   const rowPromises: Promise<void>[] = [];
 
   parser.on("data", async (row: InputRowFacilityImport) => {
     parser.pause();
     const p = (async () => {
+      const messages: string[] = [];
       try {
         const npiFacility = await getFacilityByNpiOrFail(row.npi);
 
-        const metriportFacility = translateNpiFacilityToMetriportFacility(npiFacility, row);
+        const params = {
+          ...row,
+          cqActive,
+          cwActive,
+        };
 
+        const metriportFacility = translateNpiFacilityToMetriportFacility(npiFacility, params);
+        if (npiFacility.other_names.length > 0) {
+          if (
+            !facilityNamesMatch(
+              npiFacility.other_names[0].organization_name,
+              metriportFacility.nameInMetriport
+            )
+          ) {
+            throw new Error(
+              `Name mismatch: Registry='${npiFacility.other_names[0].organization_name}', CSV='${metriportFacility.nameInMetriport}'`
+            );
+          }
+        }
+        if (!validateNPI(row.npi)) {
+          throw new Error(`Invalid NPI format: ${row.npi}`);
+        }
+
+        const existingFacility = await getFacilityByNpi(cxId, row.npi);
+        if (existingFacility) {
+          throw new Error(
+            `Can't create a new facility with the same NPI as facility with ID: ${existingFacility.id} and name: ${existingFacility.name}`
+          );
+        }
         if (!isDryRun) {
           await createFacility(metriportFacility, cxId);
         }
@@ -114,17 +156,17 @@ async function main({ cxId, inputPath, dryrun }: FacilityImportParams) {
       } catch (err: any) {
         success = false;
         if (axios.isAxiosError(err) && err.response?.status === 400) {
-          // This is specifically for "Can't Create a new facility with the same NPI as ..."
           const message = err.response.data?.detail ?? err.response.data?.title ?? err.message;
           console.log(message);
-          errorMessage = message;
+          messages.push(message);
         } else {
           console.log(err);
           const message = errorToString(err);
-          errorMessage = message;
+          messages.push(message);
         }
       } finally {
-        await writeToCsv(logsFilePath, success, errorMessage, row);
+        const combinedMessage = messages.length > 0 ? messages.join("; ") : undefined;
+        await writeToCsv(logsFilePath, success, combinedMessage, row);
         await sleep(60);
         parser.resume();
       }
@@ -164,6 +206,27 @@ export async function readFileFromLocal(inputPath: string, parser: Writable): Pr
   }
 
   await pipeline(createReadStream(filePath), parser);
+}
+
+async function getFacilityByNpi(cxId: string, npi: string): Promise<Facility | null> {
+  try {
+    const url = `${internalUrl}/internal/cx-data`;
+    const response = await axios.get(url, {
+      params: { cxId },
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    const data = response.data;
+    const facilities = data.facilities || [];
+    const facility = facilities.find((f: Facility) => f.npi === npi);
+    return facility || null;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 async function createFacility(

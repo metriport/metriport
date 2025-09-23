@@ -37,6 +37,11 @@ describe("Npi Registry Validation", () => {
         telephone_number: "206-543-2100",
       },
     ],
+    other_names: [
+      {
+        organization_name: "Test Name",
+      },
+    ],
   };
 
   it("successfully returns valid facility", async () => {
@@ -95,6 +100,8 @@ describe("Npi Registry Validation", () => {
     const additionalInfoNonObo: AdditionalInformationInternalFacility = {
       facilityName: "Test Name",
       facilityType: "non-obo",
+      cqActive: false,
+      cwActive: false,
     };
 
     const internalNonObo = translateNpiFacilityToMetriportFacility(
@@ -123,6 +130,8 @@ describe("Npi Registry Validation", () => {
       facilityType: "obo",
       cqOboOid: "1.2.3.4.5.6.7.8.9",
       cwOboOid: "1.2.3.4.5.6.7.8.9",
+      cqActive: false,
+      cwActive: false,
     };
 
     const internalObo = translateNpiFacilityToMetriportFacility(validFacility, additionalInfoObo);
