@@ -13,10 +13,10 @@ import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
 import _ from "lodash";
+import { stripInvalidCharactersFromPatientData } from "../../domain/character-sanitizer";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
 import { capture, out } from "../../util";
-import { stripInvalidCharactersFromPatientData } from "../../domain/character-sanitizer";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
 import { METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER } from "./constants";
@@ -33,7 +33,7 @@ import {
   RosterRowData,
   VpnlessHieConfig,
 } from "./types";
-import { createScrambledId } from "./utils";
+import { createNoSpecialScrambledId, createScrambledId } from "./utils";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
@@ -249,6 +249,7 @@ export function createRosterRowInput(
   const phone = data.contact?.find(c => c.phone)?.phone;
   const email = data.contact?.find(c => c.email)?.email;
   const scrambledId = createScrambledId(p.cxId, p.id);
+  const noSpecialCharsScrambledId = createNoSpecialScrambledId(p.cxId, p.id);
   const rosterGenerationDate = buildDayjs(new Date()).format("YYYY-MM-DD");
   const dob = data.dob; // 2025-01-31
   const dobNoDelimiter = dob.replace(/[-]/g, ""); // 20250131
@@ -277,6 +278,7 @@ export function createRosterRowInput(
     cxId: p.cxId,
     rosterGenerationDate,
     scrambledId,
+    noSpecialCharsScrambledId,
     lastName: data.lastName,
     firstName,
     middleName: middleInitial,

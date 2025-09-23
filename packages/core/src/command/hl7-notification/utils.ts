@@ -3,6 +3,7 @@ import {
   createUnparseableHl7MessageErrorMessageFileKey,
   createUnparseableHl7MessageFileKey,
   getCxIdAndPatientIdOrFail,
+  getCxIdAndPatientIdOrFailNoSpecial,
   getOptionalValueFromMessage,
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { utcifyHl7Message } from "../../external/hl7-notification/datetime";
@@ -28,11 +29,15 @@ export function isSupportedTriggerEvent(
 
 export async function parseHl7Message(
   rawMessage: Hl7Message,
-  hieConfig: string
+  hieConfig: string,
+  hieName: string
 ): Promise<ParsedHl7Data> {
   const message = utcifyHl7Message(rawMessage, hieConfig);
 
-  const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);
+  const { cxId, patientId } =
+    hieName === "Bamboo"
+      ? getCxIdAndPatientIdOrFailNoSpecial(message)
+      : getCxIdAndPatientIdOrFail(message);
 
   return {
     message,

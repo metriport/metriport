@@ -54,10 +54,35 @@ export function unpackPidFieldOrFail(pid: string) {
   return { cxId, patientId };
 }
 
+export function unpackPidFieldOrFailNoSpecial(pid: string) {
+  if (!pid || !pid.includes("_")) {
+    throw new MetriportError("Invalid PID format: missing separator");
+  }
+
+  const [cxId, patientId] = pid.split("_");
+
+  if (!cxId || !patientId) {
+    throw new MetriportError("Invalid PID format: could not unpack identifiers");
+  }
+
+  const normalizedCxId = cxId.replace(/_/g, "").replace(/=/g, ".").replace(/\+/g, "|");
+  const normalizedPatientId = patientId.replace(/_/g, "").replace(/=/g, ".").replace(/\+/g, "|");
+  const normalizedPid = `${normalizedCxId}_${normalizedPatientId}`;
+  return unpackPidFieldOrFail(normalizedPid);
+}
+
 export function getCxIdAndPatientIdOrFail(msg: Hl7Message): { cxId: string; patientId: string } {
   const pid = getSegmentByNameOrFail(msg, "PID");
   const idComponent = pid.getComponent(3, 1);
   return unpackPidFieldOrFail(idComponent);
+}
+export function getCxIdAndPatientIdOrFailNoSpecial(msg: Hl7Message): {
+  cxId: string;
+  patientId: string;
+} {
+  const pid = getSegmentByNameOrFail(msg, "PID");
+  const idComponent = pid.getComponent(3, 1);
+  return unpackPidFieldOrFailNoSpecial(idComponent);
 }
 
 export function getRequiredValueFromMessage(
