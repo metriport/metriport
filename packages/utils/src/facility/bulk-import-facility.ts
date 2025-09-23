@@ -125,7 +125,8 @@ async function main({ cxId, inputPath, dryrun }: FacilityImportParams) {
         };
 
         const metriportFacility = translateNpiFacilityToMetriportFacility(npiFacility, params);
-        if (npiFacility.other_names.length > 0) {
+        const otherNames = npiFacility.other_names ?? [];
+        if (otherNames.length > 0) {
           if (
             !facilityNamesMatch(
               npiFacility.other_names[0].organization_name,
