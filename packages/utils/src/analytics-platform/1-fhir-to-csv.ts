@@ -135,7 +135,6 @@ async function main({
     async patientId => {
       try {
         await fhirToCsvHandler.processFhirToCsvBulk({
-          jobId: fhirToCsvJobId,
           cxId,
           patientId,
           outputPrefix: buildFhirToCsvBulkJobPrefix({ cxId, jobId: fhirToCsvJobId }),

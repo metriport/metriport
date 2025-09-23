@@ -1,4 +1,4 @@
-import { buildFhirToCsvIncrementalHandler } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-incremental/fhir-to-csv-incremental-factory";
+import { buildFhirToCsvIncrementalHandler } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/incremental/fhir-to-csv-incremental-factory";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
@@ -13,7 +13,6 @@ const router = Router();
  * Runs the incremental fhir to csv job, for a single patient.
  *
  * @param req.query.cxId - The CX ID.
- * @param req.query.jobId - The job ID.
  * @param req.query.patientId - The patient ID.
  * @returns 200 OK
  */
@@ -22,11 +21,10 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFromQueryOrFail("cxId", req);
-    const jobId = getFromQueryOrFail("jobId", req);
     const patientId = getFromQueryOrFail("patientId", req);
 
     const handler = buildFhirToCsvIncrementalHandler();
-    await handler.processFhirToCsvIncremental({ cxId, jobId, patientId });
+    await handler.processFhirToCsvIncremental({ cxId, patientId });
 
     return res.sendStatus(httpStatus.OK);
   })

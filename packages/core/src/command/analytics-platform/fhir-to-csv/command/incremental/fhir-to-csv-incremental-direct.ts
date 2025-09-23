@@ -1,8 +1,9 @@
-import { DbCreds, sleep } from "@metriport/shared";
+import { DbCreds, dbCredsSchema, MetriportError, sleep } from "@metriport/shared";
+import { Config } from "../../../../../util/config";
 import { out } from "../../../../../util/log";
 import { sendPatientCsvsToDb } from "../../../csv-to-db/send-csvs-to-db";
 import { buildFhirToCsvIncrementalJobPrefix } from "../../file-name";
-import { startFhirToCsvTransform } from "../fhir-to-csv-transform";
+import { buildFhirToCsvTransformHandler } from "../transform/fhir-to-csv-transform-factory";
 import {
   FhirToCsvIncrementalHandler,
   ProcessFhirToCsvIncrementalRequest,
@@ -10,27 +11,30 @@ import {
 
 export class FhirToCsvIncrementalDirect implements FhirToCsvIncrementalHandler {
   constructor(
-    private readonly analyticsBucketName: string,
-    private readonly region: string,
-    private readonly dbCreds: DbCreds,
+    private readonly analyticsBucketName: string | undefined = Config.getAnalyticsBucketName(),
+    private readonly region: string = Config.getAWSRegion(),
+    private readonly dbCreds: DbCreds = dbCredsSchema.parse(
+      JSON.parse(Config.getAnalyticsDbCreds())
+    ),
     private readonly waitTimeInMillis: number = 0
   ) {}
 
   async processFhirToCsvIncremental({
     cxId,
-    jobId,
     patientId,
     timeoutInMillis,
   }: ProcessFhirToCsvIncrementalRequest): Promise<void> {
-    const { log } = out(`FhirToCsvIncrementalDirect - cx ${cxId} pt ${patientId} job ${jobId}`);
+    const { log } = out(`FhirToCsvIncrementalDirect - cx ${cxId} pt ${patientId}`);
+
+    if (!this.analyticsBucketName) throw new MetriportError("Analytics bucket name is not set");
 
     const outputPrefix = buildFhirToCsvIncrementalJobPrefix({ cxId, patientId });
 
     const startedAt = Date.now();
     log(`Starting FhirToCsvTransform...`);
-    await startFhirToCsvTransform({
+    const handler = buildFhirToCsvTransformHandler();
+    await handler.startFhirToCsvTransform({
       cxId,
-      jobId,
       patientId,
       outputPrefix,
       timeoutInMillis,

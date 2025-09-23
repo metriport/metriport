@@ -1,7 +1,6 @@
 export type ProcessFhirToCsvIncrementalRequest = {
   cxId: string;
   patientId: string;
-  jobId: string;
   timeoutInMillis?: number | undefined;
 };
 

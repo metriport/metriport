@@ -416,6 +416,9 @@ export class Config {
   static getFhirToCsvTransformLambdaName(): string {
     return getEnvVarOrFail("FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME");
   }
+  static getFhirToCsvTransformHttpEndpoint(): string {
+    return getEnvVar("FHIR_TO_CSV_TRANSFORM_HTTP_ENDPOINT") ?? "http://localhost:8001";
+  }
 
   static getRosterUploadSftpPasswordArn(): string {
     return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_ARN`);
