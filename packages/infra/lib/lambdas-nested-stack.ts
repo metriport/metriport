@@ -1,4 +1,4 @@
-import { Duration, NestedStack, NestedStackProps, Size } from "aws-cdk-lib";
+import { Duration, NestedStack, NestedStackProps, RemovalPolicy, Size } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -335,6 +335,7 @@ export class LambdasNestedStack extends NestedStack {
         publicReadAccess: false,
         encryption: s3.BucketEncryption.S3_MANAGED,
         versioned: true,
+        removalPolicy: RemovalPolicy.DESTROY,
         cors: [
           {
             allowedOrigins: ["*"],
