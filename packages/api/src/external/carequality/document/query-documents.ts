@@ -25,7 +25,7 @@ import { getCqInitiator } from "../shared";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
 import { filterCqLinksByManagingOrg } from "./filter-oids-by-managing-org";
 
-const staleLookbackWeeks = 1;
+const staleLookbackWeeks = 2;
 
 export async function getDocumentsFromCQ({
   requestId,
@@ -125,7 +125,8 @@ export async function getDocumentsFromCQ({
     });
 
     const linksWithDqUrl: CQLink[] = [];
-    const addDqUrlToCqLink = async (patientLink: CQLink): Promise<void> => {
+    // eslint-disable-next-line no-inner-declarations
+    async function addDqUrlToCqLink(patientLink: CQLink): Promise<void> {
       const gateway = await getCQDirectoryEntry(patientLink.oid);
 
       if (!gateway) {
@@ -141,7 +142,7 @@ export async function getDocumentsFromCQ({
         ...patientLink,
         url: gateway.urlDQ,
       });
-    };
+    }
     await executeAsynchronously(cqPatientData.data.links, addDqUrlToCqLink, {
       numberOfParallelExecutions: 20,
     });
