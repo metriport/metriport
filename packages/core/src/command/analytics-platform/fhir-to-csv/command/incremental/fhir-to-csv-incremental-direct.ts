@@ -9,6 +9,10 @@ import {
   ProcessFhirToCsvIncrementalRequest,
 } from "./fhir-to-csv-incremental";
 
+export type ProcessFhirToCsvIncrementalDirectRequest = ProcessFhirToCsvIncrementalRequest & {
+  tableDefs: Record<string, string>;
+};
+
 export class FhirToCsvIncrementalDirect implements FhirToCsvIncrementalHandler {
   constructor(
     private readonly analyticsBucketName: string | undefined = Config.getAnalyticsBucketName(),
@@ -22,8 +26,9 @@ export class FhirToCsvIncrementalDirect implements FhirToCsvIncrementalHandler {
   async processFhirToCsvIncremental({
     cxId,
     patientId,
+    tableDefs,
     timeoutInMillis,
-  }: ProcessFhirToCsvIncrementalRequest): Promise<void> {
+  }: ProcessFhirToCsvIncrementalDirectRequest): Promise<void> {
     const { log } = out(`FhirToCsvIncrementalDirect - cx ${cxId} pt ${patientId}`);
 
     if (!this.analyticsBucketName) throw new MetriportError("Analytics bucket name is not set");
@@ -48,6 +53,7 @@ export class FhirToCsvIncrementalDirect implements FhirToCsvIncrementalHandler {
       analyticsBucketName: this.analyticsBucketName,
       region: this.region,
       dbCreds: this.dbCreds,
+      tableDefs,
     });
 
     if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);

@@ -546,7 +546,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         DB_CREDS: JSON.stringify(dbCreds),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared, lambdaLayers.langchain],
+      layers: [lambdaLayers.shared, lambdaLayers.langchain, lambdaLayers.analyticsPlatform],
       vpc,
       alarmSnsAction: alarmAction,
     });

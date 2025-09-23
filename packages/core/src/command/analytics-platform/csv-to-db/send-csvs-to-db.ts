@@ -19,6 +19,7 @@ export async function sendPatientCsvsToDb({
   analyticsBucketName,
   region,
   dbCreds,
+  tableDefs,
 }: {
   cxId: string;
   patientId: string;
@@ -26,6 +27,7 @@ export async function sendPatientCsvsToDb({
   analyticsBucketName: string;
   region: string;
   dbCreds: DbCreds;
+  tableDefs: Record<string, string>;
 }): Promise<void> {
   const { log } = out(`sendPatientCsvsToDb - cx ${cxId}, pt ${patientId}`);
   log(
@@ -39,6 +41,7 @@ export async function sendPatientCsvsToDb({
       port: dbCreds.port,
       dbname: dbCreds.dbname,
       username: dbCreds.username,
+      tableDefs: Object.keys(tableDefs).length,
     })}`
   );
   // TODO test this, then unstash and try to connect to DB
