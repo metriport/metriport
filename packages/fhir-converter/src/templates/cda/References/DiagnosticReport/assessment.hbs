@@ -30,11 +30,11 @@
         "resourceType": "DiagnosticReport",
         "id":"{{ID}}",
         "status":{{>ValueSet/DiagnosticReportStatus.hbs code="unknown"}},
-        "code": { "coding": [{{>DataType/Coding.hbs canBeUnknown=true}}] },
+        "code": {{>DataType/CodeableConcept.hbs code=code}},
         "presentedForm": [
                 {
                     "contentType": "text/plain",
-                    "data": "{{{base64Encode text}}}",
+                    "data": "{{{base64Encode rawText}}}",
                 }
             ],
     },
