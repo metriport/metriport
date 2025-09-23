@@ -8,3 +8,4 @@ select
     , cast(null as {{ dbt.type_string() }} ) as sub_specialty
     , cast(pract.meta_source as {{ dbt.type_string() }} ) as data_source
  from {{ ref('stage__practitioner') }} as pract
+ 
