@@ -29,6 +29,8 @@
     "resource":{
         "resourceType": "DiagnosticReport",
         "id":"{{ID}}",
+        "status":{{>ValueSet/DiagnosticReportStatus.hbs code="unknown"}},
+        "code": { "coding": [{{>DataType/Coding.hbs canBeUnknown=true}}] },
         "presentedForm": [
                 {
                     "contentType": "text/plain",
