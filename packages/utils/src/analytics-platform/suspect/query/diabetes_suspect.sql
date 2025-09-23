@@ -63,7 +63,7 @@ WITH diabetes_observations AS (
     o.RESULT,
     COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) AS units,
     o.DATA_SOURCE
-  FROM OBSERVATION o
+  FROM CORE.OBSERVATION o
   WHERE
     /* Only normalized LOINC plasma/serum glucose */
     o.NORMALIZED_CODE_TYPE ILIKE 'loinc'
@@ -81,7 +81,7 @@ WITH diabetes_observations AS (
     /* Exclude patients already diagnosed with diabetes (any E08–E13) */
     AND NOT EXISTS (
       SELECT 1
-      FROM CONDITION c
+      FROM CORE.CONDITION c
       WHERE c.PATIENT_ID = o.PATIENT_ID
         AND c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
         AND LEFT(c.NORMALIZED_CODE, 3) IN ('E08','E09','E10','E11','E13')

@@ -108,7 +108,7 @@ select
     , loinc.long_common_name as loinc_description
     , snomed.snomed_ct as snomed_code
     , snomed.description  as snomed_description
-    , 'metriport' as data_source
+    , obvs.meta_source as data_source
 from {{ref('stage__observation')}} obvs
 left join {{ref('stage__patient')}} pat
     on replace(obvs.subject_reference,'Patient/','') = pat.id

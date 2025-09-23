@@ -23,7 +23,7 @@
 
 WITH obesity_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CONDITION c
+  FROM CORE.CONDITION c
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
     AND c.NORMALIZED_CODE IN ('E66.01','E66.2','E66.813')
 ),
@@ -49,7 +49,7 @@ bmi_direct AS (
     o.OBSERVATION_DATE,
     o.DATA_SOURCE
 
-  FROM OBSERVATION o
+  FROM CORE.OBSERVATION o
   WHERE o.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND o.NORMALIZED_CODE = '39156-5'                    -- BMI
     AND TRY_TO_DOUBLE(o.RESULT) >= 40
@@ -81,7 +81,7 @@ weights AS (
         THEN TRY_TO_DOUBLE(o.RESULT) * 0.45359237          -- plausible lb
       ELSE NULL
     END AS weight_kg
-  FROM OBSERVATION o
+  FROM CORE.OBSERVATION o
   WHERE o.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND o.NORMALIZED_CODE = '29463-7'           -- Body weight
 ),
@@ -114,7 +114,7 @@ heights AS (
         THEN TRY_TO_DOUBLE(o.RESULT) * 0.0254             -- inches -> meters
       ELSE NULL
     END AS height_m
-  FROM OBSERVATION o
+  FROM CORE.OBSERVATION o
   WHERE o.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND o.NORMALIZED_CODE = '8302-2'           -- Body height
 ),

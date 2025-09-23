@@ -58,7 +58,7 @@ WITH prediabetes_observations AS (
     o.RESULT,
     COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) AS units,
     o.DATA_SOURCE
-  FROM OBSERVATION o
+  FROM CORE.OBSERVATION o
   WHERE
     /* Only normalized LOINC glucose in serum/plasma */
     o.NORMALIZED_CODE_TYPE ILIKE 'loinc'
@@ -76,7 +76,7 @@ WITH prediabetes_observations AS (
     /* Exclude patients already diagnosed with prediabetes */
     AND NOT EXISTS (
       SELECT 1
-      FROM CONDITION c
+      FROM CORE.CONDITION c
       WHERE c.PATIENT_ID = o.PATIENT_ID
         AND c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
         AND c.NORMALIZED_CODE = 'R73.03'

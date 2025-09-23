@@ -21,6 +21,6 @@ select pat.id                                                   as patient_id
       , null                                                    as county
       , null                                                    as latitude
       , null                                                    as longitude
-      , 'metriport'                                            as data_source
-from {{ ref('stage__patient') }}                               as pat
+      , 'metriport'                                             as data_source
+from {{ ref('stage__patient') }}                                as pat
     left join address on pat.id = address.patient_id

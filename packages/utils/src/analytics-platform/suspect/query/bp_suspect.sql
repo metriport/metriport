@@ -45,7 +45,7 @@ WITH bp_observations AS (
     o.OBSERVATION_DATE,
     o.DATA_SOURCE
 
-  FROM OBSERVATION o
+  FROM CORE.OBSERVATION o
   WHERE
     /* Only normalized LOINC BP observations */
     o.NORMALIZED_CODE_TYPE ILIKE 'loinc'
@@ -56,7 +56,7 @@ WITH bp_observations AS (
 
     AND NOT EXISTS (
       SELECT 1
-      FROM CONDITION c
+      FROM CORE.CONDITION c
       WHERE c.PATIENT_ID = o.PATIENT_ID
         AND c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
         AND LEFT(c.NORMALIZED_CODE,3) IN ('I10','I11','I12','I13','I15')
