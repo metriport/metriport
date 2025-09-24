@@ -1,20 +1,21 @@
 import { z } from "zod";
 
-export const allOrSelectPatientIdsSchema = z.object({
-  patientIds: z.array(z.string()).optional(),
-  all: z.boolean().optional(),
-});
+const PATIENT_IDS_MIN_LENGTH = 1;
 
-export const allOrSelectPatientIdsRefinedSchema = allOrSelectPatientIdsSchema
-  .refine(data => data.patientIds || data.all, {
-    message: "Either patientIds or all must be provided",
-  })
-  .refine(data => !data.patientIds || data.patientIds.length > 0, {
-    message: "patientIds must be an array of patient IDs",
-  })
-  .refine(data => !(data.patientIds && data.all), {
-    message: "patientIds and all cannot be provided together",
-  });
+export const patientIdsSchema = z.array(z.string()).min(PATIENT_IDS_MIN_LENGTH);
+
+export const allOrSubsetPatientIdsSchema = z.discriminatedUnion("all", [
+  z.object({
+    all: z.literal(true),
+    patientIds: z.undefined().optional(),
+  }),
+  z.object({
+    all: z.undefined().optional(),
+    patientIds: patientIdsSchema,
+  }),
+]);
+
+export type AllOrSubsetPatientIds = z.infer<typeof allOrSubsetPatientIdsSchema>;
 
 export function strictlyValidateAllAndPatientIds({
   patientIds,
@@ -23,5 +24,5 @@ export function strictlyValidateAllAndPatientIds({
   patientIds: string[] | undefined;
   all: boolean | undefined;
 }): void {
-  allOrSelectPatientIdsRefinedSchema.parse({ patientIds, all });
+  allOrSubsetPatientIdsSchema.parse({ patientIds, all });
 }
