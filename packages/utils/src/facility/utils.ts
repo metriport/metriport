@@ -36,7 +36,7 @@ export async function readNpisFromCsv(inputPath: string): Promise<string[]> {
   const npis: string[] = [];
 
   const parser = csvParser({
-    headers: ["facilityName", "npi"],
+    headers: ["npi"],
     skipLines: 1,
   });
 
