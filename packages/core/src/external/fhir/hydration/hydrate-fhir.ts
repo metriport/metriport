@@ -1,6 +1,7 @@
 import { Bundle, Condition, Medication, Parameters, Resource } from "@medplum/fhirtypes";
 import { ICD_10_URL, NDC_URL, RXNORM_URL, SNOMED_URL } from "@metriport/shared/medical";
 import { cloneDeep } from "lodash";
+import { executeAsynchronously } from "../../../util/concurrency";
 import {
   buildFhirParametersFromCoding,
   buildMultipleFhirParametersFromCodings,
@@ -8,6 +9,8 @@ import {
   lookupMultipleCodes,
 } from "../../term-server";
 import { findCodeableConcepts, isUsefulDisplay } from "../codeable-concept";
+
+const NUMBER_OF_PARALLEL_CROSSWALKS = 10;
 
 /**
  * This function first collects all of the different Coding elements from the Bundle,
@@ -32,8 +35,9 @@ export async function hydrateFhir(
 
   const lookupParametersMap = new Map<string, Parameters>();
   if (hydratedBundle.entry) {
-    await Promise.all(
-      hydratedBundle.entry?.map(async entry => {
+    await executeAsynchronously(
+      hydratedBundle.entry,
+      async entry => {
         const res = entry.resource;
         if (!res) return;
 
@@ -53,7 +57,10 @@ export async function hydrateFhir(
             if (param.id) lookupParametersMap.set(param.id, param);
           });
         });
-      })
+      },
+      {
+        numberOfParallelExecutions: NUMBER_OF_PARALLEL_CROSSWALKS,
+      }
     );
   }
 
