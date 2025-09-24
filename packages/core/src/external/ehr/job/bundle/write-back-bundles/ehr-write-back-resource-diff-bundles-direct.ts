@@ -407,6 +407,8 @@ function getWriteBackResourceType(resource: Resource): WriteBackResourceType | u
     if (isLabPanel(resource)) return "lab-panel";
     return undefined;
   }
+  if (isProcedure(resource)) return "procedure";
+  if (isAllergyIntolerance(resource)) return "allergy";
   throw new BadRequestError("Could not find write back resource type for resource", undefined, {
     resourceType: resource.resourceType,
   });
