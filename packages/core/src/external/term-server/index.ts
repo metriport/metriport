@@ -62,7 +62,7 @@ export async function lookupMultipleCodes(
   { metadata: Record<string, string | number>; data: CodeSystemLookupOutput[] } | undefined
 > {
   const termServer = buildTermServerApi();
-  if (!termServer) return;
+  if (!termServer || params.length === 0) return;
 
   const startedAt = Date.now();
   const result = await termServer.post(bulkLookupUrl, params);
