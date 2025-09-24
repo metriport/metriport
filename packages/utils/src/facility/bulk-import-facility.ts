@@ -7,12 +7,12 @@ import {
   getFacilityByNpiOrFail,
   translateNpiFacilityToMetriportFacility,
 } from "@metriport/core/external/npi-registry/npi-registry";
-import { validateNPI } from "@metriport/shared/common/validate-npi";
 import { errorToString, getEnvVarOrFail, MetriportError, sleep } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import axios from "axios";
 import { Command } from "commander";
 import csvParser from "csv-parser";
+import dayjs from "dayjs";
 import fs from "fs/promises";
 import { createReadStream, constants as FS } from "node:fs";
 import { access } from "node:fs/promises";
@@ -44,8 +44,9 @@ import { z } from "zod";
 
 const internalUrl = getEnvVarOrFail("API_URL");
 
-const cqActive = true; // CHANGE IF NEEDED
-const cwActive = true; // CHANGE IF NEEDED
+const cqActive = false; // CHANGE IF NEEDED
+const cwActive = false; // CHANGE IF NEEDED
+const timeout = dayjs.duration(1, "seconds");
 
 interface FacilityImportParams {
   cxId: string;
@@ -63,22 +64,11 @@ export const InputRowSchema = z.object({
 export type InputRowFacilityImport = z.infer<typeof InputRowSchema>;
 
 const CSV_HEADER =
-  ["npi", "facilityName", "facilityType", "cqOboOid", "cwOboOid", "success", "reason"].join(",") +
+  ["facilityName", "npi", "facilityType", "cqOboOid", "cwOboOid", "success", "reason"].join(",") +
   "\n";
 
-function normalizeFacilityName(name: string): string {
-  return name.toLowerCase().trim();
-}
-
-function facilityNamesMatch(registryName: string, csvName: string): boolean {
-  const normalizedRegistry = normalizeFacilityName(registryName);
-  const normalizedCsv = normalizeFacilityName(csvName);
-
-  return normalizedRegistry.includes(normalizedCsv) || normalizedCsv.includes(normalizedRegistry);
-}
-
 async function main({ cxId, inputPath, dryrun }: FacilityImportParams) {
-  await sleep(50); // Give some time to avoid mixing logs w/ Node's
+  await sleep(50);
   const isDryRun = Boolean(dryrun);
   const currentTime = buildDayjs(new Date());
   const outputTimeStamp = currentTime.format("YYYY-MM-DD");
@@ -90,11 +80,6 @@ async function main({ cxId, inputPath, dryrun }: FacilityImportParams) {
     } ##############`
   );
 
-  const parser = csvParser({
-    headers: ["npi", "facilityName", "facilityType", "cqOboOid", "cwOboOid"],
-    skipLines: 1,
-  });
-
   const logsFolder = `runs/import-facility/${outputTimeStamp}`;
   const resultFileName = `${name}_result${isDryRun ? "_dryrun" : ""}.csv`;
 
@@ -105,85 +90,15 @@ async function main({ cxId, inputPath, dryrun }: FacilityImportParams) {
 
   await createCsv(logsFilePath, CSV_HEADER);
 
+  const rows = await readCsvRows(inputPath);
   const createdFacilities: FacilityInternalDetails[] = [];
 
-  const rowPromises: Promise<void>[] = [];
-
-  parser.on("data", async (row: InputRowFacilityImport) => {
-    parser.pause();
-    const p = (async () => {
-      let rowSuccess = true;
-      const messages: string[] = [];
-      try {
-        const npiFacility = await getFacilityByNpiOrFail(row.npi);
-
-        const params = {
-          ...row,
-          cqActive,
-          cwActive,
-        };
-
-        const metriportFacility = translateNpiFacilityToMetriportFacility(npiFacility, params);
-        const otherNames = npiFacility.other_names ?? [];
-        if (otherNames.length > 0) {
-          if (
-            !facilityNamesMatch(
-              npiFacility.other_names[0].organization_name,
-              metriportFacility.nameInMetriport
-            )
-          ) {
-            throw new Error(
-              `Name mismatch: Registry='${npiFacility.other_names[0].organization_name}', CSV='${metriportFacility.nameInMetriport}'`
-            );
-          }
-        }
-        if (!validateNPI(row.npi)) {
-          throw new Error(`Invalid NPI format: ${row.npi}`);
-        }
-
-        const existingFacility = await getFacilityByNpi(cxId, row.npi);
-        if (existingFacility) {
-          throw new Error(
-            `Can't create a new facility with the same NPI as facility with ID: ${existingFacility.id} and name: ${existingFacility.name}`
-          );
-        }
-        if (!isDryRun) {
-          await createFacility(metriportFacility, cxId);
-        }
-        createdFacilities.push(metriportFacility);
-        console.log(`Successfully created facility with npi: ${row.npi}`);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
-        rowSuccess = false;
-        if (axios.isAxiosError(err) && err.response?.status === 400) {
-          const message = err.response.data?.detail ?? err.response.data?.title ?? err.message;
-          console.log(message);
-          messages.push(message);
-        } else {
-          console.log(err);
-          const message = errorToString(err);
-          messages.push(message);
-        }
-      } finally {
-        const combinedMessage = messages.length > 0 ? messages.join("; ") : undefined;
-        await writeToCsv(logsFilePath, rowSuccess, combinedMessage, row);
-        await sleep(60);
-        parser.resume();
-      }
-    })().catch(error => {
-      console.log("Unexpected error in row processing:", error);
-      parser.resume();
-    });
-    rowPromises.push(p);
-  });
-
-  await new Promise<void>((resolve, reject) => {
-    parser.once("end", resolve);
-    parser.once("error", reject);
-    readFileFromLocal(inputPath, parser).catch(reject);
-  });
-
-  await Promise.all(rowPromises);
+  for (const row of rows) {
+    const facility = await processRow(row, cxId, isDryRun, logsFilePath);
+    if (facility) {
+      createdFacilities.push(facility);
+    }
+  }
 
   await fs.writeFile(payloadCreatesFilePath, JSON.stringify(createdFacilities, null, 2), "utf8");
 
@@ -192,6 +107,86 @@ async function main({ cxId, inputPath, dryrun }: FacilityImportParams) {
       isDryRun ? "[DRY RUN]" : ""
     } ##############`
   );
+}
+
+async function readCsvRows(inputPath: string): Promise<InputRowFacilityImport[]> {
+  const rows: InputRowFacilityImport[] = [];
+  const parser = csvParser({
+    headers: ["facilityName", "npi", "facilityType", "cqOboOid", "cwOboOid"],
+    skipLines: 1,
+  });
+
+  parser.on("data", (row: InputRowFacilityImport) => {
+    rows.push(row);
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    parser.once("end", resolve);
+    parser.once("error", reject);
+    readFileFromLocal(inputPath, parser).catch(reject);
+  });
+
+  return rows;
+}
+
+async function processRow(
+  row: InputRowFacilityImport,
+  cxId: string,
+  isDryRun: boolean,
+  logsFilePath: string
+): Promise<FacilityInternalDetails | null> {
+  let rowSuccess = true;
+  let message: string | undefined = undefined;
+
+  try {
+    const npiFacility = await getFacilityByNpiOrFail(row.npi);
+
+    const params = {
+      ...row,
+      cqActive,
+      cwActive,
+    };
+
+    const metriportFacility = translateNpiFacilityToMetriportFacility(npiFacility, params);
+    const otherNames = npiFacility.other_names ?? [];
+    if (otherNames.length > 0) {
+      if (
+        !facilityNamesMatch(
+          npiFacility.other_names[0].organization_name,
+          metriportFacility.nameInMetriport
+        )
+      ) {
+        throw new Error(
+          `Name mismatch: Registry='${npiFacility.other_names[0].organization_name}', CSV='${metriportFacility.nameInMetriport}'`
+        );
+      }
+    }
+
+    const existingFacility = await getFacilityByNpi(cxId, row.npi);
+    if (existingFacility) {
+      throw new Error(
+        `Can't create a new facility with the same NPI as facility with ID: ${existingFacility.id} and name: ${existingFacility.name}`
+      );
+    }
+    if (!isDryRun) {
+      await createFacility(metriportFacility, cxId);
+    }
+    console.log(`Successfully created facility with npi: ${row.npi}`);
+    return metriportFacility;
+  } catch (err: unknown) {
+    rowSuccess = false;
+    if (axios.isAxiosError(err) && err.response?.status === 400) {
+      message = err.response.data?.detail ?? err.response.data?.title ?? err.message;
+      console.log(message);
+    } else {
+      console.log(err);
+      message = errorToString(err);
+    }
+    return null;
+  } finally {
+    await writeToCsv(logsFilePath, rowSuccess, message, row);
+    await sleep(timeout.asMilliseconds());
+  }
 }
 
 export async function readFileFromLocal(inputPath: string, parser: Writable): Promise<void> {
@@ -208,7 +203,7 @@ export async function readFileFromLocal(inputPath: string, parser: Writable): Pr
   await pipeline(createReadStream(filePath), parser);
 }
 
-async function getFacilityByNpi(cxId: string, npi: string): Promise<Facility | null> {
+export async function getFacilityByNpi(cxId: string, npi: string): Promise<Facility | null> {
   try {
     const url = `${internalUrl}/internal/cx-data`;
     const response = await axios.get(url, {
@@ -278,6 +273,17 @@ async function writeToCsv(
     ].join(",") + "\n";
 
   await fs.appendFile(filePath, line, "utf8");
+}
+
+function normalizeFacilityName(name: string): string {
+  return name.toLowerCase().trim();
+}
+
+function facilityNamesMatch(registryName: string, csvName: string): boolean {
+  const normalizedRegistry = normalizeFacilityName(registryName);
+  const normalizedCsv = normalizeFacilityName(csvName);
+
+  return normalizedRegistry.includes(normalizedCsv) || normalizedCsv.includes(normalizedRegistry);
 }
 
 const program = new Command();
