@@ -7,7 +7,7 @@
   "scripts": {
     "test": "jest",
     "start": "ts-node src/app.ts",
-    "dev": "nodemon --exec \"PORT=8666 ts-node src/app.ts\"",
+    "dev": "PORT=8666 ts-node-dev --transpile-only --respawn --inspect=0.0.0.0:9229 --project tsconfig.dev.json --files src/app.ts",
     "clean": "rimraf dist && rimraf node_modules",
     "build": "tsc -p tsconfig.build.json",
     "prettier-fix": "npx prettier '**/*.ts' --write",
