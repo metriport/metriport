@@ -70,7 +70,7 @@ async function main() {
       try {
         console.log(`Checking CareQuality organization for OID: ${facilityOid}`);
         const cqOrg = await getCqFacility(cxId, facility.id, facilityOid);
-        console.log(`✅ CQ Organization found: ${cqOrg.id})}`);
+        console.log(`✅ CQ Organization found: ${cqOrg.id}`);
         cqFound.push(npi);
       } catch (error) {
         console.log(`❌ CQ Organization not found: ${error}`);

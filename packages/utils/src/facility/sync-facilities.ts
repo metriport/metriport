@@ -1,11 +1,11 @@
+import { Facility } from "@metriport/api-sdk/medical/models/facility";
+import { FacilityType } from "@metriport/core/domain/facility";
+import { sleep } from "@metriport/shared";
 import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
+import axios from "axios";
+import dayjs from "dayjs";
 import { getFacilityByNpi } from "./bulk-import-facility";
 import { getCqFacilitySafe, getCwFacilitySafe, readNpisFromCsv } from "./utils";
-import axios from "axios";
-import { Facility } from "@metriport/api-sdk/medical/models/facility";
-import { sleep } from "@medplum/core";
-import dayjs from "dayjs";
-import { FacilityType } from "@metriport/core/domain/facility";
 
 /*
  * This script will read NPIs from a local csv.
@@ -29,7 +29,7 @@ const inputPath = "";
 const internalUrl = getEnvVarOrFail("API_URL");
 const defaultActive = true;
 const defaultType = FacilityType.initiatorAndResponder;
-const timeout = dayjs.duration(1, "seconds");
+const timeout = dayjs.duration(0.5, "seconds");
 
 async function main() {
   const npis = await readNpisFromCsv(inputPath);
@@ -74,10 +74,10 @@ async function main() {
     else cqNotFound.push(npi);
 
     if (cwOrg && cqOrg && cwOrg.active && cqOrg.active) {
-      console.log(`Facility is active in both CW and CQ: ${npi}`);
+      console.log(`Facility is active in both CW and CQ`);
       continue;
     }
-    console.log(`Syncing facility: ${npi}`);
+    console.log(`Syncing facility`);
 
     const facilityDetails: Record<string, unknown> = {
       id: facility.id,
@@ -115,15 +115,16 @@ async function main() {
         },
       });
       console.log(`Ran facility sync: ${npi}`);
+      await sleep(timeout.asMilliseconds());
 
       const cqOrgAfter = await getCqFacilitySafe(cxId, facility.id, facilityOid);
       const cwOrgAfter = await getCwFacilitySafe(cxId, facility.id, facilityOid);
 
       if (cqOrgAfter && cwOrgAfter && cqOrgAfter.active && cwOrgAfter.active) {
-        console.log(`Facility successfully synced: ${npi}`);
+        console.log(`Facility successfully synced`);
         synced.push(npi);
       } else {
-        console.log(`Facility failed to sync: ${npi}`);
+        console.log(`Facility failed to sync`);
         syncFailed.push(npi);
       }
     } catch (error) {
