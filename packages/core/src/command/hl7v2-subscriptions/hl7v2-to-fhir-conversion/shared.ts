@@ -65,10 +65,20 @@ export function unpackPidFieldOrFailNoSpecial(pid: string) {
     throw new MetriportError("Invalid PID format: could not unpack identifiers");
   }
 
-  const normalizedCxId = cxId.replace(/_/g, "").replace(/=/g, ".").replace(/\+/g, "|");
-  const normalizedPatientId = patientId.replace(/_/g, "").replace(/=/g, ".").replace(/\+/g, "|");
+  const normalizedCxId = unpackNormalizedId(cxId);
+  const normalizedPatientId = unpackNormalizedId(patientId);
   const normalizedPid = `${normalizedCxId}_${normalizedPatientId}`;
   return unpackPidFieldOrFail(normalizedPid);
+}
+
+//pipe to a +, and an period to a =
+export function unpackNormalizedId(id: string) {
+  return id.replace(/./g, "=").replace(/|/g, "+");
+}
+
+//+ to a pipe, and an = to a period
+export function packNormalizedId(id: string) {
+  return id.replace(/=/g, ".").replace(/\+/g, "|");
 }
 
 export function getCxIdAndPatientIdOrFail(msg: Hl7Message): { cxId: string; patientId: string } {

@@ -1,4 +1,4 @@
-import { compressUuid } from "./hl7v2-to-fhir-conversion/shared";
+import { compressUuid, packNormalizedId } from "./hl7v2-to-fhir-conversion/shared";
 
 export function createScrambledId(cxId: string, patientId: string): string {
   const compressedCxId = compressUuid(cxId);
@@ -10,14 +10,8 @@ export function createNoSpecialScrambledId(cxId: string, patientId: string): str
   const compressedCxId = compressUuid(cxId);
   const compressedPatientId = compressUuid(patientId);
 
-  const normalizedCompressedCxId = compressedCxId
-    .replace(/_/g, "")
-    .replace(/=/g, ".")
-    .replace(/\+/g, "|");
-  const normalizedCompressedPatientId = compressedPatientId
-    .replace(/_/g, "")
-    .replace(/=/g, ".")
-    .replace(/\+/g, "|");
+  const normalizedCompressedCxId = packNormalizedId(compressedCxId);
+  const normalizedCompressedPatientId = packNormalizedId(compressedPatientId);
 
   return `${normalizedCompressedCxId}_${normalizedCompressedPatientId}`;
 }
