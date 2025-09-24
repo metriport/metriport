@@ -65,7 +65,7 @@ import {
   getDocPrintableDetails,
 } from "./shared";
 
-const staleLookbackWeeks = 1;
+const staleLookbackWeeks = 2;
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
