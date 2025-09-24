@@ -1,4 +1,4 @@
-import { FhirToCsvBulkDirect } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-bulk/fhir-to-csv-bulk-direct";
+import { FhirToCsvBulkDirect } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/bulk/fhir-to-csv-bulk-direct";
 import { doesConsolidatedDataExist } from "@metriport/core/command/consolidated/consolidated-get";
 import { MetriportError } from "@metriport/shared";
 import { Context, SQSEvent } from "aws-lambda";

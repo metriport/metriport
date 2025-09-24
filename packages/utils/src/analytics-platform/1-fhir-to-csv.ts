@@ -2,7 +2,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { FhirToCsvBulkCloud } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-bulk/fhir-to-csv-bulk-cloud";
+import { FhirToCsvBulkCloud } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/bulk/fhir-to-csv-bulk-cloud";
 import { buildFhirToCsvBulkJobPrefix } from "@metriport/core/command/analytics-platform/fhir-to-csv/file-name";
 import { createConsolidatedDataFilePath } from "@metriport/core/domain/consolidated/filename";
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";

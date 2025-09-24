@@ -1,7 +1,7 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { dbCredsForLambdaSchema } from "@metriport/core/command/analytics-platform/config";
-import { FhirToCsvIncrementalDirect } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv-incremental/fhir-to-csv-incremental-direct";
-import { ProcessFhirToCsvIncrementalDirectRequest } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/incremental/fhir-to-csv-incremental-direct";
+import { ProcessFhirToCsvIncrementalRequest } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/incremental/fhir-to-csv-incremental";
+import { FhirToCsvIncrementalDirect } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/incremental/fhir-to-csv-incremental-direct";
 import { readConfigs } from "@metriport/core/command/analytics-platform/fhir-to-csv/configs/read-column-defs";
 import { doesConsolidatedDataExist } from "@metriport/core/command/consolidated/consolidated-get";
 import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
@@ -50,7 +50,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
     }
 
     log(`Reading table definitions from /opt/configurations`);
-    const tableDefs = readConfigs(`/opt/configurations`);
+    const tablesDefinitions = readConfigs(`/opt/configurations`);
 
     const timeoutForCsvTransform = Math.max(0, context.getRemainingTimeInMillis() - 200);
     const dbCredsForFunction: DbCreds = {
@@ -67,11 +67,12 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
     const fhirToCsvHandler = new FhirToCsvIncrementalDirect(
       analyticsBucketName,
       region,
-      dbCredsForFunction
+      dbCredsForFunction,
+      tablesDefinitions
     );
-    const params: ProcessFhirToCsvIncrementalDirectRequest = {
-      ...parsedBody,
-      tableDefs,
+    const params: ProcessFhirToCsvIncrementalRequest = {
+      cxId,
+      patientId,
       timeoutInMillis: timeoutForCsvTransform,
     };
     await fhirToCsvHandler.processFhirToCsvIncremental(params);
