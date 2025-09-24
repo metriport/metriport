@@ -41,3 +41,5 @@ export const facilityInternalDetailsSchema = z
     cwOboOid: z.string().optional(),
   })
   .merge(addressStrictSchema);
+
+export type FacilityInternalDetails = z.infer<typeof facilityInternalDetailsSchema>;
