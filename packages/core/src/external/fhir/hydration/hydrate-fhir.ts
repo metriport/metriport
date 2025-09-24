@@ -1,8 +1,10 @@
-import { Bundle, Parameters, Resource } from "@medplum/fhirtypes";
+import { Bundle, Condition, Medication, Parameters, Resource } from "@medplum/fhirtypes";
+import { ICD_10_URL, NDC_URL, RXNORM_URL, SNOMED_URL } from "@metriport/shared/medical";
 import { cloneDeep } from "lodash";
 import {
   buildFhirParametersFromCoding,
   buildMultipleFhirParametersFromCodings,
+  crosswalkCode,
   lookupMultipleCodes,
 } from "../../term-server";
 import { findCodeableConcepts, isUsefulDisplay } from "../codeable-concept";
@@ -29,19 +31,30 @@ export async function hydrateFhir(
   const hydratedBundle: Bundle = cloneDeep(fhirBundle);
 
   const lookupParametersMap = new Map<string, Parameters>();
-  hydratedBundle.entry?.forEach(entry => {
-    const res = entry.resource;
-    if (!res) return;
-    const codes = findCodeableConcepts(res);
+  if (hydratedBundle.entry) {
+    await Promise.all(
+      hydratedBundle.entry?.map(async entry => {
+        const res = entry.resource;
+        if (!res) return;
 
-    codes.forEach(code => {
-      const parameters = buildMultipleFhirParametersFromCodings(code.coding);
+        if (res.resourceType === "Condition") {
+          await dangerouslyHydrateCondition(res);
+        } else if (res.resourceType === "Medication") {
+          await dangerouslyHydrateMedication(res);
+        }
 
-      parameters?.forEach(param => {
-        if (param.id) lookupParametersMap.set(param.id, param);
-      });
-    });
-  });
+        const codes = findCodeableConcepts(res);
+
+        codes.forEach(code => {
+          const parameters = buildMultipleFhirParametersFromCodings(code.coding);
+
+          parameters?.forEach(param => {
+            if (param.id) lookupParametersMap.set(param.id, param);
+          });
+        });
+      })
+    );
+  }
 
   const lookupParametersArray = Array.from(lookupParametersMap.values());
   const result = await lookupMultipleCodes(lookupParametersArray, log);
@@ -87,4 +100,47 @@ export async function hydrateFhir(
     },
     data: hydratedBundle,
   };
+}
+
+/**
+ * This function hydrates the condition by crosswalking the SNOMED code to the ICD-10 code
+ * if it doesn't already have an ICD-10 code.
+ */
+async function dangerouslyHydrateCondition(condition: Condition): Promise<void> {
+  const snomedCode = condition.code?.coding?.find(coding => coding.system === SNOMED_URL);
+  if (!snomedCode || !snomedCode.code) return;
+
+  const existingIcd10Code = condition.code?.coding?.find(coding => coding.system === ICD_10_URL);
+  if (existingIcd10Code) return;
+
+  const icd10Code = await crosswalkCode({
+    sourceCode: snomedCode.code,
+    sourceSystem: SNOMED_URL,
+    targetSystem: ICD_10_URL,
+  });
+  if (!icd10Code) return;
+
+  condition.code?.coding?.push(icd10Code);
+  return;
+}
+
+/**
+ * This function hydrates the medication by crosswalking the NDC code to the RXNorm code.
+ * if it doesn't already have an RXNorm code.
+ */
+async function dangerouslyHydrateMedication(medication: Medication): Promise<void> {
+  const existingRxNormCode = medication.code?.coding?.find(coding => coding.system === RXNORM_URL);
+  if (existingRxNormCode) return;
+
+  const ndcCode = medication.code?.coding?.find(coding => coding.system === NDC_URL);
+  if (!ndcCode || !ndcCode.code) return;
+
+  const rxNormCode = await crosswalkCode({
+    sourceCode: ndcCode.code,
+    sourceSystem: NDC_URL,
+    targetSystem: RXNORM_URL,
+  });
+  if (!rxNormCode) return;
+  medication.code?.coding?.push(rxNormCode);
+  return;
 }

@@ -1,8 +1,8 @@
 import { TypedValue } from "@medplum/core";
 import { Coding, ConceptMap, Parameters, ParametersParameter } from "@medplum/fhirtypes";
+import { executeWithNetworkRetries } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosInstance } from "axios";
-import { executeWithNetworkRetries } from "@metriport/shared";
 import { Config } from "../../util/config";
 import {
   CPT_URL,
@@ -13,6 +13,7 @@ import {
   RXNORM_URL,
   SNOMED_URL,
 } from "../../util/constants";
+import { codeSourceFhirExtension } from "../fhir/shared/extensions/code-source-extension";
 
 export type CodeSystemLookupOutput = {
   name: string;
@@ -81,16 +82,24 @@ export async function lookupMultipleCodes(
   return { metadata, data };
 }
 
-export async function crosswalkNdcToRxNorm(ndcCode: string): Promise<Coding | undefined> {
+export async function crosswalkCode({
+  sourceCode,
+  sourceSystem,
+  targetSystem,
+}: {
+  sourceCode: string;
+  sourceSystem: string;
+  targetSystem: string;
+}): Promise<Coding | undefined> {
   const termServer = buildTermServerApi();
   if (!termServer) return undefined;
 
   const params = buildFhirParametersForCrosswalkFromCoding(
     {
-      system: NDC_URL,
-      code: ndcCode,
+      system: sourceSystem,
+      code: sourceCode,
     },
-    RXNORM_URL
+    targetSystem
   );
   if (!params) return undefined;
   const result = await executeWithNetworkRetries(async function () {
@@ -106,9 +115,10 @@ export async function crosswalkNdcToRxNorm(ndcCode: string): Promise<Coding | un
   if (!target || !target.code) return undefined;
 
   return {
-    system: RXNORM_URL,
+    system: targetSystem,
     code: target.code,
     ...(target.display ? { display: target.display } : undefined),
+    extension: [codeSourceFhirExtension],
   };
 }
 
