@@ -19,7 +19,6 @@ services:
       - ~/.aws:/root/.aws
     environment:
       ENV: ${ENV}
-      AWS_REGION: ${AWS_REGION}
       PORT: 8000
       HOST: 0.0.0.0
       DEBUG: ${DEBUG:-false}
