@@ -29,7 +29,7 @@ const inputPath = "";
 const internalUrl = getEnvVarOrFail("API_URL");
 const defaultActive = true;
 const defaultType = FacilityType.initiatorAndResponder;
-const timeout = dayjs.duration(0.5, "seconds");
+const timeout = dayjs.duration(0.5, "seconds"); //There is 2 sleeps, one at the end of the loop and one in the middle of the loop.
 
 async function main() {
   const npis = await readNpisFromCsv(inputPath);
