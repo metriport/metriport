@@ -87,16 +87,6 @@ function shouldIncludeMapping(mapping: SnomedToIcdMapping): boolean {
     return false;
   }
 
-  // Skip mappings with malformed ICD-10 codes (should be alphanumeric with periods)
-  if (!/^[A-Z0-9.]+$/.test(mapping.icd10Code)) {
-    return false;
-  }
-
-  // Skip mappings with malformed SNOMED codes (should be numeric)
-  if (!/^\d+$/.test(mapping.snomedCode)) {
-    return false;
-  }
-
   return true;
 }
 
@@ -415,7 +405,7 @@ async function main(): Promise<void> {
   if (!filePath) {
     return Promise.reject(
       new Error(
-        "Missing argument: specify path to SNOMED CT to ICD-10-CM mapping file\nUsage: npm run seed-snomed-icd10 <filePath>"
+        "Missing argument: specify path to SNOMED CT to ICD-10-CM mapping file\nUsage: npm run seed-snomed-icd10 -- <filePath>"
       )
     );
   }
