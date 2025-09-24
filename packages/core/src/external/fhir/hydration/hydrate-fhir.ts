@@ -44,10 +44,15 @@ export async function hydrateFhir(
         if (!res) return;
 
         // TODO: ENG-1149 - Refactor to use batch crosswalk
-        if (isCondition(res)) {
-          await dangerouslyHydrateCondition(res);
-        } else if (isMedication(res)) {
-          await dangerouslyHydrateMedication(res);
+        try {
+          if (isCondition(res)) {
+            await dangerouslyHydrateCondition(res);
+          } else if (isMedication(res)) {
+            await dangerouslyHydrateMedication(res);
+          }
+        } catch (err) {
+          // Keep processing other entries even if one crosswalk fails.
+          log(`[hydrateFhir] crosswalk failed for ${res.resourceType}: ${(err as Error).message}`);
         }
 
         const codes = findCodeableConcepts(res);
@@ -116,7 +121,7 @@ export async function hydrateFhir(
  * This function hydrates the condition by crosswalking the SNOMED code to the ICD-10 code
  * if it doesn't already have an ICD-10 code.
  */
-async function dangerouslyHydrateCondition(condition: Condition): Promise<void> {
+export async function dangerouslyHydrateCondition(condition: Condition): Promise<void> {
   const snomedCode = condition.code?.coding?.find(coding => coding.system === SNOMED_URL);
   if (!snomedCode || !snomedCode.code) return;
 
@@ -138,7 +143,7 @@ async function dangerouslyHydrateCondition(condition: Condition): Promise<void> 
  * This function hydrates the medication by crosswalking the NDC code to the RXNorm code.
  * if it doesn't already have an RXNorm code.
  */
-async function dangerouslyHydrateMedication(medication: Medication): Promise<void> {
+export async function dangerouslyHydrateMedication(medication: Medication): Promise<void> {
   const existingRxNormCode = medication.code?.coding?.find(coding => coding.system === RXNORM_URL);
   if (existingRxNormCode && !isUnknownCoding(existingRxNormCode)) return;
 
