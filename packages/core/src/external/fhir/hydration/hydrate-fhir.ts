@@ -9,6 +9,7 @@ import {
   lookupMultipleCodes,
 } from "../../term-server";
 import { findCodeableConcepts, isUsefulDisplay } from "../codeable-concept";
+import { isCondition, isMedication } from "../shared";
 
 const NUMBER_OF_PARALLEL_CROSSWALKS = 10;
 
@@ -42,9 +43,9 @@ export async function hydrateFhir(
         if (!res) return;
 
         // TODO: ENG-1149 - Refactor to use batch crosswalk
-        if (res.resourceType === "Condition") {
+        if (isCondition(res)) {
           await dangerouslyHydrateCondition(res);
-        } else if (res.resourceType === "Medication") {
+        } else if (isMedication(res)) {
           await dangerouslyHydrateMedication(res);
         }
 
