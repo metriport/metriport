@@ -95,6 +95,10 @@ describe("Npi Registry Validation", () => {
       addressLine1: toTitleCase("17020 AURORA AVE N UNIT C44"),
       zip: "98133",
       country: "USA",
+      cqActive: false,
+      cwActive: false,
+      cqApproved: false,
+      cwApproved: false,
     };
 
     const additionalInfoNonObo: AdditionalInformationInternalFacility = {
@@ -123,6 +127,10 @@ describe("Npi Registry Validation", () => {
       country: "USA",
       cqOboOid: "1.2.3.4.5.6.7.8.9",
       cwOboOid: "1.2.3.4.5.6.7.8.9",
+      cqActive: false,
+      cwActive: false,
+      cqApproved: false,
+      cwApproved: false,
     };
 
     const additionalInfoObo: AdditionalInformationInternalFacility = {
