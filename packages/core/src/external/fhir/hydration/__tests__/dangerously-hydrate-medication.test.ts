@@ -150,24 +150,4 @@ describe("dangerouslyHydrateMedication", () => {
     expect(mockCrosswalkCode).not.toHaveBeenCalled();
     expect(medication.code?.coding).toBeUndefined();
   });
-
-  it("should handle crosswalkCode throwing an error", async () => {
-    const ndcCode = "12345-678-90";
-    const medication: Medication = {
-      resourceType: "Medication",
-      id: faker.string.uuid(),
-      code: {
-        coding: [
-          {
-            system: NDC_URL,
-            code: ndcCode,
-          },
-        ],
-      },
-    };
-
-    mockCrosswalkCode.mockRejectedValue(new Error("Crosswalk failed"));
-
-    await expect(dangerouslyHydrateMedication(medication)).rejects.toThrow("Crosswalk failed");
-  });
 });

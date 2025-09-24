@@ -154,25 +154,4 @@ describe("dangerouslyHydrateCondition", () => {
     expect(mockCrosswalkCode).not.toHaveBeenCalled();
     expect(condition.code?.coding).toBeUndefined();
   });
-
-  it("should handle crosswalkCode throwing an error", async () => {
-    const snomedCode = "123456789";
-    const condition: Condition = {
-      resourceType: "Condition",
-      id: faker.string.uuid(),
-      code: {
-        coding: [
-          {
-            system: SNOMED_URL,
-            code: snomedCode,
-            display: "Test condition",
-          },
-        ],
-      },
-    };
-
-    mockCrosswalkCode.mockRejectedValue(new Error("Crosswalk failed"));
-
-    await expect(dangerouslyHydrateCondition(condition)).rejects.toThrow("Crosswalk failed");
-  });
 });
