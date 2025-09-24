@@ -4,6 +4,7 @@ import { sleep } from "@metriport/shared";
 import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
 import axios from "axios";
 import dayjs from "dayjs";
+import { FacilityInternalDetails } from "../../../api/src/routes/medical/schemas/facility";
 import { getFacilityByNpi } from "./bulk-import-facility";
 import { getCqFacilitySafe, getCwFacilitySafe, readNpisFromCsv } from "./utils";
 
@@ -79,34 +80,24 @@ async function main() {
     }
     console.log(`Syncing facility`);
 
-    const facilityDetails: Record<string, unknown> = {
+    const facilityDetails: FacilityInternalDetails = {
       id: facility.id,
       nameInMetriport: facility.name,
       npi: facility.npi,
-      tin: facility.tin,
+      tin: facility.tin || undefined,
       addressLine1: facility.address.addressLine1,
       addressLine2: facility.address.addressLine2,
       city: facility.address.city,
       state: facility.address.state,
       zip: facility.address.zip,
       country: facility.address.country,
-      cqType: (facility as Record<string, unknown>).cqType || defaultType,
-      cwType: (facility as Record<string, unknown>).cwType || defaultType,
+      cqType: defaultType,
+      cwType: defaultType,
       cqActive: defaultActive,
       cwActive: defaultActive,
       cqApproved: defaultActive,
       cwApproved: defaultActive,
     };
-
-    const cqOboOid = (facility as Record<string, unknown>).cqOboOid;
-    if (cqOboOid) {
-      facilityDetails.cqOboOid = cqOboOid;
-    }
-
-    const cwOboOid = (facility as Record<string, unknown>).cwOboOid;
-    if (cwOboOid) {
-      facilityDetails.cwOboOid = cwOboOid;
-    }
 
     try {
       await axios.put(`${internalUrl}/internal/facility?cxId=${cxId}`, facilityDetails, {
