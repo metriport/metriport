@@ -4,7 +4,7 @@ import { sleep } from "@metriport/shared";
 import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
 import axios from "axios";
 import dayjs from "dayjs";
-import { FacilityInternalDetails } from "../../../api/src/routes/medical/schemas/facility";
+import { FacilityInternalDetails } from "@metriport/core/domain/facility";
 import { getFacilityByNpi } from "./bulk-import-facility";
 import { getCqFacilitySafe, getCwFacilitySafe, readNpisFromCsv } from "./utils";
 
@@ -51,6 +51,7 @@ async function main() {
       facility = await getFacilityByNpi(cxId, npi);
     } catch (error) {
       facilityNotFound.push(npi);
+      console.log(error);
       continue;
     }
     if (!facility) {
