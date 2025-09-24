@@ -1,4 +1,4 @@
-import { Cohort } from "@metriport/core/domain/cohort";
+import { Cohort, CohortEntity } from "@metriport/core/domain/cohort";
 import { NotFoundError } from "@metriport/shared";
 import { col, fn, Op, Transaction } from "sequelize";
 import { CohortModel } from "../../../models/medical/cohort";
@@ -6,8 +6,8 @@ import { getPatientIdsAssignedToCohort } from "./patient-cohort/get-assigned-ids
 
 const countAttr = "count";
 
-export type CohortWithCount = { cohort: Cohort; count: number };
-export type CohortWithPatientIdsAndCount = CohortWithCount & { patientIds: string[] };
+export type CohortEntityWithSize = { cohort: CohortEntity; size: number };
+export type CohortEntityWithPatientIdsAndCount = CohortEntityWithSize & { patientIds: string[] };
 
 export type GetCohortProps = {
   id: string;
@@ -48,21 +48,21 @@ export async function getCohortModelOrFail({
   return cohort;
 }
 
-export async function getCohortWithCountOrFail({
+export async function getCohortWithSizeOrFail({
   id,
   cxId,
-}: GetCohortProps): Promise<CohortWithPatientIdsAndCount> {
+}: GetCohortProps): Promise<CohortEntityWithPatientIdsAndCount> {
   const [cohort, patientIds] = await Promise.all([
     getCohortModelOrFail({ id, cxId }),
     getPatientIdsAssignedToCohort({ cohortId: id, cxId }),
   ]);
   if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id, cxId });
 
-  return { cohort: cohort.dataValues, count: patientIds.length, patientIds };
+  return { cohort: cohort.dataValues, size: patientIds.length, patientIds };
 }
 
-export async function getCohorts({ cxId }: { cxId: string }): Promise<CohortWithCount[]> {
-  const cohortsWithCounts = await CohortModel.findAll({
+export async function getCohorts({ cxId }: { cxId: string }): Promise<CohortEntityWithSize[]> {
+  const cohortsWithSize = await CohortModel.findAll({
     where: { cxId },
     include: [
       {
@@ -77,10 +77,10 @@ export async function getCohorts({ cxId }: { cxId: string }): Promise<CohortWith
     group: [col("CohortModel.id")],
   });
 
-  return cohortsWithCounts.map(cohort => ({
+  return cohortsWithSize.map(cohort => ({
     cohort: cohort.dataValues,
     // Type assertion needed because Sequelize's get() method returns any for computed attributes
-    count: Number((cohort.get(countAttr) as number | null) ?? 0),
+    size: Number((cohort.get(countAttr) as number | null) ?? 0),
   }));
 }
 
