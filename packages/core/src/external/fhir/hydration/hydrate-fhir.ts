@@ -37,6 +37,7 @@ export async function hydrateFhir(
         const res = entry.resource;
         if (!res) return;
 
+        // TODO: ENG-1149 - Refactor to use batch crosswalk
         if (res.resourceType === "Condition") {
           await dangerouslyHydrateCondition(res);
         } else if (res.resourceType === "Medication") {
