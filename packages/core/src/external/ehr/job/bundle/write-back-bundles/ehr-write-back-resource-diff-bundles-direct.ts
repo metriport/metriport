@@ -479,7 +479,7 @@ export function shouldWriteBackResource({
     if (!isProcedure(resource)) return false;
     return true;
   } else if (writeBackResourceType === "allergy") {
-    if (writeBackFilters.problem?.disabled) return false;
+    if (writeBackFilters.allergy?.disabled) return false;
     if (!isAllergyIntolerance(resource)) return false;
     return true;
   }
