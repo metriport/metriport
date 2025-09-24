@@ -476,12 +476,10 @@ export function shouldWriteBackResource({
     return true;
   } else if (writeBackResourceType === "procedure") {
     if (writeBackFilters.procedure?.disabled) return false;
-    if (!isProcedure(resource)) return false;
-    return true;
+    return isProcedure(resource);
   } else if (writeBackResourceType === "allergy") {
     if (writeBackFilters.allergy?.disabled) return false;
-    if (!isAllergyIntolerance(resource)) return false;
-    return true;
+    return isAllergyIntolerance(resource);
   }
   throw new BadRequestError("Could not find write back resource type", undefined, {
     writeBackResourceType,
