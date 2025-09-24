@@ -22,7 +22,7 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFromQueryOrFail("cxId", req);
-    const patientId = getFromQueryOrFail("id", req);
+    const patientId = getFromQueryOrFail("patientId", req);
 
     // validate cx<>patient
     await getPatientOrFail({ id: patientId, cxId });
