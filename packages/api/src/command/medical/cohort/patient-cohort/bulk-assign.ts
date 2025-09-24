@@ -1,5 +1,5 @@
 import { out } from "@metriport/core/util";
-import { BadRequestError } from "@metriport/shared/dist/error/bad-request";
+import { BadRequestError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
 import { getPatientIds } from "../../patient/get-patient-read-only";
