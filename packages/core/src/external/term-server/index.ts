@@ -13,7 +13,7 @@ import {
   RXNORM_URL,
   SNOMED_URL,
 } from "../../util/constants";
-import { codeSourceFhirExtension } from "../fhir/shared/extensions/code-source-extension";
+import { buildMappingExtension } from "../fhir/shared/extensions/mapping-extension";
 
 export type CodeSystemLookupOutput = {
   name: string;
@@ -114,11 +114,15 @@ export async function crosswalkCode({
   const target = element.target?.[0];
   if (!target || !target.code) return undefined;
 
+  const mappingExtension = buildMappingExtension({
+    sourceSystem,
+  });
+
   return {
     system: targetSystem,
     code: target.code,
     ...(target.display ? { display: target.display } : undefined),
-    extension: [codeSourceFhirExtension],
+    extension: [mappingExtension],
   };
 }
 
