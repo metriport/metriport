@@ -1,6 +1,7 @@
 import { Bundle, Condition, Medication, Parameters, Resource } from "@medplum/fhirtypes";
 import { ICD_10_URL, NDC_URL, RXNORM_URL, SNOMED_URL } from "@metriport/shared/medical";
 import { cloneDeep } from "lodash";
+import { isUnknownCoding } from "../../../fhir-deduplication/shared";
 import { executeAsynchronously } from "../../../util/concurrency";
 import {
   buildFhirParametersFromCoding,
@@ -120,7 +121,7 @@ async function dangerouslyHydrateCondition(condition: Condition): Promise<void> 
   if (!snomedCode || !snomedCode.code) return;
 
   const existingIcd10Code = condition.code?.coding?.find(coding => coding.system === ICD_10_URL);
-  if (existingIcd10Code) return;
+  if (existingIcd10Code && !isUnknownCoding(existingIcd10Code)) return;
 
   const icd10Code = await crosswalkCode({
     sourceCode: snomedCode.code,
@@ -139,7 +140,7 @@ async function dangerouslyHydrateCondition(condition: Condition): Promise<void> 
  */
 async function dangerouslyHydrateMedication(medication: Medication): Promise<void> {
   const existingRxNormCode = medication.code?.coding?.find(coding => coding.system === RXNORM_URL);
-  if (existingRxNormCode) return;
+  if (existingRxNormCode && !isUnknownCoding(existingRxNormCode)) return;
 
   const ndcCode = medication.code?.coding?.find(coding => coding.system === NDC_URL);
   if (!ndcCode || !ndcCode.code) return;
