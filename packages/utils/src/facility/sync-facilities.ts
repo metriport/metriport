@@ -1,12 +1,14 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+// keep that ^ on top
 import { Facility } from "@metriport/api-sdk/medical/models/facility";
-import { FacilityType } from "@metriport/core/domain/facility";
+import { FacilityInternalDetails, FacilityType } from "@metriport/core/domain/facility";
 import { sleep } from "@metriport/shared";
 import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
 import axios from "axios";
 import dayjs from "dayjs";
-import { FacilityInternalDetails } from "@metriport/core/domain/facility";
-import { getFacilityByNpi } from "./bulk-import-facility";
-import { getCqFacilitySafe, getCwFacilitySafe, readNpisFromCsv } from "./utils";
+import { getCqFacilitySafe, getCwFacilitySafe, getFacilityByNpi, readNpisFromCsv } from "./utils";
+import { Command } from "commander";
 
 /*
  * This script will read NPIs from a local csv.
@@ -22,17 +24,19 @@ import { getCqFacilitySafe, getCwFacilitySafe, readNpisFromCsv } from "./utils";
  * Set the input variables below.
  *
  * Execute this with:
- * $ ts-node src/facility/sync-facilities
+ * $ ts-node src/facility/sync-facilities --input-path <inputpath> --cx-id <cxId>
  */
+interface FacilitySyncParams {
+  inputPath: string;
+  cxId: string;
+}
 
-const cxId = "";
-const inputPath = "";
 const internalUrl = getEnvVarOrFail("API_URL");
 const defaultActive = true;
 const defaultType = FacilityType.initiatorAndResponder;
 const timeout = dayjs.duration(0.5, "seconds"); //There is 2 sleeps, one at the start of the loop and one in the middle of the loop.
 
-async function main() {
+async function main({ inputPath, cxId }: FacilitySyncParams) {
   const npis = await readNpisFromCsv(inputPath);
   const cwFound: string[] = [];
   const cwNotFound: string[] = [];
@@ -150,4 +154,18 @@ async function main() {
   }
 }
 
-main();
+const program = new Command();
+
+program
+  .name("sync-facilities")
+  .requiredOption("--input-path <inputpath>", "The path to the input csv file")
+  .requiredOption("--cx-id <cxId>", "The customer ID for the facilities to be created under.")
+  .description("Syncs the facilities with CommonWell and CareQuality.")
+  .showHelpAfterError()
+  .version("1.0.0")
+  .action(main);
+
+if (require.main === module) {
+  program.parse(process.argv);
+}
+export default program;

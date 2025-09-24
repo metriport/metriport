@@ -20,6 +20,7 @@ import { Writable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import path from "path";
 import { z } from "zod";
+import { getFacilityByNpi, verifyFacilities } from "./utils";
 
 /*
  * This script will read NPIs, Names, Type, CqOboOid, CwOboOid from a local csv.
@@ -39,19 +40,20 @@ import { z } from "zod";
  *
  * Execute this with:
  * $ ts-node src/facility/bulk-import-facility --input-path <inputpath> --cx-id <cxId> --dryrun
- * $ ts-node src/facility/bulk-import-facility --input-path <inputpath> --cx-id <cxId>
+ * $ ts-node src/facility/bulk-import-facility --input-path <inputpath> --cx-id <cxId> --verify
  */
 
 const internalUrl = getEnvVarOrFail("API_URL");
+const cqActive = true; // CHANGE IF NEEDED
+const cwActive = true; // CHANGE IF NEEDED
 
-const cqActive = false; // CHANGE IF NEEDED
-const cwActive = false; // CHANGE IF NEEDED
 const timeout = dayjs.duration(1, "seconds");
 
 interface FacilityImportParams {
   cxId: string;
   inputPath: string;
   dryrun?: boolean;
+  verify?: boolean;
 }
 
 export const InputRowSchema = z.object({
@@ -64,12 +66,13 @@ export const InputRowSchema = z.object({
 export type InputRowFacilityImport = z.infer<typeof InputRowSchema>;
 
 const CSV_HEADER =
-  ["facilityName", "npi", "facilityType", "cqOboOid", "cwOboOid", "success", "reason"].join(",") +
+  ["npi", "facilityName", "facilityType", "cqOboOid", "cwOboOid", "success", "reason"].join(",") +
   "\n";
 
-async function main({ cxId, inputPath, dryrun }: FacilityImportParams) {
+async function main({ cxId, inputPath, dryrun, verify }: FacilityImportParams) {
   await sleep(50);
   const isDryRun = Boolean(dryrun);
+  const isVerify = Boolean(verify);
   const currentTime = buildDayjs(new Date());
   const outputTimeStamp = currentTime.format("YYYY-MM-DD");
   const name = path.basename(inputPath, path.extname(inputPath));
@@ -99,6 +102,15 @@ async function main({ cxId, inputPath, dryrun }: FacilityImportParams) {
       createdFacilities.push(facility);
     }
   }
+  console.log(`Created ${createdFacilities.length} facilities`);
+  if (isVerify) {
+    console.log(`Verifying ${createdFacilities.length} facilities`);
+    await verifyFacilities(
+      createdFacilities.map(facility => facility.npi),
+      cxId,
+      timeout.asMilliseconds()
+    );
+  }
 
   await fs.writeFile(payloadCreatesFilePath, JSON.stringify(createdFacilities, null, 2), "utf8");
 
@@ -112,7 +124,7 @@ async function main({ cxId, inputPath, dryrun }: FacilityImportParams) {
 async function readCsvRows(inputPath: string): Promise<InputRowFacilityImport[]> {
   const rows: InputRowFacilityImport[] = [];
   const parser = csvParser({
-    headers: ["facilityName", "npi", "facilityType", "cqOboOid", "cwOboOid"],
+    headers: ["npi", "facilityName", "facilityType", "cqOboOid", "cwOboOid"],
     skipLines: 1,
   });
 
@@ -203,27 +215,6 @@ export async function readFileFromLocal(inputPath: string, parser: Writable): Pr
   await pipeline(createReadStream(filePath), parser);
 }
 
-export async function getFacilityByNpi(cxId: string, npi: string): Promise<Facility | null> {
-  try {
-    const url = `${internalUrl}/internal/cx-data`;
-    const response = await axios.get(url, {
-      params: { cxId },
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    const data = response.data;
-    const facilities = data.facilities || [];
-    const facility = facilities.find((f: Facility) => f.npi === npi);
-    return facility || null;
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.status === 404) {
-      return null;
-    }
-    throw error;
-  }
-}
-
 async function createFacility(
   createPayload: FacilityInternalDetails,
   cxId: string
@@ -295,6 +286,10 @@ program
   .option(
     "--dryrun",
     "Writes to a local JSON file all the facilities it would of tried to create. Does not upload to S3 or add Facilities to the DB"
+  )
+  .option(
+    "--verify",
+    "Verifies the facilities that were created by checking if the CW and CQ Organizations are found and if the OID is present."
   )
   .description(
     "Creates facilities for the customer inputted based on NPIs, Names, Type, CqOboOid, CwOboOid from a a csv stored in S3."
