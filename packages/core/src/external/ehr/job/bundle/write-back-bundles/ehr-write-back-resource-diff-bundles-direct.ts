@@ -29,10 +29,12 @@ import { executeAsynchronously } from "../../../../../util/concurrency";
 import { log, out } from "../../../../../util/log";
 import { capture } from "../../../../../util/notifications";
 import {
+  isAllergyIntolerance,
   isCondition,
   isDiagnosticReport,
   isMedicationStatement,
   isObservation,
+  isProcedure,
 } from "../../../../fhir/shared";
 import { getSecondaryMappings } from "../../../api/get-secondary-mappings";
 import { BundleType } from "../../../bundle/bundle-shared";
@@ -94,6 +96,8 @@ const supportedWriteBackResourceTypes: ResourceType[] = [
   "Observation",
   "DiagnosticReport",
   "MedicationStatement",
+  "Procedure",
+  "AllergyIntolerance",
 ];
 export type SupportedWriteBackResourceType = (typeof supportedWriteBackResourceTypes)[number];
 export function isSupportedWriteBackResourceType(
@@ -378,12 +382,6 @@ function getResourcesToWriteBack({
   for (const resource of resources) {
     const writeBackResourceType = getWriteBackResourceType(resource);
     if (!writeBackResourceType) continue;
-    if (
-      resource.resourceType === "DiagnosticReport" &&
-      (!resource.result || resource.result.length < 1)
-    ) {
-      continue;
-    }
     const shouldWriteBack = shouldWriteBackResource({
       ehr,
       resource,
@@ -448,6 +446,7 @@ export function shouldWriteBackResource({
   } else if (writeBackResourceType === "lab-panel") {
     if (writeBackFilters.labPanel?.disabled) return false;
     if (!isDiagnosticReport(resource)) return false;
+    if (!resource.result || resource.result.length < 1) return false;
     const diagnosticReport = resource;
     if (skipLabPanelDate(diagnosticReport, writeBackFilters)) return false;
     if (skipLabPanelDateAbsolute(diagnosticReport, writeBackFilters)) return false;
@@ -472,6 +471,14 @@ export function shouldWriteBackResource({
     if (!isMedicationStatement(resource)) return false;
     const medicationStatement = resource;
     if (skipMedicationStatementDateAbsolute(medicationStatement, writeBackFilters)) return false;
+    return true;
+  } else if (writeBackResourceType === "procedure") {
+    if (writeBackFilters.procedure?.disabled) return false;
+    if (!isProcedure(resource)) return false;
+    return true;
+  } else if (writeBackResourceType === "allergy") {
+    if (writeBackFilters.problem?.disabled) return false;
+    if (!isAllergyIntolerance(resource)) return false;
     return true;
   }
   throw new BadRequestError("Could not find write back resource type", undefined, {
