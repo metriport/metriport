@@ -38,6 +38,13 @@ export function getCreateViewJobCommand(tableName: string): { cmd: string; viewN
   return { cmd, viewName };
 }
 
+export function getCreateIndexCommand(tableName: string): string {
+  return `CREATE INDEX IF NOT EXISTS ${tableName}_index ON ${tableName} (${columnJobIdName}, ${columnPatientIdName})`;
+}
+export function getDropIndexCommand(tableName: string): string {
+  return `DROP INDEX IF EXISTS ${tableName}_index`;
+}
+
 export function getInsertTableCommand(tableName: string, columnNames: string[]): string {
   const valuesPlaceholders = columnNames.map((_, index) => `$${index + 1}`).join(", ");
   const insertQuery = `
