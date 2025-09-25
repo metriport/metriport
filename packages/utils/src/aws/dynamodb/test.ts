@@ -12,7 +12,7 @@ import { getEnvVarOrFail } from "@metriport/shared";
  * Script to test the code that manipulates the feature flags in DynamoDB.
  *
  * Usage:
- * - IMPORTANT: set the DYNAMODB_ENDPOINT env var when running pointint to local DB
+ * - IMPORTANT: set the DYNAMODB_ENDPOINT env var pointing to local DB
  *   It's used on DynamoDbUtils' constructor
  * - set the AWS_REGION and FEATURE_FLAGS_TABLE_NAME environment variables
  * - run the script
@@ -25,13 +25,14 @@ const region = getEnvVarOrFail("AWS_REGION");
 async function main() {
   try {
     FeatureFlags.init(region, tableName);
-    const value = await FeatureFlags.getFeatureFlagsRecord();
+    const value = await FeatureFlags.getFeatureFlagsRecord(); // can use { skipCache: true }
     console.log("Parameter value:", value);
     const newValue: FeatureFlagsRecordUpdate = {
       ...value,
       featureFlags: {
         ...(value?.featureFlags ?? initialFeatureFlags),
-        commonwellFeatureFlag: { enabled: true },
+        // Insert feature flags to test e.g.:
+        // commonwellFeatureFlag: { enabled: true },
       },
       existingVersion: value?.version ?? 0,
       updatedBy: "test",
