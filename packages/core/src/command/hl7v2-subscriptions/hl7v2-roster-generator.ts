@@ -107,10 +107,9 @@ export class Hl7v2RosterGenerator {
 
       return createRosterRowInput(p, { shortcode: org.shortcode }, states);
     });
-
-    const rosterRows = rosterRowInputs.map(input => createRosterRow(input, config.mapping));
-    const newRosterRows = translateRosterRows(rosterRows, hieName);
-    const rosterCsv = this.generateCsv(newRosterRows);
+    const newRosterRowInputs = customizeInputsForHies(rosterRowInputs, hieName);
+    const rosterRows = newRosterRowInputs.map(input => createRosterRow(input, config.mapping));
+    const rosterCsv = this.generateCsv(rosterRows);
     log("Created CSV");
 
     const s3Key = createFileKeyHl7v2Roster(hieName);
@@ -135,7 +134,7 @@ export class Hl7v2RosterGenerator {
     });
     log(`Saved in S3: ${this.bucketName}/${s3Key}`);
 
-    const rosterSize = newRosterRows.length;
+    const rosterSize = rosterRows.length;
     const trackRosterSizePerCustomerParams: TrackRosterSizePerCustomerParams = {
       patients,
       hieName,
@@ -201,20 +200,17 @@ export function createFileNameHl7v2Roster(hieName: string): string {
   return `Metriport_${hieName}_Patient_Enrollment_${fileDate}.${CSV_FILE_EXTENSION}`;
 }
 
-function translateRosterRows(rosterRows: RosterRow[], hieName: string): RosterRow[] {
+function customizeInputsForHies(
+  rosterRowInputs: RosterRowData[],
+  hieName: string
+): RosterRowData[] {
   if (hieName === "Bamboo") {
-    return rosterRows.map(row => {
-      if (!row.PATIENT_ID) {
-        throw new MetriportError("Scrambled ID is required for Bamboo", undefined, {
-          hieName,
-          id: row.PATIENT_ID,
-        });
-      }
-      row.PATIENT_ID = toBambooId(row.PATIENT_ID);
-      return row;
-    });
+    return rosterRowInputs.map(({ scrambledId, ...rest }) => ({
+      scrambledId: toBambooId(scrambledId),
+      ...rest,
+    }));
   }
-  return rosterRows;
+  return rosterRowInputs;
 }
 
 export function createRosterRow(
