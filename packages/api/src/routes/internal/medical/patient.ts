@@ -1136,9 +1136,10 @@ router.post(
     const id = getFromParamsOrFail("id", req);
     const patient = await getPatientOrFail({ id, cxId });
 
-    await ingestPatientIntoAnalyticsPlatform({ cxId, patientId: patient.id });
+    const resp = await ingestPatientIntoAnalyticsPlatform({ cxId, patientId: patient.id });
 
-    return res.status(status.OK).json({ message: "Ingestion initiated" });
+    const message = resp ? "Ingestion initiated" : "Ingestion not initiated";
+    return res.status(status.OK).json({ message });
   })
 );
 

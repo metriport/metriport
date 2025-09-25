@@ -8,11 +8,14 @@ export async function ingestPatientIntoAnalyticsPlatform({
 }: {
   cxId: string;
   patientId: string;
-}): Promise<void> {
+}): Promise<boolean> {
   const { log } = out(`ingestPatientIntoAnalyticsPlatform - cx ${cxId}, pt ${patientId}`);
 
   const isAnalyticsEnabled = await isAnalyticsIncrementalIngestionEnabledForCx(cxId);
-  if (!isAnalyticsEnabled) return;
+  if (!isAnalyticsEnabled) {
+    log(`Analytics is not enabled for this customer`);
+    return false;
+  }
 
   // TODO ENG-743 implement this
   log(`WOULD BE ingesting pt consolidated into analytics platform`);
@@ -25,4 +28,6 @@ export async function ingestPatientIntoAnalyticsPlatform({
   //   jobId,
   //   outputPrefix,
   // });
+
+  return true;
 }
