@@ -25,7 +25,7 @@ const region = getEnvVarOrFail("AWS_REGION");
 async function main() {
   try {
     FeatureFlags.init(region, tableName);
-    const value = await FeatureFlags.getFeatureFlagsRecord(); // can use { skipCache: true }
+    const value = await FeatureFlags.getFeatureFlagsRecord();
     console.log("Parameter value:", value);
     const newValue: FeatureFlagsRecordUpdate = {
       ...value,
