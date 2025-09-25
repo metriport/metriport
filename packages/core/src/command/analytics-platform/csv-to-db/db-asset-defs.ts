@@ -1,7 +1,3 @@
-export function getCxDbName(cxId: string, dbname: string): string {
-  return `${dbname}_${cxId}`;
-}
-
 export const tableJobName = "metriport_incremental_job";
 
 export const columnPatientIdName = "m_patient_id";
@@ -71,4 +67,52 @@ export function getInsertTableCommand(tableName: string, columnNames: string[]):
     VALUES (${valuesPlaceholders})
   `;
   return insertQuery;
+}
+
+export function getCxDbName(cxId: string, dbname: string): string {
+  return `${dbname}_${cxId.replace(/-/g, "_")}`;
+}
+
+export function getCreateCxDbCommand({ cxDbName }: { cxDbName: string }): string {
+  return `CREATE DATABASE "${cxDbName}"`;
+}
+export function getCxDbExistsCommand({ cxDbName }: { cxDbName: string }): string {
+  return `SELECT 1 FROM pg_database WHERE datname = '${cxDbName}'`;
+}
+
+export function getCreateDbUserCommand({
+  username,
+  password,
+}: {
+  username: string;
+  password: string;
+}): string {
+  const cmd = `DO $$
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_user WHERE usename = '${username}') THEN
+            CREATE USER ${username} WITH PASSWORD '${password}';
+        END IF;
+    END
+    $$;`;
+  return cmd;
+}
+export function getGrantAccessToDbUserCommand({
+  dbName,
+  username,
+}: {
+  dbName: string;
+  username: string;
+}): string {
+  const cmd = `GRANT CONNECT ON DATABASE ${dbName} TO ${username}_rw;
+    GRANT USAGE ON SCHEMA public TO ${username}_rw;
+    grant all on schema public to ${username}_rw;
+    grant all on all tables in schema public to ${username}_rw;
+    grant all on all sequences in schema public to ${username}_rw;
+    grant all on all functions in schema public to ${username}_rw;
+    grant all on all procedures in schema public to ${username}_rw;
+    grant all on all routines in schema public to ${username}_rw;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ${username}_rw;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO ${username}_rw;
+    `;
+  return cmd;
 }
