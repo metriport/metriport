@@ -83,7 +83,7 @@ function setPid3Id(pid: Hl7Segment, newId: string, oldIdIndex?: number): Hl7Segm
   const newPatientIdField = new Hl7Field([[newId]], pid.context);
 
   const newFields = [...pid.fields];
-  if (oldIdIndex) {
+  if (oldIdIndex !== undefined) {
     if (oldIdIndex >= newFields.length || oldIdIndex < 0) {
       throw new MetriportError("oldIdIndex out of bounds", undefined, {
         oldIdIndex,

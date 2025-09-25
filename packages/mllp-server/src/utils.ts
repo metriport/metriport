@@ -129,6 +129,9 @@ export function translateMessage(rawMessage: Hl7Message, hieName: string): Hl7Me
       throw new MetriportError("PID segment not found in bamboo message", undefined, { hieName });
     }
     const bambooId = pid.getComponent(3, 1);
+    if (!bambooId) {
+      throw new MetriportError("ID not found in bamboo message", undefined, { hieName });
+    }
     const normalId = fromBambooId(bambooId);
 
     const newMessage = remapMessageReplacingPid3(rawMessage, normalId);
