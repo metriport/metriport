@@ -52,7 +52,7 @@ bmi_direct AS (
   FROM OBSERVATION o
   WHERE o.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND o.NORMALIZED_CODE = '39156-5'                    -- BMI
-    AND TRY_TO_DOUBLE(o.RESULT) >= 40
+    AND TRY_TO_DOUBLE(o.RESULT) >= 35
     AND NOT EXISTS (SELECT 1 FROM obesity_dx_exclusion x WHERE x.PATIENT_ID = o.PATIENT_ID)
 ),
 
@@ -106,12 +106,12 @@ heights AS (
       WHEN COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) ILIKE '%ft%'
         THEN TRY_TO_DOUBLE(o.RESULT) * 0.3048             -- feet -> meters
       /* Heuristics if units are missing: */
-      WHEN TRY_TO_DOUBLE(o.RESULT) BETWEEN 1 AND 2.5
-        THEN TRY_TO_DOUBLE(o.RESULT)                      -- meters
-      WHEN TRY_TO_DOUBLE(o.RESULT) BETWEEN 120 AND 250
-        THEN TRY_TO_DOUBLE(o.RESULT) / 100                -- centimeters -> meters
+      WHEN TRY_TO_DOUBLE(o.RESULT) BETWEEN 1.0 AND 2.5
+        THEN TRY_TO_DOUBLE(o.RESULT)                      -- meters (1.0-2.5m)
+      WHEN TRY_TO_DOUBLE(o.RESULT) BETWEEN 100 AND 250
+        THEN TRY_TO_DOUBLE(o.RESULT) / 100                -- centimeters -> meters (100-250cm)
       WHEN TRY_TO_DOUBLE(o.RESULT) BETWEEN 48 AND 100
-        THEN TRY_TO_DOUBLE(o.RESULT) * 0.0254             -- inches -> meters
+        THEN TRY_TO_DOUBLE(o.RESULT) * 0.0254             -- inches -> meters (48-100in)
       ELSE NULL
     END AS height_m
   FROM OBSERVATION o
@@ -188,7 +188,7 @@ bmi_derived AS (
     COALESCE(p.weight_data_source, p.height_data_source) AS DATA_SOURCE
 
   FROM latest_encounter_pair p
-  WHERE (p.weight_kg / NULLIF(p.height_m * p.height_m, 0)) >= 40
+  WHERE (p.weight_kg / NULLIF(p.height_m * p.height_m, 0)) >= 35
     AND NOT EXISTS (SELECT 1 FROM obesity_dx_exclusion x WHERE x.PATIENT_ID = p.PATIENT_ID)
 ),
 
