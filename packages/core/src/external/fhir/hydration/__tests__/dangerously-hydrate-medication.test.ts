@@ -45,6 +45,7 @@ describe("dangerouslyHydrateMedication", () => {
       targetSystem: RXNORM_URL,
     });
 
+    expect(medication.code?.coding).toBeDefined();
     expect(medication.code?.coding).toHaveLength(2);
     expect(medication.code?.coding?.[1]).toEqual({
       system: RXNORM_URL,
@@ -69,6 +70,7 @@ describe("dangerouslyHydrateMedication", () => {
     await dangerouslyHydrateMedication(medication);
 
     expect(mockCrosswalkCode).not.toHaveBeenCalled();
+    expect(medication.code?.coding).toBeDefined();
     expect(medication.code?.coding).toHaveLength(1);
   });
 
@@ -95,6 +97,7 @@ describe("dangerouslyHydrateMedication", () => {
     await dangerouslyHydrateMedication(medication);
 
     expect(mockCrosswalkCode).not.toHaveBeenCalled();
+    expect(medication.code?.coding).toBeDefined();
     expect(medication.code?.coding).toHaveLength(2);
   });
 
@@ -123,6 +126,7 @@ describe("dangerouslyHydrateMedication", () => {
       targetSystem: RXNORM_URL,
     });
 
+    expect(medication.code?.coding).toBeDefined();
     expect(medication.code?.coding).toHaveLength(1);
   });
 

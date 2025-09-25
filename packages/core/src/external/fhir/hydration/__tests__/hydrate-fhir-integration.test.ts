@@ -49,6 +49,7 @@ describe.skip("hydrateFhir - Integration Tests", () => {
       const result = await hydrateFhir(bundle, mockLog);
 
       const hydratedCondition = result.data.entry?.[0]?.resource as Condition;
+      expect(hydratedCondition?.code?.coding).toBeDefined();
       expect(hydratedCondition?.code?.coding).toHaveLength(2);
 
       const icd10Coding = hydratedCondition?.code?.coding?.find(
@@ -81,6 +82,7 @@ describe.skip("hydrateFhir - Integration Tests", () => {
       const result = await hydrateFhir(bundle, mockLog);
 
       const hydratedMedication = result.data.entry?.[0]?.resource as Medication;
+      expect(hydratedMedication?.code?.coding).toBeDefined();
       expect(hydratedMedication?.code?.coding).toHaveLength(2);
 
       const rxNormCoding = hydratedMedication?.code?.coding?.find(
@@ -160,10 +162,13 @@ describe.skip("hydrateFhir - Integration Tests", () => {
       const result = await hydrateFhir(bundle, mockLog);
 
       // Verify both resources were processed
+      expect(result.data.entry).toBeDefined();
       expect(result.data.entry).toHaveLength(2);
 
       // Check Condition hydration
       const hydratedCondition = result.data.entry?.[0]?.resource as Condition;
+
+      expect(hydratedCondition?.code?.coding).toBeDefined();
       expect(hydratedCondition?.code?.coding).toHaveLength(2);
       const conditionIcd10 = hydratedCondition?.code?.coding?.find(
         coding => coding.system === ICD_10_URL
@@ -172,6 +177,7 @@ describe.skip("hydrateFhir - Integration Tests", () => {
 
       // Check Medication hydration
       const hydratedMedication = result.data.entry?.[1]?.resource as Medication;
+      expect(hydratedMedication?.code?.coding).toBeDefined();
       expect(hydratedMedication?.code?.coding).toHaveLength(2);
       const medicationRxNorm = hydratedMedication?.code?.coding?.find(
         coding => coding.system === RXNORM_URL
@@ -208,6 +214,8 @@ describe.skip("hydrateFhir - Integration Tests", () => {
 
       // Verify the condition wasn't modified
       const hydratedCondition = result.data.entry?.[0]?.resource as Condition;
+
+      expect(hydratedCondition?.code?.coding).toBeDefined();
       expect(hydratedCondition?.code?.coding).toHaveLength(1);
       expect(hydratedCondition?.code?.coding?.[0]?.system).toBe(ICD_10_URL);
       expect(hydratedCondition?.code?.coding?.[0]?.code).toBe(staphIcd10Code);
@@ -265,6 +273,7 @@ describe.skip("hydrateFhir - Integration Tests", () => {
       // Should not crash and should return the original bundle
       expect(result.data).toBeDefined();
       const hydratedCondition = result.data.entry?.[0]?.resource as Condition;
+      expect(hydratedCondition?.code?.coding).toBeDefined();
       expect(hydratedCondition?.code?.coding).toHaveLength(1);
       expect(hydratedCondition?.code?.coding?.[0]?.code).toBe("invalid-code-12345");
     });

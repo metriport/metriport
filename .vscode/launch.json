@@ -42,7 +42,7 @@
       "port": 9230,
       "address": "0.0.0.0",
       "sourceMapPathOverrides": {
-        "/usr/src/app/packages/api/*": "${workspaceFolder}/packages/terminology/*"
+        "/usr/src/app/packages/terminology/*": "${workspaceFolder}/packages/terminology/*"
       },
       "localRoot": "${workspaceFolder}/packages/terminology",
       "remoteRoot": "/usr/src/app/packages/terminology"

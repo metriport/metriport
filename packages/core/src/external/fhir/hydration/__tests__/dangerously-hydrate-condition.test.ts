@@ -45,6 +45,7 @@ describe("dangerouslyHydrateCondition", () => {
       targetSystem: ICD_10_URL,
     });
 
+    expect(condition.code?.coding).toBeDefined();
     expect(condition.code?.coding).toHaveLength(2);
     expect(condition.code?.coding?.[1]).toEqual({
       system: ICD_10_URL,
@@ -70,6 +71,7 @@ describe("dangerouslyHydrateCondition", () => {
     await dangerouslyHydrateCondition(condition);
 
     expect(mockCrosswalkCode).not.toHaveBeenCalled();
+    expect(condition.code?.coding).toBeDefined();
     expect(condition.code?.coding).toHaveLength(1);
   });
 
@@ -98,6 +100,7 @@ describe("dangerouslyHydrateCondition", () => {
     await dangerouslyHydrateCondition(condition);
 
     expect(mockCrosswalkCode).not.toHaveBeenCalled();
+    expect(condition.code?.coding).toBeDefined();
     expect(condition.code?.coding).toHaveLength(2);
   });
 
@@ -127,6 +130,7 @@ describe("dangerouslyHydrateCondition", () => {
       targetSystem: ICD_10_URL,
     });
 
+    expect(condition.code?.coding).toBeDefined();
     expect(condition.code?.coding).toHaveLength(1);
   });
 
