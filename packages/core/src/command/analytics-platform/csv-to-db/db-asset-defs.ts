@@ -9,6 +9,8 @@ export const columnJobIdName = "m_job_id";
 
 const defaultColumnType = "VARCHAR";
 
+const indexSuffixName = "idx_brin";
+
 export const columnPatientIdDefinition = `${columnPatientIdName} ${defaultColumnType}`;
 export const columnJobIdDefinition = `${columnJobIdName} ${defaultColumnType}`;
 
@@ -40,10 +42,13 @@ export function getCreateViewJobCommand(tableName: string): { cmd: string; viewN
 }
 
 export function getCreateIndexCommand(tableName: string): string {
-  return `CREATE INDEX IF NOT EXISTS ${tableName}_index ON ${tableName} (${columnJobIdName}, ${columnPatientIdName})`;
+  return (
+    `CREATE INDEX IF NOT EXISTS ${tableName}_${indexSuffixName} ` +
+    `ON ${tableName} USING BRIN (${columnJobIdName})`
+  );
 }
 export function getDropIndexCommand(tableName: string): string {
-  return `DROP INDEX IF EXISTS ${tableName}_index`;
+  return `DROP INDEX IF EXISTS ${tableName}_${indexSuffixName}`;
 }
 
 export function getInsertTableCommand(tableName: string, columnNames: string[]): string {

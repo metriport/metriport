@@ -10,10 +10,10 @@ import { parseTableNameFromFhirToCsvIncrementalFileKey } from "../fhir-to-csv/fi
 import {
   additionalColumnDefs,
   createTableJobCommand,
+  getCreateIndexCommand,
   getCreateTableCommand,
   getCreateViewJobCommand,
   getCxDbName,
-  getDropIndexCommand,
   insertTableJobCommand,
 } from "./db-asset-defs";
 
@@ -271,10 +271,8 @@ async function createTableIfNotExists(
   try {
     const createTableCmd = getCreateTableCommand(tableName, columnsDef);
     await client.query(createTableCmd);
-    // Drop the index because we'll be ingesting a lot of data, it should be recreated before
-    // we use the views to re-create the core schema
-    const dropIndexCmd = getDropIndexCommand(tableName);
-    await client.query(dropIndexCmd);
+    const createIndexCmd = getCreateIndexCommand(tableName);
+    await client.query(createIndexCmd);
   } catch (error) {
     log(`Error creating table ${tableName}: ${error}`);
     throw new MetriportError(`Failed to create table ${tableName}`, error, { tableName });
