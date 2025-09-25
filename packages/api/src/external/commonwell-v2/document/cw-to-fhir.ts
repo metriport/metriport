@@ -82,7 +82,7 @@ export function cwToFHIR(
   const fhirDocRef: DocumentReferenceWithId = {
     id: docId,
     resourceType: "DocumentReference",
-    contained: containedContent,
+    ...(containedContent.length ? { contained: containedContent } : {}),
     masterIdentifier: {
       system: doc.masterIdentifier?.system ?? undefined,
       value: doc.masterIdentifier?.value ?? docId,
@@ -158,6 +158,7 @@ function containedOrgToFHIRResource(
   return [
     {
       resourceType: "Organization",
+      id: resource.id,
       name: resource.name,
     },
   ];
