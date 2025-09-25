@@ -1,17 +1,12 @@
+import { MetriportError, sleep } from "@metriport/shared";
 import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
-import { MetriportError } from "@metriport/shared";
 import axios from "axios";
+import csvParser from "csv-parser";
+import { createReadStream, constants as FS } from "node:fs";
 import { access } from "node:fs/promises";
 import { pipeline } from "node:stream/promises";
 import path from "path";
-import { createReadStream, constants as FS } from "node:fs";
-import csvParser from "csv-parser";
-import { Facility as SdkFacility } from "@metriport/api-sdk/medical/models/facility";
-import { sleep } from "@metriport/shared";
-
-interface FacilityWithOid extends SdkFacility {
-  oid: string;
-}
+import { InternalFacilityDTO } from "../../../api/src/routes/medical/dtos/facilityDTO";
 
 const internalUrl = getEnvVarOrFail("API_URL");
 
@@ -106,7 +101,7 @@ export async function getCqFacilitySafe(
 export async function getInternalFacilityByNpi(
   cxId: string,
   npi: string
-): Promise<FacilityWithOid | undefined> {
+): Promise<InternalFacilityDTO | undefined> {
   try {
     const url = `${internalUrl}/internal/cx-data`;
     const response = await axios.get(url, {
@@ -117,7 +112,7 @@ export async function getInternalFacilityByNpi(
     });
     const data = response.data;
     const facilities = data.facilities || [];
-    const facility = facilities.find((f: FacilityWithOid) => f.npi === npi);
+    const facility = facilities.find((f: InternalFacilityDTO) => f.npi === npi);
     return facility || undefined;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) {

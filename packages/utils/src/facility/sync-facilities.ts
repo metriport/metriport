@@ -1,9 +1,8 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { Facility } from "@metriport/api-sdk/medical/models/facility";
-import { FacilityInternalDetails, FacilityType } from "@metriport/core/domain/facility";
-import { sleep } from "@metriport/shared";
+import { FacilityInternalDetails } from "@metriport/core/domain/facility";
+import { sleep, USTerritory, USState } from "@metriport/shared";
 import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -14,6 +13,7 @@ import {
   readNpisFromCsv,
 } from "./utils";
 import { Command } from "commander";
+import { InternalFacilityDTO } from "../../../api/src/routes/medical/dtos/facilityDTO";
 
 /*
  * This script will read NPIs from a local csv.
@@ -37,8 +37,6 @@ interface FacilitySyncParams {
 }
 
 const internalUrl = getEnvVarOrFail("API_URL");
-const defaultActive = true;
-const defaultType = FacilityType.initiatorAndResponder;
 const waitTimeBetweenChecks = dayjs.duration(0.5, "seconds"); //There is 2 sleeps, one at the start of the loop and one in the middle of the loop.
 
 async function main({ inputPath, cxId }: FacilitySyncParams) {
@@ -55,7 +53,7 @@ async function main({ inputPath, cxId }: FacilitySyncParams) {
   for (const npi of npis) {
     await sleep(waitTimeBetweenChecks.asMilliseconds());
     console.log(`Processing facility: ${npi}`);
-    let facility: Facility | undefined = undefined;
+    let facility: InternalFacilityDTO | undefined = undefined;
     try {
       facility = await getInternalFacilityByNpi(cxId, npi);
     } catch (error) {
@@ -69,7 +67,7 @@ async function main({ inputPath, cxId }: FacilitySyncParams) {
       continue;
     }
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const facilityOid = (facility as any).oid;
+    const facilityOid = facility.oid;
     if (!facilityOid) {
       console.log(`Facility has no OID: ${npi}`);
       noOid.push(npi);
@@ -101,15 +99,15 @@ async function main({ inputPath, cxId }: FacilitySyncParams) {
       addressLine1: facility.address.addressLine1,
       addressLine2: facility.address.addressLine2,
       city: facility.address.city,
-      state: facility.address.state,
+      state: facility.address.state as USState | USTerritory,
       zip: facility.address.zip,
-      country: facility.address.country,
-      cqType: defaultType,
-      cwType: defaultType,
-      cqActive: defaultActive,
-      cwActive: defaultActive,
-      cqApproved: defaultActive,
-      cwApproved: defaultActive,
+      country: "USA",
+      cqType: facility.cqType,
+      cwType: facility.cwType,
+      cqActive: facility.cqActive,
+      cwActive: facility.cwActive,
+      cqApproved: facility.cqApproved,
+      cwApproved: facility.cwApproved,
     };
 
     try {

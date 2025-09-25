@@ -42,10 +42,12 @@ import { getInternalFacilityByNpi, verifyFacilities } from "./utils";
  * $ ts-node src/facility/bulk-import-facility --input-path <inputpath> --cx-id <cxId> --dryrun
  * $ ts-node src/facility/bulk-import-facility --input-path <inputpath> --cx-id <cxId> --verify
  */
-
 const internalUrl = getEnvVarOrFail("API_URL");
 const cqActive = true; // CHANGE IF NEEDED
 const cwActive = true; // CHANGE IF NEEDED
+const verifyNames = true;
+const useNpiDbName = false; // Needs to be opposite of useNameFromCsv and verifyNames must be false
+const useNameFromCsv = false; // Needs to be opposite of useNpiDbName and verifyNames must be false
 
 const waitTimeBetweenChecks = dayjs.duration(1, "seconds");
 
@@ -162,16 +164,19 @@ async function processRow(
     const metriportFacility = buildInternalFacilityFromNpiFacility(npiFacility, params);
 
     const otherNames = npiFacility.other_names ?? [];
-    if (otherNames.length > 0) {
+    if ((verifyNames || useNpiDbName) && otherNames.length > 0 && !useNameFromCsv) {
       const organizationName = otherNames[0].organization_name;
       if (!organizationName) {
         throw new Error(`Organization name was not returned from the NPI Registry`);
       }
 
-      if (!facilityNamesMatch(organizationName, metriportFacility.nameInMetriport)) {
+      if (verifyNames && !facilityNamesMatch(organizationName, metriportFacility.nameInMetriport)) {
         throw new Error(
           `Name mismatch: Registry='${npiFacility.other_names[0].organization_name}', CSV='${metriportFacility.nameInMetriport}'`
         );
+      }
+      if (useNpiDbName) {
+        metriportFacility.nameInMetriport = organizationName;
       }
     }
 
