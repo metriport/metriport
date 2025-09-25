@@ -54,30 +54,13 @@ export function unpackPidFieldOrFail(pid: string) {
   return { cxId, patientId };
 }
 
-export function unpackBambooPidFieldOrFail(pid: string) {
-  if (!pid || !pid.includes("_")) {
-    throw new MetriportError("Invalid PID format: missing separator");
-  }
-
-  const [cxId, patientId] = pid.split("_");
-
-  if (!cxId || !patientId) {
-    throw new MetriportError("Invalid PID format: could not unpack identifiers");
-  }
-
-  const normalizedCxId = unpackBambooId(cxId);
-  const normalizedPatientId = unpackBambooId(patientId);
-  const normalizedPid = `${normalizedCxId}_${normalizedPatientId}`;
-  return unpackPidFieldOrFail(normalizedPid);
-}
-
 // Turn + into - , and = into .
-export function createBambooId(id: string) {
+export function toBambooId(id: string) {
   return id.replace(/\+/g, "-").replace(/=/g, ".");
 }
 
 // Reverse: - back to + , . back to =
-export function unpackBambooId(id: string) {
+export function fromBambooId(id: string) {
   return id.replace(/-/g, "+").replace(/\./g, "=");
 }
 
@@ -87,8 +70,10 @@ export function remapMessageReplacingPid3(
   newId: string,
   oldIdIndex?: number
 ): Hl7Message {
+  const pid = getSegmentByNameOrFail(message, "PID");
+  console.log("pid", pid.toString());
   const updatedPid = setPid3Id(getSegmentByNameOrFail(message, "PID"), newId, oldIdIndex);
-
+  console.log("updatedPid", updatedPid.toString());
   const newSegments = message.segments.map(seg => (seg.name === "PID" ? updatedPid : seg));
 
   return new Hl7Message(newSegments, message.context);
@@ -120,14 +105,6 @@ export function getCxIdAndPatientIdOrFail(msg: Hl7Message): { cxId: string; pati
   const pid = getSegmentByNameOrFail(msg, "PID");
   const idComponent = pid.getComponent(3, 1);
   return unpackPidFieldOrFail(idComponent);
-}
-export function getCxIdAndPatientIdOrFailBamboo(msg: Hl7Message): {
-  cxId: string;
-  patientId: string;
-} {
-  const pid = getSegmentByNameOrFail(msg, "PID");
-  const idComponent = pid.getComponent(3, 1);
-  return unpackBambooPidFieldOrFail(idComponent);
 }
 
 export function getRequiredValueFromMessage(

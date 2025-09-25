@@ -33,7 +33,8 @@ import {
   RosterRowData,
   VpnlessHieConfig,
 } from "./types";
-import { createBambooScrambledId, createScrambledId } from "./utils";
+import { createScrambledId } from "./utils";
+import { toBambooId } from "./hl7v2-to-fhir-conversion/shared";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
@@ -108,7 +109,8 @@ export class Hl7v2RosterGenerator {
     });
 
     const rosterRows = rosterRowInputs.map(input => createRosterRow(input, config.mapping));
-    const rosterCsv = this.generateCsv(rosterRows);
+    const newRosterRows = translateRosterRows(rosterRows, hieName);
+    const rosterCsv = this.generateCsv(newRosterRows);
     log("Created CSV");
 
     const s3Key = createFileKeyHl7v2Roster(hieName);
@@ -133,7 +135,7 @@ export class Hl7v2RosterGenerator {
     });
     log(`Saved in S3: ${this.bucketName}/${s3Key}`);
 
-    const rosterSize = rosterRows.length;
+    const rosterSize = newRosterRows.length;
     const trackRosterSizePerCustomerParams: TrackRosterSizePerCustomerParams = {
       patients,
       hieName,
@@ -199,6 +201,22 @@ export function createFileNameHl7v2Roster(hieName: string): string {
   return `Metriport_${hieName}_Patient_Enrollment_${fileDate}.${CSV_FILE_EXTENSION}`;
 }
 
+function translateRosterRows(rosterRows: RosterRow[], hieName: string): RosterRow[] {
+  if (hieName === "Bamboo") {
+    return rosterRows.map(row => {
+      if (!row.scrambledId) {
+        throw new MetriportError("Scrambled ID is required for Bamboo", undefined, {
+          hieName,
+          id: row.scrambledID,
+        });
+      }
+      row.scrambledId = toBambooId(row.scrambledId);
+      return row;
+    });
+  }
+  return rosterRows;
+}
+
 export function createRosterRow(
   source: RosterRowData,
   mapping: HiePatientRosterMapping
@@ -249,7 +267,6 @@ export function createRosterRowInput(
   const phone = data.contact?.find(c => c.phone)?.phone;
   const email = data.contact?.find(c => c.email)?.email;
   const scrambledId = createScrambledId(p.cxId, p.id);
-  const bambooScrambledId = createBambooScrambledId(p.cxId, p.id);
   const rosterGenerationDate = buildDayjs(new Date()).format("YYYY-MM-DD");
   const dob = data.dob; // 2025-01-31
   const dobNoDelimiter = dob.replace(/[-]/g, ""); // 20250131
@@ -278,7 +295,6 @@ export function createRosterRowInput(
     cxId: p.cxId,
     rosterGenerationDate,
     scrambledId,
-    bambooScrambledId,
     lastName: data.lastName,
     firstName,
     middleName: middleInitial,
