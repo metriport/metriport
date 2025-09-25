@@ -5,6 +5,7 @@ import {
   ServiceRequest,
   Location,
   Condition,
+  Reference,
 } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { CPT_URL } from "@metriport/shared/medical";
@@ -35,7 +36,8 @@ export function getProcedure(
   const category = getProcedureCategory("Diagnostic procedure");
   const basedOn = serviceRequest ? [getServiceRequestReference(serviceRequest)] : undefined;
   const extension = [getQuestDataSourceExtension()];
-  const locationReference = location ? getLocationReference(location) : undefined;
+  const locationReference = getProcedureLocationReference(location);
+  const reasonReference = getProcedureReasonReference(conditions);
 
   return {
     resourceType: "Procedure",
@@ -43,16 +45,22 @@ export function getProcedure(
     status: "completed",
     subject,
     category,
-    ...(conditions && conditions.length > 0
-      ? {
-          reasonReference: conditions.map(condition => getConditionReference(condition)),
-        }
-      : undefined),
+    ...(reasonReference ? { reasonReference } : undefined),
     ...(basedOn ? { basedOn } : undefined),
     ...(code ? { code } : undefined),
     ...(locationReference ? { location: locationReference } : undefined),
     extension,
   };
+}
+
+function getProcedureReasonReference(conditions?: Condition[]): Reference<Condition>[] | undefined {
+  if (!conditions || conditions.length === 0) return undefined;
+  return conditions.map(condition => getConditionReference(condition));
+}
+
+function getProcedureLocationReference(location?: Location): Reference<Location> | undefined {
+  if (!location) return undefined;
+  return getLocationReference(location);
 }
 
 function getProcedureCode(detail: ResponseDetail): CodeableConcept | undefined {
