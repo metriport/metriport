@@ -8,7 +8,10 @@ import {
   getMessageUniqueIdentifier,
   getSendingApplication,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
-import { getCxIdAndPatientIdOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import {
+  getCxIdAndPatientIdOrFail,
+  getCxIdAndPatientIdOrFailNoSpecial,
+} from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { getHieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 import { capture } from "@metriport/core/util";
 import type { Logger } from "@metriport/core/util/log";
@@ -32,8 +35,13 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         const clientPort = connection.socket.remotePort;
 
         log(`New message over connection ${clientIp}:${clientPort}`);
+        const hieConfigDictionary = getHieConfigDictionary();
+        const { hieName } = lookupHieTzEntryForIp(hieConfigDictionary, clientIp);
 
-        const { cxId, patientId } = getCxIdAndPatientIdOrFail(rawMessage);
+        const { cxId, patientId } =
+          hieName === "Bamboo"
+            ? getCxIdAndPatientIdOrFailNoSpecial(rawMessage)
+            : getCxIdAndPatientIdOrFail(rawMessage);
 
         const messageId = getMessageUniqueIdentifier(rawMessage);
         const sendingApplication = getSendingApplication(rawMessage) ?? "Unknown HIE";
@@ -42,9 +50,6 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         log(
           `cx: ${cxId}, pt: ${patientId} Received ${triggerEvent} message from ${sendingApplication} at ${messageReceivedTimestamp} (messageId: ${messageId})`
         );
-        const hieConfigDictionary = getHieConfigDictionary();
-        const { hieName } = lookupHieTzEntryForIp(hieConfigDictionary, clientIp);
-
         capture.setExtra({
           cxId,
           patientId,
