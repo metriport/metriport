@@ -151,11 +151,9 @@ export function getOptionalValueFromMessage(
 export function getSegmentByNameOrFail(msg: Hl7Message, targetSegmentName: string): Hl7Segment {
   const segment = msg.getSegment(targetSegmentName);
   if (!segment) {
-    const patientIds = getCxIdAndPatientIdOrFail(msg);
     const datetime = getMessageDatetime(msg);
     const messageId = getMessageUniqueIdentifier(msg);
     throw new MetriportError("Missing required segment", undefined, {
-      ids: JSON.stringify(patientIds),
       targetSegmentName,
       datetime,
       messageId,
