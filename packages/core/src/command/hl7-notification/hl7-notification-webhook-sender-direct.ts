@@ -54,7 +54,7 @@ function getTimezoneFromHieName(
     log("HIE is Bamboo, getting timezone based off state in the facility");
     return getBambooTimezone(hl7Message);
   } else if (hieName === "Konza") {
-    log("HIE is Konza, getting timezone based off state in the facility");
+    log("HIE is Konza, getting timezone based off state in PV1.39");
     return getKonzaTimezone(hl7Message);
   } else {
     const hieConfigDictionary = getHieConfigDictionary() as Record<string, HieConfig>;
