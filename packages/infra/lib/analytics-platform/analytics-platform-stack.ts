@@ -555,8 +555,8 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
 
     dbCluster.connections.allowDefaultPortFrom(lambda);
     fhirToCsvTransformLambda.grantInvoke(lambda);
-    analyticsPlatformBucket.grantReadWrite(fhirToCsvTransformLambda);
-    ownProps.medicalDocumentsBucket.grantRead(fhirToCsvTransformLambda);
+    analyticsPlatformBucket.grantReadWrite(lambda);
+    ownProps.medicalDocumentsBucket.grantRead(lambda);
     featureFlagsTable.grantReadData(lambda);
     dbUserSecret.grantRead(lambda);
 

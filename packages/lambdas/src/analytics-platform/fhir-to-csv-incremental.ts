@@ -22,6 +22,7 @@ const region = getEnvVarOrFail("AWS_REGION");
 // Set by us
 const featureFlagsTableName = getEnvVarOrFail("FEATURE_FLAGS_TABLE_NAME");
 const analyticsBucketName = getEnvVarOrFail("ANALYTICS_BUCKET_NAME");
+// also needs access to MEDICAL_DOCUMENTS_BUCKET_NAME
 const dbCredsRaw = getEnvVarOrFail("DB_CREDS");
 const dbCreds = dbCredsForLambdaSchema.parse(JSON.parse(dbCredsRaw));
 
