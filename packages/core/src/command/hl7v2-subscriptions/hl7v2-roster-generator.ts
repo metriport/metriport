@@ -204,13 +204,13 @@ export function createFileNameHl7v2Roster(hieName: string): string {
 function translateRosterRows(rosterRows: RosterRow[], hieName: string): RosterRow[] {
   if (hieName === "Bamboo") {
     return rosterRows.map(row => {
-      if (!row.scrambledId) {
+      if (!row.PATIENT_ID) {
         throw new MetriportError("Scrambled ID is required for Bamboo", undefined, {
           hieName,
-          id: row.scrambledID,
+          id: row.PATIENT_ID,
         });
       }
-      row.scrambledId = toBambooId(row.scrambledId);
+      row.PATIENT_ID = toBambooId(row.PATIENT_ID);
       return row;
     });
   }
