@@ -27,6 +27,8 @@ type ResourceTypeSourceInfo = Record<string, { csvS3Key: string; tableName: stri
  * @param param.analyticsBucketName - S3 bucket name
  * @param param.region - AWS region
  * @param param.dbCreds - Database credentials
+ * @param param.tablesDefinitions - Tables definitions
+ * @param param.jobId - ID of the job to insert CSVs into the database
  */
 export async function sendPatientCsvsToDb({
   cxId,
@@ -231,7 +233,7 @@ async function processResourceType({
 
   const columnNames = updatedColumnsDefs
     .split(",")
-    .map(column => column.trim().replace(/\s+\w+$/, ""));
+    .flatMap(column => column.trim().split(/\s+/)[0] ?? []);
 
   await streamCsvToDatabase({
     cxId,

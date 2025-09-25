@@ -34,7 +34,11 @@ export function getCreateViewJobCommand(tableName: string): { cmd: string; viewN
               a.${columnJobIdName} = j.id and 
               a.${columnCxIdName} = j.${columnCxIdName} and
               a.${columnPatientIdName} = j.${columnPatientIdName}
-          WHERE j.id = (select max(id) from ${tableJobName});`;
+          WHERE j.id = (
+            select max(id) from ${tableJobName} jj
+            where jj.${columnCxIdName} = a.${columnCxIdName}
+              and jj.${columnPatientIdName} = a.${columnPatientIdName}
+          );`;
   return { cmd, viewName };
 }
 
