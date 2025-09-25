@@ -1,33 +1,14 @@
 /* ============================================================
    Purpose
    -------
-   Flag "CKD suspects" from eGFR lab results (LAB_RESULT) using
-   specific eGFR LOINC codes, with stage thresholds and the
-   requirement that values are observed on ≥2 different dates
-   (not on the same day) for the SAME stage. Exclude patients
-   already diagnosed with CKD (N18.*). Emit minimal FHIR so the UI
-   can render each supporting lab result.
-
-   Codes used (eGFR LOINC in LAB_RESULT)
-   -------------------------------------
-   - 33914-3   eGFR (MDRD)
-   - 62238-1   eGFR (CKD-EPI creatinine)
-   - 69405-9   eGFR (CKD-EPI cystatin C)
-   - 98979-8   eGFR (CKD-EPI 2021 creatinine+cystatin C)
-
-   Stage thresholds (mL/min/1.73 m²)
-   ----------------------------------
-   - 45–59  -> ckd_stage3a   (ICD-10 N18.31)
-   - 30–44  -> ckd_stage3b   (ICD-10 N18.32)
-   - 15–29  -> ckd_stage4    (ICD-10 N18.4)
-   - < 15   -> ckd_stage5    (ICD-10 N18.5)
-
-   Safety / Implementation
-   -----------------------
-   - Uses TRY_TO_DOUBLE(...) to avoid errors on non-numeric RESULT.
-   - Plausibility guard keeps eGFR in [0, 200].
-   - Two-date rule applied per stage bucket (distinct RESULT_DATEs).
-   - Minimal FHIR Observation is embedded in responsible_resources.
+   Flag "CKD suspects" from LAB_RESULT using:
+     (A) eGFR LOINCs with stage thresholds and a two-date rule per stage, and
+     (B) Albuminuria LOINC 9318-7 with ACR > 30 mg/g,
+         but ONLY when units are one of:
+           - 'mg/g', 'MG/G CREAT', 'mg/g creat', 'mg/g{creat}', 'mg/g_creat'
+         (These are treated equivalently and emitted as 'mg/g'.)
+   Exclude patients already diagnosed with CKD (N18.*).
+   Emit minimal FHIR so the UI can render each supporting lab result.
    ============================================================ */
 
 WITH egfr_lab AS (
@@ -51,7 +32,7 @@ WITH egfr_lab AS (
 ),
 
 egfr_staged AS (
-  /* Map each qualifying result to a CKD stage bucket */
+  /* Map each qualifying eGFR result to a CKD stage bucket */
   SELECT
     e.PATIENT_ID,
     e.resource_id,
@@ -74,7 +55,7 @@ egfr_staged AS (
 ),
 
 valid_stage_patients AS (
-  /* Require ≥2 distinct dates within the SAME stage bucket */
+  /* Require ≥2 distinct dates within the SAME eGFR stage bucket */
   SELECT
     patient_id,
     stage_bucket
@@ -85,15 +66,15 @@ valid_stage_patients AS (
 ),
 
 ckd_dx_exclusion AS (
-  /* Exclude anyone already diagnosed with CKD */
+  /* Exclude anyone already diagnosed with CKD (any N18.*) */
   SELECT DISTINCT c.PATIENT_ID
   FROM CONDITION c
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
     AND c.NORMALIZED_CODE LIKE 'N18.%'
 ),
 
-ckd_flags AS (
-  /* Emit stage-labeled rows only for patients meeting the two-date rule and no existing CKD dx */
+/* eGFR-based CKD suspects that satisfy the two-date rule */
+ckd_flags_egfr AS (
   SELECT
     s.PATIENT_ID,
     s.resource_id,
@@ -101,10 +82,10 @@ ckd_flags AS (
     s.NORMALIZED_DESCRIPTION,
     s.RESULT,
     s.units,
-    s.egfr,
+    s.egfr               AS value_num,     -- numeric value for FHIR builder
     s.obs_date,
     s.DATA_SOURCE,
-    s.stage_bucket                                 AS suspect_group,
+    s.stage_bucket       AS suspect_group,
     CASE
       WHEN s.stage_bucket = 'ckd_stage3a' THEN 'N18.31'
       WHEN s.stage_bucket = 'ckd_stage3b' THEN 'N18.32'
@@ -123,6 +104,69 @@ ckd_flags AS (
    AND v.stage_bucket = s.stage_bucket
   WHERE s.stage_bucket IS NOT NULL
     AND NOT EXISTS (SELECT 1 FROM ckd_dx_exclusion x WHERE x.PATIENT_ID = s.PATIENT_ID)
+),
+
+/* Albuminuria raw pulls (LOINC 9318-7), restricted to approved mg/g variants */
+albumin_lab AS (
+  SELECT
+    lr.PATIENT_ID,
+    lr.LAB_RESULT_ID                          AS resource_id,
+    lr.NORMALIZED_CODE,
+    lr.NORMALIZED_DESCRIPTION,
+    lr.RESULT,
+    COALESCE(NULLIF(lr.NORMALIZED_UNITS,''), lr.SOURCE_UNITS) AS units_raw,
+    LOWER(TRIM(COALESCE(NULLIF(lr.NORMALIZED_UNITS,''), lr.SOURCE_UNITS))) AS units_lc,
+    TRY_TO_DOUBLE(lr.RESULT)                  AS value_raw,
+    CAST(lr.RESULT_DATE AS DATE)              AS obs_date,
+    lr.DATA_SOURCE
+  FROM LAB_RESULT lr
+  WHERE lr.NORMALIZED_CODE_TYPE ILIKE 'loinc'
+    AND lr.NORMALIZED_CODE = '9318-7'
+    AND TRY_TO_DOUBLE(lr.RESULT) IS NOT NULL
+    AND LOWER(TRIM(COALESCE(NULLIF(lr.NORMALIZED_UNITS,''), lr.SOURCE_UNITS))) IN
+        ('mg/g', 'mg/g creat', 'mg/g{creat}', 'mg/g_creat', 'mg/g creat')  -- includes 'MG/G CREAT' via lower()
+),
+
+/* Normalize ACR to mg/g (no numeric conversion needed for these variants) */
+albumin_norm AS (
+  SELECT
+    a.PATIENT_ID,
+    a.resource_id,
+    a.NORMALIZED_CODE,
+    a.NORMALIZED_DESCRIPTION,
+    a.RESULT,
+    'mg/g'                          AS units,     -- cast to mg/g for output
+    a.value_raw                     AS acr_mgg,   -- already mg/g-equivalent
+    a.obs_date,
+    a.DATA_SOURCE
+  FROM albumin_lab a
+),
+
+/* Albuminuria-based CKD suspects: ACR > 30 mg/g */
+ckd_flags_albuminuria AS (
+  SELECT
+    n.PATIENT_ID,
+    n.resource_id,
+    n.NORMALIZED_CODE,
+    n.NORMALIZED_DESCRIPTION,
+    n.RESULT,
+    n.units,
+    n.acr_mgg AS value_num,          -- normalized numeric value (mg/g)
+    n.obs_date,
+    n.DATA_SOURCE,
+    'ckd_albuminuria'                 AS suspect_group,
+    'N18.2'                           AS suspect_icd10_code,
+    'Chronic kidney disease, stage 2' AS suspect_icd10_short_description
+  FROM albumin_norm n
+  WHERE n.acr_mgg > 30
+    AND NOT EXISTS (SELECT 1 FROM ckd_dx_exclusion x WHERE x.PATIENT_ID = n.PATIENT_ID)
+),
+
+/* Combine both sources */
+all_ckd_flags AS (
+  SELECT * FROM ckd_flags_egfr
+  UNION ALL
+  SELECT * FROM ckd_flags_albuminuria
 ),
 
 /* Build the minimal FHIR Observation JSON the UI reads */
@@ -149,40 +193,36 @@ obs_with_fhir AS (
       ),
       'effectiveDateTime', TO_CHAR(f.obs_date, 'YYYY-MM-DD'),
       'valueQuantity',
-        IFF(f.egfr IS NOT NULL,
-            OBJECT_CONSTRUCT(
-              'value', f.egfr,
-              /* Use lab units if present; otherwise default common eGFR unit text */
-              'unit',  COALESCE(NULLIF(f.units,''), 'mL/min/1.73 m2')
-            ),
-            NULL),
-      'valueString',
-        IFF(f.egfr IS NULL, f.RESULT, NULL)
+        OBJECT_CONSTRUCT(
+          'value', f.value_num,
+          'unit',
+            CASE
+              WHEN f.suspect_group = 'ckd_albuminuria' THEN 'mg/g'
+              ELSE COALESCE(NULLIF(f.units,''), 'mL/min/1.73 m2')
+            END
+        )
     ) AS fhir,
 
     f.resource_id,
     'Observation' AS resource_type,
     f.DATA_SOURCE AS data_source
-  FROM ckd_flags f
+  FROM all_ckd_flags f
 )
 
 SELECT
-  /* Final grouping per patient and CKD stage */
+  /* Final grouping per patient and CKD evidence bucket */
   PATIENT_ID,
   suspect_group,
   suspect_icd10_code,
   suspect_icd10_short_description,
-
-  /* Aggregate supporting lab results with FHIR payloads */
   ARRAY_AGG(
     OBJECT_CONSTRUCT(
       'id',            resource_id,
-      'resource_type', resource_type,
+      'resource_type', 'Observation',
       'data_source',   data_source,
       'fhir',          fhir
     )
   ) AS responsible_resources,
-
   CURRENT_TIMESTAMP() AS last_run
 FROM obs_with_fhir
 GROUP BY PATIENT_ID, suspect_group, suspect_icd10_code, suspect_icd10_short_description
