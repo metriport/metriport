@@ -265,8 +265,6 @@ export const config: EnvConfigNonSandbox = {
       integrationExternalId: "000000000000",
     },
     rds: {
-      host: "my_db_host",
-      port: 5432,
       name: "my_db",
       username: "my_db_user",
       maintenanceWindow: "Sun:02:00-Sun:02:30",

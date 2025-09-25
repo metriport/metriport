@@ -49,10 +49,7 @@ export type RDSConfig = {
   alarmThresholds: RDSAlarmThresholds;
 };
 
-export type RDSConfigExtended = RDSConfig & {
-  host: string;
-  port: number;
-};
+export type RDSConfigExtended = RDSConfig;
 
 export type RDSAlarmThresholds = {
   acuUtilizationPct: number;

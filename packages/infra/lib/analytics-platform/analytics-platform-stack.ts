@@ -8,7 +8,6 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as rds from "aws-cdk-lib/aws-rds";
-import { ClusterInstanceType } from "aws-cdk-lib/aws-rds";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Queue } from "aws-cdk-lib/aws-sqs";
@@ -314,12 +313,17 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     const dbClusterName = "analytics-cluster";
     const dbCluster = new rds.DatabaseCluster(this, "AnalyticsDbCluster", {
       engine: dbEngine,
-      instanceProps: {
-        vpc: ownProps.vpc,
-        instanceType: ClusterInstanceType.serverlessV2(),
+      writer: rds.ClusterInstance.serverlessV2("writer", {
         enablePerformanceInsights: true,
         parameterGroup,
-      },
+      }),
+      readers: [
+        rds.ClusterInstance.serverlessV2("reader", {
+          enablePerformanceInsights: true,
+          parameterGroup,
+        }),
+      ],
+      vpc: ownProps.vpc,
       preferredMaintenanceWindow: dbConfig.maintenanceWindow,
       credentials: dbCreds,
       defaultDatabaseName: dbConfig.name,
@@ -522,8 +526,17 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     );
 
     const dbCreds: DatabaseCredsForLambda = {
-      host: config.analyticsPlatform.rds.host,
-      port: config.analyticsPlatform.rds.port,
+      host: ownProps.dbCluster.clusterEndpoint.hostname,
+      port: ownProps.dbCluster.clusterEndpoint.port,
+      engine: "postgres" as const,
+      dbname: config.analyticsPlatform.rds.name,
+      username: config.analyticsPlatform.rds.fhirToCsvDbUsername,
+      passwordSecretArn: dbUserSecret.secretArn,
+    };
+
+    const dbReadOnlyCreds: DatabaseCredsForLambda = {
+      host: ownProps.dbCluster.clusterReadEndpoint.hostname,
+      port: ownProps.dbCluster.clusterReadEndpoint.port,
       engine: "postgres" as const,
       dbname: config.analyticsPlatform.rds.name,
       username: config.analyticsPlatform.rds.fhirToCsvDbUsername,
@@ -544,6 +557,8 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
         MEDICAL_DOCUMENTS_BUCKET_NAME: ownProps.medicalDocumentsBucket.bucketName,
         DB_CREDS: JSON.stringify(dbCreds),
+        // TODO ENG-1029 move this to the core transformer lambda
+        DB_READ_ONLY_CREDS: JSON.stringify(dbReadOnlyCreds),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain, lambdaLayers.analyticsPlatform],
