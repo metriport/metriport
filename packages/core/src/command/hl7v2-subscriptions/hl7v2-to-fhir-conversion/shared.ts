@@ -80,9 +80,23 @@ export function remapMessageReplacingPid3(
  * Sets PID-3 (Patient Identifier List) to `newId`. If `oldIdIndex` is provided, the old patient id will be moved to the given index.
  */
 function setPid3Id(pid: Hl7Segment, newId: string, oldIdIndex?: number): Hl7Segment {
-  const newPatientIdField = new Hl7Field([[newId]], pid.context);
-
   const newFields = [...pid.fields];
+  const oldPatientIdField = newFields[PATIENT_ID_FIELD_INDEX];
+
+  if (!oldPatientIdField) {
+    throw new MetriportError(
+      "Old patient id field not found, when trying to replace it with a new one",
+      undefined,
+      { oldIdIndex }
+    );
+  }
+
+  const newComponents = oldPatientIdField.components.map(c => [...c]);
+  if (!newComponents[0]) newComponents[0] = [];
+  newComponents[0][0] = newId;
+
+  const newPatientIdField = new Hl7Field(newComponents, pid.context);
+
   if (oldIdIndex !== undefined) {
     if (oldIdIndex >= newFields.length || oldIdIndex < 0) {
       throw new MetriportError("oldIdIndex out of bounds", undefined, {
@@ -90,15 +104,7 @@ function setPid3Id(pid: Hl7Segment, newId: string, oldIdIndex?: number): Hl7Segm
         fieldsLength: newFields.length,
       });
     }
-    const oldPatientId = newFields[PATIENT_ID_FIELD_INDEX];
-    if (!oldPatientId) {
-      throw new MetriportError(
-        "Old patient id not found, when trying to replace it with a new one",
-        undefined,
-        { oldPatientId, oldIdIndex }
-      );
-    }
-    newFields[oldIdIndex] = oldPatientId;
+    newFields[oldIdIndex] = oldPatientIdField;
   }
   newFields[PATIENT_ID_FIELD_INDEX] = newPatientIdField;
 
