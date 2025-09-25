@@ -84,6 +84,31 @@ export async function getCohorts({ cxId }: { cxId: string }): Promise<CohortEnti
   }));
 }
 
+export async function getCohortsForPatient({
+  cxId,
+}: // patientId,
+{
+  cxId: string;
+  // patientId: string;
+}): Promise<CohortEntity[]> {
+  const cohorts = await CohortModel.findAll({
+    where: { cxId },
+    include: [
+      {
+        association: CohortModel.associations.PatientCohort,
+        attributes: [],
+        required: false,
+      },
+    ],
+    attributes: {
+      include: [[fn("COUNT", col("PatientCohort.id")), countAttr]],
+    },
+    group: [col("CohortModel.id")],
+  });
+
+  return cohorts.dataValues;
+}
+
 export async function getCohortByName({
   cxId,
   name,

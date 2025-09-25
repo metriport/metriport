@@ -55,6 +55,7 @@ import {
 import { setPatientFacilitiesSchema } from "./schemas/patient-facilities";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 import { getLatestSuspectsBySuspectGroup } from "../../command/medical/patient/get-suspect";
+import { getPatientSettings } from "../../command/medical/patient/get-settings";
 
 const router = Router();
 
@@ -627,6 +628,46 @@ router.get(
     const suspects = await getLatestSuspectsBySuspectGroup({ cxId, patientId });
 
     return res.status(status.OK).json({ suspects });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/cohort
+ *
+ * Returns a list of all cohorts the patient is a member of.
+ *
+ * @param   req.cxId      The customer ID.
+ * @return  The suspects for the patient.
+ */
+router.get(
+  "/cohort",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+
+    const suspects = await getLatestSuspectsBySuspectGroup({ cxId, patientId });
+
+    return res.status(status.OK).json({ suspects });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/settings
+ *
+ * Returns a settings object of all settings that are enabled for a patient, based on their cohorts
+ *
+ * @param   req.cxId      The customer ID.
+ * @return  The patient's definitive settings
+ */
+router.get(
+  "/settings",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+
+    const settings = await getPatientSettings({ cxId, patientId });
+
+    return res.status(status.OK).json({ settings });
   })
 );
 
