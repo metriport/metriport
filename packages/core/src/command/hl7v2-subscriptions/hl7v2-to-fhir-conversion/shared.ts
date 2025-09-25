@@ -82,7 +82,6 @@ export function unpackNormalizedId(id: string) {
 }
 
 export function getCxIdAndPatientIdOrFail(msg: Hl7Message): { cxId: string; patientId: string } {
-  console.log("getCxIdAndPatientIdOrFail");
   const pid = getSegmentByNameOrFail(msg, "PID");
   const idComponent = pid.getComponent(3, 1);
   return unpackPidFieldOrFail(idComponent);
