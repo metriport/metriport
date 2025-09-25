@@ -87,7 +87,7 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
     practitioner,
     practitionerRole,
     organization,
-    location,
+    // location,
     observation,
     serviceRequest,
     procedure,

@@ -4,6 +4,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
 const RESPONSE_FILE_PREFIX = "Metriport_";
 const RESPONSE_FILE_EXTENSION = ".txt";
 const DATE_ID_REGEX = /^\d{12}$/;
+const SOURCE_DOCUMENT_KEY_REGEX = /\/externalId=([\w\d-]+)\/dateId=(\d+)\//;
 
 export function buildRosterFileName() {
   const dateId = buildDayjs().format("YYYYMMDD");
@@ -53,7 +54,7 @@ export function parseSourceDocumentFileName(fileName: string): {
   externalId: string;
   dateId: string;
 } {
-  const match = fileName.match(/\/externalId=([\w\d-]+)\/dateId=(\d+)\//);
+  const match = fileName.match(SOURCE_DOCUMENT_KEY_REGEX);
 
   if (!match) {
     throw new BadRequestError("Invalid source document file name", undefined, {
