@@ -23,7 +23,20 @@ export const createTableJobCommand =
 export const insertTableJobCommand = `INSERT INTO ${tableJobName} (id, ${columnPatientIdName}) VALUES ($1, $2)`;
 
 export function getCreateTableCommand(tableName: string, columnsDef: string): string {
-  return `CREATE TABLE IF NOT EXISTS ${tableName} (${columnsDef})`;
+  return (
+    `CREATE TABLE IF NOT EXISTS ${tableName} (${columnsDef}) PARTITION BY RANGE (${columnJobIdName}); ` +
+    `CREATE TABLE IF NOT EXISTS ${tableName}_default PARTITION OF ${tableName} DEFAULT; ` +
+    `CREATE TABLE IF NOT EXISTS ${tableName}_01 PARTITION OF ${tableName} FOR VALUES FROM ('20230101') TO ('20250930');` +
+    `CREATE TABLE IF NOT EXISTS ${tableName}_02 PARTITION OF ${tableName} FOR VALUES FROM ('20250930') TO ('20251031');` +
+    `CREATE TABLE IF NOT EXISTS ${tableName}_03 PARTITION OF ${tableName} FOR VALUES FROM ('20251031') TO ('20251130');` +
+    `CREATE TABLE IF NOT EXISTS ${tableName}_04 PARTITION OF ${tableName} FOR VALUES FROM ('20251130') TO ('20251231');` +
+    `CREATE TABLE IF NOT EXISTS ${tableName}_05 PARTITION OF ${tableName} FOR VALUES FROM ('20251231') TO ('20260131');` +
+    `CREATE TABLE IF NOT EXISTS ${tableName}_06 PARTITION OF ${tableName} FOR VALUES FROM ('20260131') TO ('20260229');` +
+    `CREATE TABLE IF NOT EXISTS ${tableName}_07 PARTITION OF ${tableName} FOR VALUES FROM ('20260229') TO ('20260331');` +
+    `CREATE TABLE IF NOT EXISTS ${tableName}_08 PARTITION OF ${tableName} FOR VALUES FROM ('20260331') TO ('20260430');` +
+    `CREATE TABLE IF NOT EXISTS ${tableName}_09 PARTITION OF ${tableName} FOR VALUES FROM ('20260430') TO ('20260531');` +
+    `CREATE TABLE IF NOT EXISTS ${tableName}_10 PARTITION OF ${tableName} FOR VALUES FROM ('20260531') TO ('20260630');`
+  );
 }
 
 export function getCreateViewJobCommand(tableName: string): { cmd: string; viewName: string } {
