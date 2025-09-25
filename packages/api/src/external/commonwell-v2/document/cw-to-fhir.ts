@@ -8,9 +8,9 @@ import {
 import { DocumentReference as CwDocumentReference } from "@metriport/commonwell-sdk";
 import { Patient } from "@metriport/core/domain/patient";
 import { cwExtension } from "@metriport/core/external/commonwell/extension";
+import { isOrganization } from "@metriport/core/external/fhir/shared";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { out } from "@metriport/core/util";
-import { MetriportError } from "@metriport/shared";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import { createDocReferenceContent } from "../../fhir/document";
@@ -134,10 +134,39 @@ function convertContextToFHIR(
   }) as DocumentReferenceContext;
 }
 
-function convertToFHIRResource(resource: Resource, patientId: string): Resource[] | undefined {
-  if (resource.resourceType === "Organization") {
+/**
+ * Type guard to check if an object is a valid FHIR Resource
+ */
+function isValidFHIRResource(obj: unknown): obj is Resource {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    "resourceType" in obj &&
+    typeof obj.resourceType === "string"
+  );
+}
+
+/**
+ * Safely converts a CommonWell contained resource to FHIR format.
+ * Validates the input before processing to prevent runtime errors.
+ *
+ * This only handles Organization resources for now, which is used on the Dashboard to specify
+ * the organization that created the document.
+ */
+function convertToFHIRResource(resource: unknown, patientId: string): Resource[] | undefined {
+  const { log } = out(`convertToFHIRResource - patient ${patientId}`);
+
+  // Validate that the input is a valid FHIR resource
+  if (!isValidFHIRResource(resource)) {
+    log(`Invalid FHIR resource structure, skipping: ${JSON.stringify(resource)}`);
+    return undefined;
+  }
+
+  // Check if it's an Organization resource
+  if (isOrganization(resource)) {
     return containedOrgToFHIRResource(resource, patientId);
   }
+
   return undefined;
 }
 
@@ -146,20 +175,19 @@ function containedOrgToFHIRResource(
   patientId: string
 ): Resource[] | undefined {
   const { log } = out(`containedOrgToFHIRResource - patient ${patientId}`);
-  if (resource.resourceType !== "Organization") {
-    const msg = "Contained resource is not a Organization";
-    log(`${msg} [containedOrgToFHIRResource] resource: - ${JSON.stringify(resource)}`);
-    throw new MetriportError(msg, undefined, { patientId });
-  }
-  if (!resource.name) {
-    log(`Organization with no name, skipping it: ${JSON.stringify(resource)}`);
+
+  // Validate that the organization has a name (required field)
+  if (!resource.name || typeof resource.name !== "string") {
+    log(`Organization with no valid name, skipping it: ${JSON.stringify(resource)}`);
     return undefined;
   }
-  return [
-    {
-      resourceType: "Organization",
-      id: resource.id,
-      name: resource.name,
-    },
-  ];
+
+  // Safely construct the FHIR Organization resource
+  const fhirOrg: Organization = {
+    resourceType: "Organization",
+    ...(resource.id && typeof resource.id === "string" ? { id: resource.id } : {}),
+    name: resource.name,
+  };
+
+  return [fhirOrg];
 }
