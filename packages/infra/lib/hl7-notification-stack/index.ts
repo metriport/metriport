@@ -26,7 +26,12 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
       props.config.hl7Notification.incomingMessageBucketName
     );
 
-    const ecrRepo = Repository.fromRepositoryName(this, "MllpServerRepo", "metriport/mllp-server");
+    const ecrRepo = new Repository(this, "MllpServerRepo", {
+      repositoryName: "metriport/mllp-server",
+      lifecycleRules: [{ maxImageCount: 5000 }],
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      emptyOnDelete: true,
+    });
 
     const vpc = new ec2.Vpc(this, "Vpc", {
       maxAzs: NUM_AZS,
