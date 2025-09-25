@@ -65,22 +65,57 @@ export function unpackPidFieldOrFailNoSpecial(pid: string) {
     throw new MetriportError("Invalid PID format: could not unpack identifiers");
   }
 
-  const normalizedCxId = unpackNormalizedId(cxId);
-  const normalizedPatientId = unpackNormalizedId(patientId);
+  const normalizedCxId = unpackBambooId(cxId);
+  const normalizedPatientId = unpackBambooId(patientId);
   const normalizedPid = `${normalizedCxId}_${normalizedPatientId}`;
   return unpackPidFieldOrFail(normalizedPid);
 }
 
 // Turn + into - , and = into .
-export function packNormalizedId(id: string) {
+export function createBambooId(id: string) {
   return id.replace(/\+/g, "-").replace(/=/g, ".");
 }
 
 // Reverse: - back to + , . back to =
-export function unpackNormalizedId(id: string) {
+export function unpackBambooId(id: string) {
   return id.replace(/-/g, "+").replace(/\./g, "=");
 }
 
+const PATIENT_ID_FIELD_INDEX = 3;
+export function remapMessageReplacingPid3(
+  message: Hl7Message,
+  newId: string,
+  oldIdIndex?: number
+): Hl7Message {
+  const updatedPid = setPid3Id(getSegmentByNameOrFail(message, "PID"), newId, oldIdIndex);
+
+  const newSegments = message.segments.map(seg => (seg.name === "PID" ? updatedPid : seg));
+
+  return new Hl7Message(newSegments, message.context);
+}
+
+/**
+ * Sets PID-3 (Patient Identifier List) to `newId`. If `oldIdIndex` is provided, the old patient id will be moved to the given index.
+ */
+function setPid3Id(pid: Hl7Segment, newId: string, oldIdIndex?: number): Hl7Segment {
+  const newPatientIdField = new Hl7Field([[newId]], pid.context);
+
+  const newFields = [...pid.fields];
+  if (oldIdIndex) {
+    const oldPatientId = newFields[PATIENT_ID_FIELD_INDEX];
+    if (!oldPatientId) {
+      throw new MetriportError(
+        "Old patient id not found, when trying to replace it with a new one",
+        undefined,
+        { oldPatientId, oldIdIndex }
+      );
+    }
+    newFields[oldIdIndex] = oldPatientId;
+  }
+  newFields[PATIENT_ID_FIELD_INDEX] = newPatientIdField;
+
+  return new Hl7Segment(newFields, pid.context);
+}
 export function getCxIdAndPatientIdOrFail(msg: Hl7Message): { cxId: string; patientId: string } {
   const pid = getSegmentByNameOrFail(msg, "PID");
   const idComponent = pid.getComponent(3, 1);

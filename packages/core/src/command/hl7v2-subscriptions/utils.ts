@@ -1,4 +1,4 @@
-import { compressUuid, packNormalizedId } from "./hl7v2-to-fhir-conversion/shared";
+import { compressUuid, createBambooId } from "./hl7v2-to-fhir-conversion/shared";
 
 export function createScrambledId(cxId: string, patientId: string): string {
   const compressedCxId = compressUuid(cxId);
@@ -6,12 +6,12 @@ export function createScrambledId(cxId: string, patientId: string): string {
   return `${compressedCxId}_${compressedPatientId}`;
 }
 
-export function createNoSpecialScrambledId(cxId: string, patientId: string): string {
+export function createBambooScrambledId(cxId: string, patientId: string): string {
   const compressedCxId = compressUuid(cxId);
   const compressedPatientId = compressUuid(patientId);
 
-  const normalizedCompressedCxId = packNormalizedId(compressedCxId);
-  const normalizedCompressedPatientId = packNormalizedId(compressedPatientId);
+  const normalizedCompressedCxId = createBambooId(compressedCxId);
+  const normalizedCompressedPatientId = createBambooId(compressedPatientId);
 
   return `${normalizedCompressedCxId}_${normalizedCompressedPatientId}`;
 }

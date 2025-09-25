@@ -1,16 +1,15 @@
 import { Hl7Message } from "@medplum/core";
+import { errorToString } from "@metriport/shared";
+import { buildDayjs, ISO_DATE_TIME } from "@metriport/shared/common/date";
+import { S3Utils } from "../../external/aws/s3";
+import { utcifyHl7Message } from "../../external/hl7-notification/datetime";
+import { Config } from "../../util/config";
 import {
   createUnparseableHl7MessageErrorMessageFileKey,
   createUnparseableHl7MessageFileKey,
   getCxIdAndPatientIdOrFail,
-  getCxIdAndPatientIdOrFailNoSpecial,
   getOptionalValueFromMessage,
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
-import { utcifyHl7Message } from "../../external/hl7-notification/datetime";
-import { errorToString } from "@metriport/shared";
-import { buildDayjs, ISO_DATE_TIME } from "@metriport/shared/common/date";
-import { S3Utils } from "../../external/aws/s3";
-import { Config } from "../../util/config";
 
 export interface ParsedHl7Data {
   message: Hl7Message;
@@ -29,16 +28,11 @@ export function isSupportedTriggerEvent(
 
 export async function parseHl7Message(
   rawMessage: Hl7Message,
-  hieConfig: string,
-  hieName: string
+  hieConfig: string
 ): Promise<ParsedHl7Data> {
   const message = utcifyHl7Message(rawMessage, hieConfig);
 
-  const { cxId, patientId } =
-    hieName === "Bamboo"
-      ? getCxIdAndPatientIdOrFailNoSpecial(message)
-      : getCxIdAndPatientIdOrFail(message);
-
+  const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);
   return {
     message,
     cxId,

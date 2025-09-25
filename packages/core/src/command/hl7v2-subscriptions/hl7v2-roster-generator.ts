@@ -33,7 +33,7 @@ import {
   RosterRowData,
   VpnlessHieConfig,
 } from "./types";
-import { createNoSpecialScrambledId, createScrambledId } from "./utils";
+import { createBambooScrambledId, createScrambledId } from "./utils";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
@@ -249,7 +249,7 @@ export function createRosterRowInput(
   const phone = data.contact?.find(c => c.phone)?.phone;
   const email = data.contact?.find(c => c.email)?.email;
   const scrambledId = createScrambledId(p.cxId, p.id);
-  const noSpecialCharsScrambledId = createNoSpecialScrambledId(p.cxId, p.id);
+  const bambooScrambledId = createBambooScrambledId(p.cxId, p.id);
   const rosterGenerationDate = buildDayjs(new Date()).format("YYYY-MM-DD");
   const dob = data.dob; // 2025-01-31
   const dobNoDelimiter = dob.replace(/[-]/g, ""); // 20250131
@@ -278,7 +278,7 @@ export function createRosterRowInput(
     cxId: p.cxId,
     rosterGenerationDate,
     scrambledId,
-    noSpecialCharsScrambledId,
+    bambooScrambledId,
     lastName: data.lastName,
     firstName,
     middleName: middleInitial,

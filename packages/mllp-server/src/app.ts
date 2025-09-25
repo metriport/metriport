@@ -8,17 +8,20 @@ import {
   getMessageUniqueIdentifier,
   getSendingApplication,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
-import {
-  getCxIdAndPatientIdOrFail,
-  getCxIdAndPatientIdOrFailNoSpecial,
-} from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { getCxIdAndPatientIdOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { getHieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 import { capture } from "@metriport/core/util";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { initSentry } from "./sentry";
-import { asString, getCleanIpAddress, lookupHieTzEntryForIp, withErrorHandling } from "./utils";
+import {
+  asString,
+  getCleanIpAddress,
+  lookupHieTzEntryForIp,
+  translateMessage,
+  withErrorHandling,
+} from "./utils";
 
 initSentry();
 
@@ -38,14 +41,12 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         const hieConfigDictionary = getHieConfigDictionary();
         const { hieName } = lookupHieTzEntryForIp(hieConfigDictionary, clientIp);
 
-        const { cxId, patientId } =
-          hieName === "Bamboo"
-            ? getCxIdAndPatientIdOrFailNoSpecial(rawMessage)
-            : getCxIdAndPatientIdOrFail(rawMessage);
+        const newMessage = translateMessage(rawMessage, hieName);
+        const { cxId, patientId } = getCxIdAndPatientIdOrFail(newMessage);
 
-        const messageId = getMessageUniqueIdentifier(rawMessage);
-        const sendingApplication = getSendingApplication(rawMessage) ?? "Unknown HIE";
-        const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(rawMessage);
+        const messageId = getMessageUniqueIdentifier(newMessage);
+        const sendingApplication = getSendingApplication(newMessage) ?? "Unknown HIE";
+        const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(newMessage);
         const messageReceivedTimestamp = buildDayjs(Date.now()).toISOString();
         log(
           `cx: ${cxId}, pt: ${patientId} Received ${triggerEvent} message from ${sendingApplication} at ${messageReceivedTimestamp} (messageId: ${messageId})`
@@ -60,12 +61,12 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         await buildHl7NotificationWebhookSender().execute({
           cxId,
           patientId,
-          message: asString(rawMessage),
+          message: asString(newMessage),
           messageReceivedTimestamp,
           hieName,
         });
 
-        connection.send(rawMessage.buildAck());
+        connection.send(newMessage.buildAck());
       })
     );
 
