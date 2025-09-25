@@ -1,7 +1,9 @@
 import { Bundle, Condition, Medication, Parameters, Resource } from "@medplum/fhirtypes";
+import { errorToString } from "@metriport/shared";
 import { ICD_10_URL, NDC_URL, RXNORM_URL, SNOMED_URL } from "@metriport/shared/medical";
 import { cloneDeep } from "lodash";
 import { isUnknownCoding } from "../../../fhir-deduplication/shared";
+import { capture } from "../../../util";
 import { executeAsynchronously } from "../../../util/concurrency";
 import {
   buildFhirParametersFromCoding,
@@ -10,7 +12,7 @@ import {
   lookupMultipleCodes,
 } from "../../term-server";
 import { findCodeableConcepts, isUsefulDisplay } from "../codeable-concept";
-import { isCondition, isMedication } from "../shared";
+import { findPatientResource, isCondition, isMedication } from "../shared";
 
 const NUMBER_OF_PARALLEL_CROSSWALKS = 10;
 
@@ -35,6 +37,7 @@ export async function hydrateFhir(
 ): Promise<{ metadata?: Record<string, string | number>; data: Bundle<Resource> }> {
   const hydratedBundle: Bundle = cloneDeep(fhirBundle);
 
+  const crosswalkErrors: string[] = [];
   const lookupParametersMap = new Map<string, Parameters>();
   if (hydratedBundle.entry) {
     await executeAsynchronously(
@@ -52,7 +55,9 @@ export async function hydrateFhir(
           }
         } catch (err) {
           // Keep processing other entries even if one crosswalk fails.
-          log(`[hydrateFhir] crosswalk failed for ${res.resourceType}: ${(err as Error).message}`);
+          const errorString = errorToString(err, { detailed: true });
+          log(`[hydrateFhir] crosswalk failed for ${res.resourceType}: ${errorString}`);
+          crosswalkErrors.push(errorString);
         }
 
         const codes = findCodeableConcepts(res);
@@ -103,6 +108,14 @@ export async function hydrateFhir(
       });
     });
   });
+
+  if (crosswalkErrors.length > 0) {
+    const msg = `Hydration crosswalk errors`;
+    const patientResource = findPatientResource(hydratedBundle);
+    capture.error(msg, {
+      extra: { crosswalkErrors: crosswalkErrors.join("\n "), patientId: patientResource?.id },
+    });
+  }
 
   return {
     metadata: {
