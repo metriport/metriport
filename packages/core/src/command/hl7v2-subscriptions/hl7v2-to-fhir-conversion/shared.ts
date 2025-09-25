@@ -54,7 +54,7 @@ export function unpackPidFieldOrFail(pid: string) {
   return { cxId, patientId };
 }
 
-export function unpackPidFieldOrFailNoSpecial(pid: string) {
+export function unpackBambooPidFieldOrFail(pid: string) {
   if (!pid || !pid.includes("_")) {
     throw new MetriportError("Invalid PID format: missing separator");
   }
@@ -121,13 +121,13 @@ export function getCxIdAndPatientIdOrFail(msg: Hl7Message): { cxId: string; pati
   const idComponent = pid.getComponent(3, 1);
   return unpackPidFieldOrFail(idComponent);
 }
-export function getCxIdAndPatientIdOrFailNoSpecial(msg: Hl7Message): {
+export function getCxIdAndPatientIdOrFailBamboo(msg: Hl7Message): {
   cxId: string;
   patientId: string;
 } {
   const pid = getSegmentByNameOrFail(msg, "PID");
   const idComponent = pid.getComponent(3, 1);
-  return unpackPidFieldOrFailNoSpecial(idComponent);
+  return unpackBambooPidFieldOrFail(idComponent);
 }
 
 export function getRequiredValueFromMessage(

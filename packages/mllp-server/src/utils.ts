@@ -14,7 +14,7 @@ import { Hl7Message } from "@medplum/core";
 import IPCIDR from "ip-cidr";
 import { HieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 import { createScrambledId } from "@metriport/core/command/hl7v2-subscriptions/utils";
-import { getCxIdAndPatientIdOrFailNoSpecial } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { getCxIdAndPatientIdOrFailBamboo } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { remapMessageReplacingPid3 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
@@ -123,7 +123,7 @@ function keepOnlyVpnConfigs([hieName, config]: [string, HieConfigDictionary[stri
 
 export function translateMessage(rawMessage: Hl7Message, hieName: string): Hl7Message {
   if (hieName === "Bamboo") {
-    const { cxId, patientId } = getCxIdAndPatientIdOrFailNoSpecial(rawMessage);
+    const { cxId, patientId } = getCxIdAndPatientIdOrFailBamboo(rawMessage);
     const normalId = createScrambledId(cxId, patientId);
     const newMessage = remapMessageReplacingPid3(rawMessage, normalId);
     return newMessage;
