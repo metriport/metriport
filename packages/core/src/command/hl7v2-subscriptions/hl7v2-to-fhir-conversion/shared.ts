@@ -70,10 +70,7 @@ export function remapMessageReplacingPid3(
   newId: string,
   oldIdIndex?: number
 ): Hl7Message {
-  const pid = getSegmentByNameOrFail(message, "PID");
-  console.log("pid", pid.toString());
   const updatedPid = setPid3Id(getSegmentByNameOrFail(message, "PID"), newId, oldIdIndex);
-  console.log("updatedPid", updatedPid.toString());
   const newSegments = message.segments.map(seg => (seg.name === "PID" ? updatedPid : seg));
 
   return new Hl7Message(newSegments, message.context);
