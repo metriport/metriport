@@ -32,7 +32,6 @@ export function getServiceRequest(
     location,
   }: { patient: Patient; requestingPractitioner: Practitioner; location?: Location | undefined }
 ): ServiceRequest {
-  const identifier = getServiceRequestIdentifier(detail);
   const requisition = getServiceRequestRequisition(detail);
   const subject = getPatientReference(patient);
   const requester = getPractitionerReference(requestingPractitioner);
@@ -51,7 +50,6 @@ export function getServiceRequest(
     requester,
     ...(code ? { code } : {}),
     ...(requisition ? { requisition } : {}),
-    ...(identifier ? { identifier } : {}),
     ...(locationReference ? { locationReference } : {}),
     extension,
   };
@@ -71,16 +69,6 @@ export function getServiceRequestReference(
   return {
     reference: `ServiceRequest/${serviceRequest.id}`,
   };
-}
-
-function getServiceRequestIdentifier(detail: ResponseDetail): Identifier[] | undefined {
-  if (!detail.requisitionNumber) return undefined;
-  return [
-    {
-      system: QUEST_REQUISITION_NUMBER_URL,
-      value: detail.requisitionNumber,
-    },
-  ];
 }
 
 function getServiceRequestRequisition(detail: ResponseDetail): Identifier | undefined {

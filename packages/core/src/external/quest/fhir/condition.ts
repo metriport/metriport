@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
-import { Condition, ConditionEvidence, Observation, Patient } from "@medplum/fhirtypes";
+import { Condition, ConditionEvidence, Observation, Patient, Reference } from "@medplum/fhirtypes";
 import { ResponseDetail } from "../schema/response";
 import { ICD_10_URL, ICD_9_URL } from "@metriport/shared/medical";
 import { getPatientReference } from "./patient";
@@ -31,6 +31,12 @@ export function getConditions(
     .value();
 
   return conditions;
+}
+
+export function getConditionReference(condition: Condition): Reference<Condition> {
+  return {
+    reference: `Condition/${condition.id}`,
+  };
 }
 
 function getCondition({
