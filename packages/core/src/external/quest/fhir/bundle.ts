@@ -58,10 +58,6 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
     requestingPractitioner: practitioner,
     location,
   });
-  const procedure = getProcedure(data, {
-    patient,
-    serviceRequest,
-  });
   const specimen = getSpecimen(data, {
     patient,
     practitioner,
@@ -80,7 +76,13 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
     patient,
     observation,
   });
-  const resources: Resource[] = _([
+  const procedure = getProcedure(data, {
+    patient,
+    serviceRequest,
+    conditions,
+  });
+
+  const bundleEntries: BundleEntry<Resource>[] = _([
     patient,
     practitioner,
     practitionerRole,
@@ -94,7 +96,8 @@ function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[]
     ...conditions,
   ])
     .compact()
+    .map(buildBundleEntry)
     .value();
 
-  return resources.map(resource => buildBundleEntry(resource));
+  return bundleEntries;
 }
