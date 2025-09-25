@@ -55,7 +55,7 @@ async function main({ inputPath, cxId }: FacilitySyncParams) {
   for (const npi of npis) {
     await sleep(waitTimeBetweenChecks.asMilliseconds());
     console.log(`Processing facility: ${npi}`);
-    let facility: Facility | null = null;
+    let facility: Facility | undefined = undefined;
     try {
       facility = await getInternalFacilityByNpi(cxId, npi);
     } catch (error) {

@@ -146,7 +146,7 @@ async function processRow(
   cxId: string,
   isDryRun: boolean,
   logsFilePath: string
-): Promise<FacilityInternalDetails | null> {
+): Promise<FacilityInternalDetails | undefined> {
   let rowSuccess = true;
   let message: string | undefined = undefined;
 
@@ -195,7 +195,7 @@ async function processRow(
       console.log(err);
       message = errorToString(err);
     }
-    return null;
+    return undefined;
   } finally {
     await writeToCsv(logsFilePath, rowSuccess, message, row);
   }

@@ -76,12 +76,12 @@ export async function getCwFacilitySafe(
   id: string,
   oid: string
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Promise<any | null> {
+): Promise<any | undefined> {
   try {
     return await getCwFacility(cxId, id, oid);
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) {
-      return null;
+      return undefined;
     }
     throw error;
   }
@@ -92,12 +92,12 @@ export async function getCqFacilitySafe(
   id: string,
   oid: string
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Promise<any | null> {
+): Promise<any | undefined> {
   try {
     return await getCqFacility(cxId, id, oid);
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) {
-      return null;
+      return undefined;
     }
     throw error;
   }
@@ -106,7 +106,7 @@ export async function getCqFacilitySafe(
 export async function getInternalFacilityByNpi(
   cxId: string,
   npi: string
-): Promise<FacilityWithOid | null> {
+): Promise<FacilityWithOid | undefined> {
   try {
     const url = `${internalUrl}/internal/cx-data`;
     const response = await axios.get(url, {
@@ -118,10 +118,10 @@ export async function getInternalFacilityByNpi(
     const data = response.data;
     const facilities = data.facilities || [];
     const facility = facilities.find((f: FacilityWithOid) => f.npi === npi);
-    return facility || null;
+    return facility || undefined;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) {
-      return null;
+      return undefined;
     }
     throw error;
   }
