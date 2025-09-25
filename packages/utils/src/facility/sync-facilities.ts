@@ -76,8 +76,10 @@ async function main({ inputPath, cxId }: FacilitySyncParams) {
       continue;
     }
 
-    const cwOrg = await getCwFacilitySafe(cxId, facility.id, facilityOid);
-    const cqOrg = await getCqFacilitySafe(cxId, facility.id, facilityOid);
+    const [cwOrg, cqOrg] = await Promise.all([
+      getCwFacilitySafe(cxId, facility.id, facilityOid),
+      getCqFacilitySafe(cxId, facility.id, facilityOid),
+    ]);
 
     if (cwOrg) cwFound.push(npi);
     else cwNotFound.push(npi);
@@ -118,9 +120,10 @@ async function main({ inputPath, cxId }: FacilitySyncParams) {
       });
       console.log(`Ran facility sync: ${npi}`);
       await sleep(waitTimeBetweenChecks.asMilliseconds());
-
-      const cqOrgAfter = await getCqFacilitySafe(cxId, facility.id, facilityOid);
-      const cwOrgAfter = await getCwFacilitySafe(cxId, facility.id, facilityOid);
+      const [cqOrgAfter, cwOrgAfter] = await Promise.all([
+        getCqFacilitySafe(cxId, facility.id, facilityOid),
+        getCwFacilitySafe(cxId, facility.id, facilityOid),
+      ]);
 
       if (cqOrgAfter && cwOrgAfter && cqOrgAfter.active && cwOrgAfter.active) {
         console.log(`Facility successfully synced`);
@@ -149,7 +152,9 @@ async function main({ inputPath, cxId }: FacilitySyncParams) {
   console.log(`Facilities not found: ${facilityNotFound.length}`);
 
   if (brokenFacilities > 0) {
-    console.log(`\nBroken NPIs: ${[...new Set([...cwNotFound, ...cqNotFound])].join(", ")}`);
+    console.log(
+      `\nOriginally Broken NPIs: ${[...new Set([...cwNotFound, ...cqNotFound])].join(", ")}`
+    );
   }
   if (fixedFacilities > 0) {
     console.log(`\nFixed NPIs: ${synced.join(", ")}`);

@@ -88,7 +88,7 @@ export async function getFacilityByNpiOrFail(npi: string): Promise<NpiRegistryFa
  * @param additionalInfo extra required information to translate the name, if it is OBO, and the cqOboOid + cwOboOid
  * @returns the translated FacilityInternalDetails
  */
-export function translateNpiFacilityToMetriportFacility(
+export function buildInternalFacilityFromNpiFacility(
   npiFacility: NpiRegistryFacility,
   additionalInfo: AdditionalInformationInternalFacility
 ): FacilityInternalDetails {

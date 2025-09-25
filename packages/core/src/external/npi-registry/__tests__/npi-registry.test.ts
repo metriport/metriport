@@ -4,7 +4,7 @@ import {
   NpiRegistryFacility,
 } from "../../../domain/npi-facility";
 import { FacilityType, FacilityInternalDetails } from "../../../domain/facility";
-import { getFacilityByNpiOrFail, translateNpiFacilityToMetriportFacility } from "../npi-registry";
+import { getFacilityByNpiOrFail, buildInternalFacilityFromNpiFacility } from "../npi-registry";
 import { toTitleCase } from "@metriport/shared/common/title-case";
 import axios from "axios";
 jest.mock("axios");
@@ -84,7 +84,7 @@ describe("Npi Registry Validation", () => {
     );
   });
 
-  it("successfully translates npi registry facility to our internal create facility mapping", () => {
+  it("successfully builds internal facility from npi registry facility", () => {
     const validInternalNonObo: FacilityInternalDetails = {
       city: "Shoreline",
       state: USState.WA,
@@ -108,7 +108,7 @@ describe("Npi Registry Validation", () => {
       cwActive: false,
     };
 
-    const internalNonObo = translateNpiFacilityToMetriportFacility(
+    const internalNonObo = buildInternalFacilityFromNpiFacility(
       validFacility,
       additionalInfoNonObo
     );
@@ -142,7 +142,7 @@ describe("Npi Registry Validation", () => {
       cwActive: false,
     };
 
-    const internalObo = translateNpiFacilityToMetriportFacility(validFacility, additionalInfoObo);
+    const internalObo = buildInternalFacilityFromNpiFacility(validFacility, additionalInfoObo);
 
     expect(validInternalObo).toEqual(internalObo);
   });

@@ -4,8 +4,8 @@ dotenv.config();
 import { Facility } from "@metriport/api-sdk";
 import { FacilityInternalDetails } from "@metriport/core/domain/facility";
 import {
+  buildInternalFacilityFromNpiFacility,
   getFacilityByNpiOrFail,
-  translateNpiFacilityToMetriportFacility,
 } from "@metriport/core/external/npi-registry/npi-registry";
 import { errorToString, getEnvVarOrFail, MetriportError, sleep } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -159,15 +159,16 @@ async function processRow(
       cwActive,
     };
 
-    const metriportFacility = translateNpiFacilityToMetriportFacility(npiFacility, params);
+    const metriportFacility = buildInternalFacilityFromNpiFacility(npiFacility, params);
+
     const otherNames = npiFacility.other_names ?? [];
     if (otherNames.length > 0) {
-      if (
-        !facilityNamesMatch(
-          npiFacility.other_names[0].organization_name,
-          metriportFacility.nameInMetriport
-        )
-      ) {
+      const organizationName = otherNames[0].organization_name;
+      if (!organizationName) {
+        throw new Error(`Organization name was not returned from the NPI Registry`);
+      }
+
+      if (!facilityNamesMatch(organizationName, metriportFacility.nameInMetriport)) {
         throw new Error(
           `Name mismatch: Registry='${npiFacility.other_names[0].organization_name}', CSV='${metriportFacility.nameInMetriport}'`
         );

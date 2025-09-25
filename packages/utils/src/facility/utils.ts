@@ -149,9 +149,10 @@ export async function verifyFacilities(npis: string[], cxId: string, timeout: nu
       noOid.push(npi);
       continue;
     }
-
-    const cwOrg = await getCwFacilitySafe(cxId, facility.id, facilityOid);
-    const cqOrg = await getCqFacilitySafe(cxId, facility.id, facilityOid);
+    const [cwOrg, cqOrg] = await Promise.all([
+      getCwFacilitySafe(cxId, facility.id, facilityOid),
+      getCqFacilitySafe(cxId, facility.id, facilityOid),
+    ]);
 
     if (!cwOrg) {
       console.log(`❌ CW Organization not found: ${npi}`);
