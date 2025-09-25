@@ -4,11 +4,11 @@ import { Aspects, Duration, NestedStack, NestedStackProps, RemovalPolicy } from 
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import { InstanceType } from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as rds from "aws-cdk-lib/aws-rds";
+import { ClusterInstanceType } from "aws-cdk-lib/aws-rds";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Queue } from "aws-cdk-lib/aws-sqs";
@@ -316,7 +316,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       engine: dbEngine,
       instanceProps: {
         vpc: ownProps.vpc,
-        instanceType: new InstanceType("serverless"),
+        instanceType: ClusterInstanceType.serverlessV2(),
         enablePerformanceInsights: true,
         parameterGroup,
       },

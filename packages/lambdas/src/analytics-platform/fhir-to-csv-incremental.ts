@@ -37,7 +37,12 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
     const { cxId, patientId } = parsedBody;
 
     // read the db user password from the secret
-    const dbPassword = await (getSecret(dbCreds.passwordSecretArn) as Promise<string>);
+    const dbPassword = await (getSecret(dbCreds.passwordSecretArn) as Promise<string | undefined>);
+    if (!dbPassword) {
+      throw new MetriportError(`DB password not found`, undefined, {
+        secretArn: dbCreds.passwordSecretArn,
+      });
+    }
 
     const log = prefixedLog(`cxId ${cxId}, patientId ${patientId}`);
     log(`Parsed: ${JSON.stringify(parsedBody)}`);
