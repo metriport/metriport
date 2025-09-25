@@ -51,7 +51,7 @@ function getTimezoneFromHieName(
   log: typeof console.log
 ): string {
   if (hieName === "Bamboo") {
-    log("HIE is Bamboo, getting timezone based off state in the facility");
+    log("HIE is Bamboo, getting timezone based off state in the custom ZFA segment");
     return getBambooTimezone(hl7Message);
   } else if (hieName === "Konza") {
     log("HIE is Konza, getting timezone based off state in PV1.39");
