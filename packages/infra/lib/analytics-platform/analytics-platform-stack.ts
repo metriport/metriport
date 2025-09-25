@@ -50,7 +50,7 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      // maxConcurrency: 15,
+      maxConcurrency: 100,
     },
     waitTime: Duration.seconds(0),
   };
@@ -72,7 +72,7 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      // maxConcurrency: 5,
+      maxConcurrency: 100,
     },
     waitTime: Duration.seconds(0),
   };
