@@ -57,6 +57,7 @@ DG1|3|I10|I10.9^Essential (primary) hypertension^I10|Essential (primary) hyperte
 DG1|4|I10|E78.5^Dyslipidemia^I10|Dyslipidemia
 DG1|5|I10|E03.9^Hypothyroidism, unspecified^I10|Hypothyroidism, unspecified
 `;
+//ZFA|1|something|something|123 Main Street^Unit 1^Boston^MA^02108^USA
 
 async function sendAdtToMllpServer() {
   const hl7Message = Hl7Message.parse(msg);

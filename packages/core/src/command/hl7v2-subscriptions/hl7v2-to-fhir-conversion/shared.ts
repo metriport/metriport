@@ -71,17 +71,18 @@ export function unpackPidFieldOrFailNoSpecial(pid: string) {
   return unpackPidFieldOrFail(normalizedPid);
 }
 
-//pipe to a +, and an period to a =
-export function unpackNormalizedId(id: string) {
-  return id.replace(/./g, "=").replace(/|/g, "+");
+// Turn + into - , and = into .
+export function packNormalizedId(id: string) {
+  return id.replace(/\+/g, "-").replace(/=/g, ".");
 }
 
-//+ to a pipe, and an = to a period
-export function packNormalizedId(id: string) {
-  return id.replace(/=/g, ".").replace(/\+/g, "|");
+// Reverse: - back to + , . back to =
+export function unpackNormalizedId(id: string) {
+  return id.replace(/-/g, "+").replace(/\./g, "=");
 }
 
 export function getCxIdAndPatientIdOrFail(msg: Hl7Message): { cxId: string; patientId: string } {
+  console.log("getCxIdAndPatientIdOrFail");
   const pid = getSegmentByNameOrFail(msg, "PID");
   const idComponent = pid.getComponent(3, 1);
   return unpackPidFieldOrFail(idComponent);
