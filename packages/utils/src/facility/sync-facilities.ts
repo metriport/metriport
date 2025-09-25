@@ -7,7 +7,12 @@ import { sleep } from "@metriport/shared";
 import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
 import axios from "axios";
 import dayjs from "dayjs";
-import { getCqFacilitySafe, getCwFacilitySafe, getFacilityByNpi, readNpisFromCsv } from "./utils";
+import {
+  getCqFacilitySafe,
+  getCwFacilitySafe,
+  getInternalFacilityByNpi,
+  readNpisFromCsv,
+} from "./utils";
 import { Command } from "commander";
 
 /*
@@ -34,7 +39,7 @@ interface FacilitySyncParams {
 const internalUrl = getEnvVarOrFail("API_URL");
 const defaultActive = true;
 const defaultType = FacilityType.initiatorAndResponder;
-const timeout = dayjs.duration(0.5, "seconds"); //There is 2 sleeps, one at the start of the loop and one in the middle of the loop.
+const waitTimeBetweenChecks = dayjs.duration(0.5, "seconds"); //There is 2 sleeps, one at the start of the loop and one in the middle of the loop.
 
 async function main({ inputPath, cxId }: FacilitySyncParams) {
   const npis = await readNpisFromCsv(inputPath);
@@ -48,11 +53,11 @@ async function main({ inputPath, cxId }: FacilitySyncParams) {
   const syncFailed: string[] = [];
 
   for (const npi of npis) {
-    await sleep(timeout.asMilliseconds());
+    await sleep(waitTimeBetweenChecks.asMilliseconds());
     console.log(`Processing facility: ${npi}`);
     let facility: Facility | null = null;
     try {
-      facility = await getFacilityByNpi(cxId, npi);
+      facility = await getInternalFacilityByNpi(cxId, npi);
     } catch (error) {
       facilityNotFound.push(npi);
       console.log(error);
@@ -112,7 +117,7 @@ async function main({ inputPath, cxId }: FacilitySyncParams) {
         },
       });
       console.log(`Ran facility sync: ${npi}`);
-      await sleep(timeout.asMilliseconds());
+      await sleep(waitTimeBetweenChecks.asMilliseconds());
 
       const cqOrgAfter = await getCqFacilitySafe(cxId, facility.id, facilityOid);
       const cwOrgAfter = await getCwFacilitySafe(cxId, facility.id, facilityOid);

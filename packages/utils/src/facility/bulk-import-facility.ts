@@ -20,7 +20,7 @@ import { Writable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import path from "path";
 import { z } from "zod";
-import { getFacilityByNpi, verifyFacilities } from "./utils";
+import { getInternalFacilityByNpi, verifyFacilities } from "./utils";
 
 /*
  * This script will read NPIs, Names, Type, CqOboOid, CwOboOid from a local csv.
@@ -47,7 +47,7 @@ const internalUrl = getEnvVarOrFail("API_URL");
 const cqActive = true; // CHANGE IF NEEDED
 const cwActive = true; // CHANGE IF NEEDED
 
-const timeout = dayjs.duration(1, "seconds");
+const waitTimeBetweenChecks = dayjs.duration(1, "seconds");
 
 interface FacilityImportParams {
   cxId: string;
@@ -101,6 +101,7 @@ async function main({ cxId, inputPath, dryrun, verify }: FacilityImportParams) {
     if (facility) {
       createdFacilities.push(facility);
     }
+    await sleep(waitTimeBetweenChecks.asMilliseconds());
   }
   console.log(`Created ${createdFacilities.length} facilities`);
   if (isVerify) {
@@ -108,7 +109,7 @@ async function main({ cxId, inputPath, dryrun, verify }: FacilityImportParams) {
     await verifyFacilities(
       createdFacilities.map(facility => facility.npi),
       cxId,
-      timeout.asMilliseconds()
+      waitTimeBetweenChecks.asMilliseconds()
     );
   }
 
@@ -128,11 +129,10 @@ async function readCsvRows(inputPath: string): Promise<InputRowFacilityImport[]>
     skipLines: 1,
   });
 
-  parser.on("data", (row: InputRowFacilityImport) => {
-    rows.push(row);
-  });
-
   await new Promise<void>((resolve, reject) => {
+    parser.on("data", (row: InputRowFacilityImport) => {
+      rows.push(row);
+    });
     parser.once("end", resolve);
     parser.once("error", reject);
     readFileFromLocal(inputPath, parser).catch(reject);
@@ -174,7 +174,7 @@ async function processRow(
       }
     }
 
-    const existingFacility = await getFacilityByNpi(cxId, row.npi);
+    const existingFacility = await getInternalFacilityByNpi(cxId, row.npi);
     if (existingFacility) {
       throw new Error(
         `Can't create a new facility with the same NPI as facility with ID: ${existingFacility.id} and name: ${existingFacility.name}`
@@ -197,7 +197,6 @@ async function processRow(
     return null;
   } finally {
     await writeToCsv(logsFilePath, rowSuccess, message, row);
-    await sleep(timeout.asMilliseconds());
   }
 }
 

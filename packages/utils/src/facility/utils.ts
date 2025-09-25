@@ -79,8 +79,11 @@ export async function getCwFacilitySafe(
 ): Promise<any | null> {
   try {
     return await getCwFacility(cxId, id, oid);
-  } catch {
-    return null;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return null;
+    }
+    throw error;
   }
 }
 
@@ -92,12 +95,18 @@ export async function getCqFacilitySafe(
 ): Promise<any | null> {
   try {
     return await getCqFacility(cxId, id, oid);
-  } catch {
-    return null;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return null;
+    }
+    throw error;
   }
 }
 
-export async function getFacilityByNpi(cxId: string, npi: string): Promise<FacilityWithOid | null> {
+export async function getInternalFacilityByNpi(
+  cxId: string,
+  npi: string
+): Promise<FacilityWithOid | null> {
   try {
     const url = `${internalUrl}/internal/cx-data`;
     const response = await axios.get(url, {
@@ -127,7 +136,7 @@ export async function verifyFacilities(npis: string[], cxId: string, timeout: nu
   const cqOrgFound: string[] = [];
 
   for (const npi of npis) {
-    const facility = await getFacilityByNpi(cxId, npi);
+    const facility = await getInternalFacilityByNpi(cxId, npi);
     if (!facility) {
       console.log(`❌ Facility not found: ${npi}`);
       notFound.push(npi);
