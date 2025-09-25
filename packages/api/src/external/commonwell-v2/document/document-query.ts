@@ -346,6 +346,7 @@ async function internalGetDocuments({
       if (d.masterIdentifier?.value && d.content?.[0]?.attachment.url) {
         const docRef: CwDocumentReference = {
           ...d,
+          description: d.description ?? getDescriptionFromAttachment(d.content),
           id: d.masterIdentifier?.value,
         };
         return docRef;
@@ -359,6 +360,10 @@ async function internalGetDocuments({
       context,
     });
   }
+}
+
+function getDescriptionFromAttachment(content: CwDocumentReference["content"]): string | undefined {
+  return content?.[0]?.attachment?.title ?? undefined;
 }
 
 function reportCWErrors({

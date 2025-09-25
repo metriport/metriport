@@ -1,8 +1,16 @@
-import { DocumentReference, DocumentReferenceContext, Identifier } from "@medplum/fhirtypes";
+import {
+  DocumentReference,
+  DocumentReferenceContext,
+  Identifier,
+  Organization,
+  Resource,
+} from "@medplum/fhirtypes";
 import { DocumentReference as CwDocumentReference } from "@metriport/commonwell-sdk";
 import { Patient } from "@metriport/core/domain/patient";
 import { cwExtension } from "@metriport/core/external/commonwell/extension";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { out } from "@metriport/core/util";
+import { MetriportError } from "@metriport/shared";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import { createDocReferenceContent } from "../../fhir/document";
@@ -61,12 +69,20 @@ export function cwToFHIR(
   // Get date from content or use current date
   const date = firstContent?.attachment?.creation ?? new Date().toISOString();
 
+  const containedContent: Resource[] = [];
+
+  const contained = doc.contained;
+  if (contained?.length) {
+    contained.forEach(cwResource => {
+      const fhirResource = convertToFHIRResource(cwResource, patient.id);
+      if (fhirResource) containedContent.push(...fhirResource);
+    });
+  }
   // Create basic FHIR DocumentReference
   const fhirDocRef: DocumentReferenceWithId = {
     id: docId,
     resourceType: "DocumentReference",
-    // TODO: Maybe not even needed, but we have it on CW v1
-    // contained: containedContent,
+    contained: containedContent,
     masterIdentifier: {
       system: doc.masterIdentifier?.system ?? undefined,
       value: doc.masterIdentifier?.value ?? docId,
@@ -116,4 +132,33 @@ function convertContextToFHIR(
     ...context,
     encounter: context.encounter ? [context.encounter] : undefined,
   }) as DocumentReferenceContext;
+}
+
+function convertToFHIRResource(resource: Resource, patientId: string): Resource[] | undefined {
+  if (resource.resourceType === "Organization") {
+    return containedOrgToFHIRResource(resource, patientId);
+  }
+  return undefined;
+}
+
+function containedOrgToFHIRResource(
+  resource: Organization,
+  patientId: string
+): Resource[] | undefined {
+  const { log } = out(`containedOrgToFHIRResource - patient ${patientId}`);
+  if (resource.resourceType !== "Organization") {
+    const msg = "Contained resource is not a Organization";
+    log(`${msg} [containedOrgToFHIRResource] resource: - ${JSON.stringify(resource)}`);
+    throw new MetriportError(msg, undefined, { patientId });
+  }
+  if (!resource.name) {
+    log(`Organization with no name, skipping it: ${JSON.stringify(resource)}`);
+    return undefined;
+  }
+  return [
+    {
+      resourceType: "Organization",
+      name: resource.name,
+    },
+  ];
 }
