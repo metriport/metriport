@@ -3,7 +3,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
 
 const RESPONSE_FILE_PREFIX = "Metriport_";
 const RESPONSE_FILE_EXTENSION = ".txt";
-const DATE_ID_REGEX = /^\d{12}$/;
+const DATE_ID_REGEX = /^(\w+_)?\d{12}$/;
 const SOURCE_DOCUMENT_KEY_REGEX = /\/externalId=([\w\d-]+)\/dateId=(\d+)\//;
 
 export function buildRosterFileName() {
