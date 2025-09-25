@@ -139,6 +139,7 @@ function convertContextToFHIR(
  */
 function isValidFHIRResource(obj: unknown): obj is Resource {
   return (
+    obj !== undefined &&
     typeof obj === "object" &&
     obj !== null &&
     "resourceType" in obj &&
