@@ -1,25 +1,24 @@
+export function getCxDbName(cxId: string, dbname: string): string {
+  return `${dbname}_${cxId}`;
+}
+
 export const tableJobName = "metriport_incremental_job";
 
-export const columnCxIdName = "m_cx_id";
 export const columnPatientIdName = "m_patient_id";
 export const columnJobIdName = "m_job_id";
 
 const defaultColumnType = "VARCHAR";
 
-export const columnCxIdDefinition = `${columnCxIdName} ${defaultColumnType}`;
 export const columnPatientIdDefinition = `${columnPatientIdName} ${defaultColumnType}`;
 export const columnJobIdDefinition = `${columnJobIdName} ${defaultColumnType}`;
 
-export const additionalColumnDefs = `${columnCxIdDefinition}, ${columnPatientIdDefinition}, ${columnJobIdDefinition}`;
+export const additionalColumnDefs = `${columnPatientIdDefinition}, ${columnJobIdDefinition}`;
 
 export const createTableJobCommand =
   `CREATE TABLE IF NOT EXISTS ${tableJobName} (` +
-  `id VARCHAR PRIMARY KEY, ${columnCxIdDefinition}, ${columnPatientIdDefinition})`;
+  `id VARCHAR PRIMARY KEY, ${columnPatientIdDefinition})`;
 
-export const insertTableJobCommand =
-  `INSERT INTO ${tableJobName} (` +
-  `id, ${columnCxIdName}, ${columnPatientIdName}) ` +
-  `VALUES ($1, $2, $3)`;
+export const insertTableJobCommand = `INSERT INTO ${tableJobName} (id, ${columnPatientIdName}) VALUES ($1, $2)`;
 
 export function getCreateTableCommand(tableName: string, columnsDef: string): string {
   return `CREATE TABLE IF NOT EXISTS ${tableName} (${columnsDef})`;
@@ -32,12 +31,10 @@ export function getCreateViewJobCommand(tableName: string): { cmd: string; viewN
           FROM ${tableName} a
             join ${tableJobName} j on
               a.${columnJobIdName} = j.id and 
-              a.${columnCxIdName} = j.${columnCxIdName} and
               a.${columnPatientIdName} = j.${columnPatientIdName}
           WHERE j.id = (
             select max(id) from ${tableJobName} jj
-            where jj.${columnCxIdName} = a.${columnCxIdName}
-              and jj.${columnPatientIdName} = a.${columnPatientIdName}
+            where jj.${columnPatientIdName} = a.${columnPatientIdName}
           );`;
   return { cmd, viewName };
 }

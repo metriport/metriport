@@ -12,6 +12,7 @@ import {
   createTableJobCommand,
   getCreateTableCommand,
   getCreateViewJobCommand,
+  getCxDbName,
   getDropIndexCommand,
   insertTableJobCommand,
 } from "./db-asset-defs";
@@ -53,17 +54,19 @@ export async function sendPatientCsvsToDb({
   tablesDefinitions: Record<string, string>;
 }): Promise<void> {
   const { log } = out(`sendPatientCsvsToDb - cx ${cxId}, pt ${patientId}`);
-  capture.setExtra({ cxId, patientId, jobId, patientCsvsS3Prefix, analyticsBucketName });
+
+  const cxDbName = getCxDbName(cxId, dbCreds.dbname);
+
+  capture.setExtra({ cxId, patientId, jobId, patientCsvsS3Prefix, analyticsBucketName, cxDbName });
   log(
     `Running with params: ${JSON.stringify({
-      cxId,
-      patientId,
       jobId,
       patientCsvsS3Prefix,
       analyticsBucketName,
       host: dbCreds.host,
       port: dbCreds.port,
       dbname: dbCreds.dbname,
+      cxDbName,
       username: dbCreds.username,
       tablesDefinitions: Object.keys(tablesDefinitions).length,
     })}`
@@ -73,7 +76,7 @@ export async function sendPatientCsvsToDb({
   const dbClient = new Client({
     host: dbCreds.host,
     port: dbCreds.port,
-    database: dbCreds.dbname,
+    database: cxDbName,
     user: dbCreds.username,
     password: dbCreds.password,
   });
@@ -101,7 +104,6 @@ export async function sendPatientCsvsToDb({
     for (const [resourceType, { csvS3Key, tableName }] of Object.entries(resourceTypeSourceInfo)) {
       try {
         counter += await processResourceType({
-          cxId,
           patientId,
           jobId,
           dbClient,
@@ -123,7 +125,7 @@ export async function sendPatientCsvsToDb({
       }
     }
 
-    await finalizeIncrementalJobInDb({ dbClient, jobId, cxId, patientId });
+    await finalizeIncrementalJobInDb({ dbClient, jobId, patientId });
 
     log(`Successfully processed ${csvFileKeys.length} CSV files, ${counter} rows inserted`);
   } finally {
@@ -177,17 +179,15 @@ async function prepareIncrementalJobInDb({ dbClient }: { dbClient: Client }): Pr
 
 async function finalizeIncrementalJobInDb({
   dbClient,
-  cxId,
   patientId,
   jobId,
 }: {
   dbClient: Client;
-  cxId: string;
   patientId: string;
   jobId: string;
 }): Promise<void> {
   // Once this is done, the DB views will return the newly inserted rows.
-  await dbClient.query(insertTableJobCommand, [jobId, cxId, patientId]);
+  await dbClient.query(insertTableJobCommand, [jobId, patientId]);
 }
 
 function createTableName(resourceType: string): string {
@@ -198,7 +198,6 @@ function createTableName(resourceType: string): string {
  * Processes a single CSV file by streaming it from S3 and inserting records into the database.
  */
 async function processResourceType({
-  cxId,
   patientId,
   jobId,
   resourceType,
@@ -210,7 +209,6 @@ async function processResourceType({
   s3Utils,
   log,
 }: {
-  cxId: string;
   patientId: string;
   jobId: string;
   resourceType: string;
@@ -222,7 +220,7 @@ async function processResourceType({
   s3Utils: S3Utils;
   log: (msg: string) => void;
 }): Promise<number> {
-  const { debug } = out(`processResourceType - cx ${cxId}, pt ${patientId}, job ${jobId}`);
+  const { debug } = out(`processResourceType - pt ${patientId}, job ${jobId}`);
 
   const columnsDef = tablesDefinitions[resourceType];
   if (!columnsDef) {
@@ -242,7 +240,6 @@ async function processResourceType({
   const additionalColumnNames = getColumnNamesFromColumnsDef(additionalColumnDefs);
 
   const rowCount = await streamCsvToDatabase({
-    cxId,
     patientId,
     jobId,
     tableName,
@@ -303,7 +300,6 @@ async function createViewIfNotExists(
  * Streams CSV data from S3 and inserts it into the database using proper CSV parsing and batch inserts.
  */
 async function streamCsvToDatabase({
-  cxId,
   patientId,
   jobId,
   tableName,
@@ -315,7 +311,6 @@ async function streamCsvToDatabase({
   s3Utils,
   log,
 }: {
-  cxId: string;
   patientId: string;
   jobId: string;
   tableName: string;
@@ -327,7 +322,7 @@ async function streamCsvToDatabase({
   s3Utils: S3Utils;
   log: (msg: string) => void;
 }): Promise<number> {
-  const { debug } = out(`streamCsvToDatabase - cx ${cxId}, pt ${patientId}, job ${jobId}`);
+  const { debug } = out(`streamCsvToDatabase - pt ${patientId}, job ${jobId}`);
 
   let rowCount = 0;
   let batch: string[][] = [];
@@ -362,7 +357,6 @@ async function streamCsvToDatabase({
             const localBatch = batch;
             batch = [];
             await insertBatchIntoDatabase({
-              cxId,
               patientId,
               jobId,
               tableName,
@@ -381,7 +375,6 @@ async function streamCsvToDatabase({
           // Process remaining rows in the batch
           if (batch.length > 0) {
             await insertBatchIntoDatabase({
-              cxId,
               patientId,
               jobId,
               tableName,
@@ -412,7 +405,6 @@ async function streamCsvToDatabase({
  * Inserts a batch of rows into the database using a single query for better performance.
  */
 async function insertBatchIntoDatabase({
-  cxId,
   patientId,
   jobId,
   tableName,
@@ -421,7 +413,6 @@ async function insertBatchIntoDatabase({
   batch,
   dbClient,
 }: {
-  cxId: string;
   patientId: string;
   jobId: string;
   tableName: string;
@@ -451,7 +442,7 @@ async function insertBatchIntoDatabase({
   // Flatten all values and add the additional columns for each row
   const allValues: string[] = [];
   batch.forEach(rowValues => {
-    allValues.push(...rowValues, cxId, patientId, jobId);
+    allValues.push(...rowValues, patientId, jobId);
   });
 
   await dbClient.query(insertQuery, allValues);
