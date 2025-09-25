@@ -13,8 +13,8 @@ import { codeLookupOperationDefinition } from "./definitions/codeLookupOperation
 import { ndcCodeSystem } from "./definitions/codeSystem";
 import { findCodeSystemResource } from "./utils/codeSystemLookup";
 import {
-  isValidParametersResource,
-  parseBulkInputParameters,
+  isValidLookupParametersResource,
+  parseBulkLookupInputParameters,
   parseInputParameters,
 } from "./utils/parameters";
 
@@ -83,7 +83,7 @@ export async function bulkCodeSystemLookupHandler(request: FhirRequest): Promise
   }
 
   const invalidParams = request.body.flatMap((param, index) => {
-    if (isValidParametersResource(param)) return [];
+    if (isValidLookupParametersResource(param)) return [];
     return normalizeOperationOutcome(new Error(`Invalid Parameters resource at index ${index}`));
   });
 
@@ -95,7 +95,7 @@ export async function bulkCodeSystemLookupHandler(request: FhirRequest): Promise
   }
 
   const inputParams = request.body as Parameters[];
-  const params = parseBulkInputParameters(operation, inputParams);
+  const params = parseBulkLookupInputParameters(operation, inputParams);
 
   const startedAt = Date.now();
   const results = await Promise.allSettled(
