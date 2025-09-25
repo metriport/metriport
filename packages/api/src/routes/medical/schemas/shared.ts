@@ -10,7 +10,7 @@ export const allOrSubsetPatientIdsSchema = z.discriminatedUnion("all", [
     patientIds: z.undefined().optional(),
   }),
   z.object({
-    all: z.undefined().optional(),
+    all: z.undefined(),
     patientIds: patientIdsSchema,
   }),
 ]);
