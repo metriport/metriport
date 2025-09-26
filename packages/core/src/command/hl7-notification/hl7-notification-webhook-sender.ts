@@ -6,7 +6,7 @@ export const hl7NotificationSenderParamsSchema = z.object({
   message: z.string(),
   messageReceivedTimestamp: z.string(),
   hieName: z.string(),
-  timezone: z.string().optional(),
+  impersonateTimezone: z.string().optional(),
 });
 
 export type Hl7NotificationSenderParams = z.infer<typeof hl7NotificationSenderParamsSchema>;
