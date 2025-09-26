@@ -55,3 +55,14 @@ export function buildFhirToCsvIncrementalJobPrefix({
 }): string {
   return `snowflake/fhir-to-csv-incremental/cx=${cxId}/pt=${patientId}`;
 }
+
+export function parseTableNameFromFhirToCsvIncrementalFileKey(key: string): string {
+  // e.g.: snowflake/fhir-to-csv-incremental/cx=eae9172a-1c55-437b-bc1a-9689c64e47a1/pt=0194f5f7-c165-7c48-b7fe-cf1f4da02e17/patient.csv
+  const fileNameWithExt = key.split("/").pop();
+  const tableName =
+    fileNameWithExt?.substring(0, fileNameWithExt.lastIndexOf(".")) ?? fileNameWithExt;
+  if (!tableName) {
+    throw new MetriportError(`Failed to parse tableName from fhirToCsvFileKey`, undefined, { key });
+  }
+  return tableName;
+}

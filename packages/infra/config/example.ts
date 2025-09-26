@@ -252,8 +252,10 @@ export const config: EnvConfigNonSandbox = {
   },
   analyticsPlatform: {
     bucketName: "test-bucket",
-    secrets: {
-      SNOWFLAKE_CREDS: "your-snowflake-creds-as-json",
+    secretNames: {
+      SNOWFLAKE_CREDS: "name-of-secret",
+      FHIR_TO_CSV_DB_PASSWORD: "name-of-secret",
+      CORE_TRANSFORMER_DB_PASSWORD: "name-of-secret",
     },
     snowflake: {
       warehouse: "test-warehouse",
@@ -261,6 +263,21 @@ export const config: EnvConfigNonSandbox = {
       integrationName: "test-integration",
       integrationUserArn: "arn:aws:iam::000000000000:role/SnowflakeIntegrationRole",
       integrationExternalId: "000000000000",
+    },
+    rds: {
+      name: "my_db",
+      username: "my_db_user",
+      maintenanceWindow: "Sun:02:00-Sun:02:30",
+      minCapacity: 0.5,
+      maxCapacity: 1,
+      alarmThresholds: {
+        acuUtilizationPct: 80,
+        cpuUtilizationPct: 80,
+        freeableMemoryMb: 1_000,
+        volumeReadIops: 2_000,
+        volumeWriteIops: 2_000,
+      },
+      fhirToCsvDbUsername: "my_db_user",
     },
   },
 };

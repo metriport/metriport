@@ -1,6 +1,6 @@
 import { out } from "../../util/log";
 import { isAnalyticsIncrementalIngestionEnabledForCx } from "../feature-flags/domain-ffs";
-// import { buildFhirToCsvHandler } from "./fhir-to-csv/command/fhir-to-csv/fhir-to-csv-factory";
+import { buildFhirToCsvIncrementalHandler } from "./fhir-to-csv/command/incremental/fhir-to-csv-incremental-factory";
 
 export async function ingestPatientIntoAnalyticsPlatform({
   cxId,
@@ -8,26 +8,16 @@ export async function ingestPatientIntoAnalyticsPlatform({
 }: {
   cxId: string;
   patientId: string;
-}): Promise<boolean> {
+}): Promise<string | undefined> {
   const { log } = out(`ingestPatientIntoAnalyticsPlatform - cx ${cxId}, pt ${patientId}`);
 
   const isAnalyticsEnabled = await isAnalyticsIncrementalIngestionEnabledForCx(cxId);
-  if (!isAnalyticsEnabled) {
-    log(`Analytics is not enabled for this customer`);
-    return false;
-  }
+  if (!isAnalyticsEnabled) return undefined;
 
-  // TODO ENG-743 implement this
-  log(`WOULD BE ingesting pt consolidated into analytics platform`);
-  // log(`Ingesting pt consolidated into analytics platform`);
+  log(`Ingesting pt consolidated into analytics platform`);
 
-  // const fhirToCsvHandler = buildFhirToCsvHandler();
-  // fhirToCsvHandler.processFhirToCsv({
-  //   cxId,
-  //   patientId,
-  //   jobId,
-  //   outputPrefix,
-  // });
+  const fhirToCsvHandler = buildFhirToCsvIncrementalHandler();
+  const jobId = fhirToCsvHandler.processFhirToCsvIncremental({ cxId, patientId });
 
-  return true;
+  return jobId;
 }

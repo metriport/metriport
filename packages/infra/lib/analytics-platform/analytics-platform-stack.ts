@@ -1,18 +1,23 @@
+import { DatabaseCredsForLambda } from "@metriport/core/command/analytics-platform/config";
 import * as cdk from "aws-cdk-lib";
-import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
+import { Aspects, Duration, NestedStack, NestedStackProps, RemovalPolicy } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
+import * as rds from "aws-cdk-lib/aws-rds";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
 import { EnvType } from "../env-type";
 import { addErrorAlarmToLambdaFunc, createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
+import { addDBClusterPerformanceAlarms } from "../shared/rds";
+import { buildSecret } from "../shared/secrets";
 import { LambdaSettingsWithNameAndEntry, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
 import { isProdEnv } from "../shared/util";
@@ -124,11 +129,11 @@ interface AnalyticsPlatformsNestedStackProps extends NestedStackProps {
 }
 
 export class AnalyticsPlatformsNestedStack extends NestedStack {
-  readonly fhirToCsvBulkLambda: lambda.DockerImageFunction;
+  readonly fhirToCsvBulkLambda: lambda.Function;
   readonly fhirToCsvBulkQueue: Queue;
-  readonly fhirToCsvIncrementalLambda: lambda.DockerImageFunction;
+  readonly fhirToCsvIncrementalLambda: lambda.Function;
   readonly fhirToCsvIncrementalQueue: Queue;
-  readonly mergeCsvsLambda: lambda.DockerImageFunction;
+  readonly mergeCsvsLambda: lambda.Function;
   readonly mergeCsvsQueue: Queue;
   readonly analyticsPlatformBucket: s3.Bucket;
 
@@ -187,6 +192,14 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       },
     });
 
+    const { dbCluster } = this.setupDB({
+      config: props.config,
+      envType: props.config.environmentType,
+      awsRegion: props.config.region,
+      vpc: props.vpc,
+      alarmAction: props.alarmAction,
+    });
+
     const { fhirToCsvTransformLambda } = this.setupFhirToCsvTransformLambda({
       config: props.config,
       envType: props.config.environmentType,
@@ -228,6 +241,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         fhirToCsvTransformLambda,
         featureFlagsTable: props.featureFlagsTable,
         medicalDocumentsBucket: props.medicalDocumentsBucket,
+        dbCluster,
       });
     this.fhirToCsvIncrementalLambda = fhirToCsvIncrementalLambda;
     this.fhirToCsvIncrementalQueue = fhirToCsvIncrementalQueue;
@@ -256,6 +270,82 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       mergeCsvsQueue: this.mergeCsvsQueue,
       analyticsPlatformBucket: this.analyticsPlatformBucket,
     };
+  }
+
+  private setupDB(ownProps: {
+    config: EnvConfigNonSandbox;
+    envType: EnvType;
+    awsRegion: string;
+    vpc: ec2.IVpc;
+    alarmAction: SnsAction | undefined;
+  }): {
+    dbCluster: rds.DatabaseCluster;
+  } {
+    const dbConfig = ownProps.config.analyticsPlatform.rds;
+    // create database credentials
+    const dbSecretName = "AnalyticsDbCreds";
+    const dbCredsSecret = new secret.Secret(this, dbSecretName, {
+      secretName: dbSecretName,
+      generateSecretString: {
+        secretStringTemplate: JSON.stringify({
+          username: dbConfig.username,
+        }),
+        excludePunctuation: true,
+        includeSpace: false,
+        generateStringKey: "password",
+      },
+    });
+    const dbCreds = rds.Credentials.fromSecret(dbCredsSecret);
+    const dbEngine = rds.DatabaseClusterEngine.auroraPostgres({
+      version: rds.AuroraPostgresEngineVersion.VER_16_1,
+    });
+    const parameterGroup = new rds.ParameterGroup(this, "AnalyticsDbParams", {
+      engine: dbEngine,
+      parameters: {
+        ...(dbConfig.minSlowLogDurationInMs
+          ? {
+              log_min_duration_statement: dbConfig.minSlowLogDurationInMs.toString(),
+            }
+          : undefined),
+      },
+    });
+
+    const dbClusterName = "analytics-cluster";
+    const dbCluster = new rds.DatabaseCluster(this, "AnalyticsDbCluster", {
+      engine: dbEngine,
+      writer: rds.ClusterInstance.serverlessV2("writer", {
+        enablePerformanceInsights: true,
+        parameterGroup,
+      }),
+      readers: [
+        rds.ClusterInstance.serverlessV2("reader", {
+          enablePerformanceInsights: true,
+          parameterGroup,
+        }),
+      ],
+      vpc: ownProps.vpc,
+      preferredMaintenanceWindow: dbConfig.maintenanceWindow,
+      credentials: dbCreds,
+      defaultDatabaseName: dbConfig.name,
+      clusterIdentifier: dbClusterName,
+      storageEncrypted: true,
+      parameterGroup,
+      cloudwatchLogsExports: ["postgresql"],
+      deletionProtection: true,
+      removalPolicy: RemovalPolicy.RETAIN,
+    });
+    Aspects.of(dbCluster).add({
+      visit(node) {
+        if (node instanceof rds.CfnDBCluster) {
+          node.serverlessV2ScalingConfiguration = {
+            minCapacity: dbConfig.minCapacity,
+            maxCapacity: dbConfig.maxCapacity,
+          };
+        }
+      },
+    });
+    addDBClusterPerformanceAlarms(this, dbCluster, dbClusterName, dbConfig, ownProps.alarmAction);
+    return { dbCluster };
   }
 
   private setupFhirToCsvTransformLambda(ownProps: {
@@ -316,11 +406,11 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-    fhirToCsvTransformLambda: lambda.Function;
+    fhirToCsvTransformLambda: lambda.DockerImageFunction;
     featureFlagsTable: dynamodb.Table;
     medicalDocumentsBucket: s3.Bucket;
   }): {
-    lambda: lambda.DockerImageFunction;
+    lambda: lambda.Function;
     queue: Queue;
   } {
     const {
@@ -389,11 +479,12 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     analyticsPlatformBucket: s3.Bucket;
-    fhirToCsvTransformLambda: lambda.Function;
+    fhirToCsvTransformLambda: lambda.DockerImageFunction;
     featureFlagsTable: dynamodb.Table;
     medicalDocumentsBucket: s3.Bucket;
+    dbCluster: rds.DatabaseCluster;
   }): {
-    lambda: lambda.DockerImageFunction;
+    lambda: lambda.Function;
     queue: Queue;
   } {
     const {
@@ -405,6 +496,8 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       fhirToCsvTransformLambda,
       analyticsPlatformBucket,
       featureFlagsTable,
+      dbCluster,
+      config,
     } = ownProps;
 
     const {
@@ -427,6 +520,27 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       deliveryDelay: queueSettings.deliveryDelay,
     });
 
+    const dbUserSecret = buildSecret(
+      this,
+      config.analyticsPlatform.secretNames.FHIR_TO_CSV_DB_PASSWORD
+    );
+
+    const dbCreds: DatabaseCredsForLambda = {
+      host: ownProps.dbCluster.clusterEndpoint.hostname,
+      port: ownProps.dbCluster.clusterEndpoint.port,
+      engine: "postgres" as const,
+      dbname: config.analyticsPlatform.rds.name,
+      username: config.analyticsPlatform.rds.fhirToCsvDbUsername,
+      passwordSecretArn: dbUserSecret.secretArn,
+    };
+
+    // TODO ENG-1029 for reference only for now
+    // const dbReadOnlyCreds: DatabaseCredsForLambda = {
+    //   host: ownProps.dbCluster.clusterReadEndpoint.hostname,
+    //   port: ownProps.dbCluster.clusterReadEndpoint.port,
+    //   ...
+    // };
+
     const lambda = createLambda({
       ...lambdaSettings,
       stack: this,
@@ -437,22 +551,25 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         // API_URL set on the api-stack after the OSS API is created
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME: fhirToCsvTransformLambda.functionName,
-        ANALYTICS_S3_BUCKET: analyticsPlatformBucket.bucketName,
+        ANALYTICS_BUCKET_NAME: analyticsPlatformBucket.bucketName,
         FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
         MEDICAL_DOCUMENTS_BUCKET_NAME: ownProps.medicalDocumentsBucket.bucketName,
+        DB_CREDS: JSON.stringify(dbCreds),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared, lambdaLayers.langchain],
+      layers: [lambdaLayers.shared, lambdaLayers.langchain, lambdaLayers.analyticsPlatform],
       vpc,
       alarmSnsAction: alarmAction,
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 
+    dbCluster.connections.allowDefaultPortFrom(lambda);
     fhirToCsvTransformLambda.grantInvoke(lambda);
-    analyticsPlatformBucket.grantReadWrite(fhirToCsvTransformLambda);
-    ownProps.medicalDocumentsBucket.grantRead(fhirToCsvTransformLambda);
+    analyticsPlatformBucket.grantReadWrite(lambda);
+    ownProps.medicalDocumentsBucket.grantRead(lambda);
     featureFlagsTable.grantReadData(lambda);
+    dbUserSecret.grantRead(lambda);
 
     return { lambda, queue };
   }
@@ -467,7 +584,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     alarmAction: SnsAction | undefined;
     bucket: s3.Bucket;
   }): {
-    mergeCsvsLambda: lambda.DockerImageFunction;
+    mergeCsvsLambda: lambda.Function;
     queue: Queue;
   } {
     const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;

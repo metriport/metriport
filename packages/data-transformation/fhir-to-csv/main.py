@@ -3,17 +3,14 @@ import os
 import shutil
 import json
 import ndjson
-import snowflake.connector
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from src.parseNdjsonBundle import parseNdjsonBundle
 from src.utils.environment import Environment
-from src.utils.dwh import DWH
-from src.utils.file import create_consolidated_key, create_output_file_prefix
+from src.utils.file import create_consolidated_key
 
 transform_name = 'fhir-to-csv'
 
 env = Environment(os.getenv("ENV") or Environment.DEV)
-dwh = DWH(os.getenv("DWH") or DWH.SNOWFLAKE)
 
 s3_client = boto3.client("s3")
 
@@ -30,7 +27,6 @@ def transform_and_upload_data(
     output_bucket: str,
     cx_id: str,
     patient_id: str,
-    job_id: str,
     output_file_prefix: str,
 ) -> list[tuple[str, str, str]]:
     bundle_key = create_consolidated_key(cx_id, patient_id)
@@ -90,17 +86,14 @@ def transform_and_upload_data(
 def handler(event: dict, context: dict):
     cx_id = event.get("CX_ID") or os.getenv("CX_ID")
     patient_id = event.get("PATIENT_ID") or os.getenv("PATIENT_ID")
-    job_id = event.get("JOB_ID") or os.getenv("JOB_ID")
     input_bucket = event.get("INPUT_S3_BUCKET") or os.getenv("INPUT_S3_BUCKET")
-    output_bucket = os.getenv("OUTPUT_S3_BUCKET")
-    output_file_prefix = os.getenv("OUTPUT_PREFIX") # Will append '/<cx_id>_<patient_id>_<table_name>.csv' to it
+    output_bucket = event.get("OUTPUT_S3_BUCKET") or os.getenv("OUTPUT_S3_BUCKET")
+    # Will append '/<cx_id>_<patient_id>_<table_name>.csv' to output_file_prefix
+    output_file_prefix = event.get("OUTPUT_PREFIX") or os.getenv("OUTPUT_PREFIX")
     if not cx_id:
         raise ValueError("CX_ID is not set") 
     if not patient_id:
         raise ValueError("PATIENT_ID is not set")
-    if not job_id:
-        raise ValueError("JOB_ID is not set")
-    job_id = job_id.replace(":", "-").replace(".", "-")
     if not input_bucket:
         raise ValueError("INPUT_S3_BUCKET is not set")
     if not output_bucket:
@@ -108,13 +101,12 @@ def handler(event: dict, context: dict):
     if not output_file_prefix:
         raise ValueError("OUTPUT_PREFIX is not set")
 
-    print(f">>> Parsing data and uploading it to S3 for Snowflake - {cx_id}, patient_id {patient_id}, job_id {job_id}")
+    print(f">>> Parsing data and uploading it to S3 for Snowflake - {cx_id}, patient_id {patient_id}")
     output_bucket_and_file_keys_and_table_names = transform_and_upload_data(
         input_bucket,
         output_bucket,
         cx_id,
         patient_id,
-        job_id,
         output_file_prefix,
     )
 
@@ -122,7 +114,24 @@ def handler(event: dict, context: dict):
         print("No files were uploaded")
         exit(0)
 
-    print(f">>> Done processing {cx_id}, patient_id {patient_id}, job_id {job_id}")
+    print(f">>> Done processing {cx_id}, patient_id {patient_id}")
+
+def main():
+    """Main entry point for CLI usage."""
+    handler({}, {})
 
 if __name__ == "__main__":
-    handler({}, {})
+    import sys
+    
+    # Check if we should run in server mode
+    if len(sys.argv) > 1 and sys.argv[1] == "server":
+        # Import and run the server
+        from server import app
+        port = int(os.environ.get('PORT', 8000))
+        host = os.environ.get('HOST', '0.0.0.0')
+        debug = os.environ.get('DEBUG', 'false').lower() == 'true'
+        print(f"Starting FHIR to CSV HTTP server on {host}:{port}")
+        app.run(host=host, port=port, debug=debug)
+    else:
+        # Run in CLI mode (default behavior)
+        main()

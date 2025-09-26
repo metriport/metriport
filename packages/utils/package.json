@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
-    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "prettier-fix": "npx prettier '**/*.{js,ts,md}' --write --ignore-path ../../.prettierignore",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
     "cq-stats": "npx --node-options='--max-old-space-size=8192' ts-node src/carequality/cq-monthly-stats/index.ts",
     "fhir-uploader": "ts-node src/fhir-uploader.ts",

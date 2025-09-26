@@ -1,5 +1,5 @@
 import { sleep } from "@metriport/shared";
-import { startFhirToCsvTransform } from "../fhir-to-csv-transform";
+import { buildFhirToCsvTransformHandler } from "../transform/fhir-to-csv-transform-factory";
 import { FhirToCsvBulkHandler, ProcessFhirToCsvBulkRequest } from "./fhir-to-csv-bulk";
 
 export class FhirToCsvBulkDirect implements FhirToCsvBulkHandler {
@@ -7,14 +7,13 @@ export class FhirToCsvBulkDirect implements FhirToCsvBulkHandler {
 
   async processFhirToCsvBulk({
     cxId,
-    jobId,
     patientId,
     outputPrefix,
     timeoutInMillis,
   }: ProcessFhirToCsvBulkRequest): Promise<void> {
-    await startFhirToCsvTransform({
+    const handler = buildFhirToCsvTransformHandler();
+    await handler.startFhirToCsvTransform({
       cxId,
-      jobId,
       patientId,
       outputPrefix,
       timeoutInMillis,
