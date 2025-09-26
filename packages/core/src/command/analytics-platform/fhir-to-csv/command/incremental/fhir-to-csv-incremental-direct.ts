@@ -1,6 +1,4 @@
-import { DbCreds, sleep } from "@metriport/shared";
-import { buildDayjs } from "@metriport/shared/common/date";
-import { customAlphabet } from "nanoid";
+import { DbCreds } from "@metriport/shared";
 import { out } from "../../../../../util/log";
 import { sendPatientCsvsToDb } from "../../../csv-to-db/send-csvs-to-db";
 import { buildFhirToCsvIncrementalJobPrefix } from "../../file-name";
@@ -10,24 +8,22 @@ import {
   ProcessFhirToCsvIncrementalRequest,
 } from "./fhir-to-csv-incremental";
 
-const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";
-export const nanoid = customAlphabet(alphabet, 10);
-
-export class FhirToCsvIncrementalDirect implements FhirToCsvIncrementalHandler {
+export class FhirToCsvIncrementalDirect extends FhirToCsvIncrementalHandler {
   constructor(
     private readonly analyticsBucketName: string,
     private readonly region: string,
     private readonly dbCreds: DbCreds,
-    private readonly tablesDefinitions: Record<string, string>,
-    private readonly waitTimeInMillis: number = 0
-  ) {}
+    private readonly tablesDefinitions: Record<string, string>
+  ) {
+    super();
+  }
 
   async processFhirToCsvIncremental({
     cxId,
     patientId,
     jobId = this.generateJobId(),
     timeoutInMillis,
-  }: ProcessFhirToCsvIncrementalRequest): Promise<void> {
+  }: ProcessFhirToCsvIncrementalRequest): Promise<string> {
     const { log } = out(`FhirToCsvIncrementalDirect - cx ${cxId} pt ${patientId}`);
 
     const outputPrefix = buildFhirToCsvIncrementalJobPrefix({ cxId, patientId });
@@ -54,14 +50,6 @@ export class FhirToCsvIncrementalDirect implements FhirToCsvIncrementalHandler {
       jobId,
     });
 
-    if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
-  }
-
-  private generateJobId(): string {
-    return (
-      buildDayjs().toISOString().replace(/[-:.]/g, "").replace("T", "-").substring(0, 18) +
-      "-" +
-      nanoid()
-    );
+    return jobId;
   }
 }

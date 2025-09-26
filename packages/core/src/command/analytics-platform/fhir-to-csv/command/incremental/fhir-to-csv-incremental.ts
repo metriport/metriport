@@ -1,3 +1,9 @@
+import { buildDayjs } from "@metriport/shared/common/date";
+import { customAlphabet } from "nanoid";
+
+const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";
+const nanoid = customAlphabet(alphabet, 10);
+
 export type ProcessFhirToCsvIncrementalRequest = {
   cxId: string;
   patientId: string;
@@ -6,6 +12,16 @@ export type ProcessFhirToCsvIncrementalRequest = {
   timeoutInMillis?: number | undefined;
 };
 
-export interface FhirToCsvIncrementalHandler {
-  processFhirToCsvIncremental(request: ProcessFhirToCsvIncrementalRequest): Promise<void>;
+export abstract class FhirToCsvIncrementalHandler {
+  abstract processFhirToCsvIncremental(
+    request: ProcessFhirToCsvIncrementalRequest
+  ): Promise<string>;
+
+  generateJobId(): string {
+    return (
+      buildDayjs().toISOString().replace(/[-:.]/g, "").replace("T", "-").substring(0, 18) +
+      "-" +
+      nanoid()
+    );
+  }
 }
