@@ -1,4 +1,4 @@
-import { buildFhirToCsvIncrementalHandler } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/incremental/fhir-to-csv-incremental-factory";
+import { ingestPatientIntoAnalyticsPlatform } from "@metriport/core/command/analytics-platform/incremental-ingestion";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
@@ -27,10 +27,10 @@ router.post(
     // validate cx<>patient
     await getPatientOrFail({ id: patientId, cxId });
 
-    const handler = buildFhirToCsvIncrementalHandler();
-    await handler.processFhirToCsvIncremental({ cxId, patientId });
+    const jobId = await ingestPatientIntoAnalyticsPlatform({ cxId, patientId });
 
-    return res.sendStatus(httpStatus.OK);
+    const message = jobId ? "Ingestion initiated" : "Ingestion not initiated";
+    return res.status(httpStatus.OK).json({ message, jobId });
   })
 );
 
