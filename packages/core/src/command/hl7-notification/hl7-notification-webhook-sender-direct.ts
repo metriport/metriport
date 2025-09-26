@@ -126,7 +126,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       patientId,
       timestamp,
       messageId: getMessageUniqueIdentifier(message),
-      messageCode: messageCode,
+      messageCode,
       triggerEvent,
     });
 
