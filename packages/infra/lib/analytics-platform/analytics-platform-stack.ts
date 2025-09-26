@@ -30,6 +30,7 @@ interface AnalyticsPlatformsSettings {
   fhirToCsvIncremental: QueueAndLambdaSettings;
   fhirToCsvTransform: DockerImageLambdaSettings;
   mergeCsvs: QueueAndLambdaSettings;
+  rawToCoreTransform: DockerImageLambdaSettings;
 }
 
 function settings(envType: EnvType): AnalyticsPlatformsSettings {
@@ -38,6 +39,7 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
   const fhirToCsvIncrementalLambdaTimeout = fhirToCsvTransformLambdaTimeout.plus(
     Duration.seconds(10)
   );
+  const rawToCoreTransformLambdaTimeout = Duration.minutes(10);
   const fhirToCsvBulk: QueueAndLambdaSettings = {
     name: "FhirToCsvBulk",
     entry: "analytics-platform/fhir-to-csv-bulk",
@@ -111,11 +113,19 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
     },
     waitTime: Duration.seconds(0),
   };
+  const rawToCoreTransform: DockerImageLambdaSettings = {
+    name: "RawToCoreTransform",
+    lambda: {
+      memory: 512,
+      timeout: rawToCoreTransformLambdaTimeout,
+    },
+  };
   return {
     fhirToCsvBulk,
     fhirToCsvIncremental,
     fhirToCsvTransform,
     mergeCsvs,
+    rawToCoreTransform,
   };
 }
 
@@ -135,6 +145,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
   readonly fhirToCsvIncrementalQueue: Queue;
   readonly mergeCsvsLambda: lambda.Function;
   readonly mergeCsvsQueue: Queue;
+  readonly rawToCoreTransformLambda: lambda.Function;
   readonly analyticsPlatformBucket: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: AnalyticsPlatformsNestedStackProps) {
@@ -258,6 +269,18 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     });
     this.mergeCsvsLambda = mergeCsvsLambda;
     this.mergeCsvsQueue = mergeCsvsQueue;
+
+    const { rawToCoreTransformLambda } = this.setupRawToCoreTransformLambda({
+      config: props.config,
+      envType: props.config.environmentType,
+      awsRegion: props.config.region,
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      sentryDsn: props.config.sentryDSN,
+      alarmAction: props.alarmAction,
+      dbCluster,
+    });
+    this.rawToCoreTransformLambda = rawToCoreTransformLambda;
   }
 
   getAssets(): AnalyticsPlatformsAssets {
@@ -268,6 +291,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       fhirToCsvIncrementalQueue: this.fhirToCsvIncrementalQueue,
       mergeCsvsLambda: this.mergeCsvsLambda,
       mergeCsvsQueue: this.mergeCsvsQueue,
+      rawToCoreTransformLambda: this.rawToCoreTransformLambda,
       analyticsPlatformBucket: this.analyticsPlatformBucket,
     };
   }
@@ -628,5 +652,53 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     ownProps.bucket.grantReadWrite(mergeCsvsLambda);
 
     return { mergeCsvsLambda, queue };
+  }
+
+  private setupRawToCoreTransformLambda(ownProps: {
+    config: EnvConfigNonSandbox;
+    envType: EnvType;
+    awsRegion: string;
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+    dbCluster: rds.DatabaseCluster;
+  }): {
+    rawToCoreTransformLambda: lambda.DockerImageFunction;
+  } {
+    const { lambda: rawToCoreTransformLambdaSettings, name: rawToCoreTransformLambdaName } =
+      settings(ownProps.envType).rawToCoreTransform;
+    // TODO Try to make this lambda to read from and write to SQS, then we don't need the FhirToCsv one
+    const rawToCoreTransformLambda = new lambda.DockerImageFunction(
+      this,
+      "RawToCoreTransformLambda",
+      {
+        functionName: rawToCoreTransformLambdaName,
+        vpc: ownProps.vpc,
+        code: lambda.DockerImageCode.fromImageAsset("../data-transformation/fhir-to-csv", {
+          file: "Dockerfile.lambda",
+        }),
+        timeout: rawToCoreTransformLambdaSettings.timeout,
+        memorySize: rawToCoreTransformLambdaSettings.memory,
+        ephemeralStorageSize: rawToCoreTransformLambdaSettings.ephemeralStorageSize,
+        environment: {
+          DBT_PG_HOST: ownProps.dbCluster.clusterEndpoint.hostname,
+          DBT_PG_PORT: ownProps.dbCluster.clusterEndpoint.port.toString(),
+          DBT_PG_USER: ownProps.config.analyticsPlatform.rds.fhirToCsvDbUsername,
+          DBT_PG_SCHEMA: "PUBLIC",
+        },
+      }
+    );
+
+    addErrorAlarmToLambdaFunc(
+      this,
+      rawToCoreTransformLambda,
+      `${rawToCoreTransformLambda}-GeneralLambdaAlarm`,
+      ownProps.alarmAction
+    );
+
+    ownProps.dbCluster.connections.allowDefaultPortFrom(rawToCoreTransformLambda);
+
+    return { rawToCoreTransformLambda };
   }
 }
