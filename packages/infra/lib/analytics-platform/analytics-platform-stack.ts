@@ -668,14 +668,14 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
   } {
     const { lambda: rawToCoreTransformLambdaSettings, name: rawToCoreTransformLambdaName } =
       settings(ownProps.envType).rawToCoreTransform;
-    // TODO Try to make this lambda to read from and write to SQS, then we don't need the FhirToCsv one
+
     const rawToCoreTransformLambda = new lambda.DockerImageFunction(
       this,
       "RawToCoreTransformLambda",
       {
         functionName: rawToCoreTransformLambdaName,
         vpc: ownProps.vpc,
-        code: lambda.DockerImageCode.fromImageAsset("../data-transformation/fhir-to-csv", {
+        code: lambda.DockerImageCode.fromImageAsset("../data-transformation/raw-to-core", {
           file: "Dockerfile.lambda",
         }),
         timeout: rawToCoreTransformLambdaSettings.timeout,
