@@ -88,7 +88,7 @@ def handler(event: dict, context: dict):
     patient_id = event.get("PATIENT_ID") or os.getenv("PATIENT_ID")
     input_bucket = event.get("INPUT_S3_BUCKET") or os.getenv("INPUT_S3_BUCKET")
     output_bucket = event.get("OUTPUT_S3_BUCKET") or os.getenv("OUTPUT_S3_BUCKET")
-    # Will append '/<cx_id>_<patient_id>_<table_name>.csv' to output_file_prefix
+    # Will append '/<table_name>.csv' to output_file_prefix
     output_file_prefix = event.get("OUTPUT_PREFIX") or os.getenv("OUTPUT_PREFIX")
     if not cx_id:
         raise ValueError("CX_ID is not set") 

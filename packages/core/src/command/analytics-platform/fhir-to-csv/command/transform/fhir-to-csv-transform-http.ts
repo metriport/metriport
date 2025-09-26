@@ -19,6 +19,7 @@ export class FhirToCsvTransformHttp implements FhirToCsvTransformHandler {
     cxId,
     patientId,
     outputPrefix,
+    timeoutInMillis,
   }: StartFhirToCsvTransformRequest): Promise<void> {
     const { log } = out(`FhirToCsvTransformHttp - cx ${cxId} pt ${patientId}`);
 
@@ -37,6 +38,7 @@ export class FhirToCsvTransformHttp implements FhirToCsvTransformHandler {
     await executeWithNetworkRetries(async () => {
       const response = await axios.post(`${this.httpEndpoint}/transform`, payload, {
         headers: { "Content-Type": "application/json" },
+        ...(timeoutInMillis !== undefined ? { timeout: timeoutInMillis } : {}),
       });
       if (response.status !== 200) {
         throw new MetriportError(`HTTP request failed with status ${response.status}`, undefined, {
