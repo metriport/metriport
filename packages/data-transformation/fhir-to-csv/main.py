@@ -112,7 +112,7 @@ def handler(event: dict, context: dict):
 
     if len(output_bucket_and_file_keys_and_table_names) < 1:
         print("No files were uploaded")
-        exit(0)
+        return {"message": "No files were uploaded"}
 
     print(f">>> Done processing {cx_id}, patient_id {patient_id}")
 
