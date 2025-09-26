@@ -55,14 +55,14 @@ DG1|3|I10|I10.9^Essential (primary) hypertension^I10|Essential (primary) hyperte
 DG1|4|I10|E78.5^Dyslipidemia^I10|Dyslipidemia
 DG1|5|I10|E03.9^Hypothyroidism, unspecified^I10|Hypothyroidism, unspecified
 `;
-//ZIT|hieName|timezone| uncomment this if you want to "impersonate" a specific HIE
-//ZFA|1|something|something|123 Main Street^Unit 1^Boston^MA^02108^USA Uncomment if you want to test sending a Bamboo specific message.
+//ZIT|hieName|timezone put this in the message if you want to "impersonate" a specific HIE
+//ZFA|1|something|something|123 Main Street^Unit 1^Boston^MA^02108^USA put this in the message if you want to test sending a Bamboo specific message.
 
 async function sendAdtToMllpServer() {
   const hl7Message = Hl7Message.parse(msg);
 
   const client = new Hl7Client({
-    host: "localhost",
+    host: "127.0.0.1",
     port: 2575,
   });
 
