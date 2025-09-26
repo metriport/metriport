@@ -59,6 +59,7 @@ export const ehrCxMappingSecondaryMappingsSchemaMapGeneral: {
   ...ehrCxMappingSecondaryMappingsSchemaMap,
   [EhrSources.eclinicalworks]: undefined,
   [EhrSources.salesforce]: undefined,
+  [EhrSources.epic]: undefined,
 };
 
 export type EhrPatientMappingSecondaryMappings =
@@ -74,4 +75,5 @@ export const ehrPatientMappingSecondaryMappingsSchemaMap: {
   [EhrSources.healthie]: patientMappingSecondaryMappingsSchema,
   [EhrSources.eclinicalworks]: patientMappingSecondaryMappingsSchema,
   [EhrSources.salesforce]: patientMappingSecondaryMappingsSchema,
+  [EhrSources.epic]: patientMappingSecondaryMappingsSchema,
 };

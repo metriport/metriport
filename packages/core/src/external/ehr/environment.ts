@@ -6,6 +6,7 @@ import { EClinicalWorksEnv } from "./eclinicalworks";
 import ElationApi, { ElationEnv } from "./elation";
 import { HealthieEnv } from "./healthie";
 import { SalesforceEnv } from "./salesforce";
+import { EpicEnv } from "./epic";
 
 export type EhrEnv =
   | AthenaEnv
@@ -13,7 +14,8 @@ export type EhrEnv =
   | CanvasEnv
   | HealthieEnv
   | EClinicalWorksEnv
-  | SalesforceEnv;
+  | SalesforceEnv
+  | EpicEnv;
 
 const ehrSourcesWithClientCredentials = [
   EhrSources.canvas,

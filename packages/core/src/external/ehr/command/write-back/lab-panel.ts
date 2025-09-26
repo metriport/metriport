@@ -34,6 +34,7 @@ const ehrWriteBackLabPanelMap: WriteBackLabPanelFnMap = {
   [EhrSources.healthie]: undefined,
   [EhrSources.eclinicalworks]: undefined,
   [EhrSources.salesforce]: undefined,
+  [EhrSources.epic]: undefined,
 };
 
 function getEhrWriteBackLabPanelHandler(ehr: EhrSource): WriteBackLabPanelFn {

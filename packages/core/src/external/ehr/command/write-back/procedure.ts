@@ -33,6 +33,7 @@ const ehrWriteBackProcedureMap: WriteBackProcedureFnMap = {
   [EhrSources.healthie]: undefined,
   [EhrSources.eclinicalworks]: undefined,
   [EhrSources.salesforce]: undefined,
+  [EhrSources.epic]: undefined,
 };
 
 function getEhrWriteBackProcedureHandler(ehr: EhrSource): WriteBackProcedureFn {
