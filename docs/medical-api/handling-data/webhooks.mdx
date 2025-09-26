@@ -135,6 +135,7 @@ These are messages you can expect to receive in the following scenarios:
 {
   "meta": {
     "messageId": "<message-id>",
+    "requestId": "<request-id>",
     "when": "<date-time-in-utc>",
     "type": "medical.document-download"
     "data": {
@@ -276,6 +277,7 @@ Example payload:
 {
   "meta": {
     "messageId": "1e82424a-1220-473d-a0d1-6e5fde15159e",
+    "requestId": "00000000-0000-0000-0000-000000000000",
     "when": "2023-08-23T22:09:11.373Z",
     "type": "medical.consolidated-data"
   },
@@ -411,7 +413,8 @@ Example payload:
 ```json
 {
   "meta": {
-    "messageId": "00000000-00000000-00000000-00000000",
+    "messageId": "1e82424a-1220-473d-a0d1-6e5fde15159e",
+    "requestId": "00000000-0000-0000-0000-000000000000",
     "when": "2024-12-30T05:05:12.215Z",
     "type": "medical.bulk-patient-create"
   },
@@ -510,6 +513,7 @@ Here is an example payload:
 {
 "meta": {
     "messageId": "bd4184dd-3b35-4c60-8130-447d1d528fea",
+    "requestId": "00000000-0000-0000-0000-000000000000",
     "when": "2023-11-30T05:05:12.215Z",
     "type": "medical.document-bulk-download-urls"
   },
