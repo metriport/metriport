@@ -118,22 +118,15 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     const encounterId = createEncounterId(message, patientId);
 
     const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
-    if (!isSupportedTriggerEvent(triggerEvent)) {
-      log(`Trigger event ${triggerEvent} is not supported. Skipping...`);
-      return;
-    }
-    const timestamp = basicToExtendedIso8601(getOrCreateMessageDatetime(message));
 
-    const encounterPeriod = getEncounterPeriod(message);
-    const encounterClass = getEncounterClass(message);
-    const facilityName = getFacilityName(message);
+    const timestamp = basicToExtendedIso8601(getOrCreateMessageDatetime(message));
 
     const rawDataFileKey = createIncomingMessageFileKey({
       cxId,
       patientId,
       timestamp,
       messageId: getMessageUniqueIdentifier(message),
-      messageCode,
+      messageCode: messageCode,
       triggerEvent,
     });
 
@@ -144,6 +137,15 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       file: Buffer.from(asString(message)),
       contentType: "text/plain",
     });
+
+    if (!isSupportedTriggerEvent(triggerEvent)) {
+      log(`Trigger event ${triggerEvent} is not supported. Skipping...`);
+      return;
+    }
+
+    const encounterPeriod = getEncounterPeriod(message);
+    const encounterClass = getEncounterClass(message);
+    const facilityName = getFacilityName(message);
 
     analytics({
       distinctId: cxId,
