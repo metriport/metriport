@@ -62,6 +62,7 @@ import { NetworkLink } from "./types";
 dayjs.extend(duration);
 
 const waitTimeAfterRegisterPatientAndBeforeGetLinks = dayjs.duration(15, "seconds");
+const waitTimeBetweenExistingAndProbableLinks = dayjs.duration(1, "seconds");
 const MAX_ATTEMPTS_PATIENT_LINKING = 3;
 
 const createContext = "cw.patient.create";
@@ -645,38 +646,86 @@ async function runPatientLinkingWithRetries({
     log(`Attempt ${attempt}/${MAX_ATTEMPTS_PATIENT_LINKING} - waiting ${waitTime}ms...`);
     await sleep(waitTime);
 
-    const existingLinks = await getExistingLinks({
-      commonWell,
-      commonwellPatientId,
-    });
-    const existingLinksCount = existingLinks?.Patients?.length ?? 0;
+    try {
+      const existingLinks = await getExistingLinks({
+        commonWell,
+        commonwellPatientId,
+      });
+      const existingLinksCount = existingLinks?.Patients?.length ?? 0;
 
-    const probableLinks = await getProbableLinks({
-      commonWell,
-      commonwellPatientId,
-    });
-    const probableLinksCount = probableLinks?.Patients?.length ?? 0;
+      // An extra sleep prior to getting probable links to allow more processing time on the CW side.
+      await sleep(waitTimeBetweenExistingAndProbableLinks.asMilliseconds());
 
-    log(
-      `Found ${existingLinksCount} existing links, and ${probableLinksCount} probable links on attempt ${attempt}`
-    );
+      let probableLinks: PatientProbableLinks = { Patients: [] };
+      let probableLinksCount = undefined;
 
-    const result = await tryToImproveLinks({
-      commonWell,
-      patient,
-      commonwellPatientId,
-      existingLinks,
-      probableLinks,
-      context,
-      getOrgIdExcludeList,
-    });
+      try {
+        probableLinks = await getProbableLinks({
+          commonWell,
+          commonwellPatientId,
+        });
+        probableLinksCount = probableLinks?.Patients?.length;
+      } catch (probableLinksError) {
+        // Don't fail the entire flow if probable links fail - just log and continue with empty probable links
+        const cwRef = commonWell.lastTransactionId;
+        log(
+          `Failed to get probable links on attempt ${attempt}, continuing with empty probable links. ` +
+            `Patient ID: ${patient.id}. Cause: ${errorToString(
+              probableLinksError
+            )}. CW Reference: ${cwRef}`
+        );
+      }
 
-    validLinks = result.validLinks;
-    invalidLinks = result.invalidLinks;
+      log(
+        `Found ${existingLinksCount} existing links, and ${probableLinksCount} probable links on attempt ${attempt}`
+      );
 
-    if (probableLinksCount < 1) {
-      log(`No probable links found, stopping retry loop after attempt ${attempt}`);
-      break;
+      const result = await tryToImproveLinks({
+        commonWell,
+        patient,
+        commonwellPatientId,
+        existingLinks,
+        probableLinks,
+        context,
+        getOrgIdExcludeList,
+      });
+
+      validLinks = result.validLinks;
+      invalidLinks = result.invalidLinks;
+
+      if (probableLinksCount && probableLinksCount < 1) {
+        log(`No probable links found, stopping retry loop after attempt ${attempt}`);
+        break;
+      }
+    } catch (error) {
+      const cwRef = commonWell.lastTransactionId;
+      const msg = `Error in patient linking attempt ${attempt}/${MAX_ATTEMPTS_PATIENT_LINKING}`;
+      log(
+        `${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`
+      );
+
+      // If this is the last attempt, report the error and re-throw
+      if (attempt >= MAX_ATTEMPTS_PATIENT_LINKING) {
+        log(`Reached maximum retry attempts (${MAX_ATTEMPTS_PATIENT_LINKING}), re-throwing error`);
+
+        capture.error(msg, {
+          extra: {
+            cxId: patient.cxId,
+            patientId: patient.id,
+            commonwellPatientId,
+            attempt,
+            maxAttempts: MAX_ATTEMPTS_PATIENT_LINKING,
+            cwReference: cwRef,
+            context: `cw.runPatientLinkingWithRetries`,
+            error: errorToString(error),
+          },
+        });
+
+        throw error;
+      }
+
+      log(`Retrying linking after errors on attempt ${attempt}`);
+      continue;
     }
   }
 
