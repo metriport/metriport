@@ -168,18 +168,26 @@ export async function runPatientLinkingWithRetries({
       `Found ${existingLinksCount} existing links, and ${probableLinksCount} probable links on attempt ${attempt}`
     );
 
-    const result = await tryToImproveLinks({
-      commonWell,
-      patient,
-      commonwellPatientId,
-      existingLinks,
-      probableLinks,
-      context,
-      getOrgIdExcludeList,
-    });
+    // Only process links if we have data from at least one successful fetch
+    const hasExistingLinks = existingLinksCount > 0;
+    const hasProbableLinks = probableLinksCount > 0;
 
-    validLinks = result.validLinks;
-    invalidLinks = result.invalidLinks;
+    if (hasExistingLinks || hasProbableLinks) {
+      const result = await tryToImproveLinks({
+        commonWell,
+        patient,
+        commonwellPatientId,
+        existingLinks,
+        probableLinks,
+        context,
+        getOrgIdExcludeList,
+      });
+
+      validLinks = result.validLinks;
+      invalidLinks = result.invalidLinks;
+    } else {
+      log(`No links found on attempt ${attempt}, preserving previous results`);
+    }
 
     if (isProbableLinksSuccessful && probableLinksCount < 1) {
       log(`No probable links found, stopping retry loop after attempt ${attempt}`);
