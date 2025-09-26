@@ -1,13 +1,13 @@
+import { OutboundDocumentQueryReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { XMLBuilder } from "fast-xml-parser";
+import { wrapIdInUrnUuid } from "../../../../../../util/urn";
+import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
+import { expiresIn, namespaces } from "../../../constants";
+import { doesGatewayUseSha1, getHomeCommunityId } from "../../../gateways";
 import { createSecurityHeader } from "../../../saml/security/security-header";
 import { signFullSaml } from "../../../saml/security/sign";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
-import { namespaces, expiresIn } from "../../../constants";
-import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
-import { OutboundDocumentQueryReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
-import { wrapIdInUrnUuid } from "../../../../../../util/urn";
-import { getHomeCommunityId, doesGatewayUseSha1 } from "../../../gateways";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
 const findDocumentId = "14d4debf-8f97-4251-9a74-a90016b0af0d";
@@ -171,7 +171,7 @@ export function createITI38SoapEnvelope({
   const subjectRole = bodyData.samlAttributes.subjectRole.display;
   const homeCommunityId = getHomeCommunityId(bodyData.gateway, bodyData.samlAttributes);
   const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
-
+  const queryGrantorOid = bodyData.samlAttributes.queryGrantorOid;
   const createdTimestamp = dayjs().toISOString();
   const expiresTimestamp = dayjs(createdTimestamp).add(expiresIn, "minute").toISOString();
 
@@ -184,6 +184,7 @@ export function createITI38SoapEnvelope({
     metriportOrganization,
     homeCommunityId,
     purposeOfUse,
+    queryGrantorOid,
   });
 
   const soapBody = createSoapBody(bodyData);
@@ -233,7 +234,10 @@ export function createAndSignDQRequest(
   bodyData: OutboundDocumentQueryReq,
   samlCertsAndKeys: SamlCertsAndKeys
 ): string {
-  const xmlString = createITI38SoapEnvelope({ bodyData, publicCert: samlCertsAndKeys.publicCert });
+  const xmlString = createITI38SoapEnvelope({
+    bodyData,
+    publicCert: samlCertsAndKeys.publicCert,
+  });
   const useSha1 = doesGatewayUseSha1(bodyData.gateway.homeCommunityId);
   const fullySignedSaml = signFullSaml({ xmlString, samlCertsAndKeys, useSha1 });
   return fullySignedSaml;

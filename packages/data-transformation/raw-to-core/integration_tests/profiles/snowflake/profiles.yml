@@ -1,0 +1,13 @@
+default:
+  outputs:
+    dev:
+      account: "{{ env_var('DBT_TUVA_SNOWFLAKE_ACCOUNT') }}"
+      database: "{{ env_var('DBT_TUVA_CI_DATABASE') }}"
+      password: "{{ env_var('DBT_SNOWFLAKE_CI_PASSWORD') }}"
+      role: "{{ env_var('DBT_SNOWFLAKE_CI_ROLE') }}"
+      schema: "{{ env_var('DBT_SNOWFLAKE_CI_SCHEMA') }}"
+      threads: 5
+      type: snowflake
+      user: "{{ env_var('DBT_SNOWFLAKE_CI_USER') }}"
+      warehouse: "{{ env_var('DBT_SNOWFLAKE_CI_WAREHOUSE') }}"
+  target: dev

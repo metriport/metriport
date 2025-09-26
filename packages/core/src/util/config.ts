@@ -1,6 +1,6 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
-import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
+import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
 
 /**
  * Shared configs, still defining how to work with this. For now:
@@ -50,6 +50,10 @@ export class Config {
 
   static getAWSRegion(): string {
     return getEnvVarOrFail("AWS_REGION");
+  }
+
+  static getGeneralBucketName(): string {
+    return getEnvVarOrFail("GENERAL_BUCKET_NAME");
   }
 
   static getSearchEndpoint(): string {
@@ -372,6 +376,10 @@ export class Config {
     return getEnvVar("EHR_ECLINICALWORKS_ENVIRONMENT");
   }
 
+  static getSalesforceEnv(): string | undefined {
+    return getEnvVar("EHR_SALESFORCE_ENVIRONMENT");
+  }
+
   static getRunPatientJobQueueUrl(): string {
     return getEnvVarOrFail("RUN_PATIENT_JOB_QUEUE_URL");
   }
@@ -400,6 +408,50 @@ export class Config {
 
   static getRosterUploadSftpPasswordArn(): string {
     return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_ARN`);
+  }
+
+  static getLahieIngestionLambdaName(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_LAMBDA_NAME");
+  }
+
+  static getLahieIngestionRemotePath(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_REMOTE_PATH");
+  }
+
+  static getLahieConfig(): Record<string, unknown> {
+    return getEnvVarAsRecordOrFail("LAHIE_CONFIG");
+  }
+
+  static getLahieIngestionHost(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_HOST");
+  }
+
+  static getLahieIngestionUsername(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_USERNAME");
+  }
+
+  static getLahieIngestionPort(): number {
+    const port = Number.parseInt(getEnvVarOrFail("LAHIE_INGESTION_PORT"));
+    if (isFinite(port)) {
+      return port;
+    }
+    throw new Error("Lahie ingestion port is not a valid number");
+  }
+
+  static getLahieIngestionPasswordArn(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_PASSWORD_ARN");
+  }
+
+  static getLahieIngestionBucket(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_BUCKET_NAME");
+  }
+
+  static getLahieIngestionPrivateKeyArn(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_PRIVATE_KEY_ARN");
+  }
+
+  static getLahieIngestionPrivateKeyPassphraseArn(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_PRIVATE_KEY_PASSPHRASE_ARN");
   }
 
   static getInternalServerUrl(): string {

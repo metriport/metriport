@@ -1,3 +1,4 @@
+import { isDebugFeatureFlagEnabled } from "@metriport/core/command/feature-flags/domain-ffs";
 import { NotFoundError } from "@metriport/shared";
 import Router from "express-promise-router";
 import { requestLogger } from "../../../routes/helpers/request-logger";
@@ -25,10 +26,13 @@ const fhirRouter = Router();
 fhirRouter.get(
   "/DocumentReference",
   requestLogger,
-  asyncHandler(async (req, res) => {
-    const bundle = await processRequest(req);
-    return res.status(200).json(bundle);
-  })
+  asyncHandler(
+    async (req, res) => {
+      const bundle = await processRequest(req);
+      return res.status(200).json(bundle);
+    },
+    async () => isDebugFeatureFlagEnabled()
+  )
 );
 fhirRouter.all(
   "/*",

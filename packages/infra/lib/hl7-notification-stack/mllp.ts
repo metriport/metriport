@@ -2,8 +2,8 @@
 import * as cdk from "aws-cdk-lib";
 import { Duration } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import { Repository } from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
+import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as elbv2 from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as logs from "aws-cdk-lib/aws-logs";
@@ -11,15 +11,15 @@ import { LogGroup } from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
+import { createHieConfigDictionary } from "../shared/hie-config-dictionary";
 import { buildSecrets, secretsToECS } from "../shared/secrets";
 import { MLLP_DEFAULT_PORT } from "./constants";
-import { createHieConfigDictionary } from "../shared/hie-config-dictionary";
 
 interface MllpStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
   version: string | undefined;
   vpc: ec2.Vpc;
-  ecrRepo: Repository;
+  ecrRepo: ecr.IRepository;
   incomingHl7NotificationBucket: s3.IBucket;
 }
 

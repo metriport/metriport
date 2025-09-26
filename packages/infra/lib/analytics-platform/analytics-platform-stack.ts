@@ -100,6 +100,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
   readonly fhirToCsvQueue: Queue;
   readonly mergeCsvsLambda: lambda.DockerImageFunction;
   readonly mergeCsvsQueue: Queue;
+  readonly analyticsPlatformBucket: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: AnalyticsPlatformsNestedStackProps) {
     super(scope, id, props);
@@ -118,7 +119,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       encryption: s3.BucketEncryption.S3_MANAGED,
       versioned: true,
     });
-
+    this.analyticsPlatformBucket = analyticsPlatformBucket;
     // Snowflake access via S3 Integration https://docs.snowflake.com/en/user-guide/data-load-s3-config-storage-integration
     const snowflakePrefix = "snowflake";
     const s3Policy = new iam.Policy(this, "SnowflakeAnalyticsPlatformS3Policy", {
@@ -190,6 +191,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       fhirToCsvQueue: this.fhirToCsvQueue,
       mergeCsvsLambda: this.mergeCsvsLambda,
       mergeCsvsQueue: this.mergeCsvsQueue,
+      analyticsPlatformBucket: this.analyticsPlatformBucket,
     };
   }
 
@@ -273,9 +275,10 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         // API_URL set on the api-stack after the OSS API is created
         WAIT_TIME_IN_MILLIS: waitTime.toMilliseconds().toString(),
         FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME: fhirToCsvTransformLambda.functionName,
+        MEDICAL_DOCUMENTS_BUCKET_NAME: ownProps.medicalDocumentsBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      layers: [lambdaLayers.shared],
+      layers: [lambdaLayers.shared, lambdaLayers.langchain],
       vpc,
       alarmSnsAction: alarmAction,
     });
@@ -283,6 +286,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     fhirToCsvLambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
     fhirToCsvTransformLambda.grantInvoke(fhirToCsvLambda);
     ownProps.medicalDocumentsBucket.grantRead(fhirToCsvTransformLambda);
+    ownProps.medicalDocumentsBucket.grantRead(fhirToCsvLambda);
 
     return { fhirToCsvLambda, queue };
   }

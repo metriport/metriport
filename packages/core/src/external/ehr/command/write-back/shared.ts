@@ -2,24 +2,30 @@ import { Resource } from "@medplum/fhirtypes";
 import { BadRequestError, JwtTokenInfo } from "@metriport/shared";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import {
+  isAllergyIntolerance,
   isCondition,
   isDiagnosticReport,
   isMedication,
   isMedicationStatement,
   isObservation,
+  isProcedure,
 } from "../../../fhir/shared";
+import { writeBackAllergy } from "./allergy";
 import { writeBackCondition } from "./condition";
 import { EhrGroupedVitals, isEhrGroupedVitals, writeBackGroupedVitals } from "./grouped-vitals";
 import { writeBackLab } from "./lab";
 import { writeBackLabPanel } from "./lab-panel";
 import { writeBackMedicationStatement } from "./medication-statement";
+import { writeBackProcedure } from "./procedure";
 
 export type WriteBackResourceType =
   | "condition"
   | "lab"
   | "lab-panel"
   | "grouped-vitals"
-  | "medication-statement";
+  | "medication-statement"
+  | "procedure"
+  | "allergy";
 
 export type WriteBackResourceRequest = {
   ehr: EhrSource;
@@ -159,6 +165,36 @@ export async function writeBackResource({ ...params }: WriteBackResourceRequest)
       ...params,
       statements: [params.primaryResourceOrResources],
       medication,
+    });
+  } else if (params.writeBackResource === "procedure") {
+    if (!isProcedure(params.primaryResourceOrResources)) {
+      throw new BadRequestError(
+        "Procedure write back requires primary resource to be a procedure",
+        undefined,
+        {
+          ehr: params.ehr,
+          writeBackResource: params.writeBackResource,
+        }
+      );
+    }
+    return await writeBackProcedure({
+      ...params,
+      procedure: params.primaryResourceOrResources,
+    });
+  } else if (params.writeBackResource === "allergy") {
+    if (!isAllergyIntolerance(params.primaryResourceOrResources)) {
+      throw new BadRequestError(
+        "Allergy write back requires primary resource to be an allergy intolerance",
+        undefined,
+        {
+          ehr: params.ehr,
+          writeBackResource: params.writeBackResource,
+        }
+      );
+    }
+    return await writeBackAllergy({
+      ...params,
+      allergyIntolerance: params.primaryResourceOrResources,
     });
   }
   throw new BadRequestError("Could not find handler to write back resource", undefined, {

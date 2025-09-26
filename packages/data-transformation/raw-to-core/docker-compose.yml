@@ -1,0 +1,19 @@
+version: "3.8"
+
+name: raw-to-core
+services:
+  raw-to-core:
+    container_name: raw-to-core
+    build:
+      dockerfile: ./Dockerfile.dev
+    volumes:
+      - .:/usr/app/data
+    environment:
+      DBT_PROFILES_DIR: /usr/app/dbt/profiles/snowflake
+      DBT_TUVA_SNOWFLAKE_ACCOUNT: ${DBT_TUVA_SNOWFLAKE_ACCOUNT}
+      DBT_TUVA_CI_DATABASE: ${DBT_TUVA_CI_DATABASE}
+      DBT_SNOWFLAKE_CI_PASSWORD: ${DBT_SNOWFLAKE_CI_PASSWORD}
+      DBT_SNOWFLAKE_CI_ROLE: ${DBT_SNOWFLAKE_CI_ROLE}
+      DBT_SNOWFLAKE_CI_SCHEMA: ${DBT_SNOWFLAKE_CI_SCHEMA}
+      DBT_SNOWFLAKE_CI_USER: ${DBT_SNOWFLAKE_CI_USER}
+      DBT_SNOWFLAKE_CI_WAREHOUSE: ${DBT_SNOWFLAKE_CI_WAREHOUSE}

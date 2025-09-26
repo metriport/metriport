@@ -60,8 +60,8 @@ export const handler = capture.wrapHandler(async (event: APIGatewayProxyEventV2)
 
       return buildResponse(200, xmlResponse);
     } catch (error) {
-      log(`Client error on ${lambdaName}: ${errorToString(error)}`);
-      return buildResponse(400, errorToString(error));
+      log(`Client error on ${lambdaName}: ${errorToString(error, { detailed: true })}`);
+      return buildResponse(400, errorToString(error, { detailed: true }));
     }
   } catch (error) {
     const msg = "Server error processing event on " + lambdaName;
