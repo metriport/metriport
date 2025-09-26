@@ -1,20 +1,24 @@
 import { Resource } from "@medplum/fhirtypes";
 import { errorToString, sleep } from "@metriport/shared";
 import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
-//import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
+import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getConsolidatedFile } from "../../../../../../../command/consolidated/consolidated-get";
 import { setJobEntryStatus } from "../../../../../../../command/job/patient/api/set-entry-status";
 import { computeResourcesXorAlongResourceType } from "../../../../../../../fhir-deduplication/compute-resources-xor";
 import { deduplicateResources } from "../../../../../../../fhir-deduplication/dedup-resources";
 import { out } from "../../../../../../../util/log";
-//import { getSecondaryMappings } from "../../../../../api/get-secondary-mappings";
+import { getSecondaryMappings } from "../../../../../api/get-secondary-mappings";
 import { startContributeBundlesJob } from "../../../../../api/job/start-contribute-bundles-job";
-//import { startWriteBackBundlesJob } from "../../../../../api/job/start-write-back-bundles-job";
+import { startWriteBackBundlesJob } from "../../../../../api/job/start-write-back-bundles-job";
 import { BundleType } from "../../../../../bundle/bundle-shared";
 import { createOrReplaceBundle } from "../../../../../bundle/command/create-or-replace-bundle";
 import { fetchBundle, FetchBundleParams } from "../../../../../bundle/command/fetch-bundle";
-//import { ehrCxMappingSecondaryMappingsSchemaMap } from "../../../../../mappings";
-//import { isSupportedWriteBackResourceType } from "../../../write-back-bundles/ehr-write-back-resource-diff-bundles-direct";
+import { isEhrSourceWithWriteBack } from "../../../../../command/write-back/shared";
+import {
+  ehrCxMappingSecondaryMappingsSchemaMap,
+  isEhrSourceWithSecondaryMappings,
+} from "../../../../../mappings";
+import { isSupportedWriteBackResourceType } from "../../../write-back-bundles/ehr-write-back-resource-diff-bundles-direct";
 import {
   ComputeResourceDiffBundlesRequest,
   EhrComputeResourceDiffBundlesHandler,
@@ -139,7 +143,6 @@ export class EhrComputeResourceDiffBundlesDirect implements EhrComputeResourceDi
           resourceType,
           createResourceDiffBundlesJobId: jobId,
         }),
-        /* TODO: Re-enable this when we're ready to have it on for all patients
         ...((await shouldWriteBack({ ehr, practiceId, resourceType }))
           ? [
               startWriteBackBundlesJob({
@@ -152,7 +155,6 @@ export class EhrComputeResourceDiffBundlesDirect implements EhrComputeResourceDi
               }),
             ]
           : []),
-        */
       ]);
     } catch (error) {
       if (reportError) {
@@ -210,7 +212,6 @@ async function getEhrResourcesFromS3({
   });
 }
 
-/* TODO: Re-enable this when we're ready to have it on for all patients
 async function shouldWriteBack({
   ehr,
   practiceId,
@@ -221,6 +222,10 @@ async function shouldWriteBack({
   resourceType: string;
 }): Promise<boolean> {
   if (!isSupportedWriteBackResourceType(resourceType)) return false;
+  if (!isEhrSourceWithWriteBack(ehr)) return false;
+  /* TODO Remove once Elation is validated */
+  if (ehr !== EhrSources.athena) return false;
+  if (!isEhrSourceWithSecondaryMappings(ehr)) return false;
   const mappingsSchema = ehrCxMappingSecondaryMappingsSchemaMap[ehr];
   if (!mappingsSchema) return false;
   const secondaryMappings = await getSecondaryMappings({
@@ -228,8 +233,6 @@ async function shouldWriteBack({
     practiceId,
     schema: mappingsSchema,
   });
-  if (!secondaryMappings) return false;
-  if (!secondaryMappings.writeBackEnabled) return false;
+  if (!secondaryMappings || !secondaryMappings.writeBackEnabled) return false;
   return true;
 }
-*/

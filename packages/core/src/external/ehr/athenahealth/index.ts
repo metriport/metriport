@@ -1104,20 +1104,16 @@ class AthenaHealthApi {
     if (!reaction || reaction.length < 1) {
       throw new BadRequestError("No reactions found for allergy", undefined, additionalInfo);
     }
-    const codingsWithSeverityPairs: [Coding, Coding, string | undefined][] = reaction.flatMap(r => {
-      const substanceRxnormCoding = getAllergyIntoleranceSubstanceRxnormCoding(r);
-      if (!substanceRxnormCoding) return [];
-      const manifestationSnomedCoding = getAllergyIntoleranceManifestationSnomedCoding(r);
-      if (!manifestationSnomedCoding) return [];
-      return [[substanceRxnormCoding, manifestationSnomedCoding, r.severity]];
-    });
+    const codingsWithSeverityPairs: [Coding, Coding | undefined, string | undefined][] =
+      reaction.flatMap(r => {
+        const substanceRxnormCoding = getAllergyIntoleranceSubstanceRxnormCoding(r);
+        if (!substanceRxnormCoding) return [];
+        const manifestationSnomedCoding = getAllergyIntoleranceManifestationSnomedCoding(r);
+        return [[substanceRxnormCoding, manifestationSnomedCoding, r.severity]];
+      });
     const codingsWithSeverityPair = codingsWithSeverityPairs[0];
     if (!codingsWithSeverityPair) {
-      throw new BadRequestError(
-        "No RXNORM and SNOMED codes found for allergy reaction",
-        undefined,
-        additionalInfo
-      );
+      throw new BadRequestError("No RXNORM found for allergy reaction", undefined, additionalInfo);
     }
     const [substanceRxnormCoding, manifestationSnomedCoding, severity] = codingsWithSeverityPair;
     const allergenReference = await this.searchForAllergen({
@@ -1135,32 +1131,30 @@ class AthenaHealthApi {
       allergenId: allergenReference.allergenid,
     });
     const existingReactions = existingAllergy?.reactions ?? [];
-    const possibleReactions = await this.getCompleteAllergyReactions({ cxId });
-    const reactionReference = possibleReactions.find(
-      r => r.snomedcode === manifestationSnomedCoding.code
-    );
-    if (!reactionReference) {
-      throw new BadRequestError(
-        "No reaction reference found for allergy reaction manifestation",
-        undefined,
-        additionalInfo
+    if (manifestationSnomedCoding) {
+      const possibleReactions = await this.getCompleteAllergyReactions({ cxId });
+      const reactionReference = possibleReactions.find(
+        r => r.snomedcode === manifestationSnomedCoding.code
       );
+      if (reactionReference) {
+        const possibleSeverities = await this.getCompleteAllergySeverities({ cxId });
+        const severityReference = severity
+          ? possibleSeverities.find(s => s.severity.toLowerCase() === severity.toLowerCase())
+          : undefined;
+        const newReaction = {
+          reactionname: reactionReference.reactionname,
+          snomedcode: reactionReference.snomedcode,
+          ...(severityReference
+            ? {
+                severity: severityReference.severity,
+                severitysnomedcode: severityReference.snomedcode,
+              }
+            : {}),
+        };
+        existingReactions.push(newReaction);
+      }
     }
-    const possibleSeverities = await this.getCompleteAllergySeverities({ cxId });
-    const severityReference = severity
-      ? possibleSeverities.find(s => s.severity.toLowerCase() === severity.toLowerCase())
-      : undefined;
-    const newReaction = {
-      reactionname: reactionReference.reactionname,
-      snomedcode: reactionReference.snomedcode,
-      ...(severityReference
-        ? {
-            severity: severityReference.severity,
-            severitysnomedcode: severityReference.snomedcode,
-          }
-        : {}),
-    };
-    const allReactions = uniqBy([...existingReactions, newReaction], "snomedcode");
+    const allReactions = uniqBy([...existingReactions], "snomedcode");
     const onsetDate = getAllergyIntoleranceOnsetDate(allergyIntolerance);
     const formattedOnsetDate = this.formatDate(onsetDate);
     if (!formattedOnsetDate) {
@@ -1178,7 +1172,7 @@ class AthenaHealthApi {
             }
           : { criticality, onsetdate: formattedOnsetDate }),
         note: "Added via Metriport App",
-        reactions: allReactions,
+        reactions: allReactions.length < 1 ? undefined : allReactions,
       },
     ];
     const data = {
