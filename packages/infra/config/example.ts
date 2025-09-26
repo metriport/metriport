@@ -278,7 +278,6 @@ export const config: EnvConfigNonSandbox = {
         volumeWriteIops: 2_000,
       },
       fhirToCsvDbUsername: "my_db_user",
-      coreTransformerDbUsername: "my_db_user",
     },
   },
 };

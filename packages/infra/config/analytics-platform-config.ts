@@ -16,6 +16,5 @@ export interface AnalyticsPlatformConfig {
   };
   rds: RDSConfigExtended & {
     fhirToCsvDbUsername: string;
-    coreTransformerDbUsername: string;
   };
 }
