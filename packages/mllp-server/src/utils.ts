@@ -132,7 +132,9 @@ export function getHieConfig(
       });
     }
 
-    const impersonateTimezone = zitSegment.getField(CUSTOM_SEGMENT_TIMEZONE_INDEX).toString();
+    const timezone = zitSegment.getField(CUSTOM_SEGMENT_TIMEZONE_INDEX);
+    const impersonateTimezone = timezone ? timezone.toString() : undefined;
+
     console.log(
       `[mllp-server.getHieConfig] Impersonating HIE: ${hieName} ${
         impersonateTimezone ? `with timezone: ${impersonateTimezone}` : ""
