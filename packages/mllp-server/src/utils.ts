@@ -8,15 +8,15 @@ import { Config } from "@metriport/core/util/config";
 import { Logger } from "@metriport/core/util/log";
 import { unpackUuid } from "@metriport/core/util/pack-uuid";
 
-import { MetriportError } from "@metriport/shared";
-import * as Sentry from "@sentry/node";
-import { Hl7Message, Hl7Segment } from "@medplum/core";
-import IPCIDR from "ip-cidr";
-import { HieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
+import { Hl7Message } from "@medplum/core";
 import {
   fromBambooId,
   remapMessageReplacingPid3,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { HieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
+import { MetriportError } from "@metriport/shared";
+import * as Sentry from "@sentry/node";
+import IPCIDR from "ip-cidr";
 
 const CUSTOM_SEGMENT_NAME = "ZIT";
 const CUSTOM_SEGMENT_HIE_NAME_INDEX = 1;
@@ -131,37 +131,14 @@ export function getHieConfig(
         zitSegment: zitSegment.toString(),
       });
     }
-    const impersonateTimezone = getTimezoneFromCustomSegment(zitSegment, hieName, hieVpnConfigRows);
+
+    const impersonateTimezone = zitSegment.getField(CUSTOM_SEGMENT_TIMEZONE_INDEX).toString();
     console.log(
       `[mllp-server.getHieConfig] Impersonating HIE: ${hieName} with timezone: ${impersonateTimezone}`
     );
     return { hieName, impersonateTimezone };
   }
   return lookupHieTzEntryForIp(hieVpnConfigRows, ip);
-}
-
-function getTimezoneFromCustomSegment(
-  zitSegment: Hl7Segment,
-  hieName: string,
-  hieVpnConfigRows: HieVpnConfigRow[]
-): string {
-  const timezone = zitSegment.getField(CUSTOM_SEGMENT_TIMEZONE_INDEX).toString();
-  if (!timezone) {
-    const match = hieVpnConfigRows.find(({ hieName: configHieName }) => configHieName === hieName);
-    if (!match) {
-      throw new MetriportError(
-        "Impersonation request failed. HIE not found in config dictionary",
-        undefined,
-        {
-          context: "mllp-server.getHieConfig",
-          zitSegment: zitSegment.toString(),
-          hieVpnConfigRows: JSON.stringify(hieVpnConfigRows),
-        }
-      );
-    }
-    return match.timezone;
-  }
-  return timezone;
 }
 
 function isIpInRange(cidrBlock: string, ip: string): boolean {
