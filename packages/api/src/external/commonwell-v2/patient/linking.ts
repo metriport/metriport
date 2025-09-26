@@ -48,7 +48,7 @@ const PROBABLE_LINKS_RETRY_OPTIONS = {
   maxAttempts: 5,
   initialDelay: 1_000, // 1 second initial delay
   backoffMultiplier: 5, // exponential backoff
-  maxDelay: 30_000, // max 45 seconds delay
+  maxDelay: 30_000, // max 30 seconds delay
 };
 
 /**
@@ -306,11 +306,9 @@ async function autoUpgradeProbableLinks({
   executionContext: string;
   getOrgIdExcludeList: () => Promise<string[]>;
 }): Promise<void> {
-  const { log, debug } = out("CW.v2 autoUpgradeProbableLinks");
+  const { log } = out("CW.v2 autoUpgradeProbableLinks");
 
   const orgIdExcludeList = await getOrgIdExcludeList();
-  debug(`validLinks: `, () => JSON.stringify(validLinks));
-  debug(`invalidLinks: `, () => JSON.stringify(invalidLinks));
 
   const validProbableLinks = validLinks.filter(l => l.type === "probable");
   const validExistingLinks = validLinks.filter(l => l.type === "existing");
