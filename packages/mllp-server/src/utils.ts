@@ -98,7 +98,10 @@ export type HieVpnConfigRow = { hieName: string; cidrBlocks: string[]; timezone:
  * @param ip The IP address to lookup.
  * @returns The HIE config for the given IP address.
  */
-export function lookupHieTzEntryForIp(hieVpnConfigRows: HieVpnConfigRow[], ip: string) {
+export function lookupHieTzEntryForIp(
+  hieVpnConfigRows: HieVpnConfigRow[],
+  ip: string
+): { hieName: string } {
   const match = hieVpnConfigRows.find(({ cidrBlocks }) =>
     cidrBlocks.some(cidrBlock => isIpInRange(cidrBlock, ip))
   );
@@ -117,7 +120,7 @@ export function getHieConfig(
   hieConfigDictionary: HieConfigDictionary,
   ip: string,
   rawMessage: Hl7Message
-): { hieName: string; timezone?: string } {
+): { hieName: string; impersonateTimezone?: string } {
   const zitSegment = rawMessage.getSegment(CUSTOM_SEGMENT_NAME);
   const hieVpnConfigRows = Object.entries(hieConfigDictionary).flatMap(keepOnlyVpnConfigs);
   if (zitSegment) {
@@ -128,11 +131,11 @@ export function getHieConfig(
         zitSegment: zitSegment.toString(),
       });
     }
-    const timezone = getTimezoneFromCustomSegment(zitSegment, hieName, hieVpnConfigRows);
+    const impersonateTimezone = getTimezoneFromCustomSegment(zitSegment, hieName, hieVpnConfigRows);
     console.log(
-      `[mllp-server.getHieConfig] Impersonating HIE: ${hieName} with timezone: ${timezone}`
+      `[mllp-server.getHieConfig] Impersonating HIE: ${hieName} with timezone: ${impersonateTimezone}`
     );
-    return { hieName, timezone };
+    return { hieName, impersonateTimezone };
   }
   return lookupHieTzEntryForIp(hieVpnConfigRows, ip);
 }
