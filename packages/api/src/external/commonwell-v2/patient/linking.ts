@@ -37,7 +37,7 @@ const MAX_ATTEMPTS_PATIENT_LINKING = 3;
 
 // This would result in a total of 2 minutes.
 const EXISTING_LINKS_RETRY_OPTIONS = {
-  maxAttempts: 5,
+  maxAttempts: 6,
   initialDelay: 1_000, // 1 second initial delay
   backoffMultiplier: 5, // exponential backoff
   maxDelay: 45_000, // max 45 seconds delay
@@ -45,7 +45,7 @@ const EXISTING_LINKS_RETRY_OPTIONS = {
 
 // This would result in a total of 1 minute.
 const PROBABLE_LINKS_RETRY_OPTIONS = {
-  maxAttempts: 4,
+  maxAttempts: 5,
   initialDelay: 1_000, // 1 second initial delay
   backoffMultiplier: 5, // exponential backoff
   maxDelay: 30_000, // max 45 seconds delay
