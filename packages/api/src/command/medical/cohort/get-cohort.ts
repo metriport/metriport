@@ -1,4 +1,4 @@
-import { Cohort, CohortEntity } from "@metriport/core/domain/cohort";
+import { Cohort, CohortEntity } from "@metriport/shared/domain/cohort";
 import { NotFoundError } from "@metriport/shared";
 import { col, fn, Op, Transaction } from "sequelize";
 import { CohortModel } from "../../../models/medical/cohort";

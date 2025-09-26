@@ -2,7 +2,7 @@ import {
   cohortCreateSchema,
   CohortEntity,
   cohortUpdateSchema,
-} from "@metriport/core/domain/cohort";
+} from "@metriport/shared/domain/cohort";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";

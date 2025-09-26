@@ -1,4 +1,4 @@
-import { CohortSettings } from "@metriport/core/domain/cohort";
+import { CohortSettings } from "@metriport/shared/domain/cohort";
 import { mergeWith } from "lodash";
 import { getCohortsForPatient } from "../cohort/get-cohort";
 

@@ -1,4 +1,4 @@
-import { CohortEntity, CohortUpdate } from "@metriport/core/domain/cohort";
+import { CohortEntity, CohortUpdate } from "@metriport/shared/domain/cohort";
 import { out } from "@metriport/core/util";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
