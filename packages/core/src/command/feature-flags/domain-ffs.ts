@@ -325,6 +325,11 @@ export async function isCqDoaEnabled(): Promise<boolean> {
   return isFeatureFlagEnabled("cqDoaFeatureFlag");
 }
 
-export async function isNewSoapEnvelopeEnabled(): Promise<boolean> {
-  return isFeatureFlagEnabled("newSoapEnvelopeFeatureFlag");
+export async function getCxsWithNewSoapEnvelopeFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithNewSoapEnvelopeFeatureFlag");
+}
+
+export async function isNewSoapEnvelopeFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithNewSoapEnvelopeEnabled = await getCxsWithNewSoapEnvelopeFeatureFlag();
+  return cxIdsWithNewSoapEnvelopeEnabled.some(i => i === cxId);
 }

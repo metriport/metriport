@@ -16,7 +16,6 @@ export const booleanFFsSchema = z.object({
   carequalityFeatureFlag: ffBooleanSchema,
   cqDoaFeatureFlag: ffBooleanSchema,
   debugFeatureFlag: ffBooleanSchema,
-  newSoapEnvelopeFeatureFlag: ffBooleanSchema,
 });
 export type BooleanFeatureFlags = z.infer<typeof booleanFFsSchema>;
 
@@ -46,6 +45,7 @@ export const cxBasedFFsSchema = z.object({
   cxsWithDischargeSlackNotificationFeatureFlag: ffStringValuesSchema,
   cxsWithDischargeRequeryFeatureFlag: ffStringValuesSchema,
   cxsWithXmlRedownloadFeatureFlag: ffStringValuesSchema,
+  cxsWithNewSoapEnvelopeFeatureFlag: ffStringValuesSchema,
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 

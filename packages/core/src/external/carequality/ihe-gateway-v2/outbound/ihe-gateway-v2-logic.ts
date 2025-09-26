@@ -27,7 +27,7 @@ import { createAndSignBulkXCPDRequests, SignedXcpdRequest } from "./xcpd/create/
 import { isRetryable as isRetryableXcpd } from "./xcpd/process/error";
 import { processXCPDResponse } from "./xcpd/process/xcpd-response";
 import { sendSignedXcpdRequest } from "./xcpd/send/xcpd-requests";
-import { isNewSoapEnvelopeEnabled } from "../../../../command/feature-flags/domain-ffs";
+import { isNewSoapEnvelopeFeatureFlagEnabledForCx } from "../../../../command/feature-flags/domain-ffs";
 
 dayjs.extend(duration);
 
@@ -154,7 +154,7 @@ export async function createSignSendProcessXCPDRequest({
 }): Promise<void> {
   const log = getLog("createSignSendProcessXCPDRequest");
 
-  const isNewSoapEnabled = await isNewSoapEnvelopeEnabled();
+  const isNewSoapEnabled = await isNewSoapEnvelopeFeatureFlagEnabledForCx(cxId);
   const signedRequests = createAndSignBulkXCPDRequests(
     xcpdRequest,
     samlCertsAndKeys,
