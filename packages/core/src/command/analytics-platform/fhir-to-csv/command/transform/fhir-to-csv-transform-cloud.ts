@@ -39,7 +39,7 @@ export class FhirToCsvTransformCloud implements FhirToCsvTransformHandler {
     const command = new InvokeCommand({
       FunctionName: this.lambdaName,
       InvocationType: "RequestResponse",
-      Payload: new TextEncoder().encode(payloadAsString),
+      Payload: payloadAsString,
     });
     await executeWithNetworkRetries(async () => {
       const result = await lambdaClient.send(command);
