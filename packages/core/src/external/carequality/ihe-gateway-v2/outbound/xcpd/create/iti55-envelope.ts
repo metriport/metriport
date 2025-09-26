@@ -464,11 +464,11 @@ function createSoapBody({
 export function createITI5SoapEnvelope({
   bodyData,
   publicCert,
-  isNewSoapEnabled,
+  isNewSoapEnabled = false,
 }: {
   bodyData: OutboundPatientDiscoveryReq;
   publicCert: string;
-  isNewSoapEnabled: boolean;
+  isNewSoapEnabled?: boolean;
 }): string {
   const gateway = bodyData.gateways?.[0];
   if (!gateway) {
