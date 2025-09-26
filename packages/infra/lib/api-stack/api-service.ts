@@ -391,6 +391,7 @@ export function createAPIService({
             EHR_HEALTHIE_ENVIRONMENT: props.config.ehrIntegration.healthie.env,
             EHR_ECLINICALWORKS_ENVIRONMENT: props.config.ehrIntegration.eclinicalworks.env,
             EHR_SALESFORCE_ENVIRONMENT: props.config.ehrIntegration.salesforce.env,
+            EHR_EPIC_ENVIRONMENT: props.config.ehrIntegration.epic.env,
           }),
           ...(!isSandbox(props.config) && {
             DASH_URL: props.config.dashUrl,
