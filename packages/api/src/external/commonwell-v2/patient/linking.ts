@@ -32,21 +32,35 @@ import { NetworkLink } from "./types";
 
 dayjs.extend(duration);
 
-const waitTimeAfterRegisterPatientAndBeforeGetLinks = dayjs.duration(15, "seconds");
-const waitTimeBetweenExistingAndProbableLinks = dayjs.duration(1, "seconds");
+const waitTimeAfterRegisterPatientAndBeforeGetLinks = dayjs.duration(5, "seconds");
 const MAX_ATTEMPTS_PATIENT_LINKING = 3;
 
-const COMMONWELL_RETRY_OPTIONS = {
-  maxAttempts: 3,
-  initialDelay: 1000, // 1 second initial delay
-  backoffMultiplier: 2, // exponential backoff
-  maxDelay: 10000, // max 10 seconds delay
+// This would result in a total of 2 minutes.
+const EXISTING_LINKS_RETRY_OPTIONS = {
+  maxAttempts: 5,
+  initialDelay: 1_000, // 1 second initial delay
+  backoffMultiplier: 5, // exponential backoff
+  maxDelay: 45_000, // max 45 seconds delay
+};
+
+// This would result in a total of 1 minute.
+const PROBABLE_LINKS_RETRY_OPTIONS = {
+  maxAttempts: 4,
+  initialDelay: 1_000, // 1 second initial delay
+  backoffMultiplier: 5, // exponential backoff
+  maxDelay: 30_000, // max 45 seconds delay
 };
 
 /**
- * Runs the patient linking flow with retries.
+ * Runs the patient linking flow with retries, accounting for the delays on the CW MPI side generating existing and probable links.
  *
- * As we upgrade links, the search fans out to find more potential links.
+ * The flow is such that we give the CW MPI a little bit of time after pt create before we get the links.
+ * Then, we retry up to 2 min to get the existing links.
+ * After we receive existing links, we retry up to 1 min to get the probable links.
+ * We then validate, upgrade and store the links.
+ * If any probable links were upgraded, we will retry the whole process up to 2 more times.
+ *
+ * We then return the valid and invalid links.
  */
 export async function runPatientLinkingWithRetries({
   commonWell,
@@ -97,7 +111,7 @@ export async function runPatientLinkingWithRetries({
           });
         },
         {
-          ...COMMONWELL_RETRY_OPTIONS,
+          ...EXISTING_LINKS_RETRY_OPTIONS,
           log: msg => log(`[getExistingLinks retry] ${msg}`),
           onError: error => {
             const cwRef = commonWell.lastTransactionId;
@@ -116,9 +130,6 @@ export async function runPatientLinkingWithRetries({
       });
     }
 
-    // An extra sleep prior to getting probable links to allow more processing time on the CW side.
-    await sleep(waitTimeBetweenExistingAndProbableLinks.asMilliseconds());
-
     let probableLinks: PatientProbableLinks = { Patients: [] };
     let probableLinksCount = 0;
 
@@ -131,7 +142,7 @@ export async function runPatientLinkingWithRetries({
           });
         },
         {
-          ...COMMONWELL_RETRY_OPTIONS,
+          ...PROBABLE_LINKS_RETRY_OPTIONS,
           log: msg => log(`[getProbableLinks retry] ${msg}`),
           onError: error => {
             const cwRef = commonWell.lastTransactionId;
