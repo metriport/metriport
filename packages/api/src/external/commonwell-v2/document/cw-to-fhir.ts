@@ -8,7 +8,7 @@ import {
 import { DocumentReference as CwDocumentReference } from "@metriport/commonwell-sdk";
 import { Patient } from "@metriport/core/domain/patient";
 import { cwExtension } from "@metriport/core/external/commonwell/extension";
-import { isOrganization } from "@metriport/core/external/fhir/shared";
+import { isOrganization } from "@metriport/core/external/fhir/shared/index";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { out } from "@metriport/core/util";
 import dayjs from "dayjs";
