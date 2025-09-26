@@ -30,7 +30,7 @@
         {{#each (toArray 2_16_840_1_113883_10_20_22_2_8) as |assessment|}}
             {{#if (and assessment.text (contains (toLower assessment.title._) "assessment"))}}
                 {{#with (extractAndMapTableData assessment.text) as |assessmentMap|}}
-                    {{>References/DiagnosticReport/assessment.hbs rawText=(convertMappedDataToPlainText assessmentMap) code=assessment.code ID=(generateUUID (toJsonString assessment))}},
+                    {{>References/DiagnosticReport/assessment.hbs text=(convertMappedDataToPlainText assessmentMap) ID=(generateUUID (toJsonString assessment))}},
                 {{/with}}
             {{/if}}
         {{/each}}

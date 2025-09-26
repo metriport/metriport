@@ -36,6 +36,18 @@
       "remoteRoot": "/usr/src/app/packages/api"
     },
     {
+      "name": "Debug TermServer - Attach to Node",
+      "type": "node",
+      "request": "attach",
+      "port": 9230,
+      "address": "0.0.0.0",
+      "sourceMapPathOverrides": {
+        "/usr/src/app/packages/terminology/*": "${workspaceFolder}/packages/terminology/*"
+      },
+      "localRoot": "${workspaceFolder}/packages/terminology",
+      "remoteRoot": "/usr/src/app/packages/terminology"
+    },
+    {
       "name": "Run Widget in Chrome",
       "type": "chrome",
       "request": "launch",

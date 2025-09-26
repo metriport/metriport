@@ -4,6 +4,8 @@ import { ConceptMapTranslateParameters, normalizeOperationOutcome } from "@medpl
 import { conceptMapTranslateOperationDefinition } from "./definitions/conceptMapTranslate";
 import { parseInputParameters } from "./utils/parameters";
 import { getTermServerClient } from "../init-term-server";
+import { ndcCodeSystem } from "./definitions/codeSystem";
+import { normalizeNdcCode } from "../util";
 
 const operation: OperationDefinition = conceptMapTranslateOperationDefinition;
 
@@ -12,6 +14,10 @@ export async function conceptMapTranslateHandler(
 ): Promise<FhirResponse | ConceptMap> {
   try {
     const params = parseInputParameters(operation, req);
+    if (params.system === ndcCodeSystem.url) {
+      params.code = normalizeNdcCode(params.code, true);
+    }
+
     return await lookupConceptMap(params);
   } catch (error) {
     return [normalizeOperationOutcome(error)];
