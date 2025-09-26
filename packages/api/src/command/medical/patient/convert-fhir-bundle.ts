@@ -13,7 +13,7 @@ import {
 import { getConsolidatedQueryByRequestId, Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
-import { makeS3Client, S3Utils } from "@metriport/core/external/aws/s3";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import {
   buildBundleEntry,
   buildSearchSetBundle,
@@ -39,7 +39,7 @@ export const TIMEOUT_CALLING_CONVERTER_LAMBDA = dayjs.duration(15, "minutes").ad
 
 const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region, TIMEOUT_CALLING_CONVERTER_LAMBDA.asMilliseconds());
-const s3 = makeS3Client(Config.getAWSRegion());
+const s3 = new S3Utils(Config.getAWSRegion());
 export const emptyMetaProp = "na";
 
 const REQUESTED_MIME_TYPE: Record<ConsolidationConversionType, string> = {
@@ -209,15 +209,13 @@ export async function uploadJsonBundleToS3({
   fileName: string;
   metadata: Record<string, string>;
 }) {
-  await s3
-    .putObject({
-      Bucket: Config.getMedicalDocumentsBucketName(),
-      Key: fileName,
-      Body: JSON.stringify(bundle),
-      ContentType: "application/json",
-      Metadata: metadata,
-    })
-    .promise();
+  await s3.uploadFile({
+    bucket: Config.getMedicalDocumentsBucketName(),
+    key: fileName,
+    file: Buffer.from(JSON.stringify(bundle)),
+    contentType: "application/json",
+    metadata: metadata,
+  });
 }
 
 export async function uploadGzipBundleToS3({
@@ -229,14 +227,12 @@ export async function uploadGzipBundleToS3({
   fileName: string;
   metadata: Record<string, string>;
 }) {
-  await s3
-    .putObject({
-      Bucket: Config.getMedicalDocumentsBucketName(),
-      Key: fileName,
-      Body: compressedData,
-      ContentType: "application/gzip",
-      ContentEncoding: "gzip",
-      Metadata: metadata,
-    })
-    .promise();
+  await s3.uploadFile({
+    bucket: Config.getMedicalDocumentsBucketName(),
+    key: fileName,
+    file: compressedData,
+    contentType: "application/gzip",
+    contentEncoding: "gzip",
+    metadata,
+  });
 }

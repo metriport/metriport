@@ -1,7 +1,10 @@
 import {
+  _Object,
   CommonPrefix,
   CopyObjectCommand,
   DeleteObjectCommand,
+  DeleteObjectsCommand,
+  GetObjectCommand,
   HeadObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
@@ -16,17 +19,17 @@ import {
   MetriportError,
   NotFoundError,
 } from "@metriport/shared";
-import * as AWS from "aws-sdk";
+import { StreamingBlobPayloadOutputTypes } from "@smithy/types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import * as stream from "stream";
-import * as util from "util";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
+import { pipeline } from "node:stream/promises";
+import { Readable } from "node:stream";
 
 dayjs.extend(duration);
 
-const pipeline = util.promisify(stream.pipeline);
 const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
 const defaultS3RetriesConfig = {
   maxAttempts: 5,
@@ -53,6 +56,11 @@ export type FileInfoNotExists = {
   eTag?: never;
   createdAt?: never;
   metadata?: never;
+};
+
+export type BucketAndKey = {
+  bucket: string;
+  key: string;
 };
 
 export type GetSignedUrlWithBucketAndKey = {
@@ -96,6 +104,7 @@ export type UploadParams = {
   key: string;
   file: Buffer;
   contentType?: string;
+  contentEncoding?: string;
   metadata?: Record<string, string>;
 };
 
@@ -112,6 +121,12 @@ export type StoreInS3Params = {
     captureParams?: Record<string, unknown>;
     shouldCapture: boolean;
   };
+};
+
+export type GetFileContentsIntoStreamParams = {
+  bucket: string;
+  key: string;
+  writeStream: stream.Writable;
 };
 
 export async function executeWithRetriesS3<T>(
@@ -133,62 +148,31 @@ export async function executeWithRetriesS3<T>(
   });
 }
 
-/**
- * @deprecated Use S3Utils instead, adding functions as needed
- */
-export function makeS3Client(region: string): AWS.S3 {
-  return new AWS.S3({ signatureVersion: "v4", region });
-}
-
 type FileExistsFilter = {
   path: string;
   targetString: string;
 };
 
-/**
- * @deprecated Use `S3Utils.getSignedUrl()` instead
- */
-export async function getSignedUrl({
-  awsRegion,
-  ...req
-}: {
-  bucketName: string;
-  fileName: string;
-  durationSeconds?: number;
-  awsRegion: string;
-}): Promise<string> {
-  return new S3Utils(awsRegion).getSignedUrl(req);
-}
-
 export class S3Utils {
-  /**
-   * @deprecated This is v2 of the S3 client. Use `s3Client` instead.
-   */
-  public readonly _s3: AWS.S3;
-  public readonly _s3Client: S3Client;
+  private readonly _s3Client: S3Client;
 
   constructor(readonly region: string) {
-    this._s3 = makeS3Client(region);
     this._s3Client = new S3Client({ region });
-  }
-
-  /**
-   * @deprecated This is v2 of the S3 client. Use `s3Client` instead.
-   */
-  get s3(): AWS.S3 {
-    return this._s3;
   }
 
   get s3Client(): S3Client {
     return this._s3Client;
   }
 
-  async getFileContentsIntoStream(
-    s3BucketName: string,
-    s3FileName: string,
-    writeStream: stream.Writable
-  ): Promise<void> {
-    const readStream = this.getReadStream(s3BucketName, s3FileName);
+  async getFileContentsIntoStream({
+    bucket,
+    key,
+    writeStream,
+  }: GetFileContentsIntoStreamParams): Promise<void> {
+    const readStream = await this.getReadStream({ bucket, key });
+    if (!(readStream instanceof Readable)) {
+      throw new Error(`Invalid read stream for ${key}`);
+    }
     return await pipeline(readStream, writeStream);
   }
 
@@ -199,8 +183,11 @@ export class S3Utils {
   ): Promise<string> {
     return hydrateErrors(
       async () => {
-        const stream = this.getReadStream(s3BucketName, s3FileName);
-        return await this.streamToString(stream, encoding);
+        const stream = await this.getReadStreamAsStreamingBlob({
+          bucket: s3BucketName,
+          key: s3FileName,
+        });
+        return await stream.transformToString(encoding);
       },
       {
         bucket: s3BucketName,
@@ -210,18 +197,35 @@ export class S3Utils {
     );
   }
 
-  private getReadStream(s3BucketName: string, s3FileName: string): stream.Readable {
-    return this.s3.getObject({ Bucket: s3BucketName, Key: s3FileName }).createReadStream();
+  async getFileContentsAsBuffer({ bucket, key }: BucketAndKey): Promise<Buffer> {
+    return hydrateErrors(
+      async () => {
+        const stream = await this.getReadStreamAsStreamingBlob({ bucket, key });
+        return Buffer.from(await stream.transformToByteArray());
+      },
+      {
+        bucket,
+        key,
+      },
+      `getFileContentsAsBuffer`
+    );
   }
 
-  streamToString(stream: stream.Readable, encoding: BufferEncoding = "utf-8"): Promise<string> {
-    const chunks: Buffer[] = [];
-    return new Promise((resolve, reject) => {
-      stream.on("data", chunk => chunks.push(Buffer.from(chunk)));
-      stream.on("error", err => reject(err));
-      // TODO ENG-1064 Try to idenfity the encoding from the Buffer before converting it to string
-      stream.on("end", () => resolve(Buffer.concat(chunks).toString(encoding)));
-    });
+  async getReadStreamAsStreamingBlob({
+    bucket,
+    key,
+  }: BucketAndKey): Promise<StreamingBlobPayloadOutputTypes> {
+    const resp = await executeWithRetriesS3(() =>
+      this.s3Client.send(new GetObjectCommand({ Bucket: bucket, Key: key }))
+    );
+    if (!resp.Body) throw new Error(`No body found for ${key}`);
+    return resp.Body;
+  }
+
+  async getReadStream({ bucket, key }: BucketAndKey): Promise<stream.Readable> {
+    const resp = await this.getReadStreamAsStreamingBlob({ bucket, key });
+    if (!(resp instanceof Readable)) throw new Error(`Invalid read stream for ${key}`);
+    return resp;
   }
 
   async getFileInfoFromS3(
@@ -340,12 +344,14 @@ export class S3Utils {
     durationSeconds?: number;
     versionId?: string;
   }): Promise<string> {
+    const command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: fileName,
+      ...(versionId ? { VersionId: versionId } : {}),
+    });
     return executeWithRetriesS3(() =>
-      this.s3.getSignedUrlPromise("getObject", {
-        Bucket: bucketName,
-        Key: fileName,
-        Expires: durationSeconds ?? DEFAULT_SIGNED_URL_DURATION,
-        ...(versionId ? { VersionId: versionId } : {}),
+      getPresignedUrl(this.s3Client, command, {
+        expiresIn: durationSeconds ?? DEFAULT_SIGNED_URL_DURATION,
       })
     );
   }
@@ -470,39 +476,30 @@ export class S3Utils {
     await executeWithRetriesS3(() => this.s3Client.send(copyObjectCommand));
   }
 
-  /**
-   * TODO: Switch to using the aws-sdk v3 client.
-   *
-   * The types on the aws-sdk v2 `upload()` method have not been
-   * maintained / kept up to date, hence the type assertion after the
-   * `this._s3.upload()` call.
-   */
   async uploadFile({
     bucket,
     key,
     file,
     contentType,
+    contentEncoding,
     metadata,
   }: UploadParams): Promise<UploadFileResult> {
-    const uploadParams: AWS.S3.PutObjectRequest = {
+    const command = new PutObjectCommand({
       Bucket: bucket,
       Key: key,
       Body: file,
+      ...(contentType ? { ContentType: contentType } : undefined),
+      ...(contentEncoding ? { ContentEncoding: contentEncoding } : undefined),
       ...(metadata ? { Metadata: metadata } : undefined),
-    };
-    if (contentType) {
-      uploadParams.ContentType = contentType;
-    }
+    });
     try {
-      const resp = (await executeWithRetriesS3(() =>
-        this._s3.upload(uploadParams).promise()
-      )) as AWS.S3.ManagedUpload.SendData & { VersionId?: string };
+      const resp = await executeWithRetriesS3(() => this.s3Client.send(command));
 
       return {
-        location: resp.Location,
-        eTag: resp.ETag,
-        bucket: resp.Bucket,
-        key: resp.Key,
+        location: this.getLocation({ key, bucket }),
+        eTag: resp.ETag ?? "",
+        bucket: bucket,
+        key: key,
         versionId: resp.VersionId,
       };
     } catch (error) {
@@ -512,14 +509,14 @@ export class S3Utils {
     }
   }
 
-  async downloadFile({ bucket, key }: { bucket: string; key: string }): Promise<Buffer> {
-    const params = {
-      Bucket: bucket,
-      Key: key,
-    };
+  getLocation({ key, bucket }: BucketAndKey): string {
+    return `https://${bucket}.s3.${this.region}.amazonaws.com/${key}`;
+  }
+
+  /** @deprecated Use getFileContentsAsBuffer instead */
+  async downloadFile({ bucket, key }: BucketAndKey): Promise<Buffer> {
     try {
-      const resp = await executeWithRetriesS3(() => this._s3.getObject(params).promise());
-      return resp.Body as Buffer;
+      return await this.getFileContentsAsBuffer({ bucket, key });
     } catch (error) {
       const { log } = out("downloadFile");
       log(`Error during download: ${errorToString(error)}`);
@@ -527,13 +524,13 @@ export class S3Utils {
     }
   }
 
-  async deleteFile({ bucket, key }: { bucket: string; key: string }): Promise<void> {
-    const deleteParams = {
+  async deleteFile({ bucket, key }: BucketAndKey): Promise<void> {
+    const command = new DeleteObjectCommand({
       Bucket: bucket,
       Key: key,
-    };
+    });
     try {
-      await executeWithRetriesS3(() => this._s3.deleteObject(deleteParams).promise());
+      await executeWithRetriesS3(() => this.s3Client.send(command));
     } catch (error) {
       const { log } = out("deleteFile");
       log(`Error during file deletion: ${errorToString(error)}`);
@@ -542,14 +539,14 @@ export class S3Utils {
   }
 
   async deleteFiles({ bucket, keys }: { bucket: string; keys: string[] }): Promise<void> {
-    const deleteParams = {
+    const command = new DeleteObjectsCommand({
       Bucket: bucket,
       Delete: {
         Objects: keys.map(key => ({ Key: key })),
       },
-    };
+    });
     try {
-      await executeWithRetriesS3(() => this._s3.deleteObjects(deleteParams).promise());
+      await executeWithRetriesS3(() => this.s3Client.send(command));
     } catch (error) {
       const { log } = out("deleteFiles");
       log(`Error during files deletion: ${errorToString(error)}`);
@@ -561,21 +558,16 @@ export class S3Utils {
     bucket: string,
     prefix: string,
     options: { maxAttempts?: number } = {}
-  ): Promise<AWS.S3.ObjectList> {
-    const allObjects: AWS.S3.Object[] = [];
+  ): Promise<_Object[]> {
+    const allObjects: _Object[] = [];
     let continuationToken: string | undefined;
     do {
-      const res = await executeWithRetriesS3(
-        () =>
-          this._s3
-            .listObjectsV2({
-              Bucket: bucket,
-              Prefix: prefix,
-              ...(continuationToken ? { ContinuationToken: continuationToken } : {}),
-            })
-            .promise(),
-        options
-      );
+      const command = new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix,
+        ...(continuationToken ? { ContinuationToken: continuationToken } : {}),
+      });
+      const res = await executeWithRetriesS3(() => this.s3Client.send(command), options);
       if (res.Contents) {
         allObjects.push(...res.Contents);
       }
@@ -654,7 +646,7 @@ export async function returnUndefinedOn404<T>(fn: () => Promise<T>): Promise<T |
 
 export async function hydrateErrors<T>(
   fn: () => Promise<T>,
-  fileInfo: { bucket: string; key: string },
+  fileInfo: BucketAndKey,
   functionName: string
 ): Promise<T> {
   try {
@@ -702,21 +694,16 @@ export async function storeInS3WithRetries({
   errorConfig,
 }: StoreInS3Params): Promise<void> {
   try {
-    await executeWithRetriesS3(
-      () =>
-        s3Utils.s3
-          .upload({
-            Bucket: bucketName,
-            Key: fileName,
-            Body: payload,
-            ContentType: contentType,
-          })
-          .promise(),
-      {
-        ...defaultS3RetriesConfig,
-        log,
-      }
-    );
+    const command = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: fileName,
+      Body: payload,
+      ContentType: contentType,
+    });
+    await executeWithRetriesS3(() => s3Utils.s3Client.send(command), {
+      ...defaultS3RetriesConfig,
+      log,
+    });
   } catch (error) {
     const msg = errorConfig?.errorMessage ?? "Error uploading to S3";
     log(`${msg}: ${errorToString(error)}`);

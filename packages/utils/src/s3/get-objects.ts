@@ -1,6 +1,7 @@
-import { makeS3Client } from "@metriport/core/external/aws/s3";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { makeDir, makeDirIfNeeded, writeFileContents } from "../shared/fs";
+import { errorToString } from "@metriport/shared";
 
 /**
  * Get files from S3 and store them locally.
@@ -19,18 +20,19 @@ const region = getEnvVarOrFail("AWS_REGION");
 
 async function main() {
   makeDir(outputFolderName);
-  const s3 = makeS3Client(region);
+  const s3 = new S3Utils(region);
 
   for (const fileName of inputFileNamesToDownload) {
-    console.log(`Getting file ${fileName}...`);
-    const obj = await s3.getObject({ Bucket: inputBucketName, Key: fileName }).promise();
-
-    if (obj.Body) {
-      const content = obj.Body.toString();
-
-      const destFileName = `${outputFolderName}/${fileName}`;
-      makeDirIfNeeded(destFileName);
-      writeFileContents(destFileName, content);
+    try {
+      console.log(`Getting file ${fileName}...`);
+      const content = await s3.getFileContentsAsString(inputBucketName, fileName);
+      if (content) {
+        const destFileName = `${outputFolderName}/${fileName}`;
+        makeDirIfNeeded(destFileName);
+        writeFileContents(destFileName, content);
+      }
+    } catch (error) {
+      console.error(`Error getting file ${fileName}: ${errorToString(error)}`);
     }
   }
 }
