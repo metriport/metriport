@@ -1342,8 +1342,8 @@ class AthenaHealthApi {
   }: {
     cxId: string;
     patientId: string;
-    coding?: Coding;
-    text?: string;
+    coding?: Coding | undefined;
+    text?: string | undefined;
   }): Promise<MedicationReference | undefined> {
     const { log, debug } = out(
       `AthenaHealth searchForMedication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
@@ -1427,8 +1427,8 @@ class AthenaHealthApi {
   }: {
     cxId: string;
     patientId: string;
-    coding?: Coding;
-    text?: string;
+    coding?: Coding | undefined;
+    text?: string | undefined;
   }): Promise<AllergenReference | undefined> {
     const { log, debug } = out(
       `AthenaHealth searchForAllergen - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
