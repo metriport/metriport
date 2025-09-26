@@ -124,7 +124,8 @@ export function getHieConfig(
   const zitSegment = rawMessage.getSegment(CUSTOM_SEGMENT_NAME);
   const hieVpnConfigRows = Object.entries(hieConfigDictionary).flatMap(keepOnlyVpnConfigs);
   if (zitSegment) {
-    const hieName = zitSegment.getField(CUSTOM_SEGMENT_HIE_NAME_INDEX).toString();
+    const hieNameField = zitSegment.getField(CUSTOM_SEGMENT_HIE_NAME_INDEX);
+    const hieName = hieNameField ? hieNameField.toString() : undefined;
     if (!hieName) {
       throw new MetriportError("HIE name not found in ZIT segment", undefined, {
         context: "mllp-server.getHieConfig",
