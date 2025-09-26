@@ -61,8 +61,8 @@ function createSoapBodyContent({
 }): object {
   const prefix = useUrn ? "urn:" : "";
   const soapBody = {
-    "@_xmlns:urn": namespaces.hl7,
     [`urn:PRPA_IN201305UV02`]: {
+      "@_xmlns:urn": namespaces.hl7,
       "@_ITSVersion": "XML_1.0",
       [`${prefix}id`]: {
         "@_extension": messageId,
