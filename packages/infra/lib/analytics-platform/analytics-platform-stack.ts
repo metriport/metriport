@@ -534,14 +534,12 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       passwordSecretArn: dbUserSecret.secretArn,
     };
 
-    const dbReadOnlyCreds: DatabaseCredsForLambda = {
-      host: ownProps.dbCluster.clusterReadEndpoint.hostname,
-      port: ownProps.dbCluster.clusterReadEndpoint.port,
-      engine: "postgres" as const,
-      dbname: config.analyticsPlatform.rds.name,
-      username: config.analyticsPlatform.rds.fhirToCsvDbUsername,
-      passwordSecretArn: dbUserSecret.secretArn,
-    };
+    // TODO ENG-1029 for reference only for now
+    // const dbReadOnlyCreds: DatabaseCredsForLambda = {
+    //   host: ownProps.dbCluster.clusterReadEndpoint.hostname,
+    //   port: ownProps.dbCluster.clusterReadEndpoint.port,
+    //   ...
+    // };
 
     const lambda = createLambda({
       ...lambdaSettings,
@@ -557,8 +555,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
         MEDICAL_DOCUMENTS_BUCKET_NAME: ownProps.medicalDocumentsBucket.bucketName,
         DB_CREDS: JSON.stringify(dbCreds),
-        // TODO ENG-1029 move this to the core transformer lambda
-        DB_READ_ONLY_CREDS: JSON.stringify(dbReadOnlyCreds),
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain, lambdaLayers.analyticsPlatform],
