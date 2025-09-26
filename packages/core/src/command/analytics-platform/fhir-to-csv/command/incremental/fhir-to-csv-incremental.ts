@@ -9,7 +9,6 @@ export type ProcessFhirToCsvIncrementalRequest = {
   patientId: string;
   /** Represents the call to processFhirToCsvIncremental. If not provided, a jobId will be generated. */
   jobId?: string;
-  timeoutInMillis?: number | undefined;
 };
 
 export abstract class FhirToCsvIncrementalHandler {

@@ -22,7 +22,6 @@ export class FhirToCsvIncrementalDirect extends FhirToCsvIncrementalHandler {
     cxId,
     patientId,
     jobId = this.generateJobId(),
-    timeoutInMillis,
   }: ProcessFhirToCsvIncrementalRequest): Promise<string> {
     const { log } = out(`FhirToCsvIncrementalDirect - cx ${cxId} pt ${patientId}`);
 
@@ -35,7 +34,6 @@ export class FhirToCsvIncrementalDirect extends FhirToCsvIncrementalHandler {
       cxId,
       patientId,
       outputPrefix,
-      timeoutInMillis,
     });
 
     log(`Done in ${Date.now() - startedAt}ms, storing flattened data in the DB...`);

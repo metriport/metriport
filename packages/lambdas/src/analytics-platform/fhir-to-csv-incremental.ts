@@ -5,7 +5,7 @@ import { FhirToCsvIncrementalDirect } from "@metriport/core/command/analytics-pl
 import { readConfigs } from "@metriport/core/command/analytics-platform/fhir-to-csv/configs/read-column-defs";
 import { doesConsolidatedDataExist } from "@metriport/core/command/consolidated/consolidated-get";
 import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
-import { DbCreds, errorToString, getEnvVarOrFail, MetriportError } from "@metriport/shared";
+import { DbCreds, errorToString, getEnvVarOrFail, MetriportError, sleep } from "@metriport/shared";
 import { Context, SQSEvent } from "aws-lambda";
 import { z } from "zod";
 import { capture } from "../shared/capture";
@@ -58,7 +58,8 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
     log(`Reading table definitions from /opt/configurations`);
     const tablesDefinitions = readConfigs(`/opt/configurations`);
 
-    const timeoutForCsvTransform = Math.max(0, context.getRemainingTimeInMillis() - 200);
+    const remainingLambdaExecutionTime = Math.max(0, context.getRemainingTimeInMillis() - 200);
+
     const dbCredsForFunction: DbCreds = {
       host: dbCreds.host,
       port: dbCreds.port,
@@ -68,7 +69,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
       password: dbPassword,
     };
 
-    log(`Invoking lambda ${lambdaName}... it has ${timeoutForCsvTransform}ms to run`);
+    log(`Invoking processFhirToCsvIncremental... it has ${remainingLambdaExecutionTime}ms to run`);
     const startedAt = Date.now();
     const fhirToCsvHandler = new FhirToCsvIncrementalDirect(
       analyticsBucketName,
@@ -79,9 +80,20 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
     const params: ProcessFhirToCsvIncrementalRequest = {
       cxId,
       patientId,
-      timeoutInMillis: timeoutForCsvTransform,
     };
-    await fhirToCsvHandler.processFhirToCsvIncremental(params);
+    const resp = await Promise.race([
+      fhirToCsvHandler.processFhirToCsvIncremental(params),
+      async () => {
+        await sleep(remainingLambdaExecutionTime);
+        return "Timeout";
+      },
+    ]);
+    if (resp === "Timeout") {
+      throw new MetriportError("Timeout calling processFhirToCsvIncremental", undefined, {
+        cxId,
+        patientId,
+      });
+    }
     log(`Done in ${Date.now() - startedAt}ms`);
   } catch (error) {
     console.error("Re-throwing error ", errorToString(error));
