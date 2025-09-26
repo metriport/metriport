@@ -34,7 +34,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
-    "prettier-fix": "npx prettier '**/*.ts' --write --ignore-path ../../.prettierignore",
+    "prettier-fix": "npx prettier '**/*.{js,ts,md}' --write --ignore-path ../../.prettierignore",
     "test": "echo \"No test specified yet\""
   },
   "bugs": {
