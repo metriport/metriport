@@ -421,6 +421,20 @@ export class APIStack extends Stack {
     }
 
     //-------------------------------------------
+    // Analytics Platform
+    //-------------------------------------------
+    let analyticsPlatformStack: AnalyticsPlatformsNestedStack | undefined = undefined;
+    if (!isSandbox(props.config)) {
+      analyticsPlatformStack = new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatforms", {
+        config: props.config,
+        vpc: this.vpc,
+        lambdaLayers,
+        medicalDocumentsBucket,
+        featureFlagsTable,
+      });
+    }
+
+    //-------------------------------------------
     // General lambdas
     //-------------------------------------------
     const {
@@ -466,6 +480,7 @@ export class APIStack extends Stack {
         consolidatedIndexName: props.config.openSearch.openSearch.consolidatedIndexName,
         documentIndexName: props.config.openSearch.openSearch.indexName,
       },
+      analyticsQueue: analyticsPlatformStack?.getAssets()?.fhirToCsvIncrementalQueue,
     });
 
     //-------------------------------------------
@@ -535,20 +550,6 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
       lambdaLayers,
     });
-
-    //-------------------------------------------
-    // Analytics Platform
-    //-------------------------------------------
-    let analyticsPlatformStack: AnalyticsPlatformsNestedStack | undefined = undefined;
-    if (!isSandbox(props.config)) {
-      analyticsPlatformStack = new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatforms", {
-        config: props.config,
-        vpc: this.vpc,
-        lambdaLayers,
-        medicalDocumentsBucket,
-        featureFlagsTable,
-      });
-    }
 
     //-------------------------------------------
     // Rate Limiting

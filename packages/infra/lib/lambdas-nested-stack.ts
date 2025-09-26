@@ -82,6 +82,7 @@ interface LambdasNestedStackProps extends NestedStackProps {
   featureFlagsTable: dynamodb.Table;
   bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
   openSearch: OpenSearchConfigForLambdas;
+  analyticsQueue?: IQueue | undefined;
 }
 
 type GenericConsolidatedLambdaProps = {
@@ -101,6 +102,7 @@ type GenericConsolidatedLambdaProps = {
   featureFlagsTable: dynamodb.Table;
   consolidatedIngestionQueue: IQueue;
   bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
+  analyticsQueue?: IQueue;
 };
 
 type ConsolidatedLambdaProps = Omit<GenericConsolidatedLambdaProps, "name" | "entry" | "memory">;
@@ -243,6 +245,7 @@ export class LambdasNestedStack extends NestedStack {
       featureFlagsTable: props.featureFlagsTable,
       bedrock: props.config.bedrock,
       consolidatedIngestionQueue: this.consolidatedIngestionQueue,
+      analyticsQueue: props.analyticsQueue,
     });
     this.fhirToBundleCountLambda = this.setupFhirBundleCountLambda({
       lambdaLayers: props.lambdaLayers,
@@ -750,6 +753,7 @@ export class LambdasNestedStack extends NestedStack {
     featureFlagsTable,
     bedrock,
     consolidatedIngestionQueue,
+    analyticsQueue,
   }: GenericConsolidatedLambdaProps): Lambda {
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
 
@@ -783,6 +787,9 @@ export class LambdasNestedStack extends NestedStack {
         }),
         CONSOLIDATED_INGESTION_QUEUE_URL: consolidatedIngestionQueue.queueUrl,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        ...(analyticsQueue && {
+          FHIR_TO_CSV_INCREMENTAL_QUEUE_URL: analyticsQueue.queueUrl,
+        }),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       memory: 6144,
@@ -802,6 +809,7 @@ export class LambdasNestedStack extends NestedStack {
     featureFlagsTable.grantReadData(theLambda);
 
     consolidatedIngestionQueue.grantSendMessages(theLambda);
+    analyticsQueue?.grantSendMessages(theLambda);
 
     // Always add the bedrock policy to the lambda, regardless of whether bedrock is defined or not
     addBedrockPolicyToLambda(theLambda);
