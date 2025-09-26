@@ -533,16 +533,14 @@ export function createITI5SoapEnvelope({
   };
 
   const builder = new XMLBuilder(options);
-  console.log("SOAP ENVELOPE IS", soapEnvelope);
   const xmlContent = builder.build(soapEnvelope);
-  console.log("XML CONTENT IS", xmlContent);
   return xmlContent;
 }
 
 export function createAndSignBulkXCPDRequests(
   bulkBodyData: OutboundPatientDiscoveryReq,
   samlCertsAndKeys: SamlCertsAndKeys,
-  isNewSoapEnabled: boolean
+  isNewSoapEnabled = false
 ): SignedXcpdRequest[] {
   const signedRequests: SignedXcpdRequest[] = [];
 
