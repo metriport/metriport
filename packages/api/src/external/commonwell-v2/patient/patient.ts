@@ -62,6 +62,7 @@ import { NetworkLink } from "./types";
 dayjs.extend(duration);
 
 const waitTimeAfterRegisterPatientAndBeforeGetLinks = dayjs.duration(15, "seconds");
+const waitTimeBetweenExistingAndProbableLinks = dayjs.duration(1, "seconds");
 const MAX_ATTEMPTS_PATIENT_LINKING = 3;
 
 const createContext = "cw.patient.create";
@@ -638,6 +639,11 @@ async function runPatientLinkingWithRetries({
   let invalidLinks: NetworkLink[] = [];
   let attempt = 0;
 
+  const probableLinksErrors: {
+    error: string;
+    cwRef: string;
+  }[] = [];
+
   while (attempt < MAX_ATTEMPTS_PATIENT_LINKING) {
     attempt++;
     // CW v2 does not return links immediately after registering a patient yet, so we need to wait.
@@ -651,11 +657,29 @@ async function runPatientLinkingWithRetries({
     });
     const existingLinksCount = existingLinks?.Patients?.length ?? 0;
 
-    const probableLinks = await getProbableLinks({
-      commonWell,
-      commonwellPatientId,
-    });
-    const probableLinksCount = probableLinks?.Patients?.length ?? 0;
+    // An extra sleep prior to getting probable links to allow more processing time on the CW side.
+    await sleep(waitTimeBetweenExistingAndProbableLinks.asMilliseconds());
+
+    let probableLinks: PatientProbableLinks = { Patients: [] };
+    let probableLinksCount = 0;
+
+    try {
+      probableLinks = await getProbableLinks({
+        commonWell,
+        commonwellPatientId,
+      });
+      probableLinksCount = probableLinks?.Patients?.length ?? 0;
+    } catch (error) {
+      const cwRef = commonWell.lastTransactionId;
+      const msg = `Error in getProbableLinks ${attempt}/${MAX_ATTEMPTS_PATIENT_LINKING}`;
+      log(
+        `${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`
+      );
+      probableLinksErrors.push({
+        error: errorToString(error),
+        cwRef: cwRef ?? "unknown",
+      });
+    }
 
     log(
       `Found ${existingLinksCount} existing links, and ${probableLinksCount} probable links on attempt ${attempt}`
@@ -682,6 +706,14 @@ async function runPatientLinkingWithRetries({
 
   if (attempt >= MAX_ATTEMPTS_PATIENT_LINKING) {
     log(`Reached maximum retry attempts (${MAX_ATTEMPTS_PATIENT_LINKING}), stopping retry loop`);
+  }
+
+  if (probableLinksErrors.length > 0) {
+    const msg = "CW - Probable links errors";
+    log(`${msg}, patientId: ${patient.id}, ${JSON.stringify(probableLinksErrors)}`);
+    capture.error(msg, {
+      extra: { probableLinksErrors, commonwellPatientId, context },
+    });
   }
 
   return { validLinks, invalidLinks };
