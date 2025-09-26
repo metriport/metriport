@@ -121,6 +121,7 @@ export class LambdasNestedStack extends NestedStack {
   readonly acmCertificateMonitorLambda: Lambda;
   readonly hl7v2RosterUploadLambdas: Lambda[] | undefined;
   readonly hl7LahieSftpIngestionLambda: Lambda | undefined;
+  readonly hl7AlohrSftpIngestionLambda: Lambda | undefined;
   readonly conversionResultNotifierLambda: Lambda;
   readonly reconversionKickoffLambda: Lambda;
   readonly reconversionKickoffQueue: Queue;
@@ -329,6 +330,19 @@ export class LambdasNestedStack extends NestedStack {
         ],
       });
 
+      const alohrSftpIngestionBucket = new s3.Bucket(this, "alohrSftpIngestionBucket", {
+        bucketName: props.config.hl7Notification.AlohrSftpIngestionLambda.bucketName,
+        publicReadAccess: false,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+        versioned: true,
+        cors: [
+          {
+            allowedOrigins: ["*"],
+            allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
+          },
+        ],
+      });
+
       this.hl7v2RosterUploadLambdas = this.setupRosterUploadLambdas({
         lambdaLayers: props.lambdaLayers,
         vpc: props.vpc,
@@ -345,6 +359,15 @@ export class LambdasNestedStack extends NestedStack {
         config: props.config,
         alarmAction: props.alarmAction,
         lahieSftpIngestionBucket,
+      });
+
+      this.hl7AlohrSftpIngestionLambda = this.setupAlohrSftpIngestionLambda({
+        lambdaLayers: props.lambdaLayers,
+        vpc: props.vpc,
+        secrets: props.secrets,
+        config: props.config,
+        alarmAction: props.alarmAction,
+        alohrSftpIngestionBucket,
       });
     }
 
@@ -1028,6 +1051,71 @@ export class LambdasNestedStack extends NestedStack {
     );
 
     return acmCertificateMonitorLambda;
+  }
+
+  private setupAlohrSftpIngestionLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    secrets: Secrets;
+    config: EnvConfig;
+    alohrSftpIngestionBucket: s3.IBucket;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const envType = ownProps.config.environmentType;
+    const alohrProps = ownProps.config.hl7Notification?.AlohrSftpIngestionLambda;
+    const sftpPasswordSecret = ownProps.secrets["ALOHR_INGESTION_PASSWORD"];
+    const queue = ownProps.config.hl7Notification?.notificationWebhookSenderQueue;
+
+    if (!alohrProps) {
+      throw new Error("AlohrSftpIngestionLambda is undefined in config.");
+    }
+    if (!ownProps.config.hl7Notification) {
+      throw new Error("HL7Notification is undefined in config.");
+    }
+    if (!queue) {
+      throw new Error("HL7NotificationWebhookSenderQueue is undefined in config.");
+    }
+    if (!sftpPasswordSecret) {
+      throw new Error("ALOHR_INGESTION_PASSWORD is not defined in config.");
+    }
+
+    const sftpConfig = alohrProps.sftpConfig;
+    const lambdaTimeout = Duration.minutes(5);
+    const lambdaMemorySize = 1024;
+    const hl7Base64ScramblerSeed = ownProps.secrets["HL7_BASE64_SCRAMBLER_SEED"];
+
+    if (!hl7Base64ScramblerSeed) {
+      throw new Error("HL7_BASE64_SCRAMBLER_SEED is not defined in config.");
+    }
+
+    const lambda = createScheduledLambda({
+      layers: [ownProps.lambdaLayers.shared],
+      vpc: ownProps.vpc,
+      timeout: lambdaTimeout,
+      memory: lambdaMemorySize,
+      scheduleExpression: "0/15 * * * ? *",
+      envType,
+      entry: "hl7-alohr-sftp-ingestion",
+      envVars: {
+        ALOHR_INGESTION_SFTP_CONFIG: JSON.stringify(sftpConfig),
+        ALOHR_INGESTION_REMOTE_PATH: sftpConfig.remotePath,
+        ALOHR_INGESTION_PASSWORD_ARN: sftpPasswordSecret.secretArn,
+        ALOHR_INGESTION_BUCKET_NAME: ownProps.alohrSftpIngestionBucket.bucketName,
+        HL7_BASE64_SCRAMBLER_SEED_ARN: hl7Base64ScramblerSeed.secretArn,
+        HL7_NOTIFICATION_QUEUE_URL: queue.url,
+      },
+      stack: this,
+      name: "Hl7SftpIngestionAlohr",
+      alarmSnsAction: ownProps.alarmAction,
+    });
+
+    sftpPasswordSecret.grantRead(lambda);
+
+    ownProps.alohrSftpIngestionBucket.grantReadWrite(lambda);
+    hl7Base64ScramblerSeed.grantRead(lambda);
+    const webhookSenderQueue = Queue.fromQueueArn(this, "Hl7WebhookSenderQueueAlohr", queue.arn);
+    webhookSenderQueue.grantSendMessages(lambda);
+    return lambda;
   }
 
   private setupLahieSftpIngestionLambda(ownProps: {
