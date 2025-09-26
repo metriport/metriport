@@ -18,7 +18,7 @@ import { initSentry } from "./sentry";
 import {
   asString,
   getCleanIpAddress,
-  lookupHieTzEntryForIp,
+  getHieConfig,
   translateMessage,
   withErrorHandling,
 } from "./utils";
@@ -39,7 +39,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
 
         log(`New message over connection ${clientIp}:${clientPort}`);
         const hieConfigDictionary = getHieConfigDictionary();
-        const { hieName } = lookupHieTzEntryForIp(hieConfigDictionary, clientIp);
+        const { hieName } = getHieConfig(hieConfigDictionary, clientIp, rawMessage);
 
         const newMessage = translateMessage(rawMessage, hieName);
         const { cxId, patientId } = getCxIdAndPatientIdOrFail(newMessage);

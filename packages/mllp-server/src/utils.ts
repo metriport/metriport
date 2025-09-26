@@ -10,13 +10,17 @@ import { unpackUuid } from "@metriport/core/util/pack-uuid";
 
 import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/node";
-import { Hl7Message } from "@medplum/core";
+import { Hl7Message, Hl7Segment } from "@medplum/core";
 import IPCIDR from "ip-cidr";
 import { HieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 import {
   fromBambooId,
   remapMessageReplacingPid3,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+
+const CUSTOM_SEGMENT_NAME = "ZIT";
+const CUSTOM_SEGMENT_HIE_NAME_INDEX = 1;
+const CUSTOM_SEGMENT_TIMEZONE_INDEX = 2;
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 export const s3Utils = new S3Utils(Config.getAWSRegion());
@@ -86,25 +90,75 @@ export function asString(message: Hl7Message) {
   return message.segments.map(s => s.toString()).join("\n");
 }
 
+export type HieVpnConfigRow = { hieName: string; cidrBlocks: string[]; timezone: string };
+
 /**
  * Lookup the HIE config for a provided IP address.
  * @param hieConfigDictionary The HIE config dictionary.
  * @param ip The IP address to lookup.
  * @returns The HIE config for the given IP address.
  */
-export function lookupHieTzEntryForIp(hieConfigDictionary: HieConfigDictionary, ip: string) {
-  const hieVpnConfigRows = Object.entries(hieConfigDictionary).flatMap(keepOnlyVpnConfigs);
+export function lookupHieTzEntryForIp(hieVpnConfigRows: HieVpnConfigRow[], ip: string) {
   const match = hieVpnConfigRows.find(({ cidrBlocks }) =>
     cidrBlocks.some(cidrBlock => isIpInRange(cidrBlock, ip))
   );
   if (!match) {
     console.log("[mllp-server.lookupHieTzEntryForIp] Sender IP not found in any CIDR block", ip);
-    throw new MetriportError(`Sender IP not found in any CIDR block`, {
-      cause: undefined,
-      additionalInfo: { context: "mllp-server.lookupHieTzEntryForIp", ip, hieConfigDictionary },
+    throw new MetriportError(`Sender IP not found in any CIDR block`, undefined, {
+      context: "mllp-server.lookupHieTzEntryForIp",
+      ip,
+      hieVpnConfigRows: JSON.stringify(hieVpnConfigRows),
     });
   }
   return match;
+}
+
+export function getHieConfig(
+  hieConfigDictionary: HieConfigDictionary,
+  ip: string,
+  rawMessage: Hl7Message
+) {
+  const zitSegment = rawMessage.getSegment(CUSTOM_SEGMENT_NAME);
+  const hieVpnConfigRows = Object.entries(hieConfigDictionary).flatMap(keepOnlyVpnConfigs);
+  if (zitSegment) {
+    const hieName = zitSegment.getField(CUSTOM_SEGMENT_HIE_NAME_INDEX).toString();
+    if (!hieName) {
+      throw new MetriportError("HIE name not found in ZIT segment", undefined, {
+        context: "mllp-server.getHieConfig",
+        zitSegment: zitSegment.toString(),
+      });
+    }
+    const timezone = getTimezoneFromCustomSegment(zitSegment, hieName, hieVpnConfigRows);
+    console.log(
+      `[mllp-server.getHieConfig] Impersonating HIE: ${hieName} with timezone: ${timezone}`
+    );
+    return { hieName, timezone };
+  }
+  return lookupHieTzEntryForIp(hieVpnConfigRows, ip);
+}
+
+function getTimezoneFromCustomSegment(
+  zitSegment: Hl7Segment,
+  hieName: string,
+  hieVpnConfigRows: HieVpnConfigRow[]
+): string {
+  const timezone = zitSegment.getField(CUSTOM_SEGMENT_TIMEZONE_INDEX).toString();
+  if (!timezone) {
+    const match = hieVpnConfigRows.find(({ hieName: configHieName }) => configHieName === hieName);
+    if (!match) {
+      throw new MetriportError(
+        "Impersonation request failed. HIE not found in config dictionary",
+        undefined,
+        {
+          context: "mllp-server.getHieConfig",
+          zitSegment: zitSegment.toString(),
+          hieVpnConfigRows: JSON.stringify(hieVpnConfigRows),
+        }
+      );
+    }
+    return match.timezone;
+  }
+  return timezone;
 }
 
 function isIpInRange(cidrBlock: string, ip: string): boolean {
