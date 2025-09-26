@@ -44,6 +44,7 @@ function createSoapBodyContent({
   identifiers,
   providerId,
   useUrn = true,
+  isNewSoapEnabled,
 }: {
   messageId: string;
   homeCommunityId: string;
@@ -58,11 +59,188 @@ function createSoapBodyContent({
   identifiers: PersonalIdentifier[] | undefined;
   providerId: string | undefined;
   useUrn?: boolean;
+  isNewSoapEnabled: boolean;
 }): object {
   const prefix = useUrn ? "urn:" : "";
+
+  if (isNewSoapEnabled) {
+    return {
+      [`urn:PRPA_IN201305UV02`]: {
+        "@_xmlns:urn": namespaces.hl7,
+        "@_ITSVersion": "XML_1.0",
+        [`${prefix}id`]: {
+          "@_extension": messageId,
+          "@_root": homeCommunityId,
+        },
+        [`${prefix}creationTime`]: {
+          "@_value": timestampToSoapBody(createdTimestamp),
+        },
+        [`${prefix}interactionId`]: {
+          "@_extension": "PRPA_IN201305UV02",
+          "@_root": "2.16.840.1.113883.1.6",
+        },
+        [`${prefix}processingCode`]: {
+          "@_code": "P",
+        },
+        [`${prefix}processingModeCode`]: {
+          "@_code": "T",
+        },
+        [`${prefix}acceptAckCode`]: {
+          "@_code": "AL",
+        },
+        [`${prefix}receiver`]: {
+          "@_typeCode": "RCV",
+          [`${prefix}device`]: {
+            "@_classCode": "DEV",
+            "@_determinerCode": "INSTANCE",
+            [`${prefix}id`]: {
+              "@_root": receiverDeviceId,
+            },
+            [`${prefix}telecom`]: {
+              "@_value": toUrl,
+            },
+            [`${prefix}asAgent`]: {
+              "@_classCode": "AGNT",
+              [`${prefix}representedOrganization`]: {
+                "@_classCode": "ORG",
+                "@_determinerCode": "INSTANCE",
+                [`${prefix}id`]: {
+                  "@_root": receiverDeviceId,
+                },
+              },
+            },
+          },
+        },
+        [`${prefix}sender`]: {
+          "@_typeCode": "SND",
+          [`${prefix}device`]: {
+            "@_classCode": "DEV",
+            "@_determinerCode": "INSTANCE",
+            [`${prefix}id`]: {
+              "@_root": METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
+            },
+            [`${prefix}asAgent`]: {
+              "@_classCode": "AGNT",
+              [`${prefix}representedOrganization`]: {
+                "@_classCode": "ORG",
+                "@_determinerCode": "INSTANCE",
+                [`${prefix}id`]: {
+                  "@_root": METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
+                },
+                [`${prefix}name`]: metriportOrganization,
+              },
+            },
+          },
+        },
+        [`${prefix}controlActProcess`]: {
+          "@_classCode": "CACT",
+          "@_moodCode": "EVN",
+          [`${prefix}code`]: {
+            "@_code": "PRPA_TE201305UV02",
+            "@_codeSystem": "2.16.840.1.113883.1.6",
+          },
+          [`${prefix}queryByParameter`]: {
+            [`${prefix}queryId`]: {
+              "@_extension": messageId,
+              "@_root": homeCommunityId,
+            },
+            [`${prefix}statusCode`]: {
+              "@_code": "new",
+            },
+            [`${prefix}responseModalityCode`]: {
+              "@_code": "R",
+            },
+            [`${prefix}responsePriorityCode`]: {
+              "@_code": "I",
+            },
+            [`${prefix}parameterList`]: {
+              ...(patientGender !== "UNK" && {
+                [`${prefix}livingSubjectAdministrativeGender`]: {
+                  [`${prefix}value`]: {
+                    "@_code": patientGender,
+                    "@_codeSystem": "2.16.840.1.113883.5.1",
+                  },
+                  [`${prefix}semanticsText`]: "LivingSubject.administrativeGender",
+                },
+              }),
+              [`${prefix}livingSubjectBirthTime`]: patientBirthtime
+                ? {
+                    [`${prefix}value`]: {
+                      "@_value": patientBirthtime,
+                    },
+                    [`${prefix}semanticsText`]: "LivingSubject.birthTime",
+                  }
+                : {},
+              ...(identifiers && identifiers.length > 0
+                ? {
+                    [`${prefix}livingSubjectId`]: {
+                      [`${prefix}value`]: identifiers.map(identifier => ({
+                        "@_extension": identifier.value,
+                        "@_root": identifier.system,
+                      })),
+                      [`${prefix}semanticsText`]: "LivingSubject.id",
+                    },
+                  }
+                : {}),
+              ...(patientNames
+                ? patientNames.map(name => ({
+                    [`${prefix}livingSubjectName`]: {
+                      [`${prefix}value`]: {
+                        [`${prefix}family`]: name.family,
+                        [`${prefix}given`]: name.given,
+                      },
+                      [`${prefix}semanticsText`]: "LivingSubject.name",
+                    },
+                  }))
+                : []),
+              ...(patientAddresses
+                ? {
+                    [`${prefix}patientAddress`]: {
+                      [`${prefix}value`]: patientAddresses.map(address => ({
+                        ...address.line?.map(line => ({
+                          [`${prefix}streetAddressLine`]: line,
+                        })),
+                        [`${prefix}city`]: address.city,
+                        [`${prefix}state`]: address.state,
+                        [`${prefix}postalCode`]: address.postalCode,
+                        [`${prefix}country`]: address.country,
+                      })),
+                      [`${prefix}semanticsText`]: "Patient.addr",
+                    },
+                  }
+                : {}),
+              ...(patientTelecoms && patientTelecoms.length > 0
+                ? {
+                    [`${prefix}patientTelecom`]: {
+                      [`${prefix}value`]: patientTelecoms.map(telecom => ({
+                        "@_use": telecom.system,
+                        "@_value": telecom.value,
+                      })),
+                      [`${prefix}semanticsText`]: "Patient.telecom",
+                    },
+                  }
+                : {}),
+              ...(providerId
+                ? {
+                    [`${prefix}principalCareProviderId`]: {
+                      [`${prefix}value`]: {
+                        "@_extension": providerId,
+                        "@_root": "2.16.840.1.113883.4.6",
+                      },
+                      [`${prefix}semanticsText`]: "AssignedProvider.id",
+                    },
+                  }
+                : {}),
+            },
+          },
+        },
+      },
+    };
+  }
+
   const soapBody = {
+    "@_xmlns:urn": namespaces.hl7,
     [`urn:PRPA_IN201305UV02`]: {
-      "@_xmlns:urn": namespaces.hl7,
       "@_ITSVersion": "XML_1.0",
       [`${prefix}id`]: {
         "@_extension": messageId,
@@ -239,9 +417,11 @@ function createSoapBodyContent({
 function createSoapBody({
   bodyData,
   createdTimestamp,
+  isNewSoapEnabled,
 }: {
   bodyData: OutboundPatientDiscoveryReq;
   createdTimestamp: string;
+  isNewSoapEnabled: boolean;
 }): object {
   const gateway = bodyData.gateways?.[0];
   if (!gateway) {
@@ -275,6 +455,7 @@ function createSoapBody({
       identifiers,
       providerId,
       useUrn,
+      isNewSoapEnabled,
     }),
   };
   return soapBody;
@@ -283,9 +464,11 @@ function createSoapBody({
 export function createITI5SoapEnvelope({
   bodyData,
   publicCert,
+  isNewSoapEnabled,
 }: {
   bodyData: OutboundPatientDiscoveryReq;
   publicCert: string;
+  isNewSoapEnabled: boolean;
 }): string {
   const gateway = bodyData.gateways?.[0];
   if (!gateway) {
@@ -313,7 +496,7 @@ export function createITI5SoapEnvelope({
     queryGrantorOid,
   });
 
-  const soapBody = createSoapBody({ bodyData, createdTimestamp });
+  const soapBody = createSoapBody({ bodyData, createdTimestamp, isNewSoapEnabled });
 
   const soapEnvelope = {
     "soap:Envelope": {
@@ -350,13 +533,16 @@ export function createITI5SoapEnvelope({
   };
 
   const builder = new XMLBuilder(options);
+  console.log("SOAP ENVELOPE IS", soapEnvelope);
   const xmlContent = builder.build(soapEnvelope);
+  console.log("XML CONTENT IS", xmlContent);
   return xmlContent;
 }
 
 export function createAndSignBulkXCPDRequests(
   bulkBodyData: OutboundPatientDiscoveryReq,
-  samlCertsAndKeys: SamlCertsAndKeys
+  samlCertsAndKeys: SamlCertsAndKeys,
+  isNewSoapEnabled: boolean
 ): SignedXcpdRequest[] {
   const signedRequests: SignedXcpdRequest[] = [];
 
@@ -369,6 +555,7 @@ export function createAndSignBulkXCPDRequests(
     const xmlString = createITI5SoapEnvelope({
       bodyData,
       publicCert: samlCertsAndKeys.publicCert,
+      isNewSoapEnabled,
     });
     const useSha1 = doesGatewayUseSha1(gateway.oid);
     const signedRequest = signFullSaml({ xmlString, samlCertsAndKeys, useSha1 });

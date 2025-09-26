@@ -324,3 +324,7 @@ export async function isQuestFeatureFlagEnabledForCx(cxId: string): Promise<bool
 export async function isCqDoaEnabled(): Promise<boolean> {
   return isFeatureFlagEnabled("cqDoaFeatureFlag");
 }
+
+export async function isNewSoapEnvelopeEnabled(): Promise<boolean> {
+  return isFeatureFlagEnabled("newSoapEnvelopeFeatureFlag");
+}
