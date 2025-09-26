@@ -92,6 +92,7 @@ export async function runPatientLinkingWithRetries({
     cwRef: string;
   }[] = [];
 
+  const startedAt = Date.now();
   while (attempt < MAX_ATTEMPTS_PATIENT_LINKING) {
     attempt++;
     // CW v2 does not return links immediately after registering a patient yet, so we need to wait.
@@ -187,6 +188,9 @@ export async function runPatientLinkingWithRetries({
   if (attempt >= MAX_ATTEMPTS_PATIENT_LINKING) {
     log(`Reached maximum retry attempts (${MAX_ATTEMPTS_PATIENT_LINKING}), stopping retry loop`);
   }
+
+  const elapsedTime = Date.now() - startedAt;
+  log(`Linking flow took: ${elapsedTime}ms`);
 
   if (existingLinksErrors.length > 0) {
     const msg = "CW - Existing links errors";
