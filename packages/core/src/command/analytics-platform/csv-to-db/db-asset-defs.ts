@@ -103,16 +103,16 @@ export function getGrantAccessToDbUserCommand({
   dbName: string;
   username: string;
 }): string {
-  const cmd = `GRANT CONNECT ON DATABASE ${dbName} TO ${username}_rw;
-    GRANT USAGE ON SCHEMA public TO ${username}_rw;
-    grant all on schema public to ${username}_rw;
-    grant all on all tables in schema public to ${username}_rw;
-    grant all on all sequences in schema public to ${username}_rw;
-    grant all on all functions in schema public to ${username}_rw;
-    grant all on all procedures in schema public to ${username}_rw;
-    grant all on all routines in schema public to ${username}_rw;
-    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ${username}_rw;
-    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO ${username}_rw;
+  const cmd = `GRANT CONNECT ON DATABASE ${dbName} TO ${username};
+    GRANT USAGE ON SCHEMA public TO ${username};
+    grant all on schema public to ${username};
+    grant all on all tables in schema public to ${username};
+    grant all on all sequences in schema public to ${username};
+    grant all on all functions in schema public to ${username};
+    grant all on all procedures in schema public to ${username};
+    grant all on all routines in schema public to ${username};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ${username};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO ${username};
     `;
   return cmd;
 }
