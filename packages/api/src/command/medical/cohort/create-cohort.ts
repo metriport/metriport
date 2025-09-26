@@ -1,4 +1,4 @@
-import { CohortCreate, CohortEntity, CohortModelCreate } from "@metriport/core/domain/cohort";
+import { CohortCreate, CohortEntity, CohortModelCreate } from "@metriport/shared/domain/cohort";
 import { out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError } from "@metriport/shared";
