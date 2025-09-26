@@ -1,6 +1,6 @@
 import { Resource } from "@medplum/fhirtypes";
 import { BadRequestError, JwtTokenInfo } from "@metriport/shared";
-import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
+import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import {
   isAllergyIntolerance,
   isCondition,
@@ -17,6 +17,12 @@ import { writeBackLab } from "./lab";
 import { writeBackLabPanel } from "./lab-panel";
 import { writeBackMedicationStatement } from "./medication-statement";
 import { writeBackProcedure } from "./procedure";
+
+export const writeBackEhrSources = [EhrSources.athena, EhrSources.elation];
+export type WriteBackEhrSource = (typeof writeBackEhrSources)[number];
+export function isEhrSourceWithWriteBack(ehr: EhrSource): ehr is WriteBackEhrSource {
+  return writeBackEhrSources.includes(ehr as WriteBackEhrSource);
+}
 
 export type WriteBackResourceType =
   | "condition"
@@ -41,6 +47,11 @@ export type WriteBackResourceRequest = {
 export type WriteBackResourceClientRequest = Omit<WriteBackResourceRequest, "ehr">;
 
 export async function writeBackResource({ ...params }: WriteBackResourceRequest): Promise<void> {
+  if (!isEhrSourceWithWriteBack(params.ehr)) {
+    throw new BadRequestError("EHR source does not support write back", undefined, {
+      ehr: params.ehr,
+    });
+  }
   if (params.writeBackResource === "grouped-vitals") {
     if (!isEhrGroupedVitals(params.primaryResourceOrResources)) {
       throw new BadRequestError(

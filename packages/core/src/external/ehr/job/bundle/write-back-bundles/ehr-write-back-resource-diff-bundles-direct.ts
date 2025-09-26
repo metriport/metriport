@@ -342,7 +342,11 @@ async function getWriteBackFilters({
   ehr: EhrSource;
   practiceId: string;
 }): Promise<WriteBackFiltersPerResourceType | undefined> {
-  if (!isEhrSourceWithSecondaryMappings(ehr)) return undefined;
+  if (!isEhrSourceWithSecondaryMappings(ehr)) {
+    throw new BadRequestError("EHR does not support secondary mappings", undefined, {
+      ehr,
+    });
+  }
   const mappingsSchema = ehrCxMappingSecondaryMappingsSchemaMap[ehr];
   if (!mappingsSchema) {
     throw new BadRequestError("No mappings schema found for EHR", undefined, {
@@ -354,14 +358,8 @@ async function getWriteBackFilters({
     practiceId,
     schema: mappingsSchema,
   });
-  if (!secondaryMappings) {
-    throw new BadRequestError("No secondary mappings found for EHR", undefined, {
-      ehr,
-      practiceId,
-    });
-  }
-  if (!secondaryMappings.writeBackEnabled) {
-    throw new BadRequestError("Write back is not enabled for EHR", undefined, {
+  if (!secondaryMappings || !secondaryMappings.writeBackEnabled) {
+    throw new BadRequestError("Write back is not enabled for practice", undefined, {
       ehr,
       practiceId,
     });
