@@ -133,6 +133,7 @@ export async function runPatientLinkingWithRetries({
 
     let probableLinks: PatientProbableLinks = { Patients: [] };
     let probableLinksCount = 0;
+    let isProbableLinksSuccessful = false;
 
     try {
       probableLinks = await executeWithRetries(
@@ -152,6 +153,7 @@ export async function runPatientLinkingWithRetries({
         }
       );
       probableLinksCount = probableLinks?.Patients?.length ?? 0;
+      isProbableLinksSuccessful = true;
     } catch (error) {
       const cwRef = commonWell.lastTransactionId;
       const msg = `Error in getProbableLinks after all retries ${attempt}/${MAX_ATTEMPTS_PATIENT_LINKING}`;
@@ -179,7 +181,7 @@ export async function runPatientLinkingWithRetries({
     validLinks = result.validLinks;
     invalidLinks = result.invalidLinks;
 
-    if (probableLinksCount < 1) {
+    if (isProbableLinksSuccessful && probableLinksCount < 1) {
       log(`No probable links found, stopping retry loop after attempt ${attempt}`);
       break;
     }
