@@ -333,4 +333,18 @@ describe("epicMatchingAlgorithm", () => {
     };
     expect(epicMatchingAlgorithm(patient1, patient2, 20)).toBe(false);
   });
+
+  it("fail w/ requirePartialNameMatch and no name matches, dob (8), exact address (2), exact phone (2), exact email (2), exact ssn (5)", () => {
+    const patient1 = { ...basePatient };
+    const patient2 = {
+      ...differentPatient,
+      dob: basePatient.dob,
+      firstName: "Jane",
+      lastName: "Smith",
+      address: basePatient.address,
+      contact: basePatient.contact ?? [],
+      personalIdentifiers: basePatient.personalIdentifiers,
+    };
+    expect(epicMatchingAlgorithm(patient1, patient2, 20)).toBe(false);
+  });
 });
