@@ -110,14 +110,14 @@ export function lookupHieTzEntryForIp(hieVpnConfigRows: HieVpnConfigRow[], ip: s
       hieVpnConfigRows: JSON.stringify(hieVpnConfigRows),
     });
   }
-  return match;
+  return { hieName: match.hieName };
 }
 
 export function getHieConfig(
   hieConfigDictionary: HieConfigDictionary,
   ip: string,
   rawMessage: Hl7Message
-) {
+): { hieName: string; timezone?: string } {
   const zitSegment = rawMessage.getSegment(CUSTOM_SEGMENT_NAME);
   const hieVpnConfigRows = Object.entries(hieConfigDictionary).flatMap(keepOnlyVpnConfigs);
   if (zitSegment) {
