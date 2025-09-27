@@ -13,8 +13,10 @@ const { log } = out("ihe-gateway-v2-outbound-patient-discovery");
 const apiUrl = getEnvVarOrFail("API_URL");
 const pdResponseUrl = `http://${apiUrl}/internal/carequality/patient-discovery/response`;
 
-// Set by us
+// Automatically set by AWS
 const region = getEnvOrFail("AWS_REGION");
+
+// Set by us
 const featureFlagsTableName = getEnvOrFail("FEATURE_FLAGS_TABLE_NAME");
 
 // Call this before reading FFs
