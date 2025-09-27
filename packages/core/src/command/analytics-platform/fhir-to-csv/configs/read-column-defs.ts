@@ -1,21 +1,41 @@
 import fs from "fs";
 import ini from "ini";
+import { parseResourceTypeFromConfigurationFileName } from "../file-name";
 
+/**
+ * Returns the list of resource types from the configuration files.
+ *
+ * @param iniFolder
+ * @returns List of resource types.
+ */
+export function getResourceTypesFromConfigurationFiles(iniFolder: string): string[] {
+  const iniFiles = getIniFiles(iniFolder);
+  const resourceTypes = iniFiles.map(parseResourceTypeFromConfigurationFileName);
+  return resourceTypes;
+}
+
+/**
+ * Returns the column definitions for each resource type from the configuration files.
+ *
+ * @param iniFolder
+ * @returns Record with resource type as key and column definitions as value.
+ */
 export function readConfigs(iniFolder: string): Record<string, string> {
-  const files = fs.readdirSync(iniFolder);
-  const iniFiles = files.filter(file => file.endsWith(".ini"));
+  const iniFiles = getIniFiles(iniFolder);
   const columnDefs: Record<string, string> = {};
 
   for (const file of iniFiles) {
+    const resourceType = parseResourceTypeFromConfigurationFileName(file);
     const columns = readIniFile(`${iniFolder}/${file}`);
-    const resourceType = file.split("_").slice(1).join("_")?.replace(".ini", "")?.toLowerCase();
-    if (!resourceType) {
-      throw new Error(`Invalid resource type in file: ${file}`);
-    }
     columnDefs[resourceType] = columns.map(column => `${column} VARCHAR`).join(", ");
   }
 
   return columnDefs;
+}
+
+function getIniFiles(iniFolder: string): string[] {
+  const files = fs.readdirSync(iniFolder);
+  return files.filter(file => file.endsWith(".ini"));
 }
 
 function readIniFile(path: string): string[] {

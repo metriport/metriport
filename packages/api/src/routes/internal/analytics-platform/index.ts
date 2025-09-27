@@ -1,11 +1,12 @@
 import { startCoreTransform } from "@metriport/core/command/analytics-platform/core-transfom/command/core-transform";
+import { rebuildCoreSchemas } from "@metriport/core/command/analytics-platform/core-transform/rebuild-core";
 import { ingestPatientIntoAnalyticsPlatform } from "@metriport/core/command/analytics-platform/incremental-ingestion";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { requestLogger } from "../../helpers/request-logger";
-import { asyncHandler, getFromQueryOrFail } from "../../util";
+import { asyncHandler, getFromQuery, getFromQueryOrFail } from "../../util";
 
 const router = Router();
 
@@ -55,6 +56,28 @@ router.post(
     const jobId = await startCoreTransform({ cxId, database, schema });
 
     return res.status(httpStatus.OK).json({ message: "Core transform initiated", jobId });
+  })
+);
+
+/**
+ * POST /internal/analytics-platform/ingestion/core/rebuild
+ *
+ * Runs the core rebuild into the analytics platform, for a single patient.
+ *
+ * @param req.query.cxId - The CX ID (optional, defaults to all cxIds that have the analytics
+ *     incremental ingestion feature flag enabled).
+ * @returns 200 OK with the cxIds that core schema rebuild was initiated for.
+ */
+router.post(
+  "/ingestion/core/rebuild",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getFromQuery("cxId", req);
+
+    const cxIds = await rebuildCoreSchemas({ cxId });
+
+    const message = `Core schema rebuild initiated for ${cxIds.length} cxIds`;
+    return res.status(httpStatus.OK).json({ message, cxIds });
   })
 );
 

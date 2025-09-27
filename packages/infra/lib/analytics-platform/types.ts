@@ -14,6 +14,9 @@ export type AnalyticsPlatformsAssets = {
   coreTransformBatchJob: EcsJobDefinition;
   coreTransformBatchJobContainer: EcsFargateContainerDefinition;
   coreTransformBatchJobQueue: JobQueue;
+  coreTransformScheduledLambda: Lambda;
+  // coreTransformLambda: Lambda;
+  // coreTransformQueue: Queue;
   analyticsPlatformBucket: s3.Bucket;
   coreTransformJobCompletionTopic: sns.Topic;
 };
