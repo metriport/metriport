@@ -1,3 +1,4 @@
+import { Bundle } from "@medplum/fhirtypes";
 import { SftpConfig } from "../sftp/types";
 import { z } from "zod";
 import { patientSchema } from "@metriport/shared/domain/patient";
@@ -20,18 +21,31 @@ export const questRosterResponseSchema = z.object({
 
 export type QuestRosterResponse = z.infer<typeof questRosterResponseSchema>;
 
+/**
+ * A Quest response file may be prefixed with "Sweep_" or ""
+ */
+export type QuestResponseType = "notification" | "sweep" | "backfill";
+
 export interface QuestResponseFile {
   fileName: string;
   fileContent: Buffer;
 }
 
-export interface QuestPatientResponseFile extends QuestResponseFile {
-  patientId: string;
+export interface QuestSourceDocument extends QuestResponseFile {
+  externalId: string;
+  sourceDocumentKey: string;
 }
 
 export const questFhirConversionRequestSchema = z.object({
-  patientId: z.string(),
-  sourceDocumentName: z.string(),
+  externalId: z.string(),
+  sourceDocumentKey: z.string(),
 });
 
 export type QuestFhirConversionRequest = z.infer<typeof questFhirConversionRequestSchema>;
+
+export interface QuestFhirConversionResponse {
+  bundle: Bundle;
+  cxId: string;
+  patientId: string;
+  dateId: string;
+}

@@ -34,7 +34,7 @@ const queryMetaSchema = createQueryMetaSchema();
 export type HttpMeta = z.infer<typeof queryMetaSchema>;
 
 export const paginationMetaSchema = z.object({
-  itemsInTotal: z.number(),
+  itemsInTotal: z.number().optional(),
   itemsOnPage: z.number(),
   nextPage: z.string().optional(),
   prevPage: z.string().optional(),

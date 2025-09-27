@@ -20,8 +20,8 @@ command.action(async () => {
   const sourceDocuments = await handler.createSourceDocuments(responseFiles);
   console.log(`Created ${sourceDocuments.length} source documents`);
 
-  const patientIds = new Set(sourceDocuments.map(({ patientId }) => patientId));
-  console.log(`Found ${patientIds.size} unique patients`);
+  const externalIds = new Set(sourceDocuments.map(({ externalId }) => externalId));
+  console.log(`Found ${externalIds.size} unique external IDs`);
 });
 
 export default command;
