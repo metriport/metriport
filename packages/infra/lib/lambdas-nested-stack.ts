@@ -28,7 +28,7 @@ import { createScheduledLambda } from "./shared/lambda-scheduled";
 import { buildSecret, Secrets } from "./shared/secrets";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
-import { isSandbox } from "./shared/util";
+import { isSandbox, isStaging } from "./shared/util";
 
 export const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
@@ -304,34 +304,54 @@ export class LambdasNestedStack extends NestedStack {
     });
 
     if (!isSandbox(props.config)) {
+      if (!isStaging(props.config)) {
+        const lahieSftpIngestionBucket = new s3.Bucket(this, "lahieSftpIngestionBucket", {
+          bucketName: props.config.hl7Notification.LahieSftpIngestionLambda.bucketName,
+          publicReadAccess: false,
+          encryption: s3.BucketEncryption.S3_MANAGED,
+          versioned: true,
+          cors: [
+            {
+              allowedOrigins: ["*"],
+              allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
+            },
+          ],
+        });
+
+        const alohrSftpIngestionBucket = new s3.Bucket(this, "alohrSftpIngestionBucket", {
+          bucketName: props.config.hl7Notification.AlohrSftpIngestionLambda.bucketName,
+          publicReadAccess: false,
+          encryption: s3.BucketEncryption.S3_MANAGED,
+          versioned: true,
+          cors: [
+            {
+              allowedOrigins: ["*"],
+              allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
+            },
+          ],
+        });
+
+        this.hl7LahieSftpIngestionLambda = this.setupLahieSftpIngestionLambda({
+          lambdaLayers: props.lambdaLayers,
+          vpc: props.vpc,
+          secrets: props.secrets,
+          config: props.config,
+          alarmAction: props.alarmAction,
+          lahieSftpIngestionBucket,
+        });
+
+        this.hl7AlohrSftpIngestionLambda = this.setupAlohrSftpIngestionLambda({
+          lambdaLayers: props.lambdaLayers,
+          vpc: props.vpc,
+          secrets: props.secrets,
+          config: props.config,
+          alarmAction: props.alarmAction,
+          alohrSftpIngestionBucket,
+        });
+      }
+
       const hl7v2RosterBucket = new s3.Bucket(this, "Hl7v2RosterBucket", {
         bucketName: props.config.hl7Notification.hl7v2RosterUploadLambda.bucketName,
-        publicReadAccess: false,
-        encryption: s3.BucketEncryption.S3_MANAGED,
-        versioned: true,
-        cors: [
-          {
-            allowedOrigins: ["*"],
-            allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
-          },
-        ],
-      });
-
-      const lahieSftpIngestionBucket = new s3.Bucket(this, "lahieSftpIngestionBucket", {
-        bucketName: props.config.hl7Notification.LahieSftpIngestionLambda.bucketName,
-        publicReadAccess: false,
-        encryption: s3.BucketEncryption.S3_MANAGED,
-        versioned: true,
-        cors: [
-          {
-            allowedOrigins: ["*"],
-            allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
-          },
-        ],
-      });
-
-      const alohrSftpIngestionBucket = new s3.Bucket(this, "alohrSftpIngestionBucket", {
-        bucketName: props.config.hl7Notification.AlohrSftpIngestionLambda.bucketName,
         publicReadAccess: false,
         encryption: s3.BucketEncryption.S3_MANAGED,
         versioned: true,
@@ -350,24 +370,6 @@ export class LambdasNestedStack extends NestedStack {
         hl7v2RosterBucket,
         config: props.config,
         alarmAction: props.alarmAction,
-      });
-
-      this.hl7LahieSftpIngestionLambda = this.setupLahieSftpIngestionLambda({
-        lambdaLayers: props.lambdaLayers,
-        vpc: props.vpc,
-        secrets: props.secrets,
-        config: props.config,
-        alarmAction: props.alarmAction,
-        lahieSftpIngestionBucket,
-      });
-
-      this.hl7AlohrSftpIngestionLambda = this.setupAlohrSftpIngestionLambda({
-        lambdaLayers: props.lambdaLayers,
-        vpc: props.vpc,
-        secrets: props.secrets,
-        config: props.config,
-        alarmAction: props.alarmAction,
-        alohrSftpIngestionBucket,
       });
     }
 
@@ -1110,7 +1112,6 @@ export class LambdasNestedStack extends NestedStack {
     });
 
     sftpPasswordSecret.grantRead(lambda);
-
     ownProps.alohrSftpIngestionBucket.grantReadWrite(lambda);
     hl7Base64ScramblerSeed.grantRead(lambda);
     const webhookSenderQueue = Queue.fromQueueArn(this, "Hl7WebhookSenderQueueAlohr", queue.arn);
