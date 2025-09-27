@@ -1,5 +1,5 @@
 import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@medplum/fhirtypes";
-import { PaginatedResponse } from "@metriport/shared";
+import { CohortCreate, CohortEntity, CohortUpdate, PaginatedResponse } from "@metriport/shared";
 import {
   WebhookRequest,
   WebhookRequestParsingFailure,
@@ -51,6 +51,7 @@ const NO_DATA_MESSAGE = "No data returned from API";
 const BASE_PATH = "/medical/v1";
 const ORGANIZATION_URL = `/organization`;
 const FACILITY_URL = `/facility`;
+const COHORT_URL = `/cohort`;
 const NETWORK_ENTRY_URL = `/network-entry`;
 const PATIENT_URL = `/patient`;
 const DOCUMENT_URL = `/document`;
@@ -708,7 +709,7 @@ export class MetriportMedicalApi {
    * @param data The properties to create the cohort with.
    * @returns The created cohort.
    */
-  async createCohort(data: CohortCreate): Promise<Cohort> {
+  async createCohort(data: CohortCreate): Promise<CohortEntity> {
     const resp = await this.api.post(`${COHORT_URL}`, data);
     return resp.data;
   }
@@ -718,7 +719,7 @@ export class MetriportMedicalApi {
    * @param id The ID of the cohort to delete.
    * @returns The deleted cohort.
    */
-  async deleteCohort(id: string): Promise<void> {
+  async deleteCohort(id: string): Promise<CohortEntity> {
     const resp = await this.api.delete(`${COHORT_URL}/${id}`);
     return resp.data;
   }
@@ -730,7 +731,7 @@ export class MetriportMedicalApi {
    * @param data The properties to update on the cohort.
    * @returns The updated cohort.
    */
-  async updateCohort(id: string, data: CohortUpdate): Promise<Cohort> {
+  async updateCohort(id: string, data: CohortUpdate): Promise<CohortEntity> {
     const resp = await this.api.put(`${COHORT_URL}/${id}`, data);
     return resp.data;
   }
@@ -740,7 +741,7 @@ export class MetriportMedicalApi {
    * @param id The ID of the cohort to return.
    * @returns The cohort with the given ID.
    */
-  async getCohort(id: string): Promise<Cohort> {
+  async getCohort(id: string): Promise<CohortEntity> {
     const resp = await this.api.get(`${COHORT_URL}/${id}`);
     return resp.data;
   }
@@ -750,7 +751,7 @@ export class MetriportMedicalApi {
    * @param name The name of the cohort to return.
    * @returns The cohort with the given name.
    */
-  async getCohortByName(name: string): Promise<Cohort> {
+  async getCohortByName(name: string): Promise<CohortEntity> {
     const resp = await this.api.get(`${COHORT_URL}`, { params: { name } });
     return resp.data;
   }
@@ -759,7 +760,7 @@ export class MetriportMedicalApi {
    * Returns all available cohorts.
    * @returns All available cohorts.
    */
-  async listCohorts(): Promise<Cohort[]> {
+  async listCohorts(): Promise<CohortEntity[]> {
     const resp = await this.api.get(`${COHORT_URL}`);
     return resp.data;
   }
@@ -781,7 +782,47 @@ export class MetriportMedicalApi {
    * @returns The updated cohort.
    */
   async bulkRemovePatientsFromCohort(cohortId: string, patientIds: string[]): Promise<void> {
-    await this.api.delete(`${COHORT_URL}/${cohortId}/patient`, { patientIds });
+    await this.api.delete(`${COHORT_URL}/${cohortId}/patient`, { data: { patientIds } });
+  }
+
+  /**
+   * Assigns a cohort to a patient.
+   * @param patientId The ID of the patient.
+   * @param cohortId The ID of the cohort to assign.
+   * @returns void
+   */
+  async addPatientToCohort(patientId: string, cohortId: string): Promise<void> {
+    await this.api.post(`${PATIENT_URL}/${patientId}/cohort/${cohortId}`);
+  }
+
+  /**
+   * Removes a cohort from a patient.
+   * @param patientId The ID of the patient.
+   * @param cohortId The ID of the cohort to remove.
+   * @returns void
+   */
+  async removePatientFromCohort(patientId: string, cohortId: string): Promise<void> {
+    await this.api.delete(`${PATIENT_URL}/${patientId}/cohort/${cohortId}`);
+  }
+
+  /**
+   * Returns all cohorts assigned to a patient.
+   * @param patientId The ID of the patient.
+   * @returns The list of cohorts assigned to the patient.
+   */
+  async listCohortsForPatient(patientId: string): Promise<CohortEntity[]> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/cohort`);
+    return resp.data;
+  }
+
+  /**
+   * Returns the settings for a patient.
+   * @param patientId The ID of the patient.
+   * @returns The settings for the patient.
+   */
+  async getPatientSettings(patientId: string): Promise<object> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/settings`);
+    return resp.data;
   }
 
   /**

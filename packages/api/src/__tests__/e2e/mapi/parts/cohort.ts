@@ -12,7 +12,7 @@ export const createCohort: CohortCreate = {
 };
 
 export function validateCohort(cohort: Cohort) {
-  expect(cohort.id).toBeTruthy();
+  expect(cohort.name).toBeTruthy();
   expect(cohort.color).toBeTruthy();
   expect(cohort.description).toBeTruthy();
   expect(cohort.settings).toBeTruthy();
