@@ -20,7 +20,6 @@ dbt-extractor==0.6.0
 dbt-postgres==1.9.1
 dbt-protos==1.0.375
 dbt-semantic-interfaces==0.9.0
-dbt-snowflake==1.10.2
 deepdiff==8.6.1
 filelock==3.19.1
 idna==3.10
