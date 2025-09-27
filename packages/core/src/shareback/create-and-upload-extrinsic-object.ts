@@ -1,7 +1,7 @@
 import { DocumentReference, Organization } from "@medplum/fhirtypes";
 import { S3Utils } from "../external/aws/s3";
 import { createPatientUniqueId } from "../external/carequality/shared";
-import { isOrganization } from "../external/fhir/shared";
+import { isOrganization } from "../external/fhir/shared/index";
 import { XML_APP_MIME_TYPE } from "../util/mime";
 import { createExtrinsicObjectXml } from "./metadata/create-metadata-xml";
 
