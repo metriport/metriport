@@ -10,12 +10,15 @@ import {
 } from "./db-asset-defs";
 
 /**
- * Streams patient CSV files from S3 and inserts them into PostgreSQL database.
- * Each CSV file represents a FHIR resource type (e.g., Patient, Condition, Encounter).
+ * Creates the customer analytics database in the main analytics DB instance, and set it up
+ * for usage.
+ *
+ * It also creates the additional users if provided. Those are typically dedicated users with
+ * limited access, used for specific purposes, like lambda functions.
  *
  * @param param.cxId - Customer ID
- * @param param.region - AWS region
  * @param param.dbCreds - Database credentials
+ * @param param.lambdaUsers - Additional users to create
  */
 export async function setupCustomerAnalyticsDb({
   cxId,
