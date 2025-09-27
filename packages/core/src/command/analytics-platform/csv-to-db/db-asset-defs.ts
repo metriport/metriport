@@ -90,7 +90,7 @@ export function getCreateDbUserCommand({
   const cmd = `DO $$
     BEGIN
         IF NOT EXISTS (SELECT 1 FROM pg_user WHERE usename = '${username}') THEN
-            CREATE USER ${username} WITH PASSWORD '${password}';
+            CREATE USER '${username}' WITH PASSWORD '${password}';
         END IF;
     END
     $$;`;

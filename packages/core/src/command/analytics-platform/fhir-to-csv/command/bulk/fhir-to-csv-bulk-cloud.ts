@@ -12,10 +12,11 @@ export class FhirToCsvBulkCloud implements FhirToCsvBulkHandler {
   async processFhirToCsvBulk(params: ProcessFhirToCsvBulkRequest): Promise<void> {
     const { patientId } = params;
     const payload = JSON.stringify(params);
+    const messageDeduplicationId = uuidv4();
     await executeWithNetworkRetries(async () => {
       await this.sqsClient.sendMessageToQueue(this.fhirToCsvQueueUrl, payload, {
         fifo: true,
-        messageDeduplicationId: uuidv4(),
+        messageDeduplicationId,
         messageGroupId: patientId,
       });
     });
