@@ -19,11 +19,10 @@ import {
 
 const INSERT_BATCH_SIZE = 100;
 
-type ResourceTypeSourceInfo = Record<string, { csvS3Key: string; tableName: string }>;
+type ResourceTypeSourceInfo = { resourceType: string; csvS3Key: string; tableName: string }[];
 
 /**
  * Streams patient CSV files from S3 and inserts them into PostgreSQL database.
- * Each CSV file represents a FHIR resource type (e.g., Patient, Condition, Encounter).
  *
  * @param param.cxId - Customer ID
  * @param param.patientId - Patient ID
@@ -32,7 +31,6 @@ type ResourceTypeSourceInfo = Record<string, { csvS3Key: string; tableName: stri
  * @param param.region - AWS region
  * @param param.dbCreds - Database credentials
  * @param param.tablesDefinitions - Tables definitions
- * @param param.jobId - ID of the job to insert CSVs into the database
  */
 export async function sendPatientCsvsToDb({
   cxId,
@@ -84,16 +82,13 @@ export async function sendPatientCsvsToDb({
   try {
     // List all CSV files in the S3 prefix
     const csvFileKeys = await listCsvFileKeys(s3Utils, analyticsBucketName, patientCsvsS3Prefix);
-    if (csvFileKeys.length === 0) {
+    if (csvFileKeys.length < 1) {
       log(`No CSV files found in prefix: ${patientCsvsS3Prefix}`);
       return;
     }
     log(`Found ${csvFileKeys.length} CSV files to process`);
 
-    const resourceTypeSourceInfo: ResourceTypeSourceInfo = getResourceTypeSourceInfo(
-      csvFileKeys,
-      tablesDefinitions
-    );
+    const resourceTypeSourceInfo = getResourceTypeSourceInfo(csvFileKeys);
 
     await dbClient.connect();
     log(`Connected to database`);
@@ -101,7 +96,7 @@ export async function sendPatientCsvsToDb({
     await prepareIncrementalJobInDb({ dbClient });
 
     let counter = 0;
-    for (const [resourceType, { csvS3Key, tableName }] of Object.entries(resourceTypeSourceInfo)) {
+    for (const { resourceType, csvS3Key, tableName } of resourceTypeSourceInfo) {
       try {
         counter += await processResourceType({
           patientId,
@@ -149,28 +144,24 @@ async function listCsvFileKeys(
 /**
  * Returns the CSV file key and DB table name for each resource type.
  */
-function getResourceTypeSourceInfo(
-  csvFileKeys: string[],
-  tablesDefinitions: Record<string, string>
-): ResourceTypeSourceInfo {
-  const csvKeysByResourceType = groupBy(csvFileKeys, parseTableNameFromFhirToCsvIncrementalFileKey);
-  const resourceTypeSourceInfo: ResourceTypeSourceInfo = Object.keys(tablesDefinitions).reduce(
-    (acc, resourceType) => {
-      const csvS3Key = csvKeysByResourceType[resourceType]?.[0];
-      if (!csvS3Key) {
-        throw new MetriportError(`No CSV file key found for resource type`, undefined, {
-          resourceType,
-        });
-      }
-      acc[resourceType] = {
-        csvS3Key,
-        tableName: createTableName(resourceType),
-      };
-      return acc;
-    },
-    {} as ResourceTypeSourceInfo
-  );
-  return resourceTypeSourceInfo;
+function getResourceTypeSourceInfo(csvFileKeys: string[]): ResourceTypeSourceInfo {
+  const sourceInfoByResourceType = csvFileKeys.map(s3Key => {
+    const resourceType = parseTableNameFromFhirToCsvIncrementalFileKey(s3Key);
+    const tableName = createTableName(resourceType);
+    return { resourceType, tableName, csvS3Key: s3Key };
+  });
+  const resourceTypesWithMoreThanOneCsvFile = Object.entries(
+    groupBy(sourceInfoByResourceType, "resourceType")
+  ).filter(([, files]) => files.length > 1);
+  if (resourceTypesWithMoreThanOneCsvFile.length > 0) {
+    const { log } = out("getResourceTypeSourceInfo");
+    const filesAsStr = JSON.stringify(resourceTypesWithMoreThanOneCsvFile);
+    log(`Multiple CSV files found for resource type: ${filesAsStr}`);
+    throw new MetriportError(`Multiple CSV files found for resource type`, undefined, {
+      files: filesAsStr,
+    });
+  }
+  return sourceInfoByResourceType;
 }
 
 async function prepareIncrementalJobInDb({ dbClient }: { dbClient: Client }): Promise<void> {
@@ -419,7 +410,7 @@ async function insertBatchIntoDatabase({
   batch: string[][];
   dbClient: Client;
 }): Promise<void> {
-  if (batch.length === 0) return;
+  if (batch.length < 1) return;
 
   // Create VALUES clause with placeholders for batch insert
   const valuesClauses = batch.map((_, batchIndex) => {
