@@ -2,7 +2,7 @@ name: "metriport_connector"
 version: "1.0.0"
 config-version: 2
 
-profile: "snowflake"
+profile: "postgres"
 
 model-paths: ["models"]
 analysis-paths: ["analyses"]

@@ -9,5 +9,6 @@ export type AnalyticsPlatformsAssets = {
   fhirToCsvIncrementalQueue: Queue;
   mergeCsvsLambda: Lambda;
   mergeCsvsQueue: Queue;
+  rawToCoreTransformLambda: Lambda;
   analyticsPlatformBucket: s3.Bucket;
 };
