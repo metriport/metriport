@@ -7,6 +7,7 @@ import { UniqueConstraintError } from "sequelize";
 import { createTenantIfNotExists } from "../../../external/fhir/admin";
 import { upsertOrgToFHIRServer } from "../../../external/fhir/organization/upsert-organization";
 import { OrganizationModel } from "../../../models/medical/organization";
+import { createDefaultCohorts } from "../cohort/create-default-cohorts";
 import { createOrganizationId } from "../customer-sequence/create-id";
 import { getOrganization } from "./get-organization";
 
@@ -37,6 +38,8 @@ export async function createOrganization({
   await createTenantIfNotExists(org);
   const fhirOrg = toFHIR(org);
   await upsertOrgToFHIRServer(org.cxId, fhirOrg);
+
+  await createDefaultCohorts({ cxId });
 
   return org;
 }
@@ -88,6 +91,7 @@ async function createOrganizationInternal({
           cqActive,
           cwApproved,
           cwActive,
+          // eslint-disable-next-line no-param-reassign
           attempt: ++attempt,
         });
       }

@@ -50,6 +50,7 @@ const testPatient: PatientCreate = {
   dob: "1981-01-01",
   genderAtBirth: "M",
   personalIdentifiers: [],
+  cohorts: ["Low Risk"],
   address: [
     {
       zip: "35080",
