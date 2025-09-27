@@ -12,6 +12,8 @@ def handler(event: dict, context: dict):
     os.environ['DBT_PG_DATABASE'] = database
     schema = event.get("SCHEMA") or os.getenv("DBT_PG_SCHEMA")
     os.environ['DBT_PG_SCHEMA'] = schema
+    if (not host or not user or not password or not database or not schema):
+        raise ValueError("Missing required environment variables")
     print(f"Running DBT build with database: {database}, schema: {schema}")
     dbt_runner = dbtRunner()
     cli_args = ["deps"]
