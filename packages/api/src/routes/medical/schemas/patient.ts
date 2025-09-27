@@ -1,9 +1,4 @@
-import {
-  Contact as ContactSchema,
-  Demographics,
-  PatientCreate,
-  patientCreateSchema,
-} from "@metriport/api-sdk";
+import { Contact as ContactSchema, Demographics, patientCreateSchema } from "@metriport/api-sdk";
 import { Contact } from "@metriport/core/domain/contact";
 import { PatientData } from "@metriport/core/domain/patient";
 import { z } from "zod";
@@ -18,7 +13,7 @@ export function schemaContactToContact(input: ContactSchema): Contact {
   };
 }
 
-export function schemaCreateToPatientData(input: PatientCreate): PatientData {
+export function schemaCreateToPatientData(input: Demographics): PatientData {
   return {
     ...input,
     address: Array.isArray(input.address) ? input.address : [input.address],
