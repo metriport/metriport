@@ -438,6 +438,7 @@ export function createAPIService({
             FHIR_TO_CSV_INCREMENTAL_QUEUE_URL:
               analyticsPlatformAssets.fhirToCsvIncrementalQueue.queueUrl,
             ANALYTICS_BUCKET_NAME: analyticsPlatformAssets.analyticsPlatformBucket.bucketName,
+            CORE_TRANSFORM_QUEUE_URL: analyticsPlatformAssets.coreTransformQueue.queueUrl,
           }),
           ...(props.config.hl7Notification?.hieConfigs && {
             HIE_CONFIG_DICTIONARY: JSON.stringify(
@@ -604,6 +605,11 @@ export function createAPIService({
     provideAccessToQueue({
       accessType: "send",
       queue: analyticsPlatformAssets.fhirToCsvIncrementalQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+    provideAccessToQueue({
+      accessType: "send",
+      queue: analyticsPlatformAssets.coreTransformQueue,
       resource: fargateService.taskDefinition.taskRole,
     });
   }

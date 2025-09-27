@@ -801,6 +801,7 @@ export class APIStack extends Stack {
       ...(questStack?.getLambdas() ?? []),
       jobsStack.getAssets().runPatientJobLambda,
       analyticsPlatformStack?.getAssets().fhirToCsvBulkLambda,
+      analyticsPlatformStack?.getAssets().coreTransformScheduledLambda,
     ];
     const apiUrl = `http://${apiDirectUrl}`;
     lambdasToGetApiUrl.forEach(lambda => lambda?.addEnvironment("API_URL", apiUrl));

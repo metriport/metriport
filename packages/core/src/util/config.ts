@@ -420,6 +420,9 @@ export class Config {
   static getFhirToCsvTransformHttpEndpoint(): string {
     return getEnvVar("FHIR_TO_CSV_TRANSFORM_HTTP_ENDPOINT") ?? "http://localhost:8001";
   }
+  static getCoreTransformQueueUrl(): string {
+    return getEnvVarOrFail("CORE_TRANSFORM_QUEUE_URL");
+  }
 
   static getRosterUploadSftpPasswordArn(): string {
     return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_ARN`);
