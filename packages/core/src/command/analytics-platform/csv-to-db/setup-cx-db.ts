@@ -53,6 +53,9 @@ export async function setupCustomerAnalyticsDb({
     const cxDbName = getCxDbName(cxId, dbCreds.dbname);
     await dbClient.connect();
     log(`Connected to database`);
+
+    await initializeGlobalDbIfNeeded({ dbClient, log });
+
     await createCustomerAnalyticsDb({ dbClient, cxDbName, log });
     await dbClient.end();
     log(`Disconnected from main database, connecting again to the cx db...`);
@@ -75,6 +78,21 @@ export async function setupCustomerAnalyticsDb({
     await dbClient.end();
     log(`Disconnected from database`);
   }
+}
+
+async function initializeGlobalDbIfNeeded({
+  dbClient,
+  log,
+}: {
+  dbClient: Client;
+  log: typeof console.log;
+}): Promise<void> {
+  const cmdExists = `SELECT extname, extversion FROM pg_extension WHERE extname = 'aws_s3'`;
+  const exists = await dbClient.query(cmdExists);
+  if (exists.rowCount > 0) return;
+  const cmdCreate = `CREATE EXTENSION aws_s3 CASCADE`;
+  await dbClient.query(cmdCreate);
+  log(`Created aws_s3 extension`);
 }
 
 async function createCustomerAnalyticsDb({
