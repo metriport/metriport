@@ -5,7 +5,7 @@ import csv from "csv-parser";
 import * as stream from "stream";
 import { SuspectCreate } from "../../../domain/suspect";
 import { SuspectModel } from "../../../models/suspect";
-import { Config } from "../../../shared/config";
+import { Config } from "@metriport/core/util/config";
 
 const MAX_NUMBER_ROWS = 100_000;
 const region = Config.getAWSRegion();
@@ -29,7 +29,7 @@ export async function createSuspectsFromS3({
   cxId,
   key,
 }: CreateSuspectsFromS3Params): Promise<void> {
-  const bucket = Config.getAnalyticsPlatformBucketName();
+  const bucket = Config.getAnalyticsBucketName();
   if (!bucket) throw new MetriportError("Analytics platform bucket name is not set");
   const s3Client = new S3Utils(region);
   const csvAsString = await s3Client.getFileContentsAsString(bucket, key);

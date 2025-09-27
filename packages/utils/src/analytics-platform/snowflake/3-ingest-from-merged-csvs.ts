@@ -2,6 +2,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { readConfigs } from "@metriport/core/command/analytics-platform/fhir-to-csv/configs/read-column-defs";
 import { buildMergeCsvsJobPrefix } from "@metriport/core/command/analytics-platform/merge-csvs/file-name";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import {
@@ -15,8 +16,6 @@ import * as AWS from "aws-sdk";
 import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import fs from "fs";
-import ini from "ini";
 import readline from "readline/promises";
 import * as snowflake from "snowflake-sdk";
 import { elapsedTimeAsStr } from "../../shared/duration";
@@ -86,7 +85,7 @@ async function main({ mergeCsvJobId }: { mergeCsvJobId: string }) {
   const prefixName = buildMergeCsvsJobPrefix({ cxId, jobId: mergeCsvJobId });
   const prefixUrl = `s3://${bucketName}/${prefixName}`;
 
-  const columnDefs = readConfigs();
+  const columnDefs = readConfigs(`../data-transformation/fhir-to-csv/src/parseFhir/configurations`);
   const [{ orgName }, files] = await Promise.all([
     getCxData(cxId, undefined, false),
     s3Utils.listObjects(bucketName, prefixName),
@@ -206,42 +205,6 @@ async function processTable({
 
 function createTableName(resourceType: string): string {
   return resourceType.toUpperCase();
-}
-
-/**
- * Reads from a .ini file and returns the list of properties under [Struct] section.
- */
-function readIniFile(path: string): string[] {
-  const data = fs.readFileSync(path, "utf8");
-  const config = ini.parse(data);
-
-  // Extract properties from the [Struct] section
-  const structSection = config.Struct;
-  if (!structSection) {
-    throw new Error("No [Struct] section found in the INI file");
-  }
-
-  // Return the list of property names (keys) from the Struct section
-  return Object.keys(structSection);
-}
-
-// TODO ENG-858 Configs won't be available at runtime in the lambda like this, will need a diff approach
-function readConfigs(): Record<string, string> {
-  const iniFolder = `../data-transformation/fhir-to-csv/src/parseFhir/configurations`;
-  const files = fs.readdirSync(iniFolder);
-  const iniFiles = files.filter(file => file.endsWith(".ini"));
-  const columnDefs: Record<string, string> = {};
-
-  for (const file of iniFiles) {
-    const columns = readIniFile(`${iniFolder}/${file}`);
-    const resourceType = file.split("_").slice(1).join("_")?.replace(".ini", "")?.toLowerCase();
-    if (!resourceType) {
-      throw new Error(`Invalid resource type in file: ${file}`);
-    }
-    columnDefs[resourceType] = columns.map(column => `${column} VARCHAR`).join(", ");
-  }
-
-  return columnDefs;
 }
 
 async function displayWarningAndConfirmation(

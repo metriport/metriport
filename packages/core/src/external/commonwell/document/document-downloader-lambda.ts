@@ -1,4 +1,5 @@
 import * as AWS from "aws-sdk";
+import { out } from "../../../util/log";
 import { getLambdaResultPayload, makeLambdaClient } from "../../aws/lambda";
 import {
   Document,
@@ -56,6 +57,8 @@ export class DocumentDownloaderLambda extends DocumentDownloader {
     destinationFileInfo: FileInfo;
     cxId: string;
   }): Promise<DownloadResult> {
+    const { log } = out(`DocumentDownloaderLambda.download - cx ${cxId}`);
+
     const payload: DocumentDownloaderLambdaRequest = {
       sourceDocument,
       destinationFileInfo,
@@ -78,9 +81,7 @@ export class DocumentDownloaderLambda extends DocumentDownloader {
       lambdaName: this.lambdaName,
     });
 
-    console.log(
-      `Response from the downloader lambda: ${lambdaResult.StatusCode} / ${resultPayload}`
-    );
+    log(`Response from the downloader lambda: ${lambdaResult.StatusCode} / ${resultPayload}`);
     return JSON.parse(resultPayload.toString());
   }
 }

@@ -67,6 +67,7 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   cxsWithSurescriptsFeatureFlag: { enabled: false, values: [] },
   cxsWithSurescriptsNotificationsFeatureFlag: { enabled: false, values: [] },
   cxsWithQuestFeatureFlag: { enabled: false, values: [] },
+  analyticsIncrementalIngestion: { enabled: false, values: [] },
   cqDoaFeatureFlag: { enabled: false },
   cxsWithNewSoapEnvelopeFeatureFlag: { enabled: false, values: [] },
 };

@@ -7,7 +7,7 @@ export type LogParam = LogParamBasic | (() => LogParamBasic);
 export type Logger = ReturnType<typeof out>;
 export type LogFunction = Logger["log"];
 
-export function log(prefix?: string, suffix?: string) {
+export function log(prefix?: string, suffix?: string): typeof console.log {
   return (msg: string, ...optionalParams: LogParam[]): void => {
     const actualPrefix = prefix ? `[${prefix}] ` : ``;
 
@@ -22,7 +22,7 @@ export function log(prefix?: string, suffix?: string) {
   };
 }
 
-export function debug(prefix?: string, suffix?: string) {
+export function debug(prefix?: string, suffix?: string): typeof console.log {
   if (Config.isCloudEnv()) return emptyFunction;
   return log(prefix, suffix);
 }

@@ -363,7 +363,7 @@ to run and restart); this has the benefit of Docker Desktop managing the service
 
 ```shell
 $ cd packages/api
-$ npm run start-dependencies # might be able run it once
+$ npm run start-dependencies # run it once
 $ npm run dev
 ```
 

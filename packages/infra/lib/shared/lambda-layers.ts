@@ -10,6 +10,7 @@ export const layers = [
   "puppeteer",
   "langchain",
   "saxon",
+  "analyticsPlatform",
 ] as const;
 export type LambdaLayer = (typeof layers)[number];
 
@@ -55,6 +56,12 @@ export function setupLambdasLayers(stack: Stack, prefixStackName = false): Lambd
     saxon: new LayerVersion(stack, `${prefix}SaxonLayer`, {
       layerVersionName: `${prefix}SaxonLayer`,
       code: Code.fromAsset("../lambdas/layers/saxon/dist/saxon-layer.zip"),
+    }),
+    analyticsPlatform: new LayerVersion(stack, `${prefix}AnalyticsPlatformLayer`, {
+      layerVersionName: `${prefix}AnalyticsPlatformLayer`,
+      code: Code.fromAsset(
+        "../lambdas/layers/analytics-platform/dist/analytics-platform-layer.zip"
+      ),
     }),
   };
 }

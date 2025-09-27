@@ -1,0 +1,33 @@
+version: "3.8"
+
+name: fhir-to-csv-transform
+
+networks:
+  metriportNetwork:
+    name: metriportNetwork
+    driver: bridge
+
+services:
+  fhir-to-csv-transform:
+    container_name: server
+    build:
+      dockerfile: ./Dockerfile.dev
+    ports:
+      - "8001:8000"  # Map host port 8001 to container port 8000
+    volumes:
+      - .:/usr/app/data
+      - ~/.aws:/root/.aws
+    environment:
+      ENV: ${ENV}
+      PORT: 8000
+      HOST: 0.0.0.0
+      DEBUG: ${DEBUG:-false}
+    command: ["python", "main.py", "server"]
+    networks:
+      - metriportNetwork
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

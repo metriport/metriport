@@ -26,6 +26,10 @@ main() {
    pushd layers/langchain
    npm run prep-deploy
    popd
+
+   pushd layers/analytics-platform
+   ./scripts/prep-deploy.sh
+   popd
 }
 
 main
