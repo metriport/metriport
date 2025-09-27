@@ -735,6 +735,7 @@ export class APIStack extends Stack {
         iheResponsesBucketName: props.config.iheResponsesBucketName,
         iheParsedResponsesBucketName: props.config.iheParsedResponsesBucketName,
         alarmAction: slackNotification?.alarmAction,
+        featureFlagsTable,
       });
     }
 

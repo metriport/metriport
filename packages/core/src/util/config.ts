@@ -1,6 +1,7 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
 import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
+import { SftpConfig } from "../external/sftp/types";
 
 /**
  * Shared configs, still defining how to work with this. For now:
@@ -470,5 +471,25 @@ export class Config {
 
   static getInternalServerUrl(): string {
     return getEnvVarOrFail("INTERNAL_SERVER_BASE_URL");
+  }
+
+  static getAlohrIngestionBucket(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_BUCKET_NAME");
+  }
+
+  static getAlohrIngestionRemotePath(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_REMOTE_PATH");
+  }
+
+  static getAlohrIngestionPasswordArn(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_PASSWORD_ARN");
+  }
+
+  static getAlohrIngestionSftpConfig(): Partial<SftpConfig> {
+    return getEnvVarAsRecordOrFail("ALOHR_INGESTION_SFTP_CONFIG");
+  }
+
+  static getAlohrIngestionLambdaName(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_LAMBDA_NAME");
   }
 }

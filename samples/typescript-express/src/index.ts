@@ -51,7 +51,7 @@ async function main() {
 
   let page = 1;
   // const { meta, patients } = await metriportClient.listPatients({ facilityId });
-  const { meta, patients } = await metriportClient.listPatients();
+  const { meta, patients } = await metriportClient.listPatients({ pagination: { count: 10 } });
   console.log(`Page ${page++} has ${patients.length} patients`);
   // do something with the patients...
   let nextPage = meta.nextPage;
