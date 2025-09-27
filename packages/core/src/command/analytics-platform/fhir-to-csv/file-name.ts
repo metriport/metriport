@@ -62,7 +62,11 @@ export function parseTableNameFromFhirToCsvIncrementalFileKey(key: string): stri
   const tableName =
     fileNameWithExt?.substring(0, fileNameWithExt.lastIndexOf(".")) ?? fileNameWithExt;
   if (!tableName) {
-    throw new MetriportError(`Failed to parse tableName from fhirToCsvFileKey`, undefined, { key });
+    throw new MetriportError(
+      `Failed to parse tableName from fhirToCsvIncrementalFileKey`,
+      undefined,
+      { key }
+    );
   }
   return tableName;
 }
