@@ -52,6 +52,7 @@ const percentageWithExternalId = 0.5;
 const percentageWithAddressLine2 = 0.4;
 const percentageWithSsn = 0.1;
 const percentageWithDriversLicence = 0.2;
+const potentialCohorts = [["High Risk"], ["Low Risk", "Custom Cohort"], []];
 function getAmountOfAddresses() {
   return faker.number.int({ min: 1, max: 10 });
 }
@@ -120,6 +121,8 @@ function makePatient(): PatientPayload {
     probability: percentageWithExternalId,
   });
 
+  const cohorts = faker.helpers.arrayElement(potentialCohorts);
+
   const amountOfContacts = getAmountOfContacts();
   const amountOfAddresses = getAmountOfAddresses();
   const address = Array.from({ length: amountOfAddresses }, () => makeAddress());
@@ -137,6 +140,7 @@ function makePatient(): PatientPayload {
 
   return {
     externalId,
+    cohorts,
     ...patientData,
   };
 }

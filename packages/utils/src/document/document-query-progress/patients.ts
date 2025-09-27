@@ -10,6 +10,7 @@ export const patientsToCreate: PatientCreate[] = [
     lastName: "Wayne",
     dob: "1939-01-01",
     genderAtBirth: "M",
+    cohorts: ["Low Risk"],
     address: {
       addressLine1: "123 Test Ave",
       city: "Gotham",
@@ -23,6 +24,7 @@ export const patientsToCreate: PatientCreate[] = [
     lastName: "Kent",
     dob: "1938-01-01",
     genderAtBirth: "M",
+    cohorts: ["Low Risk"],
     address: {
       addressLine1: "123 Test Ave",
       city: "Metropolis",
@@ -36,6 +38,7 @@ export const patientsToCreate: PatientCreate[] = [
     lastName: "Prince",
     dob: "1941-01-01",
     genderAtBirth: "F",
+    cohorts: ["Low Risk"],
     address: {
       addressLine1: "123 Test Ave",
       city: "Themyscira",
@@ -49,6 +52,7 @@ export const patientsToCreate: PatientCreate[] = [
     lastName: "Allen",
     dob: "1956-01-01",
     genderAtBirth: "M",
+    cohorts: ["Low Risk"],
     address: {
       addressLine1: "123 Test Ave",
       city: "Central City",
@@ -62,6 +66,7 @@ export const patientsToCreate: PatientCreate[] = [
     lastName: "Curry",
     dob: "1941-01-01",
     genderAtBirth: "M",
+    cohorts: ["Low Risk"],
     address: {
       addressLine1: "123 Test Ave",
       city: "Atlantis",
@@ -75,6 +80,7 @@ export const patientsToCreate: PatientCreate[] = [
     lastName: "Stark",
     dob: "1963-01-01",
     genderAtBirth: "M",
+    cohorts: ["Low Risk"],
     address: {
       addressLine1: "123 Test Ave",
       city: "New York",
@@ -88,6 +94,7 @@ export const patientsToCreate: PatientCreate[] = [
     lastName: "Rogers",
     dob: "1941-01-01",
     genderAtBirth: "M",
+    cohorts: ["Low Risk"],
     address: {
       addressLine1: "123 Test Ave",
       city: "Brooklyn",
@@ -101,6 +108,7 @@ export const patientsToCreate: PatientCreate[] = [
     lastName: "Romanoff",
     dob: "1964-01-01",
     genderAtBirth: "F",
+    cohorts: ["Low Risk"],
     address: {
       addressLine1: "123 Test Ave",
       city: "Stalingrad",
@@ -114,6 +122,7 @@ export const patientsToCreate: PatientCreate[] = [
     lastName: "Maximoff",
     dob: "1964-01-01",
     genderAtBirth: "F",
+    cohorts: ["Low Risk"],
     address: {
       addressLine1: "123 Test Ave",
       city: "Sokovia",
