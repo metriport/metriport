@@ -16,20 +16,17 @@ def handler(event: dict, context: dict):
         raise ValueError("Missing required environment variables")
     print(f"Running DBT build with database: {database}, schema: {schema}")
     dbt_runner = dbtRunner()
-    cli_args = ["deps"]
-    result = dbt_runner.invoke(cli_args)
-    if result.success:
-        print("DBT deps completed successfully")
-    else:
-        print("DBT deps failed")
-        print(result.exception)
     cli_args = ["build"]
     result = dbt_runner.invoke(cli_args)
     if result.success:
         print("DBT build completed successfully")
     else:
-        print("DBT build failed")
-        print(result.exception)
+        if result.exception:
+            print("DBT build failed with exception:")
+            print(result.exception)
+            raise RuntimeError("DBT build failed") from result.exception
+        print("DBT build failed without exception")
+        raise RuntimeError("DBT build failed")
 
 def main():
     """Main entry point for CLI usage."""

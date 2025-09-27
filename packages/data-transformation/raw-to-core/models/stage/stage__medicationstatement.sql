@@ -376,6 +376,4 @@ SELECT
     statusreason_text,
     filename,
     processed_date 
-FROM {{source('raw', 'medicationstatement') }} x
-
-QUALIFY rank() over(partition by filename order by processed_date desc) = 1
+FROM {{source('raw', 'medicationstatement_view') }} x

@@ -690,7 +690,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     addErrorAlarmToLambdaFunc(
       this,
       rawToCoreTransformLambda,
-      `${rawToCoreTransformLambda}-GeneralLambdaAlarm`,
+      `${rawToCoreTransformLambdaName}-GeneralLambdaAlarm`,
       ownProps.alarmAction
     );
 

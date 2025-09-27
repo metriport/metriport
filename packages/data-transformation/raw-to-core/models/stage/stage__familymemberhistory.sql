@@ -32,6 +32,4 @@ SELECT
     identifier_5_value,
     filename,
     processed_date 
-FROM {{source('raw', 'familymemberhistory') }} x
-
-QUALIFY rank() over(partition by filename order by processed_date desc) = 1
+FROM {{source('raw', 'familymemberhistory_view') }} x
