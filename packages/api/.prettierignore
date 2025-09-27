@@ -1,0 +1,4 @@
+node_modules
+build
+dist
+e2e-test-results
