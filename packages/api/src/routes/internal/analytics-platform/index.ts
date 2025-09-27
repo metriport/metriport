@@ -1,33 +1,36 @@
-import { buildFhirToCsvHandler } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/fhir-to-csv/fhir-to-csv-factory";
+import { ingestPatientIntoAnalyticsPlatform } from "@metriport/core/command/analytics-platform/incremental-ingestion";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { requestLogger } from "../../helpers/request-logger";
-import { asyncHandler, getFromQuery, getFromQueryOrFail } from "../../util";
+import { asyncHandler, getFromQueryOrFail } from "../../util";
 
 const router = Router();
 
 /**
- * POST /internal/analytics-platform/fhir-to-csv
+ * POST /internal/analytics-platform/ingestion/incremental
  *
- * Runs the fhir to csv job.
+ * Runs the incremental ingestion into the analytics platform, for a single patient.
+ *
  * @param req.query.cxId - The CX ID.
- * @param req.query.jobId - The job ID.
  * @param req.query.patientId - The patient ID.
- * @param req.query.inputBundle - The input bundle.
  * @returns 200 OK
  */
 router.post(
-  "/fhir-to-csv",
+  "/ingestion/incremental",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFromQueryOrFail("cxId", req);
-    const jobId = getFromQueryOrFail("jobId", req);
     const patientId = getFromQueryOrFail("patientId", req);
-    const inputBundle = getFromQuery("inputBundle", req);
-    const handler = buildFhirToCsvHandler();
-    await handler.processFhirToCsv({ cxId, jobId, patientId, inputBundle });
-    return res.sendStatus(httpStatus.OK);
+
+    // validate cx<>patient
+    await getPatientOrFail({ id: patientId, cxId });
+
+    const jobId = await ingestPatientIntoAnalyticsPlatform({ cxId, patientId });
+
+    const message = jobId ? "Ingestion initiated" : "Ingestion not initiated";
+    return res.status(httpStatus.OK).json({ message, jobId });
   })
 );
 

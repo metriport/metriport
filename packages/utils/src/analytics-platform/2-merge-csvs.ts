@@ -2,8 +2,8 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import {
-  buildFhirToCsvJobPrefix,
-  parsePatientIdFromFhirToCsvPatientPrefix,
+  buildFhirToCsvBulkJobPrefix,
+  parsePatientIdFromFhirToCsvBulkPatientPrefix,
 } from "@metriport/core/command/analytics-platform/fhir-to-csv/file-name";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { SQSClient } from "@metriport/core/external/aws/sqs";
@@ -166,13 +166,13 @@ async function getPatientIdsFromFhirToCsvJob({
 }: {
   fhirToCsvJobId: string;
 }): Promise<string[]> {
-  const basePrefix = buildFhirToCsvJobPrefix({ cxId, jobId: fhirToCsvJobId });
+  const basePrefix = buildFhirToCsvBulkJobPrefix({ cxId, jobId: fhirToCsvJobId });
   const files = await s3Utils.listFirstLevelSubdirectories({
     bucket: bucketName,
     prefix: basePrefix + "/",
   });
   const patientIds = files.flatMap(file =>
-    file.Prefix ? parsePatientIdFromFhirToCsvPatientPrefix(file.Prefix) : []
+    file.Prefix ? parsePatientIdFromFhirToCsvBulkPatientPrefix(file.Prefix) : []
   );
   return patientIds;
 }
