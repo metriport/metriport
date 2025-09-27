@@ -13,6 +13,13 @@ export type ScheduledLambdaProps = Omit<LambdaProps, "entry"> & {
     | {
         entry?: never;
         url: string;
+        endpoint?: never;
+        eventInput?: never;
+      }
+    | {
+        entry?: never;
+        url?: never;
+        endpoint: string;
         eventInput?: never;
       }
   );
@@ -37,6 +44,7 @@ export function createScheduledLambda(props: ScheduledLambdaProps): Lambda {
           envVars: {
             ...props.envVars,
             ...(props.url ? { URL: props.url } : {}),
+            ...(props.endpoint ? { ENDPOINT: props.endpoint } : {}),
           },
         }),
   });

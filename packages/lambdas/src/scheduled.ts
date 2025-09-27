@@ -1,5 +1,4 @@
-import { executeWithNetworkRetries, getEnvVar, getEnvVarOrFail } from "@metriport/shared";
-import * as Sentry from "@sentry/serverless";
+import { executeWithNetworkRetries, getEnvVar } from "@metriport/shared";
 import * as http from "http";
 import * as https from "https";
 import * as URL from "url";
@@ -11,7 +10,9 @@ capture.init();
 // Automatically set by AWS
 const lambdaName = getEnvVar("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
-const url = getEnvVarOrFail("URL");
+const apiUrl = getEnvVar("API_URL");
+const url = getEnvVar("URL");
+const endpoint = getEnvVar("ENDPOINT");
 const timeoutRaw = getEnvVar("TIMEOUT_MILLIS");
 const timeoutMillis = timeoutRaw != undefined ? Number(timeoutRaw) : undefined;
 
@@ -21,17 +22,26 @@ const timeoutMillis = timeoutRaw != undefined ? Number(timeoutRaw) : undefined;
  * Usually applied to scheduled jobs, it gets triggered by CloudWatch events
  * and calls an endpoint with no authentication.
  */
-// TODO move to capture.wrapHandler()
-export const handler = Sentry.AWSLambda.wrapHandler(async event => {
+export const handler = capture.wrapHandler(async event => {
+  let fullUrl: string | undefined = url;
   try {
-    console.log(`Calling POST ${url}`);
+    if (!url) {
+      if (!apiUrl || !endpoint) {
+        throw new Error("URL or (API_URL + ENDPOINT) are required");
+      }
+      fullUrl = apiUrl + endpoint;
+    }
+    const urlToCall = fullUrl;
+    if (!urlToCall) throw new Error("Promigramming error, urlToCall is undefined");
 
-    await executeWithNetworkRetries(() => sendRequest({ url, method: "POST" }));
+    console.log(`Calling POST ${fullUrl}`);
+
+    await executeWithNetworkRetries(() => sendRequest({ url: urlToCall, method: "POST" }));
 
     console.log(`Done, request completed. (not waiting for a response)`);
   } catch (error) {
-    console.log(`Error calling ${url}; ${error}`);
-    capture.error(error, { extra: { url, event, lambdaName, error } });
+    console.log(`Error calling ${fullUrl}; ${error}`);
+    capture.error(error, { extra: { url, apiUrl, endpoint, event, lambdaName, error } });
     throw error;
   }
 });
