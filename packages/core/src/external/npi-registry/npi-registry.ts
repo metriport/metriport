@@ -88,7 +88,7 @@ export async function getFacilityByNpiOrFail(npi: string): Promise<NpiRegistryFa
  * @param additionalInfo extra required information to translate the name, if it is OBO, and the cqOboOid + cwOboOid
  * @returns the translated FacilityInternalDetails
  */
-export function translateNpiFacilityToMetriportFacility(
+export function buildInternalFacilityFromNpiFacility(
   npiFacility: NpiRegistryFacility,
   additionalInfo: AdditionalInformationInternalFacility
 ): FacilityInternalDetails {
@@ -102,6 +102,8 @@ export function translateNpiFacilityToMetriportFacility(
 
   const type = isObo ? FacilityType.initiatorOnly : FacilityType.initiatorAndResponder;
   const zip = normalizeZipCodeNew(address.postal_code);
+  const cqActive = additionalInfo.cqActive;
+  const cwActive = additionalInfo.cwActive;
 
   const internalFacility: FacilityInternalDetails = {
     city: normalizeCity(address.city),
@@ -110,6 +112,10 @@ export function translateNpiFacilityToMetriportFacility(
     npi: npiFacility.number,
     cqType: type,
     cwType: type,
+    cqApproved: cqActive,
+    cwApproved: cwActive,
+    cqActive,
+    cwActive,
     addressLine1: toTitleCase(address.address_1),
     zip,
     country: "USA",
