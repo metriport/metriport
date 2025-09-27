@@ -10,12 +10,15 @@ import {
 } from "./db-asset-defs";
 
 /**
- * Streams patient CSV files from S3 and inserts them into PostgreSQL database.
- * Each CSV file represents a FHIR resource type (e.g., Patient, Condition, Encounter).
+ * Creates the customer analytics database in the main analytics DB instance, and set it up
+ * for usage.
+ *
+ * It also creates the additional users if provided. Those are typically dedicated users with
+ * limited access, used for specific purposes, like lambda functions.
  *
  * @param param.cxId - Customer ID
- * @param param.region - AWS region
  * @param param.dbCreds - Database credentials
+ * @param param.lambdaUsers - Additional users to create
  */
 export async function setupCustomerAnalyticsDb({
   cxId,
@@ -53,6 +56,9 @@ export async function setupCustomerAnalyticsDb({
     const cxDbName = getCxDbName(cxId, dbCreds.dbname);
     await dbClient.connect();
     log(`Connected to database`);
+
+    await initializeGlobalDbIfNeeded({ dbClient, log });
+
     await createCustomerAnalyticsDb({ dbClient, cxDbName, log });
     await dbClient.end();
     log(`Disconnected from main database, connecting again to the cx db...`);
@@ -75,6 +81,21 @@ export async function setupCustomerAnalyticsDb({
     await dbClient.end();
     log(`Disconnected from database`);
   }
+}
+
+async function initializeGlobalDbIfNeeded({
+  dbClient,
+  log,
+}: {
+  dbClient: Client;
+  log: typeof console.log;
+}): Promise<void> {
+  const cmdExists = `SELECT extname, extversion FROM pg_extension WHERE extname = 'aws_s3'`;
+  const exists = await dbClient.query(cmdExists);
+  if (exists.rowCount > 0) return;
+  const cmdCreate = `CREATE EXTENSION aws_s3 CASCADE`;
+  await dbClient.query(cmdCreate);
+  log(`Created aws_s3 extension`);
 }
 
 async function createCustomerAnalyticsDb({

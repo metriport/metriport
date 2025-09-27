@@ -1,6 +1,6 @@
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
-import { Queue } from "aws-cdk-lib/aws-sqs";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import { Queue } from "aws-cdk-lib/aws-sqs";
 
 export type AnalyticsPlatformsAssets = {
   fhirToCsvBulkLambda: Lambda;
@@ -10,5 +10,8 @@ export type AnalyticsPlatformsAssets = {
   mergeCsvsLambda: Lambda;
   mergeCsvsQueue: Queue;
   rawToCoreTransformLambda: Lambda;
+  coreTransformScheduledLambda: Lambda;
+  coreTransformLambda: Lambda;
+  coreTransformQueue: Queue;
   analyticsPlatformBucket: s3.Bucket;
 };
