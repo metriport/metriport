@@ -51,7 +51,7 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
       }
 
       const message = await s3Utils.getFileContentsAsString(bucketName, filePath);
-      const recievedAt = buildDayjs(Date.now()).toISOString();
+      const receivedAt = buildDayjs().toISOString();
       const hl7Message = Hl7Message.parse(message);
 
       const remappedMessage = this.remapMessage(hl7Message);
@@ -60,7 +60,7 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
 
       timestampedMessages.push({
         message: remappedMessageString,
-        timestamp: recievedAt,
+        timestamp: receivedAt,
         cxId: cxId,
         patientId: patientId,
       });
