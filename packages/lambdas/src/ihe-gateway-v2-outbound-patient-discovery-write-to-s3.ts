@@ -4,8 +4,9 @@ import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
 import { z } from "zod";
-import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
+import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
+import { capture } from "./shared/capture";
 import { prefixedLog } from "./shared/log";
 
 // Keep this as early on the file as possible
@@ -13,6 +14,13 @@ capture.init();
 
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
+
+// Set by us
+const region = getEnvOrFail("AWS_REGION");
+const featureFlagsTableName = getEnvOrFail("FEATURE_FLAGS_TABLE_NAME");
+
+// Call this before reading FFs
+FeatureFlags.init(region, featureFlagsTableName);
 
 // TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
