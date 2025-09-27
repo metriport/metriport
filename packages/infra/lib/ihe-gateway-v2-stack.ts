@@ -1,20 +1,20 @@
 import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as iam from "aws-cdk-lib/aws-iam";
 import * as glue from "aws-cdk-lib/aws-glue";
+import * as iam from "aws-cdk-lib/aws-iam";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "./env-type";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { Secrets } from "./shared/secrets";
-import { provideAccessToQueue } from "./shared/sqs";
-import { Queue } from "aws-cdk-lib/aws-sqs";
-import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
-import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
-import { createQueue } from "./shared/sqs";
 import { QueueAndLambdaSettings } from "./shared/settings";
+import { createQueue, provideAccessToQueue } from "./shared/sqs";
 
 interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   lambdaLayers: LambdaLayers;
@@ -33,6 +33,7 @@ interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   iheResponsesBucketName: string;
   iheParsedResponsesBucketName: string;
   alarmAction?: SnsAction;
+  featureFlagsTable?: dynamodb.Table;
 }
 
 function settings() {
@@ -234,6 +235,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       apiURL: string;
       envType: EnvType;
       sentryDsn: string | undefined;
+      featureFlagsTable?: dynamodb.Table;
     },
     iheResponsesBucket: s3.Bucket,
     iheParsedResponsesBucket: s3.Bucket,
@@ -252,6 +254,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       apiURL,
       envType,
       sentryDsn,
+      featureFlagsTable,
     } = ownProps;
 
     const patientDiscoveryLambda = createLambda({
@@ -277,6 +280,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         IHE_RESPONSES_BUCKET_NAME: iheResponsesBucket.bucketName,
         IHE_PARSED_RESPONSES_BUCKET_NAME: iheParsedResponsesBucket.bucketName,
         WRITE_TO_S3_QUEUE_URL: writeToS3Queue.queueUrl,
+        ...(featureFlagsTable && { FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName }),
       },
       layers: [lambdaLayers.shared],
       memory: 4096,
