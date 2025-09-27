@@ -1,5 +1,5 @@
-import { Cohort, CohortEntity } from "@metriport/shared/domain/cohort";
 import { NotFoundError } from "@metriport/shared";
+import { CohortEntity } from "@metriport/shared/domain/cohort";
 import { col, fn, Op, Transaction } from "sequelize";
 import { CohortModel } from "../../../models/medical/cohort";
 import { getPatientIdsAssignedToCohort } from "./patient-cohort/get-assigned-ids";
@@ -115,7 +115,7 @@ export async function getCohortByName({
 }: {
   cxId: string;
   name: string;
-}): Promise<Cohort | undefined> {
+}): Promise<CohortEntity | undefined> {
   const trimmedName = name.trim();
 
   const cohort = await CohortModel.findOne({
@@ -126,5 +126,6 @@ export async function getCohortByName({
       },
     },
   });
+
   return cohort?.dataValues ?? undefined;
 }
