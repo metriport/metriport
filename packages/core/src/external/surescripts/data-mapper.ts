@@ -1,3 +1,4 @@
+import _ from "lodash";
 import { NotFoundError } from "@metriport/shared";
 import { CustomerData, FacilityData, OrganizationData } from "@metriport/shared/domain/customer";
 import { Patient } from "@metriport/shared/domain/patient";
@@ -48,6 +49,27 @@ export class SurescriptsDataMapper {
     ]);
     const patients = await this.getEachPatientById(cxId, validPatientIds);
     return { cxId, facility, org, patients };
+  }
+
+  async getBatchRequestDataByFacility(
+    cxId: string,
+    batchSize = 100
+  ): Promise<SurescriptsBatchRequestData[]> {
+    const customer = await this.getCustomerData(cxId);
+    const facilities = customer.facilities;
+    const batchRequests: SurescriptsBatchRequestData[] = [];
+    for (const facility of facilities) {
+      const patientIds = await this.getPatientIdsForFacility({ cxId, facilityId: facility.id });
+      const allPatients = await this.getEachPatientById(cxId, patientIds);
+      const batchesForFacility = _.chunk(allPatients, batchSize).map(patientsInBatch => ({
+        cxId,
+        facility,
+        org: customer.org,
+        patients: patientsInBatch,
+      }));
+      batchRequests.push(...batchesForFacility);
+    }
+    return batchRequests;
   }
 
   convertBatchRequestToPatientRequests(
