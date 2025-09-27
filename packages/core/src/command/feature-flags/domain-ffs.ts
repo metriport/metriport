@@ -324,8 +324,8 @@ export async function getCxsEnabledForAnalyticsIncrementalIngestion(): Promise<s
   return getCxsWithFeatureFlagEnabled("analyticsIncrementalIngestion");
 }
 export async function isAnalyticsIncrementalIngestionEnabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithCommonwellV2Enabled = await getCxsEnabledForAnalyticsIncrementalIngestion();
-  return cxIdsWithCommonwellV2Enabled.some(i => i === cxId);
+  const cxIdsWithFFEnabled = await getCxsEnabledForAnalyticsIncrementalIngestion();
+  return cxIdsWithFFEnabled.some(i => i === cxId);
 }
 
 // TODO: ENG-1089 - Remove this once we fully migrate to the new DOA flow on CQ.
