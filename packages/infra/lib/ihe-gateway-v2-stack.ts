@@ -280,7 +280,6 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         IHE_RESPONSES_BUCKET_NAME: iheResponsesBucket.bucketName,
         IHE_PARSED_RESPONSES_BUCKET_NAME: iheParsedResponsesBucket.bucketName,
         WRITE_TO_S3_QUEUE_URL: writeToS3Queue.queueUrl,
-        AWS_REGION: this.region,
         ...(featureFlagsTable && { FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName }),
       },
       layers: [lambdaLayers.shared],
