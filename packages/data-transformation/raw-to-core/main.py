@@ -2,6 +2,8 @@ from dbt.cli.main import dbtRunner
 import os
 
 def handler(event: dict, context: dict):
+    host = event.get("HOST") or os.getenv("DBT_PG_HOST")
+    os.environ['DBT_PG_HOST'] = host
     user = event.get("USER") or os.getenv("DBT_PG_USER")
     os.environ['DBT_PG_USER'] = user
     password = event.get("PASSWORD") or os.getenv("DBT_PG_PASSWORD")
