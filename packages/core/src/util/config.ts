@@ -420,6 +420,10 @@ export class Config {
   static getFhirToCsvTransformHttpEndpoint(): string {
     return getEnvVar("FHIR_TO_CSV_TRANSFORM_HTTP_ENDPOINT") ?? "http://localhost:8001";
   }
+  // TOOD ENG-954 remove this
+  static getCoreTransformQueueUrl(): string {
+    return getEnvVarOrFail("CORE_TRANSFORM_QUEUE_URL");
+  }
 
   static getCoreTransformBatchJobQueueArn(): string {
     return getEnvVarOrFail("CORE_TRANSFORM_BATCH_JOB_QUEUE_ARN");

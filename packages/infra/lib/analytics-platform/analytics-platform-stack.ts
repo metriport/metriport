@@ -22,6 +22,7 @@ import { EnvConfigNonSandbox } from "../../config/env-config";
 import { EnvType } from "../env-type";
 import { addErrorAlarmToLambdaFunc, createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
+import { createScheduledLambda } from "../shared/lambda-scheduled";
 import { addDBClusterPerformanceAlarms } from "../shared/rds";
 import { buildSecret } from "../shared/secrets";
 import { LambdaSettingsWithNameAndEntry, QueueAndLambdaSettings } from "../shared/settings";
@@ -41,6 +42,16 @@ interface AnalyticsPlatformsSettings {
   fhirToCsvTransform: DockerImageLambdaSettings;
   mergeCsvs: QueueAndLambdaSettings;
   coreTransform: BatchJobSettings;
+  coreTransformScheduled: {
+    name: string;
+    lambda: {
+      memory: number;
+      timeout: Duration;
+    };
+    url: string;
+    scheduleExpression: string;
+  };
+  coreTransformConnector: QueueAndLambdaSettings;
 }
 
 function settings(envType: EnvType): AnalyticsPlatformsSettings {
@@ -49,6 +60,9 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
   const fhirToCsvIncrementalLambdaTimeout = fhirToCsvTransformLambdaTimeout.plus(
     Duration.seconds(10)
   );
+  const coreTransformScheduledLambdaInterval = Duration.minutes(20);
+  const coreTransformConnectorLambdaTimeout = Duration.minutes(15).minus(Duration.seconds(2));
+
   const fhirToCsvBulk: QueueAndLambdaSettings = {
     name: "FhirToCsvBulk",
     entry: "analytics-platform/fhir-to-csv-bulk",
@@ -126,12 +140,44 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
     memory: cdk.Size.mebibytes(8192),
     cpu: 4,
   };
+  const coreTransformScheduled = {
+    name: "CoreTransformScheduled",
+    lambda: {
+      memory: 512,
+      timeout: Duration.minutes(1),
+    },
+    url: `/internal/analytics-platform/ingestion/core/rebuild`,
+    scheduleExpression: `0/${coreTransformScheduledLambdaInterval} * * * ? *`,
+  };
+  const coreTransformConnector: QueueAndLambdaSettings = {
+    name: "CoreTransform",
+    entry: "analytics-platform/core-transform",
+    lambda: {
+      memory: 1024,
+      timeout: coreTransformConnectorLambdaTimeout,
+    },
+    queue: {
+      alarmMaxAgeOfOldestMessage: coreTransformScheduledLambdaInterval.minus(Duration.minutes(3)),
+      maxMessageCountAlarmThreshold: 3,
+      maxReceiveCount: 1,
+      visibilityTimeout: Duration.seconds(coreTransformConnectorLambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+      maxConcurrency: 2, // let's monitor and decide if we can increase this or not
+    },
+    waitTime: Duration.seconds(0),
+  };
   return {
     fhirToCsvBulk,
     fhirToCsvIncremental,
     fhirToCsvTransform,
     mergeCsvs,
     coreTransform,
+    coreTransformScheduled,
+    coreTransformConnector,
   };
 }
 
@@ -156,17 +202,14 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
   readonly coreTransformBatchJobQueue: batch.JobQueue;
   readonly analyticsPlatformBucket: s3.Bucket;
   readonly coreTransformJobCompletionTopic: sns.Topic;
+  readonly coreTransformScheduledLambda: lambda.Function;
+  // readonly coreTransformLambda: lambda.Function;
+  // readonly coreTransformQueue: Queue;
 
   constructor(scope: Construct, id: string, props: AnalyticsPlatformsNestedStackProps) {
     super(scope, id, props);
 
     this.terminationProtection = true;
-
-    // TODO ENG-858 reintroduce this
-    // const snowflakeCreds = buildSecret(
-    //   this,
-    //   props.config.analyticsPlatform.secrets.SNOWFLAKE_CREDS
-    // );
 
     const analyticsPlatformBucket = new s3.Bucket(this, "AnalyticsPlatformBucket", {
       bucketName: props.config.analyticsPlatform.bucketName,
@@ -212,12 +255,13 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       },
     });
 
-    const { dbCluster } = this.setupDB({
+    const { dbCluster, dbCreds } = this.setupDB({
       config: props.config,
       envType: props.config.environmentType,
       awsRegion: props.config.region,
       vpc: props.vpc,
       alarmAction: props.alarmAction,
+      analyticsBucket: analyticsPlatformBucket,
     });
 
     const dbUserSecret = buildSecret(
@@ -322,6 +366,42 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       coreTransformBatchJob,
     });
     this.coreTransformJobCompletionTopic = coreTransformJobCompletionTopic;
+    // this.rawToCoreTransformLambda = rawToCoreTransformLambda;
+
+    this.coreTransformScheduledLambda = this.setupCoreTransformerScheduleLambda({
+      config: props.config,
+      envType: props.config.environmentType,
+      awsRegion: props.config.region,
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+    });
+
+    // TODO will be repurposed
+    // const { lambda: coreTransformConnectorLambda, queue: coreTransformConnectorQueue } =
+    //   this.setupCoreTransformConnector({
+    //     config: props.config,
+    //     envType: props.config.environmentType,
+    //     awsRegion: props.config.region,
+    //     lambdaLayers: props.lambdaLayers,
+    //     vpc: props.vpc,
+    //     sentryDsn: props.config.sentryDSN,
+    //     alarmAction: props.alarmAction,
+    //     analyticsPlatformBucket,
+    //     coreTransformBatchJob,
+    //     coreTransformBatchJobQueue,
+    //     featureFlagsTable: props.featureFlagsTable,
+    //     medicalDocumentsBucket: props.medicalDocumentsBucket,
+    //     dbCluster,
+    //     dbCreds,
+    //   });
+    // this.coreTransformLambda = coreTransformConnectorLambda;
+    // this.coreTransformQueue = coreTransformConnectorQueue;
+
+    // TODO ENG-858 reintroduce this
+    // const snowflakeCreds = buildSecret(
+    //   this,
+    //   props.config.analyticsPlatform.secrets.SNOWFLAKE_CREDS
+    // );
   }
 
   getAssets(): AnalyticsPlatformsAssets {
@@ -337,6 +417,9 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       coreTransformBatchJobContainer: this.coreTransformBatchJobContainer,
       analyticsPlatformBucket: this.analyticsPlatformBucket,
       coreTransformJobCompletionTopic: this.coreTransformJobCompletionTopic,
+      coreTransformScheduledLambda: this.coreTransformScheduledLambda,
+      // coreTransformLambda: this.coreTransformLambda,
+      // coreTransformQueue: this.coreTransformQueue,
     };
   }
 
@@ -345,9 +428,11 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     envType: EnvType;
     awsRegion: string;
     vpc: ec2.IVpc;
+    analyticsBucket: s3.Bucket;
     alarmAction: SnsAction | undefined;
   }): {
     dbCluster: rds.DatabaseCluster;
+    dbCreds: rds.Credentials;
   } {
     const dbConfig = ownProps.config.analyticsPlatform.rds;
     // create database credentials
@@ -375,6 +460,34 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
               log_min_duration_statement: dbConfig.minSlowLogDurationInMs.toString(),
             }
           : undefined),
+      },
+    });
+
+    const dbClusterS3Role = new iam.Role(this, "DatabaseClusterS3Role", {
+      roleName: `DatabaseClusterS3Role-${ownProps.envType}`,
+      assumedBy: new iam.ServicePrincipal("rds.amazonaws.com"),
+      managedPolicies: [
+        iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AmazonRDSEnhancedMonitoringRole"),
+      ],
+      inlinePolicies: {
+        S3AccessPolicy: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: [
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:AbortMultipartUpload",
+                "s3:ListMultipartUploadParts",
+                "s3:ListBucketMultipartUploads",
+              ],
+              resources: [
+                `arn:aws:s3:::${ownProps.analyticsBucket.bucketName}`,
+                `arn:aws:s3:::${ownProps.analyticsBucket.bucketName}/*`,
+              ],
+            }),
+          ],
+        }),
       },
     });
 
@@ -413,8 +526,17 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       },
     });
 
+    const cfnDbCluster = dbCluster.node.defaultChild as rds.CfnDBCluster;
+    cfnDbCluster.associatedRoles = [
+      {
+        roleArn: dbClusterS3Role.roleArn,
+        featureName: "s3Export",
+      },
+    ];
+
     addDBClusterPerformanceAlarms(this, dbCluster, dbClusterName, dbConfig, ownProps.alarmAction);
-    return { dbCluster };
+
+    return { dbCluster, dbCreds };
   }
 
   private setupFhirToCsvTransformLambda(ownProps: {
@@ -599,13 +721,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       username: config.analyticsPlatform.rds.fhirToCsvDbUsername,
       passwordSecretArn: dbUserSecret.secretArn,
     };
-
-    // TODO ENG-1029 for reference only for now
-    // const dbReadOnlyCreds: DatabaseCredsForLambda = {
-    //   host: ownProps.dbCluster.clusterReadEndpoint.hostname,
-    //   port: ownProps.dbCluster.clusterReadEndpoint.port,
-    //   ...
-    // };
 
     const lambda = createLambda({
       ...lambdaSettings,
@@ -808,4 +923,121 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
 
     return { topic };
   }
+
+  private setupCoreTransformerScheduleLambda(ownProps: {
+    config: EnvConfigNonSandbox;
+    envType: EnvType;
+    awsRegion: string;
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+  }): lambda.Function {
+    const { lambdaLayers, vpc } = ownProps;
+
+    const {
+      name,
+      lambda: { timeout, memory },
+      scheduleExpression,
+      url,
+    } = settings(ownProps.envType).coreTransformScheduled;
+
+    const lambda = createScheduledLambda({
+      stack: this,
+      layers: [lambdaLayers.shared],
+      name,
+      vpc,
+      memory,
+      scheduleExpression,
+      url,
+      timeout,
+      envType: ownProps.config.environmentType,
+      envVars: {
+        ...(ownProps.config.lambdasSentryDSN
+          ? { SENTRY_DSN: ownProps.config.lambdasSentryDSN }
+          : {}),
+      },
+    });
+
+    return lambda;
+  }
+
+  // private setupCoreTransformConnector(ownProps: {
+  //   config: EnvConfigNonSandbox;
+  //   envType: EnvType;
+  //   awsRegion: string;
+  //   lambdaLayers: LambdaLayers;
+  //   vpc: ec2.IVpc;
+  //   sentryDsn: string | undefined;
+  //   alarmAction: SnsAction | undefined;
+  //   analyticsPlatformBucket: s3.Bucket;
+  //   rawToCoreTransformLambda: lambda.DockerImageFunction;
+  //   featureFlagsTable: dynamodb.Table;
+  //   medicalDocumentsBucket: s3.Bucket;
+  //   dbCluster: rds.DatabaseCluster;
+  //   dbCreds: rds.Credentials;
+  // }): {
+  //   lambda: lambda.Function;
+  //   queue: Queue;
+  // } {
+  //   const {
+  //     lambdaLayers,
+  //     vpc,
+  //     envType,
+  //     sentryDsn,
+  //     alarmAction,
+  //     analyticsPlatformBucket,
+  //     featureFlagsTable,
+  //     dbCluster,
+  //     dbCreds,
+  //     rawToCoreTransformLambda,
+  //   } = ownProps;
+
+  //   const {
+  //     name,
+  //     entry,
+  //     lambda: lambdaSettings,
+  //     queue: queueSettings,
+  //     eventSource: eventSourceSettings,
+  //   } = settings(envType).coreTransformConnector;
+
+  //   const queue = createQueue({
+  //     ...queueSettings,
+  //     stack: this,
+  //     name,
+  //     fifo: true,
+  //     createDLQ: true,
+  //     envType,
+  //     alarmSnsAction: alarmAction,
+  //     deliveryDelay: queueSettings.deliveryDelay,
+  //   });
+
+  //   const dbSecretsArn = dbCreds.secret?.secretArn;
+
+  //   const lambda = createLambda({
+  //     ...lambdaSettings,
+  //     stack: this,
+  //     name,
+  //     entry,
+  //     envType,
+  //     envVars: {
+  //       RAW_TO_CORE_TRANSFORM_LAMBDA_NAME: rawToCoreTransformLambda.functionName,
+  //       ANALYTICS_BUCKET_NAME: analyticsPlatformBucket.bucketName,
+  //       FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
+  //       ...(dbSecretsArn ? { DB_CREDS_ARN: dbSecretsArn } : {}),
+  //       ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+  //     },
+  //     layers: [lambdaLayers.shared, lambdaLayers.langchain, lambdaLayers.analyticsPlatform],
+  //     vpc,
+  //     alarmSnsAction: alarmAction,
+  //   });
+
+  //   lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
+
+  //   dbCluster.connections.allowDefaultPortFrom(lambda);
+  //   analyticsPlatformBucket.grantReadWrite(lambda);
+  //   featureFlagsTable.grantReadData(lambda);
+  //   dbCreds.secret?.grantRead(lambda);
+  //   rawToCoreTransformLambda.grantInvoke(lambda);
+
+  //   return { lambda, queue };
+  // }
 }
