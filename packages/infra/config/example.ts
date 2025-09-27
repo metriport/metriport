@@ -265,7 +265,6 @@ export const config: EnvConfigNonSandbox = {
     secretNames: {
       SNOWFLAKE_CREDS: "name-of-secret",
       FHIR_TO_CSV_DB_PASSWORD: "name-of-secret",
-      CORE_TRANSFORMER_DB_PASSWORD: "name-of-secret",
     },
     snowflake: {
       warehouse: "test-warehouse",
