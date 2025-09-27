@@ -5,7 +5,6 @@ export interface AnalyticsPlatformConfig {
   secretNames: {
     SNOWFLAKE_CREDS: string;
     FHIR_TO_CSV_DB_PASSWORD: string;
-    CORE_TRANSFORMER_DB_PASSWORD: string;
   };
   snowflake: {
     warehouse: string;
