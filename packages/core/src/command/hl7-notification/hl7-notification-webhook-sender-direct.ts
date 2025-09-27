@@ -1,7 +1,7 @@
 import { Hl7Message } from "@medplum/core";
 import { Bundle, CodeableConcept, Resource } from "@medplum/fhirtypes";
-import { executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
+import { executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { CreateDischargeRequeryParams } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import { TcmEncounterUpsertInput } from "@metriport/shared/domain/tcm-encounter";
 import axios from "axios";
@@ -126,7 +126,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       patientId,
       timestamp,
       messageId: getMessageUniqueIdentifier(message),
-      messageCode: messageCode,
+      messageCode,
       triggerEvent,
     });
 
