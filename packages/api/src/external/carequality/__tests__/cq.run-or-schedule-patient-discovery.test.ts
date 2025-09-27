@@ -11,11 +11,15 @@ import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import * as schedulePatientDiscovery from "../../hie/schedule-patient-discovery";
 import { runOrScheduleCqPatientDiscovery } from "../command/run-or-schedule-patient-discovery";
 import * as cqPatient from "../patient";
+import * as isCqEnabled from "../shared";
 
 let patientModel_findOne: jest.SpyInstance;
 let cqDiscover_mock: jest.SpyInstance;
 let schedulePatientDiscovery_mock: jest.SpyInstance;
 
+beforeAll(() => {
+  jest.spyOn(isCqEnabled, "isCqEnabled").mockResolvedValue(true);
+});
 beforeEach(() => {
   mockStartTransaction();
   patientModel_findOne = jest.spyOn(PatientModel, "findOne");
