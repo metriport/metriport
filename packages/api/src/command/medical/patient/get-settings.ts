@@ -10,7 +10,7 @@ import { getCohortsForPatient } from "../cohort/get-cohort";
  * @param b value 2 of the conflict
  * @returns true, false, or undefined
  */
-function cohortSettingsConflictResolver(a, b) {
+function cohortSettingsConflictResolver(a: unknown, b: unknown) {
   if (a !== undefined && b !== undefined) {
     return a && b;
   }
