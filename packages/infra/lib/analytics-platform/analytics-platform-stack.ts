@@ -22,11 +22,6 @@ import { LambdaSettingsWithNameAndEntry, QueueAndLambdaSettings } from "../share
 import { createQueue } from "../shared/sqs";
 import { isProdEnv } from "../shared/util";
 import { AnalyticsPlatformsAssets } from "./types";
-import {
-  AwsCustomResource,
-  AwsCustomResourcePolicy,
-  PhysicalResourceId,
-} from "aws-cdk-lib/custom-resources";
 
 type DockerImageLambdaSettings = Omit<LambdaSettingsWithNameAndEntry, "entry">;
 
@@ -349,28 +344,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         }
       },
     });
-
-    // Create a custom resource to execute the schema creation SQL
-    const sqlCommandsToRunOnClusterCreation = [`CREATE EXTENSION aws_s3 CASCADE`];
-    const createSchemaResource = new AwsCustomResource(this, "CreateSchemaCustomResource", {
-      onCreate: {
-        service: "RDSDataService",
-        action: "executeStatement",
-        parameters: {
-          resourceArn: dbCluster.clusterArn,
-          secretArn: dbCredsSecret.secretArn,
-          database: dbConfig.name,
-          sql: sqlCommandsToRunOnClusterCreation.join("; "),
-        },
-        physicalResourceId: PhysicalResourceId.of("CreateSchemaCustomResource"),
-      },
-      policy: AwsCustomResourcePolicy.fromSdkCalls({
-        resources: AwsCustomResourcePolicy.ANY_RESOURCE,
-      }),
-    });
-
-    // Ensure the custom resource depends on the RDS instance
-    createSchemaResource.node.addDependency(dbCluster);
 
     addDBClusterPerformanceAlarms(this, dbCluster, dbClusterName, dbConfig, ownProps.alarmAction);
     return { dbCluster };
