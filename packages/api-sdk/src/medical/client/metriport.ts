@@ -704,6 +704,87 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Creates a new cohort.
+   * @param data The properties to create the cohort with.
+   * @returns The created cohort.
+   */
+  async createCohort(data: CohortCreate): Promise<Cohort> {
+    const resp = await this.api.post(`${COHORT_URL}`, data);
+    return resp.data;
+  }
+
+  /**
+   * Deletes an existing cohort.
+   * @param id The ID of the cohort to delete.
+   * @returns The deleted cohort.
+   */
+  async deleteCohort(id: string): Promise<void> {
+    const resp = await this.api.delete(`${COHORT_URL}/${id}`);
+    return resp.data;
+  }
+
+  /**
+   * Update an existing cohort. This does a full-overwrite of the payload contents.
+   * ⚠️ Be careful updating the name of your cohort, as it can be used as an identifier and may break your implementation elsewhere.
+   * @param id The ID of the cohort to update.
+   * @param data The properties to update on the cohort.
+   * @returns The updated cohort.
+   */
+  async updateCohort(id: string, data: CohortUpdate): Promise<Cohort> {
+    const resp = await this.api.put(`${COHORT_URL}/${id}`, data);
+    return resp.data;
+  }
+
+  /**
+   * Returns the cohort with the given ID.
+   * @param id The ID of the cohort to return.
+   * @returns The cohort with the given ID.
+   */
+  async getCohort(id: string): Promise<Cohort> {
+    const resp = await this.api.get(`${COHORT_URL}/${id}`);
+    return resp.data;
+  }
+
+  /**
+   * Returns the cohort with the given name.
+   * @param name The name of the cohort to return.
+   * @returns The cohort with the given name.
+   */
+  async getCohortByName(name: string): Promise<Cohort> {
+    const resp = await this.api.get(`${COHORT_URL}`, { params: { name } });
+    return resp.data;
+  }
+
+  /**
+   * Returns all available cohorts.
+   * @returns All available cohorts.
+   */
+  async listCohorts(): Promise<Cohort[]> {
+    const resp = await this.api.get(`${COHORT_URL}`);
+    return resp.data;
+  }
+
+  /**
+   * Bulk add patients to a cohort.
+   * @param cohortId The ID of the cohort to add patients to.
+   * @param patientIds The IDs of the patients to add to the cohort.
+   * @returns The updated cohort.
+   */
+  async bulkAddPatientsToCohort(cohortId: string, patientIds: string[]): Promise<void> {
+    await this.api.post(`${COHORT_URL}/${cohortId}/patient`, { patientIds });
+  }
+
+  /**
+   * Bulk remove patients from a cohort.
+   * @param cohortId The ID of the cohort to remove patients from.
+   * @param patientIds The IDs of the patients to remove from the cohort.
+   * @returns The updated cohort.
+   */
+  async bulkRemovePatientsFromCohort(cohortId: string, patientIds: string[]): Promise<void> {
+    await this.api.delete(`${COHORT_URL}/${cohortId}/patient`, { patientIds });
+  }
+
+  /**
    * Returns document references for the given patient across HIEs.
    *
    * @param patientId Patient ID for which to retrieve document metadata.
