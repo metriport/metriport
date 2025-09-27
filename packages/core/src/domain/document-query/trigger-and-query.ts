@@ -74,6 +74,7 @@ export abstract class TriggerAndQueryDocRefs {
         `Starting doc query for patient ${patientId}... (triggerWHNotificationsToCx=${triggerWHNotificationsToCx})`
       );
       // can't use the SDK b/c we need to bypass the feature flag that disables doc query for enhanced coverage customers
+      // TODO: ENG-554 - could potentially simplify the logic and use SDK methods instead here
       await this.triggerDocQuery(cxId, patientId, facilityId, triggerWH);
       // add a bit of jitter to the requests
       await sleep(200 + Math.random() * patientChunkDelayJitterMs);

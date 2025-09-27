@@ -98,7 +98,6 @@ export async function patchDuplicatedPersonsForPatient(
       patient,
       commonwellPatientId: cwPatientId,
       commonwellPersonId: chosenPersonId,
-      cqLinkStatus: undefined,
     });
     await updatePatientDiscoveryStatus({ patient, status: "completed" });
 
