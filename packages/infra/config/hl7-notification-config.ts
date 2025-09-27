@@ -7,6 +7,7 @@ export interface Hl7NotificationConfig {
     LAHIE_INGESTION_PASSPHRASE: string;
     LAHIE_INGESTION_PRIVATE_KEY: string;
     LAHIE_INGESTION_PASSWORD: string;
+    ALOHR_INGESTION_PASSWORD: string;
   };
   deprecatedIncomingMessageBucketName: string;
   incomingMessageBucketName: string;
@@ -29,6 +30,10 @@ export interface Hl7NotificationConfig {
     bucketName: string;
   };
   LahieSftpIngestionLambda: {
+    sftpConfig: HieSftpConfig;
+    bucketName: string;
+  };
+  AlohrSftpIngestionLambda: {
     sftpConfig: HieSftpConfig;
     bucketName: string;
   };
