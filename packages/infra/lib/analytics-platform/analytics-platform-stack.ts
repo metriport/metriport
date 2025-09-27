@@ -350,10 +350,41 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       },
     });
 
-    // Create a custom resource to execute the schema creation SQL
+    // Create a custom resource to wait for cluster availability and execute schema creation SQL
     const sqlCommandsToRunOnClusterCreation = [`CREATE EXTENSION aws_s3 CASCADE`];
+
+    // First, create a custom resource to wait for the cluster to be available
+    const waitForClusterResource = new AwsCustomResource(this, "WaitForClusterAvailable", {
+      onCreate: {
+        service: "RDS",
+        action: "describeDBClusters",
+        parameters: {
+          DBClusterIdentifier: dbCluster.clusterIdentifier,
+        },
+        physicalResourceId: PhysicalResourceId.of("WaitForClusterAvailable"),
+        // This will retry until the cluster is available
+        ignoreErrorCodesMatching: ".*DBClusterNotFound.*",
+      },
+      policy: AwsCustomResourcePolicy.fromSdkCalls({
+        resources: [dbCluster.clusterArn],
+      }),
+      timeout: Duration.minutes(10),
+    });
+
+    // Then create the schema resource that depends on the cluster being available
     const createSchemaResource = new AwsCustomResource(this, "CreateSchemaCustomResource", {
       onCreate: {
+        service: "RDSDataService",
+        action: "executeStatement",
+        parameters: {
+          resourceArn: dbCluster.clusterArn,
+          secretArn: dbCredsSecret.secretArn,
+          database: dbConfig.name,
+          sql: sqlCommandsToRunOnClusterCreation.join("; "),
+        },
+        physicalResourceId: PhysicalResourceId.of("CreateSchemaCustomResource"),
+      },
+      onUpdate: {
         service: "RDSDataService",
         action: "executeStatement",
         parameters: {
@@ -367,10 +398,12 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       policy: AwsCustomResourcePolicy.fromSdkCalls({
         resources: AwsCustomResourcePolicy.ANY_RESOURCE,
       }),
+      timeout: Duration.minutes(2),
     });
 
-    // Ensure the custom resource depends on the RDS instance
-    createSchemaResource.node.addDependency(dbCluster);
+    // Ensure proper dependency chain: DB Cluster -> Wait for Availability -> Create Schema
+    waitForClusterResource.node.addDependency(dbCluster);
+    createSchemaResource.node.addDependency(waitForClusterResource);
 
     addDBClusterPerformanceAlarms(this, dbCluster, dbClusterName, dbConfig, ownProps.alarmAction);
     return { dbCluster };
@@ -560,6 +593,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       dbname: config.analyticsPlatform.rds.name,
       username: config.analyticsPlatform.rds.fhirToCsvDbUsername,
       passwordSecretArn: dbUserSecret.secretArn,
+      schemaName: "public",
     };
 
     // TODO ENG-1029 for reference only for now
