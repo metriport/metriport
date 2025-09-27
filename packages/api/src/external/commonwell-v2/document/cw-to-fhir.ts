@@ -74,7 +74,7 @@ export function cwToFHIR(
   const contained = doc.contained;
   if (contained?.length) {
     contained.forEach(cwResource => {
-      const fhirResource = convertOrganizationResources(cwResource, patient.id);
+      const fhirResource = convertCwResourceToFhirOrganization(cwResource, patient.id);
       if (fhirResource) containedContent.push(fhirResource);
     });
   }
@@ -154,8 +154,11 @@ function isValidFHIRResource(obj: unknown): obj is Resource {
  * This only handles Organization resources for now, which is used on the Dashboard to specify
  * the organization that created the document.
  */
-function convertOrganizationResources(resource: unknown, patientId: string): Resource | undefined {
-  const { log } = out(`convertOrganizationResources - patient ${patientId}`);
+function convertCwResourceToFhirOrganization(
+  resource: unknown,
+  patientId: string
+): Resource | undefined {
+  const { log } = out(`convertCwResourceToFhirOrganization - patient ${patientId}`);
 
   // Validate that the input is a valid FHIR resource
   if (!isValidFHIRResource(resource)) {
