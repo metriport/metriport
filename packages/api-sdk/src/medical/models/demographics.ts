@@ -1,11 +1,11 @@
 import {
   defaultNameStringSchema,
   examplePhoneNumber,
+  isEmailValid,
   isPhoneValid,
   normalizeUsPhoneWithPlusOne,
   phoneLength,
   validDateOfBirthStringSchema,
-  isEmailValid,
 } from "@metriport/shared";
 import { z } from "zod";
 import { addressSchema } from "./common/address";
