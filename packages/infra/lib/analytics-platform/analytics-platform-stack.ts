@@ -682,10 +682,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         memorySize: rawToCoreTransformLambdaSettings.memory,
         ephemeralStorageSize: rawToCoreTransformLambdaSettings.ephemeralStorageSize,
         environment: {
-          DBT_PG_HOST: ownProps.dbCluster.clusterEndpoint.hostname,
-          DBT_PG_PORT: ownProps.dbCluster.clusterEndpoint.port.toString(),
-          DBT_PG_USER: ownProps.config.analyticsPlatform.rds.fhirToCsvDbUsername,
-          DBT_PG_SCHEMA: "public",
+          ENV: ownProps.envType,
         },
       }
     );
