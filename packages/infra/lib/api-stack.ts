@@ -423,7 +423,9 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Analytics Platform
     //-------------------------------------------
-    const analyticsPlatformStack: AnalyticsPlatformsNestedStack | undefined = undefined;
+    const analyticsPlatformStack: AnalyticsPlatformsNestedStack | undefined = undefined as
+      | AnalyticsPlatformsNestedStack
+      | undefined;
     // if (!isSandbox(props.config)) {
     // analyticsPlatformStack = new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatforms", {
     //   config: props.config,
