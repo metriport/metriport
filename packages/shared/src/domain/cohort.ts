@@ -25,7 +25,7 @@ import { baseDomainCreateSchema, baseDomainSchema } from "./base-domain";
 
 // export interface PatientCohort extends BaseDomain, Required<PatientCohortData> {}
 
-const COHORT_COLORS = [
+export const COHORT_COLORS = [
   "red",
   "green",
   "blue",
