@@ -147,7 +147,7 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
       timeout: Duration.minutes(1),
     },
     url: `/internal/analytics-platform/ingestion/core/rebuild`,
-    scheduleExpression: `0/${coreTransformScheduledLambdaInterval} * * * ? *`,
+    scheduleExpression: `0/${coreTransformScheduledLambdaInterval.toMinutes()} * * * ? *`,
   };
   const coreTransformConnector: QueueAndLambdaSettings = {
     name: "CoreTransform",
