@@ -74,7 +74,7 @@ export function cwToFHIR(
   const contained = doc.contained;
   if (contained?.length) {
     contained.forEach(cwResource => {
-      const fhirResource = convertToFHIRResource(cwResource, patient.id);
+      const fhirResource = convertOrganizationResources(cwResource, patient.id);
       if (fhirResource) containedContent.push(fhirResource);
     });
   }
@@ -154,8 +154,8 @@ function isValidFHIRResource(obj: unknown): obj is Resource {
  * This only handles Organization resources for now, which is used on the Dashboard to specify
  * the organization that created the document.
  */
-function convertToFHIRResource(resource: unknown, patientId: string): Resource | undefined {
-  const { log } = out(`convertToFHIRResource - patient ${patientId}`);
+function convertOrganizationResources(resource: unknown, patientId: string): Resource | undefined {
+  const { log } = out(`convertOrganizationResources - patient ${patientId}`);
 
   // Validate that the input is a valid FHIR resource
   if (!isValidFHIRResource(resource)) {
@@ -172,22 +172,21 @@ function convertToFHIRResource(resource: unknown, patientId: string): Resource |
 }
 
 function containedOrgToFHIRResource(
-  resource: Organization,
+  org: Organization,
   patientId: string
-): Resource | undefined {
+): Organization | undefined {
   const { log } = out(`containedOrgToFHIRResource - patient ${patientId}`);
 
-  // Validate that the organization has a name (required field)
-  if (!resource.name || typeof resource.name !== "string") {
-    log(`Organization with no valid name, skipping it: ${JSON.stringify(resource)}`);
+  const name = org.name ? org.name : org.alias?.join(", ");
+  if (!name) {
+    log(`Organization with no valid name, skipping it: ${JSON.stringify(org)}`);
     return undefined;
   }
 
-  // Safely construct the FHIR Organization resource
   const fhirOrg: Organization = {
     resourceType: "Organization",
-    ...(resource.id && typeof resource.id === "string" ? { id: resource.id } : {}),
-    name: resource.name,
+    ...(org.id && typeof org.id === "string" ? { id: org.id } : {}),
+    name: name,
   };
 
   return fhirOrg;

@@ -363,7 +363,7 @@ async function internalGetDocuments({
 }
 
 function getDescriptionFromAttachment(content: CwDocumentReference["content"]): string | undefined {
-  return content?.[0]?.attachment?.title ?? undefined;
+  return content?.find(c => c.attachment?.title)?.attachment?.title ?? undefined;
 }
 
 function reportCWErrors({
