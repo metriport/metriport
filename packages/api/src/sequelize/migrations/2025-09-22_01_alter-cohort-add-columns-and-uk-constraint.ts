@@ -5,7 +5,6 @@ const tableName = "cohort";
 
 export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
-    // Add description column
     await queryInterface.addColumn(
       tableName,
       "description",
@@ -17,7 +16,6 @@ export const up: Migration = async ({ context: queryInterface }) => {
       { transaction }
     );
 
-    // Add color column
     await queryInterface.addColumn(
       tableName,
       "color",
@@ -28,7 +26,6 @@ export const up: Migration = async ({ context: queryInterface }) => {
       { transaction }
     );
 
-    // Add settings column
     await queryInterface.addColumn(
       tableName,
       "settings",
@@ -40,14 +37,19 @@ export const up: Migration = async ({ context: queryInterface }) => {
       { transaction }
     );
 
-    // Remove the old monitoring column
+    await queryInterface.addConstraint(tableName, {
+      fields: ["cx_id", "name"],
+      type: "unique",
+      name: `uk_${tableName}_cx_id_name`,
+      transaction,
+    });
+
     await queryInterface.removeColumn(tableName, "monitoring", { transaction });
   });
 };
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
-    // Add back the monitoring column
     await queryInterface.addColumn(
       tableName,
       "monitoring",
@@ -58,7 +60,7 @@ export const down: Migration = ({ context: queryInterface }) => {
       { transaction }
     );
 
-    // Remove the new columns in reverse order
+    await queryInterface.removeConstraint(tableName, `uk_${tableName}_cx_id_name`, { transaction });
     await queryInterface.removeColumn(tableName, "settings", { transaction });
     await queryInterface.removeColumn(tableName, "color", { transaction });
     await queryInterface.removeColumn(tableName, "description", { transaction });
