@@ -124,7 +124,7 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
   };
   const coreTransform: BatchJobSettings = {
     memory: cdk.Size.mebibytes(1024),
-    cpu: 512,
+    cpu: 4,
   };
   return {
     fhirToCsvBulk,
@@ -152,7 +152,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
   readonly mergeCsvsLambda: lambda.Function;
   readonly mergeCsvsQueue: Queue;
   readonly coreTransformBatchJob: batch.EcsJobDefinition;
-  readonly coreTransformBatchJobContainer: batch.EcsEc2ContainerDefinition;
+  readonly coreTransformBatchJobContainer: batch.EcsFargateContainerDefinition;
   readonly coreTransformBatchJobQueue: batch.JobQueue;
   readonly analyticsPlatformBucket: s3.Bucket;
   readonly coreTransformJobCompletionTopic: sns.Topic;
@@ -704,7 +704,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     computeEnvironment: batch.ManagedEc2EcsComputeEnvironment;
   }): {
     job: batch.EcsJobDefinition;
-    container: batch.EcsEc2ContainerDefinition;
+    container: batch.EcsFargateContainerDefinition;
     queue: batch.JobQueue;
   } {
     const { memory, cpu } = settings(ownProps.envType).coreTransform;
@@ -715,11 +715,11 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     );
 
     const asset = new DockerImageAsset(this, "CoreTransformBuildImage", {
-      directory: "../data-transformation/core-transform",
+      directory: "../data-transformation/raw-to-core",
       file: "Dockerfile",
     });
 
-    const container = new batch.EcsEc2ContainerDefinition(this, "CoreTransformContainerDef", {
+    const container = new batch.EcsFargateContainerDefinition(this, "CoreTransformContainerDef", {
       image: ecs.ContainerImage.fromDockerImageAsset(asset),
       memory,
       cpu,
