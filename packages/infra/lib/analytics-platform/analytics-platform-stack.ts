@@ -466,9 +466,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     const dbClusterS3Role = new iam.Role(this, "DatabaseClusterS3Role", {
       roleName: `DatabaseClusterS3Role-${ownProps.envType}`,
       assumedBy: new iam.ServicePrincipal("rds.amazonaws.com"),
-      managedPolicies: [
-        iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AmazonRDSEnhancedMonitoringRole"),
-      ],
       inlinePolicies: {
         S3AccessPolicy: new iam.PolicyDocument({
           statements: [

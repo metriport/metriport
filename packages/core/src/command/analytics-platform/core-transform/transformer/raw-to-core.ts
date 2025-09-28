@@ -1,12 +1,14 @@
 import { InvokeCommand } from "@aws-sdk/client-lambda";
-import { DbCreds, executeWithNetworkRetries } from "@metriport/shared";
+import { DbCredsWithSchema, executeWithNetworkRetries } from "@metriport/shared";
 import { getLambdaResultPayloadV3, makeLambdaClientV3 } from "../../../../external/aws/lambda";
 import { out } from "../../../../util/log";
 
 export type RawToCoreLambdaRequest = {
+  HOST: string;
   DATABASE: string;
   USER: string;
   PASSWORD: string;
+  SCHEMA: string;
 };
 
 /**
@@ -19,7 +21,7 @@ export async function transformRawToCore({
   lambdaName,
 }: {
   cxId: string;
-  dbCreds: DbCreds;
+  dbCreds: DbCredsWithSchema;
   region: string;
   lambdaName: string;
 }): Promise<void> {
@@ -28,7 +30,9 @@ export async function transformRawToCore({
   const lambdaClient = makeLambdaClientV3(region);
 
   const payload: RawToCoreLambdaRequest = {
+    HOST: dbCreds.host,
     DATABASE: dbCreds.dbname,
+    SCHEMA: dbCreds.schemaName,
     USER: dbCreds.username,
     PASSWORD: dbCreds.password,
   };

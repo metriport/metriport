@@ -15,6 +15,7 @@ import {
   getCreateViewJobCommand,
   getCxDbName,
   insertTableJobCommand,
+  rawDbSchema,
 } from "./db-asset-defs";
 
 const INSERT_BATCH_SIZE = 100;
@@ -92,6 +93,8 @@ export async function sendPatientCsvsToDb({
 
     await dbClient.connect();
     log(`Connected to database`);
+    await dbClient.query(`SET search_path TO ${rawDbSchema}`);
+    log(`Using schema: ${rawDbSchema}`);
 
     await prepareIncrementalJobInDb({ dbClient });
 
