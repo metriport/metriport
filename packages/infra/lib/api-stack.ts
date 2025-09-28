@@ -423,18 +423,16 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Analytics Platform
     //-------------------------------------------
-    const analyticsPlatformStack: AnalyticsPlatformsNestedStack | undefined = undefined as
-      | AnalyticsPlatformsNestedStack
-      | undefined;
-    // if (!isSandbox(props.config)) {
-    // analyticsPlatformStack = new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatforms", {
-    //   config: props.config,
-    //   vpc: this.vpc,
-    //   lambdaLayers,
-    //   medicalDocumentsBucket,
-    //   featureFlagsTable,
-    // });
-    // }
+    let analyticsPlatformStack: AnalyticsPlatformsNestedStack | undefined = undefined;
+    if (!isSandbox(props.config)) {
+      analyticsPlatformStack = new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatforms", {
+        config: props.config,
+        vpc: this.vpc,
+        lambdaLayers,
+        medicalDocumentsBucket,
+        featureFlagsTable,
+      });
+    }
 
     //-------------------------------------------
     // General lambdas
