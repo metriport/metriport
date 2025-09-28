@@ -1,5 +1,10 @@
 import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@medplum/fhirtypes";
-import { CohortCreate, CohortEntity, CohortUpdate, PaginatedResponse } from "@metriport/shared";
+import {
+  CohortCreateRequest,
+  CohortDTO,
+  CohortUpdateRequest,
+  PaginatedResponse,
+} from "@metriport/shared";
 import {
   WebhookRequest,
   WebhookRequestParsingFailure,
@@ -709,7 +714,7 @@ export class MetriportMedicalApi {
    * @param data The properties to create the cohort with.
    * @returns The created cohort.
    */
-  async createCohort(data: CohortCreate): Promise<CohortEntity> {
+  async createCohort(data: CohortCreateRequest): Promise<CohortDTO> {
     const resp = await this.api.post(`${COHORT_URL}`, data);
     return resp.data;
   }
@@ -719,7 +724,7 @@ export class MetriportMedicalApi {
    * @param id The ID of the cohort to delete.
    * @returns The deleted cohort.
    */
-  async deleteCohort(id: string): Promise<CohortEntity> {
+  async deleteCohort(id: string): Promise<CohortDTO> {
     const resp = await this.api.delete(`${COHORT_URL}/${id}`);
     return resp.data;
   }
@@ -731,7 +736,7 @@ export class MetriportMedicalApi {
    * @param data The properties to update on the cohort.
    * @returns The updated cohort.
    */
-  async updateCohort(id: string, data: CohortUpdate): Promise<CohortEntity> {
+  async updateCohort(id: string, data: CohortUpdateRequest): Promise<CohortDTO> {
     const resp = await this.api.put(`${COHORT_URL}/${id}`, data);
     return resp.data;
   }
@@ -741,7 +746,9 @@ export class MetriportMedicalApi {
    * @param id The ID of the cohort to return.
    * @returns The cohort with the given ID.
    */
-  async getCohort(id: string): Promise<CohortEntity> {
+  async getCohortWithDetails(
+    id: string
+  ): Promise<{ cohort: CohortDTO; details: { patientIds: string[]; size: number } }> {
     const resp = await this.api.get(`${COHORT_URL}/${id}`);
     return resp.data;
   }
@@ -751,16 +758,17 @@ export class MetriportMedicalApi {
    * @param name The name of the cohort to return.
    * @returns The cohort with the given name.
    */
-  async getCohortByName(name: string): Promise<CohortEntity> {
+  async getCohortByName(name: string): Promise<CohortDTO> {
     const resp = await this.api.get(`${COHORT_URL}`, { params: { name } });
-    return resp.data;
+    if (!resp.data) throw new Error("No cohort found with the given name");
+    return resp.data.cohorts[0];
   }
 
   /**
    * Returns all available cohorts.
    * @returns All available cohorts.
    */
-  async listCohorts(): Promise<CohortEntity[]> {
+  async listCohorts(): Promise<{ cohorts: CohortDTO[] }> {
     const resp = await this.api.get(`${COHORT_URL}`);
     return resp.data;
   }
@@ -810,7 +818,7 @@ export class MetriportMedicalApi {
    * @param patientId The ID of the patient.
    * @returns The list of cohorts assigned to the patient.
    */
-  async listCohortsForPatient(patientId: string): Promise<CohortEntity[]> {
+  async listCohortsForPatient(patientId: string): Promise<CohortDTO[]> {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/cohort`);
     return resp.data;
   }

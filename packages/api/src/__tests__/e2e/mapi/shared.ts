@@ -12,7 +12,7 @@ import {
 } from "@medplum/fhirtypes";
 import { Facility, MetriportMedicalApi, PatientDTO } from "@metriport/api-sdk";
 import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";
-import { CohortDTO } from "../../../routes/medical/dtos/cohortDTO";
+import { CohortDTO } from "@metriport/shared/domain/cohort";
 import { getCxIdFromApiKey } from "../../../routes/middlewares/auth";
 import { baseURL, testApiKey } from "../shared";
 
