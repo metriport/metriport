@@ -1,3 +1,5 @@
+export const rawDbSchema = "raw";
+
 export const tableJobName = "metriport_incremental_job";
 
 export const columnPatientIdName = "m_patient_id";
@@ -80,7 +82,7 @@ export function getCxDbExistsCommand({ cxDbName }: { cxDbName: string }): string
   return `SELECT 1 FROM pg_database WHERE datname = '${cxDbName}'`;
 }
 
-export function getCreateDbUserCommand({
+export function getCreateDbUserIfNotExistsCommand({
   username,
   password,
 }: {
@@ -96,23 +98,26 @@ export function getCreateDbUserCommand({
     $$;`;
   return cmd;
 }
+
 export function getGrantAccessToDbUserCommand({
   dbName,
+  schemaName,
   username,
 }: {
   dbName: string;
+  schemaName: string;
   username: string;
 }): string {
   const cmd = `GRANT CONNECT ON DATABASE ${dbName} TO ${username};
-    GRANT USAGE ON SCHEMA public TO ${username};
-    grant all on schema public to ${username};
-    grant all on all tables in schema public to ${username};
-    grant all on all sequences in schema public to ${username};
-    grant all on all functions in schema public to ${username};
-    grant all on all procedures in schema public to ${username};
-    grant all on all routines in schema public to ${username};
-    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ${username};
-    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO ${username};
+    GRANT USAGE ON SCHEMA ${schemaName} TO ${username};
+    grant all on schema ${schemaName} to ${username};
+    grant all on all tables in schema ${schemaName} to ${username};
+    grant all on all sequences in schema ${schemaName} to ${username};
+    grant all on all functions in schema ${schemaName} to ${username};
+    grant all on all procedures in schema ${schemaName} to ${username};
+    grant all on all routines in schema ${schemaName} to ${username};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA ${schemaName} GRANT ALL ON TABLES TO ${username};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA ${schemaName} GRANT ALL ON FUNCTIONS TO ${username};
     `;
   return cmd;
 }

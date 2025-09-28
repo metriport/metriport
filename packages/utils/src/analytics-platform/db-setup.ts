@@ -1,8 +1,9 @@
 import dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { rawDbSchema } from "@metriport/core/command/analytics-platform/csv-to-db/db-asset-defs";
 import { setupCustomerAnalyticsDb } from "@metriport/core/command/analytics-platform/csv-to-db/setup-cx-db";
-import { dbCredsSchema, getEnvVarOrFail, sleep } from "@metriport/shared";
+import { dbCredsSchema, DbCredsWithSchema, getEnvVarOrFail, sleep } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { Command } from "commander";
 import dayjs from "dayjs";
@@ -59,9 +60,14 @@ async function main({
   }
 
   const dbCreds = dbCredsSchema.parse(JSON.parse(dbCredsRaw));
+  const dbCredsWithSchema: DbCredsWithSchema = {
+    ...dbCreds,
+    schemaName: rawDbSchema,
+  };
+
   const lambdaUsers = [{ username, password }];
 
-  await setupCustomerAnalyticsDb({ cxId, dbCreds, lambdaUsers });
+  await setupCustomerAnalyticsDb({ cxId, dbCreds: dbCredsWithSchema, lambdaUsers });
 
   console.log(`>>>>>>> Done after ${elapsedTimeAsStr(startedAt)}`);
 }

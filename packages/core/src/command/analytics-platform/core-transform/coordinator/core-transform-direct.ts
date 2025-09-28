@@ -1,9 +1,10 @@
-import { DbCreds } from "@metriport/shared";
+import { DbCreds, DbCredsWithSchema } from "@metriport/shared";
 import { out } from "../../../../util/log";
 import { getCxDbName } from "../../csv-to-db/db-asset-defs";
 import { exportCoreToS3 } from "../core-to-s3";
 import { transformRawToCore } from "../transformer/raw-to-core";
 import { CoreTransformHandler, ProcessCoreTransformRequest } from "./core-transform";
+import { rawDbSchema } from "../../csv-to-db/db-asset-defs";
 
 export class CoreTransformDirect extends CoreTransformHandler {
   constructor(
@@ -20,9 +21,10 @@ export class CoreTransformDirect extends CoreTransformHandler {
 
     const cxDbName = getCxDbName(cxId, this.dbCreds.dbname);
 
-    const dbCreds: DbCreds = {
+    const dbCreds: DbCredsWithSchema = {
       ...this.dbCreds,
       dbname: cxDbName,
+      schemaName: rawDbSchema,
     };
 
     let startedAt = Date.now();

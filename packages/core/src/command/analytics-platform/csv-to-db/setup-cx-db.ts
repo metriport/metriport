@@ -1,9 +1,9 @@
-import { DbCreds } from "@metriport/shared";
+import { DbCredsWithSchema } from "@metriport/shared";
 import { Client } from "pg";
 import { capture, out } from "../../../util";
 import {
   getCreateCxDbCommand,
-  getCreateDbUserCommand,
+  getCreateDbUserIfNotExistsCommand,
   getCxDbExistsCommand,
   getCxDbName,
   getGrantAccessToDbUserCommand,
@@ -26,7 +26,7 @@ export async function setupCustomerAnalyticsDb({
   lambdaUsers,
 }: {
   cxId: string;
-  dbCreds: DbCreds;
+  dbCreds: DbCredsWithSchema;
   lambdaUsers: { username: string; password: string }[];
 }): Promise<void> {
   const { log } = out(`setupCustomerAnalyticsDb - cx ${cxId}`);
@@ -44,10 +44,9 @@ export async function setupCustomerAnalyticsDb({
     })}`
   );
 
-  let dbClient = new Client({
+  const dbClient = new Client({
     host: dbCreds.host,
     port: dbCreds.port,
-    // connect to the main analytics db
     database: dbCreds.dbname,
     user: dbCreds.username,
     password: dbCreds.password,
@@ -57,23 +56,14 @@ export async function setupCustomerAnalyticsDb({
     await dbClient.connect();
     log(`Connected to database`);
 
-    await initializeGlobalDbIfNeeded({ dbClient, log });
+    await initializeDbInstanceIfNeeded({ dbClient, log });
 
     await createCustomerAnalyticsDb({ dbClient, cxDbName, log });
-    await dbClient.end();
-    log(`Disconnected from main database, connecting again to the cx db...`);
 
-    dbClient = new Client({
-      host: dbCreds.host,
-      port: dbCreds.port,
-      database: cxDbName,
-      user: dbCreds.username,
-      password: dbCreds.password,
-    });
-    await dbClient.connect();
     await createLambdasUsersInAnalyticsDb({
       dbClient,
       dbName: cxDbName,
+      schemaName: dbCreds.schemaName,
       lambdaUsers,
     });
     log(`Successfully created analytics database and lambdas users`);
@@ -83,7 +73,7 @@ export async function setupCustomerAnalyticsDb({
   }
 }
 
-async function initializeGlobalDbIfNeeded({
+async function initializeDbInstanceIfNeeded({
   dbClient,
   log,
 }: {
@@ -120,17 +110,19 @@ async function createCustomerAnalyticsDb({
 async function createLambdasUsersInAnalyticsDb({
   dbClient,
   dbName,
+  schemaName,
   lambdaUsers,
 }: {
   dbClient: Client;
   dbName: string;
+  schemaName: string;
   lambdaUsers: { username: string; password: string }[];
 }): Promise<void> {
   const promises = lambdaUsers.map(async ({ username, password }) => {
-    const cmdCreate = getCreateDbUserCommand({ username, password });
+    const cmdCreate = getCreateDbUserIfNotExistsCommand({ username, password });
     await dbClient.query(cmdCreate);
 
-    const cmdGrant = getGrantAccessToDbUserCommand({ dbName, username });
+    const cmdGrant = getGrantAccessToDbUserCommand({ dbName, schemaName, username });
     await dbClient.query(cmdGrant);
   });
   for (const promise of promises) await promise;
