@@ -8,9 +8,17 @@ import {
   getCxDbExistsCommand,
   getCxDbName,
   getGrantAccessToDbUserCommand,
+  getGrantFullAccessToAllSchemasCommand,
   getSchemaExistsCommand,
   rawDbSchema,
 } from "./db-asset-defs";
+
+export type SingleUserAndPassword = { username: string; password: string };
+
+export type UsersToCreateAndGrantAccess = {
+  f2c: SingleUserAndPassword;
+  r2c: SingleUserAndPassword;
+};
 
 /**
  * Creates the customer analytics database in the main analytics DB instance, and set it up
@@ -21,16 +29,17 @@ import {
  *
  * @param param.cxId - Customer ID
  * @param param.dbCreds - Database credentials
- * @param param.lambdaUsers - Additional users to create
+ * @param param.dbUsersToCreateAndGrantAccess - Additional users to create and grant access to
+ *                                              the database
  */
 export async function setupCustomerAnalyticsDb({
   cxId,
   dbCreds,
-  lambdaUsers,
+  dbUsersToCreateAndGrantAccess,
 }: {
   cxId: string;
   dbCreds: DbCredsWithSchema;
-  lambdaUsers: { username: string; password: string }[];
+  dbUsersToCreateAndGrantAccess: UsersToCreateAndGrantAccess;
 }): Promise<void> {
   const { log } = out(`setupCustomerAnalyticsDb - cx ${cxId}`);
 
@@ -61,13 +70,13 @@ export async function setupCustomerAnalyticsDb({
 
     await initializeDbInstanceIfNeeded({ dbClient, log });
 
-    await createCustomerAnalyticsDb({ dbClient, cxDbName, log });
+    await createCustomerAnalyticsDb({ dbClient, cxDbName, schemaName: dbCreds.schemaName, log });
 
-    await createLambdasUsersInAnalyticsDb({
+    await createUsersInAnalyticsDb({
       dbClient,
       dbName: cxDbName,
       schemaName: dbCreds.schemaName,
-      lambdaUsers,
+      dbUsersToCreateAndGrantAccess,
     });
     log(`Successfully created analytics database and lambdas users`);
   } finally {
@@ -94,10 +103,12 @@ async function initializeDbInstanceIfNeeded({
 async function createCustomerAnalyticsDb({
   dbClient,
   cxDbName,
+  schemaName,
   log,
 }: {
   dbClient: Client;
   cxDbName: string;
+  schemaName: string;
   log: typeof console.log;
 }): Promise<void> {
   const cmdDbExists = getCxDbExistsCommand({ cxDbName });
@@ -110,10 +121,10 @@ async function createCustomerAnalyticsDb({
     log(`Database ${cxDbName} already exists`);
   }
 
-  const cmdSchemaExists = getSchemaExistsCommand({ schemaName: rawDbSchema });
+  const cmdSchemaExists = getSchemaExistsCommand({ schemaName });
   const schemaExists = await dbClient.query(cmdSchemaExists);
   if (schemaExists.rowCount < 1) {
-    const cmdCreate = getCreateSchemaCommand({ schemaName: rawDbSchema });
+    const cmdCreate = getCreateSchemaCommand({ schemaName });
     await dbClient.query(cmdCreate);
     log(`Schema ${rawDbSchema} created`);
   } else {
@@ -121,23 +132,32 @@ async function createCustomerAnalyticsDb({
   }
 }
 
-async function createLambdasUsersInAnalyticsDb({
+async function createUsersInAnalyticsDb({
   dbClient,
   dbName,
   schemaName,
-  lambdaUsers,
+  dbUsersToCreateAndGrantAccess,
 }: {
   dbClient: Client;
   dbName: string;
   schemaName: string;
-  lambdaUsers: { username: string; password: string }[];
+  dbUsersToCreateAndGrantAccess: UsersToCreateAndGrantAccess;
 }): Promise<void> {
-  const promises = lambdaUsers.map(async ({ username, password }) => {
-    const cmdCreate = getCreateDbUserIfNotExistsCommand({ username, password });
-    await dbClient.query(cmdCreate);
+  const { f2c, r2c } = dbUsersToCreateAndGrantAccess;
 
-    const cmdGrant = getGrantAccessToDbUserCommand({ dbName, schemaName, username });
-    await dbClient.query(cmdGrant);
+  const cmdCreateF2c = getCreateDbUserIfNotExistsCommand({
+    username: f2c.username,
+    password: f2c.password,
   });
-  for (const promise of promises) await promise;
+  await dbClient.query(cmdCreateF2c);
+  const cmdGrantF2c = getGrantAccessToDbUserCommand({ dbName, schemaName, username: f2c.username });
+  await dbClient.query(cmdGrantF2c);
+
+  const cmdCreateR2c = getCreateDbUserIfNotExistsCommand({
+    username: r2c.username,
+    password: r2c.password,
+  });
+  await dbClient.query(cmdCreateR2c);
+  const cmdGrantR2c = getGrantFullAccessToAllSchemasCommand({ dbName, username: r2c.username });
+  await dbClient.query(cmdGrantR2c);
 }
