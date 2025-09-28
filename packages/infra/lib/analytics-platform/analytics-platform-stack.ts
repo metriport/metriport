@@ -1,9 +1,12 @@
 import { DatabaseCredsForLambda } from "@metriport/core/command/analytics-platform/config";
 import * as cdk from "aws-cdk-lib";
 import { Aspects, Duration, NestedStack, NestedStackProps, RemovalPolicy } from "aws-cdk-lib";
+import * as batch from "aws-cdk-lib/aws-batch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import { DockerImageAsset } from "aws-cdk-lib/aws-ecr-assets";
+import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
@@ -24,13 +27,17 @@ import { isProdEnv } from "../shared/util";
 import { AnalyticsPlatformsAssets } from "./types";
 
 type DockerImageLambdaSettings = Omit<LambdaSettingsWithNameAndEntry, "entry">;
+type BatchJobSettings = {
+  memory: cdk.Size;
+  cpu: number;
+};
 
 interface AnalyticsPlatformsSettings {
   fhirToCsvBulk: QueueAndLambdaSettings;
   fhirToCsvIncremental: QueueAndLambdaSettings;
   fhirToCsvTransform: DockerImageLambdaSettings;
   mergeCsvs: QueueAndLambdaSettings;
-  rawToCoreTransform: DockerImageLambdaSettings;
+  coreTransform: BatchJobSettings;
 }
 
 function settings(envType: EnvType): AnalyticsPlatformsSettings {
@@ -39,7 +46,6 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
   const fhirToCsvIncrementalLambdaTimeout = fhirToCsvTransformLambdaTimeout.plus(
     Duration.seconds(10)
   );
-  const rawToCoreTransformLambdaTimeout = Duration.minutes(10);
   const fhirToCsvBulk: QueueAndLambdaSettings = {
     name: "FhirToCsvBulk",
     entry: "analytics-platform/fhir-to-csv-bulk",
@@ -113,19 +119,16 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
     },
     waitTime: Duration.seconds(0),
   };
-  const rawToCoreTransform: DockerImageLambdaSettings = {
-    name: "RawToCoreTransform",
-    lambda: {
-      memory: 512,
-      timeout: rawToCoreTransformLambdaTimeout,
-    },
+  const coreTransform: BatchJobSettings = {
+    memory: cdk.Size.mebibytes(1024),
+    cpu: 512,
   };
   return {
     fhirToCsvBulk,
     fhirToCsvIncremental,
     fhirToCsvTransform,
     mergeCsvs,
-    rawToCoreTransform,
+    coreTransform,
   };
 }
 
@@ -145,7 +148,9 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
   readonly fhirToCsvIncrementalQueue: Queue;
   readonly mergeCsvsLambda: lambda.Function;
   readonly mergeCsvsQueue: Queue;
-  readonly rawToCoreTransformLambda: lambda.Function;
+  readonly coreTransformBatchJob: batch.EcsJobDefinition;
+  readonly coreTransformBatchJobContainer: batch.EcsEc2ContainerDefinition;
+  readonly coreTransformBatchJobQueue: batch.JobQueue;
   readonly analyticsPlatformBucket: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: AnalyticsPlatformsNestedStackProps) {
@@ -211,6 +216,16 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
     });
 
+    const analyticsPlatformComputeEnvironment = new batch.ManagedEc2EcsComputeEnvironment(
+      this,
+      "AnalyticsPlatformComputeEnvironment",
+      {
+        vpc: props.vpc,
+      }
+    );
+
+    dbCluster.connections.allowDefaultPortFrom(analyticsPlatformComputeEnvironment);
+
     const { fhirToCsvTransformLambda } = this.setupFhirToCsvTransformLambda({
       config: props.config,
       envType: props.config.environmentType,
@@ -270,7 +285,11 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     this.mergeCsvsLambda = mergeCsvsLambda;
     this.mergeCsvsQueue = mergeCsvsQueue;
 
-    const { rawToCoreTransformLambda } = this.setupRawToCoreTransformLambda({
+    const {
+      queue: coreTransformBatchJobQueue,
+      container: coreTransformBatchJobContainer,
+      job: coreTransformBatchJob,
+    } = this.setupCoreTransformBatchJob({
       config: props.config,
       envType: props.config.environmentType,
       awsRegion: props.config.region,
@@ -278,9 +297,11 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       vpc: props.vpc,
       sentryDsn: props.config.sentryDSN,
       alarmAction: props.alarmAction,
-      dbCluster,
+      computeEnvironment: analyticsPlatformComputeEnvironment,
     });
-    this.rawToCoreTransformLambda = rawToCoreTransformLambda;
+    this.coreTransformBatchJob = coreTransformBatchJob;
+    this.coreTransformBatchJobContainer = coreTransformBatchJobContainer;
+    this.coreTransformBatchJobQueue = coreTransformBatchJobQueue;
   }
 
   getAssets(): AnalyticsPlatformsAssets {
@@ -291,7 +312,9 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       fhirToCsvIncrementalQueue: this.fhirToCsvIncrementalQueue,
       mergeCsvsLambda: this.mergeCsvsLambda,
       mergeCsvsQueue: this.mergeCsvsQueue,
-      rawToCoreTransformLambda: this.rawToCoreTransformLambda,
+      coreTransformBatchJob: this.coreTransformBatchJob,
+      coreTransformBatchJobQueue: this.coreTransformBatchJobQueue,
+      coreTransformBatchJobContainer: this.coreTransformBatchJobContainer,
       analyticsPlatformBucket: this.analyticsPlatformBucket,
     };
   }
@@ -655,7 +678,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     return { mergeCsvsLambda, queue };
   }
 
-  private setupRawToCoreTransformLambda(ownProps: {
+  private setupCoreTransformBatchJob(ownProps: {
     config: EnvConfigNonSandbox;
     envType: EnvType;
     awsRegion: string;
@@ -663,40 +686,66 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-    dbCluster: rds.DatabaseCluster;
+    computeEnvironment: batch.ManagedEc2EcsComputeEnvironment;
   }): {
-    rawToCoreTransformLambda: lambda.DockerImageFunction;
+    job: batch.EcsJobDefinition;
+    container: batch.EcsEc2ContainerDefinition;
+    queue: batch.JobQueue;
   } {
-    const { lambda: rawToCoreTransformLambdaSettings, name: rawToCoreTransformLambdaName } =
-      settings(ownProps.envType).rawToCoreTransform;
+    const { memory, cpu } = settings(ownProps.envType).coreTransform;
+    settings(ownProps.envType).coreTransform;
 
-    const rawToCoreTransformLambda = new lambda.DockerImageFunction(
-      this,
-      "RawToCoreTransformLambda",
-      {
-        functionName: rawToCoreTransformLambdaName,
-        vpc: ownProps.vpc,
-        code: lambda.DockerImageCode.fromImageAsset("../data-transformation/raw-to-core", {
-          file: "Dockerfile.lambda",
-        }),
-        timeout: rawToCoreTransformLambdaSettings.timeout,
-        memorySize: rawToCoreTransformLambdaSettings.memory,
-        ephemeralStorageSize: rawToCoreTransformLambdaSettings.ephemeralStorageSize,
-        environment: {
-          ENV: ownProps.envType,
+    const asset = new DockerImageAsset(this, "MyBuildImage", {
+      directory: "../data-transformation/fhir-to-csv",
+      file: "Dockerfile",
+    });
+
+    const container = new batch.EcsEc2ContainerDefinition(this, "FhirToCsvContainerDef", {
+      image: ecs.ContainerImage.fromDockerImageAsset(asset),
+      memory,
+      cpu,
+      environment: {
+        ENV: ownProps.envType,
+        AWS_REGION: ownProps.awsRegion,
+      },
+      command: [
+        "python",
+        "main.py",
+        "-e",
+        "HOST=Ref::host",
+        "-e",
+        "USER=Ref::user",
+        "-e",
+        "PASSWORD=Ref::password",
+        "-e",
+        "DATABASE=Ref::database",
+        "-e",
+        "SCHEMA=Ref::schema",
+      ],
+    });
+
+    const job = new batch.EcsJobDefinition(this, "FhirToCsvBatchJob", {
+      jobDefinitionName: "FhirToCsvBatchJob",
+      container,
+      parameters: {
+        jobId: "default",
+        user: "default",
+        password: "default",
+        database: "default",
+        schema: "default",
+      },
+    });
+
+    const queue = new batch.JobQueue(this, "FhirToCsvJobQueue", {
+      computeEnvironments: [
+        {
+          computeEnvironment: ownProps.computeEnvironment,
+          order: 1,
         },
-      }
-    );
+      ],
+      priority: 10,
+    });
 
-    addErrorAlarmToLambdaFunc(
-      this,
-      rawToCoreTransformLambda,
-      `${rawToCoreTransformLambdaName}-GeneralLambdaAlarm`,
-      ownProps.alarmAction
-    );
-
-    ownProps.dbCluster.connections.allowDefaultPortFrom(rawToCoreTransformLambda);
-
-    return { rawToCoreTransformLambda };
+    return { job, container, queue };
   }
 }

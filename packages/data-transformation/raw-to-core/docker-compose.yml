@@ -9,7 +9,6 @@ services:
     volumes:
       - .:/usr/app/data
     environment:
-      DBT_PROFILES_DIR: /app/profiles/postgres
       DBT_PG_HOST: ${DBT_PG_HOST}
       DBT_PG_PORT: ${DBT_PG_PORT}
       DBT_PG_USER: ${DBT_PG_USER}

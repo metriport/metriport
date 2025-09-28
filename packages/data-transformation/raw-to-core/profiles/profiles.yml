@@ -8,4 +8,5 @@ postgres:
       dbname: "{{ env_var('DBT_PG_DATABASE') }}"
       schema: "{{ env_var('DBT_PG_SCHEMA') }}"
       type: postgres
+      threads: 5
   target: default
