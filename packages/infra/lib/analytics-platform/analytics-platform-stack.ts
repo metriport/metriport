@@ -78,6 +78,7 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
     lambda: {
       memory: 512,
       timeout: fhirToCsvBulkLambdaTimeout,
+      runtime: lambda.Runtime.NODEJS_20_X,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(6),
@@ -99,6 +100,7 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
     lambda: {
       memory: 512,
       timeout: fhirToCsvIncrementalLambdaTimeout,
+      runtime: lambda.Runtime.NODEJS_20_X,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(6),
@@ -130,6 +132,7 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
     lambda: {
       memory: 4096,
       timeout: mergeCsvsLambdaTimeout,
+      runtime: lambda.Runtime.NODEJS_20_X,
     },
     queue: {
       alarmMaxAgeOfOldestMessage: Duration.hours(2),
