@@ -41,10 +41,6 @@ router.post(
  * Runs the core transform into the analytics platform, for a single patient.
  *
  * @param req.query.cxId - The CX ID.
- * @param req.query.jobId - The job ID.
- * @param req.query.host - The host.
- * @param req.query.user - The user.
- * @param req.query.password - The password.
  * @param req.query.database - The database.
  * @param req.query.schema - The schema.
  */
@@ -56,9 +52,9 @@ router.post(
     const database = getFromQueryOrFail("database", req);
     const schema = getFromQueryOrFail("schema", req);
 
-    await startCoreTransform({ cxId, database, schema });
+    const jobId = await startCoreTransform({ cxId, database, schema });
 
-    return res.status(httpStatus.OK).json({ message: "Core transform initiated" });
+    return res.status(httpStatus.OK).json({ message: "Core transform initiated", jobId });
   })
 );
 
