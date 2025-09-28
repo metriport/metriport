@@ -123,7 +123,7 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
     waitTime: Duration.seconds(0),
   };
   const coreTransform: BatchJobSettings = {
-    memory: cdk.Size.mebibytes(1024),
+    memory: cdk.Size.mebibytes(8192),
     cpu: 4,
   };
   return {
