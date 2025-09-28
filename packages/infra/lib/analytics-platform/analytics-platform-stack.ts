@@ -212,7 +212,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       },
     });
 
-    const { dbCluster } = this.setupDB({
+    const { dbCluster, dbCredsSecret } = this.setupDB({
       config: props.config,
       envType: props.config.environmentType,
       awsRegion: props.config.region,
@@ -308,7 +308,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       sentryDsn: props.config.sentryDSN,
       alarmAction: props.alarmAction,
       dbCluster,
-      dbUserSecret,
+      dbCredsSecret,
       computeEnvironment: analyticsPlatformComputeEnvironment,
     });
     this.coreTransformBatchJob = coreTransformBatchJob;
@@ -348,6 +348,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     alarmAction: SnsAction | undefined;
   }): {
     dbCluster: rds.DatabaseCluster;
+    dbCredsSecret: secret.ISecret;
   } {
     const dbConfig = ownProps.config.analyticsPlatform.rds;
     // create database credentials
@@ -414,7 +415,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     });
 
     addDBClusterPerformanceAlarms(this, dbCluster, dbClusterName, dbConfig, ownProps.alarmAction);
-    return { dbCluster };
+    return { dbCluster, dbCredsSecret };
   }
 
   private setupFhirToCsvTransformLambda(ownProps: {
@@ -705,7 +706,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     dbCluster: rds.DatabaseCluster;
-    dbUserSecret: secret.ISecret;
+    dbCredsSecret: secret.ISecret;
     computeEnvironment: batch.FargateComputeEnvironment;
   }): {
     job: batch.EcsJobDefinition;
@@ -727,10 +728,10 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         ENV: ownProps.envType,
         AWS_REGION: ownProps.awsRegion,
         HOST: ownProps.dbCluster.clusterEndpoint.hostname,
-        USER: ownProps.config.analyticsPlatform.rds.fhirToCsvDbUsername,
+        USER: ownProps.config.analyticsPlatform.rds.username,
       },
       secrets: {
-        PASSWORD: ecs.Secret.fromSecretsManager(ownProps.dbUserSecret),
+        PASSWORD: ecs.Secret.fromSecretsManager(ownProps.dbCredsSecret),
       },
       command: ["python", "main.py", "Ref::database", "Ref::schema"],
     });
