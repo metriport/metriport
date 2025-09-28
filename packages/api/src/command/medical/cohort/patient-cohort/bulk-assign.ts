@@ -3,7 +3,7 @@ import { BadRequestError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
 import { getPatientIds } from "../../patient/get-patient-read-only";
-import { CohortEntityWithPatientIdsAndCount, getCohortModelOrFail } from "../get-cohort";
+import { getCohortModelOrFail } from "../get-cohort";
 import { getPatientIdsAssignedToCohort } from "./get-assigned-ids";
 
 type BulkAssignPatientsToCohortParams = {

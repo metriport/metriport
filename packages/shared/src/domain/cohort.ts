@@ -1,29 +1,5 @@
 import { z } from "zod";
-import { baseDomainCreateSchema, baseDomainSchema } from "./base-domain";
-// import { BaseDomain, BaseDomainCreate } from "./base-domain";
-
-// export type MonitoringSettings = {
-//   adt?: boolean;
-// };
-
-// export interface CohortCreate extends BaseDomainCreate {
-//   cxId: string;
-//   name: string;
-//   monitoring?: MonitoringSettings;
-// }
-
-// export interface Cohort extends BaseDomain, CohortCreate {}
-
-// export interface PatientCohortData {
-//   patientId: string;
-//   cohortId: string;
-// }
-
-// export interface PatientCohortCreate extends PatientCohortData {
-//   cxId: string;
-// }
-
-// export interface PatientCohort extends BaseDomain, Required<PatientCohortData> {}
+import { BaseDomain } from "./base-domain";
 
 export const COHORT_COLORS = [
   "red",
@@ -38,64 +14,82 @@ export const COHORT_COLORS = [
   "black",
   "white",
 ] as const;
-export const cohortColorsSchema = z.enum(COHORT_COLORS);
-export type CohortColors = z.infer<typeof cohortColorsSchema>;
 
-// Cohort Domain Interface
+// ### Domain Interface ###
+export const cohortColorsSchema = z.enum(COHORT_COLORS);
 export const cohortSettingsSchema = z.object({
   adtMonitoring: z.boolean().optional(),
 });
-export type CohortSettings = z.infer<typeof cohortSettingsSchema>;
-
-export const cohortSchema = z.object({
+export const baseCohortSchema = z.object({
   name: z.string().transform(val => val.trim()),
   color: cohortColorsSchema,
   description: z.string(),
   settings: cohortSettingsSchema,
 });
-export type Cohort = z.infer<typeof cohortSchema>;
 
-export const cohortCreateSchema = cohortSchema.extend({
+export type CohortColors = z.infer<typeof cohortColorsSchema>;
+export type CohortSettings = z.infer<typeof cohortSettingsSchema>;
+export type BaseCohort = z.infer<typeof baseCohortSchema>;
+// #########################
+
+// ### Input Interfaces ###
+// > Request schemas for parsing request body
+export const cohortCreateSchema = baseCohortSchema.extend({
   description: z.string().optional(),
   settings: cohortSettingsSchema.optional(),
 });
-export type CohortCreate = z.infer<typeof cohortCreateSchema>;
-
-export const cohortUpdateSchema = cohortCreateSchema.partial();
-export type CohortUpdate = z.infer<typeof cohortUpdateSchema>;
-
-// Cohort Model Interface
-export const cohortModelSchema = cohortSchema
-  .and(baseDomainSchema)
-  .and(z.object({ cxId: z.string() }));
-export type CohortEntity = z.infer<typeof cohortModelSchema>;
-
-export const cohortModelCreateSchema = cohortCreateSchema
-  .and(baseDomainCreateSchema)
-  .and(z.object({ cxId: z.string() }));
-export type CohortModelCreate = z.infer<typeof cohortModelCreateSchema>;
-
-export const cohortModelUpdateSchema = cohortUpdateSchema
-  .and(baseDomainCreateSchema)
-  .and(z.object({ cxId: z.string() }));
-export type CohortModelUpdate = z.infer<typeof cohortModelUpdateSchema>;
-
-// PatientCohort Domain Interface
-export const patientCohortSchema = z.object({
-  patientId: z.string(),
-  cohortId: z.string(),
+export const cohortUpdateSchema = cohortCreateSchema.partial().extend({
+  eTag: z.string().optional(),
 });
-export type PatientCohort = z.infer<typeof patientCohortSchema>;
 
-export const patientCohortCreateSchema = patientCohortSchema;
-export type PatientCohortCreate = z.infer<typeof patientCohortCreateSchema>;
+export type CohortCreateRequest = z.infer<typeof cohortCreateSchema>;
+export type CohortUpdateRequest = z.infer<typeof cohortUpdateSchema>;
 
-export const patientCohortUpdateSchema = patientCohortCreateSchema.partial();
-export type PatientCohortUpdate = z.infer<typeof patientCohortUpdateSchema>;
+// > Command schemas after parsing request body
+export type CohortCreateCmd = z.infer<typeof cohortCreateSchema> & { cxId: string };
+export type CohortUpdateCmd = z.infer<typeof cohortUpdateSchema> & { id: string; cxId: string };
+// #########################
 
-// PatientCohort Model Interface
-export const patientCohortModelCreateSchema = patientCohortCreateSchema.and(baseDomainCreateSchema);
-export type PatientCohortModelCreate = z.infer<typeof patientCohortModelCreateSchema>;
+// ### Output Interfaces ###
+export type Cohort = BaseCohort & BaseDomain & { cxId: string };
+// #########################
 
-export const patientCohortModelUpdateSchema = patientCohortUpdateSchema.and(baseDomainCreateSchema);
-export type PatientCohortModelUpdate = z.infer<typeof patientCohortModelUpdateSchema>;
+// Move this somewhere else?
+export type BaseDTO = {
+  id: string;
+  eTag: string;
+};
+
+export function toBaseDTO(model: { id: string; eTag: string }): BaseDTO {
+  return {
+    id: model.id,
+    eTag: model.eTag,
+  };
+}
+
+export type CohortDTO = {
+  id: string;
+  name: string;
+  description: string;
+  color: CohortColors;
+  settings: CohortSettings;
+};
+
+export type CohortEntityWithSizeDTO = {
+  cohort: CohortDTO;
+  size: number;
+};
+
+export type CohortEntityWithPatientIdsAndSizeDTO = CohortEntityWithSizeDTO & {
+  patientIds: string[];
+};
+
+export function dtoFromCohort(cohort: Cohort & { eTag: string }): CohortDTO {
+  return {
+    ...toBaseDTO(cohort),
+    name: cohort.name,
+    color: cohort.color,
+    settings: cohort.settings,
+    description: cohort.description,
+  };
+}

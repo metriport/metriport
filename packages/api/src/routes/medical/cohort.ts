@@ -1,14 +1,20 @@
 import {
+  Cohort,
   cohortCreateSchema,
-  CohortEntity,
+  CohortDTO,
   cohortUpdateSchema,
+  dtoFromCohort,
 } from "@metriport/shared/domain/cohort";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { createCohort } from "../../command/medical/cohort/create-cohort";
 import { deleteCohort } from "../../command/medical/cohort/delete-cohort";
-import { getCohorts, getCohortWithSizeOrFail } from "../../command/medical/cohort/get-cohort";
+import {
+  getCohortByName,
+  getCohorts,
+  getCohortWithDetailsOrFail,
+} from "../../command/medical/cohort/get-cohort";
 import {
   assignAllPatientsToCohort,
   bulkAssignPatientsToCohort,
@@ -19,13 +25,12 @@ import { getETag } from "../../shared/http";
 import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
 import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
-import { CohortDTO, dtoFromCohort } from "./dtos/cohortDTO";
+import { asyncHandler, getCxIdOrFail, getFromParamsOrFail, getFromQuery } from "../util";
 import { allOrSubsetPatientIdsSchema, patientIdsSchema } from "./schemas/shared";
 
 const router = Router();
 
-function applyCohortDtoToPayload(params: { cohort: CohortEntity }): { cohort: CohortDTO } {
+function applyCohortDtoToPayload(params: { cohort: Cohort }): { cohort: CohortDTO } {
   return {
     ...params,
     cohort: dtoFromCohort(params.cohort),
@@ -75,9 +80,9 @@ router.put(
 
     const cohort = await updateCohort({
       ...getETag(req),
-      id,
-      cxId,
       ...data,
+      cxId,
+      id,
     });
 
     return res.status(status.OK).json(dtoFromCohort(cohort));
@@ -112,8 +117,9 @@ router.delete(
 /** ---------------------------------------------------------------------------
  * GET /medical/v1/cohort
  *
- * Returns all cohorts defined by the CX.
+ * Returns all cohorts defined by the CX. If a name is provided, returns the cohort with the specified name instead.
  *
+ * @param req.query.name (optional) The name of the cohort to return.
  * @returns List of cohorts with count of patients assigned to them.
  */
 router.get(
@@ -121,11 +127,12 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
+    const name = getFromQuery("name", req);
 
-    const cohortsWithSizes = await getCohorts({ cxId });
+    const cohorts = name ? [await getCohortByName({ cxId, name })] : await getCohorts({ cxId });
 
     return res.status(status.OK).json({
-      cohorts: cohortsWithSizes.map(applyCohortDtoToPayload),
+      cohorts: cohorts.map(dtoFromCohort),
     });
   })
 );
@@ -133,10 +140,10 @@ router.get(
 /** ---------------------------------------------------------------------------
  * GET /medical/v1/cohort/:id
  *
- * Returns cohort details, count and IDs of the patients assigned to it.
+ * Returns cohort with additional details; the count and IDs of the patients assigned to it.
  *
  * @param req.param.id The ID of the cohort to get.
- * @returns Cohort details, count and IDs of the patients assigned to it.
+ * @returns Cohort with additional details; the count and IDs of the patients assigned to it.
  */
 router.get(
   "/:id",
@@ -146,7 +153,7 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
 
-    const cohortDetails = await getCohortWithSizeOrFail({ id, cxId });
+    const cohortDetails = await getCohortWithDetailsOrFail({ id, cxId });
 
     return res.status(status.OK).json(applyCohortDtoToPayload(cohortDetails));
   })
