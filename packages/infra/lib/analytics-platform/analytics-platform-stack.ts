@@ -107,7 +107,7 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
       alarmMaxAgeOfOldestMessage: Duration.hours(6),
       maxMessageCountAlarmThreshold: 5_000,
       maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(fhirToCsvIncrementalLambdaTimeout.toSeconds() * 2 + 1),
+      visibilityTimeout: Duration.seconds(fhirToCsvIncrementalLambdaTimeout.toSeconds()),
       createRetryLambda: false,
       deliveryDelay: isProdEnv(envType) ? Duration.minutes(5) : Duration.seconds(30),
     },
