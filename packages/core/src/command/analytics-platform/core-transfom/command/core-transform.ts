@@ -1,4 +1,4 @@
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, MetriportError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { BatchUtils } from "../../../../external/aws/batch";
 import { Config } from "../../../../util/config";
@@ -21,7 +21,12 @@ export async function startCoreTransform({
   const coreTransformBatchJobDefinitionArn = Config.getCoreTransformBatchJobDefinitionArn();
 
   if (!coreTransformBatchJobQueueArn || !coreTransformBatchJobDefinitionArn) {
-    throw new BadRequestError("Job queue or definition ARN is not set");
+    throw new BadRequestError("Job queue or definition ARN is not set", undefined, {
+      cxId,
+      jobId,
+      database,
+      schema,
+    });
   }
 
   const batch = new BatchUtils(Config.getAWSRegion());
@@ -35,7 +40,10 @@ export async function startCoreTransform({
       schema,
     },
   });
+  if (!response?.jobId) {
+    throw new MetriportError("Failed to start job", undefined, { cxId, jobId, database, schema });
+  }
 
   log(`>>> Job started: ${JSON.stringify(response)}`);
-  return jobId;
+  return response.jobId;
 }
