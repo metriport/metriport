@@ -267,11 +267,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     });
     this.dbCredsSecret = dbCredsSecret;
 
-    const dbUserSecret = buildSecret(
-      this,
-      props.config.analyticsPlatform.secretNames.FHIR_TO_CSV_DB_PASSWORD
-    );
-
     const analyticsPlatformComputeEnvironment = new batch.FargateComputeEnvironment(
       this,
       "AnalyticsPlatformComputeEnvironment",
@@ -324,7 +319,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         featureFlagsTable: props.featureFlagsTable,
         medicalDocumentsBucket: props.medicalDocumentsBucket,
         dbCluster,
-        dbUserSecret,
       });
     this.fhirToCsvIncrementalLambda = fhirToCsvIncrementalLambda;
     this.fhirToCsvIncrementalQueue = fhirToCsvIncrementalQueue;
@@ -355,7 +349,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       sentryDsn: props.config.sentryDSN,
       alarmAction: props.alarmAction,
       dbCluster,
-      dbCredsSecret,
       computeEnvironment: analyticsPlatformComputeEnvironment,
     });
     this.coreTransformBatchJob = coreTransformBatchJob;
@@ -675,7 +668,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     featureFlagsTable: dynamodb.Table;
     medicalDocumentsBucket: s3.Bucket;
     dbCluster: rds.DatabaseCluster;
-    dbUserSecret: secret.ISecret;
   }): {
     lambda: lambda.Function;
     queue: Queue;
@@ -691,7 +683,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       featureFlagsTable,
       dbCluster,
       config,
-      dbUserSecret,
     } = ownProps;
 
     const {
@@ -713,6 +704,11 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
       deliveryDelay: queueSettings.deliveryDelay,
     });
+
+    const dbUserSecret = buildSecret(
+      this,
+      config.analyticsPlatform.secretNames.FHIR_TO_CSV_DB_PASSWORD
+    );
 
     const dbCreds: DatabaseCredsForLambda = {
       host: ownProps.dbCluster.clusterEndpoint.hostname,
@@ -821,7 +817,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     dbCluster: rds.DatabaseCluster;
-    dbCredsSecret: secret.Secret;
     computeEnvironment: batch.FargateComputeEnvironment;
   }): {
     job: batch.EcsJobDefinition;
@@ -835,6 +830,11 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       file: "Dockerfile",
     });
 
+    const dbUserSecret = buildSecret(
+      this,
+      ownProps.config.analyticsPlatform.secretNames.RAW_TO_CORE_DB_PASSWORD
+    );
+
     const container = new batch.EcsFargateContainerDefinition(this, "CoreTransformContainerDef", {
       image: ecs.ContainerImage.fromDockerImageAsset(asset),
       memory,
@@ -846,7 +846,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         USER: ownProps.config.analyticsPlatform.rds.fhirToCsvDbUsername,
       },
       secrets: {
-        PASSWORD: ecs.Secret.fromSecretsManager(ownProps.dbCredsSecret),
+        PASSWORD: ecs.Secret.fromSecretsManager(dbUserSecret),
       },
       command: ["python", "main.py", "Ref::database", "Ref::schema"],
     });
