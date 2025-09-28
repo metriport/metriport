@@ -2,6 +2,7 @@ import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { EcsEc2ContainerDefinition, EcsJobDefinition, JobQueue } from "aws-cdk-lib/aws-batch";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as sns from "aws-cdk-lib/aws-sns";
 
 export type AnalyticsPlatformsAssets = {
   fhirToCsvBulkLambda: Lambda;
@@ -14,4 +15,5 @@ export type AnalyticsPlatformsAssets = {
   coreTransformBatchJobContainer: EcsEc2ContainerDefinition;
   coreTransformBatchJobQueue: JobQueue;
   analyticsPlatformBucket: s3.Bucket;
+  coreTransformJobCompletionTopic: sns.Topic;
 };
