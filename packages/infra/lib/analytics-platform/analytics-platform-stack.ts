@@ -348,7 +348,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     alarmAction: SnsAction | undefined;
   }): {
     dbCluster: rds.DatabaseCluster;
-    dbCredsSecret: secret.ISecret;
   } {
     const dbConfig = ownProps.config.analyticsPlatform.rds;
     // create database credentials
@@ -415,7 +414,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     });
 
     addDBClusterPerformanceAlarms(this, dbCluster, dbClusterName, dbConfig, ownProps.alarmAction);
-    return { dbCluster, dbCredsSecret };
+    return { dbCluster };
   }
 
   private setupFhirToCsvTransformLambda(ownProps: {
