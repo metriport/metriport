@@ -3,6 +3,7 @@ import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { Queue } from "aws-cdk-lib/aws-sqs";
+import { Secret } from "aws-cdk-lib/aws-secretsmanager";
 
 export type AnalyticsPlatformsAssets = {
   fhirToCsvBulkLambda: Lambda;
@@ -15,8 +16,7 @@ export type AnalyticsPlatformsAssets = {
   coreTransformBatchJobContainer: EcsFargateContainerDefinition;
   coreTransformBatchJobQueue: JobQueue;
   coreTransformScheduledLambda: Lambda;
-  // coreTransformLambda: Lambda;
-  // coreTransformQueue: Queue;
   analyticsPlatformBucket: s3.Bucket;
   coreTransformJobCompletionTopic: sns.Topic;
+  dbCredsSecret: Secret;
 };

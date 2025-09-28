@@ -1,6 +1,7 @@
 import { executeWithNetworkRetries } from "@metriport/shared";
 import { SQSClient } from "../../../../external/aws/sqs";
 import { Config } from "../../../../util/config";
+import { startCoreTransform } from "../../core-transfom/command/core-transform";
 import { CoreTransformHandler, ProcessCoreTransformRequest } from "./core-transform";
 
 export class CoreTransformCloud extends CoreTransformHandler {
@@ -16,12 +17,13 @@ export class CoreTransformCloud extends CoreTransformHandler {
     const payload: ProcessCoreTransformRequest = params;
     const payloadStrig = JSON.stringify(payload);
 
-    await executeWithNetworkRetries(async () => {
-      await this.sqsClient.sendMessageToQueue(this.coreTransformQueueUrl, payloadStrig, {
-        fifo: true,
-        messageDeduplicationId: cxId,
-        messageGroupId: cxId,
-      });
+    await startCoreTransform({
+      cxId,
+      host: dbCreds.host,
+      user: dbCreds.username,
+      password: dbCreds.password,
+      database: cxDbName,
+      schema: rawDbSchema,
     });
   }
 }

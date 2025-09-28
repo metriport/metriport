@@ -1,10 +1,8 @@
 import { DbCreds, DbCredsWithSchema } from "@metriport/shared";
 import { out } from "../../../../util/log";
-import { getCxDbName } from "../../csv-to-db/db-asset-defs";
-import { exportCoreToS3 } from "../core-to-s3";
-import { transformRawToCore } from "../transformer/raw-to-core";
+import { startCoreTransform } from "../../core-transfom/command/core-transform";
+import { getCxDbName, rawDbSchema } from "../../csv-to-db/db-asset-defs";
 import { CoreTransformHandler, ProcessCoreTransformRequest } from "./core-transform";
-import { rawDbSchema } from "../../csv-to-db/db-asset-defs";
 
 export class CoreTransformDirect extends CoreTransformHandler {
   constructor(
@@ -28,22 +26,18 @@ export class CoreTransformDirect extends CoreTransformHandler {
     };
 
     let startedAt = Date.now();
-    log(`Starting Raw to Core transform...`);
-    await transformRawToCore({
-      cxId,
-      dbCreds,
-      region: this.region,
-      lambdaName: this.rawToCoreLambdaName,
-    });
-    log(`Done transformRawToCore in ${Date.now() - startedAt}ms, exporting core data to S3...`);
+    log(`Calling startCoreTransform...`);
+    // TODO ENG0954 to only send database + schema
 
-    startedAt = Date.now();
-    await exportCoreToS3({
+    await startCoreTransform({
       cxId,
-      analyticsBucketName: this.analyticsBucketName,
-      region: this.region,
-      dbCreds,
+      host: dbCreds.host,
+      user: dbCreds.username,
+      password: dbCreds.password,
+      database: cxDbName,
+      schema: rawDbSchema,
     });
-    log(`Done exportCoreToS3 in ${Date.now() - startedAt}ms`);
+
+    log(`Done calling startCoreTransform in ${Date.now() - startedAt}ms`);
   }
 }
