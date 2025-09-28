@@ -18,12 +18,14 @@ def handler(event: dict, context: dict):
         raise ValueError("Missing required environment variables: PASSWORD")
     os.environ['DBT_PG_PASSWORD'] = password
 
-    database = sys.argv[1] or os.getenv("DATABASE") or os.getenv("DBT_PG_DATABASE")
+    cliDatabase = sys.argv[1] if len(sys.argv) > 1 else None
+    database = cliDatabase or os.getenv("DATABASE") or os.getenv("DBT_PG_DATABASE")
     if not database:
         raise ValueError("Missing required environment variables: DATABASE")
     os.environ['DBT_PG_DATABASE'] = database
 
-    schema = sys.argv[2] or os.getenv("SCHEMA") or os.getenv("DBT_PG_SCHEMA")
+    cliSchema = sys.argv[2] if len(sys.argv) > 2 else None
+    schema = cliSchema or os.getenv("SCHEMA") or os.getenv("DBT_PG_SCHEMA")
     if not schema:
         raise ValueError("Missing required environment variables: SCHEMA")
     os.environ['DBT_PG_SCHEMA'] = schema
