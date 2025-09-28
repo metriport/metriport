@@ -1,11 +1,13 @@
-import { DockerImageFunction } from "aws-cdk-lib/aws-lambda";
+import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 
 export type AnalyticsPlatformsAssets = {
-  fhirToCsvLambda: DockerImageFunction;
-  fhirToCsvQueue: Queue;
-  mergeCsvsLambda: DockerImageFunction;
+  fhirToCsvBulkLambda: Lambda;
+  fhirToCsvBulkQueue: Queue;
+  fhirToCsvIncrementalLambda: Lambda;
+  fhirToCsvIncrementalQueue: Queue;
+  mergeCsvsLambda: Lambda;
   mergeCsvsQueue: Queue;
   analyticsPlatformBucket: s3.Bucket;
 };

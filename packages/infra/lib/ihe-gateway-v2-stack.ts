@@ -304,6 +304,12 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     iheResponsesBucket.grantReadWrite(patientDiscoveryLambda);
     medicalDocumentsBucket.grantRead(patientDiscoveryLambda);
     cqTrustBundleBucket.grantRead(patientDiscoveryLambda);
+
+    // Grant DynamoDB read access for feature flags
+    if (featureFlagsTable) {
+      featureFlagsTable.grantReadData(patientDiscoveryLambda);
+    }
+
     return patientDiscoveryLambda;
   }
 

@@ -395,16 +395,30 @@ export class Config {
     return getEnvVarOrFail("FHIR_CONVERTER_BUCKET_NAME");
   }
 
+  static getAnalyticsBucketName(): string | undefined {
+    return getEnvVar("ANALYTICS_BUCKET_NAME");
+  }
+  /** For development only - cloud should call a lambda that has it setup differently */
+  static getAnalyticsDbCreds(): string {
+    return getEnvVarOrFail("ANALYTICS_DB_CREDS");
+  }
+
   // ENG-536 remove this once we automatically find the discharge summary
   static getDischargeNotificationSlackUrl(): string {
     return getEnvVarOrFail("DISCHARGE_NOTIFICATION_SLACK_URL");
   }
 
-  static getFhirToCsvQueueUrl(): string {
-    return getEnvVarOrFail("FHIR_TO_CSV_QUEUE_URL");
+  static getFhirToCsvBulkQueueUrl(): string {
+    return getEnvVarOrFail("FHIR_TO_CSV_BULK_QUEUE_URL");
+  }
+  static getFhirToCsvIncrementalQueueUrl(): string {
+    return getEnvVarOrFail("FHIR_TO_CSV_INCREMENTAL_QUEUE_URL");
   }
   static getFhirToCsvTransformLambdaName(): string {
     return getEnvVarOrFail("FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME");
+  }
+  static getFhirToCsvTransformHttpEndpoint(): string {
+    return getEnvVar("FHIR_TO_CSV_TRANSFORM_HTTP_ENDPOINT") ?? "http://localhost:8001";
   }
 
   static getRosterUploadSftpPasswordArn(): string {
