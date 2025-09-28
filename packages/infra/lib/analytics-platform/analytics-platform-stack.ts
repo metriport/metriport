@@ -26,7 +26,7 @@ import { EnvConfigNonSandbox } from "../../config/env-config";
 import { EnvType } from "../env-type";
 import { addErrorAlarmToLambdaFunc, createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
-import { createScheduledLambda } from "../shared/lambda-scheduled";
+import { createScheduledLambda, ScheduledLambdaProps } from "../shared/lambda-scheduled";
 import { addDBClusterPerformanceAlarms } from "../shared/rds";
 import { buildSecret } from "../shared/secrets";
 import {
@@ -48,21 +48,18 @@ type CoreToS3LambdaSettings = LambdaSetup & {
   eventSource: SnsEventSourceProps;
 };
 
+type CoreTransformScheduledSettings = Omit<
+  ScheduledLambdaProps,
+  "entry" | "stack" | "envType" | "layers"
+> & { endpoint: string };
+
 interface AnalyticsPlatformsSettings {
   fhirToCsvBulk: QueueAndLambdaSettings;
   fhirToCsvIncremental: QueueAndLambdaSettings;
   fhirToCsvTransform: DockerImageLambdaSettings;
   mergeCsvs: QueueAndLambdaSettings;
   coreTransform: BatchJobSettings;
-  coreTransformScheduled: {
-    name: string;
-    lambda: {
-      memory: number;
-      timeout: Duration;
-    };
-    url: string;
-    scheduleExpression: string;
-  };
+  coreTransformScheduled: CoreTransformScheduledSettings;
   coreToS3Lambda: CoreToS3LambdaSettings;
 }
 
@@ -152,13 +149,12 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
     memory: cdk.Size.mebibytes(8192),
     cpu: 4,
   };
-  const coreTransformScheduled = {
+  const coreTransformScheduled: CoreTransformScheduledSettings = {
     name: "CoreTransformScheduled",
-    lambda: {
-      memory: 512,
-      timeout: Duration.minutes(1),
-    },
-    url: `/internal/analytics-platform/ingestion/core/rebuild`,
+    memory: 512,
+    runtime: lambda.Runtime.NODEJS_20_X,
+    timeout: Duration.minutes(1),
+    endpoint: `/internal/analytics-platform/ingestion/core/rebuild`,
     scheduleExpression: `0/${coreTransformScheduledLambdaInterval.toMinutes()} * * * ? *`,
   };
   const coreToS3Lambda: CoreToS3LambdaSettings = {
@@ -925,12 +921,9 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
   }): lambda.Function {
     const { lambdaLayers, vpc } = ownProps;
 
-    const {
-      name,
-      lambda: { timeout, memory },
-      scheduleExpression,
-      url,
-    } = settings(ownProps.envType).coreTransformScheduled;
+    const { name, timeout, memory, scheduleExpression, endpoint, runtime } = settings(
+      ownProps.envType
+    ).coreTransformScheduled;
 
     const lambda = createScheduledLambda({
       stack: this,
@@ -938,8 +931,9 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       name,
       vpc,
       memory,
+      runtime,
       scheduleExpression,
-      url,
+      endpoint,
       timeout,
       envType: ownProps.config.environmentType,
       envVars: {
