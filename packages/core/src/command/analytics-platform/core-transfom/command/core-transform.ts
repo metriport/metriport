@@ -41,7 +41,13 @@ export async function startCoreTransform({
     },
   });
   if (!response?.jobId) {
-    throw new MetriportError("Failed to start job", undefined, { cxId, jobId, database, schema });
+    throw new MetriportError("Failed to start job", undefined, {
+      cxId,
+      jobId,
+      database,
+      schema,
+      response: JSON.stringify(response),
+    });
   }
 
   log(`>>> Job started: ${JSON.stringify(response)}`);
