@@ -833,7 +833,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         ENV: ownProps.envType,
         AWS_REGION: ownProps.awsRegion,
         HOST: ownProps.dbCluster.clusterEndpoint.hostname,
-        USER: ownProps.config.analyticsPlatform.rds.fhirToCsvDbUsername,
+        USER: ownProps.config.analyticsPlatform.rds.rawToCoreDbUsername,
       },
       secrets: {
         PASSWORD: ecs.Secret.fromSecretsManager(dbUserSecret),
