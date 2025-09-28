@@ -220,7 +220,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
     });
 
-    const analyticsPlatformComputeEnvironment = new batch.ManagedEc2EcsComputeEnvironment(
+    const analyticsPlatformComputeEnvironment = new batch.FargateComputeEnvironment(
       this,
       "AnalyticsPlatformComputeEnvironment",
       {
@@ -701,7 +701,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     dbCluster: rds.DatabaseCluster;
-    computeEnvironment: batch.ManagedEc2EcsComputeEnvironment;
+    computeEnvironment: batch.FargateComputeEnvironment;
   }): {
     job: batch.EcsJobDefinition;
     container: batch.EcsFargateContainerDefinition;

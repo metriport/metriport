@@ -1,8 +1,4 @@
-import {
-  EcsFargateContainerDefinitionProps,
-  EcsJobDefinition,
-  JobQueue,
-} from "aws-cdk-lib/aws-batch";
+import { EcsFargateContainerDefinition, EcsJobDefinition, JobQueue } from "aws-cdk-lib/aws-batch";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as sns from "aws-cdk-lib/aws-sns";
@@ -16,7 +12,7 @@ export type AnalyticsPlatformsAssets = {
   mergeCsvsLambda: Lambda;
   mergeCsvsQueue: Queue;
   coreTransformBatchJob: EcsJobDefinition;
-  coreTransformBatchJobContainer: EcsFargateContainerDefinitionProps;
+  coreTransformBatchJobContainer: EcsFargateContainerDefinition;
   coreTransformBatchJobQueue: JobQueue;
   analyticsPlatformBucket: s3.Bucket;
   coreTransformJobCompletionTopic: sns.Topic;
