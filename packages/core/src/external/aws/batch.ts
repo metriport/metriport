@@ -66,7 +66,7 @@ export class BatchUtils {
     }
   }
 
-  async getJobStatus(jobId: string): Promise<AWS.Batch.JobDetail | undefined> {
+  async getJobDetails(jobId: string): Promise<AWS.Batch.JobDetail | undefined> {
     const { log } = out(`getJobStatus`);
     const input: AWS.Batch.DescribeJobsRequest = {
       jobs: [jobId],
@@ -76,12 +76,12 @@ export class BatchUtils {
       const response = await this.batch.describeJobs(input).promise();
       return response.jobs?.[0];
     } catch (error) {
-      const msg = `Error getting job status from Batch`;
+      const msg = `Error getting job details from Batch`;
       log(`${msg} - error: ${errorToString(error)}`);
       capture.message(msg, {
         extra: {
           error: errorToString(error),
-          context: "getJobStatus",
+          context: "getJobDetails",
           level: "warning",
         },
       });
