@@ -262,6 +262,11 @@ export function createAPIService({
           SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
           ...secretsToECS(secrets),
           ...secretsToECS(buildSecrets(stack, props.config.propelAuth.secrets)),
+          ...(analyticsPlatformAssets && {
+            ANALYTICS_DB_CREDS: ecs.Secret.fromSecretsManager(
+              analyticsPlatformAssets.dbCredsSecret
+            ),
+          }),
         },
         environment: {
           NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
@@ -513,6 +518,7 @@ export function createAPIService({
 
   // Access grant for Aurora DB's secret
   dbCredsSecret.grantRead(fargateService.taskDefinition.taskRole);
+  analyticsPlatformAssets?.dbCredsSecret.grantRead(fargateService.taskDefinition.taskRole);
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   rateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);

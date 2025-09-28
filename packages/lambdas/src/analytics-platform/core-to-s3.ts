@@ -1,8 +1,6 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
-import { ProcessCoreTransformRequest } from "@metriport/core/command/analytics-platform/core-transform/coordinator/core-transform";
-import { CoreTransformDirect } from "@metriport/core/command/analytics-platform/core-transform/coordinator/core-transform-direct";
+import { exportCoreToS3 } from "@metriport/core/command/analytics-platform/core-transform/core-to-s3";
 import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
-import { controlDuration } from "@metriport/core/util/race-control";
 import { dbCredsSchema, errorToString, getEnvVarOrFail, MetriportError } from "@metriport/shared";
 import { Context, SQSEvent } from "aws-lambda";
 import { z } from "zod";
@@ -14,13 +12,16 @@ import { getSingleMessageOrFail } from "../shared/sqs";
 // Keep this as early on the file as possible
 capture.init();
 
+/**
+ * Lambda to export the core data to S3.
+ */
+
 // Automatically set by AWS
 const lambdaName = getEnvVarOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvVarOrFail("AWS_REGION");
 // Set by us
 const featureFlagsTableName = getEnvVarOrFail("FEATURE_FLAGS_TABLE_NAME");
 const analyticsBucketName = getEnvVarOrFail("ANALYTICS_BUCKET_NAME");
-const rawToCoreLambdaName = getEnvVarOrFail("RAW_TO_CORE_TRANSFORM_LAMBDA_NAME");
 const dbCredsSecretArn = getEnvVarOrFail("DB_CREDS_ARN");
 
 FeatureFlags.init(region, featureFlagsTableName);
@@ -47,27 +48,18 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
 
     const remainingLambdaExecutionTime = Math.max(0, context.getRemainingTimeInMillis() - 200);
 
-    log(`Invoking processCoreTransform... it has ${remainingLambdaExecutionTime}ms to run`);
+    log(`Invoking exportCoreToS3... it has ${remainingLambdaExecutionTime}ms to run`);
     const startedAt = Date.now();
-    const coreTransformHandler = new CoreTransformDirect(
+
+    await exportCoreToS3({
+      cxId,
       analyticsBucketName,
       region,
       dbCreds,
-      rawToCoreLambdaName
-    );
-    const params: ProcessCoreTransformRequest = {
-      cxId,
-    };
-    const timedOutResp = "Timeout";
-    const resp = await Promise.race([
-      coreTransformHandler.processCoreTransform(params),
-      controlDuration(remainingLambdaExecutionTime, timedOutResp),
-    ]);
-    if (resp === timedOutResp) {
-      throw new MetriportError("Timeout calling processCoreTransform", undefined, {
-        cxId,
-      });
-    }
+    });
+
+    // TODO ENG-954 Call Snowflake Lambda (or put on SNS if time allows)
+
     log(`Done in ${Date.now() - startedAt}ms`);
   } catch (error) {
     console.error("Re-throwing error ", errorToString(error));

@@ -11,6 +11,7 @@ export type RawToCoreLambdaRequest = {
   SCHEMA: string;
 };
 
+// TODO -ENG-954 repurpose to be the snowflake lambda
 /**
  * Calls the service that transforms the raw data into the core data.
  */

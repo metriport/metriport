@@ -6,6 +6,8 @@ import { BadRequestError } from "@metriport/shared";
 import { executeAsynchronously } from "../../../util/concurrency";
 import { buildCoreTransformHandler } from "./coordinator/core-transform-factory";
 import { out } from "../../../util/log";
+import { Config } from "../../../util/config";
+import { getCxDbName } from "../csv-to-db/db-asset-defs";
 
 /**
  * Rebuilds the core schemas for a given cxId.
@@ -25,13 +27,18 @@ export async function rebuildCoreSchemas({ cxId }: { cxId?: string }): Promise<s
 
   const cxIds = cxId ? [cxId] : await getCxsEnabledForAnalyticsIncrementalIngestion();
 
+  if (cxIds.length < 1) log(`No cxIds to rebuild core schemas for`);
+
+  const dbCreds = Config.getAnalyticsDbCreds();
+
   log(`Rebuilding core schemas for ${cxIds.length} cxIds: ${cxIds.join(", ")}`);
 
   await executeAsynchronously(
     cxIds,
     async cxId => {
+      const cxDbName = getCxDbName(cxId, dbCreds.dbname);
       const coreTransformHandler = buildCoreTransformHandler();
-      await coreTransformHandler.processCoreTransform({ cxId });
+      await coreTransformHandler.processCoreTransform({ cxId, dbName: cxDbName });
     },
     {
       numberOfParallelExecutions: 10,
