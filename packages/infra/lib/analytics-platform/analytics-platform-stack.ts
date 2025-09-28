@@ -870,7 +870,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       priority: 10,
     });
 
-    ownProps.dbCredsSecret.grantRead(container.executionRole);
+    dbUserSecret.grantRead(container.executionRole);
 
     return { job, container, queue };
   }
