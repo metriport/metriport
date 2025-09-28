@@ -52,6 +52,7 @@ export function dangerouslyDeduplicateFhir(
   cxId: string,
   patientId: string
 ): void {
+  fs.writeFileSync("zhopa_with_dups.json", JSON.stringify(fhirBundle, null, 2));
   let resourceArrays = extractFhirTypesFromBundle(fhirBundle);
 
   const compositionsResult = deduplicateCompositions(resourceArrays.compositions);
@@ -412,6 +413,16 @@ function removeDanglingReferences<T extends Resource>(
   if ("report" in entry) {
     entry.report = entry.report?.filter(r => r.reference && !danglingLinks.has(r.reference));
     if (!entry.report?.length) delete entry.report;
+  }
+
+  if ("authorizingPrescription" in entry && Array.isArray(entry.authorizingPrescription)) {
+    entry.authorizingPrescription = entry.authorizingPrescription.filter(prescription => {
+      if (prescription.reference && danglingLinks.has(prescription.reference)) {
+        return false;
+      }
+      return true;
+    });
+    if (entry.authorizingPrescription?.length < 1) delete entry.authorizingPrescription;
   }
 
   return entry;
