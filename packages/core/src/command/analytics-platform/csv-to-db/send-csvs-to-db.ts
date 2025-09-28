@@ -10,7 +10,7 @@ import { parseTableNameFromFhirToCsvIncrementalFileKey } from "../fhir-to-csv/fi
 import {
   additionalColumnDefs,
   getCreateIndexCommand,
-  getCreateTableCommand,
+  getCreatePartitionedTableCommand,
   getCreateTableJobCommand,
   getCreateViewJobCommand,
   getCxDbName,
@@ -282,9 +282,9 @@ async function createTableIfNotExists(
   log: (msg: string) => void
 ): Promise<void> {
   try {
-    const createTableCmd = getCreateTableCommand(tableName, columnsDef);
+    const createTableCmd = getCreatePartitionedTableCommand(rawDbSchema, tableName, columnsDef);
     await client.query(createTableCmd);
-    const createIndexCmd = getCreateIndexCommand(tableName);
+    const createIndexCmd = getCreateIndexCommand(rawDbSchema, tableName);
     await client.query(createIndexCmd);
   } catch (error) {
     log(`Error creating table ${tableName}: ${error}`);
@@ -298,7 +298,7 @@ async function createViewIfNotExists(
   log: (msg: string) => void
 ): Promise<string> {
   try {
-    const { cmd, viewName } = getCreateViewJobCommand(tableName);
+    const { cmd, viewName } = getCreateViewJobCommand(rawDbSchema, tableName);
     await client.query(cmd);
     return viewName;
   } catch (error) {

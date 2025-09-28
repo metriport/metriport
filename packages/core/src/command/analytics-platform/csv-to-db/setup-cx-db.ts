@@ -56,7 +56,7 @@ export async function setupCustomerAnalyticsDb({
     })}`
   );
 
-  const dbClient = new Client({
+  let dbClient = new Client({
     host: dbCreds.host,
     port: dbCreds.port,
     database: dbCreds.dbname,
@@ -67,11 +67,21 @@ export async function setupCustomerAnalyticsDb({
     const cxDbName = getCxDbName(cxId, dbCreds.dbname);
     await dbClient.connect();
     log(`Connected to database`);
+    await createCustomerAnalyticsDb({ dbClient, cxDbName, log });
+    await dbClient.end();
+    log(`Disconnected from main database, connecting to customer database...`);
 
+    dbClient = new Client({
+      host: dbCreds.host,
+      port: dbCreds.port,
+      database: cxDbName,
+      user: dbCreds.username,
+      password: dbCreds.password,
+    });
+    await dbClient.connect();
+    log(`Connected to database`);
     await initializeDbInstanceIfNeeded({ dbClient, log });
-
-    await createCustomerAnalyticsDb({ dbClient, cxDbName, schemaName: dbCreds.schemaName, log });
-
+    await createShemaAnalyticsDb({ dbClient, schemaName: dbCreds.schemaName, log });
     await createUsersInAnalyticsDb({
       dbClient,
       dbName: cxDbName,
@@ -103,12 +113,10 @@ async function initializeDbInstanceIfNeeded({
 async function createCustomerAnalyticsDb({
   dbClient,
   cxDbName,
-  schemaName,
   log,
 }: {
   dbClient: Client;
   cxDbName: string;
-  schemaName: string;
   log: typeof console.log;
 }): Promise<void> {
   const cmdDbExists = getCxDbExistsCommand({ cxDbName });
@@ -120,7 +128,17 @@ async function createCustomerAnalyticsDb({
   } else {
     log(`Database ${cxDbName} already exists`);
   }
+}
 
+async function createShemaAnalyticsDb({
+  dbClient,
+  schemaName,
+  log,
+}: {
+  dbClient: Client;
+  schemaName: string;
+  log: typeof console.log;
+}): Promise<void> {
   const cmdSchemaExists = getSchemaExistsCommand({ schemaName });
   const schemaExists = await dbClient.query(cmdSchemaExists);
   if (schemaExists.rowCount < 1) {

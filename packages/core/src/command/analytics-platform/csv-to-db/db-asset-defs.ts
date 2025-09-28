@@ -25,52 +25,75 @@ export function getInsertTableJobCommand(schemaName: string): string {
   return `INSERT INTO ${schemaName}.${tableJobName} (id, ${columnPatientIdName}) VALUES ($1, $2)`;
 }
 
-export function getCreateTableCommand(tableName: string, columnsDef: string): string {
+export function getCreatePartitionedTableCommand(
+  schemaName: string,
+  tableName: string,
+  columnsDef: string
+): string {
   return (
-    `CREATE TABLE IF NOT EXISTS ${tableName} (${columnsDef}) PARTITION BY RANGE (${columnJobIdName}); ` +
-    `CREATE TABLE IF NOT EXISTS ${tableName}_default PARTITION OF ${tableName} DEFAULT; ` +
-    `CREATE TABLE IF NOT EXISTS ${tableName}_01 PARTITION OF ${tableName} FOR VALUES FROM ('20230101') TO ('20250930');` +
-    `CREATE TABLE IF NOT EXISTS ${tableName}_02 PARTITION OF ${tableName} FOR VALUES FROM ('20250930') TO ('20251031');` +
-    `CREATE TABLE IF NOT EXISTS ${tableName}_03 PARTITION OF ${tableName} FOR VALUES FROM ('20251031') TO ('20251130');` +
-    `CREATE TABLE IF NOT EXISTS ${tableName}_04 PARTITION OF ${tableName} FOR VALUES FROM ('20251130') TO ('20251231');` +
-    `CREATE TABLE IF NOT EXISTS ${tableName}_05 PARTITION OF ${tableName} FOR VALUES FROM ('20251231') TO ('20260131');` +
-    `CREATE TABLE IF NOT EXISTS ${tableName}_06 PARTITION OF ${tableName} FOR VALUES FROM ('20260131') TO ('20260229');` +
-    `CREATE TABLE IF NOT EXISTS ${tableName}_07 PARTITION OF ${tableName} FOR VALUES FROM ('20260229') TO ('20260331');` +
-    `CREATE TABLE IF NOT EXISTS ${tableName}_08 PARTITION OF ${tableName} FOR VALUES FROM ('20260331') TO ('20260430');` +
-    `CREATE TABLE IF NOT EXISTS ${tableName}_09 PARTITION OF ${tableName} FOR VALUES FROM ('20260430') TO ('20260531');` +
-    `CREATE TABLE IF NOT EXISTS ${tableName}_10 PARTITION OF ${tableName} FOR VALUES FROM ('20260531') TO ('20260630');`
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName} (${columnsDef}) PARTITION BY RANGE (${columnJobIdName}); ` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_default PARTITION OF ${schemaName}.${tableName} DEFAULT; ` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_01 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20230101') TO ('20250930');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_02 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20250930') TO ('20251031');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_03 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20251031') TO ('20251130');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_04 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20251130') TO ('20251231');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_05 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20251231') TO ('20260131');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_06 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260131') TO ('20260229');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_07 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260229') TO ('20260331');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_08 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260331') TO ('20260430');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_09 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260430') TO ('20260531');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_10 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260531') TO ('20260630');`
   );
 }
 
-export function getCreateViewJobCommand(tableName: string): { cmd: string; viewName: string } {
+export function getListTableNames(schemaName: string): string {
+  const cmd = `SELECT n.nspname AS "schema", c.relname as name
+    FROM pg_class c
+      join pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relkind IN ('r','p')
+      AND NOT c.relispartition
+      AND n.nspname !~ ALL ('{^pg_,^information_schema$}')
+      AND n.nspname = '${schemaName}'
+      order by 2`;
+  return cmd;
+}
+
+export function getCreateViewJobCommand(
+  schemaName: string,
+  tableName: string
+): { cmd: string; viewName: string } {
   const viewName = `${tableName}_view`;
-  const cmd = `CREATE or replace VIEW ${viewName} as
+  const cmd = `CREATE or replace VIEW ${schemaName}.${viewName} as
           SELECT a.*
-          FROM ${tableName} a
-            join ${rawDbSchema}.${tableJobName} j on
+          FROM ${schemaName}.${tableName} a
+            join ${schemaName}.${tableJobName} j on
               a.${columnJobIdName} = j.id and 
               a.${columnPatientIdName} = j.${columnPatientIdName}
           WHERE j.id = (
-            select max(id) from ${rawDbSchema}.${tableJobName} jj
+            select max(id) from ${schemaName}.${tableJobName} jj
             where jj.${columnPatientIdName} = a.${columnPatientIdName}
           );`;
   return { cmd, viewName };
 }
 
-export function getCreateIndexCommand(tableName: string): string {
+export function getCreateIndexCommand(schemaName: string, tableName: string): string {
   return (
     `CREATE INDEX IF NOT EXISTS ${tableName}_${indexSuffixName} ` +
-    `ON ${tableName} USING BRIN (${columnJobIdName})`
+    `ON ${schemaName}.${tableName} USING BRIN (${columnJobIdName})`
   );
 }
-export function getDropIndexCommand(tableName: string): string {
-  return `DROP INDEX IF EXISTS ${tableName}_${indexSuffixName}`;
+export function getDropIndexCommand(schemaName: string, tableName: string): string {
+  return `DROP INDEX IF EXISTS ${schemaName}.${tableName}_${indexSuffixName}`;
 }
 
-export function getInsertTableCommand(tableName: string, columnNames: string[]): string {
+export function getInsertTableCommand(
+  schemaName: string,
+  tableName: string,
+  columnNames: string[]
+): string {
   const valuesPlaceholders = columnNames.map((_, index) => `$${index + 1}`).join(", ");
   const insertQuery = `
-    INSERT INTO ${tableName} (${columnNames.join(", ")})
+    INSERT INTO ${schemaName}.${tableName} (${columnNames.join(", ")})
     VALUES (${valuesPlaceholders})
   `;
   return insertQuery;
