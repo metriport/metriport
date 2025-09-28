@@ -53,13 +53,10 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFromQueryOrFail("cxId", req);
-    const host = getFromQueryOrFail("host", req);
-    const user = getFromQueryOrFail("user", req);
-    const password = getFromQueryOrFail("password", req);
     const database = getFromQueryOrFail("database", req);
     const schema = getFromQueryOrFail("schema", req);
 
-    await startCoreTransform({ cxId, host, user, password, database, schema });
+    await startCoreTransform({ cxId, database, schema });
 
     return res.status(httpStatus.OK).json({ message: "Core transform initiated" });
   })

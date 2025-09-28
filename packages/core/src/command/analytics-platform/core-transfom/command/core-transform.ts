@@ -7,17 +7,11 @@ import { out } from "../../../../util/log";
 export async function startCoreTransform({
   cxId,
   jobId = uuidv7(),
-  host,
-  user,
-  password,
   database,
   schema,
 }: {
   cxId: string;
   jobId?: string;
-  host: string;
-  user: string;
-  password: string;
   database: string;
   schema: string;
 }): Promise<string> {
@@ -37,9 +31,6 @@ export async function startCoreTransform({
     jobQueueArn: coreTransformBatchJobQueueArn,
     jobDefinitionArn: coreTransformBatchJobDefinitionArn,
     parameters: {
-      host,
-      user,
-      password,
       database,
       schema,
     },

@@ -301,6 +301,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       vpc: props.vpc,
       sentryDsn: props.config.sentryDSN,
       alarmAction: props.alarmAction,
+      dbCluster,
       computeEnvironment: analyticsPlatformComputeEnvironment,
     });
     this.coreTransformBatchJob = coreTransformBatchJob;
@@ -699,6 +700,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    dbCluster: rds.DatabaseCluster;
     computeEnvironment: batch.ManagedEc2EcsComputeEnvironment;
   }): {
     job: batch.EcsJobDefinition;
@@ -706,6 +708,11 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     queue: batch.JobQueue;
   } {
     const { memory, cpu } = settings(ownProps.envType).coreTransform;
+
+    const dbUserSecret = buildSecret(
+      this,
+      ownProps.config.analyticsPlatform.secretNames.FHIR_TO_CSV_DB_PASSWORD
+    );
 
     const asset = new DockerImageAsset(this, "CoreTransformBuildImage", {
       directory: "../data-transformation/core-transform",
@@ -719,30 +726,19 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       environment: {
         ENV: ownProps.envType,
         AWS_REGION: ownProps.awsRegion,
+        HOST: ownProps.dbCluster.clusterEndpoint.hostname,
+        USER: ownProps.config.analyticsPlatform.rds.fhirToCsvDbUsername,
       },
-      command: [
-        "python",
-        "main.py",
-        "-e",
-        "HOST=Ref::host",
-        "-e",
-        "USER=Ref::user",
-        "-e",
-        "PASSWORD=Ref::password",
-        "-e",
-        "DATABASE=Ref::database",
-        "-e",
-        "SCHEMA=Ref::schema",
-      ],
+      secrets: {
+        PASSWORD: ecs.Secret.fromSecretsManager(dbUserSecret),
+      },
+      command: ["python", "main.py", "-e", "DATABASE=Ref::database", "-e", "SCHEMA=Ref::schema"],
     });
 
     const job = new batch.EcsJobDefinition(this, "CoreTransformBatchJob", {
       jobDefinitionName: "CoreTransformBatchJob",
       container,
       parameters: {
-        jobId: "default",
-        user: "default",
-        password: "default",
         database: "default",
         schema: "default",
       },
