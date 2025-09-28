@@ -52,7 +52,6 @@ export function dangerouslyDeduplicateFhir(
   cxId: string,
   patientId: string
 ): void {
-  fs.writeFileSync("zhopa_with_dups.json", JSON.stringify(fhirBundle, null, 2));
   let resourceArrays = extractFhirTypesFromBundle(fhirBundle);
 
   const compositionsResult = deduplicateCompositions(resourceArrays.compositions);
