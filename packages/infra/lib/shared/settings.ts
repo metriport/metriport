@@ -23,6 +23,7 @@ type QueueAndLambdaSettingsBase = {
     timeout: Duration;
     reservedConcurrentExecutions?: number;
     ephemeralStorageSize?: Size;
+    runtime?: LambdaSettings["runtime"];
   };
   queue: {
     fifo?: boolean;
