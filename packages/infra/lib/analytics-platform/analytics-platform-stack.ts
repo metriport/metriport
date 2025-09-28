@@ -355,7 +355,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       sentryDsn: props.config.sentryDSN,
       alarmAction: props.alarmAction,
       dbCluster,
-      dbUserSecret,
+      dbCredsSecret,
       computeEnvironment: analyticsPlatformComputeEnvironment,
     });
     this.coreTransformBatchJob = coreTransformBatchJob;
@@ -821,7 +821,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     dbCluster: rds.DatabaseCluster;
-    dbUserSecret: secret.ISecret;
+    dbCredsSecret: secret.Secret;
     computeEnvironment: batch.FargateComputeEnvironment;
   }): {
     job: batch.EcsJobDefinition;
@@ -846,7 +846,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         USER: ownProps.config.analyticsPlatform.rds.fhirToCsvDbUsername,
       },
       secrets: {
-        PASSWORD: ecs.Secret.fromSecretsManager(ownProps.dbUserSecret),
+        PASSWORD: ecs.Secret.fromSecretsManager(ownProps.dbCredsSecret),
       },
       command: ["python", "main.py", "Ref::database", "Ref::schema"],
     });
