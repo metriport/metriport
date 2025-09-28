@@ -45,9 +45,7 @@ export const handler = capture.wrapHandler(async (event: SNSEvent, context: Cont
 
     const dbCredsRaw = await (getSecret(dbCredsSecretArn) as Promise<string | undefined>);
     if (!dbCredsRaw) {
-      throw new MetriportError(`DB password not found`, undefined, {
-        secretArn: dbCredsSecretArn,
-      });
+      throw new MetriportError(`DB creds not found`, undefined, { secretArn: dbCredsSecretArn });
     }
     const dbCreds = dbCredsSchema.parse(JSON.parse(dbCredsRaw));
 
