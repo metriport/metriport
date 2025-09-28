@@ -212,7 +212,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       },
     });
 
-    const { dbCluster, dbCredsSecret } = this.setupDB({
+    const { dbCluster } = this.setupDB({
       config: props.config,
       envType: props.config.environmentType,
       awsRegion: props.config.region,
@@ -308,7 +308,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       sentryDsn: props.config.sentryDSN,
       alarmAction: props.alarmAction,
       dbCluster,
-      dbCredsSecret,
+      dbUserSecret,
       computeEnvironment: analyticsPlatformComputeEnvironment,
     });
     this.coreTransformBatchJob = coreTransformBatchJob;
@@ -706,7 +706,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
     dbCluster: rds.DatabaseCluster;
-    dbCredsSecret: secret.ISecret;
+    dbUserSecret: secret.ISecret;
     computeEnvironment: batch.FargateComputeEnvironment;
   }): {
     job: batch.EcsJobDefinition;
@@ -728,10 +728,10 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         ENV: ownProps.envType,
         AWS_REGION: ownProps.awsRegion,
         HOST: ownProps.dbCluster.clusterEndpoint.hostname,
-        USER: ownProps.config.analyticsPlatform.rds.username,
+        USER: ownProps.config.analyticsPlatform.rds.fhirToCsvDbUsername,
       },
       secrets: {
-        PASSWORD: ecs.Secret.fromSecretsManager(ownProps.dbCredsSecret),
+        PASSWORD: ecs.Secret.fromSecretsManager(ownProps.dbUserSecret),
       },
       command: ["python", "main.py", "Ref::database", "Ref::schema"],
     });
@@ -754,6 +754,8 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       ],
       priority: 10,
     });
+
+    ownProps.dbUserSecret.grantRead(container.executionRole);
 
     return { job, container, queue };
   }
