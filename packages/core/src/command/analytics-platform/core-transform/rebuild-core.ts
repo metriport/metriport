@@ -1,13 +1,13 @@
+import { BadRequestError } from "@metriport/shared";
+import { executeAsynchronously } from "../../../util/concurrency";
+import { Config } from "../../../util/config";
+import { out } from "../../../util/log";
 import {
   getCxsEnabledForAnalyticsIncrementalIngestion,
   isAnalyticsIncrementalIngestionEnabledForCx,
 } from "../../feature-flags/domain-ffs";
-import { BadRequestError } from "@metriport/shared";
-import { executeAsynchronously } from "../../../util/concurrency";
+import { getCxDbName, rawDbSchema } from "../csv-to-db/db-asset-defs";
 import { buildCoreTransformHandler } from "./coordinator/core-transform-factory";
-import { out } from "../../../util/log";
-import { Config } from "../../../util/config";
-import { getCxDbName } from "../csv-to-db/db-asset-defs";
 
 /**
  * Rebuilds the core schemas for a given cxId.
@@ -26,8 +26,7 @@ export async function rebuildCoreSchemas({ cxId }: { cxId?: string }): Promise<s
   }
 
   const cxIds = cxId ? [cxId] : await getCxsEnabledForAnalyticsIncrementalIngestion();
-
-  if (cxIds.length < 1) log(`No cxIds to rebuild core schemas for`);
+  if (cxIds.length < 1) log(`No cxs to rebuild core schema for`);
 
   const dbCreds = Config.getAnalyticsDbCreds();
 
@@ -38,7 +37,11 @@ export async function rebuildCoreSchemas({ cxId }: { cxId?: string }): Promise<s
     async cxId => {
       const cxDbName = getCxDbName(cxId, dbCreds.dbname);
       const coreTransformHandler = buildCoreTransformHandler();
-      await coreTransformHandler.processCoreTransform({ cxId, dbName: cxDbName });
+      await coreTransformHandler.processCoreTransform({
+        cxId,
+        databaseName: cxDbName,
+        schemaName: rawDbSchema,
+      });
     },
     {
       numberOfParallelExecutions: 10,

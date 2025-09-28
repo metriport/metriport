@@ -37,6 +37,8 @@ router.post(
 );
 
 /**
+ * @deprecated Remove this once we validate the flow, this should be triggered through POST /internal/analytics-platform/ingestion/core/rebuild
+ *
  * POST /internal/analytics-platform/core-transform
  *
  * Runs the core transform into the analytics platform, for a single patient.
@@ -53,6 +55,7 @@ router.post(
     const database = getFromQueryOrFail("database", req);
     const schema = getFromQueryOrFail("schema", req);
 
+    // Remove this once we validate the flow, this should be triggered through POST /internal/analytics-platform/ingestion/core/rebuild
     const jobId = await startCoreTransform({ cxId, database, schema });
 
     return res.status(httpStatus.OK).json({ message: "Core transform initiated", jobId });
@@ -62,7 +65,7 @@ router.post(
 /**
  * POST /internal/analytics-platform/ingestion/core/rebuild
  *
- * Runs the core rebuild into the analytics platform, for a single patient.
+ * Rebuild the core schema from the raw, flattened data (result of FhirToCsv).
  *
  * @param req.query.cxId - The CX ID (optional, defaults to all cxIds that have the analytics
  *     incremental ingestion feature flag enabled).
