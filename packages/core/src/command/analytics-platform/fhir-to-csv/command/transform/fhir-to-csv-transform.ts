@@ -25,5 +25,5 @@ export type FhirToCsvTransformServiceRequest = {
 };
 
 export interface FhirToCsvTransformHandler {
-  startFhirToCsvTransform(request: StartFhirToCsvTransformRequest): Promise<void>;
+  runFhirToCsvTransform(request: StartFhirToCsvTransformRequest): Promise<void>;
 }

@@ -12,7 +12,7 @@ export class FhirToCsvBulkDirect implements FhirToCsvBulkHandler {
     timeoutInMillis,
   }: ProcessFhirToCsvBulkRequest): Promise<void> {
     const handler = buildFhirToCsvTransformHandler();
-    await handler.startFhirToCsvTransform({
+    await handler.runFhirToCsvTransform({
       cxId,
       patientId,
       outputPrefix,

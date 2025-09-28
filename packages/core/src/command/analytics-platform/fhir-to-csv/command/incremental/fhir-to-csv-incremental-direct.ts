@@ -30,7 +30,7 @@ export class FhirToCsvIncrementalDirect extends FhirToCsvIncrementalHandler {
     const startedAt = Date.now();
     log(`Starting FhirToCsvTransform...`);
     const handler = buildFhirToCsvTransformHandler();
-    await handler.startFhirToCsvTransform({
+    await handler.runFhirToCsvTransform({
       cxId,
       patientId,
       outputPrefix,

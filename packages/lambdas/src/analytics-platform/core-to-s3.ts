@@ -2,12 +2,11 @@ import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { exportCoreToS3 } from "@metriport/core/command/analytics-platform/core-transform/core-to-s3";
 import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { dbCredsSchema, errorToString, getEnvVarOrFail, MetriportError } from "@metriport/shared";
-import { Context, SQSEvent } from "aws-lambda";
+import { Context, SNSEvent } from "aws-lambda";
 import { z } from "zod";
 import { capture } from "../shared/capture";
 import { prefixedLog } from "../shared/log";
 import { parseBody } from "../shared/parse-body";
-import { getSingleMessageOrFail } from "../shared/sqs";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -26,13 +25,19 @@ const dbCredsSecretArn = getEnvVarOrFail("DB_CREDS_ARN");
 
 FeatureFlags.init(region, featureFlagsTableName);
 
-export const handler = capture.wrapHandler(async (event: SQSEvent, context: Context) => {
+export const handler = capture.wrapHandler(async (event: SNSEvent, context: Context) => {
   capture.setExtra({ event, context: lambdaName });
 
-  const message = getSingleMessageOrFail(event.Records, lambdaName);
-  if (!message) return;
+  // SNS events contain a single messages
+  const message = event.Records[0]?.Sns?.Message;
+  if (!message) {
+    throw new MetriportError("No SNS message found in event", undefined, {
+      event: JSON.stringify(event),
+    });
+  }
+
   try {
-    const parsedBody = parseBody(coreTransformSchema, message.body);
+    const parsedBody = parseBody(coreToS3Schema, message);
     const { cxId } = parsedBody;
 
     const log = prefixedLog(`cxId ${cxId}`);
@@ -67,6 +72,15 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
   }
 });
 
-const coreTransformSchema = z.object({
+// See setupCoreTransformJobCompletion on analytics-platform-stack.ts
+const coreToS3Schema = z.object({
   cxId: z.string(),
+  jobId: z.string().optional(),
+  jobName: z.string().optional(),
+  jobStatus: z.string().optional(),
+  jobDefinition: z.string().optional(),
+  jobQueue: z.string().optional(),
+  startedAt: z.string().optional(),
+  stoppedAt: z.string().optional(),
+  timestamp: z.string().optional(),
 });
