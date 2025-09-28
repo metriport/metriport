@@ -115,15 +115,44 @@ export function getGrantAccessToDbUserCommand({
   username: string;
 }): string {
   const cmd = `GRANT CONNECT ON DATABASE ${dbName} TO ${username};
-    GRANT USAGE ON SCHEMA ${schemaName} TO ${username};
-    grant all on schema ${schemaName} to ${username};
-    grant all on all tables in schema ${schemaName} to ${username};
-    grant all on all sequences in schema ${schemaName} to ${username};
-    grant all on all functions in schema ${schemaName} to ${username};
-    grant all on all procedures in schema ${schemaName} to ${username};
-    grant all on all routines in schema ${schemaName} to ${username};
+    GRANT ALL ON SCHEMA ${schemaName} TO ${username};
+    GRANT ALL ON ALL TABLES IN SCHEMA ${schemaName} TO ${username};
+    GRANT ALL ON ALL SEQUENCES IN SCHEMA ${schemaName} TO ${username};
+    GRANT ALL ON ALL ROUTINES IN SCHEMA ${schemaName} TO ${username};
     ALTER DEFAULT PRIVILEGES IN SCHEMA ${schemaName} GRANT ALL ON TABLES TO ${username};
-    ALTER DEFAULT PRIVILEGES IN SCHEMA ${schemaName} GRANT ALL ON FUNCTIONS TO ${username};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA ${schemaName} GRANT ALL ON SEQUENCES TO ${username};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA ${schemaName} GRANT ALL ON ROUTINES TO ${username};
+    `;
+  return cmd;
+}
+
+export function getGrantFullAccessToAllSchemasCommand({
+  dbName,
+  username,
+}: {
+  dbName: string;
+  username: string;
+}): string {
+  const cmd = `GRANT CONNECT ON DATABASE ${dbName} TO ${username};
+    GRANT CREATE ON DATABASE ${dbName} TO ${username};
+    DO $$
+    DECLARE
+        schema_name text;
+    BEGIN
+        FOR schema_name IN 
+            SELECT s.schema_name 
+            FROM information_schema.schemata s
+            WHERE s.schema_name NOT IN ('pg_catalog', 'information_schema', 'pg_toast', 'pg_temp_1', 'pg_toast_temp_1')
+        LOOP
+            EXECUTE format('GRANT ALL ON SCHEMA %I TO %I', schema_name, '${username}');
+            EXECUTE format('GRANT ALL ON ALL TABLES IN SCHEMA %I TO %I', schema_name, '${username}');
+            EXECUTE format('GRANT ALL ON ALL SEQUENCES IN SCHEMA %I TO %I', schema_name, '${username}');
+            EXECUTE format('GRANT ALL ON ALL ROUTINES IN SCHEMA %I TO %I', schema_name, '${username}');
+            EXECUTE format('ALTER DEFAULT PRIVILEGES IN SCHEMA %I GRANT ALL ON TABLES TO %I', schema_name, '${username}');
+            EXECUTE format('ALTER DEFAULT PRIVILEGES IN SCHEMA %I GRANT ALL ON SEQUENCES TO %I', schema_name, '${username}');
+            EXECUTE format('ALTER DEFAULT PRIVILEGES IN SCHEMA %I GRANT ALL ON ROUTINES TO %I', schema_name, '${username}');
+        END LOOP;
+    END $$;
     `;
   return cmd;
 }
