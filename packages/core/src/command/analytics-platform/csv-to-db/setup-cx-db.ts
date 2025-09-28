@@ -4,9 +4,12 @@ import { capture, out } from "../../../util";
 import {
   getCreateCxDbCommand,
   getCreateDbUserIfNotExistsCommand,
+  getCreateSchemaCommand,
   getCxDbExistsCommand,
   getCxDbName,
   getGrantAccessToDbUserCommand,
+  getSchemaExistsCommand,
+  rawDbSchema,
 } from "./db-asset-defs";
 
 /**
@@ -97,14 +100,25 @@ async function createCustomerAnalyticsDb({
   cxDbName: string;
   log: typeof console.log;
 }): Promise<void> {
-  const cmdExists = getCxDbExistsCommand({ cxDbName });
-  const exists = await dbClient.query(cmdExists);
-  if (exists.rowCount > 0) {
-    log(`Database ${cxDbName} already exists, continuing...`);
-    return;
+  const cmdDbExists = getCxDbExistsCommand({ cxDbName });
+  const dbExists = await dbClient.query(cmdDbExists);
+  if (dbExists.rowCount < 1) {
+    const cmdCreate = getCreateCxDbCommand({ cxDbName });
+    await dbClient.query(cmdCreate);
+    log(`Database ${cxDbName} created`);
+  } else {
+    log(`Database ${cxDbName} already exists`);
   }
-  const cmdCreate = getCreateCxDbCommand({ cxDbName });
-  await dbClient.query(cmdCreate);
+
+  const cmdSchemaExists = getSchemaExistsCommand({ schemaName: rawDbSchema });
+  const schemaExists = await dbClient.query(cmdSchemaExists);
+  if (schemaExists.rowCount < 1) {
+    const cmdCreate = getCreateSchemaCommand({ schemaName: rawDbSchema });
+    await dbClient.query(cmdCreate);
+    log(`Schema ${rawDbSchema} created`);
+  } else {
+    log(`Schema ${rawDbSchema} already exists`);
+  }
 }
 
 async function createLambdasUsersInAnalyticsDb({

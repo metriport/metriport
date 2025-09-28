@@ -81,6 +81,12 @@ export function getCreateCxDbCommand({ cxDbName }: { cxDbName: string }): string
 export function getCxDbExistsCommand({ cxDbName }: { cxDbName: string }): string {
   return `SELECT 1 FROM pg_database WHERE datname = '${cxDbName}'`;
 }
+export function getCreateSchemaCommand({ schemaName }: { schemaName: string }): string {
+  return `CREATE SCHEMA IF NOT EXISTS "${schemaName}"`;
+}
+export function getSchemaExistsCommand({ schemaName }: { schemaName: string }): string {
+  return `SELECT TRUE FROM information_schema.schemata WHERE schema_name = '${schemaName}'`;
+}
 
 export function getCreateDbUserIfNotExistsCommand({
   username,
