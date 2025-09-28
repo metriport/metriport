@@ -7,7 +7,6 @@ const cohortIdConstraintName = `${tableName}_${cohortIdColumn}_fkey`;
 
 export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
-    // Remove the existing foreign key constraint
     await queryInterface.removeConstraint(tableName, cohortIdConstraintName, {
       transaction,
     });

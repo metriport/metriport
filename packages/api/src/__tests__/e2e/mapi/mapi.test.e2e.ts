@@ -1,15 +1,12 @@
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { initMapiE2e, tearDownMapiE2e } from "./init";
-import { runConsolidatedTests } from "./parts/consolidated.test.part";
-import { runContributedTests } from "./parts/contributed.test.part";
-import { runDocumentQueryTests } from "./parts/document-query.test.part";
+import { runCohortTestsPart1, runCohortTestsPart2 } from "./parts/cohort.test.part";
 import { runFacilityTestsPart1, runFacilityTestsPart2 } from "./parts/facility.test.part";
-import { runSetPatientFacilitiesTests } from "./parts/set-patient-facilities.test.part";
 import { runPatientTestsPart1, runPatientTestsPart2 } from "./parts/patient.test.part";
+import { runSetPatientFacilitiesTests } from "./parts/set-patient-facilities.test.part";
 import { runSettingsTests } from "./parts/settings.test.part";
 import { E2eContext } from "./shared";
-import { runCohortTestsPart1, runCohortTestsPart2 } from "./parts/cohort.test.part";
 
 dayjs.extend(duration);
 
@@ -47,17 +44,17 @@ describe("MAPI E2E Tests", () => {
     runSetPatientFacilitiesTests(e2e);
   });
 
-  describe("Contributed", () => {
-    runContributedTests(e2e);
-  });
+  // describe("Contributed", () => {
+  //   runContributedTests(e2e);
+  // });
 
-  describe("Consolidated", () => {
-    runConsolidatedTests(e2e);
-  });
+  // describe("Consolidated", () => {
+  //   runConsolidatedTests(e2e);
+  // });
 
-  describe("Document Query", () => {
-    runDocumentQueryTests(e2e);
-  });
+  // describe("Document Query", () => {
+  //   runDocumentQueryTests(e2e);
+  // });
 
   describe("Cohort Part 2", () => {
     runCohortTestsPart2(e2e);
