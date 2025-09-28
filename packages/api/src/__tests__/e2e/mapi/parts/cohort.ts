@@ -1,8 +1,12 @@
 import { faker } from "@faker-js/faker";
-import { Cohort, CohortCreate, COHORT_COLORS } from "@metriport/shared/domain/cohort";
-import { cohortSettingsSchema } from "@metriport/shared/src/domain/cohort";
+import {
+  COHORT_COLORS,
+  CohortCreateRequest,
+  cohortSettingsSchema,
+} from "@metriport/shared/domain/cohort";
+import { CohortDTO } from "@metriport/shared/domain/cohort";
 
-export const createCohort: CohortCreate = {
+export const createCohort: CohortCreateRequest = {
   name: faker.word.noun(),
   description: faker.lorem.sentence(),
   color: faker.helpers.arrayElement(COHORT_COLORS),
@@ -11,7 +15,7 @@ export const createCohort: CohortCreate = {
   },
 };
 
-export function validateCohort(cohort: Cohort) {
+export function validateCohort(cohort: CohortDTO) {
   expect(cohort.name).toBeTruthy();
   expect(cohort.color).toBeTruthy();
   expect(cohort.description).toBeTruthy();
