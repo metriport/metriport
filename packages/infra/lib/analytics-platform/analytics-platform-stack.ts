@@ -732,7 +732,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       secrets: {
         PASSWORD: ecs.Secret.fromSecretsManager(dbUserSecret),
       },
-      command: ["python", "main.py", "-e", "DATABASE=Ref::database", "-e", "SCHEMA=Ref::schema"],
+      command: ["python", "main.py", "Ref::database", "Ref::schema"],
     });
 
     const job = new batch.EcsJobDefinition(this, "CoreTransformBatchJob", {
