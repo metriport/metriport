@@ -368,6 +368,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         }
       },
     });
+
     addDBClusterPerformanceAlarms(this, dbCluster, dbClusterName, dbConfig, ownProps.alarmAction);
     return { dbCluster };
   }
