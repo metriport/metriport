@@ -217,6 +217,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       envType: props.config.environmentType,
       awsRegion: props.config.region,
       vpc: props.vpc,
+      analyticsBucket: analyticsPlatformBucket,
       alarmAction: props.alarmAction,
     });
 
@@ -345,6 +346,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     envType: EnvType;
     awsRegion: string;
     vpc: ec2.IVpc;
+    analyticsBucket: s3.Bucket;
     alarmAction: SnsAction | undefined;
   }): {
     dbCluster: rds.DatabaseCluster;
@@ -375,6 +377,35 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
               log_min_duration_statement: dbConfig.minSlowLogDurationInMs.toString(),
             }
           : undefined),
+      },
+    });
+
+    const dbClusterS3Role = new iam.Role(this, "DatabaseClusterS3Role", {
+      roleName: `DatabaseClusterS3Role-${ownProps.envType}`,
+      assumedBy: new iam.ServicePrincipal("rds.amazonaws.com"),
+      inlinePolicies: {
+        S3AccessPolicy: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: [
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:GetObjectVersion",
+                "s3:DeleteObject",
+                "s3:DeleteObjectVersion",
+                "s3:AbortMultipartUpload",
+                "s3:ListMultipartUploadParts",
+              ],
+              resources: [`arn:aws:s3:::${ownProps.analyticsBucket.bucketName}/*`],
+            }),
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: ["s3:ListBucket", "s3:GetBucketLocation", "s3:ListBucketMultipartUploads"],
+              resources: [`arn:aws:s3:::${ownProps.analyticsBucket.bucketName}`],
+            }),
+          ],
+        }),
       },
     });
 
@@ -412,6 +443,18 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         }
       },
     });
+
+    const cfnDbCluster = dbCluster.node.defaultChild as rds.CfnDBCluster;
+    cfnDbCluster.associatedRoles = [
+      {
+        roleArn: dbClusterS3Role.roleArn,
+        featureName: "s3Export",
+      },
+      {
+        roleArn: dbClusterS3Role.roleArn,
+        featureName: "s3Import",
+      },
+    ];
 
     addDBClusterPerformanceAlarms(this, dbCluster, dbClusterName, dbConfig, ownProps.alarmAction);
     return { dbCluster };
