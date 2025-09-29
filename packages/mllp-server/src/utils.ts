@@ -22,7 +22,7 @@ import { HL7_FILE_EXTENSION } from "@metriport/core/util/mime";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 export const s3Utils = new S3Utils(Config.getAWSRegion());
-export const bucketName = Config.getHl7IncomingMessageBucketName();
+export const bucketName = Config.getHl7RawMessageBucketName();
 
 export function withErrorHandling<T extends Hl7MessageEvent | Hl7ErrorEvent>(
   connection: Hl7Connection,

@@ -61,7 +61,7 @@ async function sendAdtToMllpServer() {
   const hl7Message = Hl7Message.parse(msg);
 
   const client = new Hl7Client({
-    host: "localhost",
+    host: "127.0.0.1",
     port: 2575,
   });
 
