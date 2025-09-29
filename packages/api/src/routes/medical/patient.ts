@@ -724,7 +724,7 @@ router.delete(
  * @return  The patient's definitive settings
  */
 router.get(
-  "/:id/settings",
+  "/settings",
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
