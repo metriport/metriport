@@ -12,14 +12,14 @@ api: "POST /medical/v1/cohort/{id}/patient"
 
 ## Body
 
-You must provide either `patientIds` or `all`, but not both. If using `patientIds`, at least one patient ID must be provided.
+You must provide either `patientIds` or `all`, but not both.
 
 <ParamField body="patientIds" type="string[]" optional>
   Array of patient IDs to assign to the cohort. Mutually exclusive with the `all` flag.
 </ParamField>
 
 <ParamField body="all" type="boolean" optional>
-  Flag to confirm you want to assign all patients to the cohort. Mutually exclusive with the `patientIds` array.
+  Flag to confirm you want to assign all patients in your metriport instance to the cohort. Mutually exclusive with the `patientIds` array.
 </ParamField>
 
 ## Response
