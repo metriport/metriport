@@ -1,0 +1,75 @@
+# Dependencies
+node_modules/
+**/node_modules/
+package*.json
+yarn.lock
+pnpm*.yaml
+
+# Build outputs
+dist/
+**/dist/
+build/
+**/build/
+bin/
+**/bin/
+
+# Generated files
+*.min.js
+*.min.css
+*.tar*
+*.gz
+
+# Configuration files
+*.json
+tsconfig*.json
+commitlint*.js
+.eslint*
+.prettier*
+.env*
+.dockerignore
+.gitignore
+
+# IDE and editor files
+.vscode/
+.idea/
+.cursor*
+.aider*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git and CI/CD
+.github/
+.husky/
+
+# Docker
+docker*
+
+# Logs and temporary files
+*.log
+logs/
+.tmp/
+temp/
+runs/
+**/runs/
+
+# Media files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.webp
+*.bmp
+*.tiff
+*.tif
+
+# Security and certificates
+*.pem
+
+# Documentation and licenses
+LICENSE*
+*.csv
+*.txt

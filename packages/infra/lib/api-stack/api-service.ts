@@ -434,8 +434,14 @@ export function createAPIService({
               props.config.hl7Notification.dischargeNotificationSlackUrl,
           }),
           ...(analyticsPlatformAssets && {
-            FHIR_TO_CSV_QUEUE_URL: analyticsPlatformAssets.fhirToCsvQueue.queueUrl,
+            FHIR_TO_CSV_BULK_QUEUE_URL: analyticsPlatformAssets.fhirToCsvBulkQueue.queueUrl,
+            FHIR_TO_CSV_INCREMENTAL_QUEUE_URL:
+              analyticsPlatformAssets.fhirToCsvIncrementalQueue.queueUrl,
             ANALYTICS_BUCKET_NAME: analyticsPlatformAssets.analyticsPlatformBucket.bucketName,
+            CORE_TRANSFORM_BATCH_JOB_QUEUE_ARN:
+              analyticsPlatformAssets.coreTransformBatchJobQueue.jobQueueArn,
+            CORE_TRANSFORM_BATCH_JOB_DEFINITION_ARN:
+              analyticsPlatformAssets.coreTransformBatchJob.jobDefinitionArn,
           }),
           ...(props.config.hl7Notification?.hieConfigs && {
             HIE_CONFIG_DICTIONARY: JSON.stringify(
@@ -596,9 +602,18 @@ export function createAPIService({
   if (analyticsPlatformAssets) {
     provideAccessToQueue({
       accessType: "send",
-      queue: analyticsPlatformAssets.fhirToCsvQueue,
+      queue: analyticsPlatformAssets.fhirToCsvBulkQueue,
       resource: fargateService.taskDefinition.taskRole,
     });
+    provideAccessToQueue({
+      accessType: "send",
+      queue: analyticsPlatformAssets.fhirToCsvIncrementalQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+    analyticsPlatformAssets.coreTransformBatchJob.grantSubmitJob(
+      fargateService.taskDefinition.taskRole,
+      analyticsPlatformAssets.coreTransformBatchJobQueue
+    );
   }
 
   if (dischargeRequeryQueue) {
