@@ -3,6 +3,7 @@ import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../_default";
 import { CohortModel } from "./cohort";
 import { PatientModel } from "./patient";
+import { OrganizationModel } from "./organization";
 
 export class PatientCohortModel
   extends BaseModel<PatientCohortModel>
@@ -12,6 +13,7 @@ export class PatientCohortModel
 
   declare patientId: string;
   declare cohortId: string;
+  declare cxId: string;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     PatientCohortModel.init(
@@ -29,6 +31,13 @@ export class PatientCohortModel
           references: {
             model: CohortModel.NAME,
             key: "id",
+          },
+        },
+        cxId: {
+          type: DataTypes.UUID,
+          references: {
+            model: OrganizationModel.NAME,
+            key: "cx_id",
           },
         },
       },

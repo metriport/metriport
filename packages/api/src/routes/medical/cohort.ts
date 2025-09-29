@@ -16,8 +16,8 @@ import {
   getCohortWithDetailsOrFail,
 } from "../../command/medical/cohort/get-cohort";
 import {
-  assignAllPatientsToCohort,
-  bulkAssignPatientsToCohort,
+  addAllPatientsToCohort,
+  bulkAddPatientsToCohort,
 } from "../../command/medical/cohort/patient-cohort/bulk-assign";
 import { bulkRemovePatientsFromCohort } from "../../command/medical/cohort/patient-cohort/bulk-remove";
 import { updateCohort } from "../../command/medical/cohort/update-cohort";
@@ -177,18 +177,19 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const cohortId = getUUIDFrom("params", req, "id").orFail();
-    const { patientIds, all } = allOrSubsetPatientIdsSchema.parse(req.body);
+    const body = allOrSubsetPatientIdsSchema.parse(req.body);
 
-    const cohortDetails = all
-      ? await assignAllPatientsToCohort({
-          cohortId,
-          cxId,
-        })
-      : await bulkAssignPatientsToCohort({
-          cohortId,
-          cxId,
-          patientIds,
-        });
+    const cohortDetails =
+      "all" in body
+        ? await addAllPatientsToCohort({
+            cohortId,
+            cxId,
+          })
+        : await bulkAddPatientsToCohort({
+            cohortId,
+            cxId,
+            patientIds: body.patientIds,
+          });
 
     return res.status(status.CREATED).json(applyCohortDtoToPayload(cohortDetails));
   })
@@ -211,7 +212,7 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const cohortId = getUUIDFrom("params", req, "id").orFail();
-    const patientIds = patientIdsSchema.parse(req.body);
+    const patientIds = patientIdsSchema.parse(req.body.patientIds);
 
     const removedCount = await bulkRemovePatientsFromCohort({
       cohortId,
