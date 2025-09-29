@@ -130,7 +130,7 @@ async function getResponseFilesFromCache(): Promise<ListResponseFilesResponse | 
   if (!fs.existsSync(cacheFile)) {
     return undefined;
   }
-  const cache = fs.readFileSync(cacheFile, "utf-8");
+  const cache = await fs.promises.readFile(cacheFile, "utf-8");
   console.log(`Loaded ${cache.length} response file keys from cache`);
   return JSON.parse(cache) as ListResponseFilesResponse;
 }
