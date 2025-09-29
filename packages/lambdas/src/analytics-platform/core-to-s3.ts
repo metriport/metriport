@@ -1,4 +1,5 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
+import { coreTransformJobPrefix } from "@metriport/core/command/analytics-platform/core-transfom/command/core-transform";
 import { exportCoreToS3 } from "@metriport/core/command/analytics-platform/core-transform/core-to-s3";
 import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { dbCredsSchema, errorToString, getEnvVarOrFail, MetriportError } from "@metriport/shared";
@@ -39,11 +40,21 @@ export const handler = capture.wrapHandler(async (event: SNSEvent, context: Cont
   }
 
   try {
+    console.log(`Processing message: ${JSON.stringify(message)}`);
     const parsedBody = parseBody(coreToS3Schema, message);
-    const { cxId } = parsedBody;
+    const { cxId, jobStatus, jobName } = parsedBody;
 
     const log = prefixedLog(`cxId ${cxId}`);
     log(`Parsed: ${JSON.stringify(parsedBody)}`);
+
+    if (jobStatus !== "SUCCEEDED") {
+      log(`Job status is not SUCCEEDED, skipping`);
+      return;
+    }
+    if (!jobName.startsWith(coreTransformJobPrefix)) {
+      log(`Job name is not a core transform job, skipping`);
+      return;
+    }
 
     const dbCredsRaw = await (getSecret(dbCredsSecretArn) as Promise<string | undefined>);
     if (!dbCredsRaw) {
@@ -75,12 +86,24 @@ export const handler = capture.wrapHandler(async (event: SNSEvent, context: Cont
 // See setupCoreTransformJobCompletion on analytics-platform-stack.ts
 const coreToS3Schema = z.object({
   cxId: z.string(),
-  jobId: z.string().optional(),
-  jobName: z.string().optional(),
-  jobStatus: z.string().optional(),
-  jobDefinition: z.string().optional(),
-  jobQueue: z.string().optional(),
-  startedAt: z.string().optional(),
-  stoppedAt: z.string().optional(),
-  timestamp: z.string().optional(),
+  jobId: z.string(),
+  jobName: z.string(),
+  /**
+   * SUCCEEDED, FAILED
+   * @see https://docs.aws.amazon.com/batch/latest/userguide/job_states.html
+   */
+  jobStatus: z.enum([
+    "SUCCEEDED",
+    "FAILED",
+    "SUBMITTED",
+    "PENDING",
+    "RUNNABLE",
+    "STARTING",
+    "RUNNING",
+  ]),
+  // jobDefinition: z.string().optional(),
+  // jobQueue: z.string().optional(),
+  // startedAt: z.number().optional(), // timestamp
+  // stoppedAt: z.number().optional(), // timestamp
+  // timestamp: z.string().optional(), // ISO string
 });

@@ -1,4 +1,5 @@
 import { DatabaseCredsForLambda } from "@metriport/core/command/analytics-platform/config";
+import { coreTransformJobPrefix } from "@metriport/core/command/analytics-platform/core-transfom/command/core-transform";
 import * as cdk from "aws-cdk-lib";
 import { Aspects, Duration, NestedStack, NestedStackProps, RemovalPolicy } from "aws-cdk-lib";
 import * as batch from "aws-cdk-lib/aws-batch";
@@ -1007,7 +1008,19 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    lambda.addEventSource(new SnsEventSource(coreTransformJobCompletionTopic, eventSource));
+    lambda.addEventSource(
+      new SnsEventSource(coreTransformJobCompletionTopic, {
+        ...eventSource,
+        filterPolicy: {
+          jobStatus: sns.SubscriptionFilter.stringFilter({
+            allowlist: ["SUCCEEDED"],
+          }),
+          jobName: sns.SubscriptionFilter.stringFilter({
+            matchPrefixes: [coreTransformJobPrefix],
+          }),
+        },
+      })
+    );
 
     dbCluster.connections.allowDefaultPortFrom(lambda);
     dbCredsSecret.grantRead(lambda);
