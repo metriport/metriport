@@ -1,0 +1,55 @@
+---
+title: "Add Patients to Cohort"
+description: "Bulk assign multiple patients to a cohort."
+api: "POST /medical/v1/cohort/{id}/patient"
+---
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the cohort to assign patients to.
+</ParamField>
+
+## Body
+
+You must provide either `patientIds` or `all`, but not both. If using `patientIds`, at least one patient ID must be provided.
+
+<ParamField body="patientIds" type="string[]" optional>
+  Array of patient IDs to assign to the cohort. Mutually exclusive with the `all` flag.
+</ParamField>
+
+<ParamField body="all" type="boolean" optional>
+  Flag to confirm you want to assign all patients to the cohort. Mutually exclusive with the `patientIds` array.
+</ParamField>
+
+## Response
+
+<Snippet file="cohort-with-details-response.mdx" />
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+// Add specific patients to cohort
+const cohortWithPatients = await metriport.addPatientsToCohort({
+  cohortId: "018a80c4-292a-7486-a1234-9uiu76yhe234",
+  patientIds: [
+    "018a80c4-292a-7486-a1234-76yuhe23yu14",
+    "018a80c4-292a-7486-a1234-5ert32uij123"
+  ]
+});
+
+// Add all patients to cohort
+const cohortWithAllPatients = await metriport.addAllPatientsToCohort({
+  cohortId: "018a80c4-292a-7486-a1234-9uiu76yhe234",
+  all: true
+});
+```
+
+</ResponseExample>
+
+<Snippet file="cohort-with-details-response-json.mdx" />
+

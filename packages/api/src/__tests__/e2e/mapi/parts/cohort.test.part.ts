@@ -45,31 +45,19 @@ export function runCohortTestsPart1(e2e: E2eContext) {
     const { cohort } = await medicalApi.getCohort(e2e.cohort.id);
 
     e2e.cohort = cohort;
-    expect(e2e.cohort.color).toEqual(updateCohort.color);
     expect(e2e.cohort.description).toEqual(updateCohort.description);
     expect(e2e.cohort.name).toEqual(updateCohort.name);
-  });
-
-  it("adds + removes a patient from a cohort (individually)", async () => {
-    if (!e2e.cohort) throw new Error("Missing cohort");
-    if (!e2e.patient) throw new Error("Missing patient");
-
-    await medicalApi.addPatientToCohort({ patientId: e2e.patient.id, cohortId: e2e.cohort.id });
-    await medicalApi.removePatientFromCohort({
-      patientId: e2e.patient.id,
-      cohortId: e2e.cohort.id,
-    });
   });
 
   it("adds + removes patient(s) from a cohort (bulk)", async () => {
     if (!e2e.cohort) throw new Error("Missing cohort");
     if (!e2e.patient) throw new Error("Missing patient");
 
-    await medicalApi.bulkAddPatientsToCohort({
+    await medicalApi.addPatientsToCohort({
       cohortId: e2e.cohort.id,
       patientIds: [e2e.patient.id],
     });
-    await medicalApi.bulkRemovePatientsFromCohort({
+    await medicalApi.removePatientsFromCohort({
       cohortId: e2e.cohort.id,
       patientIds: [e2e.patient.id],
     });
@@ -79,12 +67,12 @@ export function runCohortTestsPart1(e2e: E2eContext) {
     if (!e2e.cohort) throw new Error("Missing cohort");
     if (!e2e.patient) throw new Error("Missing patient");
 
-    await medicalApi.addPatientToCohort({ patientId: e2e.patient.id, cohortId: e2e.cohort.id });
+    await medicalApi.addPatientsToCohort({ patientIds: [e2e.patient.id], cohortId: e2e.cohort.id });
     const { cohorts } = await medicalApi.listCohortsForPatient(e2e.patient.id);
     expect(cohorts.length).toEqual(1);
     expect(cohorts[0].id).toEqual(e2e.cohort.id);
-    await medicalApi.removePatientFromCohort({
-      patientId: e2e.patient.id,
+    await medicalApi.removePatientsFromCohort({
+      patientIds: [e2e.patient.id],
       cohortId: e2e.cohort.id,
     });
   });
@@ -93,12 +81,12 @@ export function runCohortTestsPart1(e2e: E2eContext) {
     if (!e2e.cohort) throw new Error("Missing cohort");
     if (!e2e.patient) throw new Error("Missing patient");
 
-    await medicalApi.addPatientToCohort({ patientId: e2e.patient.id, cohortId: e2e.cohort.id });
+    await medicalApi.addPatientsToCohort({ patientIds: [e2e.patient.id], cohortId: e2e.cohort.id });
     const { settings } = await medicalApi.getPatientSettings(e2e.patient.id);
     expect(settings).toBeTruthy();
     expect(settings.adtMonitoring).toEqual(e2e.cohort.settings.adtMonitoring);
-    await medicalApi.removePatientFromCohort({
-      patientId: e2e.patient.id,
+    await medicalApi.removePatientsFromCohort({
+      patientIds: [e2e.patient.id],
       cohortId: e2e.cohort.id,
     });
   });

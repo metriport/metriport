@@ -20,8 +20,6 @@ import status from "http-status";
 import { orderBy } from "lodash";
 import { z } from "zod";
 import { getCohortsForPatient } from "../../command/medical/cohort/get-cohort";
-import { addPatientToCohort } from "../../command/medical/cohort/patient-cohort/add-patient-to-cohort";
-import { removePatientFromCohort } from "../../command/medical/cohort/patient-cohort/remove-patient-from-cohort";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { startConsolidatedQuery } from "../../command/medical/patient/consolidated-get";
 import {
@@ -49,7 +47,6 @@ import { getOutputFormatFromRequest } from "../helpers/output-format";
 import { requestLogger } from "../helpers/request-logger";
 import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
 import { checkRateLimit } from "../middlewares/rate-limiting";
-import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { dtoFromModel as facilityDtoFromModel } from "./dtos/facilityDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
@@ -653,65 +650,6 @@ router.get(
     const cohorts = await getCohortsForPatient({ cxId, patientId });
 
     return res.status(status.OK).json({ cohorts });
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * POST /patient/:id/cohort/:cohortId
- *
- * Add the patient to the provided cohort
- *
- * @param req.param.id The ID of the cohort to assign patients to.
- * @param req.body.patientIds The list of patient IDs to assign. Mutually exclusive with the all flag.
- * @param req.body.all Flag to confirm we want to assign all patients to the cohort. Mutually exclusive with the patientIds list.
- *
- * @returns 201 Created with a message.
- */
-router.post(
-  "/cohort/:cohortId",
-  handleParams,
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const { cxId, id: patientId } = getPatientInfoOrFail(req);
-    const cohortId = getUUIDFrom("params", req, "cohortId").orFail();
-
-    await addPatientToCohort({
-      cohortId,
-      patientId,
-      cxId,
-    });
-
-    return res.status(status.CREATED).json({ message: `Patient added to cohort` });
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * DELETE /patient/:id/cohort/:cohortId
- *
- * Remove the patient from the provided cohort
- *
- * @param req.param.id The ID of the cohort to assign patients to.
- * @param req.param.cohortId The ID of the cohort to remove the patient from.
- *
- * @returns 204 No Content with a message.
- */
-router.delete(
-  "/cohort/:cohortId",
-  handleParams,
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const { cxId, id: patientId } = getPatientInfoOrFail(req);
-    const cohortId = getUUIDFrom("params", req, "cohortId").orFail();
-
-    await removePatientFromCohort({
-      cohortId,
-      patientId,
-      cxId,
-    });
-
-    return res
-      .status(status.NO_CONTENT)
-      .json({ message: `Patient ${patientId} removed from cohort ${cohortId}` });
   })
 );
 

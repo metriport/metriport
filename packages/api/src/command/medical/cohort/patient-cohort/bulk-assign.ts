@@ -11,12 +11,12 @@ type BulkAssignPatientsToCohortParams = {
   patientIds: string[];
 };
 
-export async function bulkAddPatientsToCohort({
+export async function addPatientsToCohort({
   cohortId,
   cxId,
   patientIds,
 }: BulkAssignPatientsToCohortParams): Promise<CohortWithDetails> {
-  const { log } = out(`bulkAddPatientsToCohort - cx ${cxId}, cohort ${cohortId}`);
+  const { log } = out(`addPatientsToCohort - cx ${cxId}, cohort ${cohortId}`);
 
   if (patientIds.length === 0) {
     throw new BadRequestError("No patient IDs provided in request.", undefined, { cxId, cohortId });

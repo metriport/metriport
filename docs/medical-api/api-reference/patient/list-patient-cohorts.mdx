@@ -1,0 +1,59 @@
+---
+title: "List Patient Cohorts"
+description: "Returns a list of all cohorts the patient is a member of."
+api: "GET /medical/v1/patient/{id}/cohort"
+---
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the patient whose cohorts are to be returned.
+</ParamField>
+
+## Response
+
+<ResponseField name="cohorts" type="Cohort[]" required>
+  Array of cohorts the patient is assigned to.
+  <Expandable title="Cohort properties">
+    <Snippet file="cohort-response.mdx" />
+  </Expandable>
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const patientCohorts = await metriport.getPatientCohorts("018a80c4-292a-7486-a1234-76yuhe23yu14");
+```
+
+</ResponseExample>
+
+```json
+{
+  "cohorts": [
+    {
+      "id": "018a80c4-292a-7486-a1234-9uiu76yhe234",
+      "eTag": "1",
+      "name": "Pilot - Eval",
+      "color": "blue",
+      "description": "Patients that are a part of our newest pilot program.",
+      "settings": {
+        "adtMonitoring": true
+      }
+    },
+    {
+      "id": "018a80c4-292a-7486-a1234-6hyt345tyu23",
+      "eTag": "1",
+      "name": "Cardiac Care Cohort",
+      "color": "red",
+      "description": "Patients receiving cardiac care and monitoring",
+      "settings": {
+        "adtMonitoring": false
+      }
+    }
+  ]
+}
+```

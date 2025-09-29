@@ -8,12 +8,12 @@ type BulkRemovePatientsFromCohortParams = {
   patientIds: string[];
 };
 
-export async function bulkRemovePatientsFromCohort({
+export async function removePatientsFromCohort({
   cohortId,
   cxId,
   patientIds,
 }: BulkRemovePatientsFromCohortParams): Promise<number> {
-  const { log } = out(`bulkRemovePatientsFromCohort - cx ${cxId}, cohort ${cohortId}`);
+  const { log } = out(`removePatientsFromCohort - cx ${cxId}, cohort ${cohortId}`);
 
   const deletedCount = await PatientCohortModel.destroy({
     where: { cohortId, patientId: { [Op.in]: patientIds } },

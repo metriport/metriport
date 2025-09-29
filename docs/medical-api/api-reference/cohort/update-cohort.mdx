@@ -1,0 +1,59 @@
+---
+title: "Update Cohort"
+description: "Updates the settings of an existing cohort."
+api: "PUT /medical/v1/cohort/{id}"
+---
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the cohort to update.
+</ParamField>
+
+## Headers
+
+<ParamField header="If-Match" type="string" optional>
+  The ETag value for optimistic concurrency control. If provided, the update will only succeed if the current ETag matches this value.
+</ParamField>
+
+## Body
+
+All fields are optional for updates. Only provide the fields you want to change.
+
+<Snippet file="cohort.mdx" />
+
+## Response
+
+<Snippet file="cohort-response.mdx" />
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const cohort = await metriport.updateCohort({
+  id: "018a80c4-292a-7486-a1234-9uiu76yhe234",
+  name: "Pilot - Eval",
+  description: "Patients that are a part of our newest pilot program.",
+  settings: {
+    adtMonitoring: true
+  }
+});
+```
+
+</ResponseExample>
+
+```json
+{
+  "id": "018a80c4-292a-7486-a1234-9uiu76yhe234",
+  "eTag": "2",
+  "name": "Pilot - Eval",
+  "color": "blue",
+  "description": "Patients that are a part of our newest pilot program.",
+  "settings": {
+    "adtMonitoring": true
+  }
+}
+```
