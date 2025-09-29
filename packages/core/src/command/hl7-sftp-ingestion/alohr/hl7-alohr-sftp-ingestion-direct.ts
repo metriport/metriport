@@ -45,26 +45,9 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
     log(`Reading synced files`);
     const timestampedMessages: TimestampedMessage[] = [];
     for (const fileName of fileNames) {
-      try {
-        const timestampedMessage = await this.processFile(
-          s3Utils,
-          bucketName,
-          remotePath,
-          fileName
-        );
+      const timestampedMessage = await this.processFile(s3Utils, bucketName, remotePath, fileName);
+      if (timestampedMessage) {
         timestampedMessages.push(timestampedMessage);
-      } catch (error) {
-        capture.error("error processing file: ", {
-          extra: {
-            fileName,
-            error,
-          },
-        });
-        log("error processing file: ", error);
-        const filePath = this.getFilePath(remotePath, fileName);
-        const message = await s3Utils.getFileContentsAsString(bucketName, filePath);
-
-        await this.persistError(message, fileName, error);
       }
     }
 
@@ -77,28 +60,43 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
     bucketName: string,
     remotePath: string,
     fileName: string
-  ): Promise<TimestampedMessage> {
-    const filePath = this.getFilePath(remotePath, fileName);
-    const existsFile = await s3Utils.fileExists(bucketName, filePath);
-    if (!existsFile) {
-      throw new Error(`File ${filePath} does not exist`);
+  ): Promise<TimestampedMessage | null> {
+    try {
+      const filePath = this.getFilePath(remotePath, fileName);
+      const existsFile = await s3Utils.fileExists(bucketName, filePath);
+      if (!existsFile) {
+        throw new Error(`File ${filePath} does not exist`);
+      }
+
+      const message = await s3Utils.getFileContentsAsString(bucketName, filePath);
+      const receivedAt = buildDayjs().toISOString();
+      const hl7Message = Hl7Message.parse(message);
+
+      const remappedMessage = this.remapMessage(hl7Message);
+      const remappedMessageString = asString(remappedMessage);
+      const { cxId, patientId } = getCxIdAndPatientIdOrFail(remappedMessage);
+
+      return {
+        message: remappedMessageString,
+        timestamp: receivedAt,
+        cxId,
+        patientId,
+        fileName,
+      };
+    } catch (error) {
+      capture.error("error processing file: ", {
+        extra: {
+          fileName,
+          error,
+        },
+      });
+      log("error processing file: ", error);
+      const filePath = this.getFilePath(remotePath, fileName);
+      const message = await s3Utils.getFileContentsAsString(bucketName, filePath);
+
+      await this.persistError(message, fileName, error);
+      return null;
     }
-
-    const message = await s3Utils.getFileContentsAsString(bucketName, filePath);
-    const receivedAt = buildDayjs().toISOString();
-    const hl7Message = Hl7Message.parse(message);
-
-    const remappedMessage = this.remapMessage(hl7Message);
-    const remappedMessageString = asString(remappedMessage);
-    const { cxId, patientId } = getCxIdAndPatientIdOrFail(remappedMessage);
-
-    return {
-      message: remappedMessageString,
-      timestamp: receivedAt,
-      cxId,
-      patientId,
-      fileName,
-    };
   }
 
   private async sendToWebhookSender(timestampedMessages: TimestampedMessage[]): Promise<void> {

@@ -17,7 +17,7 @@ const lambdaName = getEnvVarOrFail("AWS_LAMBDA_FUNCTION_NAME");
 export const handler = capture.wrapHandler(
   async (params: Hl7LahieSftpIngestionParams): Promise<void> => {
     if (Config.isStaging()) {
-      log("Staging environment is not supported (We don't want to ingest PHI in staging)");
+      log("Skipping Lahie SFTP ingestion in staging. (We don't want to ingest PHI in staging)");
       return;
     }
     const secretArn = Config.getHl7Base64ScramblerSeedArn();
