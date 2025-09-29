@@ -25,13 +25,14 @@ type ResourceTypeSourceInfo = { resourceType: string; csvS3Key: string; tableNam
 /**
  * Streams patient CSV files from S3 and inserts them into PostgreSQL database.
  *
- * @param param.cxId - Customer ID
- * @param param.patientId - Patient ID
- * @param param.patientCsvsS3Prefix - S3 prefix containing CSV files
- * @param param.analyticsBucketName - S3 bucket name
- * @param param.region - AWS region
- * @param param.dbCreds - Database credentials
- * @param param.tablesDefinitions - Tables definitions
+ * @param cxId - Customer ID
+ * @param patientId - Patient ID for the CSV files
+ * @param jobId - Job ID for tracking and logging purposes
+ * @param patientCsvsS3Prefix - S3 prefix containing CSV files for this patient
+ * @param analyticsBucketName - S3 bucket name containing the CSV files
+ * @param region - AWS region where the S3 bucket is located
+ * @param dbCreds - Database credentials for PostgreSQL connection
+ * @param tablesDefinitions - Record mapping table names to their SQL creation definitions
  */
 export async function sendPatientCsvsToDb({
   cxId,
