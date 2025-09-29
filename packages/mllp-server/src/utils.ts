@@ -122,7 +122,7 @@ export function getHieConfig(
   rawMessage: Hl7Message
 ): { hieName: string; impersonateTimezone?: string } {
   const zitSegment = rawMessage.getSegment(CUSTOM_SEGMENT_NAME);
-  const hieVpnConfigRows = Object.entries(hieConfigDictionary).flatMap(keepOnlyVpnConfigs);
+  const hieVpnConfigRows = toVpnRows(hieConfigDictionary);
   if (zitSegment) {
     const hieNameField = zitSegment.getField(CUSTOM_SEGMENT_HIE_NAME_INDEX);
     const hieName = hieNameField ? hieNameField.toString() : undefined;
