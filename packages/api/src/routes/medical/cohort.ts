@@ -18,8 +18,8 @@ import {
 import {
   addAllPatientsToCohort,
   addPatientsToCohort,
-} from "../../command/medical/cohort/patient-cohort/bulk-assign";
-import { removePatientsFromCohort } from "../../command/medical/cohort/patient-cohort/bulk-remove";
+} from "../../command/medical/cohort/patient-cohort/add-patients-to-cohort";
+import { removePatientsFromCohort } from "../../command/medical/cohort/patient-cohort/remove-patients-from-cohort";
 import { updateCohort } from "../../command/medical/cohort/update-cohort";
 import { getETag } from "../../shared/http";
 import { handleParams } from "../helpers/handle-params";
