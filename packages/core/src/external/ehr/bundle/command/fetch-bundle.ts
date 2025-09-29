@@ -1,9 +1,4 @@
-import {
-  BadRequestError,
-  errorToString,
-  executeWithNetworkRetries,
-  MetriportError,
-} from "@metriport/shared";
+import { BadRequestError, errorToString, MetriportError } from "@metriport/shared";
 import { BundleWithLastModified } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -74,12 +69,10 @@ export async function fetchBundle({
   try {
     const fileExists = await s3Utils.fileExists(s3BucketName, key);
     if (!fileExists) return undefined;
-    const [file, fileInfo] = await executeWithNetworkRetries(async () => {
-      return Promise.all([
-        s3Utils.getFileContentsAsString(s3BucketName, key),
-        getLastModified ? s3Utils.getFileInfoFromS3(key, s3BucketName) : undefined,
-      ]);
-    });
+    const [file, fileInfo] = await Promise.all([
+      s3Utils.getFileContentsAsString(s3BucketName, key),
+      getLastModified ? s3Utils.getFileInfoFromS3(key, s3BucketName) : undefined,
+    ]);
     return {
       bundle: JSON.parse(file),
       lastModified: fileInfo?.createdAt,

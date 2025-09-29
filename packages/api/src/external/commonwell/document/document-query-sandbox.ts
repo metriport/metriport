@@ -2,7 +2,7 @@ import { Bundle } from "@medplum/fhirtypes";
 import { conversionBundleSuffix } from "@metriport/core/command/consolidated/consolidated-create";
 import { createFilePath } from "@metriport/core/domain/filename";
 import { Patient } from "@metriport/core/domain/patient";
-import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
 import { parseRawBundleForFhirServer } from "@metriport/core/external/fhir/parse-bundle";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
@@ -239,7 +239,7 @@ async function sandboxConvertCDAToFHIR(params: {
     `Bypassing conversion, storing the pre-canned JSON on the conversion bucket` +
       ` - ${JSON.stringify(s3Params)}`
   );
-  await copyPrecannedBundleToConversionBucket({ patientId: patient.id, ...s3Params, log });
+  await copyPrecannedBundleToConversionBucket({ patientId: patient.id, ...s3Params });
 }
 
 async function copyPrecannedBundleToConversionBucket({
@@ -248,20 +248,15 @@ async function copyPrecannedBundleToConversionBucket({
   sourceFilePath,
   destinationBucketName,
   destinationFilePath,
-  log,
 }: {
   patientId: string;
   sourceBucketName: string;
   sourceFilePath: string;
   destinationBucketName: string;
   destinationFilePath: string;
-  log: typeof console.log;
 }) {
   const s3Utils = new S3Utils(Config.getAWSRegion());
-  const payloadRaw = await executeWithRetriesS3(
-    () => s3Utils.getFileContentsAsString(sourceBucketName, sourceFilePath),
-    { log }
-  );
+  const payloadRaw = await s3Utils.getFileContentsAsString(sourceBucketName, sourceFilePath);
   // We need to replace the placeholder patient ID with the actual patient ID
   const payload: Bundle = parseRawBundleForFhirServer(payloadRaw, patientId);
   await s3Utils.uploadFile({
