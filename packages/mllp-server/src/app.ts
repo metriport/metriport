@@ -39,7 +39,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
 
         log(`New message over connection ${clientIp}:${clientPort}`);
         const hieConfigDictionary = getHieConfigDictionary();
-        const { hieName, impersonateTimezone } = getHieConfig(
+        const { hieName, impersonationTimezone } = getHieConfig(
           hieConfigDictionary,
           clientIp,
           rawMessage
@@ -68,7 +68,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           message: asString(newMessage),
           messageReceivedTimestamp,
           hieName,
-          impersonateTimezone,
+          impersonationTimezone,
         });
 
         connection.send(newMessage.buildAck());
