@@ -9,25 +9,22 @@ import {
   getSendingApplication,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { getCxIdAndPatientIdOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
-import { S3Utils } from "@metriport/core/external/aws/s3";
 import { getHieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 import { capture } from "@metriport/core/util";
-import { Config } from "@metriport/core/util/config";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { initSentry } from "./sentry";
 import {
   asString,
+  bucketName,
   createRawHl7MessageFileKey,
   getCleanIpAddress,
   getHieConfig,
+  s3Utils,
   translateMessage,
   withErrorHandling,
 } from "./utils";
-
-const bucketName = Config.getHl7RawMessageBucketName();
-const s3Utils = new S3Utils(Config.getAWSRegion());
 
 initSentry();
 
