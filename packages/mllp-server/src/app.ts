@@ -26,6 +26,9 @@ import {
   withErrorHandling,
 } from "./utils";
 
+const bucketName = Config.getHl7RawMessageBucketName();
+const s3Utils = new S3Utils(Config.getAWSRegion());
+
 initSentry();
 
 const MLLP_DEFAULT_PORT = 2575;
@@ -38,9 +41,6 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
       "message",
       withErrorHandling(connection, logger, async ({ message: rawMessage }) => {
         const clientIp = getCleanIpAddress(connection.socket.remoteAddress);
-
-        const bucketName = Config.getHl7RawMessageBucketName();
-        const s3Utils = new S3Utils(Config.getAWSRegion());
         const rawFileKey = createRawHl7MessageFileKey(clientIp);
 
         await s3Utils.uploadFile({
