@@ -3,7 +3,7 @@ import { getSecretValueOrFail } from "../../../external/aws/secret-manager";
 import { SftpClient } from "../../../external/sftp/client";
 import { SftpConfig } from "../../../external/sftp/types";
 import { Config } from "../../../util/config";
-import { buildDayjs } from "@metriport/shared/common/date";
+import { buildDayjsTz } from "@metriport/shared/common/date";
 import { sftpConfigSchema } from "../sftp-config";
 
 export class AlohrSftpIngestionClient extends SftpClient {
@@ -90,8 +90,14 @@ export class AlohrSftpIngestionClient extends SftpClient {
   ): Promise<string[]> {
     this.log(`Syncing from remotePath: ${remotePath}`);
 
-    const start = startingDate ? startingDate : buildDayjs(Date.now()).format(this.FILE_FORMAT);
-    const end = endingDate ? endingDate : buildDayjs().add(1, "day").format(this.FILE_FORMAT);
+    const start = startingDate
+      ? startingDate
+      : buildDayjsTz(Date.now(), Config.getAlohrIngestionTimezone()).format(this.FILE_FORMAT);
+    const end = endingDate
+      ? endingDate
+      : buildDayjsTz(Date.now(), Config.getAlohrIngestionTimezone())
+          .add(1, "day")
+          .format(this.FILE_FORMAT);
     try {
       await this.connect();
 
