@@ -143,7 +143,8 @@ export function getHieConfig(
     );
     return { hieName, impersonateTimezone };
   }
-  return lookupHieTzEntryForIp(hieVpnConfigRows, ip);
+  const { hieName } = lookupHieTzEntryForIp(hieVpnConfigRows, ip);
+  return { hieName };
 }
 
 function isIpInRange(cidrBlock: string, ip: string): boolean {
