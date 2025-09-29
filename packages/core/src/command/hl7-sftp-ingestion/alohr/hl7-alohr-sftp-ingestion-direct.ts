@@ -17,11 +17,12 @@ import {
   getSegmentByNameOrFail,
 } from "../../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { asString } from "../../hl7-notification/utils";
+import { capture } from "../../../util/notifications";
 
 export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
   private readonly ALTERNATE_PATIENT_ID_FIELD_INDEX = 4; // 1 indexed
   private readonly PATIENT_ID_FIELD_INDEX = 3; // 1 indexed
-  private readonly ERROR_FILE_PATH = "error";
+  private readonly ERROR_FILE_PATH = "errors";
 
   private sftpClient: AlohrSftpIngestionClient;
 
@@ -43,7 +44,6 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
 
     log(`Reading synced files`);
     const timestampedMessages: TimestampedMessage[] = [];
-
     for (const fileName of fileNames) {
       try {
         const timestampedMessage = await this.processFile(
@@ -54,8 +54,16 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
         );
         timestampedMessages.push(timestampedMessage);
       } catch (error) {
+        capture.error("error processing file: ", {
+          extra: {
+            fileName,
+            error,
+          },
+        });
+        log("error processing file: ", error);
         const filePath = this.getFilePath(remotePath, fileName);
         const message = await s3Utils.getFileContentsAsString(bucketName, filePath);
+
         await this.persistError(message, fileName, error);
       }
     }
@@ -110,7 +118,7 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
   private async persistError(message: string, fileName: string, error: unknown): Promise<void> {
     const s3Utils = new S3Utils(Config.getAWSRegion());
     const bucketName = Config.getAlohrIngestionBucket();
-    const filePath = this.getFilePath(fileName, this.ERROR_FILE_PATH);
+    const filePath = this.getFilePath(this.ERROR_FILE_PATH, fileName);
     const fileContents = `${error}\n\n${message}`;
     await s3Utils.uploadFile({
       bucket: bucketName,
