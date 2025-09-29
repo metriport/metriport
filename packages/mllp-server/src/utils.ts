@@ -178,3 +178,7 @@ export function translateMessage(rawMessage: Hl7Message, hieName: string): Hl7Me
   }
   return rawMessage;
 }
+
+export function toVpnRows(dict: HieConfigDictionary): HieVpnConfigRow[] {
+  return Object.entries(dict).flatMap(keepOnlyVpnConfigs);
+}
