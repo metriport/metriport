@@ -1,14 +1,11 @@
-import { PatientCohortModelCreate } from "@metriport/shared/domain/cohort";
+import { PatientCohort } from "@metriport/shared/domain/patient-cohort";
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../_default";
 import { CohortModel } from "./cohort";
-import { PatientModel } from "./patient";
 import { OrganizationModel } from "./organization";
+import { PatientModel } from "./patient";
 
-export class PatientCohortModel
-  extends BaseModel<PatientCohortModel>
-  implements PatientCohortModelCreate
-{
+export class PatientCohortModel extends BaseModel<PatientCohortModel> implements PatientCohort {
   static NAME = "patient_cohort";
 
   declare patientId: string;

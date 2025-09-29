@@ -16,7 +16,7 @@ function cohortSettingsConflictResolver(a: unknown, b: unknown) {
   }
 }
 
-function mergeCohortSettings(cohortArray: CohortSettings[]) {
+export function mergeCohortSettings(cohortArray: CohortSettings[]) {
   return cohortArray.reduce((aggregate, current) =>
     mergeWith(aggregate, current, cohortSettingsConflictResolver)
   );

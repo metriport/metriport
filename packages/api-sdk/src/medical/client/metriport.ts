@@ -2,6 +2,7 @@ import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@m
 import {
   CohortCreateRequest,
   CohortDTO,
+  CohortSettings,
   CohortUpdateRequest,
   PaginatedResponse,
 } from "@metriport/shared";
@@ -849,7 +850,7 @@ export class MetriportMedicalApi {
    * @param patientId The ID of the patient.
    * @returns The settings for the patient.
    */
-  async getPatientSettings(patientId: string): Promise<object> {
+  async getPatientSettings(patientId: string): Promise<{ settings: CohortSettings }> {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/settings`);
     return resp.data;
   }
