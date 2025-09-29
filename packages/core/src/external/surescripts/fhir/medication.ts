@@ -105,16 +105,12 @@ function getMedicationAmount(detail: ResponseDetail): Ratio | undefined {
     return undefined;
   }
   const quantityUnitOfMeasureDisplay = getNcpdpName(detail.quantityUnitOfMeasure);
+  if (!quantityUnitOfMeasureDisplay) return undefined;
 
   return {
     numerator: {
       value: Number(detail.quantityDispensed),
-      unit: detail.quantityUnitOfMeasure,
-      ...(quantityUnitOfMeasureDisplay ? { display: quantityUnitOfMeasureDisplay } : undefined),
-    },
-    denominator: {
-      value: 1,
-      unit: "1",
+      unit: quantityUnitOfMeasureDisplay,
     },
   };
 }
