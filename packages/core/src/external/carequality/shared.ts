@@ -12,6 +12,7 @@ export const METRIPORT_REPOSITORY_UNIQUE_ID = "urn:oid:2.16.840.1.113883.3.9621"
 export const CODE_SYSTEM_ERROR = "1.3.6.1.4.1.19376.1.2.27.1";
 export const DEFAULT_TITLE = "Clinical Document";
 export const replyTo = "http://www.w3.org/2005/08/addressing/anonymous";
+export const PRINCIPAL_AND_DELEGATES_FILE_NAME = "principal-and-delegates.json";
 
 // Our code accepts Driver's License from territories as well, see
 // packages/core/src/domain/oid.ts:driversLicenseURIs()

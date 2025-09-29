@@ -179,7 +179,7 @@ export async function processOutboundDocumentQueryResps({
 
     await resultPoller.pollOutboundDocRetrievalResults({
       requestId,
-      patientId: patientId,
+      patientId,
       cxId: cxId,
       numOfGateways: documentRetrievalRequestsV2.length,
     });

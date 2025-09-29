@@ -1,9 +1,21 @@
 import { faker } from "@faker-js/faker";
-import { normalizeZipCodeNew, normalizeZipCodeNewSafe } from "../zip";
+import { isValidZipCode, normalizeZipCodeNew, normalizeZipCodeNewSafe } from "../zip";
 
-function getFiveDigitZip() {
-  return faker.number.int({ min: 10000, max: 99999 }).toString();
-}
+const knownInvalidZipCodes = [
+  "00000",
+  "99999",
+  "10000",
+  "20000",
+  "30000",
+  "40000",
+  "50000",
+  "60000",
+  "70000",
+  "80000",
+  "90000",
+  "12345",
+  "54321",
+];
 
 describe("zip", () => {
   describe("normalizeZipCodeNew", () => {
@@ -92,4 +104,84 @@ describe("zip", () => {
       }
     });
   });
+
+  describe("isValidZipCode", () => {
+    it("should return true for valid zip codes", () => {
+      const validZipCodes = [
+        "90210", // Beverly Hills
+        "10001", // New York
+        "60601", // Chicago
+        "33101", // Miami
+        "98101", // Seattle
+        ...Array.from({ length: 5 }, () => getValidZipCode()),
+      ];
+
+      validZipCodes.forEach(zipCode => {
+        expect(isValidZipCode(zipCode)).toBe(true);
+      });
+    });
+
+    it("should return false for known invalid zip codes", () => {
+      knownInvalidZipCodes.forEach((zipCode: string) => {
+        expect(isValidZipCode(zipCode)).toBe(false);
+      });
+    });
+
+    it("should return false for invalid formats", () => {
+      const invalidFormats = ["", "12345-667a", "1234a", "abcde"];
+
+      invalidFormats.forEach(zipCode => {
+        expect(isValidZipCode(zipCode)).toBe(false);
+      });
+    });
+
+    it("should return true for valid zip+4 format", () => {
+      const validZipPlus4 = ["12345-6789", "90210-1234", "10001-0001"];
+
+      validZipPlus4.forEach(zipCode => {
+        expect(isValidZipCode(zipCode)).toBe(true);
+      });
+    });
+
+    it("should return true for zip codes of any length (current behavior)", () => {
+      // Note: isValidZipCode doesn't validate length - this documents current behavior
+      const anyLengthZipCodes = ["1", "12", "123", "1234", "123456", "1234567"];
+
+      anyLengthZipCodes.forEach(zipCode => {
+        expect(isValidZipCode(zipCode)).toBe(true);
+      });
+    });
+
+    it("should return true for various dash formats (current behavior)", () => {
+      // Note: isValidZipCode accepts any format with digits and dashes - this documents current behavior
+      const dashFormatZipCodes = [
+        "123-45",
+        "12-345",
+        "1-2345",
+        "12345-6",
+        "12345-67",
+        "12345-678",
+        "12345-",
+        "-12345",
+        "12345-12345",
+        "12345-123",
+      ];
+
+      dashFormatZipCodes.forEach(zipCode => {
+        expect(isValidZipCode(zipCode)).toBe(true);
+      });
+    });
+  });
 });
+
+function getFiveDigitZip() {
+  return faker.number.int({ min: 10000, max: 99999 }).toString();
+}
+
+function getValidZipCode(): string {
+  let zipCode: string;
+  do {
+    zipCode = faker.number.int({ min: 10000, max: 99999 }).toString();
+  } while (knownInvalidZipCodes.includes(zipCode));
+  return zipCode;
+}

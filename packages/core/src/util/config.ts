@@ -1,6 +1,7 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
-import { getEnvVar, getEnvVarOrFail } from "./env-var";
 import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
+import { SftpConfig } from "../external/sftp/types";
+import { getEnvVar, getEnvVarOrFail } from "./env-var";
 
 /**
  * Shared configs, still defining how to work with this. For now:
@@ -50,6 +51,10 @@ export class Config {
 
   static getAWSRegion(): string {
     return getEnvVarOrFail("AWS_REGION");
+  }
+
+  static getGeneralBucketName(): string {
+    return getEnvVarOrFail("GENERAL_BUCKET_NAME");
   }
 
   static getSearchEndpoint(): string {
@@ -372,6 +377,10 @@ export class Config {
     return getEnvVar("EHR_ECLINICALWORKS_ENVIRONMENT");
   }
 
+  static getSalesforceEnv(): string | undefined {
+    return getEnvVar("EHR_SALESFORCE_ENVIRONMENT");
+  }
+
   static getRunPatientJobQueueUrl(): string {
     return getEnvVarOrFail("RUN_PATIENT_JOB_QUEUE_URL");
   }
@@ -386,16 +395,37 @@ export class Config {
     return getEnvVarOrFail("FHIR_CONVERTER_BUCKET_NAME");
   }
 
+  static getAnalyticsBucketName(): string | undefined {
+    return getEnvVar("ANALYTICS_BUCKET_NAME");
+  }
+  /** For development only - cloud should call a lambda that has it setup differently */
+  static getAnalyticsDbCreds(): string {
+    return getEnvVarOrFail("ANALYTICS_DB_CREDS");
+  }
+
   // ENG-536 remove this once we automatically find the discharge summary
   static getDischargeNotificationSlackUrl(): string {
     return getEnvVarOrFail("DISCHARGE_NOTIFICATION_SLACK_URL");
   }
 
-  static getFhirToCsvQueueUrl(): string {
-    return getEnvVarOrFail("FHIR_TO_CSV_QUEUE_URL");
+  static getFhirToCsvBulkQueueUrl(): string {
+    return getEnvVarOrFail("FHIR_TO_CSV_BULK_QUEUE_URL");
+  }
+  static getFhirToCsvIncrementalQueueUrl(): string {
+    return getEnvVarOrFail("FHIR_TO_CSV_INCREMENTAL_QUEUE_URL");
   }
   static getFhirToCsvTransformLambdaName(): string {
     return getEnvVarOrFail("FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME");
+  }
+  static getFhirToCsvTransformHttpEndpoint(): string {
+    return getEnvVar("FHIR_TO_CSV_TRANSFORM_HTTP_ENDPOINT") ?? "http://localhost:8001";
+  }
+
+  static getCoreTransformBatchJobQueueArn(): string {
+    return getEnvVarOrFail("CORE_TRANSFORM_BATCH_JOB_QUEUE_ARN");
+  }
+  static getCoreTransformBatchJobDefinitionArn(): string {
+    return getEnvVarOrFail("CORE_TRANSFORM_BATCH_JOB_DEFINITION_ARN");
   }
 
   static getRosterUploadSftpPasswordArn(): string {
@@ -448,5 +478,25 @@ export class Config {
 
   static getInternalServerUrl(): string {
     return getEnvVarOrFail("INTERNAL_SERVER_BASE_URL");
+  }
+
+  static getAlohrIngestionBucket(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_BUCKET_NAME");
+  }
+
+  static getAlohrIngestionRemotePath(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_REMOTE_PATH");
+  }
+
+  static getAlohrIngestionPasswordArn(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_PASSWORD_ARN");
+  }
+
+  static getAlohrIngestionSftpConfig(): Partial<SftpConfig> {
+    return getEnvVarAsRecordOrFail("ALOHR_INGESTION_SFTP_CONFIG");
+  }
+
+  static getAlohrIngestionLambdaName(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_LAMBDA_NAME");
   }
 }

@@ -1,11 +1,20 @@
-import { Bundle, Parameters, Resource } from "@medplum/fhirtypes";
+import { Bundle, Condition, Medication, Parameters, Resource } from "@medplum/fhirtypes";
+import { errorToString } from "@metriport/shared";
+import { ICD_10_URL, NDC_URL, RXNORM_URL, SNOMED_URL } from "@metriport/shared/medical";
 import { cloneDeep } from "lodash";
+import { isUnknownCoding } from "../../../fhir-deduplication/shared";
+import { capture } from "../../../util";
+import { executeAsynchronously } from "../../../util/concurrency";
 import {
   buildFhirParametersFromCoding,
   buildMultipleFhirParametersFromCodings,
+  crosswalkCode,
   lookupMultipleCodes,
 } from "../../term-server";
 import { findCodeableConcepts, isUsefulDisplay } from "../codeable-concept";
+import { findPatientResource, isCondition, isMedication } from "../shared";
+
+const NUMBER_OF_PARALLEL_CROSSWALKS = 10;
 
 /**
  * This function first collects all of the different Coding elements from the Bundle,
@@ -28,20 +37,44 @@ export async function hydrateFhir(
 ): Promise<{ metadata?: Record<string, string | number>; data: Bundle<Resource> }> {
   const hydratedBundle: Bundle = cloneDeep(fhirBundle);
 
+  const crosswalkErrors: string[] = [];
   const lookupParametersMap = new Map<string, Parameters>();
-  hydratedBundle.entry?.forEach(entry => {
-    const res = entry.resource;
-    if (!res) return;
-    const codes = findCodeableConcepts(res);
+  if (hydratedBundle.entry) {
+    await executeAsynchronously(
+      hydratedBundle.entry,
+      async entry => {
+        const res = entry.resource;
+        if (!res) return;
 
-    codes.forEach(code => {
-      const parameters = buildMultipleFhirParametersFromCodings(code.coding);
+        // TODO: ENG-1149 - Refactor to use batch crosswalk
+        try {
+          if (isCondition(res)) {
+            await dangerouslyHydrateCondition(res);
+          } else if (isMedication(res)) {
+            await dangerouslyHydrateMedication(res);
+          }
+        } catch (err) {
+          // Keep processing other entries even if one crosswalk fails.
+          const errorString = errorToString(err, { detailed: true });
+          log(`[hydrateFhir] crosswalk failed for ${res.resourceType}: ${errorString}`);
+          crosswalkErrors.push(errorString);
+        }
 
-      parameters?.forEach(param => {
-        if (param.id) lookupParametersMap.set(param.id, param);
-      });
-    });
-  });
+        const codes = findCodeableConcepts(res);
+
+        codes.forEach(code => {
+          const parameters = buildMultipleFhirParametersFromCodings(code.coding);
+
+          parameters?.forEach(param => {
+            if (param.id) lookupParametersMap.set(param.id, param);
+          });
+        });
+      },
+      {
+        numberOfParallelExecutions: NUMBER_OF_PARALLEL_CROSSWALKS,
+      }
+    );
+  }
 
   const lookupParametersArray = Array.from(lookupParametersMap.values());
   const result = await lookupMultipleCodes(lookupParametersArray, log);
@@ -76,6 +109,14 @@ export async function hydrateFhir(
     });
   });
 
+  if (crosswalkErrors.length > 0) {
+    const msg = `Hydration crosswalk errors`;
+    const patientResource = findPatientResource(hydratedBundle);
+    capture.error(msg, {
+      extra: { crosswalkErrors: crosswalkErrors.join("\n "), patientId: patientResource?.id },
+    });
+  }
+
   return {
     metadata: {
       ...result.metadata,
@@ -87,4 +128,47 @@ export async function hydrateFhir(
     },
     data: hydratedBundle,
   };
+}
+
+/**
+ * This function hydrates the condition by crosswalking the SNOMED code to the ICD-10 code
+ * if it doesn't already have an ICD-10 code.
+ */
+export async function dangerouslyHydrateCondition(condition: Condition): Promise<void> {
+  const snomedCode = condition.code?.coding?.find(coding => coding.system === SNOMED_URL);
+  if (!snomedCode || !snomedCode.code) return;
+
+  const existingIcd10Code = condition.code?.coding?.find(coding => coding.system === ICD_10_URL);
+  if (existingIcd10Code && !isUnknownCoding(existingIcd10Code)) return;
+
+  const icd10Code = await crosswalkCode({
+    sourceCode: snomedCode.code,
+    sourceSystem: SNOMED_URL,
+    targetSystem: ICD_10_URL,
+  });
+  if (!icd10Code) return;
+
+  condition.code?.coding?.push(icd10Code);
+  return;
+}
+
+/**
+ * This function hydrates the medication by crosswalking the NDC code to the RXNorm code.
+ * if it doesn't already have an RXNorm code.
+ */
+export async function dangerouslyHydrateMedication(medication: Medication): Promise<void> {
+  const existingRxNormCode = medication.code?.coding?.find(coding => coding.system === RXNORM_URL);
+  if (existingRxNormCode && !isUnknownCoding(existingRxNormCode)) return;
+
+  const ndcCode = medication.code?.coding?.find(coding => coding.system === NDC_URL);
+  if (!ndcCode || !ndcCode.code) return;
+
+  const rxNormCode = await crosswalkCode({
+    sourceCode: ndcCode.code,
+    sourceSystem: NDC_URL,
+    targetSystem: RXNORM_URL,
+  });
+  if (!rxNormCode) return;
+  medication.code?.coding?.push(rxNormCode);
+  return;
 }
