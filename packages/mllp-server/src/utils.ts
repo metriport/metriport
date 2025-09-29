@@ -94,14 +94,14 @@ export type HieVpnConfigRow = { hieName: string; cidrBlocks: string[]; timezone:
 
 /**
  * Lookup the HIE config for a provided IP address.
- * @param hieConfigDictionary The HIE config dictionary.
+ * @param hieVpnConfigRows The HIE VPN config rows.
  * @param ip The IP address to lookup.
  * @returns The HIE config for the given IP address.
  */
 export function lookupHieTzEntryForIp(
   hieVpnConfigRows: HieVpnConfigRow[],
   ip: string
-): { hieName: string } {
+): HieVpnConfigRow {
   const match = hieVpnConfigRows.find(({ cidrBlocks }) =>
     cidrBlocks.some(cidrBlock => isIpInRange(cidrBlock, ip))
   );
@@ -113,7 +113,7 @@ export function lookupHieTzEntryForIp(
       hieVpnConfigRows: JSON.stringify(hieVpnConfigRows),
     });
   }
-  return { hieName: match.hieName };
+  return match;
 }
 
 export function getHieConfig(
