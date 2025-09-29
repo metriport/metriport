@@ -1,0 +1,67 @@
+---
+title: "Get Patient Settings"
+description: "Returns aggregated settings for a patient based on all cohorts they belong to. When a patient belongs to multiple cohorts with conflicting settings, a logical AND operation is applied."
+api: "GET /medical/v1/patient/{id}/settings"
+---
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the patient whose settings are to be returned.
+</ParamField>
+
+## Response
+
+<ResponseField name="settings" type="object" required>
+  The aggregated settings for the patient based on their cohort memberships.
+  <Expandable title="Settings properties">
+    <ResponseField name="adtMonitoring" type="boolean" optional>
+      Whether ADT (Admission, Discharge, Transfer) monitoring is enabled for this patient. If the patient belongs to multiple cohorts with different ADT monitoring settings, this will be `true` only if ALL cohorts have it enabled (logical AND operation).
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const patientSettings = await metriport.getPatientSettings("018a80c4-292a-7486-a1234-76yuhe23yu14");
+```
+
+</ResponseExample>
+
+```json
+{
+  "settings": {
+    "adtMonitoring": true
+  }
+}
+```
+
+## Settings Aggregation Logic
+
+When a patient belongs to multiple cohorts:
+
+- **Single cohort has setting**: The setting value is used
+- **Multiple cohorts with same setting**: The setting value is used  
+- **Multiple cohorts with conflicting settings**: Logical AND is applied (both must be `true` for result to be `true`)
+
+### Examples
+
+**Patient in one cohort with ADT monitoring enabled:**
+```json
+{ "adtMonitoring": true }
+```
+
+**Patient in multiple cohorts, all with ADT monitoring enabled:**
+```json
+{ "adtMonitoring": true }
+```
+
+**Patient in multiple cohorts, one with ADT enabled, one disabled:**
+```json
+{ "adtMonitoring": false }
+```

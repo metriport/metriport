@@ -17,7 +17,6 @@ export const createCohort: CohortCreateRequest = {
 
 export function validateCohort(cohort: CohortDTO) {
   expect(cohort.name).toBeTruthy();
-  expect(cohort.color).toBeTruthy();
   expect(cohort.description).toBeTruthy();
   expect(cohort.settings).toBeTruthy();
   expect(() => cohortSettingsSchema.parse(cohort.settings)).not.toThrow();

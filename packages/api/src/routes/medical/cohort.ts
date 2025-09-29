@@ -17,9 +17,9 @@ import {
 } from "../../command/medical/cohort/get-cohort";
 import {
   addAllPatientsToCohort,
-  bulkAddPatientsToCohort,
+  addPatientsToCohort,
 } from "../../command/medical/cohort/patient-cohort/bulk-assign";
-import { bulkRemovePatientsFromCohort } from "../../command/medical/cohort/patient-cohort/bulk-remove";
+import { removePatientsFromCohort } from "../../command/medical/cohort/patient-cohort/bulk-remove";
 import { updateCohort } from "../../command/medical/cohort/update-cohort";
 import { getETag } from "../../shared/http";
 import { handleParams } from "../helpers/handle-params";
@@ -185,7 +185,7 @@ router.post(
             cohortId,
             cxId,
           })
-        : await bulkAddPatientsToCohort({
+        : await addPatientsToCohort({
             cohortId,
             cxId,
             patientIds: body.patientIds,
@@ -214,7 +214,7 @@ router.delete(
     const cohortId = getUUIDFrom("params", req, "id").orFail();
     const patientIds = patientIdsSchema.parse(req.body.patientIds);
 
-    const removedCount = await bulkRemovePatientsFromCohort({
+    const removedCount = await removePatientsFromCohort({
       cohortId,
       cxId,
       patientIds,
