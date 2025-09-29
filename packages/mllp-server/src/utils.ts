@@ -8,15 +8,17 @@ import { Config } from "@metriport/core/util/config";
 import { Logger } from "@metriport/core/util/log";
 import { unpackUuid } from "@metriport/core/util/pack-uuid";
 
-import { MetriportError } from "@metriport/shared";
-import * as Sentry from "@sentry/node";
 import { Hl7Message } from "@medplum/core";
-import IPCIDR from "ip-cidr";
-import { HieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 import {
   fromBambooId,
   remapMessageReplacingPid3,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import { HieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
+import { MetriportError } from "@metriport/shared";
+import * as Sentry from "@sentry/node";
+import IPCIDR from "ip-cidr";
+import { buildDayjs } from "@metriport/shared/common/date";
+import { HL7_FILE_EXTENSION } from "@metriport/core/util/mime";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 export const s3Utils = new S3Utils(Config.getAWSRegion());
@@ -138,4 +140,9 @@ export function translateMessage(rawMessage: Hl7Message, hieName: string): Hl7Me
     return newMessage;
   }
   return rawMessage;
+}
+
+export function createRawHl7MessageFileKey(clientIp: string) {
+  const now = buildDayjs().toISOString();
+  return `${clientIp}/${now}.${HL7_FILE_EXTENSION}`;
 }
