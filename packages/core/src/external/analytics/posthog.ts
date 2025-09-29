@@ -22,7 +22,7 @@ const groupType = "customer";
 
 export function analytics(params: EventMessageV1, postApiKey?: string): PostHog | void {
   const apiKey = postApiKey ?? defaultPostHogApiKey;
-
+  console.log("apiKey: ", apiKey?.slice(0, 5) + "...");
   if (!apiKey) return;
 
   const posthog = new PostHog(apiKey);
