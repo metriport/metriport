@@ -3,9 +3,8 @@ import { BadRequestError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
 import { getPatientIds } from "../../patient/get-patient-read-only";
-import { CohortWithDetails, getCohortWithDetailsOrFail } from "../get-cohort";
 
-type BulkAssignPatientsToCohortParams = {
+type AddPatientsToCohortParams = {
   cohortId: string;
   cxId: string;
   patientIds: string[];
@@ -15,7 +14,7 @@ export async function addPatientsToCohort({
   cohortId,
   cxId,
   patientIds,
-}: BulkAssignPatientsToCohortParams): Promise<CohortWithDetails> {
+}: AddPatientsToCohortParams): Promise<void> {
   const { log } = out(`addPatientsToCohort - cx ${cxId}, cohort ${cohortId}`);
 
   if (patientIds.length === 0) {
@@ -38,10 +37,7 @@ export async function addPatientsToCohort({
     `Assigned ${createdPatientCohortRows.length}/${uniquePatientIds.length} patients to cohort ${cohortId}`
   );
 
-  return await getCohortWithDetailsOrFail({
-    id: cohortId,
-    cxId,
-  });
+  return;
 }
 
 type AssignAllPatientsToCohortParams = {
@@ -52,7 +48,7 @@ type AssignAllPatientsToCohortParams = {
 export async function addAllPatientsToCohort({
   cohortId,
   cxId,
-}: AssignAllPatientsToCohortParams): Promise<CohortWithDetails> {
+}: AssignAllPatientsToCohortParams): Promise<void> {
   const { log } = out(`addAllPatientsToCohort - cx ${cxId}, cohort ${cohortId}`);
 
   const patientIds = await getPatientIds({ cxId });
@@ -70,5 +66,5 @@ export async function addAllPatientsToCohort({
   const successCount = createdPatientCohortRows.length;
   log(`Assigned ${successCount}/${patientIds.length} patients to cohort ${cohortId}`);
 
-  return await getCohortWithDetailsOrFail({ id: cohortId, cxId });
+  return;
 }

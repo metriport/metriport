@@ -1,7 +1,7 @@
 import { BadRequestError, NotFoundError } from "@metriport/shared";
 import { Cohort } from "@metriport/shared/domain/cohort";
 import { CohortModel } from "../../../models/medical/cohort";
-import { getCohortSize } from "./patient-cohort/get-assigned-ids";
+import { getCohortSize } from "./patient-cohort/get-cohort-size";
 
 export type CohortWithDetails = { cohort: Cohort; details: { size: number } };
 

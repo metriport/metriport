@@ -162,7 +162,7 @@ router.get(
 /** ---------------------------------------------------------------------------
  * POST /medical/v1/cohort/:id/patient
  *
- * Bulk assign multiple patients to a cohort.
+ * Add patients to a cohort.
  *
  * @param req.param.id The ID of the cohort to assign patients to.
  * @param req.body.patientIds The list of patient IDs to assign. Mutually exclusive with the all flag.
@@ -179,26 +179,34 @@ router.post(
     const cohortId = getUUIDFrom("params", req, "id").orFail();
     const body = allOrSubsetPatientIdsSchema.parse(req.body);
 
-    const cohortDetails =
-      "all" in body
-        ? await addAllPatientsToCohort({
-            cohortId,
-            cxId,
-          })
-        : await addPatientsToCohort({
-            cohortId,
-            cxId,
-            patientIds: body.patientIds,
-          });
+    if ("all" in body) {
+      await addAllPatientsToCohort({
+        cohortId,
+        cxId,
+      });
+    } else {
+      await addPatientsToCohort({
+        cohortId,
+        cxId,
+        patientIds: body.patientIds,
+      });
+    }
 
-    return res.status(status.CREATED).json(applyCohortDtoToPayload(cohortDetails));
+    const cohortDetails = await getCohortWithDetailsOrFail({
+      id: cohortId,
+      cxId,
+    });
+
+    return res
+      .status(status.CREATED)
+      .json({ message: "Patient(s) added to cohort", ...applyCohortDtoToPayload(cohortDetails) });
   })
 );
 
 /** ---------------------------------------------------------------------------
  * DELETE /medical/v1/cohort/:id/patient
  *
- * Bulk remove patients from a cohort.
+ * Remove patients from a cohort.
  *
  * @param req.param.id The ID of the cohort to remove patients from.
  * @param req.body.patientIds The list of patient IDs to remove. Mutually exclusive with the all flag.
@@ -214,13 +222,21 @@ router.delete(
     const cohortId = getUUIDFrom("params", req, "id").orFail();
     const patientIds = patientIdsSchema.parse(req.body.patientIds);
 
-    const removedCount = await removePatientsFromCohort({
+    await removePatientsFromCohort({
       cohortId,
       cxId,
       patientIds,
     });
 
-    return res.status(status.OK).json({ message: "Patient(s) removed from cohort", removedCount });
+    const cohortDetails = await getCohortWithDetailsOrFail({
+      id: cohortId,
+      cxId,
+    });
+
+    return res.status(status.OK).json({
+      message: "Patient(s) removed from cohort",
+      ...applyCohortDtoToPayload(cohortDetails),
+    });
   })
 );
 
