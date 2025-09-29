@@ -2,7 +2,7 @@ import { out } from "@metriport/core/util";
 import { Op } from "sequelize";
 import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
 
-type BulkRemovePatientsFromCohortParams = {
+type RemovePatientsFromCohortParams = {
   cohortId: string;
   cxId: string;
   patientIds: string[];
@@ -12,7 +12,7 @@ export async function removePatientsFromCohort({
   cohortId,
   cxId,
   patientIds,
-}: BulkRemovePatientsFromCohortParams): Promise<number> {
+}: RemovePatientsFromCohortParams): Promise<void> {
   const { log } = out(`removePatientsFromCohort - cx ${cxId}, cohort ${cohortId}`);
 
   const deletedCount = await PatientCohortModel.destroy({
@@ -20,5 +20,5 @@ export async function removePatientsFromCohort({
   });
   log(`Removed ${deletedCount} patients from cohort ${cohortId}`);
 
-  return deletedCount;
+  return;
 }

@@ -1,20 +1,18 @@
 import { Transaction } from "sequelize";
 import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
 
-export type GetPatientCountInCohortParams = {
+export type GetCohortSizeParams = {
   cohortId: string;
   cxId: string;
   transaction?: Transaction;
 };
 
 /**
- * @see executeOnDBTx() for details about the 'transaction' parameter.
+ * @param cohortId - The ID of the cohort to get the size of.
+ * @param cxId - The ID of the CX to get the size of.
+ * @returns The size of the cohort.
  */
-export async function getCohortSize({
-  cohortId,
-  cxId,
-  transaction,
-}: GetPatientCountInCohortParams): Promise<number> {
+export async function getCohortSize({ cohortId, cxId }: GetCohortSizeParams): Promise<number> {
   const count = await PatientCohortModel.count({
     where: { cohortId },
     include: [
@@ -25,7 +23,6 @@ export async function getCohortSize({
         required: true,
       },
     ],
-    transaction,
   });
   return count;
 }
