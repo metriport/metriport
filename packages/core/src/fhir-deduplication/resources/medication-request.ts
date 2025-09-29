@@ -40,6 +40,7 @@ export function deduplicateMedRequests(
 ): DeduplicationResult<MedicationRequest> {
   const { medRequestsMap, refReplacementMap, danglingReferences } =
     groupSameMedRequests(medications);
+
   return {
     combinedResources: combineResources({
       combinedMaps: [medRequestsMap],
@@ -72,6 +73,15 @@ export function groupSameMedRequests(medRequests: MedicationRequest[]): {
       const datetime = getDateFromString(date, "datetime");
       // TODO: Include medRequest.dosage into the key when we start mapping it on the FHIR converter
       const key = JSON.stringify({ medRef, datetime });
+      deduplicateWithinMap({
+        dedupedResourcesMap: medRequestsMap,
+        dedupKey: key,
+        candidateResource: medRequest,
+        refReplacementMap,
+        onPremerge: preprocessStatus,
+      });
+    } else if (medRef) {
+      const key = JSON.stringify({ medRef });
       deduplicateWithinMap({
         dedupedResourcesMap: medRequestsMap,
         dedupKey: key,
