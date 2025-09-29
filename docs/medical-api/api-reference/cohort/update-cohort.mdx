@@ -29,7 +29,6 @@ All fields are optional for updates. Only provide the fields you want to change.
 <Snippet file="cohort-response.mdx" />
 
 <ResponseExample>
-
 ```javascript Metriport SDK
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 
@@ -47,7 +46,6 @@ const cohort = await metriport.updateCohort(
   }
 );
 ```
-
 </ResponseExample>
 
 ```json
@@ -55,7 +53,6 @@ const cohort = await metriport.updateCohort(
   "id": "018a80c4-292a-7486-a1234-9uiu76yhe234",
   "eTag": "2",
   "name": "Pilot - Eval",
-  "color": "blue",
   "description": "Patients that are a part of our newest pilot program.",
   "settings": {
     "adtMonitoring": true
