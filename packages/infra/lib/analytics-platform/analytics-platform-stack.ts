@@ -854,6 +854,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       jobDefinitionName: "CoreTransformBatchJob",
       container,
       parameters: {
+        cxId: "default",
         database: "default",
         schema: "default",
       },
@@ -906,6 +907,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     eventRule.addTarget(
       new targets.SnsTopic(topic, {
         message: events.RuleTargetInput.fromObject({
+          cxId: events.EventField.fromPath("$.detail.parameters.cxId"),
           jobId: events.EventField.fromPath("$.detail.jobId"),
           jobName: events.EventField.fromPath("$.detail.jobName"),
           jobStatus: events.EventField.fromPath("$.detail.status"),

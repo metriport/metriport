@@ -39,6 +39,7 @@ export async function startCoreTransform({
       jobQueueArn: coreTransformBatchJobQueueArn,
       jobDefinitionArn: coreTransformBatchJobDefinitionArn,
       parameters: {
+        cxId,
         database,
         schema,
       },

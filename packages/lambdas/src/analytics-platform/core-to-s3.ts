@@ -13,6 +13,8 @@ capture.init();
 
 /**
  * Lambda to export the core data to S3.
+ *
+ * It's triggered by the core transform job completion topic, through a SNS event.
  */
 
 // Automatically set by AWS
