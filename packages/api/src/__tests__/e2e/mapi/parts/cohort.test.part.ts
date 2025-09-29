@@ -88,6 +88,20 @@ export function runCohortTestsPart1(e2e: E2eContext) {
       cohortId: e2e.cohort.id,
     });
   });
+
+  it("gets settings for a patient", async () => {
+    if (!e2e.cohort) throw new Error("Missing cohort");
+    if (!e2e.patient) throw new Error("Missing patient");
+
+    await medicalApi.addPatientToCohort({ patientId: e2e.patient.id, cohortId: e2e.cohort.id });
+    const { settings } = await medicalApi.getPatientSettings(e2e.patient.id);
+    expect(settings).toBeTruthy();
+    expect(settings.adtMonitoring).toEqual(e2e.cohort.settings.adtMonitoring);
+    await medicalApi.removePatientFromCohort({
+      patientId: e2e.patient.id,
+      cohortId: e2e.cohort.id,
+    });
+  });
 }
 
 export function runCohortTestsPart2(e2e: E2eContext) {
