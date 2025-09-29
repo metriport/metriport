@@ -380,32 +380,55 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       },
     });
 
-    const dbClusterS3Role = new iam.Role(this, "DatabaseClusterS3Role", {
-      roleName: `DatabaseClusterS3Role2-${ownProps.envType}`,
+    const s3BucketLevelStatement = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: ["s3:ListBucket", "s3:GetBucketLocation", "s3:ListBucketMultipartUploads"],
+      resources: [`arn:aws:s3:::${ownProps.analyticsBucket.bucketName}`],
+    });
+
+    const s3ImportPolicy = new iam.PolicyDocument({
+      statements: [
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ["s3:GetObject", "s3:GetObjectVersion", "s3:ListMultipartUploadParts"],
+          resources: [`arn:aws:s3:::${ownProps.analyticsBucket.bucketName}/*`],
+        }),
+        s3BucketLevelStatement,
+      ],
+    });
+
+    const s3ExportPolicy = new iam.PolicyDocument({
+      statements: [
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            "s3:PutObject",
+            "s3:GetObject",
+            "s3:GetObjectVersion",
+            "s3:DeleteObject",
+            "s3:DeleteObjectVersion",
+            "s3:AbortMultipartUpload",
+            "s3:ListMultipartUploadParts",
+          ],
+          resources: [`arn:aws:s3:::${ownProps.analyticsBucket.bucketName}/*`],
+        }),
+        s3BucketLevelStatement,
+      ],
+    });
+
+    const dbClusterS3ImportRole = new iam.Role(this, "DatabaseClusterS3ImportRole", {
+      roleName: `DatabaseClusterS3ImportRole-${ownProps.envType}`,
       assumedBy: new iam.ServicePrincipal("rds.amazonaws.com"),
       inlinePolicies: {
-        S3AccessPolicy: new iam.PolicyDocument({
-          statements: [
-            new iam.PolicyStatement({
-              effect: iam.Effect.ALLOW,
-              actions: [
-                "s3:PutObject",
-                "s3:GetObject",
-                "s3:GetObjectVersion",
-                "s3:DeleteObject",
-                "s3:DeleteObjectVersion",
-                "s3:AbortMultipartUpload",
-                "s3:ListMultipartUploadParts",
-              ],
-              resources: [`arn:aws:s3:::${ownProps.analyticsBucket.bucketName}/*`],
-            }),
-            new iam.PolicyStatement({
-              effect: iam.Effect.ALLOW,
-              actions: ["s3:ListBucket", "s3:GetBucketLocation", "s3:ListBucketMultipartUploads"],
-              resources: [`arn:aws:s3:::${ownProps.analyticsBucket.bucketName}`],
-            }),
-          ],
-        }),
+        S3ImportPolicy: s3ImportPolicy,
+      },
+    });
+
+    const dbClusterS3ExportRole = new iam.Role(this, "DatabaseClusterS3ExportRole", {
+      roleName: `DatabaseClusterS3ExportRole-${ownProps.envType}`,
+      assumedBy: new iam.ServicePrincipal("rds.amazonaws.com"),
+      inlinePolicies: {
+        S3ExportPolicy: s3ExportPolicy,
       },
     });
 
@@ -447,12 +470,12 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     const cfnDbCluster = dbCluster.node.defaultChild as rds.CfnDBCluster;
     cfnDbCluster.associatedRoles = [
       {
-        roleArn: dbClusterS3Role.roleArn,
-        featureName: "s3Export",
+        roleArn: dbClusterS3ImportRole.roleArn,
+        featureName: "s3Import",
       },
       {
-        roleArn: dbClusterS3Role.roleArn,
-        featureName: "s3Import",
+        roleArn: dbClusterS3ExportRole.roleArn,
+        featureName: "s3Export",
       },
     ];
 
