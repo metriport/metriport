@@ -1,6 +1,7 @@
 import { out } from "@metriport/core/util";
-import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
 import { uuidv7 } from "@metriport/shared/util";
+import { UniqueConstraintError } from "sequelize";
+import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
 
 export type AddPatientToCohortParams = {
   cohortId: string;
@@ -15,11 +16,21 @@ export async function addPatientToCohort({
 }: AddPatientToCohortParams): Promise<void> {
   const { log } = out(`addPatientToCohort - cx ${cxId}, cohort ${cohortId}, patient ${patientId}`);
 
-  await PatientCohortModel.create({
-    id: uuidv7(),
-    patientId,
-    cohortId,
-  });
+  try {
+    await PatientCohortModel.create({
+      id: uuidv7(),
+      cxId,
+      patientId,
+      cohortId,
+    });
+  } catch (error) {
+    if (error instanceof UniqueConstraintError) {
+      log(`Patient already in cohort`);
+      return;
+    }
+    log(`Error adding patient ${patientId} to cohort ${cohortId}: ${error}`);
+    throw error;
+  }
 
   log(`Added patient ${patientId} to cohort ${cohortId}`);
 }

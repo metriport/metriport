@@ -746,9 +746,7 @@ export class MetriportMedicalApi {
    * @param id The ID of the cohort to return.
    * @returns The cohort with the given ID.
    */
-  async getCohortWithDetails(
-    id: string
-  ): Promise<{ cohort: CohortDTO; details: { patientIds: string[]; size: number } }> {
+  async getCohort(id: string): Promise<{ cohort: CohortDTO; details: { size: number } }> {
     const resp = await this.api.get(`${COHORT_URL}/${id}`);
     return resp.data;
   }
@@ -758,10 +756,10 @@ export class MetriportMedicalApi {
    * @param name The name of the cohort to return.
    * @returns The cohort with the given name.
    */
-  async getCohortByName(name: string): Promise<CohortDTO> {
+  async getCohortByName(name: string): Promise<{ cohort: CohortDTO }> {
     const resp = await this.api.get(`${COHORT_URL}`, { params: { name } });
     if (!resp.data) throw new Error("No cohort found with the given name");
-    return resp.data.cohorts[0];
+    return { cohort: resp.data.cohorts[0] };
   }
 
   /**
@@ -779,17 +777,28 @@ export class MetriportMedicalApi {
    * @param patientIds The IDs of the patients to add to the cohort.
    * @returns The updated cohort.
    */
-  async bulkAddPatientsToCohort(cohortId: string, patientIds: string[]): Promise<void> {
+  async bulkAddPatientsToCohort({
+    cohortId,
+    patientIds,
+  }: {
+    cohortId: string;
+    patientIds: string[];
+  }): Promise<void> {
     await this.api.post(`${COHORT_URL}/${cohortId}/patient`, { patientIds });
   }
-
   /**
    * Bulk remove patients from a cohort.
    * @param cohortId The ID of the cohort to remove patients from.
    * @param patientIds The IDs of the patients to remove from the cohort.
    * @returns The updated cohort.
    */
-  async bulkRemovePatientsFromCohort(cohortId: string, patientIds: string[]): Promise<void> {
+  async bulkRemovePatientsFromCohort({
+    cohortId,
+    patientIds,
+  }: {
+    cohortId: string;
+    patientIds: string[];
+  }): Promise<void> {
     await this.api.delete(`${COHORT_URL}/${cohortId}/patient`, { data: { patientIds } });
   }
 
@@ -799,7 +808,13 @@ export class MetriportMedicalApi {
    * @param cohortId The ID of the cohort to assign.
    * @returns void
    */
-  async addPatientToCohort(patientId: string, cohortId: string): Promise<void> {
+  async addPatientToCohort({
+    patientId,
+    cohortId,
+  }: {
+    patientId: string;
+    cohortId: string;
+  }): Promise<void> {
     await this.api.post(`${PATIENT_URL}/${patientId}/cohort/${cohortId}`);
   }
 
@@ -809,7 +824,13 @@ export class MetriportMedicalApi {
    * @param cohortId The ID of the cohort to remove.
    * @returns void
    */
-  async removePatientFromCohort(patientId: string, cohortId: string): Promise<void> {
+  async removePatientFromCohort({
+    patientId,
+    cohortId,
+  }: {
+    patientId: string;
+    cohortId: string;
+  }): Promise<void> {
     await this.api.delete(`${PATIENT_URL}/${patientId}/cohort/${cohortId}`);
   }
 
@@ -818,7 +839,7 @@ export class MetriportMedicalApi {
    * @param patientId The ID of the patient.
    * @returns The list of cohorts assigned to the patient.
    */
-  async listCohortsForPatient(patientId: string): Promise<CohortDTO[]> {
+  async listCohortsForPatient(patientId: string): Promise<{ cohorts: CohortDTO[] }> {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/cohort`);
     return resp.data;
   }

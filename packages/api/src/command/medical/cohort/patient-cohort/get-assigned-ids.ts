@@ -1,7 +1,7 @@
 import { Transaction } from "sequelize";
 import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
 
-export type GetPatientIdsAssignedToCohortParams = {
+export type GetPatientCountInCohortParams = {
   cohortId: string;
   cxId: string;
   transaction?: Transaction;
@@ -10,12 +10,12 @@ export type GetPatientIdsAssignedToCohortParams = {
 /**
  * @see executeOnDBTx() for details about the 'transaction' parameter.
  */
-export async function getPatientIdsAssignedToCohort({
+export async function getCohortSize({
   cohortId,
   cxId,
   transaction,
-}: GetPatientIdsAssignedToCohortParams): Promise<string[]> {
-  const res = await PatientCohortModel.findAll({
+}: GetPatientCountInCohortParams): Promise<number> {
+  const count = await PatientCohortModel.count({
     where: { cohortId },
     include: [
       {
@@ -25,8 +25,7 @@ export async function getPatientIdsAssignedToCohort({
         required: true,
       },
     ],
-    attributes: ["patientId"],
     transaction,
   });
-  return res.map(r => r.dataValues.patientId);
+  return count;
 }
