@@ -32,7 +32,7 @@ def handler(event: dict, context: dict):
 
     print(f"Running DBT build with database: {database}, schema: {schema}")
     dbt_runner = dbtRunner()
-    cli_args = ["build"]
+    cli_args = ["build", "--vars", f'{{"input_database": "{database}", "input_schema": "{schema}"}}']
     result = dbt_runner.invoke(cli_args)
     if result.success:
         print("DBT build completed successfully")
