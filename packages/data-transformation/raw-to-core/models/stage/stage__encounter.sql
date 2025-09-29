@@ -188,6 +188,4 @@ SELECT
     type_7_text,
     filename,
     processed_date 
-FROM {{source('raw', 'encounter') }} x
-
-QUALIFY rank() over(partition by filename order by processed_date desc) = 1
+FROM {{source('raw', 'encounter_view') }} x

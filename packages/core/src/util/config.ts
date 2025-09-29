@@ -1,7 +1,7 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
-import { getEnvVar, getEnvVarOrFail } from "./env-var";
 import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
 import { SftpConfig } from "../external/sftp/types";
+import { getEnvVar, getEnvVarOrFail } from "./env-var";
 
 /**
  * Shared configs, still defining how to work with this. For now:
@@ -419,6 +419,13 @@ export class Config {
   }
   static getFhirToCsvTransformHttpEndpoint(): string {
     return getEnvVar("FHIR_TO_CSV_TRANSFORM_HTTP_ENDPOINT") ?? "http://localhost:8001";
+  }
+
+  static getCoreTransformBatchJobQueueArn(): string {
+    return getEnvVarOrFail("CORE_TRANSFORM_BATCH_JOB_QUEUE_ARN");
+  }
+  static getCoreTransformBatchJobDefinitionArn(): string {
+    return getEnvVarOrFail("CORE_TRANSFORM_BATCH_JOB_DEFINITION_ARN");
   }
 
   static getRosterUploadSftpPasswordArn(): string {

@@ -69,6 +69,4 @@ SELECT
     vaccinecode_text,
     filename,
     processed_date 
-FROM {{source('raw', 'immunization') }} x
-
-QUALIFY rank() over(partition by filename order by processed_date desc) = 1
+FROM {{source('raw', 'immunization_view') }} x

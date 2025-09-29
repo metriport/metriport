@@ -1,15 +1,21 @@
 import { DatabaseCredsForLambda } from "@metriport/core/command/analytics-platform/config";
 import * as cdk from "aws-cdk-lib";
 import { Aspects, Duration, NestedStack, NestedStackProps, RemovalPolicy } from "aws-cdk-lib";
+import * as batch from "aws-cdk-lib/aws-batch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import { DockerImageAsset } from "aws-cdk-lib/aws-ecr-assets";
+import * as ecs from "aws-cdk-lib/aws-ecs";
+import * as events from "aws-cdk-lib/aws-events";
+import * as targets from "aws-cdk-lib/aws-events-targets";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
+import * as sns from "aws-cdk-lib/aws-sns";
 import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfigNonSandbox } from "../../config/env-config";
@@ -24,12 +30,17 @@ import { isProdEnv } from "../shared/util";
 import { AnalyticsPlatformsAssets } from "./types";
 
 type DockerImageLambdaSettings = Omit<LambdaSettingsWithNameAndEntry, "entry">;
+type BatchJobSettings = {
+  memory: cdk.Size;
+  cpu: number;
+};
 
 interface AnalyticsPlatformsSettings {
   fhirToCsvBulk: QueueAndLambdaSettings;
   fhirToCsvIncremental: QueueAndLambdaSettings;
   fhirToCsvTransform: DockerImageLambdaSettings;
   mergeCsvs: QueueAndLambdaSettings;
+  coreTransform: BatchJobSettings;
 }
 
 function settings(envType: EnvType): AnalyticsPlatformsSettings {
@@ -111,11 +122,16 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
     },
     waitTime: Duration.seconds(0),
   };
+  const coreTransform: BatchJobSettings = {
+    memory: cdk.Size.mebibytes(8192),
+    cpu: 4,
+  };
   return {
     fhirToCsvBulk,
     fhirToCsvIncremental,
     fhirToCsvTransform,
     mergeCsvs,
+    coreTransform,
   };
 }
 
@@ -135,7 +151,11 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
   readonly fhirToCsvIncrementalQueue: Queue;
   readonly mergeCsvsLambda: lambda.Function;
   readonly mergeCsvsQueue: Queue;
+  readonly coreTransformBatchJob: batch.EcsJobDefinition;
+  readonly coreTransformBatchJobContainer: batch.EcsFargateContainerDefinition;
+  readonly coreTransformBatchJobQueue: batch.JobQueue;
   readonly analyticsPlatformBucket: s3.Bucket;
+  readonly coreTransformJobCompletionTopic: sns.Topic;
 
   constructor(scope: Construct, id: string, props: AnalyticsPlatformsNestedStackProps) {
     super(scope, id, props);
@@ -200,6 +220,21 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
     });
 
+    const dbUserSecret = buildSecret(
+      this,
+      props.config.analyticsPlatform.secretNames.FHIR_TO_CSV_DB_PASSWORD
+    );
+
+    const analyticsPlatformComputeEnvironment = new batch.FargateComputeEnvironment(
+      this,
+      "AnalyticsPlatformComputeEnvironment",
+      {
+        vpc: props.vpc,
+      }
+    );
+
+    dbCluster.connections.allowDefaultPortFrom(analyticsPlatformComputeEnvironment);
+
     const { fhirToCsvTransformLambda } = this.setupFhirToCsvTransformLambda({
       config: props.config,
       envType: props.config.environmentType,
@@ -242,6 +277,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         featureFlagsTable: props.featureFlagsTable,
         medicalDocumentsBucket: props.medicalDocumentsBucket,
         dbCluster,
+        dbUserSecret,
       });
     this.fhirToCsvIncrementalLambda = fhirToCsvIncrementalLambda;
     this.fhirToCsvIncrementalQueue = fhirToCsvIncrementalQueue;
@@ -258,6 +294,34 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     });
     this.mergeCsvsLambda = mergeCsvsLambda;
     this.mergeCsvsQueue = mergeCsvsQueue;
+
+    const {
+      queue: coreTransformBatchJobQueue,
+      container: coreTransformBatchJobContainer,
+      job: coreTransformBatchJob,
+    } = this.setupCoreTransformBatchJob({
+      config: props.config,
+      envType: props.config.environmentType,
+      awsRegion: props.config.region,
+      lambdaLayers: props.lambdaLayers,
+      vpc: props.vpc,
+      sentryDsn: props.config.sentryDSN,
+      alarmAction: props.alarmAction,
+      dbCluster,
+      dbUserSecret,
+      computeEnvironment: analyticsPlatformComputeEnvironment,
+    });
+    this.coreTransformBatchJob = coreTransformBatchJob;
+    this.coreTransformBatchJobContainer = coreTransformBatchJobContainer;
+    this.coreTransformBatchJobQueue = coreTransformBatchJobQueue;
+
+    const { topic: coreTransformJobCompletionTopic } = this.setupCoreTransformJobCompletion({
+      config: props.config,
+      envType: props.config.environmentType,
+      awsRegion: props.config.region,
+      coreTransformBatchJob,
+    });
+    this.coreTransformJobCompletionTopic = coreTransformJobCompletionTopic;
   }
 
   getAssets(): AnalyticsPlatformsAssets {
@@ -268,7 +332,11 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       fhirToCsvIncrementalQueue: this.fhirToCsvIncrementalQueue,
       mergeCsvsLambda: this.mergeCsvsLambda,
       mergeCsvsQueue: this.mergeCsvsQueue,
+      coreTransformBatchJob: this.coreTransformBatchJob,
+      coreTransformBatchJobQueue: this.coreTransformBatchJobQueue,
+      coreTransformBatchJobContainer: this.coreTransformBatchJobContainer,
       analyticsPlatformBucket: this.analyticsPlatformBucket,
+      coreTransformJobCompletionTopic: this.coreTransformJobCompletionTopic,
     };
   }
 
@@ -484,6 +552,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     featureFlagsTable: dynamodb.Table;
     medicalDocumentsBucket: s3.Bucket;
     dbCluster: rds.DatabaseCluster;
+    dbUserSecret: secret.ISecret;
   }): {
     lambda: lambda.Function;
     queue: Queue;
@@ -499,6 +568,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       featureFlagsTable,
       dbCluster,
       config,
+      dbUserSecret,
     } = ownProps;
 
     const {
@@ -520,11 +590,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
       deliveryDelay: queueSettings.deliveryDelay,
     });
-
-    const dbUserSecret = buildSecret(
-      this,
-      config.analyticsPlatform.secretNames.FHIR_TO_CSV_DB_PASSWORD
-    );
 
     const dbCreds: DatabaseCredsForLambda = {
       host: ownProps.dbCluster.clusterEndpoint.hostname,
@@ -629,5 +694,118 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     ownProps.bucket.grantReadWrite(mergeCsvsLambda);
 
     return { mergeCsvsLambda, queue };
+  }
+
+  private setupCoreTransformBatchJob(ownProps: {
+    config: EnvConfigNonSandbox;
+    envType: EnvType;
+    awsRegion: string;
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+    dbCluster: rds.DatabaseCluster;
+    dbUserSecret: secret.ISecret;
+    computeEnvironment: batch.FargateComputeEnvironment;
+  }): {
+    job: batch.EcsJobDefinition;
+    container: batch.EcsFargateContainerDefinition;
+    queue: batch.JobQueue;
+  } {
+    const { memory, cpu } = settings(ownProps.envType).coreTransform;
+
+    const asset = new DockerImageAsset(this, "CoreTransformBuildImage", {
+      directory: "../data-transformation/raw-to-core",
+      file: "Dockerfile",
+    });
+
+    const container = new batch.EcsFargateContainerDefinition(this, "CoreTransformContainerDef", {
+      image: ecs.ContainerImage.fromDockerImageAsset(asset),
+      memory,
+      cpu,
+      environment: {
+        ENV: ownProps.envType,
+        AWS_REGION: ownProps.awsRegion,
+        HOST: ownProps.dbCluster.clusterEndpoint.hostname,
+        USER: ownProps.config.analyticsPlatform.rds.fhirToCsvDbUsername,
+      },
+      secrets: {
+        PASSWORD: ecs.Secret.fromSecretsManager(ownProps.dbUserSecret),
+      },
+      command: ["python", "main.py", "Ref::database", "Ref::schema"],
+    });
+
+    const job = new batch.EcsJobDefinition(this, "CoreTransformBatchJob", {
+      jobDefinitionName: "CoreTransformBatchJob",
+      container,
+      parameters: {
+        database: "default",
+        schema: "default",
+      },
+    });
+
+    const queue = new batch.JobQueue(this, "CoreTransformJobQueue", {
+      computeEnvironments: [
+        {
+          computeEnvironment: ownProps.computeEnvironment,
+          order: 1,
+        },
+      ],
+      priority: 10,
+    });
+
+    ownProps.dbUserSecret.grantRead(container.executionRole);
+
+    return { job, container, queue };
+  }
+
+  private setupCoreTransformJobCompletion(ownProps: {
+    config: EnvConfigNonSandbox;
+    envType: EnvType;
+    awsRegion: string;
+    coreTransformBatchJob: batch.EcsJobDefinition;
+  }): {
+    topic: sns.Topic;
+  } {
+    const { envType, coreTransformBatchJob } = ownProps;
+
+    const topic = new sns.Topic(this, "CoreTransformJobCompletionTopic", {
+      topicName: `core-transform-job-completion-${envType}`,
+      displayName: "Core Transform Job Completion",
+    });
+
+    const eventRule = new events.Rule(this, "CoreTransformJobStateChangeRule", {
+      ruleName: `core-transform-job-state-change-${envType}`,
+      description: "Rule to capture Core Transform batch job state changes",
+      eventPattern: {
+        source: ["aws.batch"],
+        detailType: ["Batch Job State Change"],
+        detail: {
+          jobDefinition: [coreTransformBatchJob.jobDefinitionArn],
+          status: ["SUCCEEDED", "FAILED"],
+        },
+      },
+    });
+
+    // Add SNS target to EventBridge rule
+    eventRule.addTarget(
+      new targets.SnsTopic(topic, {
+        message: events.RuleTargetInput.fromObject({
+          jobId: events.EventField.fromPath("$.detail.jobId"),
+          jobName: events.EventField.fromPath("$.detail.jobName"),
+          jobStatus: events.EventField.fromPath("$.detail.status"),
+          jobDefinition: events.EventField.fromPath("$.detail.jobDefinition"),
+          jobQueue: events.EventField.fromPath("$.detail.jobQueue"),
+          startedAt: events.EventField.fromPath("$.detail.startedAt"),
+          stoppedAt: events.EventField.fromPath("$.detail.stoppedAt"),
+          timestamp: events.EventField.fromPath("$.time"),
+        }),
+      })
+    );
+
+    // Grant EventBridge permission to publish to SNS topic
+    topic.grantPublish(new iam.ServicePrincipal("events.amazonaws.com"));
+
+    return { topic };
   }
 }

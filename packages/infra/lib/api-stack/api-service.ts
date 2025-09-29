@@ -438,6 +438,10 @@ export function createAPIService({
             FHIR_TO_CSV_INCREMENTAL_QUEUE_URL:
               analyticsPlatformAssets.fhirToCsvIncrementalQueue.queueUrl,
             ANALYTICS_BUCKET_NAME: analyticsPlatformAssets.analyticsPlatformBucket.bucketName,
+            CORE_TRANSFORM_BATCH_JOB_QUEUE_ARN:
+              analyticsPlatformAssets.coreTransformBatchJobQueue.jobQueueArn,
+            CORE_TRANSFORM_BATCH_JOB_DEFINITION_ARN:
+              analyticsPlatformAssets.coreTransformBatchJob.jobDefinitionArn,
           }),
           ...(props.config.hl7Notification?.hieConfigs && {
             HIE_CONFIG_DICTIONARY: JSON.stringify(
@@ -606,6 +610,10 @@ export function createAPIService({
       queue: analyticsPlatformAssets.fhirToCsvIncrementalQueue,
       resource: fargateService.taskDefinition.taskRole,
     });
+    analyticsPlatformAssets.coreTransformBatchJob.grantSubmitJob(
+      fargateService.taskDefinition.taskRole,
+      analyticsPlatformAssets.coreTransformBatchJobQueue
+    );
   }
 
   if (dischargeRequeryQueue) {

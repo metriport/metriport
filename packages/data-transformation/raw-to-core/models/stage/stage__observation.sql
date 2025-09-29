@@ -181,6 +181,4 @@ SELECT
     valuetime,
     filename,
     processed_date 
-FROM {{source('raw', 'observation') }} x
-
-QUALIFY rank() over(partition by filename order by processed_date desc) = 1
+FROM {{source('raw', 'observation_view') }} x

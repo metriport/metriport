@@ -1,3 +1,4 @@
+import { startCoreTransform } from "@metriport/core/command/analytics-platform/core-transfom/command/core-transform";
 import { ingestPatientIntoAnalyticsPlatform } from "@metriport/core/command/analytics-platform/incremental-ingestion";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -31,6 +32,29 @@ router.post(
 
     const message = jobId ? "Ingestion initiated" : "Ingestion not initiated";
     return res.status(httpStatus.OK).json({ message, jobId });
+  })
+);
+
+/**
+ * POST /internal/analytics-platform/core-transform
+ *
+ * Runs the core transform into the analytics platform, for a single patient.
+ *
+ * @param req.query.cxId - The CX ID.
+ * @param req.query.database - The database.
+ * @param req.query.schema - The schema.
+ */
+router.post(
+  "/core-transform",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getFromQueryOrFail("cxId", req);
+    const database = getFromQueryOrFail("database", req);
+    const schema = getFromQueryOrFail("schema", req);
+
+    const jobId = await startCoreTransform({ cxId, database, schema });
+
+    return res.status(httpStatus.OK).json({ message: "Core transform initiated", jobId });
   })
 );
 
