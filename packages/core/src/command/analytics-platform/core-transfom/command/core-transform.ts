@@ -5,6 +5,8 @@ import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { executeWithNetworkRetries } from "@metriport/shared";
 
+export const coreTransformJobPrefix = "core-transform";
+
 // TODO move this to core-transfor-cloud.ts
 export async function startCoreTransform({
   cxId,
@@ -35,7 +37,7 @@ export async function startCoreTransform({
 
   const response = await executeWithNetworkRetries(async () => {
     return await batch.startJob({
-      jobName: `core-transform-${jobId}`,
+      jobName: `${coreTransformJobPrefix}-${jobId}`,
       jobQueueArn: coreTransformBatchJobQueueArn,
       jobDefinitionArn: coreTransformBatchJobDefinitionArn,
       parameters: {
