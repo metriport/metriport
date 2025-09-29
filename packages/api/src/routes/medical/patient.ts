@@ -19,6 +19,9 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { orderBy } from "lodash";
 import { z } from "zod";
+import { getCohortsForPatient } from "../../command/medical/cohort/get-cohort";
+import { addPatientToCohort } from "../../command/medical/cohort/patient-cohort/add-patient-to-cohort";
+import { removePatientFromCohort } from "../../command/medical/cohort/patient-cohort/remove-patient-from-cohort";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { startConsolidatedQuery } from "../../command/medical/patient/consolidated-get";
 import {
@@ -31,6 +34,8 @@ import { forceEhrPatientSync } from "../../command/medical/patient/force-ehr-pat
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import { getPatientFacilities } from "../../command/medical/patient/get-patient-facilities";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
+import { getPatientSettings } from "../../command/medical/patient/get-settings";
+import { getLatestSuspectsBySuspectGroup } from "../../command/medical/patient/get-suspect";
 import { setPatientFacilities } from "../../command/medical/patient/set-patient-facilities";
 import { getHieOptOut, setHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
@@ -39,10 +44,12 @@ import { countResources } from "../../external/fhir/patient/count-resources";
 import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
+import { handleParams } from "../helpers/handle-params";
 import { getOutputFormatFromRequest } from "../helpers/output-format";
 import { requestLogger } from "../helpers/request-logger";
 import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
 import { checkRateLimit } from "../middlewares/rate-limiting";
+import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { dtoFromModel as facilityDtoFromModel } from "./dtos/facilityDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
@@ -54,8 +61,6 @@ import {
 } from "./schemas/patient";
 import { setPatientFacilitiesSchema } from "./schemas/patient-facilities";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { getLatestSuspectsBySuspectGroup } from "../../command/medical/patient/get-suspect";
-import { getPatientSettings } from "../../command/medical/patient/get-settings";
 
 const router = Router();
 
@@ -645,9 +650,68 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id: patientId } = getPatientInfoOrFail(req);
 
-    const suspects = await getLatestSuspectsBySuspectGroup({ cxId, patientId });
+    const cohorts = await getCohortsForPatient({ cxId, patientId });
 
-    return res.status(status.OK).json({ suspects });
+    return res.status(status.OK).json({ cohorts });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /patient/:id/cohort/:cohortId
+ *
+ * Add the patient to the provided cohort
+ *
+ * @param req.param.id The ID of the cohort to assign patients to.
+ * @param req.body.patientIds The list of patient IDs to assign. Mutually exclusive with the all flag.
+ * @param req.body.all Flag to confirm we want to assign all patients to the cohort. Mutually exclusive with the patientIds list.
+ *
+ * @returns 201 Created with a message.
+ */
+router.post(
+  "/cohort/:cohortId",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+    const cohortId = getUUIDFrom("params", req, "cohortId").orFail();
+
+    await addPatientToCohort({
+      cohortId,
+      patientId,
+      cxId,
+    });
+
+    return res.status(status.CREATED).json({ message: `Patient added to cohort` });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * DELETE /patient/:id/cohort/:cohortId
+ *
+ * Remove the patient from the provided cohort
+ *
+ * @param req.param.id The ID of the cohort to assign patients to.
+ * @param req.param.cohortId The ID of the cohort to remove the patient from.
+ *
+ * @returns 204 No Content with a message.
+ */
+router.delete(
+  "/cohort/:cohortId",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+    const cohortId = getUUIDFrom("params", req, "cohortId").orFail();
+
+    await removePatientFromCohort({
+      cohortId,
+      patientId,
+      cxId,
+    });
+
+    return res
+      .status(status.NO_CONTENT)
+      .json({ message: `Patient ${patientId} removed from cohort ${cohortId}` });
   })
 );
 
@@ -660,7 +724,8 @@ router.get(
  * @return  The patient's definitive settings
  */
 router.get(
-  "/settings",
+  "/:id/settings",
+  handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id: patientId } = getPatientInfoOrFail(req);
