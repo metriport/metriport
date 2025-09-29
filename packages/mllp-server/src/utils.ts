@@ -120,7 +120,7 @@ export function getHieConfig(
   hieConfigDictionary: HieConfigDictionary,
   ip: string,
   rawMessage: Hl7Message
-): { hieName: string; impersonateTimezone?: string } {
+): { hieName: string; impersonationTimezone?: string } {
   const zitSegment = rawMessage.getSegment(CUSTOM_SEGMENT_NAME);
   const hieVpnConfigRows = toVpnRows(hieConfigDictionary);
   if (zitSegment) {
@@ -134,14 +134,14 @@ export function getHieConfig(
     }
 
     const timezone = zitSegment.getField(CUSTOM_SEGMENT_TIMEZONE_INDEX);
-    const impersonateTimezone = timezone ? timezone.toString() : undefined;
+    const impersonationTimezone = timezone ? timezone.toString() : undefined;
 
     console.log(
       `[mllp-server.getHieConfig] Impersonating HIE: ${hieName} ${
-        impersonateTimezone ? `with timezone: ${impersonateTimezone}` : ""
+        impersonationTimezone ? `with timezone: ${impersonationTimezone}` : ""
       }`
     );
-    return { hieName, impersonateTimezone };
+    return { hieName, impersonationTimezone };
   }
   const { hieName } = lookupHieTzEntryForIp(hieVpnConfigRows, ip);
   return { hieName };

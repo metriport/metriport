@@ -106,11 +106,9 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     const hl7Message = Hl7Message.parse(params.message);
     let parsedData: ParsedHl7Data;
-    if (params.impersonateTimezone) {
-      log(`Impersonating timezone: ${params.impersonateTimezone}`);
-    }
-    const timezone = params.impersonateTimezone
-      ? params.impersonateTimezone
+
+    const timezone = params.impersonationTimezone
+      ? params.impersonationTimezone
       : getTimezoneFromHieName(params.hieName, hl7Message, log);
     try {
       parsedData = await parseHl7Message(hl7Message, timezone);
