@@ -13,8 +13,9 @@ import { buildDayjs } from "@metriport/shared/common/date";
 /**
  * Sends an HL7v2 ADT message to a local MLLP server.
  *
- * This script demonstrates sending a sample HL7v2 ADT message to an MLLP server running locally.
+ * This script lets you send a sample HL7v2 ADT message to the MLLP server.
  * The message is hardcoded in the script and contains a discharge notification (ADT^A03).
+ * You can test different HIE configurations by adding the ZIT segment to the message.
  *
  * The script:
  * - Parses the HL7 message string into a structured format
@@ -55,13 +56,22 @@ DG1|3|I10|I10.9^Essential (primary) hypertension^I10|Essential (primary) hyperte
 DG1|4|I10|E78.5^Dyslipidemia^I10|Dyslipidemia
 DG1|5|I10|E03.9^Hypothyroidism, unspecified^I10|Hypothyroidism, unspecified
 `;
-//ZFA|1|something|something|123 Main Street^Unit 1^Boston^MA^02108^USA Uncomment if you want to test sending a Bamboo specific message.
+
+/**
+ * Use this if you want to impersonate / simulate a specific source HIE for testing purposes.
+ */
+//ZIT|MyTestHIE|America/Los_Angeles
+
+/**
+ * Use this if you want to test sending a Bamboo specific message.
+ **/
+//ZFA|1|something|something|123 Main Street^Unit 1^Boston^MA^02108^USA
 
 async function sendAdtToMllpServer() {
   const hl7Message = Hl7Message.parse(msg);
 
   const client = new Hl7Client({
-    host: "localhost",
+    host: "127.0.0.1",
     port: 2575,
   });
 
