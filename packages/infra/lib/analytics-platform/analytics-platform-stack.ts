@@ -217,6 +217,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       envType: props.config.environmentType,
       awsRegion: props.config.region,
       vpc: props.vpc,
+      analyticsBucket: analyticsPlatformBucket,
       alarmAction: props.alarmAction,
     });
 
@@ -345,6 +346,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     envType: EnvType;
     awsRegion: string;
     vpc: ec2.IVpc;
+    analyticsBucket: s3.Bucket;
     alarmAction: SnsAction | undefined;
   }): {
     dbCluster: rds.DatabaseCluster;
@@ -375,6 +377,58 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
               log_min_duration_statement: dbConfig.minSlowLogDurationInMs.toString(),
             }
           : undefined),
+      },
+    });
+
+    const s3BucketLevelStatement = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: ["s3:ListBucket", "s3:GetBucketLocation", "s3:ListBucketMultipartUploads"],
+      resources: [`arn:aws:s3:::${ownProps.analyticsBucket.bucketName}`],
+    });
+
+    const s3ImportPolicy = new iam.PolicyDocument({
+      statements: [
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ["s3:GetObject", "s3:GetObjectVersion", "s3:ListMultipartUploadParts"],
+          resources: [`arn:aws:s3:::${ownProps.analyticsBucket.bucketName}/*`],
+        }),
+        s3BucketLevelStatement,
+      ],
+    });
+
+    const s3ExportPolicy = new iam.PolicyDocument({
+      statements: [
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            "s3:PutObject",
+            "s3:GetObject",
+            "s3:GetObjectVersion",
+            "s3:DeleteObject",
+            "s3:DeleteObjectVersion",
+            "s3:AbortMultipartUpload",
+            "s3:ListMultipartUploadParts",
+          ],
+          resources: [`arn:aws:s3:::${ownProps.analyticsBucket.bucketName}/*`],
+        }),
+        s3BucketLevelStatement,
+      ],
+    });
+
+    const dbClusterS3ImportRole = new iam.Role(this, "DatabaseClusterS3ImportRole", {
+      roleName: `DatabaseClusterS3ImportRole-${ownProps.envType}`,
+      assumedBy: new iam.ServicePrincipal("rds.amazonaws.com"),
+      inlinePolicies: {
+        S3ImportPolicy: s3ImportPolicy,
+      },
+    });
+
+    const dbClusterS3ExportRole = new iam.Role(this, "DatabaseClusterS3ExportRole", {
+      roleName: `DatabaseClusterS3ExportRole-${ownProps.envType}`,
+      assumedBy: new iam.ServicePrincipal("rds.amazonaws.com"),
+      inlinePolicies: {
+        S3ExportPolicy: s3ExportPolicy,
       },
     });
 
@@ -412,6 +466,18 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         }
       },
     });
+
+    const cfnDbCluster = dbCluster.node.defaultChild as rds.CfnDBCluster;
+    cfnDbCluster.associatedRoles = [
+      {
+        roleArn: dbClusterS3ImportRole.roleArn,
+        featureName: "s3Import",
+      },
+      {
+        roleArn: dbClusterS3ExportRole.roleArn,
+        featureName: "s3Export",
+      },
+    ];
 
     addDBClusterPerformanceAlarms(this, dbCluster, dbClusterName, dbConfig, ownProps.alarmAction);
     return { dbCluster };
