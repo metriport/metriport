@@ -9,12 +9,12 @@ import { capture, out } from "../../../util";
 import { parseTableNameFromFhirToCsvIncrementalFileKey } from "../fhir-to-csv/file-name";
 import {
   additionalColumnDefs,
-  createTableJobCommand,
   getCreateIndexCommand,
   getCreateTableCommand,
+  getCreateTableJobCommand,
   getCreateViewJobCommand,
   getCxDbName,
-  insertTableJobCommand,
+  getInsertTableJobCommand,
   rawDbSchema,
 } from "./db-asset-defs";
 
@@ -56,8 +56,17 @@ export async function sendPatientCsvsToDb({
   const { log } = out(`sendPatientCsvsToDb - cx ${cxId}, pt ${patientId}`);
 
   const cxDbName = getCxDbName(cxId, dbCreds.dbname);
+  const schemaName = rawDbSchema;
 
-  capture.setExtra({ cxId, patientId, jobId, patientCsvsS3Prefix, analyticsBucketName, cxDbName });
+  capture.setExtra({
+    cxId,
+    patientId,
+    jobId,
+    patientCsvsS3Prefix,
+    analyticsBucketName,
+    cxDbName,
+    schemaName,
+  });
   log(
     `Running with params: ${JSON.stringify({
       jobId,
@@ -67,6 +76,7 @@ export async function sendPatientCsvsToDb({
       port: dbCreds.port,
       dbname: dbCreds.dbname,
       cxDbName,
+      schemaName,
       username: dbCreds.username,
       tablesDefinitions: Object.keys(tablesDefinitions).length,
     })}`
@@ -97,7 +107,7 @@ export async function sendPatientCsvsToDb({
     await dbClient.query(`SET search_path TO ${rawDbSchema}`);
     log(`Using schema: ${rawDbSchema}`);
 
-    await prepareIncrementalJobInDb({ dbClient });
+    await prepareIncrementalJobInDb({ dbClient, schemaName });
 
     let counter = 0;
     for (const { resourceType, csvS3Key, tableName } of resourceTypeSourceInfo) {
@@ -124,7 +134,7 @@ export async function sendPatientCsvsToDb({
       }
     }
 
-    await finalizeIncrementalJobInDb({ dbClient, jobId, patientId });
+    await finalizeIncrementalJobInDb({ dbClient, jobId, patientId, schemaName });
 
     log(`Successfully processed ${csvFileKeys.length} CSV files, ${counter} rows inserted`);
   } finally {
@@ -168,21 +178,29 @@ function getResourceTypeSourceInfo(csvFileKeys: string[]): ResourceTypeSourceInf
   return sourceInfoByResourceType;
 }
 
-async function prepareIncrementalJobInDb({ dbClient }: { dbClient: Client }): Promise<void> {
-  await dbClient.query(createTableJobCommand);
+async function prepareIncrementalJobInDb({
+  dbClient,
+  schemaName,
+}: {
+  dbClient: Client;
+  schemaName: string;
+}): Promise<void> {
+  await dbClient.query(getCreateTableJobCommand(schemaName));
 }
 
 async function finalizeIncrementalJobInDb({
   dbClient,
   patientId,
   jobId,
+  schemaName,
 }: {
   dbClient: Client;
   patientId: string;
   jobId: string;
+  schemaName: string;
 }): Promise<void> {
   // Once this is done, the DB views will return the newly inserted rows.
-  await dbClient.query(insertTableJobCommand, [jobId, patientId]);
+  await dbClient.query(getInsertTableJobCommand(schemaName), [jobId, patientId]);
 }
 
 function createTableName(resourceType: string): string {

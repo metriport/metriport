@@ -261,6 +261,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       envType: props.config.environmentType,
       awsRegion: props.config.region,
       vpc: props.vpc,
+      analyticsBucket: analyticsPlatformBucket,
       alarmAction: props.alarmAction,
       analyticsBucket: analyticsPlatformBucket,
     });
@@ -452,7 +453,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     });
 
     const dbClusterS3Role = new iam.Role(this, "DatabaseClusterS3Role", {
-      roleName: `DatabaseClusterS3Role-${ownProps.envType}`,
+      roleName: `DatabaseClusterS3Role2-${ownProps.envType}`,
       assumedBy: new iam.ServicePrincipal("rds.amazonaws.com"),
       inlinePolicies: {
         S3AccessPolicy: new iam.PolicyDocument({
@@ -462,14 +463,18 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
               actions: [
                 "s3:PutObject",
                 "s3:GetObject",
+                "s3:GetObjectVersion",
+                "s3:DeleteObject",
+                "s3:DeleteObjectVersion",
                 "s3:AbortMultipartUpload",
                 "s3:ListMultipartUploadParts",
-                "s3:ListBucketMultipartUploads",
               ],
-              resources: [
-                `arn:aws:s3:::${ownProps.analyticsBucket.bucketName}`,
-                `arn:aws:s3:::${ownProps.analyticsBucket.bucketName}/*`,
-              ],
+              resources: [`arn:aws:s3:::${ownProps.analyticsBucket.bucketName}/*`],
+            }),
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: ["s3:ListBucket", "s3:GetBucketLocation", "s3:ListBucketMultipartUploads"],
+              resources: [`arn:aws:s3:::${ownProps.analyticsBucket.bucketName}`],
             }),
           ],
         }),
@@ -516,6 +521,10 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       {
         roleArn: dbClusterS3Role.roleArn,
         featureName: "s3Export",
+      },
+      {
+        roleArn: dbClusterS3Role.roleArn,
+        featureName: "s3Import",
       },
     ];
 

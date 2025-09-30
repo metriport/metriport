@@ -14,11 +14,16 @@ export const columnJobIdDefinition = `${columnJobIdName} ${defaultColumnType}`;
 
 export const additionalColumnDefs = `${columnPatientIdDefinition}, ${columnJobIdDefinition}`;
 
-export const createTableJobCommand =
-  `CREATE TABLE IF NOT EXISTS ${tableJobName} (` +
-  `id VARCHAR PRIMARY KEY, ${columnPatientIdDefinition})`;
+export function getCreateTableJobCommand(schemaName: string): string {
+  return (
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableJobName} (` +
+    `id VARCHAR PRIMARY KEY, ${columnPatientIdDefinition})`
+  );
+}
 
-export const insertTableJobCommand = `INSERT INTO ${tableJobName} (id, ${columnPatientIdName}) VALUES ($1, $2)`;
+export function getInsertTableJobCommand(schemaName: string): string {
+  return `INSERT INTO ${schemaName}.${tableJobName} (id, ${columnPatientIdName}) VALUES ($1, $2)`;
+}
 
 export function getCreateTableCommand(tableName: string, columnsDef: string): string {
   return (
@@ -42,11 +47,11 @@ export function getCreateViewJobCommand(tableName: string): { cmd: string; viewN
   const cmd = `CREATE or replace VIEW ${viewName} as
           SELECT a.*
           FROM ${tableName} a
-            join ${tableJobName} j on
+            join ${rawDbSchema}.${tableJobName} j on
               a.${columnJobIdName} = j.id and 
               a.${columnPatientIdName} = j.${columnPatientIdName}
           WHERE j.id = (
-            select max(id) from ${tableJobName} jj
+            select max(id) from ${rawDbSchema}.${tableJobName} jj
             where jj.${columnPatientIdName} = a.${columnPatientIdName}
           );`;
   return { cmd, viewName };
