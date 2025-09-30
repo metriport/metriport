@@ -8,7 +8,7 @@ jest.spyOn(Config, "getHl7IncomingMessageBucketName").mockReturnValue("unit-test
 // Import after mocking to ensure mocked values are used during module initialization
 import { MetriportError } from "@metriport/shared";
 import { HieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
-import { lookupHieTzEntryForIp } from "../utils";
+import { lookupHieTzEntryForIp, toVpnRows } from "../utils";
 
 describe("lookupHieTzEntryForIp", () => {
   const mockHieConfigDictionary: HieConfigDictionary = {
@@ -28,7 +28,7 @@ describe("lookupHieTzEntryForIp", () => {
 
   describe("successful IP lookup", () => {
     it("should return correct HIE config for IP in first CIDR block", () => {
-      const result = lookupHieTzEntryForIp(mockHieConfigDictionary, "192.168.1.100");
+      const result = lookupHieTzEntryForIp(toVpnRows(mockHieConfigDictionary), "192.168.1.100");
 
       expect(result).toEqual({
         hieName: "hie1",
@@ -39,11 +39,11 @@ describe("lookupHieTzEntryForIp", () => {
 
     it("should return correct HIE config for IP at network boundary", () => {
       // Test edge case: first IP in network
-      const result1 = lookupHieTzEntryForIp(mockHieConfigDictionary, "192.168.1.1");
+      const result1 = lookupHieTzEntryForIp(toVpnRows(mockHieConfigDictionary), "192.168.1.1");
       expect(result1.hieName).toBe("hie1");
 
       // Test edge case: last IP in network
-      const result2 = lookupHieTzEntryForIp(mockHieConfigDictionary, "192.168.1.254");
+      const result2 = lookupHieTzEntryForIp(toVpnRows(mockHieConfigDictionary), "192.168.1.254");
       expect(result2.hieName).toBe("hie1");
     });
 
@@ -55,7 +55,7 @@ describe("lookupHieTzEntryForIp", () => {
         },
       };
 
-      const result = lookupHieTzEntryForIp(singleIpConfig, "203.0.113.42");
+      const result = lookupHieTzEntryForIp(toVpnRows(singleIpConfig), "203.0.113.42");
       expect(result).toEqual({
         hieName: "single-ip-hie",
         cidrBlocks: ["203.0.113.42/32"],
@@ -69,19 +69,19 @@ describe("lookupHieTzEntryForIp", () => {
       const testIp = "8.8.8.8"; // Public DNS, not in any of our test ranges
 
       expect(() => {
-        lookupHieTzEntryForIp(mockHieConfigDictionary, testIp);
+        lookupHieTzEntryForIp(toVpnRows(mockHieConfigDictionary), testIp);
       }).toThrow(MetriportError);
     });
 
     it("should throw MetriportError when IP is outside CIDR range", () => {
       // 192.168.2.1 is outside 192.168.1.0/24
       expect(() => {
-        lookupHieTzEntryForIp(mockHieConfigDictionary, "192.168.2.1");
+        lookupHieTzEntryForIp(toVpnRows(mockHieConfigDictionary), "192.168.2.1");
       }).toThrow(MetriportError);
 
       // 172.15.255.255 is outside 172.16.0.0/12
       expect(() => {
-        lookupHieTzEntryForIp(mockHieConfigDictionary, "172.15.255.255");
+        lookupHieTzEntryForIp(toVpnRows(mockHieConfigDictionary), "172.15.255.255");
       }).toThrow(MetriportError);
     });
   });
