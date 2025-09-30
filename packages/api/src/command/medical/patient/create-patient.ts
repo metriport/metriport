@@ -40,7 +40,7 @@ export async function createPatient({
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
   settings?: PatientSettingsData;
-  cohorts: string[];
+  cohorts?: string[];
 }): Promise<PatientWithIdentifiers> {
   const { cxId, facilityId, externalId } = patient;
   const { log } = out(`createPatient.${cxId}`);
