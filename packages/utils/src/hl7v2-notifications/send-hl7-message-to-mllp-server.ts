@@ -13,8 +13,9 @@ import { buildDayjs } from "@metriport/shared/common/date";
 /**
  * Sends an HL7v2 ADT message to a local MLLP server.
  *
- * This script demonstrates sending a sample HL7v2 ADT message to an MLLP server running locally.
+ * This script lets you send a sample HL7v2 ADT message to the MLLP server.
  * The message is hardcoded in the script and contains a discharge notification (ADT^A03).
+ * You can test different HIE configurations by adding the ZIT segment to the message.
  *
  * The script:
  * - Parses the HL7 message string into a structured format
