@@ -19,17 +19,17 @@ export async function getCohortOrFail({ id, cxId }: GetCohortProps): Promise<Coh
   return cohort;
 }
 
-export async function getCohortWithDetailsOrFail({
+export async function getCohortWithSizeOrFail({
   id,
   cxId,
-}: GetCohortProps): Promise<CohortWithDetails> {
+}: GetCohortProps): Promise<CohortWithSize> {
   const [cohort, size] = await Promise.all([
     getCohortOrFail({ id, cxId }),
     getCohortSize({ cohortId: id, cxId }),
   ]);
   if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id, cxId });
 
-  return { cohort: cohort.dataValues, details: { size } };
+  return { cohort: cohort.dataValues, size };
 }
 
 export async function getCohorts({ cxId }: { cxId: string }): Promise<Cohort[]> {

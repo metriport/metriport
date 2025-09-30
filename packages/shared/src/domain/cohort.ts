@@ -75,13 +75,14 @@ export type CohortDTO = {
   settings: CohortSettings;
 };
 
-export type CohortEntityWithSizeDTO = {
-  cohort: CohortDTO;
+export type CohortWithSize = {
+  cohort: Cohort;
   size: number;
 };
 
-export type CohortEntityWithPatientIdsAndSizeDTO = CohortEntityWithSizeDTO & {
-  patientIds: string[];
+export type CohortWithSizeDTO = {
+  cohort: CohortDTO;
+  size: number;
 };
 
 export function dtoFromCohort(cohort: Cohort & { eTag: string }): CohortDTO {

@@ -38,70 +38,30 @@ When importing patients into metriport you can assign them to cohorts.
 And easily retrieve them as a group.
 // Example api call
 
-### Cohorts for patient monitoring
-Every cohort has a name and a collection of settings which apply to all patients that are members of that cohort. 
-By default, you have 3 cohorts pre-created, with the following behaviors:
+### Getting started
+Every cohort has a name and a collection of settings which apply to all patients within that cohort. 
+By default, you have 3 cohorts with the following names + behaviors:
 
 - Low Risk ( 🟢 ): monthly medical record refresh
 - Medium Risk ( 🟡 ): monthly medical record refresh & prescription medication history
 - High Risk ( 🔴 ): <b>weekly medical record refresh</b>, and monitoring enabled for all available sources
 
 <Note>
-All of this can be personalized based on your needs, either during onboarding or self-served via our API (See our API reference for documentation on how to [update an existing cohort](/medical-api/api-reference/cohort/update-cohort) or [add existing patients to a cohort](/medical-api/api-reference/cohort/add-patients-to-cohort)).
+All of this can be personalized based on your needs, either during onboarding or self-serve, via our API (See our API reference for documentation on how to [update an existing cohort](/medical-api/api-reference/cohort/update-cohort) or [add existing patients to a cohort](/medical-api/api-reference/cohort/add-patients-to-cohort)).
 </Note>
 
+### Adding patients to cohorts
+Patients can be added to cohorts on creation, or added to and removed from different cohorts as needed.
+
+During creation:
+- In [Bulk Patient Create](/medical-api/api-reference/patient/bulk-create-patient) there are `cohort1` and `cohort2` column headers for specifying the starting cohorts for a patient. See [here](/medical-api/api-reference/patient/bulk-create-patient#param-cohort1).
+- In [Create Patient](/medical-api/api-reference/patient/create-patient) there is a `cohorts` array parameter to set any number of cohorts on a patient. See [here](/medical-api/api-reference/patient/bulk-create-patient#param-cohort1).
+
+As needed:
+- Refer to [Add Patients To Cohort](/medical-api/api-reference/patient/add-patients-to-cohort)
+- Refer to [Remove Patients From Cohort](/medical-api/api-reference/patient/remove-patients-from-cohort)
+
+### Cohorts for monitoring
+
+
 ### Cohorts for convenience
-
-For each patient you intend to receive realtime notifications for, Metriport maintains the real-time state of their journey through the health system.
-Each of these patient journeys is represented via FHIR data - a FHIR [Encounter](https://hl7.org/fhir/R4/encounter.html).
-
-```json
-{
-  "resourceType": "Encounter",
-  "status": "finished",
-  "period": {
-    "start": "2024-03-15T14:20:00.000Z",
-    "end": "2024-03-15T16:45:00.000Z"
-  },
-  "reasonCode": [
-    {
-      "text": "Chest pain"
-    }
-  ],
-  "location": [
-    {
-      "location": {
-        "reference": "Location/3ca5e8d2-7c84-45ab-91e7-834f8becde12",
-        "type": "Location",
-        "display": "Memorial Hospital"
-      }
-    }
-  ]
-  // And much more
-}
-```
-
-But FHIR data relies on references to function. An Encounter might reference a subject, a practitioner, or a location - as the example above does (see the `reference` field in location.). Each root unit of data in FHIR is called a 'Resource' and each of type of resource has its own corresponding schema. It's common for resources to include references to one another.
-
-To provide comprehensive data about the Encounter, we serve a FHIR [Bundle](https://hl7.org/fhir/R4/bundle.html) via the `url` in the patient notification.
-
-```json
-{
-    "resourceType": "Bundle",
-    "type": "message",
-    "timestamp": "2020-05-08T13:10:15Z",
-    "id": "message-uuid",
-    "entry": [
-      { /* a FHIR Encounter */ },
-      // Other resources that are directly or transitively referenced via the FHIR encounter
-      { /* Another resource */ },
-      { /* Another resource */ },
-      { /* Another resource */ },
-      ...
-    ]
-}
-```
-
-The first item in every bundle for a Metriport's Patient Notification is the root Encounter. Every item thereafter is a resource referenced by the Encounter. The bundle acts as a container for all resources, ensuring you have a standalone package of clinical data.
-
-If you're unfamiliar with FHIR, please read our [FHIR Overview](medical-api/fhir/overview).

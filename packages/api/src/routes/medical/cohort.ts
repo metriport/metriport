@@ -15,7 +15,7 @@ import { deleteCohort } from "../../command/medical/cohort/delete-cohort";
 import {
   getCohortByName,
   getCohorts,
-  getCohortWithDetailsOrFail,
+  getCohortWithSizeOrFail,
 } from "../../command/medical/cohort/get-cohort";
 import {
   addAllPatientsToCohort,
@@ -65,7 +65,7 @@ router.post(
       ...data,
     });
 
-    return res.status(status.CREATED).json(dtoFromCohort(cohort));
+    return res.status(status.CREATED).json({ cohort: dtoFromCohort(cohort), size: 0 });
   })
 );
 
@@ -86,14 +86,14 @@ router.put(
     const id = getFromParamsOrFail("id", req);
     const data = cohortUpdateSchema.parse(req.body);
 
-    const cohort = await updateCohort({
+    const cohortWithSize = await updateCohort({
       ...getETag(req),
       ...data,
       cxId,
       id,
     });
 
-    return res.status(status.OK).json(dtoFromCohort(cohort));
+    return res.status(status.OK).json(applyCohortDtoToPayload(cohortWithSize));
   })
 );
 
@@ -161,9 +161,9 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
 
-    const cohortDetails = await getCohortWithDetailsOrFail({ id, cxId });
+    const cohortWithSize = await getCohortWithSizeOrFail({ id, cxId });
 
-    return res.status(status.OK).json(applyCohortDtoToPayload(cohortDetails));
+    return res.status(status.OK).json(applyCohortDtoToPayload(cohortWithSize));
   })
 );
 
@@ -254,14 +254,14 @@ router.post(
       });
     }
 
-    const cohortDetails = await getCohortWithDetailsOrFail({
+    const cohortWithSize = await getCohortWithSizeOrFail({
       id: cohortId,
       cxId,
     });
 
     return res
       .status(status.CREATED)
-      .json({ message: "Patient(s) added to cohort", ...applyCohortDtoToPayload(cohortDetails) });
+      .json({ message: "Patient(s) added to cohort", ...applyCohortDtoToPayload(cohortWithSize) });
   })
 );
 
@@ -290,14 +290,14 @@ router.delete(
       patientIds,
     });
 
-    const cohortDetails = await getCohortWithDetailsOrFail({
+    const cohortWithSize = await getCohortWithSizeOrFail({
       id: cohortId,
       cxId,
     });
 
     return res.status(status.OK).json({
       message: "Patient(s) removed from cohort",
-      ...applyCohortDtoToPayload(cohortDetails),
+      ...applyCohortDtoToPayload(cohortWithSize),
     });
   })
 );
