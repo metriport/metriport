@@ -1,18 +1,6 @@
 import { Cohort, CohortColors, CohortSettings } from "@metriport/shared/domain/cohort";
 import { toBaseDTO } from "./baseDTO";
 
-export type BaseDTO = {
-  id: string;
-  eTag: string;
-};
-
-export function toBaseDTO(model: { id: string; eTag: string }): BaseDTO {
-  return {
-    id: model.id,
-    eTag: model.eTag,
-  };
-}
-
 export type CohortDTO = {
   id: string;
   name: string;

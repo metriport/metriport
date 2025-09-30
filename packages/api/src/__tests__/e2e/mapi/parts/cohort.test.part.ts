@@ -2,6 +2,7 @@ import { faker } from "@faker-js/faker";
 import { COHORT_COLORS, CohortUpdateRequest } from "@metriport/shared/domain/cohort";
 import { E2eContext, medicalApi } from "../shared";
 import { createCohort, validateCohort } from "./cohort";
+import { createSecondaryPatient } from "./patient";
 
 export function runCohortTestsPart1(e2e: E2eContext) {
   it("creates a cohort", async () => {
@@ -75,6 +76,46 @@ export function runCohortTestsPart1(e2e: E2eContext) {
       patientIds: [e2e.patient.id],
       cohortId: e2e.cohort.id,
     });
+  });
+
+  it("lists patients in a cohort", async () => {
+    if (!e2e.cohort) throw new Error("Missing cohort");
+    if (!e2e.patient) throw new Error("Missing patient");
+    if (!e2e.facility) throw new Error("Missing facility");
+
+    const secondaryPatient = await medicalApi.createPatient(
+      createSecondaryPatient,
+      e2e.facility.id
+    );
+    await medicalApi.addPatientsToCohort({
+      patientIds: [e2e.patient.id, secondaryPatient.id],
+      cohortId: e2e.cohort.id,
+    });
+    const { meta: page1Meta, patients: page1Patients } = await medicalApi.listPatientsInCohort({
+      cohortId: e2e.cohort.id,
+      pagination: { count: 1 },
+    });
+    expect(page1Patients.length).toEqual(1);
+    expect(page1Patients[0].id).toEqual(secondaryPatient.id);
+    expect(page1Meta.itemsOnPage).toEqual(1);
+    expect(page1Meta.itemsInTotal).toEqual(2);
+    if (!page1Meta.nextPage) throw new Error("Missing next page");
+    console.log(`page1Meta.nextPage: ${page1Meta.nextPage}`);
+
+    const { meta: page2Meta, patients: page2Patients } = await medicalApi.listPatientsInCohortPage(
+      page1Meta.nextPage
+    );
+
+    expect(page2Patients.length).toEqual(1);
+    expect(page2Patients[0].id).toEqual(e2e.patient.id);
+    expect(page2Meta.itemsOnPage).toEqual(1);
+    expect(page2Meta.nextPage).not.toBeDefined();
+
+    await medicalApi.removePatientsFromCohort({
+      patientIds: [e2e.patient.id, secondaryPatient.id],
+      cohortId: e2e.cohort.id,
+    });
+    await medicalApi.deletePatient(secondaryPatient.id, e2e.facility.id);
   });
 
   it("gets settings for a patient", async () => {

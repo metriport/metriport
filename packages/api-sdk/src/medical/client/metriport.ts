@@ -773,7 +773,7 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Bulk add patients to a cohort.
+   * Add patients to a cohort.
    * @param cohortId The ID of the cohort to add patients to.
    * @param patientIds The IDs of the patients to add to the cohort.
    * @returns The updated cohort.
@@ -787,8 +787,9 @@ export class MetriportMedicalApi {
   }): Promise<void> {
     await this.api.post(`${COHORT_URL}/${cohortId}/patient`, { patientIds });
   }
+
   /**
-   * Bulk remove patients from a cohort.
+   * Remove patients from a cohort.
    * @param cohortId The ID of the cohort to remove patients from.
    * @param patientIds The IDs of the patients to remove from the cohort.
    * @returns The updated cohort.
@@ -801,6 +802,36 @@ export class MetriportMedicalApi {
     patientIds: string[];
   }): Promise<void> {
     await this.api.delete(`${COHORT_URL}/${cohortId}/patient`, { data: { patientIds } });
+  }
+
+  /**
+   * Lists patients in a cohort.
+   * @param cohortId The ID of the cohort to list patients from.
+   * @param pagination Pagination settings, optional. If not provided, the first page will be returned.
+   *                   See https://docs.metriport.com/medical-api/more-info/pagination
+   * @returns An object containing:
+   * - `patients` - A single page containing the patients in the cohort.
+   * - `meta` - Pagination information, including how to get to the next page.
+   */
+  async listPatientsInCohort({
+    cohortId,
+    pagination,
+  }: {
+    cohortId: string;
+    pagination?: Pagination | undefined;
+  }): Promise<PaginatedResponse<PatientDTO, "patients">> {
+    const resp = await this.api.get(`${COHORT_URL}/${cohortId}/patient`, {
+      params: {
+        ...getPaginationParams(pagination),
+      },
+    });
+    if (!resp.data) return { meta: { itemsOnPage: 0 }, patients: [] };
+    return resp.data;
+  }
+
+  async listPatientsInCohortPage(url: string): Promise<PaginatedResponse<PatientDTO, "patients">> {
+    const resp = await this.api.get(url);
+    return resp.data;
   }
 
   /**
