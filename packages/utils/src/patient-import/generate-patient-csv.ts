@@ -65,6 +65,7 @@ const mainHeaders = "externalId,firstName,lastName,dob,gender";
 const addressHeaders = "zip,city,state,addressLine1,addressLine2";
 const contactHeaders = "phone,email";
 const additionalIdentifiersHeaders = "ssn,driversLicenceNo,driversLicenceState";
+const cohortsHeaders = "cohort1,cohort2";
 
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
@@ -177,6 +178,7 @@ function buildHeaders(patients: PatientPayload[]): {
     headers.push(buildHeadersForVariableColumns(contactHeaders, i));
   }
   headers.push(additionalIdentifiersHeaders);
+  headers.push(cohortsHeaders);
   return {
     headers: headers.join(","),
     amountOfAddresses: maxAmountOfAddresses,
@@ -206,6 +208,9 @@ function patientToCsv(amountOfAddresses: number, amountOfContacts: number) {
       columns.push(contactToCsv(patient.contact?.[i] ?? {}));
     }
     columns.push(personalIdsToCsv(patient.personalIdentifiers ?? []));
+    for (let i = 0; i < patient.cohorts?.length; i++) {
+      columns.push(normalizeCohortName(patient.cohorts?.[i]));
+    }
     return columns.join(",");
   };
 }
@@ -225,6 +230,10 @@ function contactToCsv(contact: Contact): string {
   columns.push(contact.phone ?? "");
   columns.push(contact.email ?? "");
   return columns.join(",");
+}
+
+function normalizeCohortName(cohortName: string): string {
+  return cohortName.trim().toUpperCase();
 }
 
 function personalIdsToCsv(identifiers: PersonalIdentifier[]): string {
