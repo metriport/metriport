@@ -60,7 +60,7 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
     bucketName: string,
     remotePath: string,
     fileName: string
-  ): Promise<TimestampedMessage | null> {
+  ): Promise<TimestampedMessage | undefined> {
     try {
       const filePath = this.getFilePath(remotePath, fileName);
       const existsFile = await s3Utils.fileExists(bucketName, filePath);
@@ -95,7 +95,7 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
       const message = await s3Utils.getFileContentsAsString(bucketName, filePath);
 
       await this.persistError(message, fileName, String(error));
-      return null;
+      return undefined;
     }
   }
 
