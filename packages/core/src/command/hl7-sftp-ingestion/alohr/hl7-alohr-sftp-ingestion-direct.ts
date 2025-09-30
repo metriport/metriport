@@ -17,10 +17,12 @@ import {
   getSegmentByNameOrFail,
 } from "../../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { asString } from "../../hl7-notification/utils";
+import { capture } from "../../../util/notifications";
 
 export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
   private readonly ALTERNATE_PATIENT_ID_FIELD_INDEX = 4; // 1 indexed
   private readonly PATIENT_ID_FIELD_INDEX = 3; // 1 indexed
+  private readonly ERROR_FILE_PATH = "errors";
 
   private sftpClient: AlohrSftpIngestionClient;
 
@@ -42,8 +44,24 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
 
     log(`Reading synced files`);
     const timestampedMessages: TimestampedMessage[] = [];
-
     for (const fileName of fileNames) {
+      const timestampedMessage = await this.processFile(s3Utils, bucketName, remotePath, fileName);
+      if (timestampedMessage) {
+        timestampedMessages.push(timestampedMessage);
+      }
+    }
+
+    log(`Sending to webhook sender`);
+    await this.sendToWebhookSender(timestampedMessages);
+  }
+
+  private async processFile(
+    s3Utils: S3Utils,
+    bucketName: string,
+    remotePath: string,
+    fileName: string
+  ): Promise<TimestampedMessage | undefined> {
+    try {
       const filePath = this.getFilePath(remotePath, fileName);
       const existsFile = await s3Utils.fileExists(bucketName, filePath);
       if (!existsFile) {
@@ -51,23 +69,34 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
       }
 
       const message = await s3Utils.getFileContentsAsString(bucketName, filePath);
-      const recievedAt = buildDayjs(Date.now()).toISOString();
+      const receivedAt = buildDayjs().toISOString();
       const hl7Message = Hl7Message.parse(message);
 
       const remappedMessage = this.remapMessage(hl7Message);
       const remappedMessageString = asString(remappedMessage);
       const { cxId, patientId } = getCxIdAndPatientIdOrFail(remappedMessage);
 
-      timestampedMessages.push({
+      return {
         message: remappedMessageString,
-        timestamp: recievedAt,
-        cxId: cxId,
-        patientId: patientId,
+        timestamp: receivedAt,
+        cxId,
+        patientId,
+        fileName,
+      };
+    } catch (error) {
+      capture.error("error processing file: ", {
+        extra: {
+          fileName,
+          error,
+        },
       });
-    }
+      log(`error processing file: ${error}`);
+      const filePath = this.getFilePath(remotePath, fileName);
+      const message = await s3Utils.getFileContentsAsString(bucketName, filePath);
 
-    log(`Sending to webhook sender`);
-    await this.sendToWebhookSender(timestampedMessages);
+      await this.persistError(message, fileName, String(error));
+      return undefined;
+    }
   }
 
   private async sendToWebhookSender(timestampedMessages: TimestampedMessage[]): Promise<void> {
@@ -80,9 +109,21 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
         messageReceivedTimestamp: msg.timestamp,
         hieName: HIE_NAME,
       };
-
       await webhookSender.execute(webhookSenderParams);
     }
+  }
+
+  private async persistError(message: string, fileName: string, error: string): Promise<void> {
+    const s3Utils = new S3Utils(Config.getAWSRegion());
+    const bucketName = Config.getAlohrIngestionBucket();
+    const filePath = this.getFilePath(this.ERROR_FILE_PATH, fileName);
+    const fileContents = `${error}\n\n${message}`;
+    await s3Utils.uploadFile({
+      bucket: bucketName,
+      key: filePath,
+      file: Buffer.from(fileContents),
+      contentType: "text/plain",
+    });
   }
 
   private getFilePath(remotePath: string, fileName: string): string {

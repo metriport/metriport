@@ -3,6 +3,7 @@ dotenv.config();
 
 import { Hl7Server } from "@medplum/hl7";
 import { buildHl7NotificationWebhookSender } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-factory";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
@@ -17,8 +18,11 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import { initSentry } from "./sentry";
 import {
   asString,
+  bucketName,
+  createRawHl7MessageFileKey,
   getCleanIpAddress,
-  lookupHieTzEntryForIp,
+  getHieConfig,
+  s3Utils,
   translateMessage,
   withErrorHandling,
 } from "./utils";
@@ -35,11 +39,29 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
       "message",
       withErrorHandling(connection, logger, async ({ message: rawMessage }) => {
         const clientIp = getCleanIpAddress(connection.socket.remoteAddress);
+        const rawFileKey = createRawHl7MessageFileKey(clientIp);
+
+        const uploadResult = await uploadFileSafely(
+          s3Utils,
+          bucketName,
+          rawFileKey,
+          asString(rawMessage)
+        );
+        if (!uploadResult.success) {
+          capture.error(
+            `Failed to upload raw message to S3: ${uploadResult.error}. Continuing with message processing...`
+          );
+        }
+
         const clientPort = connection.socket.remotePort;
 
         log(`New message over connection ${clientIp}:${clientPort}`);
         const hieConfigDictionary = getHieConfigDictionary();
-        const { hieName } = lookupHieTzEntryForIp(hieConfigDictionary, clientIp);
+        const { hieName, impersonationTimezone } = getHieConfig(
+          hieConfigDictionary,
+          clientIp,
+          rawMessage
+        );
 
         const newMessage = translateMessage(rawMessage, hieName);
         const { cxId, patientId } = getCxIdAndPatientIdOrFail(newMessage);
@@ -64,6 +86,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           message: asString(newMessage),
           messageReceivedTimestamp,
           hieName,
+          impersonationTimezone,
         });
 
         connection.send(newMessage.buildAck());
@@ -84,6 +107,30 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   });
 
   return server;
+}
+
+type UploadResult = { success: true } | { success: false; error: string };
+
+async function uploadFileSafely(
+  s3Utils: S3Utils,
+  bucket: string,
+  key: string,
+  content: string
+): Promise<UploadResult> {
+  try {
+    await s3Utils.uploadFile({
+      bucket,
+      key,
+      file: Buffer.from(content),
+      contentType: "text/plain",
+    });
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 async function main() {

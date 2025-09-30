@@ -107,6 +107,9 @@ export class Config {
   static getHl7IncomingMessageBucketName(): string {
     return getEnvVarOrFail("HL7_INCOMING_MESSAGE_BUCKET_NAME");
   }
+  static getHl7RawMessageBucketName(): string {
+    return getEnvVarOrFail("HL7_RAW_MESSAGE_BUCKET_NAME");
+  }
   static getHl7OutgoingMessageBucketName(): string {
     return getEnvVarOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME");
   }
@@ -498,5 +501,9 @@ export class Config {
 
   static getAlohrIngestionLambdaName(): string {
     return getEnvVarOrFail("ALOHR_INGESTION_LAMBDA_NAME");
+  }
+
+  static getAlohrIngestionTimezone(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_TIMEZONE");
   }
 }
