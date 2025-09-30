@@ -26,6 +26,7 @@ program.name("fhir-convert-all");
 program.requiredOption("--cx-id <cx-id>", "The customer ID");
 program.option("--use-cache", "Use the cache");
 program.option("--dry-run", "Dry run before running the conversion");
+program.option("--recreate", "Recreate the consolidated bundle");
 program.description("Converts all patient responses to FHIR bundles");
 program.action(fhirConvertAllResponses);
 program.showHelpAfterError();
@@ -47,10 +48,12 @@ async function fhirConvertAllResponses({
   cxId,
   useCache,
   dryRun,
+  recreate,
 }: {
   cxId: string;
   useCache?: boolean;
   dryRun?: boolean;
+  recreate?: boolean;
 }) {
   const responseFiles = await getAllResponseFiles(useCache);
   const facilityAndPatientIds = await getFacilityAndPatientIdsForCustomer(cxId);
@@ -72,7 +75,7 @@ async function fhirConvertAllResponses({
 
     await executeAsynchronously(
       patientResponseFiles,
-      responseFile => convertPatientResponseFile(cxId, facilityId, responseFile),
+      responseFile => convertPatientResponseFile(cxId, facilityId, responseFile, recreate),
       {
         numberOfParallelExecutions: 10,
       }
@@ -80,7 +83,7 @@ async function fhirConvertAllResponses({
 
     await executeAsynchronously(
       batchResponseFiles,
-      responseFile => convertBatchResponseFile(cxId, facilityId, responseFile),
+      responseFile => convertBatchResponseFile(cxId, facilityId, responseFile, recreate),
       {
         numberOfParallelExecutions: 10,
       }
@@ -91,8 +94,9 @@ async function fhirConvertAllResponses({
 async function convertPatientResponseFile(
   cxId: string,
   facilityId: string,
-  responseFile: ListResponseFilesResponse[number]
-) {
+  responseFile: ListResponseFilesResponse[number],
+  recreate?: boolean
+): Promise<void> {
   const fhirConverter = new SurescriptsConvertPatientResponseHandlerDirect();
   await fhirConverter.convertPatientResponse({
     cxId,
@@ -102,16 +106,19 @@ async function convertPatientResponseFile(
   });
   console.log(`Converted patient response file ${responseFile.key}`);
 
-  const dataMapper = new SurescriptsDataMapper();
-  await dataMapper.recreateConsolidatedBundle(cxId, responseFile.patientId);
-  console.log(`Recreated consolidated bundle for patient ${responseFile.patientId}`);
+  if (recreate) {
+    const dataMapper = new SurescriptsDataMapper();
+    await dataMapper.recreateConsolidatedBundle(cxId, responseFile.patientId);
+    console.log(`Recreated consolidated bundle for patient ${responseFile.patientId}`);
+  }
 }
 
 async function convertBatchResponseFile(
   cxId: string,
   facilityId: string,
-  responseFile: ListResponseFilesResponse[number]
-) {
+  responseFile: ListResponseFilesResponse[number],
+  recreate?: boolean
+): Promise<void> {
   const fhirConverter = new SurescriptsConvertBatchResponseHandlerDirect();
   const conversionBundles = await fhirConverter.convertBatchResponse({
     cxId,
@@ -121,6 +128,7 @@ async function convertBatchResponseFile(
   });
 
   console.log(`Converted batch response file ${responseFile.key}`);
+  if (!recreate) return;
 
   const dataMapper = new SurescriptsDataMapper();
   for (const { patientId } of conversionBundles) {
