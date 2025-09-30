@@ -3,6 +3,7 @@ dotenv.config();
 
 import { Hl7Server } from "@medplum/hl7";
 import { buildHl7NotificationWebhookSender } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-factory";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
@@ -17,8 +18,11 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import { initSentry } from "./sentry";
 import {
   asString,
+  bucketName,
+  createRawHl7MessageFileKey,
   getCleanIpAddress,
   getHieConfig,
+  s3Utils,
   translateMessage,
   withErrorHandling,
 } from "./utils";
@@ -35,6 +39,18 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
       "message",
       withErrorHandling(connection, logger, async ({ message: rawMessage }) => {
         const clientIp = getCleanIpAddress(connection.socket.remoteAddress);
+        const rawFileKey = createRawHl7MessageFileKey(clientIp);
+
+        const uploadResult = await uploadFileSafely(
+          s3Utils,
+          bucketName,
+          rawFileKey,
+          asString(rawMessage)
+        );
+        if (!uploadResult.success) {
+          capture.error(uploadResult.error);
+        }
+
         const clientPort = connection.socket.remotePort;
 
         log(`New message over connection ${clientIp}:${clientPort}`);
@@ -89,6 +105,27 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   });
 
   return server;
+}
+
+type UploadResult = { success: true } | { success: false; error: unknown };
+
+async function uploadFileSafely(
+  s3Utils: S3Utils,
+  bucket: string,
+  key: string,
+  content: string
+): Promise<UploadResult> {
+  try {
+    await s3Utils.uploadFile({
+      bucket,
+      key,
+      file: Buffer.from(content),
+      contentType: "text/plain",
+    });
+    return { success: true };
+  } catch (error) {
+    return { success: false, error };
+  }
 }
 
 async function main() {

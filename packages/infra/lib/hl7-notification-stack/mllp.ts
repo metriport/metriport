@@ -20,7 +20,7 @@ interface MllpStackProps extends cdk.StackProps {
   version: string | undefined;
   vpc: ec2.Vpc;
   ecrRepo: ecr.IRepository;
-  incomingHl7NotificationBucket: s3.IBucket;
+  rawHl7MessageBucket: s3.IBucket;
 }
 
 const setupNlb = (identifier: string, vpc: ec2.Vpc, nlb: elbv2.NetworkLoadBalancer, ip: string) => {
@@ -64,7 +64,7 @@ export class MllpStack extends cdk.NestedStack {
   constructor(scope: Construct, id: string, props: MllpStackProps) {
     super(scope, id, props);
 
-    const { vpc, ecrRepo, incomingHl7NotificationBucket, config } = props;
+    const { vpc, ecrRepo, rawHl7MessageBucket, config } = props;
     const { notificationWebhookSenderQueue, hieConfigs } = config.hl7Notification;
     const {
       sentryDSN,
@@ -150,7 +150,7 @@ export class MllpStack extends cdk.NestedStack {
         NODE_ENV: "production",
         ENV_TYPE: props.config.environmentType,
         MLLP_PORT: MLLP_DEFAULT_PORT.toString(),
-        HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
+        HL7_RAW_MESSAGE_BUCKET_NAME: rawHl7MessageBucket.bucketName,
         HL7_NOTIFICATION_QUEUE_URL: notificationWebhookSenderQueue.url,
         HIE_CONFIG_DICTIONARY: JSON.stringify(createHieConfigDictionary(hieConfigs)),
         ...(sentryDSN ? { SENTRY_DSN: sentryDSN } : {}),
@@ -170,7 +170,7 @@ export class MllpStack extends cdk.NestedStack {
     setupNlb("", vpc, nlbA, nlbInternalIpAddressA).addTarget(fargateService);
     setupNlb("B", vpc, nlbB, nlbInternalIpAddressB).addTarget(fargateService);
 
-    incomingHl7NotificationBucket.grantWrite(fargateService.taskDefinition.taskRole);
+    rawHl7MessageBucket.grantWrite(fargateService.taskDefinition.taskRole);
 
     const scaling = fargateService.autoScaleTaskCount({
       minCapacity: fargateTaskCountMin,

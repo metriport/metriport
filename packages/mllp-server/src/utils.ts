@@ -17,6 +17,8 @@ import { HieConfigDictionary } from "@metriport/core/external/hl7-notification/h
 import { MetriportError } from "@metriport/shared";
 import * as Sentry from "@sentry/node";
 import IPCIDR from "ip-cidr";
+import { buildDayjs } from "@metriport/shared/common/date";
+import { HL7_FILE_EXTENSION } from "@metriport/core/util/mime";
 
 const CUSTOM_SEGMENT_NAME = "ZIT";
 const CUSTOM_SEGMENT_HIE_NAME_INDEX = 1;
@@ -24,7 +26,7 @@ const CUSTOM_SEGMENT_TIMEZONE_INDEX = 2;
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 export const s3Utils = new S3Utils(Config.getAWSRegion());
-export const bucketName = Config.getHl7IncomingMessageBucketName();
+export const bucketName = Config.getHl7RawMessageBucketName();
 
 export function withErrorHandling<T extends Hl7MessageEvent | Hl7ErrorEvent>(
   connection: Hl7Connection,
@@ -178,6 +180,11 @@ export function translateMessage(rawMessage: Hl7Message, hieName: string): Hl7Me
     return newMessage;
   }
   return rawMessage;
+}
+
+export function createRawHl7MessageFileKey(clientIp: string) {
+  const now = buildDayjs().toISOString();
+  return `${clientIp}/${now}.${HL7_FILE_EXTENSION}`;
 }
 
 export function toVpnRows(dict: HieConfigDictionary): HieVpnConfigRow[] {
