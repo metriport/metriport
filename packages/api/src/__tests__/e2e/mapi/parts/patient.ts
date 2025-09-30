@@ -1,10 +1,10 @@
 import { faker } from "@faker-js/faker";
 import { Address, Patient as FhirPatient } from "@medplum/fhirtypes";
-import { USState } from "@metriport/shared";
 import { PatientCreate, PatientDTO } from "@metriport/api-sdk";
 import { Patient } from "@metriport/core/domain/patient";
-import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
 import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";
+import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
+import { USState } from "@metriport/shared";
 
 export const createPatient: PatientCreate = {
   firstName: "Junhdjjdkksuyujebeb",
@@ -24,10 +24,28 @@ export const createPatient: PatientCreate = {
   },
 };
 
-export const validateLocalPatient = (
+export const createSecondaryPatient: PatientCreate = {
+  firstName: "Somename",
+  lastName: "Secondary",
+  dob: "1970-01-01",
+  genderAtBirth: "M",
+  contact: {
+    phone: faker.phone.number("+1 ###-###-####"),
+    email: faker.internet.email(),
+  },
+  address: {
+    addressLine1: "999 Shortrib Ave",
+    city: "Flanksteak",
+    state: USState.TX,
+    zip: "45485",
+    country: "USA",
+  },
+};
+
+export function validateLocalPatient(
   patient: PatientDTO | Patient,
   patientToCompare?: PatientCreate | PatientDTO
-) => {
+) {
   const pat = "data" in patient ? { ...patient, ...patient.data } : patient;
   expect(pat.id).toBeTruthy();
 
@@ -44,12 +62,12 @@ export const validateLocalPatient = (
     expect(pat.dob).toBeTruthy();
     expect(pat.genderAtBirth).toBeTruthy();
   }
-};
+}
 
-export const validateFhirPatient = (
+export function validateFhirPatient(
   patient: FhirPatient,
   patientToCompare?: PatientCreate | PatientDTO
-) => {
+) {
   expect(patient.resourceType).toBeTruthy();
   expect(patient.resourceType).toEqual("Patient");
   expect(patient.id).toBeTruthy();
@@ -66,7 +84,7 @@ export const validateFhirPatient = (
     expect(patient.birthDate).toBeTruthy();
     expect(patient.gender).toBeTruthy();
   }
-};
+}
 
 export function patientDtoToFhir(dto: PatientDTO): PatientWithId {
   const address = Array.isArray(dto.address) ? dto.address : [dto.address];

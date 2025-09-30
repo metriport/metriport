@@ -2,6 +2,8 @@ import {
   Cohort,
   cohortCreateSchema,
   CohortDTO,
+  cohortPatientListQuerySchema,
+  cohortPatientMaxPageSize,
   cohortUpdateSchema,
   dtoFromCohort,
 } from "@metriport/shared/domain/cohort";
@@ -19,13 +21,19 @@ import {
   addAllPatientsToCohort,
   addPatientsToCohort,
 } from "../../command/medical/cohort/patient-cohort/add-patients-to-cohort";
+import {
+  getPatientsInCohort,
+  getPatientsInCohortCount,
+} from "../../command/medical/cohort/patient-cohort/get-patients-in-cohort";
 import { removePatientsFromCohort } from "../../command/medical/cohort/patient-cohort/remove-patients-from-cohort";
 import { updateCohort } from "../../command/medical/cohort/update-cohort";
 import { getETag } from "../../shared/http";
 import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
+import { paginatedV2 } from "../pagination-v2";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail, getFromQuery } from "../util";
+import { dtoFromModel } from "./dtos/patientDTO";
 import { allOrSubsetPatientIdsSchema, patientIdsSchema } from "./schemas/shared";
 
 const router = Router();
@@ -156,6 +164,60 @@ router.get(
     const cohortDetails = await getCohortWithDetailsOrFail({ id, cxId });
 
     return res.status(status.OK).json(applyCohortDtoToPayload(cohortDetails));
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /medical/v1/cohort/:id/patient
+ *
+ * Returns patients assigned to a cohort with pagination support.
+ *
+ * @param req.param.id The ID of the cohort to get patients from.
+ * @param req.query.fromItem Optional pagination parameter to start from a specific item.
+ * @param req.query.toItem Optional pagination parameter to end at a specific item.
+ * @param req.query.count Optional number of items per page (max 100).
+ * @param req.query.sort Optional sort parameter (e.g., "id=asc,createdAt=desc").
+ * @returns A paginated list of patients in the cohort.
+ */
+router.get(
+  "/:id/patient",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const cohortId = getFromParamsOrFail("id", req);
+
+    // Validate query parameters for pagination
+    cohortPatientListQuerySchema.parse(req.query);
+
+    const result = await paginatedV2({
+      request: req,
+      additionalQueryParams: undefined,
+      getItems: async pagination => {
+        return await getPatientsInCohort({
+          cohortId,
+          cxId,
+          pagination,
+        });
+      },
+      getTotalCount: async () => {
+        return await getPatientsInCohortCount({
+          cohortId,
+          cxId,
+        });
+      },
+      allowedSortColumns: {
+        id: "patient",
+        createdAt: "patient",
+        updatedAt: "patient",
+      },
+      maxItemsPerPage: cohortPatientMaxPageSize,
+    });
+
+    return res.status(status.OK).json({
+      meta: result.meta,
+      patients: result.items.map(dtoFromModel),
+    });
   })
 );
 

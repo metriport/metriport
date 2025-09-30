@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { BaseDomain } from "./base-domain";
+import { createQueryMetaSchemaV2 } from "./pagination-v2";
 
 export const COHORT_COLORS = [
   "red",
@@ -91,3 +92,9 @@ export function dtoFromCohort(cohort: Cohort & { eTag: string }): CohortDTO {
     settings: cohort.settings,
   };
 }
+
+// ### Query Schemas ###
+export const cohortPatientMaxPageSize = 100;
+
+export const cohortPatientListQuerySchema = createQueryMetaSchemaV2(cohortPatientMaxPageSize);
+export type CohortPatientListQuery = z.infer<typeof cohortPatientListQuerySchema>;
