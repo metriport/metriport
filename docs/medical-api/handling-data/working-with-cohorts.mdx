@@ -57,7 +57,7 @@ Patients can be added to cohorts on creation, or added to and removed from diffe
 During creation:
 
 - In [Bulk Patient Create](/medical-api/api-reference/patient/bulk-create-patient) there are `cohort1` and `cohort2` column headers for specifying the starting cohorts for a patient. See [here](/medical-api/api-reference/patient/bulk-create-patient#param-cohort1).
-- In [Create Patient](/medical-api/api-reference/patient/create-patient) there is a `cohorts` array parameter to set any number of cohorts on a patient. See [here](/medical-api/api-reference/patient/bulk-create-patient#param-cohort1).
+- In [Create Patient](/medical-api/api-reference/patient/create-patient) there is a `cohorts` array parameter to set any number of cohorts on a patient. See [here](/medical-api/api-reference/patient/create-patient#param-cohorts).
 
 As needed:
 
@@ -68,7 +68,7 @@ As needed:
 
 Metriport allows you to monitor patients and receive notifications about them throughout their care.
 
-To do this, you create a cohort and specify the settings directly on the cohort. Then add patients that need to be monitored on the cohort, and those monitoring settings will be applied to the patient..
+To do this, you create a cohort and specify the settings directly on the cohort. Then add patients that need to be monitored on the cohort, and they will be opted-in to the monitoring settings of the cohort.
 
 ```typescript
 // 1. Create a cohort
@@ -99,7 +99,7 @@ const patientsInCohort = await metriportApi.addPatientsToCohort({
   easiest way + recommended way of enabling monitoring.
 </Tip>
 
-Alternatively, just create your patients as usual (via API call or bulk patient create) but pass in cohorts.
+Alternatively, just create your patients as usual (via API call or bulk patient create) and specify the desired cohorts.
 
 ```typescript
 // Create a patient and assign to existing cohorts
@@ -126,6 +126,22 @@ const patient = await metriportApi.createPatient(
 // The patient is now automatically subscribed to all monitoring settings
 // from both the "High Risk" and "My Custom Cohort" cohorts
 ```
+
+### Available monitoring settings
+
+We're actively building out additional monitoring capabilities. Today, these are the valid fields and values for cohort settings.
+```json
+{
+  "adtMonitoring": true,
+  "labMonitoring": true,
+  "medicationMonitoring": true,
+  "clinicalDocsMonitoring": true
+}
+```
+
+<Info>
+  ADT monitoring relies on the registered address of your patient - patients with `adtMonitoring: true` will receive ADTs from the state of their registered address, and _only_ that state.
+</Info>
 
 ### Cohorts for convenience
 
