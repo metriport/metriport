@@ -1,0 +1,35 @@
+version: 2
+models:
+  - name: input_layer__location
+    description: |
+      Mapping check to make sure all columns are mapped appropriately into the input layer.
+      The location table contains information about healthcare facilities and locations.
+    config:
+      schema: input_layer
+      tags: input_layer
+      materialized: view
+    columns:
+      - name: location_id
+        description: '{{ doc("location_id") }}'
+      - name: npi
+        description: '{{ doc("npi") }}'
+      - name: name
+        description: '{{ doc("name") }}'
+      - name: facility_type
+        description: '{{ doc("facility_type") }}'
+      - name: parent_organization
+        description: '{{ doc("parent_organization") }}'
+      - name: address
+        description: '{{ doc("address") }}'
+      - name: city
+        description: '{{ doc("city") }}'
+      - name: state
+        description: '{{ doc("state") }}'
+      - name: zip_code
+        description: '{{ doc("zip_code") }}'
+      - name: latitude
+        description: '{{ doc("latitude") }}'
+      - name: longitude
+        description: '{{ doc("longitude") }}'
+      - name: data_source
+        description: '{{ doc("data_source") }}'

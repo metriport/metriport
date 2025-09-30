@@ -1,0 +1,862 @@
+version: 2
+
+models:
+## Final
+  - name: core__condition
+    description: >
+      The core condition table contains information related to medical  conditions
+      patients have, including problems, admitting diagnosis codes,  and billable diagnosis
+      codes.
+    config:
+      schema: core
+      alias: condition
+      tags: core
+      materialized: table
+    columns:
+    - name: condition_id
+      description: '{{ doc("condition_id") }}'
+      tests:
+        - unique:
+            config:
+              severity: error
+    - name: person_id
+      description: '{{ doc("person_id") }}'
+    - name: member_id
+      description: '{{ doc("member_id") }}'
+    - name: patient_id
+      description: '{{ doc("patient_id") }}'
+    - name: encounter_id
+      description: '{{ doc("encounter_id") }}'
+    - name: claim_id
+      description: '{{ doc("claim_id") }}'
+    - name: recorded_date
+      description: '{{ doc("recorded_date") }}'
+    - name: onset_date
+      description: '{{ doc("onset_date") }}'
+    - name: resolved_date
+      description: '{{ doc("resolved_date") }}'
+    - name: status
+      description: '{{ doc("status") }}'
+    - name: condition_type
+      description: '{{ doc("condition_type") }}'
+    - name: source_code_type
+      description: '{{ doc("source_code_type") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/code-type
+    - name: source_code
+      description: '{{ doc("source_code") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/icd-10-cm
+        terminology_note: '**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters.'
+    - name: source_description
+      description: '{{ doc("source_description") }}'
+    - name: normalized_code_type
+      description: '{{ doc("normalized_code_type") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/code-type
+    - name: normalized_code
+      description: '{{ doc("normalized_code") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/icd-10-cm
+        terminology_note: '**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters.'
+    - name: normalized_description
+      description: '{{ doc("normalized_description") }}'
+    - name: mapping_method
+      description: '{{ doc("mapping_method") }}'
+    - name: condition_rank
+      description: '{{ doc("condition_rank") }}'
+      data_type: integer
+    - name: present_on_admit_code
+      description: '{{ doc("present_on_admit_code") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/present-on-admission
+    - name: present_on_admit_description
+      description: '{{ doc("present_on_admit_description") }}'
+    - name: data_source
+      description: '{{ doc("data_source") }}'
+    - name: tuva_last_run
+      description: '{{ doc("tuva_last_run") }}'
+
+  - name: core__encounter
+    description: >
+      The encounter table contains information about patients visits (i.e.  encounters).  This
+      includes acute inpatient, emergency department, office  visits, SNF stays, etc.
+    config:
+      schema: core
+      alias: encounter
+      tags:
+        - core
+        - encounters
+      materialized: table
+    columns:
+    - name: encounter_id
+      description: '{{ doc("encounter_id") }}'
+      tests:
+        - unique:
+            config:
+              severity: error
+    - name: person_id
+      description: '{{ doc("person_id") }}'
+    - name: patient_id
+      description: '{{ doc("patient_id") }}'
+    - name: encounter_type
+      description: '{{ doc("encounter_type") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/encounter-type
+    - name: encounter_group
+      description: '{{ doc("encounter_group") }}'
+    - name: encounter_start_date
+      description: '{{ doc("encounter_start_date") }}'
+    - name: encounter_end_date
+      description: '{{ doc("encounter_end_date") }}'
+    - name: length_of_stay
+      description: '{{ doc("length_of_stay") }}'
+    - name: admit_source_code
+      description: '{{ doc("admit_source_code") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/admit-source
+    - name: admit_source_description
+      description: '{{ doc("admit_source_description") }}'
+    - name: admit_type_code
+      description: '{{ doc("admit_type_code") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/admit-type
+    - name: admit_type_description
+      description: '{{ doc("admit_type_description") }}'
+    - name: discharge_disposition_code
+      description: '{{ doc("discharge_disposition_code") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/discharge-disposition
+    - name: discharge_disposition_description
+      description: '{{ doc("discharge_disposition_description") }}'
+    - name: attending_provider_id
+      description: '{{ doc("attending_provider_id") }}'
+    - name: attending_provider_name
+      description: '{{ doc("attending_provider_name") }}'
+    - name: facility_id
+      description: '{{ doc("facility_id") }}'
+    - name: facility_name
+      description: '{{ doc("facility_name") }}'
+    - name: facility_type
+      description: '{{ doc("facility_type") }}'
+    - name: observation_flag
+      description: '{{ doc("observation_flag") }}'
+    - name: lab_flag
+      description: '{{ doc("lab_flag") }}'
+    - name: dme_flag
+      description: '{{ doc("dme_flag") }}'
+    - name: ambulance_flag
+      description: '{{ doc("ambulance_flag") }}'
+    - name: pharmacy_flag
+      description: '{{ doc("pharmacy_flag") }}'
+    - name: ed_flag
+      description: '{{ doc("ed_flag") }}'
+    - name: delivery_flag
+      description: '{{ doc("delivery_flag") }}'
+    - name: delivery_type
+      description: '{{ doc("delivery_type") }}'
+    - name: newborn_flag
+      description: '{{ doc("newborn_flag") }}'
+    - name: nicu_flag
+      description: '{{ doc("nicu_flag") }}'
+    - name: primary_diagnosis_code_type
+      description: '{{ doc("primary_diagnosis_code_type") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/code-type
+    - name: primary_diagnosis_code
+      description: '{{ doc("primary_diagnosis_code") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/icd-10-cm
+        terminology_note: '**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters.'
+    - name: primary_diagnosis_description
+      description: '{{ doc("primary_diagnosis_description") }}'
+    - name: drg_code_type
+      description: '{{ doc("drg_code_type") }}'
+    - name: drg_code
+      description: '{{ doc("drg_code") }}'
+    - name: drg_description
+      description: '{{ doc("drg_description") }}'
+    - name: paid_amount
+      description: '{{ doc("paid_amount") }}'
+    - name: allowed_amount
+      description: '{{ doc("allowed_amount") }}'
+    - name: charge_amount
+      description: '{{ doc("charge_amount") }}'
+    - name: data_source
+      description: '{{ doc("data_source") }}'
+    - name: claim_count
+      description: '{{ doc("claim_count") }}'
+    - name: inst_claim_count
+      description: '{{ doc("inst_claim_count") }}'
+    - name: prof_claim_count
+      description: '{{ doc("prof_claim_count") }}'
+    - name: source_model
+      description: '{{ doc("source_model") }}'
+    - name: encounter_source_type
+      description: '{{ doc("encounter_source_type") }}'
+    - name: attending_provider_id
+      description: '{{ doc("attending_provider_id") }}'
+    - name: attending_provider_name
+      description: '{{ doc("attending_provider_name") }}'
+    - name: facility_id
+      description: '{{ doc("facility_id") }}'
+    - name: facility_name
+      description: '{{ doc("facility_name") }}'
+    - name: facility_type
+      description: '{{ doc("facility_type") }}'
+    - name: tuva_last_run
+      description: '{{ doc("tuva_last_run") }}'
+
+  - name: core__immunization
+    description: >
+      The immunization table contains information on immunizations administered to patients,
+      including the vaccine code, description, and administration date.
+    config:
+      schema: core
+      alias: immunization
+      tags: core
+      materialized: table
+    columns:
+    - name: immunization_id
+      description: '{{ doc("immunization_id") }}'
+      tests:
+        - unique:
+            config:
+              severity: error
+    - name: person_id
+      description: '{{ doc("person_id") }}'
+    - name: patient_id
+      description: '{{ doc("patient_id") }}'
+    - name: encounter_id
+      description: '{{ doc("encounter_id") }}'
+    - name: source_code_type
+      description: '{{ doc("source_code_type") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/code-type
+    - name: source_code
+      description: '{{ doc("source_code") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/cvx
+        terminology_note: '**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters.'
+    - name: source_description
+      description: '{{ doc("source_description") }}'
+    - name: normalized_code_type
+      description: '{{ doc("normalized_code_type") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/code-type
+    - name: normalized_code
+      description: '{{ doc("normalized_code") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/cvx
+        terminology_note: '**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters.'
+    - name: normalized_description
+      description: '{{ doc("normalized_description") }}'
+    - name: mapping_method
+      description: '{{ doc("mapping_method") }}'
+    - name: status
+      description: '{{ doc("status") }}'
+    - name: status_reason
+      description: '{{ doc("status_reason") }}'
+    - name: occurrence_date
+      description: '{{ doc("occurrence_date") }}'
+    - name: source_dose
+      description: '{{ doc("source_dose") }}'
+    - name: normalized_dose
+      description: '{{ doc("normalized_dose") }}'
+    - name: lot_number
+      description: '{{ doc("lot_number") }}'
+    - name: body_site
+      description: '{{ doc("body_site") }}'
+    - name: route
+      description: '{{ doc("route") }}'
+    - name: location_id
+      description: '{{ doc("location_id") }}'
+    - name: practitioner_id
+      description: '{{ doc("practitioner_id") }}'
+    - name: data_source
+      description: '{{ doc("data_source") }}'
+    - name: tuva_last_run
+      description: '{{ doc("tuva_last_run") }}'
+
+  - name: core__lab_result
+    description: >
+      The lab result table contains information about lab test results,
+      including the LOINC code and description, units, reference range, 
+      and result.
+    config:
+      schema: core
+      alias: lab_result
+      tags: core
+      materialized: table
+    columns:
+    - name: lab_result_id
+      description: '{{ doc("lab_result_id") }}'
+      tests:
+        - unique:
+            config:
+              severity: error
+    - name: person_id
+      description: '{{ doc("person_id") }}'
+    - name: patient_id
+      description: '{{ doc("patient_id") }}'
+    - name: encounter_id
+      description: '{{ doc("encounter_id") }}'
+    - name: accession_number
+      description: '{{ doc("accession_number") }}'
+    - name: source_order_type
+      description: '{{ doc("source_code_type") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/code-type
+    - name: source_order_code
+      description: '{{ doc("source_code") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/loinc
+        terminology_note: '**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters.'
+    - name: source_order_description
+      description: '{{ doc("source_description") }}'
+    - name: source_component_type
+      description: '{{ doc("source_component_type") }}'
+    - name: source_component_code
+      description: '{{ doc("source_component_code") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/loinc
+        terminology_note: '**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters.'
+    - name: source_component_description
+      description: '{{ doc("source_component_description") }}'
+    - name: normalized_order_type
+      description: '{{ doc("normalized_code_type") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/code-type
+    - name: normalized_order_code
+      description: '{{ doc("normalized_code") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/loinc
+        terminology_note: '**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters.'
+    - name: normalized_order_description
+      description: '{{ doc("normalized_description") }}'
+    - name: mapping_method
+      description: '{{ doc("mapping_method") }}'
+    - name: normalized_component_type
+      description: '{{ doc("normalized_component_type") }}'
+    - name: normalized_component_code
+      description: '{{ doc("normalized_component_code") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/loinc
+        terminology_note: '**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters.'
+    - name: normalized_component_description
+      description: '{{ doc("normalized_component_description") }}'
+    - name: status
+      description: '{{ doc("status") }}'
+    - name: result
+      description: '{{ doc("result") }}'
+    - name: result_datetime
+      description: '{{ doc("result_datetime") }}'
+    - name: collection_datetime
+      description: '{{ doc("collection_datetime") }}'
+    - name: source_units
+      description: '{{ doc("source_units") }}'
+    - name: normalized_units
+      description: '{{ doc("normalized_units") }}'
+    - name: source_reference_range_low
+      description: '{{ doc("source_reference_range_low") }}'
+    - name: source_reference_range_high
+      description: '{{ doc("source_reference_range_high") }}'
+    - name: normalized_reference_range_low
+      description: '{{ doc("normalized_reference_range_low") }}'
+    - name: normalized_reference_range_high
+      description: '{{ doc("normalized_reference_range_high") }}'
+    - name: source_abnormal_flag
+      description: '{{ doc("source_abnormal_flag") }}'
+    - name: normalized_abnormal_flag
+      description: '{{ doc("normalized_abnormal_flag") }}'
+    - name: specimen
+      description: '{{ doc("specimen") }}'
+    - name: ordering_practitioner_id
+      description: '{{ doc("ordering_practitioner_id") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/provider
+        terminology_note: '**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters.'
+    - name: data_source
+      description: '{{ doc("data_source") }}'
+    - name: tuva_last_run
+      description: '{{ doc("tuva_last_run") }}'
+
+  - name: core__location
+    description: >
+      The location table contains information on practice and facility locations  where
+      patients receive medical care.
+    config:
+      schema: core
+      alias: location
+      tags: core
+      materialized: table
+    columns:
+    - name: location_id
+      description: '{{ doc("location_id") }}'
+      tests:
+        - unique:
+            config:
+              severity: error
+    - name: npi
+      description: '{{ doc("npi") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/provider
+        terminology_note: '**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters.'
+    - name: name
+      description: '{{ doc("name") }}'
+    - name: facility_type
+      description: '{{ doc("facility_type") }}'
+    - name: parent_organization
+      description: '{{ doc("parent_organization") }}'
+    - name: address
+      description: '{{ doc("address") }}'
+    - name: city
+      description: '{{ doc("city") }}'
+    - name: state
+      description: '{{ doc("state") }}'
+    - name: zip_code
+      description: '{{ doc("zip_code") }}'
+    - name: latitude
+      description: '{{ doc("latitude") }}'
+    - name: longitude
+      description: '{{ doc("longitude") }}'
+    - name: data_source
+      description: '{{ doc("data_source") }}'
+    - name: tuva_last_run
+      description: '{{ doc("tuva_last_run") }}'
+
+  - name: core__medication
+    description: >
+      The medication table contains information on medications ordered and/or
+      administered during a patient encounter.
+    config:
+      schema: core
+      alias: medication
+      tags: core
+      materialized: table
+    columns:
+    - name: medication_id
+      description: '{{ doc("medication_id") }}'
+      tests:
+        - unique:
+            config:
+              severity: error
+    - name: person_id
+      description: '{{ doc("person_id") }}'
+    - name: patient_id
+      description: '{{ doc("patient_id") }}'
+    - name: encounter_id
+      description: '{{ doc("encounter_id") }}'
+    - name: dispensing_date
+      description: '{{ doc("dispensing_date") }}'
+    - name: prescribing_date
+      description: '{{ doc("prescribing_date") }}'
+    - name: source_code_type
+      description: '{{ doc("source_code_type") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/code-type
+    - name: source_code
+      description: '{{ doc("source_code") }}'
+      meta:
+        terminology: https://www.nlm.nih.gov/research/umls/rxnorm/index.html
+    - name: source_description
+      description: '{{ doc("source_description") }}'
+    - name: ndc_code
+      description: '{{ doc("ndc_code") }}'
+      meta:
+        terminology: https://www.fda.gov/drugs/drug-approvals-and-databases/national-drug-code-directory
+    - name: ndc_description
+      description: '{{ doc("ndc_description") }}'
+    - name: ndc_mapping_method
+      description: '{{ doc("ndc_mapping_method") }}'
+    - name: rxnorm_code
+      description: '{{ doc("rxnorm_code") }}'
+      meta:
+        terminology: https://www.nlm.nih.gov/research/umls/rxnorm/index.html
+    - name: rxnorm_description
+      description: '{{ doc("rxnorm_description") }}'
+    - name: rxnorm_mapping_method
+      description: '{{ doc("rxnorm_mapping_method") }}'
+    - name: atc_code
+      description: '{{ doc("atc_code") }}'
+      meta:
+        terminology: https://www.who.int/tools/atc-ddd-toolkit/atc-classification
+    - name: atc_description
+      description: '{{ doc("atc_description") }}'
+    - name: atc_mapping_method
+      description: '{{ doc("atc_mapping_method") }}'
+    - name: route
+      description: '{{ doc("route") }}'
+    - name: strength
+      description: '{{ doc("strength") }}'
+    - name: quantity
+      description: '{{ doc("quantity") }}'
+    - name: quantity_unit
+      description: '{{ doc("quantity_unit") }}'
+    - name: days_supply
+      description: '{{ doc("days_supply") }}'
+    - name: practitioner_id
+      description: '{{ doc("practitioner_id") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/provider
+        terminology_note: '**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters.'
+    - name: data_source
+      description: '{{ doc("data_source") }}'
+    - name: tuva_last_run
+      description: '{{ doc("tuva_last_run") }}'
+
+  - name: core__observation
+    description: >
+      The observation table contains information on measurements other than  lab
+      tests e.g. blood pressure, height, and weight.
+    config:
+      schema: core
+      alias: observation
+      tags: core
+      materialized: table
+    columns:
+    - name: observation_id
+      description: '{{ doc("observation_id") }}'
+      tests:
+        - unique:
+            config:
+              severity: error
+    - name: person_id
+      description: '{{ doc("person_id") }}'
+    - name: patient_id
+      description: '{{ doc("patient_id") }}'
+    - name: encounter_id
+      description: '{{ doc("encounter_id") }}'
+    - name: panel_id
+      description: '{{ doc("panel_id") }}'
+    - name: observation_date
+      description: '{{ doc("observation_date") }}'
+    - name: observation_type
+      description: '{{ doc("observation_type") }}'
+    - name: source_code_type
+      description: '{{ doc("source_code_type") }}'
+      meta:
+        terminology: https://thetuvaproject.com/terminology/code-type
+    - name: source_code
+      description: '{{ doc("source_code") }}'
+    - name: source_description
+      description: '{{ doc("source_description") }}'
+    - name: normalized_code_type
+      description: '{{ doc("normalized_code_type") }}'
+    - name: normalized_code
+      description: '{{ doc("normalized_code") }}'
+    - name: normalized_description
+      description: '{{ doc("normalized_description") }}'
+    - name: mapping_method
+      description: '{{ doc("mapping_method") }}'
+    - name: result
+      description: '{{ doc("result") }}'
+    - name: source_units
+      description: '{{ doc("source_units") }}'
+    - name: normalized_units
+      description: '{{ doc("normalized_units") }}'
+    - name: source_reference_range_low
+      description: '{{ doc("source_reference_range_low") }}'
+    - name: source_reference_range_high
+      description: '{{ doc("source_reference_range_high") }}'
+    - name: normalized_reference_range_low
+      description: '{{ doc("normalized_reference_range_low") }}'
+    - name: normalized_reference_range_high
+      description: '{{ doc("normalized_reference_range_high") }}'
+    - name: data_source
+      description: '{{ doc("data_source") }}'
+    - name: tuva_last_run
+      description: '{{ doc("tuva_last_run") }}'
+
+  - name: core__patient
+    description: >
+      The patient table contains demographic and geographic information
+      on patients.
+    config:
+      schema: core
+      alias: patient
+      tags: core
+      materialized: table
+    columns:
+      - name: patient_id
+        description: '{{ doc("patient_id") }}'
+        tests:
+          - unique:
+              config:
+                severity: error
+      - name: person_id
+        description: '{{ doc("person_id") }}'
+      - name: sex
+        description: '{{ doc("sex") }}'
+        meta:
+          terminology: https://thetuvaproject.com/terminology/gender
+      - name: race
+        description: '{{ doc("race") }}'
+        meta:
+          terminology: https://thetuvaproject.com/terminology/race
+      - name: birth_date
+        description: '{{ doc("birth_date") }}'
+      - name: death_date
+        description: '{{ doc("death_date") }}'
+      - name: death_flag
+        description: '{{ doc("death_flag") }}'
+        data_type: integer
+      - name: name_suffix
+        description: '{{ doc("name_suffix") }}'
+      - name: first_name
+        description: '{{ doc("first_name") }}'
+      - name: middle_name
+        description: '{{ doc("middle_name") }}'
+      - name: last_name
+        description: '{{ doc("last_name") }}'
+      - name: social_security_number
+        description: '{{ doc("social_security_number") }}'
+      - name: address
+        description: '{{ doc("address") }}'
+      - name: city
+        description: '{{ doc("city") }}'
+      - name: state
+        description: '{{ doc("state") }}'
+      - name: zip_code
+        description: '{{ doc("zip_code") }}'
+      - name: county
+        description: '{{ doc("county") }}'
+      - name: latitude
+        description: '{{ doc("latitude") }}'
+      - name: longitude
+        description: '{{ doc("longitude") }}'
+      - name: phone
+        description: '{{ doc("phone") }}'
+      - name: email
+        description: '{{ doc("email") }}'
+      - name: ethnicity
+        description: '{{ doc("ethnicity") }}'
+        meta:
+          terminology: https://thetuvaproject.com/terminology/ethnicity
+      - name: age
+        description: '{{ doc("age") }}'
+      - name: age_group
+        description: '{{ doc("age_group") }}'
+      - name: data_source
+        description: '{{ doc("data_source") }}'
+      - name: tuva_last_run
+        description: '{{ doc("tuva_last_run") }}'
+
+  - name: core__practitioner
+    description: >
+      The practitioner table contains information on the providers in the  dataset
+      e.g. physicians, physicians assistants, etc.
+    config:
+      schema: core
+      alias: practitioner
+      tags: core
+      materialized: table
+    columns:
+      - name: practitioner_id
+        description: '{{ doc("practitioner_id") }}'
+        tests:
+          - unique:
+              config:
+                severity: warn
+      - name: npi
+        description: '{{ doc("npi") }}'
+        meta:
+          terminology: https://thetuvaproject.com/terminology/provider
+          terminology_note: '**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters.'
+      - name: provider_first_name
+        description: '{{ doc("provider_first_name") }}'
+      - name: provider_last_name
+        description: '{{ doc("provider_last_name") }}'
+      - name: practice_affiliation
+        description: '{{ doc("practice_affiliation") }}'
+      - name: specialty
+        description: '{{ doc("specialty") }}'
+      - name: sub_specialty
+        description: '{{ doc("sub_specialty") }}'
+      - name: data_source
+        description: '{{ doc("data_source") }}'
+      - name: tuva_last_run
+        description: '{{ doc("tuva_last_run") }}'
+
+  - name: core__procedure
+    description: >
+      The procedure table contains information on procedures that were performed  on
+      patients in the dataset.
+    config:
+      schema: core
+      alias: procedure
+      tags: core
+      materialized: table
+    columns:
+      - name: procedure_id
+        description: '{{ doc("procedure_id") }}'
+        tests:
+          - unique:
+              config:
+                severity: error
+      - name: encounter_id
+        description: '{{ doc("encounter_id") }}'
+      - name: claim_id
+        description: '{{ doc("claim_id") }}'
+      - name: person_id
+        description: '{{ doc("person_id") }}'
+      - name: member_id
+        description: '{{ doc("member_id") }}'
+      - name: patient_id
+        description: '{{ doc("patient_id") }}'
+      - name: procedure_date
+        description: '{{ doc("procedure_date") }}'
+      - name: source_code_type
+        description: '{{ doc("source_code_type") }}'
+        meta:
+          terminology: https://thetuvaproject.com/terminology/code-type
+      - name: source_code
+        description: '{{ doc("source_code") }}'
+        meta:
+          terminology: https://thetuvaproject.com/terminology/icd-10-pcs
+          terminology_note: '**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters.'
+      - name: source_description
+        description: '{{ doc("source_description") }}'
+      - name: normalized_code_type
+        description: '{{ doc("normalized_code_type") }}'
+        meta:
+          terminology: https://thetuvaproject.com/terminology/code-type
+      - name: normalized_code
+        description: '{{ doc("normalized_code") }}'
+        meta:
+          terminology: https://thetuvaproject.com/terminology/icd-10-pcs
+          terminology_note: '**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters.'
+      - name: normalized_description
+        description: '{{ doc("normalized_description") }}'
+        meta:
+          terminology: https://thetuvaproject.com/terminology/hcpcs-level-2
+      - name: mapping_method
+        description: '{{ doc("mapping_method") }}'
+      - name: modifier_1
+        description: '{{ doc("modifier_1") }}'
+        meta:
+          terminology: https://thetuvaproject.com/terminology/hcpcs-level-2
+      - name: modifier_2
+        description: '{{ doc("modifier_2") }}'
+        meta:
+          terminology: https://thetuvaproject.com/terminology/hcpcs-level-2
+      - name: modifier_3
+        description: '{{ doc("modifier_3") }}'
+        meta:
+          terminology: https://thetuvaproject.com/terminology/hcpcs-level-2
+      - name: modifier_4
+        description: '{{ doc("modifier_4") }}'
+        meta:
+          terminology: https://thetuvaproject.com/terminology/hcpcs-level-2
+      - name: modifier_5
+        description: '{{ doc("modifier_5") }}'
+        meta:
+          terminology: https://thetuvaproject.com/terminology/hcpcs-level-2
+      - name: practitioner_id
+        description: '{{ doc("practitioner_id") }}'
+        meta:
+          terminology: https://thetuvaproject.com/terminology/provider
+          terminology_note: '**Note: this terminology set is too large to be loaded as a seed and is instead loaded from public cloud storage for supported adapters.'
+      - name: data_source
+        description: '{{ doc("data_source") }}'
+      - name: tuva_last_run
+        description: '{{ doc("tuva_last_run") }}'
+
+## Staging - Clinical
+  - name: core__stg_clinical_condition
+    description: Staging core clinical conditions
+    config:
+      schema: core
+      alias: _stg_clinical_condition
+      tags:
+        - core
+        - core_stage_clinical
+      materialized: view
+
+  - name: core__stg_clinical_encounter
+    description: Staging core clinical encounters
+    config:
+      schema: core
+      alias: _stg_clinical_encounter
+      tags:
+        - core
+        - core_stage_clinical
+      materialized: view
+
+  - name: core__stg_clinical_immunization
+    description: Staging core clinical immunization
+    config:
+      schema: core
+      alias: _stg_clinical_immunization
+      tags: core_stage_clinical
+      materialized: view
+
+  - name: core__stg_clinical_lab_result
+    description: Staging core clinical lab results
+    config:
+      schema: core
+      alias: _stg_clinical_lab_result
+      tags:
+        - core
+        - core_stage_clinical
+      materialized: view
+
+  - name: core__stg_clinical_location
+    description: Staging core clinical locations
+    config:
+      schema: core
+      alias: _stg_clinical_location
+      tags:
+        - core
+        - core_stage_clinical
+      materialized: view
+
+  - name: core__stg_clinical_medication
+    description: Staging core clinical medications
+    config:
+      schema: core
+      alias: _stg_clinical_medication
+      tags:
+        - core
+        - core_stage_clinical
+      materialized: view
+
+  - name: core__stg_clinical_observation
+    description: Staging core clinical observations
+    config:
+      schema: core
+      alias: _stg_clinical_observation
+      tags:
+        - core
+        - core_stage_clinical
+      materialized: view
+
+  - name: core__stg_clinical_patient
+    description: Staging core clinical patients
+    config:
+      schema: core
+      alias: _stg_clinical_patient
+      tags:
+        - core
+        - core_stage_clinical
+      materialized: view
+
+  - name: core__stg_clinical_practitioner
+    description: Staging core clinical providers
+    config:
+      schema: core
+      alias: _stg_clinical_practitioner
+      tags:
+        - core
+        - core_stage_clinical
+      materialized: view
+
+  - name: core__stg_clinical_procedure
+    description: Staging core clinical procedures
+    config:
+      schema: core
+      alias: _stg_clinical_procedure
+      tags:
+        - core
+        - core_stage_clinical
+      materialized: view

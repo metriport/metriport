@@ -1,0 +1,59 @@
+version: 2
+models:
+  - name: input_layer__medication
+    description: |
+      Mapping check to make sure all columns are mapped appropriately into the input layer.
+      The medication table contains information about medications prescribed and dispensed to patients.
+    config:
+      schema: input_layer
+      tags: input_layer
+      materialized: view
+    columns:
+      - name: medication_id
+        description: '{{ doc("medication_id") }}'
+      - name: person_id
+        description: '{{ doc("person_id") }}'
+      - name: patient_id
+        description: '{{ doc("patient_id") }}'
+      - name: encounter_id
+        description: '{{ doc("encounter_id") }}'
+      - name: dispensing_date
+        description: '{{ doc("dispensing_date") }}'
+      - name: prescribing_date
+        description: '{{ doc("prescribing_date") }}'
+      - name: source_code_type
+        description: '{{ doc("source_code_type") }}'
+      - name: source_code
+        description: '{{ doc("source_code") }}'
+      - name: source_description
+        description: '{{ doc("source_description") }}'
+      - name: ndc_code
+        description: '{{ doc("ndc_code") }}'
+      - name: ndc_description
+        description: '{{ doc("ndc_description") }}'
+      - name: rxnorm_code
+        description: '{{ doc("rxnorm_code") }}'
+      - name: rxnorm_description
+        description: '{{ doc("rxnorm_description") }}'
+      - name: atc_code
+        description: '{{ doc("atc_code") }}'
+      - name: atc_description
+        description: '{{ doc("atc_description") }}'
+      - name: route
+        description: '{{ doc("route") }}'
+      - name: strength
+        description: '{{ doc("strength") }}'
+      - name: quantity
+        description: '{{ doc("quantity") }}'
+      - name: quantity_unit
+        description: '{{ doc("quantity_unit") }}'
+      - name: days_supply
+        description: '{{ doc("days_supply") }}'
+      - name: practitioner_id
+        description: '{{ doc("practitioner_id") }}'
+      - name: data_source
+        description: '{{ doc("data_source") }}'
+      - name: file_name
+        description: '{{ doc("file_name") }}'
+      - name: ingest_datetime
+        description: '{{ doc("ingest_datetime") }}'
