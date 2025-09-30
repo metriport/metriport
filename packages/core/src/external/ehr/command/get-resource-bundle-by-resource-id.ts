@@ -47,6 +47,7 @@ const ehrGetResourceBundleByResourceIdMap: GetResourceBundleByResourceIdMethodsM
   [EhrSources.healthie]: getHealthieResourceBundleByResourceId,
   [EhrSources.eclinicalworks]: undefined,
   [EhrSources.salesforce]: undefined,
+  [EhrSources.epic]: undefined,
 };
 
 function getEhrGetResourceBundleByResourceIdHandler(ehr: EhrSource): GetResourceBundleByResourceId {

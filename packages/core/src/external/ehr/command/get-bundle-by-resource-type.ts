@@ -38,6 +38,7 @@ const ehrGetBundleByResourceTypeMap: GetBundleByResourceTypeFnMap = {
   [EhrSources.healthie]: getBundleByResourceTypeHealthie,
   [EhrSources.eclinicalworks]: undefined,
   [EhrSources.salesforce]: undefined,
+  [EhrSources.epic]: undefined,
 };
 
 function getEhrGetBundleByResourceTypeHandler(ehr: EhrSource): GetBundleByResourceTypeFn {

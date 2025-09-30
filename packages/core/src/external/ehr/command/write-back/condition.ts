@@ -35,6 +35,7 @@ const ehrWriteBackConditionMap: WriteBackConditionFnMap = {
   [EhrSources.healthie]: undefined,
   [EhrSources.eclinicalworks]: undefined,
   [EhrSources.salesforce]: undefined,
+  [EhrSources.epic]: undefined,
 };
 
 function getEhrWriteBackConditionHandler(ehr: EhrSource): WriteBackConditionFn {
@@ -56,6 +57,7 @@ export const ehrWriteBackConditionPrimaryCodeMap: Record<EhrSource, CodingSystem
   [EhrSources.healthie]: ICD_10_CODE,
   [EhrSources.eclinicalworks]: undefined,
   [EhrSources.salesforce]: undefined,
+  [EhrSources.epic]: undefined,
 };
 
 export function getEhrWriteBackConditionPrimaryCode(ehr: EhrSource): CodingSystem {
