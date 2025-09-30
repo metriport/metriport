@@ -18,15 +18,7 @@ api: "DELETE /medical/v1/cohort/{id}/patient"
 
 ## Response
 
-<ResponseField name="message" type="string" required>
-  Confirmation message indicating the operation was
-  successful.
-</ResponseField>
-
-<ResponseField name="removedCount" type="number" required>
-  The number of patients that were successfully removed from
-  the cohort.
-</ResponseField>
+<Snippet file="cohort-with-details-response-with-message.mdx" />
 
 <ResponseExample>
     ```javascript Metriport SDK

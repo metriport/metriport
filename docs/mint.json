@@ -104,7 +104,7 @@
             "medical-api/api-reference/cohort/delete-cohort",
             "medical-api/api-reference/cohort/list-cohorts",
             "medical-api/api-reference/cohort/add-patients-to-cohort",
-            "medical-api/api-reference/cohort/remove-patients-to-cohort"
+            "medical-api/api-reference/cohort/remove-patients-from-cohort"
           ]
         },
         {
