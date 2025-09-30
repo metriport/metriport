@@ -1,12 +1,14 @@
 import { isValidUuid } from "@metriport/core/util/uuid-v7";
 import { BadRequestError } from "@metriport/shared";
+import { normalizeCohortName } from "@metriport/core/command/patient-import/csv/convert-patient";
 import { getCohortByNameSafe } from "./get-cohort";
 
 /**
- * Returns the cohort with the specified name.
+ * Takes a list of cohort identifiers (can be names or ids) and returns a list of cohort ids.
+ *
  * @param cxId The ID of the CX.
- * @param name The name of the cohort.
- * @returns The cohort with the specified name.
+ * @param identifiers The list of cohort identifiers (can be names or ids).
+ * @returns The list of cohort ids.
  */
 export async function resolveCohortIdentifiersToUuids({
   cxId,
@@ -21,7 +23,10 @@ export async function resolveCohortIdentifiersToUuids({
         return cohortIdentifier;
       }
 
-      const cohort = await getCohortByNameSafe({ cxId, name: cohortIdentifier });
+      const cohort = await getCohortByNameSafe({
+        cxId,
+        name: normalizeCohortName(cohortIdentifier),
+      });
       if (cohort === undefined) {
         throw new BadRequestError(`Cohort not found with name ${cohortIdentifier}.`);
       }
