@@ -20,10 +20,10 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
   constructor(scope: Construct, id: string, props: Hl7NotificationStackProps) {
     super(scope, id, props);
 
-    const incomingHl7NotificationBucket = s3.Bucket.fromBucketName(
+    const rawIncomingHl7NotificationBucket = s3.Bucket.fromBucketName(
       this,
-      "IncomingHl7NotificationBucket",
-      props.config.hl7Notification.incomingMessageBucketName
+      "RawIncomingHl7NotificationBucket",
+      props.config.hl7Notification.rawIncomingMessageBucketName
     );
 
     const ecrRepo = new Repository(this, "MllpServerRepo", {
@@ -62,7 +62,7 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
       version: props.version,
       vpc,
       ecrRepo,
-      incomingHl7NotificationBucket,
+      rawIncomingHl7NotificationBucket,
       description: "HL7 Notification MLLP Server",
     });
 
