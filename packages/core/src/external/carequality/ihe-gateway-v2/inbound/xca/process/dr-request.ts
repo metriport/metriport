@@ -5,7 +5,11 @@ import { out } from "../../../../../../util/log";
 import { stripUrnPrefix } from "../../../../../../util/urn";
 import { extractText } from "../../../utils";
 import { storeDrRequest } from "../../../monitor/store";
-import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
+import {
+  convertSamlHeaderToAttributes,
+  extractTimestamp,
+  validateDelegatedRequest,
+} from "../../shared";
 import { DocumentRequest, iti39RequestSchema } from "./schema";
 
 function extractDocumentReferences(documentRequest: DocumentRequest[]): DocumentReference[] {
@@ -36,7 +40,6 @@ export async function processInboundDrRequest(
       iti39Request.Envelope.Body.RetrieveDocumentSetRequest.DocumentRequest
     );
     const documentReference = extractDocumentReferences(documentRequests);
-
     const inboundRequest = {
       id: stripUrnPrefix(extractText(iti39Request.Envelope.Header.MessageID)),
       timestamp: extractTimestamp(iti39Request.Envelope.Header),
@@ -48,6 +51,13 @@ export async function processInboundDrRequest(
     };
 
     await storeDrRequest({ request, inboundRequest });
+    if (samlAttributes.principalOid) {
+      log(
+        `Validating delegated request: principal - ${samlAttributes.principalOid}, delegate -${samlAttributes.homeCommunityId}`
+      );
+      await validateDelegatedRequest(samlAttributes.principalOid, samlAttributes.homeCommunityId);
+      log("Successfully validated");
+    }
     return inboundRequest;
   } catch (error) {
     const msg = "Failed to parse ITI-39 request";

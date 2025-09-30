@@ -65,7 +65,7 @@ import {
   getDocPrintableDetails,
 } from "./shared";
 
-const staleLookbackHours = 24;
+const staleLookbackWeeks = 2;
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -161,7 +161,7 @@ export async function queryAndProcessDocuments({
       : undefined;
     const isStale =
       updateStalePatients &&
-      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
+      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackWeeks, "weeks");
 
     if (hasNoCWStatus || isProcessing || forcePatientDiscovery || isStale) {
       log(
@@ -346,6 +346,7 @@ async function internalGetDocuments({
       if (d.masterIdentifier?.value && d.content?.[0]?.attachment.url) {
         const docRef: CwDocumentReference = {
           ...d,
+          description: d.description ?? getDescriptionFromAttachment(d.content),
           id: d.masterIdentifier?.value,
         };
         return docRef;
@@ -359,6 +360,10 @@ async function internalGetDocuments({
       context,
     });
   }
+}
+
+function getDescriptionFromAttachment(content: CwDocumentReference["content"]): string | undefined {
+  return content?.find(c => c.attachment?.title)?.attachment?.title ?? undefined;
 }
 
 function reportCWErrors({

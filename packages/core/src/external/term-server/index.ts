@@ -1,8 +1,8 @@
 import { TypedValue } from "@medplum/core";
 import { Coding, ConceptMap, Parameters, ParametersParameter } from "@medplum/fhirtypes";
+import { executeWithNetworkRetries } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosInstance } from "axios";
-import { executeWithNetworkRetries } from "@metriport/shared";
 import { Config } from "../../util/config";
 import {
   CPT_URL,
@@ -13,6 +13,7 @@ import {
   RXNORM_URL,
   SNOMED_URL,
 } from "../../util/constants";
+import { buildMappingExtension } from "../fhir/shared/extensions/mapping-extension";
 
 export type CodeSystemLookupOutput = {
   name: string;
@@ -61,7 +62,7 @@ export async function lookupMultipleCodes(
   { metadata: Record<string, string | number>; data: CodeSystemLookupOutput[] } | undefined
 > {
   const termServer = buildTermServerApi();
-  if (!termServer) return;
+  if (!termServer || params.length === 0) return;
 
   const startedAt = Date.now();
   const result = await termServer.post(bulkLookupUrl, params);
@@ -81,16 +82,24 @@ export async function lookupMultipleCodes(
   return { metadata, data };
 }
 
-export async function crosswalkNdcToRxNorm(ndcCode: string): Promise<Coding | undefined> {
+export async function crosswalkCode({
+  sourceCode,
+  sourceSystem,
+  targetSystem,
+}: {
+  sourceCode: string;
+  sourceSystem: string;
+  targetSystem: string;
+}): Promise<Coding | undefined> {
   const termServer = buildTermServerApi();
   if (!termServer) return undefined;
 
   const params = buildFhirParametersForCrosswalkFromCoding(
     {
-      system: NDC_URL,
-      code: ndcCode,
+      system: sourceSystem,
+      code: sourceCode,
     },
-    RXNORM_URL
+    targetSystem
   );
   if (!params) return undefined;
   const result = await executeWithNetworkRetries(async function () {
@@ -105,10 +114,15 @@ export async function crosswalkNdcToRxNorm(ndcCode: string): Promise<Coding | un
   const target = element.target?.[0];
   if (!target || !target.code) return undefined;
 
+  const mappingExtension = buildMappingExtension({
+    sourceSystem,
+  });
+
   return {
-    system: RXNORM_URL,
+    system: targetSystem,
     code: target.code,
     ...(target.display ? { display: target.display } : undefined),
+    extension: [mappingExtension],
   };
 }
 

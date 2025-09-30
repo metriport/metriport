@@ -3,10 +3,10 @@ import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getCQData } from "./patient";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 
 dayjs.extend(duration);
 

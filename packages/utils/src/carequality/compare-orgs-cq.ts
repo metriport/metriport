@@ -95,7 +95,7 @@ export async function main() {
       log(`Provider - Processing org...`);
       const cqCmd = getCqCommandForOrganization({ org: inputMetriportOrg });
       const cqOrgDetails = await cmdToCqOrgDetails(cqCmd);
-      const metriportOrg = getOrganizationFhirTemplate(cqOrgDetails);
+      const metriportOrg = await getOrganizationFhirTemplate(cqOrgDetails);
       await process("org", org, metriportOrg, outputFolderName, cqApi);
       // empty line
     } else if (org.businessType === OrganizationBizType.healthcareITVendor) {
@@ -129,7 +129,7 @@ export async function main() {
         };
         const cqCmd = getCqCommandForFacility({ org: inputMetriportOrg, facility: inputFacility });
         const cqOrgDetails = await cmdToCqOrgDetails(cqCmd);
-        const metriportOrg = getOrganizationFhirTemplate(cqOrgDetails);
+        const metriportOrg = await getOrganizationFhirTemplate(cqOrgDetails);
         await process("fac", facility, metriportOrg, outputFolderName, cqApi);
       }
     } else {

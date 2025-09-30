@@ -26,9 +26,12 @@ import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
+import { AnalyticsPlatformsAssets } from "../analytics-platform/types";
 import { JobsAssets } from "../jobs/types";
+import { QuestAssets } from "../quest/types";
 import { defaultBedrockPolicyStatement } from "../shared/bedrock";
 import { DnsZones } from "../shared/dns";
+import { createHieConfigDictionary } from "../shared/hie-config-dictionary";
 import { getMaxPostgresConnections } from "../shared/rds";
 import { buildLbAccessLogPrefix } from "../shared/s3";
 import { buildSecrets, Secrets, secretsToECS } from "../shared/secrets";
@@ -36,9 +39,6 @@ import { provideAccessToQueue } from "../shared/sqs";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
 import { SurescriptsAssets } from "../surescripts/types";
-import { QuestAssets } from "../quest/types";
-import { AnalyticsPlatformsAssets } from "../analytics-platform/types";
-import { createHieConfigDictionary } from "../shared/hie-config-dictionary";
 
 interface ApiProps extends StackProps {
   config: EnvConfig;
@@ -390,6 +390,7 @@ export function createAPIService({
             EHR_ELATION_ENVIRONMENT: props.config.ehrIntegration.elation.env,
             EHR_HEALTHIE_ENVIRONMENT: props.config.ehrIntegration.healthie.env,
             EHR_ECLINICALWORKS_ENVIRONMENT: props.config.ehrIntegration.eclinicalworks.env,
+            EHR_SALESFORCE_ENVIRONMENT: props.config.ehrIntegration.salesforce.env,
           }),
           ...(!isSandbox(props.config) && {
             DASH_URL: props.config.dashUrl,
@@ -433,13 +434,21 @@ export function createAPIService({
               props.config.hl7Notification.dischargeNotificationSlackUrl,
           }),
           ...(analyticsPlatformAssets && {
-            FHIR_TO_CSV_QUEUE_URL: analyticsPlatformAssets.fhirToCsvQueue.queueUrl,
+            FHIR_TO_CSV_BULK_QUEUE_URL: analyticsPlatformAssets.fhirToCsvBulkQueue.queueUrl,
+            FHIR_TO_CSV_INCREMENTAL_QUEUE_URL:
+              analyticsPlatformAssets.fhirToCsvIncrementalQueue.queueUrl,
+            ANALYTICS_BUCKET_NAME: analyticsPlatformAssets.analyticsPlatformBucket.bucketName,
+            CORE_TRANSFORM_BATCH_JOB_QUEUE_ARN:
+              analyticsPlatformAssets.coreTransformBatchJobQueue.jobQueueArn,
+            CORE_TRANSFORM_BATCH_JOB_DEFINITION_ARN:
+              analyticsPlatformAssets.coreTransformBatchJob.jobDefinitionArn,
           }),
           ...(props.config.hl7Notification?.hieConfigs && {
             HIE_CONFIG_DICTIONARY: JSON.stringify(
               createHieConfigDictionary(props.config.hl7Notification.hieConfigs)
             ),
           }),
+          GENERAL_BUCKET_NAME: generalBucket.bucketName,
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),
@@ -526,6 +535,10 @@ export function createAPIService({
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  generalBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  analyticsPlatformAssets?.analyticsPlatformBucket.grantRead(
+    fargateService.taskDefinition.taskRole
+  );
 
   incomingHl7NotificationBucket?.grantRead(fargateService.taskDefinition.taskRole);
 
@@ -589,9 +602,18 @@ export function createAPIService({
   if (analyticsPlatformAssets) {
     provideAccessToQueue({
       accessType: "send",
-      queue: analyticsPlatformAssets.fhirToCsvQueue,
+      queue: analyticsPlatformAssets.fhirToCsvBulkQueue,
       resource: fargateService.taskDefinition.taskRole,
     });
+    provideAccessToQueue({
+      accessType: "send",
+      queue: analyticsPlatformAssets.fhirToCsvIncrementalQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+    analyticsPlatformAssets.coreTransformBatchJob.grantSubmitJob(
+      fargateService.taskDefinition.taskRole,
+      analyticsPlatformAssets.coreTransformBatchJobQueue
+    );
   }
 
   if (dischargeRequeryQueue) {

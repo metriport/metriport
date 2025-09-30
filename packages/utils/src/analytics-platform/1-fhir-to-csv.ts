@@ -2,17 +2,20 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { FhirToCsvBulkCloud } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/bulk/fhir-to-csv-bulk-cloud";
+import { buildFhirToCsvBulkJobPrefix } from "@metriport/core/command/analytics-platform/fhir-to-csv/file-name";
 import { createConsolidatedDataFilePath } from "@metriport/core/domain/consolidated/filename";
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
-import { SQSClient } from "@metriport/core/external/aws/sqs";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { errorToString, getEnvVarOrFail, sleep } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import axios from "axios";
+import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
+import readline from "readline/promises";
 import { getAllPatientIds } from "../patient/get-ids";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { getCxData } from "../shared/get-cx-data";
@@ -32,38 +35,47 @@ dayjs.extend(duration);
  * - set env vars on .env file
  * - set patientIds array with the patient IDs you want to convert - leave empty to run for all
  *   patients of the customer
- * - optionally, add a file with patient IDs to convert
+ * - optionally, pass the name of a file containing patient IDs to convert with the -f flag
  * - add --check-consolidated to check if the consolidated data exists in S3
  * - run it
- *   - ts-node src/analytics-platform/1-fhir-to-csv.ts
- *   - ts-node src/analytics-platform/1-fhir-to-csv.ts <file-with-patient-ids>
- *   - ts-node src/analytics-platform/1-fhir-to-csv.ts --check-consolidated
+ *   - ts-node src/analytics-platform 1-fhir-to-csv
+ *   - ts-node src/analytics-platform 1-fhir-to-csv -f <file-with-patient-ids>
+ *   - ts-node src/analytics-platform 1-fhir-to-csv --check-consolidated
  */
 
 // Leave empty to run for all patients of the customer
 const patientIds: string[] = [];
 
-// If provided, will read patient IDs from the file and use them instead of the patientIds array
-const fileName: string | undefined = process.argv[2];
-
-const checkConsolidatedExists = process.argv.includes("--check-consolidated");
-
 const numberOfParallelExecutions = 30;
-const confirmationTime = dayjs.duration(10, "seconds");
 
 const fhirToCsvJobId = "F2C_" + buildDayjs().toISOString().slice(0, 19).replace(/[:.]/g, "-");
 
 const cxId = getEnvVarOrFail("CX_ID");
 const apiUrl = getEnvVarOrFail("API_URL");
-const queueUrl = getEnvVarOrFail("FHIR_TO_CSV_QUEUE_URL");
 const medicalDocsBucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const region = getEnvVarOrFail("AWS_REGION");
-const s3Utils = new S3Utils(region);
 
-const sqsClient = new SQSClient({ region });
+const s3Utils = new S3Utils(region);
 const api = axios.create({ baseURL: apiUrl });
 
-async function main() {
+const program = new Command();
+program
+  .name("1-fhir-to-csv")
+  .description(
+    "CLI to trigger the conversion of patients' consolidated data from JSON format to CSV"
+  )
+  .option("-f, --file <path>", "Path to file with patient IDs (optional)")
+  .option("--check-consolidated", "Check if the consolidated data exists in S3")
+  .showHelpAfterError()
+  .action(main);
+
+async function main({
+  file: fileName,
+  checkConsolidated: checkConsolidatedExists,
+}: {
+  file?: string;
+  checkConsolidated?: boolean;
+}) {
   await sleep(100);
   const { log } = out("");
 
@@ -104,6 +116,8 @@ async function main() {
         localStartedAt
       )}`
     );
+    const difference = uniquePatientIds.filter(id => !filtererdPatientIds.includes(id));
+    log(`>>> Patients without consolidated data (${difference.length}):\n${difference.join(", ")}`);
   } else {
     filtererdPatientIds = uniquePatientIds;
   }
@@ -115,21 +129,17 @@ async function main() {
 
   let amountOfPatientsProcessed = 0;
 
+  const fhirToCsvHandler = new FhirToCsvBulkCloud();
+
   const failedPatientIds: string[] = [];
   await executeAsynchronously(
     filtererdPatientIds,
     async patientId => {
-      const payload = JSON.stringify({
-        jobId: fhirToCsvJobId,
-        cxId,
-        patientId,
-      });
       try {
-        // TODO Should be using FhirToCsvCloud?
-        await sqsClient.sendMessageToQueue(queueUrl, payload, {
-          fifo: true,
-          messageDeduplicationId: patientId,
-          messageGroupId: patientId,
+        await fhirToCsvHandler.processFhirToCsvBulk({
+          cxId,
+          patientId,
+          outputPrefix: buildFhirToCsvBulkJobPrefix({ cxId, jobId: fhirToCsvJobId }),
         });
         amountOfPatientsProcessed++;
         if (amountOfPatientsProcessed % 100 === 0) {
@@ -200,8 +210,17 @@ async function displayWarningAndConfirmation(
     `You are about to trigger the conversion of ${patientsToInsert.length} patients of ` +
     `customer ${orgName} (${cxId}) from JSON to CSV, are you sure?${allPatientsMsg}`;
   log(msg);
-  log("Cancel this now if you're not sure.");
-  await sleep(confirmationTime.asMilliseconds());
+  log("Are you sure you want to proceed?");
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  const answer = await rl.question("Type 'yes' to proceed: ");
+  if (answer !== "yes") {
+    log("Aborting...");
+    process.exit(0);
+  }
+  rl.close();
 }
 
-main();
+export default program;

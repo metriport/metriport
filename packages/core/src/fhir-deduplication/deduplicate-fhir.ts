@@ -414,6 +414,16 @@ function removeDanglingReferences<T extends Resource>(
     if (!entry.report?.length) delete entry.report;
   }
 
+  if ("authorizingPrescription" in entry && Array.isArray(entry.authorizingPrescription)) {
+    entry.authorizingPrescription = entry.authorizingPrescription.filter(prescription => {
+      if (prescription.reference && danglingLinks.has(prescription.reference)) {
+        return false;
+      }
+      return true;
+    });
+    if (entry.authorizingPrescription?.length < 1) delete entry.authorizingPrescription;
+  }
+
   return entry;
 }
 

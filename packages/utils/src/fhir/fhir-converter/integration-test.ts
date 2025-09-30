@@ -33,6 +33,8 @@ dayjs.extend(duration);
 /**
  * End-to-end test for the FHIR Converter. Requires a folder with C-CDA XML files. It can contain subfolders.
  *
+ * ! Read this Notion guide for info: https://www.notion.so/metriport/FHIR-Converter-Scaling-Updating-and-Testing-276b51bb9040803cb796d5872a779c33
+ *
  * IMPORTANT: This script will remove all partitions from the FHIR server if used with the `--use-fhir-server`
  * option! Create a backup before running it!
  * See: https://smilecdr.com/docs/fhir_repository/deleting_data.html#drop-all-data
@@ -143,6 +145,9 @@ export async function main() {
   }
 
   const relativeFileNames = clinicalDocuments.map(f => f.replace(cdaLocation, ""));
+
+  console.log(`Refreshing converter templates...`);
+  await converterApi.post(`/api/UpdateBaseTemplates`);
 
   // Convert them into JSON files
   const { nonXMLBodyCount } = await convertCDAsToFHIR(
