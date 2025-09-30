@@ -6,7 +6,7 @@ import ndjson
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from src.parseNdjsonBundle import parseNdjsonBundle
 from src.utils.environment import Environment
-from src.utils.file import create_consolidated_key
+from src.utils.file import create_consolidated_key, create_patient_output_prefix
 
 transform_name = 'fhir-to-csv'
 
@@ -59,12 +59,13 @@ def transform_and_upload_data(
     local_output_files = parseNdjsonBundle.parse(local_ndjson_bundle_key, local_patient_path)
 
     output_bucket_and_file_keys_and_table_names = []
+    pt_output_file_prefix = create_patient_output_prefix(output_file_prefix, patient_id)
     
     with ThreadPoolExecutor(max_workers=3) as executor:
         future_to_file = {}
         for file in local_output_files:
-            file_name = file.split("/")[-1].replace("/", "_")
-            output_file_key = f"{output_file_prefix}/{file_name}"
+            file_name = file.replace("/", "_")
+            output_file_key = f"{pt_output_file_prefix}/{file_name}"
             future = executor.submit(upload_file_to_s3, file, output_bucket, output_file_key)
             future_to_file[future] = file
         
