@@ -42,6 +42,7 @@ import {
   SupportedTriggerEvent,
 } from "./utils";
 import { getBambooTimezone, getKonzaTimezone } from "./timezone";
+import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 
 type HieConfig = { timezone: string };
 
@@ -106,7 +107,10 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     const hl7Message = Hl7Message.parse(params.message);
     let parsedData: ParsedHl7Data;
-    const timezone = getTimezoneFromHieName(params.hieName, hl7Message, log);
+
+    const timezone = params.impersonationTimezone
+      ? params.impersonationTimezone
+      : getTimezoneFromHieName(params.hieName, hl7Message, log);
     try {
       parsedData = await parseHl7Message(hl7Message, timezone);
     } catch (parseError: unknown) {
@@ -146,17 +150,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     const encounterPeriod = getEncounterPeriod(message);
     const encounterClass = getEncounterClass(message);
     const facilityName = getFacilityName(message);
-
-    analytics({
-      distinctId: cxId,
-      event: EventTypes.hl7NotificationReceived,
-      properties: {
-        cxId,
-        patientId,
-        messageCode,
-        triggerEvent,
-      },
-    });
 
     capture.setExtra({
       cxId,
@@ -265,6 +258,26 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
             whenSourceSent: params.messageReceivedTimestamp,
           },
         })
+    );
+
+    const posthogApiKeyArn = Config.getPostHogApiKey();
+    if (!posthogApiKeyArn) {
+      throw new Error("Posthog API key not found");
+    }
+
+    const posthogApiKey = await getSecretValueOrFail(posthogApiKeyArn, Config.getAWSRegion());
+    analytics(
+      {
+        distinctId: cxId,
+        event: EventTypes.hl7NotificationReceived,
+        properties: {
+          cxId,
+          patientId,
+          messageCode,
+          triggerEvent,
+        },
+      },
+      posthogApiKey
     );
 
     log(`Done. API notified...`);
