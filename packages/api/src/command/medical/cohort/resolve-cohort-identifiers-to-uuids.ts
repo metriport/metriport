@@ -4,7 +4,7 @@ import { normalizeCohortName } from "@metriport/core/command/patient-import/csv/
 import { getCohortByNameSafe } from "./get-cohort";
 
 /**
- * Takes a list of cohort identifiers (can be names or ids) and returns a list of cohort ids.
+ * Takes a list of cohort identifiers (can be names or ids) and returns a list of unique cohort ids.
  *
  * @param cxId The ID of the CX.
  * @param identifiers The list of cohort identifiers (can be names or ids).
@@ -17,7 +17,7 @@ export async function resolveCohortIdentifiersToUuids({
   cxId: string;
   identifiers: string[];
 }): Promise<string[]> {
-  return await Promise.all(
+  const results = await Promise.all(
     identifiers?.map(async cohortIdentifier => {
       if (isValidUuid(cohortIdentifier)) {
         return cohortIdentifier;
@@ -33,4 +33,5 @@ export async function resolveCohortIdentifiersToUuids({
       return cohort.id;
     }) ?? []
   );
+  return Array.from(new Set(results));
 }
