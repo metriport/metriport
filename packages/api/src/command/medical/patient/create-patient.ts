@@ -13,13 +13,13 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
 import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-initial-patient-discovery";
 import { PatientModel } from "../../../models/medical/patient";
+import { PatientCohortModel } from "../../../models/medical/patient-cohort";
+import { resolveCohortIdentifiersToUuids } from "../cohort/resolve-cohort-identifiers-to-uuids";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { attachPatientIdentifiers, getPatientByDemo, PatientWithIdentifiers } from "./get-patient";
 import { createPatientSettings } from "./settings/create-patient-settings";
 import { sanitize, validate } from "./shared";
-import { PatientCohortModel } from "../../../models/medical/patient-cohort";
-import { getCohortByName } from "../cohort/get-cohort";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
@@ -32,7 +32,7 @@ export async function createPatient({
   forceCommonwell,
   forceCarequality,
   settings,
-  cohorts,
+  cohorts = [],
 }: {
   patient: PatientCreateCmd;
   runPd?: boolean;
@@ -40,7 +40,7 @@ export async function createPatient({
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
   settings?: PatientSettingsData;
-  cohorts?: string[];
+  cohorts: string[];
 }): Promise<PatientWithIdentifiers> {
   const { cxId, facilityId, externalId } = patient;
   const { log } = out(`createPatient.${cxId}`);
@@ -80,21 +80,19 @@ export async function createPatient({
   });
   if (addressWithCoordinates) patientCreate.data.address = addressWithCoordinates;
 
+  const cohortIdentifiers = await resolveCohortIdentifiersToUuids({
+    cxId,
+    identifiers: cohorts,
+  });
+
   const newPatient = await PatientModel.create(patientCreate);
 
-  const patientCohortCreationRows = (
-    await Promise.all(
-      cohorts?.map(async cohortName => {
-        const cohort = await getCohortByName({ cxId, name: cohortName });
-        if (cohort === undefined) {
-          throw new Error("fix this in earlier commit");
-        }
-        return cohort.id;
-      }) ?? []
-    )
-  ).map(cohortId => ({ id: uuidv7(), patientId: newPatient.id, cohortId }));
-
-  // TODO(2025-09-26): Create PatientCohort rows as well. Allow array empty for now / no cohorts
+  const patientCohortCreationRows = cohortIdentifiers.map(cohortId => ({
+    id: uuidv7(),
+    cxId,
+    patientId: newPatient.id,
+    cohortId,
+  }));
   await PatientCohortModel.bulkCreate(patientCohortCreationRows);
 
   analytics({
