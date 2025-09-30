@@ -90,11 +90,11 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
           error,
         },
       });
-      log("error processing file: ", error);
+      log(`error processing file: ${error}`);
       const filePath = this.getFilePath(remotePath, fileName);
       const message = await s3Utils.getFileContentsAsString(bucketName, filePath);
 
-      await this.persistError(message, fileName, error);
+      await this.persistError(message, fileName, String(error));
       return null;
     }
   }
@@ -113,7 +113,7 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
     }
   }
 
-  private async persistError(message: string, fileName: string, error: unknown): Promise<void> {
+  private async persistError(message: string, fileName: string, error: string): Promise<void> {
     const s3Utils = new S3Utils(Config.getAWSRegion());
     const bucketName = Config.getAlohrIngestionBucket();
     const filePath = this.getFilePath(this.ERROR_FILE_PATH, fileName);
