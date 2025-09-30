@@ -19,10 +19,6 @@ import * as Sentry from "@sentry/node";
 import IPCIDR from "ip-cidr";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { HL7_FILE_EXTENSION } from "@metriport/core/util/mime";
-import { HieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
-import { MetriportError } from "@metriport/shared";
-import * as Sentry from "@sentry/node";
-import IPCIDR from "ip-cidr";
 
 const CUSTOM_SEGMENT_NAME = "ZIT";
 const CUSTOM_SEGMENT_HIE_NAME_INDEX = 1;
