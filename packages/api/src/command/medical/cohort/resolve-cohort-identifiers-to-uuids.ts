@@ -1,5 +1,5 @@
 import { isValidUuid } from "@metriport/core/util/uuid-v7";
-import { BadRequestError } from "@metriport/shared/dist/error/bad-request";
+import { BadRequestError } from "@metriport/shared";
 import { getCohortByNameSafe } from "./get-cohort";
 
 /**
