@@ -22,7 +22,7 @@ export const cohortSettingsSchema = z.object({
   adtMonitoring: z.boolean().optional(),
 });
 export const baseCohortSchema = z.object({
-  name: z.string().transform(val => val.trim()),
+  name: z.string().transform(val => val.trim().toUpperCase()),
   color: cohortColorsSchema,
   description: z.string(),
   settings: cohortSettingsSchema,
@@ -68,8 +68,7 @@ export function toBaseDTO(model: { id: string; eTag: string }): BaseDTO {
   };
 }
 
-export type CohortDTO = {
-  id: string;
+export type CohortDTO = BaseDTO & {
   name: string;
   description: string;
   settings: CohortSettings;

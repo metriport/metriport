@@ -6,7 +6,8 @@ import { createSecondaryPatient } from "./patient";
 
 export function runCohortTestsPart1(e2e: E2eContext) {
   it("creates a cohort", async () => {
-    e2e.cohort = await medicalApi.createCohort(createCohort);
+    const { cohort } = await medicalApi.createCohort(createCohort);
+    e2e.cohort = cohort;
     validateCohort(e2e.cohort);
   });
 
@@ -21,9 +22,9 @@ export function runCohortTestsPart1(e2e: E2eContext) {
 
   it("gets a cohort", async () => {
     if (!e2e.cohort) throw new Error("Missing cohort");
-    const { cohort, details } = await medicalApi.getCohort(e2e.cohort.id);
+    const { cohort, size } = await medicalApi.getCohort(e2e.cohort.id);
     validateCohort(cohort);
-    expect(details.size).toBe(0);
+    expect(size).toBe(0);
   });
 
   it("gets a cohort by name", async () => {
