@@ -4,6 +4,7 @@ import {
   CohortDTO,
   CohortSettings,
   CohortUpdateRequest,
+  CohortWithSizeDTO,
   PaginatedResponse,
 } from "@metriport/shared";
 import {
@@ -715,7 +716,7 @@ export class MetriportMedicalApi {
    * @param data The properties to create the cohort with.
    * @returns The created cohort.
    */
-  async createCohort(data: CohortCreateRequest): Promise<CohortDTO> {
+  async createCohort(data: CohortCreateRequest): Promise<CohortWithSizeDTO> {
     const resp = await this.api.post(`${COHORT_URL}`, data);
     return resp.data;
   }
@@ -725,7 +726,7 @@ export class MetriportMedicalApi {
    * @param id The ID of the cohort to delete.
    * @returns The deleted cohort.
    */
-  async deleteCohort(id: string): Promise<CohortDTO> {
+  async deleteCohort(id: string): Promise<void> {
     const resp = await this.api.delete(`${COHORT_URL}/${id}`);
     return resp.data;
   }
@@ -737,7 +738,7 @@ export class MetriportMedicalApi {
    * @param data The properties to update on the cohort.
    * @returns The updated cohort.
    */
-  async updateCohort(id: string, data: CohortUpdateRequest): Promise<CohortDTO> {
+  async updateCohort(id: string, data: CohortUpdateRequest): Promise<CohortWithSizeDTO> {
     const resp = await this.api.put(`${COHORT_URL}/${id}`, data);
     return resp.data;
   }
@@ -747,7 +748,7 @@ export class MetriportMedicalApi {
    * @param id The ID of the cohort to return.
    * @returns The cohort with the given ID.
    */
-  async getCohort(id: string): Promise<{ cohort: CohortDTO; details: { size: number } }> {
+  async getCohort(id: string): Promise<CohortWithSizeDTO> {
     const resp = await this.api.get(`${COHORT_URL}/${id}`);
     return resp.data;
   }
