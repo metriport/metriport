@@ -1073,6 +1073,7 @@ export class LambdasNestedStack extends NestedStack {
     const alohrProps = ownProps.config.hl7Notification?.AlohrSftpIngestionLambda;
     const sftpPasswordSecret = ownProps.secrets["ALOHR_INGESTION_PASSWORD"];
     const queue = ownProps.config.hl7Notification?.notificationWebhookSenderQueue;
+    const alohr = ownProps.config.hl7Notification?.hieConfigs["Alohr"];
 
     if (!alohrProps) {
       throw new Error("AlohrSftpIngestionLambda is undefined in config.");
@@ -1085,6 +1086,9 @@ export class LambdasNestedStack extends NestedStack {
     }
     if (!sftpPasswordSecret) {
       throw new Error("ALOHR_INGESTION_PASSWORD is not defined in config.");
+    }
+    if (!alohr) {
+      throw new Error("Alohr is undefined in config.");
     }
 
     const sftpConfig = alohrProps.sftpConfig;
@@ -1111,6 +1115,7 @@ export class LambdasNestedStack extends NestedStack {
         ALOHR_INGESTION_BUCKET_NAME: ownProps.alohrSftpIngestionBucket.bucketName,
         HL7_BASE64_SCRAMBLER_SEED_ARN: hl7Base64ScramblerSeed.secretArn,
         HL7_NOTIFICATION_QUEUE_URL: queue.url,
+        ALOHR_INGESTION_TIMEZONE: alohr.timezone,
       },
       stack: this,
       name: "Hl7SftpIngestionAlohr",

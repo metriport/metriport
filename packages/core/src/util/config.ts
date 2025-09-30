@@ -499,4 +499,8 @@ export class Config {
   static getAlohrIngestionLambdaName(): string {
     return getEnvVarOrFail("ALOHR_INGESTION_LAMBDA_NAME");
   }
+
+  static getAlohrIngestionTimezone(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_TIMEZONE");
+  }
 }

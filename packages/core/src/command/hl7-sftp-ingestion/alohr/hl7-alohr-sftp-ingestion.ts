@@ -18,4 +18,5 @@ export interface TimestampedMessage {
   timestamp: string;
   cxId: string;
   patientId: string;
+  fileName: string;
 }
