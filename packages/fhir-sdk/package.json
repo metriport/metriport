@@ -1,13 +1,15 @@
 {
   "name": "@metriport/fhir-sdk",
   "version": "1.2.6",
-  "private": true,
   "description": "FHIR Bundle SDK for parsing, querying, and manipulating FHIR bundles with reference resolution",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist",
     "README.md",
@@ -23,6 +25,14 @@
         "dist/index.d.ts"
       ]
     }
+  },
+  "repository": {
+    "url": "https://github.com/metriport/metriport.git",
+    "type": "git",
+    "directory": "packages/fhir-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/metriport/metriport/issues"
   },
   "scripts": {
     "clean": "rimraf dist",
