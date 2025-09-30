@@ -51,6 +51,20 @@ By default, you have 3 cohorts with the following names + behaviors:
 </Note>
 
 ### Adding patients to cohorts
+Patients can be added to cohorts on creation, or added to and removed from different cohorts as needed.
+
+During creation:
+- In [Bulk Patient Create](/medical-api/api-reference/patient/bulk-create-patient) there are `cohort1` and `cohort2` column headers for specifying the starting cohorts for a patient. See [here](/medical-api/api-reference/patient/bulk-create-patient#param-cohort1).
+- In [Create Patient](/medical-api/api-reference/patient/create-patient) there is a `cohorts` array parameter to set any number of cohorts on a patient. See [here](/medical-api/api-reference/patient/bulk-create-patient#param-cohort1).
+
+As needed:
+- Refer to [Add Patients To Cohort](/medical-api/api-reference/patient/add-patients-to-cohort)
+- Refer to [Remove Patients From Cohort](/medical-api/api-reference/patient/remove-patients-from-cohort)
+
+### Cohorts for monitoring
+
+
+### Adding patients to cohorts
 
 Patients can be added to cohorts on creation, or added to and removed from different cohorts as needed.
 
