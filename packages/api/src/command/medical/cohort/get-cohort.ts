@@ -1,5 +1,5 @@
 import { BadRequestError, NotFoundError } from "@metriport/shared";
-import { Cohort } from "@metriport/shared/domain/cohort";
+import { Cohort, CohortWithSize } from "@metriport/shared/domain/cohort";
 import { CohortModel } from "../../../models/medical/cohort";
 import { getCohortSize } from "./patient-cohort/get-cohort-size";
 
