@@ -48,9 +48,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           asString(rawMessage)
         );
         if (!uploadResult.success) {
-          capture.error(
-            `Failed to upload raw message to S3: ${uploadResult.error}. Continuing with message processing...`
-          );
+          capture.error(uploadResult.error);
         }
 
         const clientPort = connection.socket.remotePort;
@@ -109,7 +107,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   return server;
 }
 
-type UploadResult = { success: true } | { success: false; error: string };
+type UploadResult = { success: true } | { success: false; error: unknown };
 
 async function uploadFileSafely(
   s3Utils: S3Utils,
@@ -126,10 +124,7 @@ async function uploadFileSafely(
     });
     return { success: true };
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : String(error),
-    };
+    return { success: false, error };
   }
 }
 
