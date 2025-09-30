@@ -84,17 +84,19 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
         fileName,
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       capture.error("error processing file: ", {
         extra: {
           fileName,
-          error,
+          error: error instanceof Error ? { message: error.message, stack: error.stack } : error,
         },
       });
-      log(`error processing file: ${error}`);
+      log(`error processing file ${fileName}: ${errorMessage}`);
       const filePath = this.getFilePath(remotePath, fileName);
       const message = await s3Utils.getFileContentsAsString(bucketName, filePath);
-
-      await this.persistError(message, fileName, String(error));
+      const errorDetails =
+        error instanceof Error ? `${error.message}\n\nStack: ${error.stack}` : String(error);
+      await this.persistError(message, fileName, errorDetails);
       return undefined;
     }
   }
