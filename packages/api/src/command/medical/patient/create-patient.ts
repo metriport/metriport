@@ -14,6 +14,7 @@ import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert
 import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-initial-patient-discovery";
 import { PatientModel } from "../../../models/medical/patient";
 import { PatientCohortModel } from "../../../models/medical/patient-cohort";
+import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { resolveCohortIdentifiersToUuids } from "../cohort/resolve-cohort-identifiers-to-uuids";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
@@ -85,15 +86,20 @@ export async function createPatient({
     identifiers: cohorts,
   });
 
-  const newPatient = await PatientModel.create(patientCreate);
+  const newPatient = await executeOnDBTx(PatientModel.prototype, async transaction => {
+    const patient = await PatientModel.create(patientCreate, { transaction });
 
-  const patientCohortCreationRows = cohortIdentifiers.map(cohortId => ({
-    id: uuidv7(),
-    cxId,
-    patientId: newPatient.id,
-    cohortId,
-  }));
-  await PatientCohortModel.bulkCreate(patientCohortCreationRows);
+    const patientCohortCreationRows = cohortIdentifiers.map(cohortId => ({
+      id: uuidv7(),
+      cxId,
+      patientId: patient.id,
+      cohortId,
+    }));
+
+    await PatientCohortModel.bulkCreate(patientCohortCreationRows, { transaction });
+
+    return patient;
+  });
 
   analytics({
     distinctId: cxId,
