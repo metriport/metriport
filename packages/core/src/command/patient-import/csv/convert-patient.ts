@@ -119,9 +119,9 @@ export function mapCsvPatientToMetriportPatient(
     normalizeExternalId(csvPatient[externalId2FieldNameLower]);
 
   const cohorts = _.compact([
-    normalizeCohortName(csvPatient[cohort1FieldNameLower]),
-    normalizeCohortName(csvPatient[cohort2FieldNameLower]),
-  ]);
+    csvPatient[cohort1FieldNameLower],
+    csvPatient[cohort2FieldNameLower],
+  ]).map(normalizeCohortName);
 
   const { ssn, errors: ssnErrors } = mapCsvSsn(csvPatient);
   errors.push(...ssnErrors);
@@ -160,8 +160,8 @@ export function normalizeNameOrFail(name: string | undefined, propName: string):
   return toTitleCaseIfNotMultiCase(trimmedName);
 }
 
-export function normalizeCohortName(cohortName: string | undefined): string | undefined {
-  return cohortName?.trim().toUpperCase();
+export function normalizeCohortName(cohortName: string): string {
+  return cohortName.trim().toUpperCase();
 }
 
 export function normalizeExternalId(id: string | undefined): string | undefined {
