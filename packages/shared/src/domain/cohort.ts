@@ -53,6 +53,7 @@ export const DEFAULT_SETTINGS: CohortSettings = {
 };
 
 // ### Domain Interface ###
+<<<<<<< HEAD
 export const cohortColorsSchema = z
   .string()
   .transform(color => color.toLowerCase().trim())
@@ -66,6 +67,14 @@ export const frequencySchema = z
 export const scheduleSchema = z.object({
   enabled: z.boolean(),
   frequency: frequencySchema,
+=======
+export const cohortColorsSchema = z.enum(COHORT_COLORS);
+export const cohortSettingsSchema = z.object({
+  adtMonitoring: z.boolean().optional(),
+  adtMonitoring_onlyHealthConnectTexas: z.boolean().optional(),
+  adtMonitoring_onlyHieTexasPcc: z.boolean().optional(),
+  questMonitoring: z.boolean().optional(),
+>>>>>>> bb74837308 (feat(core): add hie specific filtering for adt subscribers)
 });
 
 export const notificationScheduleSchema = z.object({
