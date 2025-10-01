@@ -70,8 +70,6 @@ export type SetCommonwellIdParams = CWParams & {
  * @param patient The patient @ Metriport.
  * @param commonwellPatientId The patient ID @ CommonWell.
  * @param commonwellPersonId The person ID @ CommonWell.
- * @param cqLinkStatus The status of linking the patient with CareQuality orgs using CW's
- *        bridge with CQ. If not provided, it will keep the current CQ link status.
  * @returns
  */
 export async function updateCommonwellIdsAndStatus({
