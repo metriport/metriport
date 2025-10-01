@@ -1111,7 +1111,7 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
 
       const newCondition: RenderCondition = {
         id: condition.id,
-        code: codeName + (hccCodes ? ` (${hccCodes})` : ""),
+        code: (codeName ?? "") + (hccCodes ? ` (${hccCodes})` : ""),
         name,
         firstSeen: onsetStartTime && onsetStartTime.length ? onsetStartTime : onsetDateTime,
         lastSeen: onsetEndTime && onsetEndTime.length ? onsetEndTime : onsetDateTime,

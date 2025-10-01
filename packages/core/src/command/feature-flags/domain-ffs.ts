@@ -253,13 +253,11 @@ export async function isPcpVisitAiSummaryFeatureFlagEnabledForCx(cxId: string): 
   return cxIdsWithPcpVisitAiSummaryEnabled.some(i => i === cxId);
 }
 
-export async function getCxsWithRecentVisitAiSummaryFeatureFlag(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsWithRecentVisitAiSummaryFeatureFlag");
+export async function getCxsWithRecentVisitAiSummary(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithRecentVisitAiSummary");
 }
-export async function isRecentVisitAiSummaryFeatureFlagEnabledForCx(
-  cxId: string
-): Promise<boolean> {
-  const cxIdsWithRecentVisitAiSummaryEnabled = await getCxsWithRecentVisitAiSummaryFeatureFlag();
+export async function isRecentVisitAiSummaryEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithRecentVisitAiSummaryEnabled = await getCxsWithRecentVisitAiSummary();
   return cxIdsWithRecentVisitAiSummaryEnabled.some(i => i === cxId);
 }
 

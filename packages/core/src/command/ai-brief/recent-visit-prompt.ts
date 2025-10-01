@@ -1,6 +1,8 @@
-const todaysDate = new Date().toISOString().split("T")[0];
-const systemPrompt =
-  "You are a medical record reviewer and your task is to extract key information from a patient's medical chart. Do not include any demographic information such as name, date of birth, address, or other personal identifiers in your summary.";
+import { buildDayjs } from "@metriport/shared/common/date";
+
+const todaysDate = buildDayjs().format("YYYY-MM-DD");
+const systemPrompt = `You are a medical record reviewer and your task is to extract key information from a patient's medical chart.
+  Do not include any demographic information such as name, date of birth, address, or other personal identifiers in your summary.`;
 
 export const documentVariableName = "text";
 
@@ -21,7 +23,8 @@ For any condition found, provide the most recent diagnosis date from the patient
 Make sure any HCCs or Conditions are flagged.
 
 Medications Prescribed (up to last 24 months):
-Only include medications that have a MedicationRequest (prescription). For each prescription found, provide the prescription date from the MedicationRequest.
+Only include medications that have a MedicationRequest (prescription).
+For each prescription found, provide the prescription date from the MedicationRequest.
   - [Medication Name] ([Prescription Date MM/DD/YYYY])
    - [Medication Name] ([Prescription Date MM/DD/YYYY])
 
@@ -33,14 +36,19 @@ For the PCP visit:
 - ONLY include providers where you can clearly see their specialty information in the medical records
 - If a provider's specialty is not clearly documented or is missing, DO NOT include them in the PCP visits list
 
-For PCP name, only include the physician if they are a MD, DO, NP, PA and are associated with the specialty of Family Medicine, Internal Medicine or OB/GYN. If you cannot determine their specialty from the available data, exclude them from the list.
+For PCP name, only include the physician if they are a MD, DO, NP, PA and are associated with the specialty of Family Medicine,
+Internal Medicine or OB/GYN. If you cannot determine their specialty from the available data, exclude them from the list.
 
-CRITICAL DATE FILTERING: All dates must be within the last 24 months from the latest report date. The data has already been filtered to include the most relevant timeframe of medical records (up to 24 months maximum).
+CRITICAL DATE FILTERING: All dates must be within the last 24 months from the latest report date.
+The data has already been filtered to include the most relevant timeframe of medical records (up to 24 months maximum).
 
-CRITICAL: If there is no data within the available timeframe (up to 24 months), DO NOT include that section at all. Do not show sections with old data. Do not modify dates to make them appear recent.
+CRITICAL: If there is no data within the available timeframe (up to 24 months), DO NOT include that section at all.
+Do not show sections with old data. Do not modify dates to make them appear recent.
 
-If any of the above information is not present, do not include that section in the summary at all. Do not write "No data available" or similar messages for empty sections - simply omit those sections entirely.
-Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided. Consolidate information and link directly to original sources. Avoid any relative terms, e.g. "recently" or "currently." Use specific dates only.
+If any of the above information is not present, do not include that section in the summary at all.
+Do not write "No data available" or similar messages for empty sections - simply omit those sections entirely.
+Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
+Consolidate information and link directly to original sources. Avoid any relative terms, e.g. "recently" or "currently." Use specific dates only.
 `;
 
 export const mainSummaryPrompt = `

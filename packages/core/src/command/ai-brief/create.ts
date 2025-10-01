@@ -13,7 +13,7 @@ import { BedrockChat } from "../../external/langchain/bedrock";
 import { out } from "../../util";
 import {
   isPcpVisitAiSummaryFeatureFlagEnabledForCx,
-  isRecentVisitAiSummaryFeatureFlagEnabledForCx,
+  isRecentVisitAiSummaryEnabledForCx,
 } from "../feature-flags/domain-ffs";
 import {
   documentVariableName as pcpVisitDocumentVariableName,
@@ -155,7 +155,7 @@ async function getInputsForAiBriefGeneration(cxId: string): Promise<{
   refinedPrompt: string;
   documentVariable: string;
 }> {
-  const isRecentVisit = await isRecentVisitAiSummaryFeatureFlagEnabledForCx(cxId);
+  const isRecentVisit = await isRecentVisitAiSummaryEnabledForCx(cxId);
   const isPcpVisit = await isPcpVisitAiSummaryFeatureFlagEnabledForCx(cxId);
 
   if (isRecentVisit) {

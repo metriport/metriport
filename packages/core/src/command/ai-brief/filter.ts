@@ -8,6 +8,7 @@ import {
 } from "@medplum/fhirtypes";
 import { toArray } from "@metriport/shared";
 import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
+import { Dayjs } from "dayjs";
 import { cloneDeep } from "lodash";
 import { condenseBundle } from "../../domain/ai-brief/condense-bundle";
 import {
@@ -85,13 +86,13 @@ export function prepareBundleForAiSummarization(bundle: Bundle, log: typeof cons
 
 function determineOptimalTimeframe(
   bundle: Bundle,
-  initialDate: ReturnType<typeof buildDayjs>
+  initialDate: Dayjs
 ): {
   finalSlimPayloadBundle: SlimResource[] | undefined;
   timeframeUsed: number;
 } {
-  const dateFromOneYear = initialDate.subtract(NUM_HISTORICAL_YEARS, "year").format(ISO_DATE);
-  const filteredBundleOneYear = filterBundleByDate(bundle, dateFromOneYear);
+  const initialStartDate = initialDate.subtract(NUM_HISTORICAL_YEARS, "year").format(ISO_DATE);
+  const filteredBundleOneYear = filterBundleByDate(bundle, initialStartDate);
   const slimPayloadBundleOneYear = buildSlimmerPayload(filteredBundleOneYear);
   const resourceCount = slimPayloadBundleOneYear?.length ?? 0;
 
@@ -104,8 +105,8 @@ function determineOptimalTimeframe(
     };
   }
 
-  const dateFromTwoYears = initialDate.subtract(MAX_HISTORICAL_YEARS, "year").format(ISO_DATE);
-  const finalFilteredBundle = filterBundleByDate(bundle, dateFromTwoYears);
+  const maxStartDate = initialDate.subtract(MAX_HISTORICAL_YEARS, "year").format(ISO_DATE);
+  const finalFilteredBundle = filterBundleByDate(bundle, maxStartDate);
   const finalSlimPayloadBundle = buildSlimmerPayload(finalFilteredBundle);
 
   return {
