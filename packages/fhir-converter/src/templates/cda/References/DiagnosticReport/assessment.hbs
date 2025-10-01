@@ -29,12 +29,10 @@
     "resource":{
         "resourceType": "DiagnosticReport",
         "id":"{{ID}}",
-        "status":{{>ValueSet/DiagnosticReportStatus.hbs code="unknown"}},
-        "code": {{>DataType/CodeableConcept.hbs code=code}},
         "presentedForm": [
                 {
                     "contentType": "text/plain",
-                    "data": "{{{base64Encode rawText}}}",
+                    "data": "{{{base64Encode text}}}",
                 }
             ],
     },

@@ -13,6 +13,10 @@ import * as Sentry from "@sentry/node";
 import { Hl7Message } from "@medplum/core";
 import IPCIDR from "ip-cidr";
 import { HieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
+import {
+  fromBambooId,
+  remapMessageReplacingPid3,
+} from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
 export const s3Utils = new S3Utils(Config.getAWSRegion());
@@ -116,4 +120,22 @@ function keepOnlyVpnConfigs([hieName, config]: [string, HieConfigDictionary[stri
   return "cidrBlocks" in config
     ? [{ hieName, cidrBlocks: config.cidrBlocks, timezone: config.timezone }]
     : [];
+}
+
+export function translateMessage(rawMessage: Hl7Message, hieName: string): Hl7Message {
+  if (hieName === "Bamboo") {
+    const pid = rawMessage.getSegment("PID");
+    if (!pid) {
+      throw new MetriportError("PID segment not found in bamboo message", undefined, { hieName });
+    }
+    const bambooId = pid.getComponent(3, 1);
+    if (!bambooId) {
+      throw new MetriportError("ID not found in bamboo message", undefined, { hieName });
+    }
+    const normalId = fromBambooId(bambooId);
+
+    const newMessage = remapMessageReplacingPid3(rawMessage, normalId);
+    return newMessage;
+  }
+  return rawMessage;
 }
