@@ -43,9 +43,7 @@ router.get(
         bucketName,
       });
 
-      log(`Binary details: ${JSON.stringify({ ...binary, data: "REDACTED" })}`);
-
-      return res.status(200).json(binary);
+      return res.status(200).send(binary);
     } catch (error) {
       const msg = `Error processing DR from CW`;
       console.log(`${msg}: ${errorToString(error)}`);

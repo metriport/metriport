@@ -54,9 +54,9 @@ export const handler = capture.wrapHandler(
       return sendResponse({
         statusCode: 200,
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/octet-stream",
         },
-        body: JSON.stringify(binary),
+        body: binary,
       });
     } catch (error) {
       const msg = `Error processing DR from CW`;
