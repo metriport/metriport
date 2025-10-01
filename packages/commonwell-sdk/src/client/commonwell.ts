@@ -570,7 +570,10 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
           reason: "Missing data",
           contentType,
           resourceType,
-          properties: typeof binary === "object" ? Object.keys(binary).join(", ") : "not-a-object",
+          properties:
+            typeof binary === "object" && binary != null
+              ? Object.keys(binary).join(", ")
+              : "not-an-object",
           inputUrl,
         });
       const dataBuffer = base64ToBuffer(data);
