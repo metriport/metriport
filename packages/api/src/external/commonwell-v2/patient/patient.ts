@@ -471,7 +471,7 @@ export async function removeInCwV2(patient: Patient, facilityId: string): Promis
   }
 }
 
-async function getCommonwellPatientId(patient: Patient): Promise<string | undefined> {
+export async function getCommonwellPatientId(patient: Patient): Promise<string | undefined> {
   const commonwellData = getCWData(patient.data.externalData);
   if (!commonwellData || !commonwellData.patientId) return undefined;
   return getCwV2PatientId(commonwellData.patientId);
