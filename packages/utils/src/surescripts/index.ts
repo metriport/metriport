@@ -24,6 +24,7 @@ import bundleVerification from "./bundle-verification";
 import generateCsv from "./generate-csv";
 import sendBatchPatientRequest from "./send-batch-patient-request";
 import sendCustomerRequest from "./send-customer-request";
+import fhirConvertAll from "./fhir-convert-all";
 
 /**
  * This is the main command registry for the Surescripts CLI. You should add any new
@@ -51,4 +52,5 @@ program.addCommand(bundleVerification);
 program.addCommand(generateCsv);
 program.addCommand(sendBatchPatientRequest);
 program.addCommand(sendCustomerRequest);
+program.addCommand(fhirConvertAll);
 program.parse();
