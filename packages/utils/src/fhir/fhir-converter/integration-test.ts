@@ -55,6 +55,13 @@ dayjs.extend(duration);
  * - cdaLocation: the folder with the XML files;
  * - converterBaseUrl: the URL of the FHIR converter;
  * - fhirBaseUrl: the URL of the FHIR server;
+ *
+ * Run it with:
+ *   - npx ts-node src/fhir/fhir-converter/integration-test.ts from the utils folder or
+ *   - npm run integration-test-and-compare-total-resource-counts from the metriport root folder.
+ *
+ * Monitor:
+ *   - FhirConverter Server logs to see the progress of the conversion.
  */
 
 const cdaLocation = ``;
