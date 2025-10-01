@@ -66,10 +66,10 @@ async function retrieveXmlContentsFromMetadataFilesOnS3(
 ): Promise<{ key: string; contents: string }[]> {
   const prefix = createSharebackFolderName({ cxId, patientId });
 
-  const data = await executeWithRetriesS3(() => s3Utils.listObjects(bucketName, prefix));
+  const files = await executeWithRetriesS3(() => s3Utils.listObjects(bucketName, prefix));
   const keysAndMetaContents = (
     await Promise.all(
-      data
+      files
         .filter(item => item.Key && item.Key.endsWith(METADATA_SUFFIX))
         .map(async item => {
           const key = item.Key;
