@@ -1,7 +1,8 @@
 import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../_default";
-import { PatientSettingsModel } from "../patient-settings";
+import { CohortModel } from "./cohort";
+import { PatientCohortModel } from "./patient-cohort";
 import { initModel, patientTableName } from "./patient-shared";
 
 export class PatientModelReadOnly extends BaseModel<PatientModelReadOnly> implements Patient {
@@ -11,16 +12,22 @@ export class PatientModelReadOnly extends BaseModel<PatientModelReadOnly> implem
   declare externalId?: string;
   declare hieOptOut?: boolean;
   declare data: PatientData;
+  declare Cohorts?: CohortModel[];
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     const model = initModel(sequelize);
     PatientModelReadOnly.init(model.attributes, model.options);
   };
 
-  static associate = (models: { PatientSettingsModel: typeof PatientSettingsModel }) => {
-    PatientModelReadOnly.hasOne(models.PatientSettingsModel, {
+  static associate = (models: {
+    CohortModel: typeof CohortModel;
+    PatientCohortModel: typeof PatientCohortModel;
+  }) => {
+    PatientModelReadOnly.belongsToMany(models.CohortModel, {
+      through: models.PatientCohortModel,
       foreignKey: "patientId",
-      sourceKey: "id",
+      otherKey: "cohortId",
+      as: "Cohorts",
     });
   };
 }

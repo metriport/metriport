@@ -1,4 +1,4 @@
-import { USState } from "@metriport/shared";
+import { Cohort, USState } from "@metriport/shared";
 import { Patient } from "../../domain/patient";
 import { Hl7v2Subscription } from "../../domain/patient-settings";
 import { HieIanaTimezone } from "../../external/hl7-notification/hie-config-dictionary";
@@ -71,8 +71,10 @@ export type Hl7v2RosterUploadDetails = {
   fileKey: string;
 };
 
+export type PatientWithCohorts = Patient & { Cohorts: Cohort[] };
+
 export type Hl7v2SubscriberApiResponse = {
-  patients: Patient[];
+  patients: PatientWithCohorts[];
   meta: {
     nextPage?: string;
   };
