@@ -1,7 +1,8 @@
-import { Bundle } from "@medplum/fhirtypes";
+import { Bundle, Medication } from "@medplum/fhirtypes";
 import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
 import { buildBundle } from "../../fhir/bundle/bundle";
 import { hydrateFhir } from "../../fhir/hydration/hydrate-fhir";
+import { dangerouslyHydrateMedication } from "../../fhir/hydration/hydrate-fhir";
 import { ResponseDetail } from "../schema/response";
 import { IncomingData } from "../schema/shared";
 import { getAllBundleEntries } from "./bundle-entry";
@@ -17,7 +18,18 @@ export async function convertIncomingDataToFhirBundle(
     bundle.entry?.push(...entries);
   }
   dangerouslyDeduplicateFhir(bundle, cxId, patientId);
+  // await dangerouslyHydrateMedications(bundle);
   await hydrateFhir(bundle, console.log);
 
   return bundle;
+}
+
+export async function dangerouslyHydrateMedications(bundle: Bundle): Promise<void> {
+  if (!bundle.entry) return;
+
+  for (const entry of bundle.entry) {
+    if (!entry.resource || entry.resource.resourceType !== "Medication") continue;
+    const medication = entry.resource as Medication;
+    await dangerouslyHydrateMedication(medication);
+  }
 }
