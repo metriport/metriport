@@ -1,21 +1,20 @@
-import { Patient } from "@metriport/core/domain/patient";
+import { PatientWithCohorts } from "@metriport/core/command/hl7v2-subscriptions/types";
 import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { MetriportError, errorToString } from "@metriport/shared";
 import { FindOptions, Op, Order, Sequelize, WhereOptions } from "sequelize";
 import { PatientModelReadOnly } from "../../../models/medical/patient-readonly";
-import { PatientSettingsModel } from "../../../models/patient-settings";
 import { Pagination, getPaginationFilters, getPaginationLimits } from "../../pagination";
 
 export type GetHl7v2SubscribersParams = {
-  hieName: string;
+  hieStates: string[];
   pagination?: Pagination;
 };
 
 function getCommonQueryOptions({
-  hieName,
+  hieStates,
   pagination,
-}: Omit<GetHl7v2SubscribersParams, "hieName"> & { hieName: string }) {
+}: Omit<GetHl7v2SubscribersParams, "hieStates"> & { hieStates: string[] }) {
   const order: Order = [["id", "DESC"]];
 
   return {
@@ -23,54 +22,63 @@ function getCommonQueryOptions({
       ...(pagination ? getPaginationFilters(pagination) : {}),
       [Op.and]: [
         Sequelize.literal(`
-          EXISTS (
-              SELECT 1
-              FROM patient_settings ps
-              WHERE ps.patient_id = "PatientModelReadOnly"."id"
-              AND ps.subscriptions->'adt' IS NOT NULL
-              AND ps.subscriptions->'adt' ? :hieName
+          NOT EXISTS (
+            SELECT 1
+            FROM patient_cohort pc2
+            JOIN cohort ch2 ON pc2.cohort_id = ch2.id
+            WHERE pc2.patient_id = "PatientModelReadOnly".id
+              AND (ch2.settings->>'adtMonitoring' IS DISTINCT FROM 'true')
           )
-          `),
+        `),
+        Sequelize.literal(`
+          EXISTS (
+            SELECT 1
+            FROM jsonb_array_elements("PatientModelReadOnly".data->'address') addr
+            WHERE addr->>'state' = ANY(ARRAY[:hieStates])
+          )
+        `),
       ],
     } as WhereOptions,
-    replacements: { hieName },
     include: [
       {
-        model: PatientSettingsModel,
-        attributes: [],
-        required: true,
+        association: "Cohorts",
+        through: { attributes: [] },
       },
     ],
+    replacements: {
+      hieStates,
+    },
     ...(pagination ? getPaginationLimits(pagination) : {}),
     ...(pagination ? { order } : {}),
   };
 }
 
 export async function getHl7v2Subscribers({
-  hieName,
+  hieStates,
   pagination,
-}: GetHl7v2SubscribersParams): Promise<Patient[]> {
+}: GetHl7v2SubscribersParams): Promise<PatientWithCohorts[]> {
   const { log } = out(`Get HL7v2 subscribers`);
-  log(`HIE: ${hieName}, pagination params: ${JSON.stringify(pagination)}`);
+  log(`HIE states: ${hieStates}, pagination params: ${JSON.stringify(pagination)}`);
 
   try {
     const findOptions: FindOptions<PatientModelReadOnly> = {
-      ...getCommonQueryOptions({ hieName, pagination }),
+      ...getCommonQueryOptions({ hieStates, pagination }),
     };
 
     const patients = await PatientModelReadOnly.findAll(findOptions);
 
     log(`Done. Found ${patients.length} HL7v2 subscribers for this page`);
-    return patients;
+
+    return patients as PatientWithCohorts[];
   } catch (error) {
     const msg = `Failed to get HL7v2 subscribers`;
     log(`${msg} - err: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         error,
-        hieName,
+        hieStates,
       },
     });
-    throw new MetriportError(msg, error, { hieName });
+    throw new MetriportError(msg, error, { hieStates: hieStates.join(",") });
   }
 }

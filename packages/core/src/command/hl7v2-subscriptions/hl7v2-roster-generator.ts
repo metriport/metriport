@@ -1,4 +1,6 @@
 import {
+  Cohort,
+  CohortSettings,
   GenderAtBirth,
   InternalOrganizationDTO,
   internalOrganizationDTOSchema,
@@ -6,6 +8,7 @@ import {
   otherGender,
   simpleExecuteWithRetries,
   unknownGender,
+  USState,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { initTimer } from "@metriport/shared/common/timer";
@@ -13,10 +16,10 @@ import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
 import _ from "lodash";
+import { stripInvalidCharactersFromPatientData } from "../../domain/character-sanitizer";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
 import { capture, out } from "../../util";
-import { stripInvalidCharactersFromPatientData } from "../../domain/character-sanitizer";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
 import { METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER } from "./constants";
@@ -30,6 +33,7 @@ import {
   HiePatientRosterMapping,
   Hl7v2SubscriberApiResponse,
   Hl7v2SubscriberParams,
+  PatientWithCohorts,
   RosterRowData,
   VpnlessHieConfig,
 } from "./types";
@@ -55,6 +59,7 @@ export class Hl7v2RosterGenerator {
   async execute(config: HieConfig | VpnlessHieConfig): Promise<void> {
     const { log } = out("Hl7v2RosterGenerator");
     const { states } = config;
+    const hieStates = config.states;
     const hieName = config.name;
     const loggingDetails = {
       hieName,
@@ -65,7 +70,7 @@ export class Hl7v2RosterGenerator {
     log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
     log(`Getting all subscribed patients...`);
     const rawPatients = await simpleExecuteWithRetries(
-      () => this.getAllSubscribedPatients(hieName),
+      () => this.getAllSubscribedPatients(hieStates, hieName),
       log
     );
     log(`Found ${rawPatients.length} total patients`);
@@ -144,12 +149,15 @@ export class Hl7v2RosterGenerator {
     await trackRosterSizePerCustomer(trackRosterSizePerCustomerParams);
   }
 
-  private async getAllSubscribedPatients(hieName: string): Promise<Patient[]> {
-    const { log } = out(`getAllSubscribedPatients - hieName ${hieName}`);
-    const allSubscribers: Patient[] = [];
+  private async getAllSubscribedPatients(
+    hieStates: USState[],
+    hieName: string
+  ): Promise<PatientWithCohorts[]> {
+    const { log } = out(`getAllSubscribedPatients - states: ${hieStates.join(",")}`);
+    const allSubscribers: PatientWithCohorts[] = [];
     let currentUrl: string | undefined = `${this.apiUrl}/${HL7V2_SUBSCRIBERS_ENDPOINT}`;
     let baseParams: Hl7v2SubscriberParams | undefined = {
-      hieName,
+      hieStates,
       count: NUMBER_OF_PATIENTS_PER_PAGE,
     };
 
@@ -165,8 +173,67 @@ export class Hl7v2RosterGenerator {
       currentUrl = response.data.meta.nextPage;
       i += 1;
     }
-    log(`Found ${allSubscribers.length} total patients in ${timer.getElapsedTime()}ms`);
-    return allSubscribers;
+    const allSubscribersHieSpecific = this.getPatientsAfterHieSpecificFilter(
+      allSubscribers,
+      hieName
+    );
+    log(`Found ${allSubscribersHieSpecific.length} total patients in ${timer.getElapsedTime()}ms`);
+    return allSubscribersHieSpecific;
+  }
+
+  private getPatientsAfterHieSpecificFilter(
+    patients: PatientWithCohorts[],
+    hieName: string
+  ): PatientWithCohorts[] {
+    if (hieName === "HealthConnectTexas") {
+      return this.getHealthConnectTexasPatients(patients);
+    }
+    if (hieName === "HieTexasPcc") {
+      return this.getHieTexasPccPatients(patients);
+    }
+
+    return patients;
+  }
+
+  private getHealthConnectTexasPatients(patients: PatientWithCohorts[]): PatientWithCohorts[] {
+    const healthConnectTexasPatients = patients.filter(p => {
+      const settings = this.getSettings(p.Cohorts);
+      return (
+        settings.adtMonitoring_onlyHealthConnectTexas === true ||
+        (settings.adtMonitoring_onlyHieTexasPcc === false &&
+          settings.adtMonitoring_onlyHealthConnectTexas === false)
+      );
+    });
+
+    return healthConnectTexasPatients;
+  }
+
+  private getHieTexasPccPatients(patients: PatientWithCohorts[]): PatientWithCohorts[] {
+    const hieTexasPccPatients = patients.filter(p => {
+      const settings = this.getSettings(p.Cohorts);
+      return (
+        settings.adtMonitoring_onlyHieTexasPcc === true ||
+        (settings.adtMonitoring_onlyHealthConnectTexas === false &&
+          settings.adtMonitoring_onlyHieTexasPcc === false)
+      );
+    });
+
+    return hieTexasPccPatients;
+  }
+
+  private getSettings(cohorts: Cohort[]): CohortSettings {
+    if (cohorts.length === 0) return {};
+    const firstCohort = cohorts[0];
+    if (!firstCohort) return {};
+
+    const keys = Object.keys(firstCohort.settings ?? {}) as (keyof CohortSettings)[];
+    const result: CohortSettings = {};
+
+    for (const key of keys) {
+      result[key] = cohorts.every(c => c.settings?.[key] === true);
+    }
+
+    return result;
   }
 
   private async getOrganizations(cxIds: string[]): Promise<InternalOrganizationDTO[]> {
