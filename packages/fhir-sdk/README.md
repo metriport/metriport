@@ -67,6 +67,26 @@ console.log(result.hasBrokenReferences); // true if at least one broken referenc
 console.log(result.brokenReferences); // All broken references in bundle
 ```
 
+### 5. Reference Walking (BFS Traversal)
+
+Walk the reference graph starting from any resource using breadth-first search (BFS). This is useful for discovering all resources connected to a specific resource.
+
+```typescript
+const observation = sdk.getObservationById("obs-123");
+
+// Walk all reachable resources
+const result = sdk.walkReferences(observation);
+console.log(result.allResources); // All resources reachable from observation
+console.log(result.resourcesByDepth); // Resources organized by depth level
+console.log(result.depthReached); // Maximum depth traversed
+
+// Limit traversal depth
+const limitedResult = sdk.walkReferences(observation, { maxDepth: 2 });
+
+// Exclude the start resource from results
+const withoutStart = sdk.walkReferences(observation, { includeStartResource: false });
+```
+
 ## Example Use Cases
 
 ### Patient Summary
@@ -89,6 +109,28 @@ const buildPatientSummary = (patientId: string) => {
 ```typescript
 // Traverse multiple references in sequence
 const orgName = sdk.getPatients()[0]?.getManagingOrganization()?.name;
+```
+
+### Extract Related Resources
+
+```typescript
+// Get all resources related to a specific observation
+const extractRelatedResources = (observationId: string) => {
+  const observation = sdk.getObservationById(observationId);
+  if (!observation) return null;
+
+  // Walk the graph to find all related resources up to 2 levels deep
+  const result = sdk.walkReferences(observation, { maxDepth: 2 });
+
+  return {
+    observation,
+    relatedResourceCount: result.allResources.length,
+    resourcesByType: result.allResources.reduce((acc, resource) => {
+      acc[resource.resourceType] = (acc[resource.resourceType] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>),
+  };
+};
 ```
 
 ### Example Use Case: Processing a bundle
