@@ -11,7 +11,7 @@ select
     , cast(normalized_description as {{ dbt.type_string() }}) as normalized_description
     , cast(status as {{ dbt.type_string() }}) as status
     , cast(status_reason as {{ dbt.type_string() }}) as status_reason
-    , {{ try_to_cast_date('occurrence_date') }} as occurrence_date
+    , {{ try_to_cast_date('occurrence_date', 'YYYY-MM-DD') }} as occurrence_date
     , cast(source_dose as {{ dbt.type_string() }}) as source_dose
     , cast(normalized_dose as {{ dbt.type_string() }}) as normalized_dose
     , cast(lot_number as {{ dbt.type_string() }}) as lot_number

@@ -1,9 +1,10 @@
 version: 2
 models:
   - name: input_layer__observation
-    description: |
-      Mapping check to make sure all columns are mapped appropriately into the input layer.
-      The observation table contains information on measurements other than lab tests
+    description: >
+      Mapping check to make sure all columns are mapped appropriately into the input
+      layer.
+      The observation table contains information on measurements other than lab  tests
       e.g. blood pressure, height, and weight.
     config:
       schema: input_layer

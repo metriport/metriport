@@ -1,9 +1,11 @@
 version: 2
 models:
   - name: input_layer__medication
-    description: |
-      Mapping check to make sure all columns are mapped appropriately into the input layer.
-      The medication table contains information about medications prescribed and dispensed to patients.
+    description: >
+      Mapping check to make sure all columns are mapped appropriately into the input
+      layer.
+      The medication table contains information on medications ordered and/or  administered
+      during a patient encounter.
     config:
       schema: input_layer
       tags: input_layer

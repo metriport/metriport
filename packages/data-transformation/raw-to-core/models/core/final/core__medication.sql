@@ -67,8 +67,8 @@ from {{ ref('core__stg_clinical_medication') }} as meds
 -- add auto rxnorm + atc
 select
      sm.medication_id
-   , sm.patient_id
    , sm.person_id
+   , sm.patient_id
    , sm.encounter_id
    , sm.dispensing_date
    , sm.prescribing_date

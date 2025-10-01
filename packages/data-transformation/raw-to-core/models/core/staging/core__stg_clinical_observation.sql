@@ -4,7 +4,7 @@ select
     , cast(patient_id as {{ dbt.type_string() }}) as patient_id
     , cast(encounter_id as {{ dbt.type_string() }}) as encounter_id
     , cast(panel_id as {{ dbt.type_string() }}) as panel_id
-    , {{ try_to_cast_date('observation_date') }} as observation_date
+    , {{ try_to_cast_date('observation_date', 'YYYY-MM-DD') }} as observation_date
     , cast(observation_type as {{ dbt.type_string() }}) as observation_type
     , cast(source_code_type as {{ dbt.type_string() }}) as source_code_type
     , cast(source_code as {{ dbt.type_string() }}) as source_code

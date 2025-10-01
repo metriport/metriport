@@ -8,6 +8,7 @@ models:
       result.
     config:
       schema: input_layer
+      tags: input_layer
       materialized: view
     columns:
       - name: lab_result_id

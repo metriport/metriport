@@ -3,7 +3,8 @@ models:
   - name: input_layer__location
     description: |
       Mapping check to make sure all columns are mapped appropriately into the input layer.
-      The location table contains information about healthcare facilities and locations.
+      The location table contains information on practice and facility locations 
+      where patients receive medical care.
     config:
       schema: input_layer
       tags: input_layer

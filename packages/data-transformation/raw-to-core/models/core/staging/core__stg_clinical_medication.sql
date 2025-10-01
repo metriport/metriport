@@ -3,8 +3,8 @@ select
     , cast(null as {{ dbt.type_string() }}) as person_id
     , cast(patient_id as {{ dbt.type_string() }}) as patient_id
     , cast(encounter_id as {{ dbt.type_string() }}) as encounter_id
-    , {{ try_to_cast_date('dispensing_date') }} as dispensing_date
-    , {{ try_to_cast_date('prescribing_date') }} as prescribing_date
+    , {{ try_to_cast_date('dispensing_date', 'YYYY-MM-DD') }} as dispensing_date
+    , {{ try_to_cast_date('prescribing_date', 'YYYY-MM-DD') }} as prescribing_date
     , cast(source_code_type as {{ dbt.type_string() }}) as source_code_type
     , cast(source_code as {{ dbt.type_string() }}) as source_code
     , cast(source_description as {{ dbt.type_string() }}) as source_description

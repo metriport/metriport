@@ -182,8 +182,6 @@ models:
       description: '{{ doc("allowed_amount") }}'
     - name: charge_amount
       description: '{{ doc("charge_amount") }}'
-    - name: data_source
-      description: '{{ doc("data_source") }}'
     - name: claim_count
       description: '{{ doc("claim_count") }}'
     - name: inst_claim_count
@@ -194,16 +192,8 @@ models:
       description: '{{ doc("source_model") }}'
     - name: encounter_source_type
       description: '{{ doc("encounter_source_type") }}'
-    - name: attending_provider_id
-      description: '{{ doc("attending_provider_id") }}'
-    - name: attending_provider_name
-      description: '{{ doc("attending_provider_name") }}'
-    - name: facility_id
-      description: '{{ doc("facility_id") }}'
-    - name: facility_name
-      description: '{{ doc("facility_name") }}'
-    - name: facility_type
-      description: '{{ doc("facility_type") }}'
+    - name: data_source
+      description: '{{ doc("data_source") }}'
     - name: tuva_last_run
       description: '{{ doc("tuva_last_run") }}'
 

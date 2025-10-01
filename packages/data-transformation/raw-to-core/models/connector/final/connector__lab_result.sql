@@ -22,8 +22,8 @@ select
     , cast(null as {{ dbt.type_string() }} ) as normalized_units
     , cast(source_reference_range_low as {{ dbt.type_string() }} ) as source_reference_range_low
     , cast(source_reference_range_high as {{ dbt.type_string() }} ) as source_reference_range_high
-    , cast(null as {{ dbt.type_string() }} ) as normalized_reference_range_high
     , cast(null as {{ dbt.type_string() }} ) as normalized_reference_range_low
+    , cast(null as {{ dbt.type_string() }} ) as normalized_reference_range_high
     , cast(null as {{ dbt.type_string() }} ) as source_abnormal_flag
     , cast(null as {{ dbt.type_string() }} ) as normalized_abnormal_flag
     , cast(null as {{ dbt.type_string() }} ) as specimen

@@ -12,8 +12,8 @@ select
     , cast(last_name as {{ dbt.type_string() }}) as last_name
     , cast(sex as {{ dbt.type_string() }}) as sex
     , cast(race as {{ dbt.type_string() }}) as race
-    , {{ try_to_cast_date('birth_date') }} as birth_date
-    , {{ try_to_cast_date('death_date') }} as death_date
+    , {{ try_to_cast_date('birth_date', 'YYYY-MM-DD') }} as birth_date
+    , {{ try_to_cast_date('death_date', 'YYYY-MM-DD') }} as death_date
     , cast(death_flag as {{ dbt.type_int() }}) as death_flag
     , cast(social_security_number as {{ dbt.type_string() }}) as social_security_number
     , cast(address as {{ dbt.type_string() }}) as address

@@ -142,8 +142,8 @@ seeds:
       column_types:
         bill_type_code: varchar(256)
         bill_type_description: varchar(256)
-        deprecated : integer
-        deprecated_date : date
+        deprecated: integer
+        deprecated_date: date
     columns:
       - name: bill_type_code
         description: 'The code representing the type of bill.'
@@ -197,7 +197,7 @@ seeds:
       alias: discharge_disposition
       column_types:
         discharge_disposition_code: varchar(256)
-        discharge_disposition_description : varchar(1024)
+        discharge_disposition_description: varchar(1024)
     columns:
       - name: discharge_disposition_code
         description: 'The code representing the discharge disposition.'
@@ -263,7 +263,7 @@ seeds:
         hcpcs: varchar(256)
         seqnum: varchar(256)
         recid: varchar(256)
-        long_description : varchar(2000)
+        long_description: varchar(2000)
         short_description: varchar(256)
     columns:
       - name: hcpcs
@@ -291,7 +291,7 @@ seeds:
         rbcs_cat_desc: varchar(256)
         rbcs_cat_subcat: varchar(256)
         rbcs_subcat_desc: varchar(256)
-        rbcs_famnumb:  numeric
+        rbcs_famnumb: numeric
         rbcs_family_desc: varchar(256)
         rbcs_major_ind: varchar(256)
         hcpcs_cd_add_dt: date
@@ -1136,6 +1136,11 @@ seeds:
         hcpcs_code: varchar(5)
         ccs_category: varchar(3)
         ccs_category_description: varchar(256)
+        release_year: integer
+        start_valid_date: date
+        end_valid_date: date
+        code_range: varchar(256)
+        source_file: varchar(256)
 
   - name: terminology__nitos
     config:

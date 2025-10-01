@@ -1,9 +1,11 @@
 version: 2
 models:
   - name: input_layer__procedure
-    description: |
-      Mapping check to make sure all columns are mapped appropriately into the input layer.
-      The procedure table contains information on procedures that were performed on patients in the dataset.
+    description: >
+      Mapping check to make sure all columns are mapped appropriately into the input
+      layer.
+      The procedure table contains information on procedures that were performed  on
+      patients in the dataset.
     config:
       schema: input_layer
       tags: input_layer

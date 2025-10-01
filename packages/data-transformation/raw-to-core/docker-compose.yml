@@ -10,7 +10,6 @@ services:
       - .:/usr/app/data
       - ~/.aws:/root/.aws
     environment:
-      DBT_PROFILES_DIR: /usr/app/dbt/
       DBT_PG_HOST: ${DBT_PG_HOST}
       DBT_PG_PORT: ${DBT_PG_PORT}
       DBT_PG_USER: ${DBT_PG_USER}

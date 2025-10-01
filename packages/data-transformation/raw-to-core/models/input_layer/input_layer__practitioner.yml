@@ -1,9 +1,11 @@
 version: 2
 models:
   - name: input_layer__practitioner
-    description: |
-      Mapping check to make sure all columns are mapped appropriately into the input layer.
-      The practitioner table contains information about healthcare providers.
+    description: >
+      Mapping check to make sure all columns are mapped appropriately into the input
+      layer.
+      The practitioner table contains information on the providers in the  dataset
+      e.g. physicians, physicians assistants, etc.
     config:
       schema: input_layer
       tags: input_layer
@@ -14,9 +16,9 @@ models:
       - name: npi
         description: '{{ doc("npi") }}'
       - name: first_name
-        description: '{{ doc("first_name") }}'
+        description: '{{ doc("provider_first_name") }}'
       - name: last_name
-        description: '{{ doc("last_name") }}'
+        description: '{{ doc("provider_last_name") }}'
       - name: practice_affiliation
         description: '{{ doc("practice_affiliation") }}'
       - name: specialty
