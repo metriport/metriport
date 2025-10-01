@@ -43,7 +43,7 @@ router.get(
         bucketName,
       });
 
-      return res.status(200).send(binary);
+      return res.status(200).type("application/octet-stream").send(binary);
     } catch (error) {
       const msg = `Error processing DR from CW`;
       console.log(`${msg}: ${errorToString(error)}`);

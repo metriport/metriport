@@ -60,7 +60,7 @@ export const handler = capture.wrapHandler(
       });
     } catch (error) {
       const msg = `Error processing DR from CW`;
-      console.log(`${msg}: ${errorToString(error)}`);
+      log(`${msg}: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
           queryParams: event.queryStringParameters,
