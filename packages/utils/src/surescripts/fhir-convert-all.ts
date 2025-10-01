@@ -91,6 +91,71 @@ async function fhirConvertAllResponses({
   }
 }
 
+/**
+ * Retrieves an array of facility IDs and corresponding patient IDs for each facility for the given customer.
+ */
+async function getFacilityAndPatientIdsForCustomer(cxId: string): Promise<FacilityAndPatientIds[]> {
+  const dataMapper = new SurescriptsDataMapper();
+  const customer = await dataMapper.getCustomerData(cxId);
+  const response: FacilityAndPatientIds[] = [];
+
+  for (const facility of customer.facilities) {
+    const facilityId = facility.id;
+    const patientIds = await dataMapper.getPatientIdsForFacility({ cxId, facilityId });
+    response.push({
+      facilityId,
+      patientIds,
+    });
+  }
+  return response;
+}
+
+/**
+ * Retrieves all Surescripts response file keys (not file contents) from S3. This returns an array of objects
+ * with { key, patientId, transmissionId }, where key is the full S3 key of the response file.
+ */
+async function getAllResponseFiles(useCache?: boolean): Promise<ListResponseFilesResponse> {
+  if (useCache) {
+    const cachedResponse = await getResponseFilesFromCache();
+    if (cachedResponse) return cachedResponse;
+  }
+  console.log(`Loading response file keys from S3`);
+  const replica = new SurescriptsReplica();
+  const responseFiles = await replica.listResponseFiles();
+  if (useCache) {
+    writeResponseFilesToCache(responseFiles);
+  }
+  console.log(`Loaded ${responseFiles.length} response file keys from S3`);
+  return responseFiles;
+}
+
+/**
+ * Uses a local cache file to store a snapshot of the response file keys from S3, useful if running this script
+ * across multiple customers and enabled by the --use-cache flag.
+ */
+async function getResponseFilesFromCache(): Promise<ListResponseFilesResponse | undefined> {
+  const cacheFile = getSurescriptsRunsFilePath(getResponseKeysFileName());
+  if (!fs.existsSync(cacheFile)) {
+    return undefined;
+  }
+  const cache = await fs.promises.readFile(cacheFile, "utf-8");
+  const responseFiles = JSON.parse(cache) as ListResponseFilesResponse;
+  console.log(`Loaded ${responseFiles.length} response file keys from cache`);
+  return responseFiles;
+}
+
+function writeResponseFilesToCache(responseFiles: ListResponseFilesResponse): void {
+  const cacheFileName = getResponseKeysFileName();
+  writeSurescriptsRunsFile(cacheFileName, JSON.stringify(responseFiles, null, 2));
+}
+
+function getResponseKeysFileName(): string {
+  return `response-keys/${buildDayjs().format("YYYY-MM-DD")}.json`;
+}
+
+/**
+ * Converts a patient response file to a FHIR bundle.
+ */
 async function convertPatientResponseFile(
   cxId: string,
   facilityId: string,
@@ -113,6 +178,9 @@ async function convertPatientResponseFile(
   }
 }
 
+/**
+ * Convert a batch response file to multiple FHIR bundles.
+ */
 async function convertBatchResponseFile(
   cxId: string,
   facilityId: string,
@@ -135,57 +203,6 @@ async function convertBatchResponseFile(
     await dataMapper.recreateConsolidatedBundle(cxId, patientId);
     console.log(`Recreated consolidated bundle for patient ${patientId}`);
   }
-}
-
-async function getFacilityAndPatientIdsForCustomer(cxId: string): Promise<FacilityAndPatientIds[]> {
-  const dataMapper = new SurescriptsDataMapper();
-  const customer = await dataMapper.getCustomerData(cxId);
-  const response: FacilityAndPatientIds[] = [];
-
-  for (const facility of customer.facilities) {
-    const facilityId = facility.id;
-    const patientIds = await dataMapper.getPatientIdsForFacility({ cxId, facilityId });
-    response.push({
-      facilityId,
-      patientIds,
-    });
-  }
-  return response;
-}
-
-async function getAllResponseFiles(useCache?: boolean): Promise<ListResponseFilesResponse> {
-  if (useCache) {
-    const cachedResponse = await getResponseFilesFromCache();
-    if (cachedResponse) return cachedResponse;
-  }
-  console.log(`Loading response file keys from S3`);
-  const replica = new SurescriptsReplica();
-  const responseFiles = await replica.listResponseFiles();
-  if (useCache) {
-    writeResponseFilesToCache(responseFiles);
-  }
-  console.log(`Loaded ${responseFiles.length} response file keys from S3`);
-  return responseFiles;
-}
-
-async function getResponseFilesFromCache(): Promise<ListResponseFilesResponse | undefined> {
-  const cacheFile = getSurescriptsRunsFilePath(getResponseKeysFileName());
-  if (!fs.existsSync(cacheFile)) {
-    return undefined;
-  }
-  const cache = await fs.promises.readFile(cacheFile, "utf-8");
-  const responseFiles = JSON.parse(cache) as ListResponseFilesResponse;
-  console.log(`Loaded ${responseFiles.length} response file keys from cache`);
-  return responseFiles;
-}
-
-function writeResponseFilesToCache(responseFiles: ListResponseFilesResponse): void {
-  const cacheFileName = getResponseKeysFileName();
-  writeSurescriptsRunsFile(cacheFileName, JSON.stringify(responseFiles, null, 2));
-}
-
-function getResponseKeysFileName(): string {
-  return `response-keys/${buildDayjs().format("YYYY-MM-DD")}.json`;
 }
 
 export default program;
