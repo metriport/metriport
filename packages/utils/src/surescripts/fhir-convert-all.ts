@@ -174,8 +174,9 @@ async function getResponseFilesFromCache(): Promise<ListResponseFilesResponse | 
     return undefined;
   }
   const cache = await fs.promises.readFile(cacheFile, "utf-8");
-  console.log(`Loaded ${cache.length} response file keys from cache`);
-  return JSON.parse(cache) as ListResponseFilesResponse;
+  const responseFiles = JSON.parse(cache) as ListResponseFilesResponse;
+  console.log(`Loaded ${responseFiles.length} response file keys from cache`);
+  return responseFiles;
 }
 
 function writeResponseFilesToCache(responseFiles: ListResponseFilesResponse): void {
