@@ -565,7 +565,14 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
         });
       }
       const data = binary.data;
-      if (!data) throw new CommonwellError(errorMessage, undefined, { reason: "Missing data" });
+      if (!data)
+        throw new CommonwellError(errorMessage, undefined, {
+          reason: "Missing data",
+          contentType,
+          resourceType,
+          properties: typeof binary === "object" ? Object.keys(binary).join(", ") : "not-a-object",
+          inputUrl,
+        });
       const dataBuffer = base64ToBuffer(data);
       outputStream.write(dataBuffer);
       outputStream.end();
