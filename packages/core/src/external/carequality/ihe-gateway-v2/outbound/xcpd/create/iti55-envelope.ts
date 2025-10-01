@@ -64,6 +64,7 @@ function createSoapBodyContent({
   const prefix = useUrn ? "urn:" : "";
 
   if (isNewSoapEnabled) {
+    const patientName = patientNames?.[0];
     return {
       [`urn:PRPA_IN201305UV02`]: {
         "@_xmlns:urn": namespaces.hl7,
@@ -182,24 +183,23 @@ function createSoapBodyContent({
                     },
                   }
                 : {}),
-              ...(patientNames
-                ? patientNames.map(name => ({
-                    [`${prefix}livingSubjectName`]: {
-                      [`${prefix}value`]: {
-                        [`${prefix}family`]: name.family,
-                        [`${prefix}given`]: name.given,
-                      },
-                      [`${prefix}semanticsText`]: "LivingSubject.name",
-                    },
-                  }))
-                : []),
+              ...(patientName && {
+                [`${prefix}livingSubjectName`]: {
+                  [`${prefix}value`]: {
+                    [`${prefix}family`]: patientName.family,
+                    [`${prefix}given`]: patientName.given,
+                  },
+                  [`${prefix}semanticsText`]: "LivingSubject.name",
+                },
+              }),
               ...(patientAddresses
                 ? {
                     [`${prefix}patientAddress`]: {
                       [`${prefix}value`]: patientAddresses.map(address => ({
-                        ...address.line?.map(line => ({
-                          [`${prefix}streetAddressLine`]: line,
-                        })),
+                        ...(address.line &&
+                          address.line.length > 0 && {
+                            [`${prefix}streetAddressLine`]: address.line,
+                          }),
                         [`${prefix}city`]: address.city,
                         [`${prefix}state`]: address.state,
                         [`${prefix}postalCode`]: address.postalCode,
