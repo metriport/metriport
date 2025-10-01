@@ -1,19 +1,31 @@
 /* ============================================================
-   Purpose: Flag patients as "hypertension suspects" from
-            discrete BP observations (LOINC):
-              - 8480-6: Systolic blood pressure
-              - 8462-4: Diastolic blood pressure
-            while excluding anyone already diagnosed with HTN.
-   Staging thresholds used (single-observation labeling):
-     - Stage 2 HTN: SBP ≥ 140  OR  DBP ≥ 90
-     - Stage 1 HTN: SBP 130–139 OR DBP 80–89
-   Notes:
-     - Uses TRY_CAST(...) to avoid errors on non-numeric RESULT.
-     - CASE is ordered so Stage 2 matches take precedence over Stage 1.
-     - This flags by individual observations; it is not a clinical diagnosis.
+   Purpose
+   -------
+   Flag "depression_screen_positive" suspects from PHQ results 
+   while EXCLUDING anyone already diagnosed with depressive disorders.
+
+   Criteria (single-observation flags)
+   -----------------------------------
+   - PHQ-9 total (LOINC 44261-6): score >= 10  -> depression_phq9_10plus
+   - PHQ-2 total (LOINC 55758-7): score >= 3   -> depression_phq2_3plus
+     (PHQ-9 panel 44249-1 is a panel code; we rely on the total scores.)
+
+   Exclusions
+   ----------
+   - Existing depression diagnosis in ICD-10-CM:
+       * F32.*  (Major depressive disorder, single episode incl. F32.A)
+       * F33.*  (Major depressive disorder, recurrent)
+       * F34.1  (Dysthymia)
+
+   Safety
+   ------
+   - TRY_TO_DOUBLE used to avoid errors on non-numeric RESULT.
+   - Value guards keep scores within plausible PHQ ranges.
+   - Embeds minimal FHIR in responsible_resources so the UI
+     can render without a consolidated bundle.
    ============================================================ */
 
-WITH bp_observations AS (
+WITH depression_observations AS (
   SELECT
     /* Who the flag applies to */
     o.PATIENT_ID,
@@ -22,44 +34,49 @@ WITH bp_observations AS (
     o.OBSERVATION_ID              AS resource_id,
     'Observation'                 AS resource_type,
 
-    /* Suspect grouping (stage precedence: stage2 > stage1) */
+    /* Assign screen-positive buckets based on PHQ totals */
     CASE
-      WHEN o.NORMALIZED_CODE = '8480-6' AND TRY_TO_DOUBLE(o.RESULT) >= 140 THEN 'stage2_systolic'
-      WHEN o.NORMALIZED_CODE = '8462-4' AND TRY_TO_DOUBLE(o.RESULT) >= 90  THEN 'stage2_diastolic'
-      WHEN o.NORMALIZED_CODE = '8480-6' AND TRY_TO_DOUBLE(o.RESULT) BETWEEN 130 AND 139 THEN 'stage1_systolic'
-      WHEN o.NORMALIZED_CODE = '8462-4' AND TRY_TO_DOUBLE(o.RESULT) BETWEEN 80  AND 89  THEN 'stage1_diastolic'
+      WHEN o.NORMALIZED_CODE = '44261-6' AND TRY_TO_DOUBLE(o.RESULT) >= 10 THEN 'depression_phq9_10plus'
+      WHEN o.NORMALIZED_CODE = '55758-7' AND TRY_TO_DOUBLE(o.RESULT) >= 3  THEN 'depression_phq2_3plus'
       ELSE NULL
     END AS suspect_group,
 
-    /* Target ICD-10 & label for HTN */
-    'I10'   AS suspect_icd10_code,
-    'Essential (primary) hypertension' AS suspect_icd10_short_description,
+    /* Default suspect diagnosis label to review (not a diagnosis by itself) */
+    'F32.A'  AS suspect_icd10_code,
+    'Depression, unspecified (screen positive)' AS suspect_icd10_short_description,
 
     /* Fields to construct minimal FHIR */
     o.NORMALIZED_CODE_TYPE,
     o.NORMALIZED_CODE,
     o.NORMALIZED_DESCRIPTION,
     o.RESULT,
-    /* Prefer NORMALIZED_UNITS if present, else SOURCE_UNITS */
-    COALESCE(NULLIF(o.NORMALIZED_UNITS, ''), o.SOURCE_UNITS) AS units,
     o.OBSERVATION_DATE,
     o.DATA_SOURCE
 
   FROM OBSERVATION o
   WHERE
-    /* Only normalized LOINC BP observations */
+    /* Only normalized PHQ totals available in your CSV */
     o.NORMALIZED_CODE_TYPE ILIKE 'loinc'
-    AND o.NORMALIZED_CODE IN ('8480-6','8462-4')
+    AND o.NORMALIZED_CODE IN ('44261-6','55758-7')      -- PHQ-9 total, PHQ-2 total
 
-    /* Ignore clearly non-hypertensive / non-numeric */
-    AND TRY_TO_DOUBLE(o.RESULT) >= 80
+    /* Numeric guardrails within plausible PHQ ranges */
+    AND (
+      (o.NORMALIZED_CODE = '44261-6' AND TRY_TO_DOUBLE(o.RESULT) BETWEEN 0 AND 27)
+      OR
+      (o.NORMALIZED_CODE = '55758-7' AND TRY_TO_DOUBLE(o.RESULT) BETWEEN 0 AND 6)
+    )
 
+    /* Exclude patients already diagnosed with depressive disorders */
     AND NOT EXISTS (
       SELECT 1
       FROM CONDITION c
       WHERE c.PATIENT_ID = o.PATIENT_ID
         AND c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
-        AND LEFT(c.NORMALIZED_CODE,3) IN ('I10','I11','I12','I13','I15')
+        AND (
+             c.NORMALIZED_CODE LIKE 'F32.%'   -- MDD, single episode (incl. F32.A)
+          OR c.NORMALIZED_CODE LIKE 'F33.%'   -- MDD, recurrent
+          OR c.NORMALIZED_CODE = 'F34.1'      -- Dysthymia
+        )
     )
 ),
 
@@ -76,7 +93,7 @@ obs_with_fhir AS (
       'resourceType', 'Observation',
       'id',            b.resource_id,
 
-      /* Status: not provided in schema; default to 'final' */
+      /* Status: not present in schema; default to 'final' */
       'status',        'final',
 
       /* CodeableConcept with LOINC */
@@ -94,15 +111,16 @@ obs_with_fhir AS (
       /* effective[x]: we have a DATE → valid FHIR date string */
       'effectiveDateTime', TO_CHAR(b.OBSERVATION_DATE, 'YYYY-MM-DD'),
 
-      /* Value: Quantity if numeric, else String */
+      /* Value: scores are numeric; send as Quantity with unit 'score' */
       'valueQuantity',
         IFF(TRY_TO_DOUBLE(b.RESULT) IS NOT NULL,
             OBJECT_CONSTRUCT(
               'value', TRY_TO_DOUBLE(b.RESULT),
-              'unit',  b.units
+              'unit',  'score'
             ),
             NULL),
 
+      /* Fallback string if somehow non-numeric slipped through guard */
       'valueString',
         IFF(TRY_TO_DOUBLE(b.RESULT) IS NULL, b.RESULT, NULL)
     ) AS fhir,
@@ -110,7 +128,7 @@ obs_with_fhir AS (
     b.resource_id,
     b.resource_type,
     b.DATA_SOURCE AS data_source
-  FROM bp_observations b
+  FROM depression_observations b
 )
 
 SELECT
@@ -124,8 +142,8 @@ SELECT
     OBJECT_CONSTRUCT(
       'id',            resource_id,
       'resource_type', resource_type,   -- "Observation"
-      'data_source',   data_source,     -- from OBSERVATION.DATA_SOURCE
-      'fhir',          fhir             -- minimal FHIR payload
+      'data_source',   data_source,     -- from OBSERVATION.DATA_SOURCE (maps meta.source → data_source)
+      'fhir',          fhir             -- minimal FHIR payload used by the UI
     )
   ) AS responsible_resources,
 
