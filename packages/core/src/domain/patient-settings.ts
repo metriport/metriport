@@ -6,6 +6,7 @@ import {
   patientSettingsRequestSchema,
   QuestMonitoringRequest,
   questMonitoringRequestSchema,
+  USState,
 } from "@metriport/shared";
 import { z } from "zod";
 import {
@@ -40,7 +41,7 @@ export type Hl7v2Subscription = z.infer<typeof hl7v2SubscriptionSchema>;
 
 export const hl7v2SubscribersQuerySchema = z
   .object({
-    hieName: z.string(),
+    hieStates: z.array(z.nativeEnum(USState)).min(1).max(2),
   })
   .and(createQueryMetaSchema());
 
