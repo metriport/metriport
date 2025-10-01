@@ -136,7 +136,6 @@ export async function queryAndProcessDocuments({
   if (!isCwEnabled) return interrupt(`CW disabled for cxId ${cxId} patientId ${patientId}`);
 
   try {
-    // TODO: ENG-934 - MINOR UPDATE TO THE LOGIC
     const initiator = await getCwInitiator(patientParam, facilityId);
 
     const currentPatient = await getPatientOrFail({ id: patientId, cxId });
