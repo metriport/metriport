@@ -74,7 +74,7 @@ export function prepareBundleForAiSummarization(bundle: Bundle, log: typeof cons
   const metrics = {
     initialBundleSize: bundle.entry?.length,
     initialBundleBytes: sizeInBytes(JSON.stringify(bundle)),
-    finalBundleSize: finalSlimPayloadBundle?.length,
+    finalBundleSize: finalSlimPayloadBundle.length,
     finalBundleBytes: sizeInBytes(bundleText),
     timeframeUsed,
     durationMs: duration,
@@ -88,13 +88,13 @@ function determineOptimalTimeframe(
   bundle: Bundle,
   initialDate: Dayjs
 ): {
-  finalSlimPayloadBundle: SlimResource[] | undefined;
+  finalSlimPayloadBundle: SlimResource[];
   timeframeUsed: number;
 } {
   const initialStartDate = initialDate.subtract(NUM_HISTORICAL_YEARS, "year").format(ISO_DATE);
   const filteredBundleOneYear = filterBundleByDate(bundle, initialStartDate);
-  const slimPayloadBundleOneYear = buildSlimmerPayload(filteredBundleOneYear);
-  const resourceCount = slimPayloadBundleOneYear?.length ?? 0;
+  const slimPayloadBundleOneYear = buildSlimmerPayload(filteredBundleOneYear) ?? [];
+  const resourceCount = slimPayloadBundleOneYear.length;
 
   const hasSufficientData = resourceCount >= MIN_RESOURCES_FOR_SUFFICIENT_DATA;
 
@@ -107,7 +107,7 @@ function determineOptimalTimeframe(
 
   const maxStartDate = initialDate.subtract(MAX_HISTORICAL_YEARS, "year").format(ISO_DATE);
   const finalFilteredBundle = filterBundleByDate(bundle, maxStartDate);
-  const finalSlimPayloadBundle = buildSlimmerPayload(finalFilteredBundle);
+  const finalSlimPayloadBundle = buildSlimmerPayload(finalFilteredBundle) ?? [];
 
   return {
     finalSlimPayloadBundle,
