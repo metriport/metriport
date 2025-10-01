@@ -2,7 +2,7 @@
 # This script runs the integration-test.ts script without inserting to FHIR, and then runs the compare_total_resource_counts.sh script using the output from integration-test.ts.
 
 # Run the integration-test.ts script and capture its output
-OUTPUT=$(ts-node src/fhir-converter/integration-test.ts)
+OUTPUT=$(ts-node src/fhir/fhir-converter/integration-test.ts)
 echo "$OUTPUT"
 
 # Extract the file1 location from the output
@@ -20,4 +20,4 @@ echo "Extracted file1 location: $FILE1_LOCATION"
 echo "Current working directory: $(pwd)"
 
 # Run the run_jsondiffpatch.sh script with the extracted file location
-./src/fhir-converter/scripts/compare_total_resource_counts.sh "$FILE1_LOCATION"
+./src/fhir/fhir-converter/scripts/compare_total_resource_counts.sh "$FILE1_LOCATION"
