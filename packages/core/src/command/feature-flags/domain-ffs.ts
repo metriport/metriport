@@ -253,6 +253,16 @@ export async function isPcpVisitAiSummaryFeatureFlagEnabledForCx(cxId: string): 
   return cxIdsWithPcpVisitAiSummaryEnabled.some(i => i === cxId);
 }
 
+export async function getCxsWithRecentVisitAiSummaryFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithRecentVisitAiSummaryFeatureFlag");
+}
+export async function isRecentVisitAiSummaryFeatureFlagEnabledForCx(
+  cxId: string
+): Promise<boolean> {
+  const cxIdsWithRecentVisitAiSummaryEnabled = await getCxsWithRecentVisitAiSummaryFeatureFlag();
+  return cxIdsWithRecentVisitAiSummaryEnabled.some(i => i === cxId);
+}
+
 export async function getCxsWithHl7NotificationWebhookFeatureFlag(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithHl7NotificationWebhookFeatureFlag");
 }
