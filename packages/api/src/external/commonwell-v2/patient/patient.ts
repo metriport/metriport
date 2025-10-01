@@ -186,7 +186,7 @@ export async function updatePatientAndLinksInCwV2({
   let commonWell: CommonWellAPI | undefined;
 
   try {
-    const commonwellPatientId = await getCommonwellPatientId(patient);
+    const commonwellPatientId = getCommonwellPatientId(patient);
     if (!commonwellPatientId) {
       log(`Could not find external data on Patient, creating it @ CW`);
       await registerAndLinkPatientInCwV2({
@@ -441,7 +441,7 @@ export async function removeInCwV2(patient: Patient, facilityId: string): Promis
   const { log } = out(`CW.v2 delete - M patientId ${patient.id}`);
   let commonWell: CommonWellAPI | undefined;
   try {
-    const commonwellPatientId = await getCommonwellPatientId(patient);
+    const commonwellPatientId = getCommonwellPatientId(patient);
     if (!commonwellPatientId) return;
 
     const { commonWellAPI } = await setupApiAndCwPatient({ patient, facilityId });
@@ -471,7 +471,7 @@ export async function removeInCwV2(patient: Patient, facilityId: string): Promis
   }
 }
 
-export async function getCommonwellPatientId(patient: Patient): Promise<string | undefined> {
+export function getCommonwellPatientId(patient: Patient): string | undefined {
   const commonwellData = getCWData(patient.data.externalData);
   if (!commonwellData || !commonwellData.patientId) return undefined;
   return getCwV2PatientId(commonwellData.patientId);

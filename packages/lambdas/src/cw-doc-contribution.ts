@@ -1,6 +1,6 @@
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { docContributionFileParam } from "@metriport/core/external/commonwell-v1/document/document-contribution";
-import { retrieveDocumentForCommonWell } from "@metriport/core/external/commonwell/contribution/shared-document-retrieval";
+import { retrieveDocumentForCommonWellContribution } from "@metriport/core/external/commonwell/contribution/shared-document-retrieval";
 import { out } from "@metriport/core/util/log";
 import { errorToString } from "@metriport/shared";
 import * as lambda from "aws-lambda";
@@ -30,34 +30,42 @@ const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
  * - retrieve the document content from S3;
  * - return a FHIR Binary resource with the document data.
  */
-const { log } = out("cw-doc-contribution");
 export const handler = capture.wrapHandler(
   async (event: lambda.APIGatewayRequestAuthorizerEvent) => {
     const startedAt = Date.now();
+
+    const { log } = out("cw-doc-contribution");
     try {
       log(`Received request w/ params: ${JSON.stringify(event.queryStringParameters)}`);
 
       const fileName = event.queryStringParameters?.[docContributionFileParam] ?? "";
       if (fileName.trim().length <= 0) {
-        return sendResponse({
-          statusCode: 400,
-          body: "Missing fileName query parameter",
-        });
+        return sendResponse(
+          {
+            statusCode: 400,
+            body: "Missing fileName query parameter",
+          },
+          log
+        );
       }
 
-      const binary = await retrieveDocumentForCommonWell({
+      const binary = await retrieveDocumentForCommonWellContribution({
         fileName,
         s3Utils,
         bucketName,
       });
 
-      return sendResponse({
-        statusCode: 200,
-        headers: {
-          "Content-Type": "application/octet-stream",
+      log(`Sending binary. Took ${Date.now() - startedAt}ms`);
+      return sendResponse(
+        {
+          statusCode: 200,
+          headers: {
+            "Content-Type": "application/octet-stream",
+          },
+          body: binary,
         },
-        body: binary,
-      });
+        log
+      );
     } catch (error) {
       const msg = `Error processing DR from CW`;
       log(`${msg}: ${errorToString(error)}`);
@@ -67,17 +75,18 @@ export const handler = capture.wrapHandler(
           error,
         },
       });
-      return sendResponse({
-        statusCode: 500,
-        body: "Internal Server Error",
-      });
-    } finally {
-      log(`Sent binary. Took ${Date.now() - startedAt}ms`);
+      return sendResponse(
+        {
+          statusCode: 500,
+          body: "Internal Server Error",
+        },
+        log
+      );
     }
   }
 );
 
-function sendResponse(response: lambda.APIGatewayProxyResult) {
+function sendResponse(response: lambda.APIGatewayProxyResult, log: typeof console.log) {
   log(`Sending to CW: ${JSON.stringify(response)}`);
   return response;
 }

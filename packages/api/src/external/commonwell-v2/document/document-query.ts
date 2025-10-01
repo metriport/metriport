@@ -29,12 +29,11 @@ import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import { removeDocRefMapping } from "../../../command/medical/docref-mapping/remove-docref-mapping";
 import { getUrl, S3Info } from "../../../command/medical/document/document-query-storage-info";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { cwToFHIR } from "../../commonwell-v2/document/cw-to-fhir";
 import { sandboxGetDocRefsAndUpsert } from "../../commonwell/document/document-query-sandbox";
-import { getCWData, update } from "../../commonwell/patient/patient";
+import { update } from "../../commonwell/patient/patient";
 import {
   getPatientWithCWData,
   PatientWithCWData,
@@ -51,7 +50,6 @@ import { HieInitiator } from "../../hie/get-hie-initiator";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
-import { setDocQueryStartAt } from "../../hie/set-doc-query-start";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
@@ -137,9 +135,8 @@ export async function queryAndProcessDocuments({
 
   try {
     const initiator = await getCwInitiator(patientParam, facilityId);
-
-    const currentPatient = await getPatientOrFail({ id: patientId, cxId });
-    const patientCWData = getCWData(currentPatient.data.externalData);
+    const patient = await getPatientWithCWData(patientParam);
+    const patientCWData = patient?.data.externalData.COMMONWELL;
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
     const isProcessing = patientCWData?.status === "processing";
     const updateStalePatients = await isStalePatientUpdateEnabledForCx(cxId);
@@ -177,8 +174,7 @@ export async function queryAndProcessDocuments({
       return;
     }
 
-    const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
-      getPatientWithCWData(patientParam),
+    const [isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
       isEnhancedCoverageEnabledForCx(cxId),
       isCQDirectEnabledForCx(cxId),
     ]);
@@ -203,6 +199,7 @@ export async function queryAndProcessDocuments({
     if (!isTriggerDQ) return;
 
     // Only set processing status when we're actually going to process documents
+    const startedAt = new Date();
     await setDocQueryProgress({
       patient: { id: patientId, cxId },
       downloadProgress: { status: "processing" },
@@ -210,12 +207,6 @@ export async function queryAndProcessDocuments({
       requestId,
       source: MedicalDataSource.COMMONWELL,
       triggerConsolidated,
-    });
-
-    const startedAt = new Date();
-    await setDocQueryStartAt({
-      patient: { id: patientId, cxId },
-      source: MedicalDataSource.COMMONWELL,
       startedAt,
     });
 

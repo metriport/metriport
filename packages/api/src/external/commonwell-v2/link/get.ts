@@ -14,6 +14,9 @@ import { getCwInitiator } from "../../commonwell/shared";
 import { makeCommonWellAPI } from "../api";
 import { getCommonwellPatientId } from "../patient/patient";
 
+const context = "cw.link.get";
+const { log } = out(context);
+
 export type CwPatientLinks = {
   existingLinks: PatientExistingLink[];
   probableLinks: PatientProbableLink[];
@@ -24,9 +27,6 @@ export async function get(
   cxId: string,
   facilityId: string
 ): Promise<CwPatientLinks> {
-  const context = "cw.link.get";
-  const { log } = out(context);
-
   if (!(await isCWEnabledForCx(cxId))) {
     log(`CW is disabled for cxId: ${cxId}`);
     return {
@@ -35,20 +35,13 @@ export async function get(
     };
   }
 
-  const patient = await getPatientOrFail({ id: patientId, cxId });
-  const initiator = await getCwInitiator(patient, facilityId);
+  const [patient, initiator] = await Promise.all([
+    getPatientOrFail({ id: patientId, cxId }),
+    getCwInitiator({ id: patientId, cxId }, facilityId),
+  ]);
 
   const commonWell = makeCommonWellAPI(initiator.name, initiator.oid, initiator.npi);
-
-  const cwPatientId = await getCommonwellPatientId(patient);
-  if (!cwPatientId) {
-    log(`No CW patient ID for patient`, patient.id);
-    return {
-      existingLinks: [],
-      probableLinks: [],
-    };
-  }
-
+  const cwPatientId = getCommonwellPatientId(patient);
   if (!cwPatientId) {
     log(`No CW patient ID for patient`, patient.id);
     return {
@@ -58,14 +51,16 @@ export async function get(
   }
 
   try {
-    const existingLinks = await findExistingLinks({
-      commonWell,
-      commonwellPatientId: cwPatientId,
-    });
-    const probableLinks = await findProbableLinks({
-      commonWell,
-      commonwellPatientId: cwPatientId,
-    });
+    const [existingLinks, probableLinks] = await Promise.all([
+      findExistingLinks({
+        commonWell,
+        commonwellPatientId: cwPatientId,
+      }),
+      findProbableLinks({
+        commonWell,
+        commonwellPatientId: cwPatientId,
+      }),
+    ]);
 
     const links: CwPatientLinks = {
       existingLinks: existingLinks?.Patients ?? [],
@@ -94,8 +89,11 @@ export async function findExistingLinks({
     return links;
   } catch (error) {
     const msg = `Failure retrieving existing links`;
-    console.log(`${msg} - for patient id:`, commonwellPatientId);
-    return undefined;
+    log(`${msg} - for patient id:`, commonwellPatientId);
+    throw new MetriportError(msg, error, {
+      cwReference: commonWell.lastTransactionId,
+      context,
+    });
   }
 }
 
@@ -112,6 +110,9 @@ export async function findProbableLinks({
   } catch (error) {
     const msg = `Failure retrieving probable links`;
     console.log(`${msg} - for patient id:`, commonwellPatientId);
-    return undefined;
+    throw new MetriportError(msg, error, {
+      cwReference: commonWell.lastTransactionId,
+      context,
+    });
   }
 }

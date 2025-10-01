@@ -1,11 +1,11 @@
-import { retrieveDocumentForCommonWell } from "@metriport/core/external/commonwell/contribution/shared-document-retrieval";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { BadRequestError, errorToString } from "@metriport/shared";
+import { retrieveDocumentForCommonWellContribution } from "@metriport/core/external/commonwell/contribution/shared-document-retrieval";
+import { log } from "@metriport/core/util/log";
+import { BadRequestError } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import { Config } from "../shared/config";
 import { asyncHandler, getFrom } from "./util";
-import { log } from "@metriport/core/util/log";
 
 const router = Router();
 
@@ -32,25 +32,18 @@ router.get(
     }
 
     const startedAt = Date.now();
-    try {
-      const fileName = getFrom("query").orFail("fileName", req);
-      const s3Utils = new S3Utils(Config.getAWSRegion());
-      const bucketName = Config.getMedicalDocumentsBucketName();
+    const fileName = getFrom("query").orFail("fileName", req);
+    const s3Utils = new S3Utils(Config.getAWSRegion());
+    const bucketName = Config.getMedicalDocumentsBucketName();
 
-      const binary = await retrieveDocumentForCommonWell({
-        fileName,
-        s3Utils,
-        bucketName,
-      });
+    const binary = await retrieveDocumentForCommonWellContribution({
+      fileName,
+      s3Utils,
+      bucketName,
+    });
 
-      return res.status(200).type("application/octet-stream").send(binary);
-    } catch (error) {
-      const msg = `Error processing DR from CW`;
-      console.log(`${msg}: ${errorToString(error)}`);
-      return res.status(500).send("Internal Server Error");
-    } finally {
-      log(`Sending binary. Took ${Date.now() - startedAt}ms`);
-    }
+    log(`Sending binary. Took ${Date.now() - startedAt}ms`);
+    return res.status(200).type("application/octet-stream").send(binary);
   })
 );
 

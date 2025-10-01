@@ -1,4 +1,3 @@
-import { parseFilePath } from "../../../domain/filename";
 import { S3Utils } from "../../../external/aws/s3";
 
 export interface DocumentRetrievalParams {
@@ -7,7 +6,7 @@ export interface DocumentRetrievalParams {
   bucketName: string;
 }
 
-export async function retrieveDocumentForCommonWell(
+export async function retrieveDocumentForCommonWellContribution(
   params: DocumentRetrievalParams
 ): Promise<string> {
   const { fileName, s3Utils, bucketName } = params;
@@ -19,11 +18,6 @@ export async function retrieveDocumentForCommonWell(
   const key = fileName.startsWith("/") ? fileName.slice(1) : fileName;
   if (!key || key.trim().length <= 0) {
     throw new Error("Invalid fileName parameter");
-  }
-
-  const parsedFileName = parseFilePath(key);
-  if (!parsedFileName) {
-    throw new Error("Invalid fileName parameter - unable to parse");
   }
 
   const docString = await s3Utils.getFileContentsAsString(bucketName, key);
