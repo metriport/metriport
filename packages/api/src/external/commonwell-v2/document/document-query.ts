@@ -137,17 +137,7 @@ export async function queryAndProcessDocuments({
 
   try {
     // TODO: ENG-934 - MINOR UPDATE TO THE LOGIC
-    const [initiator] = await Promise.all([
-      getCwInitiator(patientParam, facilityId),
-      setDocQueryProgress({
-        patient: { id: patientId, cxId },
-        downloadProgress: { status: "processing" },
-        convertProgress: { status: "processing" },
-        requestId,
-        source: MedicalDataSource.COMMONWELL,
-        triggerConsolidated,
-      }),
-    ]);
+    const initiator = await getCwInitiator(patientParam, facilityId);
 
     const currentPatient = await getPatientOrFail({ id: patientId, cxId });
     const patientCWData = getCWData(currentPatient.data.externalData);
@@ -188,13 +178,6 @@ export async function queryAndProcessDocuments({
       return;
     }
 
-    const startedAt = new Date();
-    await setDocQueryStartAt({
-      patient: { id: patientId, cxId },
-      source: MedicalDataSource.COMMONWELL,
-      startedAt,
-    });
-
     const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
       getPatientWithCWData(patientParam),
       isEnhancedCoverageEnabledForCx(cxId),
@@ -219,6 +202,23 @@ export async function queryAndProcessDocuments({
     const isTriggerDQ = forceQuery || !isWaitingForEnhancedCoverage || isCQDirectEnabledForThisCx;
 
     if (!isTriggerDQ) return;
+
+    // Only set processing status when we're actually going to process documents
+    await setDocQueryProgress({
+      patient: { id: patientId, cxId },
+      downloadProgress: { status: "processing" },
+      convertProgress: { status: "processing" },
+      requestId,
+      source: MedicalDataSource.COMMONWELL,
+      triggerConsolidated,
+    });
+
+    const startedAt = new Date();
+    await setDocQueryStartAt({
+      patient: { id: patientId, cxId },
+      source: MedicalDataSource.COMMONWELL,
+      startedAt,
+    });
 
     log(`Querying for documents of patient ${patient.id}...`);
     const cwDocuments = await internalGetDocuments({
