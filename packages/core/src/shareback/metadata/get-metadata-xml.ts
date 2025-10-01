@@ -4,6 +4,7 @@ import duration from "dayjs/plugin/duration";
 import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
 import { XDSRegistryError } from "../../external/carequality/error";
 import { Config } from "../../util/config";
+import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
 import { createSharebackFolderName, METADATA_SUFFIX } from "../file";
 
@@ -21,6 +22,7 @@ export async function getMetadataDocumentContents(
   cxId: string,
   patientId: string
 ): Promise<string[]> {
+  const { log } = out(`getMetadataDocumentContents - cxId ${cxId}, patientId ${patientId}`);
   const alreadyLoadedFiles: { key: string; contents: string }[] = [];
 
   await executeWithRetries(
@@ -44,6 +46,7 @@ export async function getMetadataDocumentContents(
       initialDelay: initialTimeToWaitBetweenAttempts.asMilliseconds(),
       maxDelay: maxTimeToWaitBetweenAttempts.asMilliseconds(),
       maxAttempts,
+      log,
     }
   );
 
