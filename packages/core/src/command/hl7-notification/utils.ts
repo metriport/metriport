@@ -82,3 +82,8 @@ export async function persistHl7MessageError(
 export function asString(message: Hl7Message) {
   return message.segments.map(s => s.toString()).join("\n");
 }
+
+const CONSOLIDATED_REFRESH_TRIGGER_EVENTS = ["A01", "A03"] as const;
+export function isConsolidatedRefreshTriggerEvent(triggerEvent: string): boolean {
+  return CONSOLIDATED_REFRESH_TRIGGER_EVENTS.includes(triggerEvent as SupportedTriggerEvent);
+}

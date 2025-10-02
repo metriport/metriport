@@ -35,6 +35,7 @@ import {
 } from "./hl7-notification-webhook-sender";
 import {
   asString,
+  isConsolidatedRefreshTriggerEvent,
   isSupportedTriggerEvent,
   ParsedHl7Data,
   parseHl7Message,
@@ -141,6 +142,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       file: Buffer.from(asString(message)),
       contentType: "text/plain",
     });
+
+    await this.notifyAnalytics({ cxId, patientId, messageCode, triggerEvent });
 
     if (!isSupportedTriggerEvent(triggerEvent)) {
       log(`Trigger event ${triggerEvent} is not supported. Skipping...`);
@@ -261,25 +264,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
         })
     );
 
-    const posthogApiKeyArn = Config.getPostHogApiKey();
-    if (!posthogApiKeyArn) {
-      throw new Error("Posthog API key not found");
-    }
-
-    const posthogApiKey = await getSecretValueOrFail(posthogApiKeyArn, Config.getAWSRegion());
-    analytics(
-      {
-        distinctId: cxId,
-        event: EventTypes.hl7NotificationReceived,
-        properties: {
-          cxId,
-          patientId,
-          messageCode,
-          triggerEvent,
-        },
-      },
-      posthogApiKey
-    );
+    log("Calling refreshConsolidated");
+    await this.refreshConsolidated(triggerEvent, cxId, patientId);
 
     log(`Done. API notified...`);
   }
@@ -344,5 +330,64 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     }
 
     return clinicalInformation;
+  }
+
+  private async refreshConsolidated(
+    triggerEvent: SupportedTriggerEvent,
+    cxId: string,
+    patientId: string
+  ) {
+    const { log } = out(
+      `refreshConsolidated, cx: ${cxId}, pt: ${patientId}, triggerEvent: ${triggerEvent}`
+    );
+    if (!isConsolidatedRefreshTriggerEvent(triggerEvent)) {
+      return;
+    }
+    log(`POST /internal/patient/${patientId}/consolidated/refresh ${triggerEvent}`);
+    await executeWithNetworkRetries(
+      async () =>
+        axios.post(
+          `${this.apiUrl}/internal/patient/${patientId}/consolidated/refresh?cxId=${cxId}`
+        ),
+      { log }
+    );
+  }
+
+  private async notifyAnalytics({
+    cxId,
+    patientId,
+    messageCode,
+    triggerEvent,
+  }: {
+    cxId: string;
+    patientId: string;
+    messageCode: string;
+    triggerEvent: string;
+  }) {
+    try {
+      const posthogApiKeyArn = Config.getPostHogApiKey();
+      if (!posthogApiKeyArn) {
+        throw new Error("No posthog API key provided in webhook sender");
+      }
+
+      const posthogApiKey = await getSecretValueOrFail(posthogApiKeyArn, Config.getAWSRegion());
+      analytics(
+        {
+          distinctId: cxId,
+          event: EventTypes.hl7NotificationReceived,
+          properties: {
+            cxId,
+            patientId,
+            messageCode,
+            triggerEvent,
+          },
+        },
+        posthogApiKey
+      );
+    } catch (error) {
+      capture.error("Failed to notify analytics", {
+        extra: { cxId, patientId, messageCode, triggerEvent, error },
+      });
+    }
   }
 }
