@@ -19,6 +19,21 @@ export function isValidISODateTime(date: string): boolean {
   return buildDayjs(date, ISO_DATE_TIME, true).isValid();
 }
 
+export function isValidateDateManual(date: dayjs.Dayjs): boolean {
+  const month = date.month();
+  const day = date.day();
+  if (month === 0 || day === 0) return false;
+  if (month > 12) return false;
+  if (day > 31) return false;
+  if (month === 2 && day > 29) return false;
+  if (month === 2 && day > 28 && !date.isLeapYear()) return false;
+  if (month === 4 && day > 30) return false;
+  if (month === 6 && day > 30) return false;
+  if (month === 9 && day > 30) return false;
+  if (month === 11 && day > 30) return false;
+  return true;
+}
+
 function isValidISODateOptional(date: string | undefined | null): boolean {
   return date ? isValidISODate(date) : true;
 }
@@ -43,6 +58,7 @@ export function validateDateOfBirth(
   if (date.length < 10) return false;
   const parsedDate = buildDayjs(date);
   if (!parsedDate.isValid()) return false;
+  if (isValidateDateManual(parsedDate)) return true;
   const {
     validateDateIsAfter1900: _validateDateIsAfter1900 = validateDateIsAfter1900,
     validateIsPastOrPresent: _validateIsPastOrPresent = validateIsPastOrPresent,
