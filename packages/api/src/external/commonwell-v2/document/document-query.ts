@@ -33,7 +33,7 @@ import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { cwToFHIR } from "../../commonwell-v2/document/cw-to-fhir";
 import { sandboxGetDocRefsAndUpsert } from "../../commonwell/document/document-query-sandbox";
-import { update } from "../../commonwell/patient/patient";
+import { getCWData, update } from "../../commonwell/patient/patient";
 import {
   getPatientWithCWData,
   PatientWithCWData,
@@ -134,9 +134,11 @@ export async function queryAndProcessDocuments({
   if (!isCwEnabled) return interrupt(`CW disabled for cxId ${cxId} patientId ${patientId}`);
 
   try {
-    const initiator = await getCwInitiator(patientParam, facilityId);
-    const patient = await getPatientWithCWData(patientParam);
-    const patientCWData = patient?.data.externalData.COMMONWELL;
+    const [initiator, patient] = await Promise.all([
+      getCwInitiator(patientParam, facilityId),
+      getPatientWithCWData(patientParam),
+    ]);
+    const patientCWData = getCWData(patient?.data.externalData);
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
     const isProcessing = patientCWData?.status === "processing";
     const updateStalePatients = await isStalePatientUpdateEnabledForCx(cxId);
