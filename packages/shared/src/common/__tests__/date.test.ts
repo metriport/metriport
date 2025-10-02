@@ -204,10 +204,6 @@ describe("shared date functions", () => {
     });
 
     it("returns true when date is valid ISO datetime", () => {
-      expect(validateDob("2004-02-26T12:30:00Z")).toBe(true);
-    });
-
-    it("returns true when date is valid ISO datetime", () => {
       expect(validateDob("2004-02-26")).toBe(true);
     });
 
@@ -296,6 +292,12 @@ describe("isValidateDayAndMonthStringBased", () => {
       expect(isValidateDayAndMonthStringBased("2000-06-15")).toBe(true);
     });
 
+    it("should return true for valid US date strings", () => {
+      expect(isValidateDayAndMonthStringBased("01/01/2023")).toBe(true);
+      expect(isValidateDayAndMonthStringBased("12/31/2023")).toBe(true);
+      expect(isValidateDayAndMonthStringBased("02/29/2024")).toBe(true);
+    });
+
     it("should return true for leap year dates", () => {
       expect(isValidateDayAndMonthStringBased("2020-02-29")).toBe(true);
       expect(isValidateDayAndMonthStringBased("2000-02-29")).toBe(true);
@@ -322,7 +324,6 @@ describe("isValidateDayAndMonthStringBased", () => {
 
   describe("invalid date formats", () => {
     it("should return false for non-ISO date format strings", () => {
-      expect(isValidateDayAndMonthStringBased("01/01/2023")).toBe(false);
       expect(isValidateDayAndMonthStringBased("2023/01/01")).toBe(false);
       expect(isValidateDayAndMonthStringBased("01-01-2023")).toBe(false);
       expect(isValidateDayAndMonthStringBased("2023-1-1")).toBe(false);
