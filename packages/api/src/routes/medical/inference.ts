@@ -6,6 +6,8 @@ import { z } from "zod";
 import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler } from "../util";
+import { AnthropicAgent } from "@metriport/core/external/bedrock/agent/anthropic";
+import { AnthropicMessageText } from "@metriport/core/external/bedrock/model/anthropic/messages";
 
 const router = Router();
 
@@ -25,6 +27,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     // const cxId = getCxIdOrFail(req);
     const { context } = sidePanelInferenceSchema.parse(req.body);
+
     const sse = await createSession(req, res, {
       state: {
         id: uuidv7(),
@@ -35,29 +38,27 @@ router.post(
       },
     });
 
+    const agent = new AnthropicAgent<"claude-sonnet-3.7">({
+      version: "claude-sonnet-3.7",
+      region: "us-east-1",
+      systemPrompt: `You are a helpful assistant that can answer questions about the user's context.`,
+      maxTokens: 1024,
+      temperature: 0,
+      tools: [],
+    });
+
     sse.push({
-      message: "Hello, world! Waiting 2 seconds...",
-      eventName: "side-panel-hw",
+      message: "Request received!",
+      eventName: "side-panel-request",
       eventId: uuidv7(),
     });
 
-    await new Promise(function (resolve) {
-      setTimeout(resolve, 2000);
-    });
+    agent.addUserMessageText(context);
+    const response = await agent.continueConversation();
 
     sse.push({
-      message: "Slept, ping, waiting 2 seconds...",
-      eventName: "side-panel-ping",
-      eventId: uuidv7(),
-    });
-
-    await new Promise(function (resolve) {
-      setTimeout(resolve, 2000);
-    });
-
-    sse.push({
-      message: "Slept, pong, - your context was: " + context,
-      eventName: "side-panel-pong",
+      message: (response.content[response.content.length - 1] as AnthropicMessageText).text,
+      eventName: "side-panel-response",
       eventId: uuidv7(),
     });
   })
