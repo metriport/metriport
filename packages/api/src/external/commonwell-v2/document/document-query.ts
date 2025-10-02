@@ -29,15 +29,13 @@ import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import { removeDocRefMapping } from "../../../command/medical/docref-mapping/remove-docref-mapping";
 import { getUrl, S3Info } from "../../../command/medical/document/document-query-storage-info";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { cwToFHIR } from "../../commonwell-v2/document/cw-to-fhir";
 import { sandboxGetDocRefsAndUpsert } from "../../commonwell/document/document-query-sandbox";
 import { getCWData, update } from "../../commonwell/patient/patient";
-import {
-  getPatientWithCWData,
-  PatientWithCWData,
-} from "../../commonwell/patient/patient-external-data";
+import { PatientDataCommonwell } from "../../commonwell/patient/patient-shared";
 import { getCwInitiator, validateCWEnabled } from "../../commonwell/shared";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
@@ -134,11 +132,11 @@ export async function queryAndProcessDocuments({
   if (!isCwEnabled) return interrupt(`CW disabled for cxId ${cxId} patientId ${patientId}`);
 
   try {
-    const [initiator, patient] = await Promise.all([
+    const [initiator, currentPatient] = await Promise.all([
       getCwInitiator(patientParam, facilityId),
-      getPatientWithCWData(patientParam),
+      getPatientOrFail({ id: patientId, cxId }),
     ]);
-    const patientCWData = getCWData(patient?.data.externalData);
+    const patientCWData = getCWData(currentPatient.data.externalData);
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
     const isProcessing = patientCWData?.status === "processing";
     const updateStalePatients = await isStalePatientUpdateEnabledForCx(cxId);
@@ -181,20 +179,10 @@ export async function queryAndProcessDocuments({
       isCQDirectEnabledForCx(cxId),
     ]);
 
-    if (!patient) {
-      const msg = `Couldn't get CW Data for Patient`;
-      throw new MetriportError(msg, undefined, {
-        cxId,
-        patientId,
-      });
-    }
-
-    const cwData = patient.data.externalData.COMMONWELL;
-
     const isWaitingForEnhancedCoverage =
       isECEnabledForThisCx &&
-      cwData.cqLinkStatus && // we're not waiting for EC if the patient was created before cqLinkStatus was introduced
-      cwData.cqLinkStatus !== "linked";
+      patientCWData.cqLinkStatus && // we're not waiting for EC if the patient was created before cqLinkStatus was introduced
+      patientCWData.cqLinkStatus !== "linked";
 
     const isTriggerDQ = forceQuery || !isWaitingForEnhancedCoverage || isCQDirectEnabledForThisCx;
 
@@ -212,15 +200,16 @@ export async function queryAndProcessDocuments({
       startedAt,
     });
 
-    log(`Querying for documents of patient ${patient.id}...`);
+    log(`Querying for documents of patient ${currentPatient.id}...`);
     const cwDocuments = await internalGetDocuments({
-      patient,
+      patientId: currentPatient.id,
+      cwData: patientCWData,
       initiator,
     });
     log(`Got ${cwDocuments.length} documents from CW`);
 
     const fhirDocRefs = await downloadDocsAndUpsertFHIR({
-      patient,
+      patient: currentPatient,
       facilityId,
       documents: cwDocuments,
       forceDownload,
@@ -284,16 +273,16 @@ export async function queryAndProcessDocuments({
  * @returns document references with CW format
  */
 async function internalGetDocuments({
-  patient,
+  patientId,
+  cwData,
   initiator,
 }: {
-  patient: PatientWithCWData;
+  patientId: string;
+  cwData: PatientDataCommonwell;
   initiator: HieInitiator;
 }): Promise<CwDocumentReference[]> {
   const context = "cw.queryDocument";
-  const { log, debug } = out(`CW internalGetDocuments - M patient ${patient.id}`);
-
-  const cwData = patient.data.externalData.COMMONWELL;
+  const { log, debug } = out(`CW internalGetDocuments - M patient ${patientId}`);
 
   function reportDocQueryMetric(queryStart: number) {
     const queryDuration = Date.now() - queryStart;
@@ -327,7 +316,7 @@ async function internalGetDocuments({
         errors: cwErrs,
         context: {
           cwReference: commonWell.lastTransactionId,
-          patientId: patient.id,
+          patientId,
         },
         log,
       });
