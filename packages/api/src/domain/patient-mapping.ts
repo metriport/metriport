@@ -22,6 +22,7 @@ export type PatientMappingSecondaryMappings = EhrPatientMappingSecondaryMappings
 export const secondaryMappingsSchemaMap: { [key in PatientMappingSource]: z.Schema | undefined } = {
   ...ehrPatientMappingSecondaryMappingsSchemaMap,
   [questSource]: undefined,
+  [surescriptsSource]: undefined,
 };
 
 export type PatientMappingPerSource = {

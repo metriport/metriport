@@ -7,7 +7,7 @@ import httpStatus, { OK } from "http-status";
 import { z } from "zod";
 import { getDocumentDownloadUrl } from "../../command/medical/document/document-download";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
-import { queryDocumentsAcrossPharmacies } from "../../command/medical/document/pharmacy-query";
+import { queryDocumentsAcrossPharmacies } from "../../command/medical/network/pharmacy-query";
 import { getUploadUrlAndCreateDocRef } from "../../command/medical/document/get-upload-url-and-create-doc-ref";
 import { startBulkGetDocumentUrls } from "../../command/medical/document/start-bulk-get-doc-url";
 import {} from "../../command/medical/patient/update-hie-opt-out";
@@ -18,7 +18,7 @@ import { requestLogger } from "../helpers/request-logger";
 import { sanitize } from "../helpers/string";
 import { getPatientInfoOrFail, patientAuthorization } from "../middlewares/patient-authorization";
 import { checkRateLimit } from "../middlewares/rate-limiting";
-import { optionalDateSchema } from "../schemas/date";
+import { optionalDateSchema } from "@metriport/shared";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema, docFileNameSchema } from "./schemas/documents";
@@ -27,7 +27,7 @@ import { getPatientPrimaryFacilityIdOrFail } from "../../command/medical/patient
 
 const router = Router();
 
-const getDocSchema = z.object({
+export const getDocSchema = z.object({
   dateFrom: optionalDateSchema,
   dateTo: optionalDateSchema,
   content: z.string().min(3).nullish(),
@@ -123,7 +123,7 @@ router.post(
       ? facilityId
       : await getPatientPrimaryFacilityIdOrFail({ cxId, patientId });
 
-    const [docQueryProgress, pharmacyQueryProgress] = await Promise.all([
+    const [docQueryProgress] = await Promise.all([
       queryDocumentsAcrossHIEs({
         cxId,
         patientId,
@@ -143,10 +143,6 @@ router.post(
           })
         : Promise.resolve(undefined),
     ]);
-
-    if (pharmacyQueryProgress) {
-      docQueryProgress.pharmacy = pharmacyQueryProgress;
-    }
 
     return res.status(OK).json(docQueryProgress);
   })
