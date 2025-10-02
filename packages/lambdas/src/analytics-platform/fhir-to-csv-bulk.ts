@@ -22,16 +22,16 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
   if (!message) return;
 
   const parsedBody = parseBody(fhirToCsvSchema, message.body);
-  const { jobId, cxId, patientId } = parsedBody;
+  const { cxId, patientId } = parsedBody;
 
-  const log = prefixedLog(`jobId ${jobId}, cxId ${cxId}, patientId ${patientId}`);
+  const log = prefixedLog(`cxId ${cxId}, patientId ${patientId}`);
   log(`Parsed: ${JSON.stringify(parsedBody)}`);
 
   const doesPatientHaveConsolidatedBundle = await doesConsolidatedDataExist(cxId, patientId);
   if (!doesPatientHaveConsolidatedBundle) {
     const msg = `Patient does not have a consolidated bundle`;
     log(msg);
-    throw new MetriportError(msg, undefined, { cxId, patientId, jobId });
+    throw new MetriportError(msg, undefined, { cxId, patientId });
   }
 
   const timeoutForCsvTransform = Math.max(0, context.getRemainingTimeInMillis() - 200);
@@ -48,7 +48,6 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
 
 const fhirToCsvSchema = z.object({
   cxId: z.string(),
-  jobId: z.string(),
   patientId: z.string(),
   outputPrefix: z.string(),
 });

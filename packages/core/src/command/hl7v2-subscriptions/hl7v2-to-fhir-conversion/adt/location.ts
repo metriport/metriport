@@ -9,9 +9,10 @@ type LocationWithId = Location & {
 };
 
 export function getLocationFromAdt(
-  adt: Hl7Message
+  adt: Hl7Message,
+  hieName: string
 ): { location: Location; locationReference: EncounterLocation } | undefined {
-  const name = getFacilityName(adt);
+  const name = getFacilityName(adt, hieName);
   // TODO 2883: Parse the address, if possible
 
   if (!name) return undefined;
