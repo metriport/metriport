@@ -22,10 +22,13 @@ export function parseResponseFileName(fileName: string): { dateId: string } {
       fileName,
     });
   }
-  const dateId = fileName.substring(
+  let dateId = fileName.substring(
     RESPONSE_FILE_PREFIX.length,
     fileName.length - RESPONSE_FILE_EXTENSION.length
   );
+  if (dateId.indexOf("_") > 0) {
+    dateId = dateId.substring(dateId.indexOf("_") + 1);
+  }
 
   if (!DATE_ID_REGEX.test(dateId)) {
     throw new MetriportError("Invalid date ID in file name", undefined, {
