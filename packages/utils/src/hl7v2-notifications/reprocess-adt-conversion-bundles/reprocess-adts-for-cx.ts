@@ -10,7 +10,7 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Config } from "@metriport/core/util/config";
 import { makeDir, writeFileContents } from "@metriport/core/util/fs";
 import { sleep } from "@metriport/shared";
-import { buildDayjs } from "@metriport/shared/common/date";
+import { buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
 
 /**
  * Reprocesses ADTs for a list of CXs
@@ -29,11 +29,13 @@ import { buildDayjs } from "@metriport/shared/common/date";
  */
 const bucketName = Config.getHl7IncomingMessageBucketName();
 const region = Config.getAWSRegion();
+Config.getEnvType(); // Determines local, staging, or prod (Combined with aws region)
 Config.getHl7NotificationQueueUrl(); // Needed if running for realsies. Comment out otherwise.
 
 // ⚠️ THIS ONLY WORKS WITH KONZA ⚠️
 const listOfCxIds: string[] = [];
-const dryRun = true;
+
+const dryRun = false;
 
 type IdentifiedMessage = {
   cxId: string;
@@ -46,7 +48,18 @@ type IdentifiedMessage = {
 const s3Utils = new S3Utils(region);
 async function reprocessAdtsForCxs() {
   await sleep(50); // Avoid mixing logs with Node
-  console.log(`Getting all ADTs for cxs`);
+  const startedAt = new Date();
+  console.log(`############## Started at ${new Date(startedAt).toISOString()} ##############`);
+  console.log(`Running in ${dryRun ? "dryRun" : "⚠️ WRITE ⚠️"} mode`);
+  console.log(
+    `Environment: ${Config.isDev() ? "dev" : `${Config.isStaging() ? "staging" : "prod"}`}`
+  );
+  console.log(`Region: ${region}`);
+  console.log(`bucket name: ${bucketName}`);
+  console.log(`Waiting 3 seconds before running.`);
+  await sleep(3000);
+
+  console.log(`Running. Getting all ADTs for cxs`);
   const allAdts = await getAllAdtsForCxs();
   console.log(`Found ${allAdts.length} ADTs`);
 
@@ -74,6 +87,11 @@ async function reprocessAdtsForCxs() {
 
   writeFileContents(fileName, JSON.stringify(allAdts, null, 2));
   console.log(`Wrote ${allAdts.length} ADTs to ${fileName}`);
+
+  const elapsedTime = elapsedTimeFromNow(startedAt);
+  console.log(`========================================`);
+  console.log(`Total elapsed time: ${elapsedTime} ms`);
+  console.log(`========================================`);
 }
 
 async function getAllAdtsForCxs(): Promise<IdentifiedMessage[]> {
