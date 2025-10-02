@@ -19,7 +19,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
  *
  * Steps:
  * 1. Ensure your .env file has the required AWS and bucket configuration (AWS_REGION)
- * 2. Update the listOfCxIds array on line 20 with the CX IDs to process
+ * 2. Update the listOfCxIds array on line 35 with the CX IDs to process
  * 2.5. Set dryRun to false to actually send the adts to the webhook
  * 3. Run the script:
  *    npx ts-node src/hl7v2-notifications/reprocess-adt-conversion-bundles/reprocess-adts-for-cx.ts
