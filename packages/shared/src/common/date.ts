@@ -8,6 +8,7 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 export const ISO_DATE = "YYYY-MM-DD";
+export const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 export const ISO_DATE_TIME = "YYYY-MM-DDTHH:mm:ss.SSSZ";
 
 /** @see https://day.js.org/docs/en/parse/is-valid  */
@@ -19,16 +20,22 @@ export function isValidISODateTime(date: string): boolean {
   return buildDayjs(date, ISO_DATE_TIME, true).isValid();
 }
 
-export function isValidateDateManual(date: dayjs.Dayjs): boolean {
-  const month = date.month(); // 0-11
-  const day = date.date();
+function isLeapYear(year: number): boolean {
+  return year % 4 === 0 && year % 100 !== 0 && year % 400 === 0;
+}
+
+export function isValidateDayAndMonthStringBased(date: string): boolean {
+  if (!ISO_DATE_REGEX.test(date)) return false;
+  const year = parseInt(date.substring(0, 4));
+  const month = parseInt(date.substring(5, 7));
+  const day = parseInt(date.substring(8, 10));
   if (month > 12 || day > 31) return false;
-  if (month === 1 && day > 29) return false;
-  if (month === 1 && day > 28 && !date.isLeapYear()) return false;
-  if (month === 3 && day > 30) return false;
-  if (month === 5 && day > 30) return false;
-  if (month === 8 && day > 30) return false;
-  if (month === 10 && day > 30) return false;
+  if (month === 2 && day > 29 && isLeapYear(year)) return false; // leap year
+  if (month === 2 && day > 28 && !isLeapYear(year)) return false; // not a leap year
+  if (month === 4 && day > 30) return false;
+  if (month === 6 && day > 30) return false;
+  if (month === 9 && day > 30) return false;
+  if (month === 11 && day > 30) return false;
   return true;
 }
 
@@ -54,9 +61,9 @@ export function validateDateOfBirth(
 ): boolean {
   if (!date || typeof date !== "string") return false;
   if (date.length < 10) return false;
+  if (!isValidateDayAndMonthStringBased(date)) return true;
   const parsedDate = buildDayjs(date);
   if (!parsedDate.isValid()) return false;
-  if (!isValidateDateManual(parsedDate)) return false;
   const {
     validateDateIsAfter1900: _validateDateIsAfter1900 = validateDateIsAfter1900,
     validateIsPastOrPresent: _validateIsPastOrPresent = validateIsPastOrPresent,

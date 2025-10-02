@@ -2,6 +2,7 @@ import {
   buildDayjsFromCompactDate,
   convertDateToString,
   convertDateToTimeString,
+  isValidateDayAndMonthStringBased,
   isValidISODate,
   isValidISODateTime,
   validateDateIsAfter1900,
@@ -284,5 +285,95 @@ describe("convertDateToTimeString", () => {
     expect(convertDateToTimeString(date, { useUtc: true, includeCentisecond: true })).toBe(
       "12300012"
     );
+  });
+});
+
+describe("isValidateDayAndMonthStringBased", () => {
+  describe("valid date formats", () => {
+    it("should return true for valid ISO date strings", () => {
+      expect(isValidateDayAndMonthStringBased("2023-01-01")).toBe(true);
+      expect(isValidateDayAndMonthStringBased("2023-12-31")).toBe(true);
+      expect(isValidateDayAndMonthStringBased("2000-06-15")).toBe(true);
+    });
+
+    it("should return true for leap year dates", () => {
+      expect(isValidateDayAndMonthStringBased("2020-02-29")).toBe(true);
+      expect(isValidateDayAndMonthStringBased("2000-02-29")).toBe(true);
+      expect(isValidateDayAndMonthStringBased("2024-02-29")).toBe(true);
+    });
+
+    it("should return true for months with 30 days", () => {
+      expect(isValidateDayAndMonthStringBased("2023-04-30")).toBe(true); // April
+      expect(isValidateDayAndMonthStringBased("2023-06-30")).toBe(true); // June
+      expect(isValidateDayAndMonthStringBased("2023-09-30")).toBe(true); // September
+      expect(isValidateDayAndMonthStringBased("2023-11-30")).toBe(true); // November
+    });
+
+    it("should return true for months with 31 days", () => {
+      expect(isValidateDayAndMonthStringBased("2023-01-31")).toBe(true); // January
+      expect(isValidateDayAndMonthStringBased("2023-03-31")).toBe(true); // March
+      expect(isValidateDayAndMonthStringBased("2023-05-31")).toBe(true); // May
+      expect(isValidateDayAndMonthStringBased("2023-07-31")).toBe(true); // July
+      expect(isValidateDayAndMonthStringBased("2023-08-31")).toBe(true); // August
+      expect(isValidateDayAndMonthStringBased("2023-10-31")).toBe(true); // October
+      expect(isValidateDayAndMonthStringBased("2023-12-31")).toBe(true); // December
+    });
+  });
+
+  describe("invalid date formats", () => {
+    it("should return false for non-ISO date format strings", () => {
+      expect(isValidateDayAndMonthStringBased("01/01/2023")).toBe(false);
+      expect(isValidateDayAndMonthStringBased("2023/01/01")).toBe(false);
+      expect(isValidateDayAndMonthStringBased("01-01-2023")).toBe(false);
+      expect(isValidateDayAndMonthStringBased("2023-1-1")).toBe(false);
+      expect(isValidateDayAndMonthStringBased("23-01-01")).toBe(false);
+    });
+
+    it("should return false for empty or invalid strings", () => {
+      expect(isValidateDayAndMonthStringBased("")).toBe(false);
+      expect(isValidateDayAndMonthStringBased("invalid")).toBe(false);
+      expect(isValidateDayAndMonthStringBased("2023-13-01")).toBe(false);
+      expect(isValidateDayAndMonthStringBased("2023-00-01")).toBe(false);
+    });
+
+    it("should return false for dates with invalid months", () => {
+      expect(isValidateDayAndMonthStringBased("2023-13-01")).toBe(false);
+      expect(isValidateDayAndMonthStringBased("2023-00-01")).toBe(false);
+      expect(isValidateDayAndMonthStringBased("2023-14-01")).toBe(false);
+    });
+
+    it("should return false for dates with invalid days", () => {
+      expect(isValidateDayAndMonthStringBased("2023-01-32")).toBe(false);
+      expect(isValidateDayAndMonthStringBased("2023-01-00")).toBe(false);
+      expect(isValidateDayAndMonthStringBased("2023-01-99")).toBe(false);
+    });
+  });
+
+  describe("month-specific day limits", () => {
+    it("should return false for February 29 in non-leap years", () => {
+      expect(isValidateDayAndMonthStringBased("2023-02-29")).toBe(false); // 2023 is not a leap year
+      expect(isValidateDayAndMonthStringBased("2021-02-29")).toBe(false); // 2021 is not a leap year
+      expect(isValidateDayAndMonthStringBased("2022-02-29")).toBe(false); // 2022 is not a leap year
+    });
+
+    it("should return false for February 30 in leap years", () => {
+      expect(isValidateDayAndMonthStringBased("2020-02-30")).toBe(false); // 2020 is a leap year
+      expect(isValidateDayAndMonthStringBased("2000-02-30")).toBe(false); // 2000 is a leap year
+      expect(isValidateDayAndMonthStringBased("2024-02-30")).toBe(false); // 2024 is a leap year
+    });
+
+    it("should return false for months with 30 days when day is 31", () => {
+      expect(isValidateDayAndMonthStringBased("2023-04-31")).toBe(false); // April has 30 days
+      expect(isValidateDayAndMonthStringBased("2023-06-31")).toBe(false); // June has 30 days
+      expect(isValidateDayAndMonthStringBased("2023-09-31")).toBe(false); // September has 30 days
+      expect(isValidateDayAndMonthStringBased("2023-11-31")).toBe(false); // November has 30 days
+    });
+
+    it("should return false for months with 31 days when day is 32", () => {
+      expect(isValidateDayAndMonthStringBased("2023-01-32")).toBe(false); // January has 31 days
+      expect(isValidateDayAndMonthStringBased("2023-07-32")).toBe(false); // July has 31 days
+      expect(isValidateDayAndMonthStringBased("2023-10-32")).toBe(false); // October has 31 days
+      expect(isValidateDayAndMonthStringBased("2023-12-32")).toBe(false); // December has 31 days
+    });
   });
 });
