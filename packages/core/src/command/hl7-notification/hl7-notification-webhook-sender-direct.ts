@@ -324,11 +324,9 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     await executeWithNetworkRetries(
       async () =>
-        axios.post(
-          createDischargeRequeryJobRouteUrl,
-          { dischargeData },
-          { params: { cxId, patientId } }
-        ),
+        axios.post(createDischargeRequeryJobRouteUrl, dischargeData, {
+          params: { cxId, patientId },
+        }),
       {
         log,
       }
