@@ -87,6 +87,53 @@ const limitedResult = sdk.walkReferences(observation, { maxDepth: 2 });
 const withoutStart = sdk.walkReferences(observation, { includeStartResource: false });
 ```
 
+### 6. LLM Context Generation
+
+Generate comprehensive, LLM-friendly context from a resource and its related resources. This automatically performs BFS traversal, strips non-clinical metadata, and formats the output for optimal LLM consumption.
+
+```typescript
+const observation = sdk.getObservationById("obs-123");
+
+// Generate structured text context (default, best for LLMs)
+const llmContext = sdk.generateLLMContext(observation, {
+  maxDepth: 2, // Default: 2
+  format: "structured-text", // Default: 'structured-text'
+});
+
+// Send to your LLM
+await llm.chat({
+  messages: [
+    { role: "system", content: "You are a medical data analyst." },
+    { role: "user", content: `Analyze this patient data:\n\n${llmContext}` },
+  ],
+});
+
+// Alternative: JSON format
+const jsonContext = sdk.generateLLMContext(observation, {
+  format: "json",
+});
+```
+
+**Features:**
+
+- Automatically discovers all related resources via BFS traversal
+- Strips non-clinical metadata (`meta`, `extension`, `text`) to reduce tokens by ~30-40%
+- Organizes resources hierarchically (primary → directly referenced → indirectly referenced)
+- Groups resources by type within each depth level
+- Logs resource counts for debugging (not included in output)
+
+**Static Helper:**
+
+You can also strip non-clinical data from any resource independently:
+
+```typescript
+import { FhirBundleSdk } from "@metriport/fhir-sdk";
+
+const cleanedPatient = FhirBundleSdk.stripNonClinicalData(patient);
+// Removes: meta, extension, modifierExtension, text
+// Returns immutable copy
+```
+
 ## Example Use Cases
 
 ### Patient Summary
