@@ -60,7 +60,7 @@ async function reprocessAdtsForCxs() {
     };
     if (!dryRun) {
       const handler = buildHl7NotificationWebhookSender();
-      handler.execute(params);
+      await handler.execute(params);
     }
     console.log(`Processed ${adt.cxId} - ${adt.ptId}`);
     await sleep(50); // Even though theres a sqs queue, we still don't want to overwhelm it
