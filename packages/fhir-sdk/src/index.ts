@@ -131,6 +131,25 @@ export interface WalkResult<T extends Resource> {
   depthReached: number;
 }
 
+/**
+ * Reverse reference details
+ */
+export interface ReverseReference {
+  sourceResourceId: string;
+  sourceResourceType: string;
+  referenceField: string;
+}
+
+/**
+ * Options for reverse reference lookup
+ */
+export interface ReverseReferenceOptions {
+  /** Filter by source resource type */
+  resourceType?: string;
+  /** Filter by specific reference field */
+  referenceField?: string;
+}
+
 function getResourceIdentifier(entry: BundleEntry): string | undefined {
   if (entry.resource?.id) {
     return entry.resource.id;
@@ -149,6 +168,9 @@ export class FhirBundleSdk {
   private resourcesById: Map<string, Resource> = new Map();
   private resourcesByFullUrl: Map<string, Resource> = new Map();
   private resourcesByType: Map<string, Resource[]> = new Map();
+
+  // Reverse reference index: maps resource ID to resources that reference it
+  private reverseReferencesById: Map<string, ReverseReference[]> = new Map();
 
   // Smart resource caching to maintain object identity
   private smartResourceCache: WeakMap<Resource, Smart<Resource>> = new WeakMap();
@@ -461,6 +483,109 @@ export class FhirBundleSdk {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       this.resourcesByType.get(resourceType)!.push(resource);
     }
+
+    // Build reverse reference index
+    this.buildReverseReferenceIndex();
+
+    // Clear resolution stack after index building
+    this.resolutionStack.clear();
+  }
+
+  /**
+   * Build reverse reference index for O(1) reverse lookup
+   */
+  private buildReverseReferenceIndex(): void {
+    if (!this.bundle.entry) {
+      return;
+    }
+
+    for (const entry of this.bundle.entry) {
+      if (!entry.resource) {
+        continue;
+      }
+
+      const resource = entry.resource;
+      const sourceResourceId = resource.id ?? entry.fullUrl ?? "unknown";
+      const references = this.findAllReferences(resource);
+
+      for (const { field, reference } of references) {
+        // Extract target ID from reference
+        const targetId = this.extractTargetIdFromReference(reference);
+        if (!targetId) {
+          continue;
+        }
+
+        // Add to reverse index for both the extracted ID and the full reference
+        const reverseRef: ReverseReference = {
+          sourceResourceId,
+          sourceResourceType: resource.resourceType,
+          referenceField: this.normalizeReferenceField(field),
+        };
+
+        // Index by extracted resource ID (e.g., "patient-123" from "Patient/patient-123")
+        if (!this.reverseReferencesById.has(targetId)) {
+          this.reverseReferencesById.set(targetId, []);
+        }
+        this.reverseReferencesById.get(targetId)?.push(reverseRef);
+
+        // Also index by full reference if it's different (e.g., "urn:uuid:patient-123")
+        if (targetId !== reference) {
+          if (!this.reverseReferencesById.has(reference)) {
+            this.reverseReferencesById.set(reference, []);
+          }
+          this.reverseReferencesById.get(reference)?.push(reverseRef);
+        }
+
+        // Also try to index by the actual resource ID if we can find it efficiently
+        // Check if this reference can be resolved to a resource with a different ID
+        if (!reference.includes("/")) {
+          // This is likely a fullUrl reference (e.g., "urn:uuid:xxx")
+          // Check if we have a resource with this fullUrl
+          const targetResource = this.resourcesByFullUrl.get(reference);
+          if (
+            targetResource?.id &&
+            targetResource.id !== targetId &&
+            targetResource.id !== reference
+          ) {
+            if (!this.reverseReferencesById.has(targetResource.id)) {
+              this.reverseReferencesById.set(targetResource.id, []);
+            }
+            this.reverseReferencesById.get(targetResource.id)?.push(reverseRef);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Extract target resource ID from a reference string
+   */
+  private extractTargetIdFromReference(reference: string): string | undefined {
+    if (!reference) {
+      return undefined;
+    }
+
+    // Handle "ResourceType/id" pattern
+    if (reference.includes("/")) {
+      const parts = reference.split("/");
+      return parts[parts.length - 1];
+    }
+
+    // Handle other reference patterns (e.g., "urn:uuid:xxx")
+    return reference;
+  }
+
+  /**
+   * Normalize reference field path to base field name
+   * e.g., "participant.individual" -> "participant"
+   *       "performer[0]" -> "performer"
+   */
+  private normalizeReferenceField(field: string): string {
+    // Remove array indices
+    const withoutIndices = field.replace(/\[\d+\]/g, "");
+    // Take first part of dotted path
+    const parts = withoutIndices.split(".");
+    return parts[0] ?? field;
   }
 
   /**
@@ -483,6 +608,17 @@ export class FhirBundleSdk {
           return true;
         }
 
+        // Handle reverse reference method
+        if (prop === "getReferencingResources") {
+          return (options?: ReverseReferenceOptions) => {
+            const resourceId = target.id;
+            if (!resourceId) {
+              return [];
+            }
+            return this.getResourcesReferencingId(resourceId, options);
+          };
+        }
+
         // Check if this is a reference method call
         if (typeof prop === "string" && isReferenceMethod(prop, target.resourceType)) {
           return () => this.resolveReference(prop, target);
@@ -494,11 +630,13 @@ export class FhirBundleSdk {
 
       // Ensure JSON serialization works correctly (FR-5.8)
       ownKeys: target => {
-        return Reflect.ownKeys(target).filter(key => key !== "__isSmartResource");
+        return Reflect.ownKeys(target).filter(
+          key => key !== "__isSmartResource" && key !== "getReferencingResources"
+        );
       },
 
       getOwnPropertyDescriptor: (target, prop) => {
-        if (prop === "__isSmartResource") {
+        if (prop === "__isSmartResource" || prop === "getReferencingResources") {
           return undefined;
         }
         return Reflect.getOwnPropertyDescriptor(target, prop);
@@ -1293,5 +1431,43 @@ export class FhirBundleSdk {
     }
 
     return grouped;
+  }
+
+  /**
+   * Get all resources that reference a given resource ID (reverse reference lookup).
+   * Operates in O(1) time complexity.
+   *
+   * @param targetId - The ID of the resource to find references to
+   * @param options - Optional filters for resourceType and referenceField
+   * @returns Array of smart resources that reference the target resource
+   */
+  getResourcesReferencingId<T extends Resource = Resource>(
+    targetId: string,
+    options?: ReverseReferenceOptions
+  ): Smart<T>[] {
+    const reverseRefs = this.reverseReferencesById.get(targetId) ?? [];
+
+    let filteredRefs = reverseRefs;
+
+    // Apply resource type filter
+    if (options?.resourceType) {
+      filteredRefs = filteredRefs.filter(ref => ref.sourceResourceType === options.resourceType);
+    }
+
+    // Apply reference field filter
+    if (options?.referenceField) {
+      filteredRefs = filteredRefs.filter(ref => ref.referenceField === options.referenceField);
+    }
+
+    // Convert to smart resources
+    const smartResources: Smart<T>[] = [];
+    for (const ref of filteredRefs) {
+      const resource = this.getResourceById(ref.sourceResourceId);
+      if (resource) {
+        smartResources.push(resource as Smart<T>);
+      }
+    }
+
+    return smartResources;
   }
 }

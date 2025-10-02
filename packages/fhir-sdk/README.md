@@ -67,7 +67,43 @@ console.log(result.hasBrokenReferences); // true if at least one broken referenc
 console.log(result.brokenReferences); // All broken references in bundle
 ```
 
-### 5. Reference Walking (BFS Traversal)
+### 5. Reverse Reference Lookup
+
+Find all resources that reference a given resource (reverse lookup). This is useful for discovering what refers to a specific resource.
+
+```typescript
+const patient = sdk.getPatientById("patient-123");
+
+// Find all resources that reference this patient
+const referencingResources = sdk.getResourcesReferencingId("patient-123");
+console.log(referencingResources); // [Observation, Encounter, DiagnosticReport, ...]
+
+// Filter by resource type
+const observations = sdk.getResourcesReferencingId("patient-123", {
+  resourceType: "Observation",
+});
+
+// Filter by reference field
+const subjectReferences = sdk.getResourcesReferencingId("patient-123", {
+  referenceField: "subject",
+});
+
+// Use smart resource method
+const backRefs = patient.getReferencingResources();
+const encounteredObs = patient.getReferencingResources({
+  resourceType: "Observation",
+  referenceField: "subject",
+});
+```
+
+**Key Features:**
+
+- **O(1) lookup** - constant time performance
+- **Flexible filtering** - by resource type and/or reference field
+- **Smart resources** - returns fully functional Smart resources
+- **Bi-directional** - complements forward reference navigation
+
+### 6. Reference Walking (BFS Traversal)
 
 Walk the reference graph starting from any resource using breadth-first search (BFS). This is useful for discovering all resources connected to a specific resource.
 
@@ -87,7 +123,7 @@ const limitedResult = sdk.walkReferences(observation, { maxDepth: 2 });
 const withoutStart = sdk.walkReferences(observation, { includeStartResource: false });
 ```
 
-### 6. LLM Context Generation
+### 7. LLM Context Generation
 
 Generate comprehensive, LLM-friendly context from a resource and its related resources. This automatically performs BFS traversal, strips non-clinical metadata, and formats the output for optimal LLM consumption.
 
@@ -211,3 +247,24 @@ const processBundle = async (bundle: Bundle) => {
 - **getById**: O(1) lookup
 - **getByType**: O(n) where n = resources of that type
 - **Reference resolution**: O(1) traversal
+- **Reverse reference lookup**: O(1) lookup
+
+## Demo
+
+To see reverse reference functionality in action, run:
+
+```bash
+# From the utils package
+cd packages/utils
+npx ts-node src/fhir-sdk/demo-reverse-references.ts --bundle-path /path/to/your/bundle.json
+```
+
+The demo will:
+
+- Automatically find the first patient in your bundle
+- Showcase all reverse reference capabilities:
+  - Finding all resources that reference a specific resource
+  - Filtering by resource type and reference field
+  - Using smart resource methods
+  - Bi-directional navigation
+  - Performance characteristics
