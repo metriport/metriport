@@ -4,6 +4,7 @@ dotenv.config();
 import { capture } from "@metriport/core/util";
 import { sleep } from "@metriport/shared";
 import * as Sentry from "@sentry/node";
+import { isAxiosError } from "axios";
 import cors from "cors";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -20,18 +21,22 @@ import { initRateLimiter } from "./routes/middlewares/rate-limiting";
 import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
 import { isClientError } from "./shared/http";
-import { isAxiosError } from "axios";
 
 dayjs.extend(duration);
 
 const app: Application = express();
 const version = Config.getVersion();
 
+function rawBodySaver(req: Request, res: Response, buf: Buffer) {
+  if (buf && buf.length) {
+    req.query.rawBody = buf.toString("utf8");
+  }
+}
 // Must be before routes
 initSentry(app);
 
 app.use(helmet()); // needs to come before any route declaration, including cors()
-app.use(express.json({ limit: "20mb" }));
+app.use(express.json({ limit: "20mb", verify: rawBodySaver }));
 app.use(express.urlencoded({ extended: false, limit: "20mb" }));
 app.use(cors());
 app.set("etag", false);
