@@ -9,6 +9,7 @@ import facilityRoot from "./facility-root";
 import networkEntry from "./network-entry";
 import patient from "./patient";
 import patientRoot from "./patient-root";
+import inference from "./inference";
 
 const routes = Router();
 
@@ -25,5 +26,6 @@ routes.use("/patient/:id", handleParams, patientAuthorization("params"), patient
 routes.use("/document", document);
 
 routes.use("/network-entry", networkEntry);
+routes.use("/inference", inference);
 
 export default routes;
