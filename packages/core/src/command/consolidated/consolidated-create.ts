@@ -24,6 +24,7 @@ import { Config } from "../../util/config";
 import { processAsyncError } from "../../util/error/shared";
 import { controlDuration } from "../../util/race-control";
 import { AiBriefControls } from "../ai-brief/shared";
+import { ingestPatientIntoAnalyticsPlatform } from "../analytics-platform/incremental-ingestion";
 import { isAiBriefFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
 import { makeIngestConsolidated } from "./search/fhir-resource/ingest-consolidated-factory";
@@ -167,6 +168,10 @@ export async function createConsolidatedFromConversions({
       error
     );
   }
+
+  ingestPatientIntoAnalyticsPlatform({ cxId, patientId }).catch(
+    processAsyncError("createConsolidatedFromConversions.ingestPatientIntoAnalyticsPlatform")
+  );
 
   log(`Done`);
   return bundle;

@@ -51,6 +51,7 @@ import ehr from "./ehr";
 import hieRoutes from "./hie";
 import carequalityRoutes from "./hie/carequality";
 import commonwellRoutes from "./hie/commonwell";
+import questRoutes from "./integration/quest";
 import jwtToken from "./jwt-token";
 import docsRoutes from "./medical/docs";
 import facilityRoutes from "./medical/facility";
@@ -60,6 +61,7 @@ import mpiRoutes from "./medical/mpi";
 import organizationRoutes from "./medical/organization";
 import patientRoutes from "./medical/patient";
 import tcmEncounter from "./medical/tcm-encounter";
+import suspectRoutes from "./medical/suspect";
 import questRoutes from "./integration/quest";
 import surecriptsRoutes from "./integration/surescripts";
 
@@ -82,6 +84,7 @@ router.use("/tcm/encounter", tcmEncounter);
 router.use("/analytics-platform", analyticsPlatformRoutes);
 router.use("/quest", questRoutes);
 router.use("/surescripts", surecriptsRoutes);
+router.use("/suspect", suspectRoutes);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/mapi-access

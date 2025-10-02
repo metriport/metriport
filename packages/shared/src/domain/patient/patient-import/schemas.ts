@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { patientImportJobStatus } from "./status";
+import { patientImportJobStatus, PatientImportJobUpdatableStatus } from "./status";
 
 // TODO 2330 Review this as part of POST /internal/patient/bulk/coverage-assessment
 // export const patientImportPatientSchema = z.object({
@@ -27,9 +27,22 @@ import { patientImportJobStatus } from "./status";
 // });
 
 export const updateJobSchema = z.object({
-  status: z.enum(patientImportJobStatus),
+  status: z
+    .enum(
+      patientImportJobStatus.filter(s => s !== "waiting") as [
+        PatientImportJobUpdatableStatus,
+        ...PatientImportJobUpdatableStatus[]
+      ]
+    )
+    .optional(),
   total: z.number().optional(),
+  /**
+   * Only to be set on dry run mode - on regular mode, the successful count is incremented
+   * individually as each patient is created.
+   */
+  successful: z.number().optional(),
   failed: z.number().optional(),
+  reason: z.string().optional(),
   forceStatusUpdate: z.boolean().optional(),
 });
 export type UpdateJobSchema = z.infer<typeof updateJobSchema>;

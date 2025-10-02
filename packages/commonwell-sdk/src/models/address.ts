@@ -1,4 +1,4 @@
-import { normalizeState, zodToLowerCase } from "@metriport/shared";
+import { normalizeState } from "@metriport/shared";
 import { z } from "zod";
 import { emptyStringToUndefinedSchema } from "../common/zod";
 import { periodSchema } from "./period";
@@ -9,16 +9,17 @@ import { periodSchema } from "./period";
  */
 export enum AddressUseCodes {
   home = "home",
+  work = "work",
+  temp = "temp",
   old = "old",
+  billing = "billing",
 }
-export const addressUseCodesSchema = z.preprocess(zodToLowerCase, z.nativeEnum(AddressUseCodes));
 
 export enum AddressTypeCodes {
   postal = "postal",
   physical = "physical",
   both = "both",
 }
-export const addressTypeCodesSchema = z.preprocess(zodToLowerCase, z.nativeEnum(AddressTypeCodes));
 
 // A postal address.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.3 Address)
@@ -27,9 +28,9 @@ export const addressSchema = z.object({
   city: z.string().nullish(),
   state: z.preprocess(normalizeStatePreprocess, z.string().nullish()),
   country: emptyStringToUndefinedSchema,
-  postalCode: z.string(),
-  use: emptyStringToUndefinedSchema.pipe(addressUseCodesSchema.nullish()),
-  type: emptyStringToUndefinedSchema.pipe(addressTypeCodesSchema.nullish()),
+  postalCode: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
+  use: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
+  type: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
   period: periodSchema.nullish(),
 });
 export type Address = z.infer<typeof addressSchema>;

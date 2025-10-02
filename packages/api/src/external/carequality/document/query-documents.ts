@@ -25,7 +25,7 @@ import { getCqInitiator } from "../shared";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
 import { filterCqLinksByManagingOrg } from "./filter-oids-by-managing-org";
 
-const staleLookbackHours = 24;
+const staleLookbackWeeks = 2;
 
 export async function getDocumentsFromCQ({
   requestId,
@@ -89,7 +89,7 @@ export async function getDocumentsFromCQ({
       : undefined;
     const isStale =
       updateStalePatients &&
-      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
+      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackWeeks, "weeks");
 
     if (hasNoCQStatus || isProcessing || forcePatientDiscovery || isStale) {
       log(
@@ -125,26 +125,13 @@ export async function getDocumentsFromCQ({
     });
 
     const linksWithDqUrl: CQLink[] = [];
-    const addDqUrlToCqLink = async (patientLink: CQLink): Promise<void> => {
-      const gateway = await getCQDirectoryEntry(patientLink.oid);
-
-      if (!gateway) {
-        const msg = `Gateway not found - Doc Query`;
-        log(`${msg}: ${patientLink.oid} skipping...`);
-        return;
-      } else if (!gateway.urlDQ) {
-        log(`Gateway ${gateway.id} has no DQ URL, skipping...`);
-        return;
+    await executeAsynchronously(
+      cqPatientData.data.links,
+      patientLink => addDqUrlToCqLink(patientLink, linksWithDqUrl, log),
+      {
+        numberOfParallelExecutions: 20,
       }
-
-      linksWithDqUrl.push({
-        ...patientLink,
-        url: gateway.urlDQ,
-      });
-    };
-    await executeAsynchronously(cqPatientData.data.links, addDqUrlToCqLink, {
-      numberOfParallelExecutions: 20,
-    });
+    );
 
     const cqLinks = cqManagingOrgName
       ? await filterCqLinksByManagingOrg(cqManagingOrgName, linksWithDqUrl)
@@ -201,4 +188,26 @@ export async function getDocumentsFromCQ({
     });
     throw error;
   }
+}
+
+async function addDqUrlToCqLink(
+  patientLink: CQLink,
+  linksWithDqUrl: CQLink[],
+  log: typeof console.log
+): Promise<void> {
+  const gateway = await getCQDirectoryEntry(patientLink.oid);
+
+  if (!gateway) {
+    const msg = `Gateway not found - Doc Query`;
+    log(`${msg}: ${patientLink.oid} skipping...`);
+    return;
+  } else if (!gateway.urlDQ) {
+    log(`Gateway ${gateway.id} has no DQ URL, skipping...`);
+    return;
+  }
+
+  linksWithDqUrl.push({
+    ...patientLink,
+    url: gateway.urlDQ,
+  });
 }

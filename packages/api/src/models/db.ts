@@ -14,7 +14,7 @@ import { CQPatientDataModel } from "../external/carequality/models/cq-patient-da
 import { OutboundDocumentQueryRespModel } from "../external/carequality/models/outbound-document-query-resp";
 import { OutboundDocumentRetrievalRespModel } from "../external/carequality/models/outbound-document-retrieval-resp";
 import { OutboundPatientDiscoveryRespModel } from "../external/carequality/models/outbound-patient-discovery-resp";
-import { CwPatientDataModel } from "../external/commonwell-v1/models/cw-patient-data";
+import { CwPatientDataModel } from "../external/commonwell/models/cw-patient-data";
 import { HIEDirectoryEntryViewModel } from "../external/hie/models/hie-directory-view";
 import { FacilityModel } from "../models/medical/facility";
 import { OrganizationModel } from "../models/medical/organization";
@@ -44,6 +44,7 @@ import { PatientMappingModel } from "./patient-mapping";
 import { PatientSettingsModel } from "./patient-settings";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
+import { SuspectModel } from "./suspect";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -77,6 +78,7 @@ const models: ModelSetup[] = [
   CohortModel.setup,
   PatientCohortModel.setup,
   TcmEncounterModel.setup,
+  SuspectModel.setup,
 ];
 
 const modelsReadOnly: ModelSetup[] = [PatientModelReadOnly.setup];
@@ -88,10 +90,10 @@ export type MetriportDB = {
 };
 
 let db: MetriportDB | undefined;
-export const getDB = (): MetriportDB => {
+export function getDB(): MetriportDB {
   if (!db) throw new Error("DB not initialized");
   return db;
-};
+}
 
 export interface DocTableNames {
   token: string;

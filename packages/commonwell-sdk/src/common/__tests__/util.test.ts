@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { decodeCwPatientId } from "../util";
+import { decodeCwPatientIdV2 as decodeCwPatientId } from "../util";
 
 describe("util", () => {
   describe("decodeCwPatientId", () => {

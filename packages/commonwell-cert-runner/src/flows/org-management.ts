@@ -7,6 +7,7 @@ import {
   Organization,
 } from "@metriport/commonwell-sdk";
 import { errorToString } from "@metriport/shared";
+import { makeNPI } from "@metriport/shared/common/__tests__/npi";
 import {
   existingOrgOid,
   memberCertificateString,
@@ -41,6 +42,7 @@ export async function orgManagement(): Promise<OrgManagementResponse> {
   try {
     let orgId: string | undefined = existingOrgOid;
     if (orgId) {
+      console.log(`>>> Reusing an existing org, oid `, existingOrgOid);
       const org = await getOneOrg(commonWellMember, orgId);
       return buildResponse(org);
     }
@@ -157,14 +159,13 @@ export async function orgManagement(): Promise<OrgManagementResponse> {
 }
 
 function buildResponse(org: Organization): OrgManagementResponse {
-  if (!org.npiType2) throw new Error("Organization is missing NPI Type 2");
   const commonWell = new CommonWell({
     orgCert: orgCertificateString,
     rsaPrivateKey: orgPrivateKeyString,
     orgName: org.name,
     oid: org.organizationId,
     homeCommunityId: org.homeCommunityId,
-    npi: org.npiType2,
+    npi: org.npiType2 ?? makeNPI(),
     apiMode: APIMode.integration,
   });
   return { commonWell };

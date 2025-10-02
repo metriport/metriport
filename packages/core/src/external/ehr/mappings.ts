@@ -3,6 +3,10 @@ import {
   athenaSecondaryMappingsSchema,
 } from "@metriport/shared/interface/external/ehr/athenahealth/cx-mapping";
 import {
+  AthenaPatientMappingSecondaryMappings,
+  athenaPatientMappingSecondaryMappingsSchema,
+} from "@metriport/shared/interface/external/ehr/athenahealth/patient-mapping";
+import {
   CanavsSecondaryMappings,
   canvasSecondaryMappingsSchema,
 } from "@metriport/shared/interface/external/ehr/canvas/cx-mapping";
@@ -14,6 +18,10 @@ import {
   HealthieSecondaryMappings,
   healthieSecondaryMappingsSchema,
 } from "@metriport/shared/interface/external/ehr/healthie/cx-mapping";
+import {
+  PatientMappingSecondaryMappings,
+  patientMappingSecondaryMappingsSchema,
+} from "@metriport/shared/interface/external/ehr/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { z } from "zod";
 
@@ -50,4 +58,20 @@ export const ehrCxMappingSecondaryMappingsSchemaMapGeneral: {
 } = {
   ...ehrCxMappingSecondaryMappingsSchemaMap,
   [EhrSources.eclinicalworks]: undefined,
+  [EhrSources.salesforce]: undefined,
+};
+
+export type EhrPatientMappingSecondaryMappings =
+  | AthenaPatientMappingSecondaryMappings
+  | PatientMappingSecondaryMappings;
+
+export const ehrPatientMappingSecondaryMappingsSchemaMap: {
+  [key in EhrSource]: z.Schema<EhrPatientMappingSecondaryMappings>;
+} = {
+  [EhrSources.athena]: athenaPatientMappingSecondaryMappingsSchema,
+  [EhrSources.elation]: patientMappingSecondaryMappingsSchema,
+  [EhrSources.canvas]: patientMappingSecondaryMappingsSchema,
+  [EhrSources.healthie]: patientMappingSecondaryMappingsSchema,
+  [EhrSources.eclinicalworks]: patientMappingSecondaryMappingsSchema,
+  [EhrSources.salesforce]: patientMappingSecondaryMappingsSchema,
 };

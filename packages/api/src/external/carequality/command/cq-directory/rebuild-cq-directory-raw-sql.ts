@@ -64,26 +64,28 @@ export async function insertCqDirectoryEntries(
 
 function createKeys(): string {
   // The order matters, it's tied to the insert below
-  const allKeys: Record<keyof Omit<CQDirectoryEntry, "eTag" | "createdAt" | "updatedAt">, string> =
-    {
-      id: "id",
-      name: "name",
-      urlXCPD: urlXcpdColumnName,
-      urlDQ: urlDqColumnName,
-      urlDR: urlDrColumnName,
-      lat: "lat",
-      lon: "lon",
-      point: "point",
-      addressLine: addressLineColumnName,
-      city: "city",
-      state: "state",
-      zip: "zip",
-      data: "data",
-      rootOrganization: rootOrgColumnName,
-      managingOrganizationId: managingOrgIdColumnName,
-      active: "active",
-      lastUpdatedAtCQ: lastUpdatedAtCqColumnName,
-    };
+  const allKeys: Record<
+    keyof Omit<CQDirectoryEntry, "delegateOids" | "eTag" | "createdAt" | "updatedAt">,
+    string
+  > = {
+    id: "id",
+    name: "name",
+    urlXCPD: urlXcpdColumnName,
+    urlDQ: urlDqColumnName,
+    urlDR: urlDrColumnName,
+    lat: "lat",
+    lon: "lon",
+    point: "point",
+    addressLine: addressLineColumnName,
+    city: "city",
+    state: "state",
+    zip: "zip",
+    data: "data",
+    rootOrganization: rootOrgColumnName,
+    managingOrganizationId: managingOrgIdColumnName,
+    active: "active",
+    lastUpdatedAtCQ: lastUpdatedAtCqColumnName,
+  };
 
   return Object.values(allKeys).join(", ");
 }

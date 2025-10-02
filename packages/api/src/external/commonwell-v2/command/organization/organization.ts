@@ -1,7 +1,7 @@
 import {
+  Organization as CwSdkOrganization,
   CwTreatmentType,
   isOrgInitiatorAndResponder,
-  Organization as CwSdkOrganization,
   OrganizationBase,
   OrganizationWithNetworkInfo,
 } from "@metriport/commonwell-sdk";
@@ -97,7 +97,14 @@ function cwOrgOrFacilityToSdk(
       networks: [
         {
           type: "CommonWell",
-          purposeOfUse: [],
+          purposeOfUse: [
+            {
+              id: "TREATMENT",
+              queryInitiatorOnly: false,
+              queryInitiator: true,
+              queryResponder: true,
+            },
+          ],
         },
       ],
       authorizationInformation: {
@@ -130,9 +137,9 @@ function cwOrgOrFacilityToSdk(
         purposeOfUse: [
           {
             id: "TREATMENT",
-            queryInitiatorOnly: !org.isInitiatorAndResponder,
-            queryInitiator: org.isInitiatorAndResponder,
-            queryResponder: org.isInitiatorAndResponder,
+            queryInitiatorOnly: true,
+            queryInitiator: false,
+            queryResponder: false,
           },
         ],
       },
@@ -145,7 +152,9 @@ export async function get(orgOid: string): Promise<CwSdkOrganization | undefined
   const { log, debug } = out(`CW.v2.org get - CW Org OID ${orgOid}`);
   const commonWell = makeCommonWellMemberAPI();
   try {
-    const resp = await executeWithNetworkRetries(() => commonWell.getOneOrg(orgOid));
+    const resp = await executeWithNetworkRetries(() => commonWell.getOneOrg(orgOid), {
+      retryOnTimeout: true,
+    });
     debug(`resp getOneOrg: `, JSON.stringify(resp));
     return resp;
   } catch (error) {

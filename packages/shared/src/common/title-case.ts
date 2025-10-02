@@ -4,7 +4,17 @@ export function toTitleCase(str: string): string {
   return words
     .map(word => {
       if (!word) return "";
-      return word.charAt(0).toUpperCase() + word.slice(1);
+      return word
+        .split("'") // supports names with apostrophes, like D'Angelo
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join("'");
     })
     .join(" ");
+}
+
+export function toTitleCaseIfNotMultiCase(str: string): string {
+  if (str.toLowerCase() === str || str.toUpperCase() === str) {
+    return toTitleCase(str);
+  }
+  return str;
 }

@@ -57,7 +57,6 @@ import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { uuidv7 } from "../../../util/uuid-v7";
-import { GroupedVitalsByDate } from "../command/write-back/grouped-vitals";
 import { createOrReplaceDocument } from "../document/command/create-or-replace-document";
 import { DocumentType } from "../document/document-shared";
 import {
@@ -79,6 +78,7 @@ import {
   getObservationUnit,
   getObservationUnitAndValue,
   getObservationValue,
+  GroupedVitalsByDate,
   makeRequest,
   MakeRequestParamsInEhr,
   paginateWaitTime,

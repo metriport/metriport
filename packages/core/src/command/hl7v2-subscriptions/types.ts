@@ -40,6 +40,7 @@ export type RosterRowData = {
   dateTwoMonthsInFutureNoDelimiter: string;
   dateMid2025NoDelimiter: string;
   emptyString: string;
+  addAllCaps: "ADD";
 };
 
 export type HiePatientRosterMapping = {
@@ -49,7 +50,7 @@ export type HiePatientRosterMapping = {
 export type HieConfig = {
   name: string;
   gatewayPublicIp: string;
-  internalCidrBlock: string;
+  internalCidrBlocks: string[];
   timezone: HieIanaTimezone;
   states: USState[];
   subscriptions: Hl7v2Subscription[];
@@ -58,7 +59,7 @@ export type HieConfig = {
   mapping: HiePatientRosterMapping;
 };
 
-export type VpnlessHieConfig = Omit<HieConfig, "gatewayPublicIp" | "internalCidrBlock">;
+export type VpnlessHieConfig = Omit<HieConfig, "gatewayPublicIp" | "internalCidrBlocks">;
 
 export type Hl7v2SubscriberParams = {
   hieName: string;
@@ -83,5 +84,5 @@ export type Hl7v2SubscriberApiResponse = {
  * @returns true if config is HieConfig, false if config is VpnlessHieConfig
  */
 export function doesHieUseVpn(config: HieConfig | VpnlessHieConfig): config is HieConfig {
-  return "gatewayPublicIp" in config && "internalCidrBlock" in config;
+  return "gatewayPublicIp" in config && "internalCidrBlocks" in config;
 }

@@ -1,4 +1,6 @@
-const todaysDate = new Date().toISOString().split("T")[0];
+import { buildDayjs } from "@metriport/shared/common/date";
+
+const todaysDate = buildDayjs().format("YYYY-MM-DD");
 const systemPrompt =
   "You are a medical record reviewer and your task is to extract key information from a patient's medical chart. Do not include any demographic information such as name, date of birth, address, or other personal identifiers in your summary.";
 

@@ -1,11 +1,9 @@
+import { isStrictMatchingAlgorithmEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { PatientData } from "@metriport/core/domain/patient";
 import { filterPatientLinks } from "@metriport/core/mpi/filter-patients/filter-patients";
 import { strictMatchingAlgorithm } from "@metriport/core/mpi/match-patients";
-import { isStrictMatchingAlgorithmEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
-import { CwLink } from "../commonwell-v1/cw-patient-data";
-import { cwLinkToPatientData } from "../commonwell-v1/link/shared";
-import { cqLinkToPatientData } from "../carequality/shared";
 import { CQLink } from "../carequality/cq-patient-data";
+import { cqLinkToPatientData } from "../carequality/shared";
 
 export async function validateCqLinksBelongToPatient(
   cxId: string,
@@ -20,17 +18,13 @@ export async function validateCqLinksBelongToPatient(
   );
 }
 
-export async function validateCwLinksBelongToPatient(
+export async function validateCwLinksBelongToPatient<T>(
   cxId: string,
-  cwLinks: CwLink[],
-  patientData: PatientData
-): Promise<{ validNetworkLinks: CwLink[]; invalidLinks: CwLink[] }> {
-  return validateLinksBelongToPatientGeneric<CwLink>(
-    cxId,
-    cwLinks,
-    patientData,
-    cwLinkToPatientData
-  );
+  cwLinks: T[],
+  patientData: PatientData,
+  convertToPatientData: (cwLink: T) => PatientData
+): Promise<{ validNetworkLinks: T[]; invalidLinks: T[] }> {
+  return validateLinksBelongToPatientGeneric<T>(cxId, cwLinks, patientData, convertToPatientData);
 }
 
 async function validateLinksBelongToPatientGeneric<TLink>(
@@ -83,7 +77,7 @@ async function validateLinksBelongToPatient(
 
     return { validPatientDataLinks: validNetworkLinks, invalidPatientDataLinks: invalidLinks };
   } else {
-    const linkStatuses = await filterPatientLinks(patientData, allPatientLinks);
+    const linkStatuses = filterPatientLinks(patientData, allPatientLinks);
 
     const validNetworkLinks: PatientData[] = [];
     const invalidLinks: PatientData[] = [];

@@ -58,7 +58,9 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   e2eCxIds: { enabled: false, values: [] },
   commonwellFeatureFlag: { enabled: false },
   carequalityFeatureFlag: { enabled: false },
+  debugFeatureFlag: { enabled: false },
   cxsWithPcpVisitAiSummaryFeatureFlag: { enabled: false, values: [] },
+  cxsWithRecentVisitAiSummary: { enabled: false, values: [] },
   cxsWithHl7NotificationWebhookFeatureFlag: { enabled: false, values: [] },
   cxsWithDischargeRequeryFeatureFlag: { enabled: false, values: [] },
   cxsWithDischargeSlackNotificationFeatureFlag: { enabled: false, values: [] },
@@ -66,7 +68,9 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   cxsWithSurescriptsFeatureFlag: { enabled: false, values: [] },
   cxsWithSurescriptsNotificationsFeatureFlag: { enabled: false, values: [] },
   cxsWithQuestFeatureFlag: { enabled: false, values: [] },
-  cxsEnabledForCommonwellV2: { enabled: false, values: [] },
+  analyticsIncrementalIngestion: { enabled: false, values: [] },
+  cqDoaFeatureFlag: { enabled: false },
+  cxsWithNewSoapEnvelopeFeatureFlag: { enabled: false, values: [] },
 };
 
 /**

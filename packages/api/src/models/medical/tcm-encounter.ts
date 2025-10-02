@@ -18,6 +18,9 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
   declare dischargeSummaryPath: string | undefined;
   declare outreachStatus: CreationOptional<"Not Started" | "Attempted" | "Completed">;
   declare lastOutreachDate: CreationOptional<Date>;
+  declare outreachLogs: CreationOptional<
+    { status: "Attempted" | "Completed"; timestamp: string }[]
+  >;
 
   // This is a stored generated column, its derived from clinical_information.
   declare readonly hasCardiacCode: CreationOptional<boolean>;
@@ -78,6 +81,11 @@ export class TcmEncounterModel extends BaseModel<TcmEncounterModel> implements T
         },
         lastOutreachDate: {
           type: DataTypes.DATE,
+        },
+        outreachLogs: {
+          type: DataTypes.JSONB,
+          defaultValue: [],
+          allowNull: false,
         },
         hasCardiacCode: {
           type: DataTypes.BOOLEAN,

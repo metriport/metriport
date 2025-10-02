@@ -1,13 +1,12 @@
-import { Transaction } from "sequelize";
+import { parseOid } from "@metriport/shared/common/normalize-oid";
 import { uniqBy } from "lodash";
+import { Transaction } from "sequelize";
 import { BaseUpdateCmdWithCustomer } from "../../../command/medical/base-update-command";
-import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { InvalidLinksData } from "../../../domain/invalid-links";
-import { InvalidLinks } from "../../../domain/invalid-links";
-import { InvalidLinksCreate } from "../../../domain/invalid-links";
+import { InvalidLinks, InvalidLinksCreate, InvalidLinksData } from "../../../domain/invalid-links";
+import { isCwLinkV1 } from "../../../external/commonwell/patient/cw-patient-data/shared";
 import { InvalidLinksModel } from "../../../models/invalid-links";
+import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getInvalidLinksOrFail } from "./get-invalid-links";
-
 export type InvalidLinksUpdate = InvalidLinksCreate & BaseUpdateCmdWithCustomer;
 
 export async function updateInvalidLinks({
@@ -48,7 +47,25 @@ export async function updateInvalidLinksWithinDbTx(
   const uniqueUpdatedData = {
     carequality: uniqBy(updatedData.carequality, "oid"),
     commonwell: uniqBy(updatedData.commonwell, function (networkLink) {
-      return networkLink.patient?.provider?.reference;
+      if (isCwLinkV1(networkLink)) {
+        // example: "https://org-address.org/v1/org/2.16.840.<rest-of-oid>/"
+        const providerReference = networkLink.patient?.provider?.reference;
+        if (!providerReference) return JSON.stringify(networkLink);
+        try {
+          return parseOid(providerReference);
+        } catch {
+          return JSON.stringify(networkLink);
+        }
+      } else {
+        // example: "urn:oid:2.16.840.<rest-of-oid>"
+        const systemReference = networkLink.Patient?.managingOrganization?.identifier?.[0]?.system;
+        if (!systemReference) return JSON.stringify(networkLink);
+        try {
+          return parseOid(systemReference);
+        } catch {
+          return JSON.stringify(networkLink);
+        }
+      }
     }),
   };
 

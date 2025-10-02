@@ -22,7 +22,6 @@ const groupType = "customer";
 
 export function analytics(params: EventMessageV1, postApiKey?: string): PostHog | void {
   const apiKey = postApiKey ?? defaultPostHogApiKey;
-
   if (!apiKey) return;
 
   const posthog = new PostHog(apiKey);
@@ -70,7 +69,7 @@ export enum EventTypes {
   inboundDocumentQuery = "inbound.documentQuery",
   inboundDocumentRetrieval = "inbound.documentRetrieval",
   dischargeRequery = "dischargeRequery",
-  rosterUploadSummary = "rosterUploadSummary",
+  rosterUploadPerCustomer = "rosterUploadPerCustomer",
 }
 
 export enum EventErrMessage {

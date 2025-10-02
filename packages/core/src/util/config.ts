@@ -1,6 +1,7 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
-import { getEnvVar, getEnvVarOrFail } from "./env-var";
 import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
+import { SftpConfig } from "../external/sftp/types";
+import { getEnvVar, getEnvVarOrFail } from "./env-var";
 
 /**
  * Shared configs, still defining how to work with this. For now:
@@ -52,6 +53,10 @@ export class Config {
     return getEnvVarOrFail("AWS_REGION");
   }
 
+  static getGeneralBucketName(): string {
+    return getEnvVarOrFail("GENERAL_BUCKET_NAME");
+  }
+
   static getSearchEndpoint(): string {
     return getEnvVarOrFail("SEARCH_ENDPOINT");
   }
@@ -101,6 +106,9 @@ export class Config {
   }
   static getHl7IncomingMessageBucketName(): string {
     return getEnvVarOrFail("HL7_INCOMING_MESSAGE_BUCKET_NAME");
+  }
+  static getHl7RawMessageBucketName(): string {
+    return getEnvVarOrFail("HL7_RAW_MESSAGE_BUCKET_NAME");
   }
   static getHl7OutgoingMessageBucketName(): string {
     return getEnvVarOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME");
@@ -372,6 +380,10 @@ export class Config {
     return getEnvVar("EHR_ECLINICALWORKS_ENVIRONMENT");
   }
 
+  static getSalesforceEnv(): string | undefined {
+    return getEnvVar("EHR_SALESFORCE_ENVIRONMENT");
+  }
+
   static getRunPatientJobQueueUrl(): string {
     return getEnvVarOrFail("RUN_PATIENT_JOB_QUEUE_URL");
   }
@@ -386,26 +398,112 @@ export class Config {
     return getEnvVarOrFail("FHIR_CONVERTER_BUCKET_NAME");
   }
 
+  static getAnalyticsBucketName(): string | undefined {
+    return getEnvVar("ANALYTICS_BUCKET_NAME");
+  }
+  /** For development only - cloud should call a lambda that has it setup differently */
+  static getAnalyticsDbCreds(): string {
+    return getEnvVarOrFail("ANALYTICS_DB_CREDS");
+  }
+
   // ENG-536 remove this once we automatically find the discharge summary
   static getDischargeNotificationSlackUrl(): string {
     return getEnvVarOrFail("DISCHARGE_NOTIFICATION_SLACK_URL");
   }
 
-  static getFhirToCsvQueueUrl(): string {
-    return getEnvVarOrFail("FHIR_TO_CSV_QUEUE_URL");
+  static getFhirToCsvBulkQueueUrl(): string {
+    return getEnvVarOrFail("FHIR_TO_CSV_BULK_QUEUE_URL");
+  }
+  static getFhirToCsvIncrementalQueueUrl(): string {
+    return getEnvVarOrFail("FHIR_TO_CSV_INCREMENTAL_QUEUE_URL");
   }
   static getFhirToCsvTransformLambdaName(): string {
     return getEnvVarOrFail("FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME");
   }
-
-  static getFhirToCsvBatchJobQueueArn(): string | undefined {
-    return getEnvVar("FHIR_TO_CSV_BATCH_JOB_QUEUE_ARN");
+  static getFhirToCsvTransformHttpEndpoint(): string {
+    return getEnvVar("FHIR_TO_CSV_TRANSFORM_HTTP_ENDPOINT") ?? "http://localhost:8001";
   }
-  static getFhirToCsvBatchJobDefinitionArn(): string | undefined {
-    return getEnvVar("FHIR_TO_CSV_BATCH_JOB_DEFINITION_ARN");
+
+  static getCoreTransformBatchJobQueueArn(): string {
+    return getEnvVarOrFail("CORE_TRANSFORM_BATCH_JOB_QUEUE_ARN");
+  }
+  static getCoreTransformBatchJobDefinitionArn(): string {
+    return getEnvVarOrFail("CORE_TRANSFORM_BATCH_JOB_DEFINITION_ARN");
   }
 
   static getRosterUploadSftpPasswordArn(): string {
     return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_ARN`);
+  }
+
+  static getLahieIngestionLambdaName(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_LAMBDA_NAME");
+  }
+
+  static getLahieIngestionRemotePath(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_REMOTE_PATH");
+  }
+
+  static getLahieConfig(): Record<string, unknown> {
+    return getEnvVarAsRecordOrFail("LAHIE_CONFIG");
+  }
+
+  static getLahieIngestionHost(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_HOST");
+  }
+
+  static getLahieIngestionUsername(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_USERNAME");
+  }
+
+  static getLahieIngestionPort(): number {
+    const port = Number.parseInt(getEnvVarOrFail("LAHIE_INGESTION_PORT"));
+    if (isFinite(port)) {
+      return port;
+    }
+    throw new Error("Lahie ingestion port is not a valid number");
+  }
+
+  static getLahieIngestionPasswordArn(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_PASSWORD_ARN");
+  }
+
+  static getLahieIngestionBucket(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_BUCKET_NAME");
+  }
+
+  static getLahieIngestionPrivateKeyArn(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_PRIVATE_KEY_ARN");
+  }
+
+  static getLahieIngestionPrivateKeyPassphraseArn(): string {
+    return getEnvVarOrFail("LAHIE_INGESTION_PRIVATE_KEY_PASSPHRASE_ARN");
+  }
+
+  static getInternalServerUrl(): string {
+    return getEnvVarOrFail("INTERNAL_SERVER_BASE_URL");
+  }
+
+  static getAlohrIngestionBucket(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_BUCKET_NAME");
+  }
+
+  static getAlohrIngestionRemotePath(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_REMOTE_PATH");
+  }
+
+  static getAlohrIngestionPasswordArn(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_PASSWORD_ARN");
+  }
+
+  static getAlohrIngestionSftpConfig(): Partial<SftpConfig> {
+    return getEnvVarAsRecordOrFail("ALOHR_INGESTION_SFTP_CONFIG");
+  }
+
+  static getAlohrIngestionLambdaName(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_LAMBDA_NAME");
+  }
+
+  static getAlohrIngestionTimezone(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_TIMEZONE");
   }
 }

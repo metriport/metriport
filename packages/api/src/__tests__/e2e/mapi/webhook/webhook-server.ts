@@ -15,9 +15,12 @@ const app = express();
 app.post(
   "/",
   raw({ type: "*/*" }),
-  asyncHandler(async (req: Request, res: Response) => {
-    await whHandler.handleRequest(req, res);
-  }, true)
+  asyncHandler(
+    async (req: Request, res: Response) => {
+      await whHandler.handleRequest(req, res);
+    },
+    async () => true
+  )
 );
 app.use(express.json({ limit: "20mb" }));
 

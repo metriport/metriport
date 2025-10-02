@@ -29,14 +29,23 @@ export function getSurescriptsDirOrFail(): string {
   return dir;
 }
 
-export function writeSurescriptsRunsFile(filePath: string, content: string): void {
+export function getSurescriptsRunsFilePath(filePath: string): string {
   const dir = getSurescriptsDirOrFail();
-  const fullFilePath = path.join(dir, filePath);
+  return path.join(dir, filePath);
+}
+
+export function writeSurescriptsRunsFile(filePath: string, content: string): string {
+  const fullFilePath = getSurescriptsRunsFilePath(filePath);
   const fileDir = path.dirname(fullFilePath);
   if (!fs.existsSync(fileDir)) {
     fs.mkdirSync(fileDir, { recursive: true });
   }
   fs.writeFileSync(fullFilePath, content, "utf-8");
+  return fullFilePath;
+}
+
+export function appendToSurescriptsRunsFile(fullFilePath: string, content: string): void {
+  fs.appendFileSync(fullFilePath, content, "utf-8");
 }
 
 export function writeSurescriptsIdentifiersFile(
@@ -75,6 +84,35 @@ export async function getTransmissionsFromCsv(
       })
       .on("end", function () {
         resolve(transmissions);
+      })
+      .on("error", function (error) {
+        reject(error);
+      });
+  });
+}
+
+export async function getPatientIdsFromCsv(csvFileName: string): Promise<string[]> {
+  const dir = getSurescriptsDirOrFail();
+  const csvFilePath = path.join(dir, csvFileName);
+  if (!fs.existsSync(csvFilePath)) {
+    throw new Error(`CSV file ${csvFilePath} not found`);
+  }
+
+  return new Promise((resolve, reject) => {
+    const patientIds: string[] = [];
+    fs.createReadStream(csvFilePath)
+      .pipe(csv())
+      .on("data", function (row) {
+        if (
+          row.patientId != null &&
+          typeof row.patientId === "string" &&
+          row.patientId.length == 36
+        ) {
+          patientIds.push(row.patientId);
+        }
+      })
+      .on("end", function () {
+        resolve(patientIds);
       })
       .on("error", function (error) {
         reject(error);

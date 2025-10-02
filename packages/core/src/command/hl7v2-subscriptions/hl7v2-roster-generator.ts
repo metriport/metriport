@@ -13,15 +13,17 @@ import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
 import _ from "lodash";
+import { stripInvalidCharactersFromPatientData } from "../../domain/character-sanitizer";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
-import { analyticsAsync, EventTypes } from "../../external/analytics/posthog";
-import { reportMetric } from "../../external/aws/cloudwatch";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
-import { getSecretValueOrFail } from "../../external/aws/secret-manager";
-import { out } from "../../util";
+import { capture, out } from "../../util";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
 import { METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER } from "./constants";
+import {
+  trackRosterSizePerCustomer,
+  TrackRosterSizePerCustomerParams,
+} from "./hl7v2-roster-analytics";
 import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
 import {
   HieConfig,
@@ -32,6 +34,7 @@ import {
   VpnlessHieConfig,
 } from "./types";
 import { createScrambledId } from "./utils";
+import { toBambooId } from "./hl7v2-to-fhir-conversion/shared";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
@@ -50,7 +53,7 @@ export class Hl7v2RosterGenerator {
     this.s3Utils = new S3Utils(region);
   }
 
-  async execute(config: HieConfig | VpnlessHieConfig): Promise<string> {
+  async execute(config: HieConfig | VpnlessHieConfig): Promise<void> {
     const { log } = out("Hl7v2RosterGenerator");
     const { states } = config;
     const hieName = config.name;
@@ -62,16 +65,20 @@ export class Hl7v2RosterGenerator {
 
     log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
     log(`Getting all subscribed patients...`);
-    const patients = await simpleExecuteWithRetries(
+    const rawPatients = await simpleExecuteWithRetries(
       () => this.getAllSubscribedPatients(hieName),
       log
     );
-    log(`Found ${patients.length} total patients`);
+    log(`Found ${rawPatients.length} total patients`);
+
+    const patients = rawPatients.map(stripInvalidCharactersFromPatientData);
 
     if (patients.length === 0) {
-      throw new MetriportError("No patients found, skipping roster generation", {
+      capture.message(`No patients found for ${hieName}, skipping roster generation`, {
         extra: loggingDetails,
+        level: "warning",
       });
+      return;
     }
 
     const cxIds = new Set(patients.map(p => p.cxId));
@@ -100,8 +107,8 @@ export class Hl7v2RosterGenerator {
 
       return createRosterRowInput(p, { shortcode: org.shortcode }, states);
     });
-
-    const rosterRows = rosterRowInputs.map(input => createRosterRow(input, config.mapping));
+    const newRosterRowInputs = customizeInputsForHies(rosterRowInputs, hieName);
+    const rosterRows = newRosterRowInputs.map(input => createRosterRow(input, config.mapping));
     const rosterCsv = this.generateCsv(rosterRows);
     log("Created CSV");
 
@@ -128,52 +135,14 @@ export class Hl7v2RosterGenerator {
     log(`Saved in S3: ${this.bucketName}/${s3Key}`);
 
     const rosterSize = rosterRows.length;
-    await this.logResults(rosterSize, hieName, log);
-
-    return rosterCsv;
-  }
-
-  private async logResults(
-    rosterSize: number,
-    hieName: string,
-    log: typeof console.log
-  ): Promise<void> {
-    log("Sending analytics to posthog");
-    await this.notifyPostHog(rosterSize, hieName);
-
-    log("Sending metrics to cloudwatch");
-    await this.notifyCloudWatch(rosterSize, hieName);
-  }
-
-  private async notifyPostHog(rosterSize: number, hieName: string) {
-    const posthogSecretName = Config.getPostHogApiKey();
-    if (!posthogSecretName) {
-      throw new Error("Failed to get posthog secret name");
-    }
-
-    const posthogSecret = await getSecretValueOrFail(posthogSecretName, region);
-    await analyticsAsync(
-      {
-        event: EventTypes.rosterUploadSummary,
-        distinctId: `cx:${hieName}`,
-        properties: {
-          stateHie: hieName,
-          rosterSize: rosterSize,
-        },
-      },
-      posthogSecret
-    );
-  }
-
-  private async notifyCloudWatch(rosterSize: number, hieName: string): Promise<void> {
-    const additional = `Hie=${hieName}`;
-
-    await reportMetric({
-      name: "ADT.RosterUpload.RosterSize",
-      unit: "Count",
-      value: rosterSize,
-      additionalDimension: additional,
-    });
+    const trackRosterSizePerCustomerParams: TrackRosterSizePerCustomerParams = {
+      patients,
+      hieName,
+      orgsByCxId,
+      rosterSize,
+      log,
+    };
+    await trackRosterSizePerCustomer(trackRosterSizePerCustomerParams);
   }
 
   private async getAllSubscribedPatients(hieName: string): Promise<Patient[]> {
@@ -229,6 +198,19 @@ export function createFileNameHl7v2Roster(hieName: string): string {
   const todaysDate = buildDayjs();
   const fileDate = todaysDate.format(FILE_DATE_FORMAT);
   return `Metriport_${hieName}_Patient_Enrollment_${fileDate}.${CSV_FILE_EXTENSION}`;
+}
+
+function customizeInputsForHies(
+  rosterRowInputs: RosterRowData[],
+  hieName: string
+): RosterRowData[] {
+  if (hieName === "Bamboo") {
+    return rosterRowInputs.map(({ scrambledId, ...rest }) => ({
+      scrambledId: toBambooId(scrambledId),
+      ...rest,
+    }));
+  }
+  return rosterRowInputs;
 }
 
 export function createRosterRow(
@@ -302,6 +284,7 @@ export function createRosterRowInput(
   const july2025 = new Date(2025, 6, 1);
   const dateMid2025NoDelimiter = buildDayjs(july2025).format("YYYYMMDD");
   const patientExternalId = p.externalId;
+  const addAllCaps = "ADD" as const;
 
   return {
     id: p.id,
@@ -339,5 +322,6 @@ export function createRosterRowInput(
     dateTwoMonthsInFutureNoDelimiter,
     dateMid2025NoDelimiter,
     emptyString,
+    addAllCaps,
   };
 }
