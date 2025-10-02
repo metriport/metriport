@@ -32,10 +32,7 @@ const region = Config.getAWSRegion();
 Config.getHl7NotificationQueueUrl(); // If running for realsies, comment out otherwise.
 
 // ⚠️ THIS ONLY WORKS WITH KONZA ⚠️
-const listOfCxIds: string[] = [
-  "68dfa720-d927-450c-932b-cfc9bbfd0a4f",
-  "2d55c892-d07a-4b0f-a319-2c5845e0a02b",
-];
+const listOfCxIds: string[] = [];
 const dryRun = true;
 
 type IdentifiedMessage = {
