@@ -1,4 +1,5 @@
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-factory";
+import { buildHealthieLinkPatientHandler } from "@metriport/core/external/ehr/healthie/command/link-patient/healthie-link-patient-factory";
 import { MetriportError } from "@metriport/shared";
 import { healthieSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/healthie/cx-mapping";
 import { healthieAppointmentCreatedEventSchema } from "@metriport/shared/interface/external/ehr/healthie/event";
@@ -8,7 +9,6 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { getCxMappingOrFail } from "../../../command/mapping/cx";
 import { getHealthiePatientsFromAppointment } from "../../../external/ehr/healthie/command/get-patients-from-appointment";
-import { updateHealthiePatientQuickNotes } from "../../../external/ehr/healthie/command/sync-patient";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFromQueryOrFail } from "../../util";
@@ -50,16 +50,17 @@ router.post(
     });
     if (healthiePatientIds.length < 1) return res.sendStatus(httpStatus.OK);
     for (const healthiePatientId of healthiePatientIds) {
-      await updateHealthiePatientQuickNotes({
+      const linkPatientHandler = buildHealthieLinkPatientHandler();
+      await linkPatientHandler.processLinkPatient({
         cxId,
-        healthiePracticeId,
-        healthiePatientId,
+        practiceId: healthiePracticeId,
+        patientId: healthiePatientId,
       });
       if (secondaryMappings.webhookAppointmentPatientProcessingDisabled) {
         continue;
       }
-      const handler = buildEhrSyncPatientHandler();
-      await handler.processSyncPatient({
+      const syncPatientHandler = buildEhrSyncPatientHandler();
+      await syncPatientHandler.processSyncPatient({
         ehr: EhrSources.healthie,
         cxId,
         practiceId: healthiePracticeId,
