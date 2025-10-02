@@ -49,20 +49,20 @@ export const handler = capture.wrapHandler(
         );
       }
 
-      const binary = await retrieveDocumentForCommonWellContribution({
+      const fileContents = await retrieveDocumentForCommonWellContribution({
         fileName,
         s3Utils,
         bucketName,
       });
 
-      log(`Sending binary. Took ${Date.now() - startedAt}ms`);
+      log(`Sending file contents (${fileContents.length} bytes). Took ${Date.now() - startedAt}ms`);
       return sendResponse(
         {
           statusCode: 200,
           headers: {
             "Content-Type": "application/octet-stream",
           },
-          body: binary,
+          body: fileContents,
         },
         log
       );
@@ -87,6 +87,15 @@ export const handler = capture.wrapHandler(
 );
 
 function sendResponse(response: lambda.APIGatewayProxyResult, log: typeof console.log) {
-  log(`Sending to CW: ${JSON.stringify(response)}`);
+  const isFileContent = response.headers?.["Content-Type"] === "application/octet-stream";
+
+  if (isFileContent) {
+    const { body, ...responseWithoutBody } = response;
+    const bodySize = typeof body === "string" ? body.length : "unknown";
+    log(`Sending to CW: ${JSON.stringify({ ...responseWithoutBody, bodySize })}`);
+  } else {
+    log(`Sending to CW: ${JSON.stringify(response)}`);
+  }
+
   return response;
 }

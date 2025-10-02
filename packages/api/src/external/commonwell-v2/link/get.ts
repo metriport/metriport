@@ -15,8 +15,6 @@ import { makeCommonWellAPI } from "../api";
 import { getCommonwellPatientId } from "../patient/patient";
 
 const context = "cw.link.get";
-const { log } = out(context);
-
 export type CwPatientLinks = {
   existingLinks: PatientExistingLink[];
   probableLinks: PatientProbableLink[];
@@ -27,6 +25,8 @@ export async function get(
   cxId: string,
   facilityId: string
 ): Promise<CwPatientLinks> {
+  const { log } = out(context);
+
   if (!(await isCWEnabledForCx(cxId))) {
     log(`CW is disabled for cxId: ${cxId}`);
     return {
@@ -84,6 +84,7 @@ export async function findExistingLinks({
   commonWell: CommonWellAPI;
   commonwellPatientId: string;
 }): Promise<PatientExistingLinks | undefined> {
+  const { log } = out(context);
   try {
     const links = await commonWell.getPatientLinksByPatientId(commonwellPatientId);
     return links;
@@ -104,12 +105,13 @@ export async function findProbableLinks({
   commonWell: CommonWellAPI;
   commonwellPatientId: string;
 }): Promise<PatientProbableLinks | undefined> {
+  const { log } = out(context);
   try {
     const links = await commonWell.getProbableLinksById(commonwellPatientId);
     return links;
   } catch (error) {
     const msg = `Failure retrieving probable links`;
-    console.log(`${msg} - for patient id:`, commonwellPatientId);
+    log(`${msg} - for patient id:`, commonwellPatientId);
     throw new MetriportError(msg, error, {
       cwReference: commonWell.lastTransactionId,
       context,

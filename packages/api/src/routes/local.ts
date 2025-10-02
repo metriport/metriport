@@ -36,14 +36,14 @@ router.get(
     const s3Utils = new S3Utils(Config.getAWSRegion());
     const bucketName = Config.getMedicalDocumentsBucketName();
 
-    const binary = await retrieveDocumentForCommonWellContribution({
+    const fileContents = await retrieveDocumentForCommonWellContribution({
       fileName,
       s3Utils,
       bucketName,
     });
 
-    log(`Sending binary. Took ${Date.now() - startedAt}ms`);
-    return res.status(200).type("application/octet-stream").send(binary);
+    log(`Sending fileContents. Took ${Date.now() - startedAt}ms`);
+    return res.status(200).type("application/octet-stream").send(fileContents);
   })
 );
 
