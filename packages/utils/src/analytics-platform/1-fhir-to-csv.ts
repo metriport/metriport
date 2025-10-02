@@ -2,9 +2,10 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { FhirToCsvBulkCloud } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/bulk/fhir-to-csv-bulk-cloud";
+import { buildFhirToCsvBulkJobPrefix } from "@metriport/core/command/analytics-platform/fhir-to-csv/file-name";
 import { createConsolidatedDataFilePath } from "@metriport/core/domain/consolidated/filename";
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
-import { SQSClient } from "@metriport/core/external/aws/sqs";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { errorToString, getEnvVarOrFail, sleep } from "@metriport/shared";
@@ -51,12 +52,10 @@ const fhirToCsvJobId = "F2C_" + buildDayjs().toISOString().slice(0, 19).replace(
 
 const cxId = getEnvVarOrFail("CX_ID");
 const apiUrl = getEnvVarOrFail("API_URL");
-const queueUrl = getEnvVarOrFail("FHIR_TO_CSV_QUEUE_URL");
 const medicalDocsBucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const region = getEnvVarOrFail("AWS_REGION");
-const s3Utils = new S3Utils(region);
 
-const sqsClient = new SQSClient({ region });
+const s3Utils = new S3Utils(region);
 const api = axios.create({ baseURL: apiUrl });
 
 const program = new Command();
@@ -117,6 +116,8 @@ async function main({
         localStartedAt
       )}`
     );
+    const difference = uniquePatientIds.filter(id => !filtererdPatientIds.includes(id));
+    log(`>>> Patients without consolidated data (${difference.length}):\n${difference.join(", ")}`);
   } else {
     filtererdPatientIds = uniquePatientIds;
   }
@@ -128,21 +129,17 @@ async function main({
 
   let amountOfPatientsProcessed = 0;
 
+  const fhirToCsvHandler = new FhirToCsvBulkCloud();
+
   const failedPatientIds: string[] = [];
   await executeAsynchronously(
     filtererdPatientIds,
     async patientId => {
-      const payload = JSON.stringify({
-        jobId: fhirToCsvJobId,
-        cxId,
-        patientId,
-      });
       try {
-        // TODO Should be using FhirToCsvCloud?
-        await sqsClient.sendMessageToQueue(queueUrl, payload, {
-          fifo: true,
-          messageDeduplicationId: patientId,
-          messageGroupId: patientId,
+        await fhirToCsvHandler.processFhirToCsvBulk({
+          cxId,
+          patientId,
+          outputPrefix: buildFhirToCsvBulkJobPrefix({ cxId, jobId: fhirToCsvJobId }),
         });
         amountOfPatientsProcessed++;
         if (amountOfPatientsProcessed % 100 === 0) {

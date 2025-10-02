@@ -1,13 +1,9 @@
-import { getEnvVarAsRecordOrFail } from "@metriport/shared";
+import { dbCredsSchema } from "@metriport/shared";
 import { z } from "zod";
 
-const snowflakeCredsSchema = z.object({
-  account: z.string(),
-  user: z.string(),
-  password: z.string(),
-});
-type SnowflakeCreds = z.infer<typeof snowflakeCredsSchema>;
-
-export function getSnowflakeCreds(): SnowflakeCreds {
-  return snowflakeCredsSchema.parse(getEnvVarAsRecordOrFail("SNOWFLAKE_CREDS"));
-}
+export const dbCredsForLambdaSchema = dbCredsSchema.omit({ password: true }).merge(
+  z.object({
+    passwordSecretArn: z.string(),
+  })
+);
+export type DatabaseCredsForLambda = z.infer<typeof dbCredsForLambdaSchema>;

@@ -29,13 +29,12 @@ let dataHandler = require("../dataHandler/dataHandler");
 let minifyXML = require("minify-xml");
 const { XMLParser } = require("fast-xml-parser");
 
-
 const elementTime00010101Regex = new RegExp('<time value="00010101000000+0000"s*/>', "g");
 const elementTime00010101Replacement = "";
 const valueTime00010101Regex = new RegExp('value="00010101000000*"s*/>', "g");
 const valueTime00010101Replacement = 'nullFlavor="NI" />';
 
-const ampersandRegex = new RegExp('&(?!(?:#\\d+|#x[\\da-fA-F]+|amp|lt|gt|quot|apos);)', 'g');
+const ampersandRegex = new RegExp("&(?!(?:#\\d+|#x[\\da-fA-F]+|amp|lt|gt|quot|apos);)", "g");
 
 module.exports = class cda extends dataHandler {
   constructor() {
@@ -83,7 +82,7 @@ module.exports = class cda extends dataHandler {
 
           if (existingIsB64) {
             // if we already have a b64 string, just use it, as the reference will be a dup
-            obj[key] = { _b64: this.removeLineBreaks(existingText) };
+            obj[key] = { _b64: existingText };
           }
           // we found the prop, change it's value to the reference text
           else if (value.reference && value.reference.value) {
@@ -92,7 +91,7 @@ module.exports = class cda extends dataHandler {
             const foundB64 = this.idToB64ValueMap[id];
             if (foundB64) {
               // if we found b64, just use it, we shouldn't mix this with any existing text
-              obj[key] = { _b64: this.removeLineBreaks(foundB64) };
+              obj[key] = { _b64: foundB64 };
             } else if (foundText) {
               const newText =
                 existingText && existingText !== foundText
@@ -142,12 +141,12 @@ module.exports = class cda extends dataHandler {
       }
       let minifiedData = minifyXML.minify(data, {
         removeComments: true,
-        removeWhitespaceBetweenTags: true,
+        removeWhitespaceBetweenTags: false, // Keep whitespace between tags to preserve spacing in text nodes
         considerPreserveWhitespace: true,
         collapseWhitespaceInTags: true,
         collapseEmptyElements: true,
-        trimWhitespaceFromTexts: true,
-        collapseWhitespaceInTexts: true, // this fixes the newline problem, but then doctor's notes look bad
+        trimWhitespaceFromTexts: false, // Don't trim - preserves formatting
+        collapseWhitespaceInTexts: false, // Don't collapse - preserves line breaks and spacing
         collapseWhitespaceInProlog: true,
         collapseWhitespaceInDocType: true,
         removeUnusedNamespaces: true,

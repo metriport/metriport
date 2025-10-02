@@ -7,6 +7,4 @@ SELECT
     display,
     filename,
     processed_date 
-FROM {{source('raw', 'condition_code_coding') }} x
-
-QUALIFY rank() over(partition by filename order by processed_date desc) = 1
+FROM {{source('raw', 'condition_code_coding_view') }} x

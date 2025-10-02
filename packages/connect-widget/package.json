@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint src/**/*.ts src/**/*.tsx",
     "lint-fix": "npm run lint --fix",
-    "prettier-fix": "npx prettier '**/*.{ts,tsx}' --write",
+    "prettier-fix": "npx prettier '**/*.{ts,tsx}' --write --ignore-path ../../.prettierignore",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
     "test:e2e": "REACT_APP_ENV_TYPE=development npx playwright test '.*\\.test\\.\\e2e\\.ts'",
     "eject": "craco eject"
