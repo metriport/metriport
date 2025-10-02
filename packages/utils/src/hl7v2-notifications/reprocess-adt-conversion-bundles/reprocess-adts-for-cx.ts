@@ -35,7 +35,7 @@ Config.getHl7NotificationQueueUrl(); // Needed if running for realsies. Comment 
 // ⚠️ THIS ONLY WORKS WITH KONZA ⚠️
 const listOfCxIds: string[] = [];
 
-const dryRun = false;
+const dryRun = true;
 
 type IdentifiedMessage = {
   cxId: string;
