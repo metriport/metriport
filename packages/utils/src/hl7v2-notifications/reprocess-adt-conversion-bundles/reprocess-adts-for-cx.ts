@@ -29,7 +29,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
  */
 const bucketName = Config.getHl7IncomingMessageBucketName();
 const region = Config.getAWSRegion();
-Config.getHl7NotificationQueueUrl(); // If running for realsies, comment out otherwise.
+Config.getHl7NotificationQueueUrl(); // Needed if running for realsies. Comment out otherwise.
 
 // ⚠️ THIS ONLY WORKS WITH KONZA ⚠️
 const listOfCxIds: string[] = [];
