@@ -103,7 +103,68 @@ const encounteredObs = patient.getReferencingResources({
 - **Smart resources** - returns fully functional Smart resources
 - **Bi-directional** - complements forward reference navigation
 
-### 6. Reference Walking (BFS Traversal)
+### 6. Date Range Search
+
+Search for resources by date range using an interval tree index. This is useful for filtering resources by clinical dates efficiently.
+
+```typescript
+const sdk = await FhirBundleSdk.create(bundle);
+
+// Basic date range search
+const results = sdk.searchByDateRange({
+  dateFrom: "2024-01-01",
+  dateTo: "2024-01-31",
+});
+
+// Filter by resource type
+const observations = sdk.searchByDateRange({
+  dateFrom: "2024-01-01",
+  dateTo: "2024-12-31",
+  resourceTypes: ["Observation", "Condition"],
+});
+
+// Filter by specific date field
+const recordedConditions = sdk.searchByDateRange({
+  dateFrom: "2024-01-01",
+  dateTo: "2024-12-31",
+  dateFields: ["recordedDate"],
+});
+
+// Use Date objects
+const recentResources = sdk.searchByDateRange({
+  dateFrom: new Date("2024-01-01"),
+  dateTo: new Date(),
+});
+```
+
+**Key Features:**
+
+- **O(log n + k) search** - efficient interval tree-based search where k is the number of matching resources
+- **Multiple date fields** - indexes primary clinical dates (effectiveDateTime, onset, performed) and recorded dates
+- **Flexible filtering** - by resource type and/or specific date fields
+- **Smart resources** - returns fully functional Smart resources
+- **Period support** - handles both single date fields and date periods/ranges
+
+**Indexed Resource Types:**
+
+The following resource types and date fields are automatically indexed:
+
+- **Observation**: effectiveDateTime, effectivePeriod, effectiveInstant, issued
+- **Condition**: onsetDateTime, onsetPeriod, abatementDateTime, abatementPeriod, recordedDate
+- **Encounter**: period
+- **Procedure**: performedDateTime, performedPeriod
+- **Immunization**: occurrenceDateTime, recorded
+- **DiagnosticReport**: effectiveDateTime, effectivePeriod, issued
+- **MedicationRequest**: authoredOn
+- **MedicationAdministration**: effectiveDateTime, effectivePeriod
+- **MedicationStatement**: effectiveDateTime, effectivePeriod
+- **MedicationDispense**: whenHandedOver, whenPrepared
+- **DocumentReference**: date, context.period
+- **Composition**: date
+- **Coverage**: period
+- **AllergyIntolerance**: onsetDateTime, onsetPeriod, lastOccurrence, recordedDate
+
+### 7. Reference Walking (BFS Traversal)
 
 Walk the reference graph starting from any resource using breadth-first search (BFS). This is useful for discovering all resources connected to a specific resource.
 

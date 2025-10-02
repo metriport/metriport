@@ -34,6 +34,7 @@ import {
   isReferenceMethod,
   REFERENCE_METHOD_MAPPING,
 } from "./types/smart-resources";
+import { IntervalTree, Interval } from "./utils/interval-tree";
 
 export { Smart } from "./types/smart-resources";
 
@@ -150,6 +151,29 @@ export interface ReverseReferenceOptions {
   referenceField?: string;
 }
 
+/**
+ * Date index record for interval tree
+ */
+export interface DateIndexRecord extends Interval<number> {
+  resourceId: string;
+  resourceType: string;
+  dateField: string;
+}
+
+/**
+ * Options for date range search
+ */
+export interface DateRangeSearchOptions {
+  /** Start date for search range (inclusive) */
+  dateFrom: string | Date;
+  /** End date for search range (inclusive, defaults to current date if not provided) */
+  dateTo?: string | Date;
+  /** Filter results by resource types */
+  resourceTypes?: string[];
+  /** Filter results by specific date fields */
+  dateFields?: string[];
+}
+
 function getResourceIdentifier(entry: BundleEntry): string | undefined {
   if (entry.resource?.id) {
     return entry.resource.id;
@@ -171,6 +195,9 @@ export class FhirBundleSdk {
 
   // Reverse reference index: maps resource ID to resources that reference it
   private reverseReferencesById: Map<string, ReverseReference[]> = new Map();
+
+  // Date range index: interval tree for O(log n + k) date range searches
+  private dateRangeIndex: IntervalTree<DateIndexRecord, number> = new IntervalTree();
 
   // Smart resource caching to maintain object identity
   private smartResourceCache: WeakMap<Resource, Smart<Resource>> = new WeakMap();
@@ -487,6 +514,9 @@ export class FhirBundleSdk {
     // Build reverse reference index
     this.buildReverseReferenceIndex();
 
+    // Build date range index
+    this.buildDateRangeIndex();
+
     // Clear resolution stack after index building
     this.resolutionStack.clear();
   }
@@ -555,6 +585,425 @@ export class FhirBundleSdk {
         }
       }
     }
+  }
+
+  /**
+   * Build date range index for O(log n + k) date range searches
+   */
+  private buildDateRangeIndex(): void {
+    if (!this.bundle.entry) {
+      return;
+    }
+
+    for (const entry of this.bundle.entry) {
+      if (!entry.resource || !entry.resource.id) {
+        continue;
+      }
+
+      const resource = entry.resource;
+      const dateIntervals = this.extractDateIntervalsFromResource(resource);
+
+      for (const interval of dateIntervals) {
+        this.dateRangeIndex.insert(interval);
+      }
+    }
+  }
+
+  /**
+   * Helper to add a date interval to the intervals array
+   */
+  private addDateInterval(
+    intervals: DateIndexRecord[],
+    resourceId: string,
+    resourceType: string,
+    dateField: string,
+    low: string | undefined,
+    high?: string | undefined
+  ): void {
+    const lowMs = this.parseDate(low);
+    const highMs = this.parseDate(high ?? low);
+
+    if (lowMs !== undefined && highMs !== undefined) {
+      intervals.push({
+        low: lowMs,
+        high: highMs,
+        resourceId,
+        resourceType,
+        dateField,
+      });
+    }
+  }
+
+  /**
+   * Extract date intervals from a resource based on its type
+   * Returns array of date intervals with metadata
+   */
+  private extractDateIntervalsFromResource(resource: Resource): DateIndexRecord[] {
+    const intervals: DateIndexRecord[] = [];
+    const resourceId = resource.id;
+
+    if (!resourceId) {
+      return intervals;
+    }
+
+    switch (resource.resourceType) {
+      case "AllergyIntolerance": {
+        const r = resource as AllergyIntolerance;
+        if (r.onsetDateTime) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "onsetDateTime",
+            r.onsetDateTime
+          );
+        }
+        if (r.onsetPeriod?.start || r.onsetPeriod?.end) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "onsetPeriod",
+            r.onsetPeriod.start,
+            r.onsetPeriod.end
+          );
+        }
+        if (r.lastOccurrence) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "lastOccurrence",
+            r.lastOccurrence
+          );
+        }
+        if (r.recordedDate) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "recordedDate",
+            r.recordedDate
+          );
+        }
+        break;
+      }
+      case "Condition": {
+        const r = resource as Condition;
+        if (r.onsetDateTime) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "onsetDateTime",
+            r.onsetDateTime
+          );
+        }
+        if (r.onsetPeriod?.start || r.onsetPeriod?.end) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "onsetPeriod",
+            r.onsetPeriod.start,
+            r.onsetPeriod.end
+          );
+        }
+        if (r.abatementDateTime) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "abatementDateTime",
+            r.abatementDateTime
+          );
+        }
+        if (r.abatementPeriod?.start || r.abatementPeriod?.end) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "abatementPeriod",
+            r.abatementPeriod.start,
+            r.abatementPeriod.end
+          );
+        }
+        if (r.recordedDate) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "recordedDate",
+            r.recordedDate
+          );
+        }
+        break;
+      }
+      case "Observation": {
+        const r = resource as Observation;
+        if (r.effectiveDateTime) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "effectiveDateTime",
+            r.effectiveDateTime
+          );
+        }
+        if (r.effectivePeriod?.start || r.effectivePeriod?.end) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "effectivePeriod",
+            r.effectivePeriod.start,
+            r.effectivePeriod.end
+          );
+        }
+        if (r.effectiveInstant) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "effectiveInstant",
+            r.effectiveInstant
+          );
+        }
+        if (r.issued) {
+          this.addDateInterval(intervals, resourceId, resource.resourceType, "issued", r.issued);
+        }
+        break;
+      }
+      case "Encounter": {
+        const r = resource as Encounter;
+        if (r.period?.start || r.period?.end) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "period",
+            r.period.start,
+            r.period.end
+          );
+        }
+        break;
+      }
+      case "Procedure": {
+        const r = resource as Procedure;
+        if (r.performedDateTime) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "performedDateTime",
+            r.performedDateTime
+          );
+        }
+        if (r.performedPeriod?.start || r.performedPeriod?.end) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "performedPeriod",
+            r.performedPeriod.start,
+            r.performedPeriod.end
+          );
+        }
+        break;
+      }
+      case "Immunization": {
+        const r = resource as Immunization;
+        if (r.occurrenceDateTime) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "occurrenceDateTime",
+            r.occurrenceDateTime
+          );
+        }
+        if (r.recorded) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "recorded",
+            r.recorded
+          );
+        }
+        break;
+      }
+      case "DiagnosticReport": {
+        const r = resource as DiagnosticReport;
+        if (r.effectiveDateTime) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "effectiveDateTime",
+            r.effectiveDateTime
+          );
+        }
+        if (r.effectivePeriod?.start || r.effectivePeriod?.end) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "effectivePeriod",
+            r.effectivePeriod.start,
+            r.effectivePeriod.end
+          );
+        }
+        if (r.issued) {
+          this.addDateInterval(intervals, resourceId, resource.resourceType, "issued", r.issued);
+        }
+        break;
+      }
+      case "MedicationRequest": {
+        const r = resource as MedicationRequest;
+        if (r.authoredOn) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "authoredOn",
+            r.authoredOn
+          );
+        }
+        break;
+      }
+      case "MedicationAdministration": {
+        const r = resource as MedicationAdministration;
+        if (r.effectiveDateTime) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "effectiveDateTime",
+            r.effectiveDateTime
+          );
+        }
+        if (r.effectivePeriod?.start || r.effectivePeriod?.end) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "effectivePeriod",
+            r.effectivePeriod.start,
+            r.effectivePeriod.end
+          );
+        }
+        break;
+      }
+      case "MedicationStatement": {
+        const r = resource as MedicationStatement;
+        if (r.effectiveDateTime) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "effectiveDateTime",
+            r.effectiveDateTime
+          );
+        }
+        if (r.effectivePeriod?.start || r.effectivePeriod?.end) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "effectivePeriod",
+            r.effectivePeriod.start,
+            r.effectivePeriod.end
+          );
+        }
+        break;
+      }
+      case "MedicationDispense": {
+        const r = resource as MedicationDispense;
+        if (r.whenHandedOver) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "whenHandedOver",
+            r.whenHandedOver
+          );
+        }
+        if (r.whenPrepared) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "whenPrepared",
+            r.whenPrepared
+          );
+        }
+        break;
+      }
+      case "DocumentReference": {
+        const r = resource as DocumentReference;
+        if (r.date) {
+          this.addDateInterval(intervals, resourceId, resource.resourceType, "date", r.date);
+        }
+        if (r.context?.period?.start || r.context?.period?.end) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "context.period",
+            r.context.period.start,
+            r.context.period.end
+          );
+        }
+        break;
+      }
+      case "Composition": {
+        const r = resource as Composition;
+        if (r.date) {
+          this.addDateInterval(intervals, resourceId, resource.resourceType, "date", r.date);
+        }
+        break;
+      }
+      case "Coverage": {
+        const r = resource as Coverage;
+        if (r.period?.start || r.period?.end) {
+          this.addDateInterval(
+            intervals,
+            resourceId,
+            resource.resourceType,
+            "period",
+            r.period.start,
+            r.period.end
+          );
+        }
+        break;
+      }
+    }
+
+    return intervals;
+  }
+
+  /**
+   * Parse date string to milliseconds timestamp, with validation
+   */
+  private parseDate(dateString: string | undefined): number | undefined {
+    if (!dateString) {
+      return undefined;
+    }
+
+    const date = new Date(dateString);
+    const timestamp = date.getTime();
+
+    // Validate date is reasonable (between 1900 and 2100)
+    if (
+      isNaN(timestamp) ||
+      timestamp < new Date("1900-01-01").getTime() ||
+      timestamp > new Date("2100-01-01").getTime()
+    ) {
+      return undefined;
+    }
+
+    return timestamp;
   }
 
   /**
@@ -1463,6 +1912,59 @@ export class FhirBundleSdk {
     const smartResources: Smart<T>[] = [];
     for (const ref of filteredRefs) {
       const resource = this.getResourceById(ref.sourceResourceId);
+      if (resource) {
+        smartResources.push(resource as Smart<T>);
+      }
+    }
+
+    return smartResources;
+  }
+
+  /**
+   * Search for resources by date range using interval tree.
+   * Operates in O(log n + k) time complexity, where k is the number of matching intervals.
+   *
+   * @param options - Search options including date range and optional filters
+   * @returns Array of smart resources that match the date range criteria
+   */
+  searchByDateRange<T extends Resource = Resource>(options: DateRangeSearchOptions): Smart<T>[] {
+    const { dateFrom, dateTo, resourceTypes, dateFields } = options;
+
+    const fromMs = this.parseDate(typeof dateFrom === "string" ? dateFrom : dateFrom.toISOString());
+    const toMs = this.parseDate(
+      dateTo
+        ? typeof dateTo === "string"
+          ? dateTo
+          : dateTo.toISOString()
+        : new Date().toISOString()
+    );
+
+    if (fromMs === undefined) {
+      throw new Error("Invalid dateFrom parameter");
+    }
+    if (toMs === undefined) {
+      throw new Error("Invalid dateTo parameter");
+    }
+
+    const matchingRecords = this.dateRangeIndex.search(fromMs, toMs);
+
+    let filteredRecords = matchingRecords;
+
+    if (resourceTypes && resourceTypes.length > 0) {
+      const resourceTypeSet = new Set(resourceTypes);
+      filteredRecords = filteredRecords.filter(record => resourceTypeSet.has(record.resourceType));
+    }
+
+    if (dateFields && dateFields.length > 0) {
+      const dateFieldSet = new Set(dateFields);
+      filteredRecords = filteredRecords.filter(record => dateFieldSet.has(record.dateField));
+    }
+
+    const resourceIdSet = new Set(filteredRecords.map(record => record.resourceId));
+
+    const smartResources: Smart<T>[] = [];
+    for (const resourceId of resourceIdSet) {
+      const resource = this.getResourceById(resourceId);
       if (resource) {
         smartResources.push(resource as Smart<T>);
       }
