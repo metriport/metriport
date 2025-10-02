@@ -54,6 +54,7 @@ import {
 } from "./schemas/patient";
 import { setPatientFacilitiesSchema } from "./schemas/patient-facilities";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
+import { getLatestSuspectsBySuspectGroup } from "../../command/medical/patient/get-suspect";
 
 const router = Router();
 
@@ -605,6 +606,27 @@ router.get(
     const facilitiesData = facilities.map(facilityDtoFromModel);
 
     return res.status(status.OK).json({ facilities: facilitiesData });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/suspect
+ *
+ * Returns the suspects for a patient.
+ *
+ * @param   req.cxId      The customer ID.
+ * @param   req.param.id  The ID of the patient to be returned.
+ * @return  The suspects for the patient.
+ */
+router.get(
+  "/suspect",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+
+    const suspects = await getLatestSuspectsBySuspectGroup({ cxId, patientId });
+
+    return res.status(status.OK).json({ suspects });
   })
 );
 

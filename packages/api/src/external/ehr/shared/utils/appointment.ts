@@ -7,7 +7,7 @@ dayjs.extend(duration);
 
 export const maxJitterPracticeBatches = dayjs.duration(15, "seconds");
 export const maxJitterPatientBatches = dayjs.duration(1, "seconds");
-export const parallelPractices = 10;
+export const parallelPractices = 5;
 export const parallelPatients = 100;
 
 export type Appointment = {

@@ -1,6 +1,6 @@
 {
   "name": "@metriport/fhir-sdk",
-  "version": "1.0.8",
+  "version": "1.2.6",
   "private": true,
   "description": "FHIR Bundle SDK for parsing, querying, and manipulating FHIR bundles with reference resolution",
   "author": "Metriport Inc. <contact@metriport.com>",
@@ -34,7 +34,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
-    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "prettier-fix": "npx prettier '**/*.{js,ts,md}' --write --ignore-path ../../.prettierignore",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
     "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
   },

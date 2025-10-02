@@ -1,11 +1,12 @@
 import { Observation } from "@medplum/fhirtypes";
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, JwtTokenInfo } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { writeBackLab as writeBackLabAthena } from "../../athenahealth/command/write-back/lab";
 import { writeBackLab as writeBackLabElation } from "../../elation/command/write-back/lab";
 
 export type WriteBackLabRequest = {
   ehr: EhrSource;
-  tokenId?: string;
+  tokenInfo?: JwtTokenInfo;
   cxId: string;
   practiceId: string;
   ehrPatientId: string;
@@ -25,10 +26,11 @@ type WriteBackLabFnMap = Record<EhrSource, WriteBackLabFn | undefined>;
 
 const ehrWriteBackLabMap: WriteBackLabFnMap = {
   [EhrSources.canvas]: undefined,
-  [EhrSources.athena]: undefined,
+  [EhrSources.athena]: writeBackLabAthena,
   [EhrSources.elation]: writeBackLabElation,
   [EhrSources.healthie]: undefined,
   [EhrSources.eclinicalworks]: undefined,
+  [EhrSources.salesforce]: undefined,
 };
 
 function getEhrWriteBackLabHandler(ehr: EhrSource): WriteBackLabFn {

@@ -16,10 +16,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@metriport/api-sdk": "^14.14.0-alpha.0",
-    "@metriport/shared": "^0.23.1",
+    "@metriport/api-sdk": "^17.4.0",
+    "@metriport/shared": "^0.26.0",
     "axios": ">=1.8.2",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "form-data": ">=4.0.4"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.1",

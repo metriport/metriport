@@ -3,6 +3,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { Command } from "commander";
+import { Config } from "@metriport/core/util/config";
+import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import sftpAction from "./sftp-action";
 import sendPatientRequest from "./send-patient-request";
 import sendBatchRequest from "./send-batch-request";
@@ -19,8 +21,18 @@ import batchAnalysis from "./batch-analysis";
 import preview from "./preview";
 import findLargest from "./find-largest";
 import bundleVerification from "./bundle-verification";
+import generateCsv from "./generate-csv";
+import sendBatchPatientRequest from "./send-batch-patient-request";
+import sendCustomerRequest from "./send-customer-request";
+import fhirConvertAll from "./fhir-convert-all";
 
+/**
+ * This is the main command registry for the Surescripts CLI. You should add any new
+ * commands to this registry, and ensure that your command has a unique name.
+ */
 const program = new Command();
+FeatureFlags.init(Config.getAWSRegion(), Config.getFeatureFlagsTableName());
+
 program.addCommand(sftpAction);
 program.addCommand(sendPatientRequest);
 program.addCommand(sendBatchRequest);
@@ -37,4 +49,8 @@ program.addCommand(analyzeResponses);
 program.addCommand(preview);
 program.addCommand(findLargest);
 program.addCommand(bundleVerification);
+program.addCommand(generateCsv);
+program.addCommand(sendBatchPatientRequest);
+program.addCommand(sendCustomerRequest);
+program.addCommand(fhirConvertAll);
 program.parse();

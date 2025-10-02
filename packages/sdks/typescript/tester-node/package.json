@@ -10,20 +10,16 @@
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
-    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "prettier-fix": "npx prettier '**/*.ts' --write --ignore-path ../../../.prettierignore",
     "test": "echo \"No test specified yet\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@metriport/api-sdk": "^7.12.1",
+    "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/core": "file:packages/core",
-    "dotenv": "^16.0.3",
-    "url-join": "4.0.1",
-    "form-data": "4.0.0",
-    "node-fetch": "2.7.0",
-    "qs": "6.11.2"
+    "dotenv": "^16.0.3"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.1",
@@ -32,12 +28,9 @@
     "@typescript-eslint/parser": "^5.50.0",
     "eslint": "^8.33.0",
     "eslint-config-prettier": "^8.6.0",
+    "prettier": "2.7.1",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^4.9.5",
-    "@types/url-join": "4.0.1",
-    "@types/qs": "6.9.8",
-    "@types/node-fetch": "2.6.9",
-    "prettier": "2.7.1"
+    "typescript": "^4.9.5"
   }
 }

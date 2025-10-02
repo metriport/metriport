@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { ScheduledPatientDiscovery } from "@metriport/core/domain/patient-discovery";
 import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
+import { ScheduledPatientDiscovery } from "@metriport/core/domain/patient-discovery";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { PatientModel } from "../../../models/medical/patient";
 import { PatientMappingModel } from "../../../models/patient-mapping";
-import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { CQDirectoryEntryViewModel } from "../../carequality/models/cq-directory-view";
-import { PatientDataCommonwell } from "../../commonwell/patient-shared";
+import { PatientDataCommonwell } from "../../commonwell/patient/patient-shared";
 import { getCqOrgIdsToDenyOnCw } from "../cross-hie-ids";
 import { resetScheduledPatientDiscovery } from "../reset-scheduled-patient-discovery-request";
 import { schedulePatientDiscovery } from "../schedule-patient-discovery";
@@ -26,7 +26,7 @@ afterEach(() => {
   jest.clearAllMocks();
 });
 
-const checkPatientUpdateWith = (scheduledPd: ScheduledPatientDiscovery | undefined) => {
+function checkPatientUpdateWith(scheduledPd: ScheduledPatientDiscovery | undefined) {
   expect(patientModel_update).toHaveBeenCalledWith(
     expect.objectContaining({
       data: expect.objectContaining({
@@ -39,7 +39,7 @@ const checkPatientUpdateWith = (scheduledPd: ScheduledPatientDiscovery | undefin
     }),
     expect.anything()
   );
-};
+}
 
 describe("update patient discovery schedule", () => {
   it("update patient with no existing schedule", async () => {

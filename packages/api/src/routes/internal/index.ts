@@ -36,7 +36,7 @@ import {
   secondaryMappingsSchemaMap,
 } from "../../domain/cx-mapping";
 import { isFacilityMappingSource } from "../../domain/facility-mapping";
-import { initCQOrgIncludeList } from "../../external/commonwell/organization";
+import { initCQOrgIncludeList } from "../../external/commonwell-v1/organization";
 import { subscribeToAllWebhooks as subscribeToElationWebhooks } from "../../external/ehr/elation/command/subscribe-to-webhook";
 import { subscribeToAllWebhooks as subscribeToHealthieWebhooks } from "../../external/ehr/healthie/command/subscribe-to-webhook";
 import { OrganizationModel } from "../../models/medical/organization";
@@ -51,6 +51,7 @@ import ehr from "./ehr";
 import hieRoutes from "./hie";
 import carequalityRoutes from "./hie/carequality";
 import commonwellRoutes from "./hie/commonwell";
+import questRoutes from "./integration/quest";
 import jwtToken from "./jwt-token";
 import docsRoutes from "./medical/docs";
 import facilityRoutes from "./medical/facility";
@@ -60,7 +61,7 @@ import mpiRoutes from "./medical/mpi";
 import organizationRoutes from "./medical/organization";
 import patientRoutes from "./medical/patient";
 import tcmEncounter from "./medical/tcm-encounter";
-import questRoutes from "./integration/quest";
+import suspectRoutes from "./medical/suspect";
 
 const router = Router();
 
@@ -80,6 +81,7 @@ router.use("/ehr", ehr);
 router.use("/tcm/encounter", tcmEncounter);
 router.use("/analytics-platform", analyticsPlatformRoutes);
 router.use("/quest", questRoutes);
+router.use("/suspect", suspectRoutes);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/mapi-access

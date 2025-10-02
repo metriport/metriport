@@ -2,7 +2,7 @@ import { Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { executeWithRetriesS3, S3Utils } from "../../../aws/s3";
-import { buildLatestConversionBundleFileName } from "../../file/file-names";
+import { buildLatestConversionFileName } from "../../file/file-names";
 
 /**
  * Returns the bundle with Quest data for a given patient.
@@ -25,7 +25,7 @@ export async function getBundle({
     return undefined;
   }
   const s3Utils = new S3Utils(Config.getAWSRegion());
-  const fileName = buildLatestConversionBundleFileName(cxId, patientId);
+  const fileName = buildLatestConversionFileName(cxId, patientId);
   const fileExists = await s3Utils.fileExists(bucketName, fileName);
   if (!fileExists) {
     log(`No bundle found`);

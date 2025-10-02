@@ -1,11 +1,11 @@
 import { DiagnosticReport, Observation } from "@medplum/fhirtypes";
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, JwtTokenInfo } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { writeBackLabPanel as writeBackLabPanelElation } from "../../elation/command/write-back/lab-panel";
 
 export type WriteBackLabPanelRequest = {
   ehr: EhrSource;
-  tokenId?: string;
+  tokenInfo?: JwtTokenInfo;
   cxId: string;
   practiceId: string;
   ehrPatientId: string;
@@ -33,6 +33,7 @@ const ehrWriteBackLabPanelMap: WriteBackLabPanelFnMap = {
   [EhrSources.elation]: writeBackLabPanelElation,
   [EhrSources.healthie]: undefined,
   [EhrSources.eclinicalworks]: undefined,
+  [EhrSources.salesforce]: undefined,
 };
 
 function getEhrWriteBackLabPanelHandler(ehr: EhrSource): WriteBackLabPanelFn {

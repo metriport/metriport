@@ -29,6 +29,8 @@
     "resource":{
         "resourceType": "DiagnosticReport",
         "id":"{{ID}}",
+        "code":{{>DataType/CodeableConcept.hbs code=diagReport.code text=diagReport.title._ canBeUnknown=true}},
+        "status":{{>ValueSet/DiagnosticReportStatus.hbs code=diagReport.statusCode.code}},
         "presentedForm": [
                 {
                     "contentType": "text/plain",

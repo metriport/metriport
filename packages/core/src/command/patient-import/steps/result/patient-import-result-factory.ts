@@ -5,9 +5,7 @@ import { PatientImportResultLocal } from "./patient-import-result-local";
 
 export function buildPatientImportResult(): PatientImportResult {
   if (Config.isDev()) {
-    const patientImportBucket = Config.getPatientImportBucket();
-    return new PatientImportResultLocal(patientImportBucket);
+    return new PatientImportResultLocal();
   }
-  const patientResultLambdaName = Config.getPatientImportResultLambdaName();
-  return new PatientImportResultHandlerCloud(patientResultLambdaName);
+  return new PatientImportResultHandlerCloud();
 }

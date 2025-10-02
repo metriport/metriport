@@ -3,9 +3,12 @@ import axios from "axios";
 import { z } from "zod";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
+import { getSecretsApiKeySchema, getSecretsOauthSchema } from "../secrets";
 import { ApiBaseParams, validateAndLogResponse } from "./api-shared";
 
 export type GetSecretsParams = Omit<ApiBaseParams, "departmentId" | "patientId">;
+
+const maskPlaceholder = "********";
 
 /**
  * Sends a request to the API to get the client key and secret (or api key) for a practice.
@@ -29,7 +32,7 @@ export async function getSecrets<T>({
     const response = await executeWithNetworkRetries(async () => {
       return api.get(getSecretsUrl);
     });
-    validateAndLogResponse(getSecretsUrl, response, debug);
+    validateAndLogResponse(getSecretsUrl, response, debug, maskKeys);
     return schema.parse(response.data);
   } catch (error) {
     const msg = "Failure while getting client key and secret @ Api";
@@ -42,4 +45,37 @@ export async function getSecrets<T>({
       context: `ehr.getSecrets`,
     });
   }
+}
+
+/**
+ * Masks sensitive information in an object for clientKey, clientSecret, and apiKey fields,
+ * keeping the first third of characters of the value.
+ * Only applies masking if the object matches the expected secrets schema.
+ */
+function maskKeys(data: unknown): unknown {
+  const oauthResult = getSecretsOauthSchema.safeParse(data);
+  if (oauthResult.success) {
+    const { clientKey, clientSecret, ...rest } = oauthResult.data;
+    return {
+      ...rest,
+      clientKey: `${clientKey.slice(0, getNumberOfCharactersToShow(clientKey))}${maskPlaceholder}`,
+      clientSecret: `${clientSecret.slice(
+        0,
+        getNumberOfCharactersToShow(clientSecret)
+      )}${maskPlaceholder}`,
+    };
+  }
+  const apiKeyResult = getSecretsApiKeySchema.safeParse(data);
+  if (apiKeyResult.success) {
+    const { apiKey, ...rest } = apiKeyResult.data;
+    return {
+      ...rest,
+      apiKey: `${apiKey.slice(0, getNumberOfCharactersToShow(apiKey))}${maskPlaceholder}`,
+    };
+  }
+  return maskPlaceholder;
+}
+
+function getNumberOfCharactersToShow(value: string): number {
+  return value.length < 7 ? 0 : Math.min(5, Math.floor(value.length / 3));
 }

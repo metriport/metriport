@@ -27,8 +27,8 @@ export type CxMappingLookupByIdParams = Pick<CxMappingParams, "cxId"> & { id: st
 export async function findOrCreateCxMapping({
   cxId,
   externalId,
-  secondaryMappings,
   source,
+  secondaryMappings,
 }: CxMappingParams): Promise<CxMapping> {
   const existing = await getCxMapping({ externalId, source });
   if (existing) return existing;

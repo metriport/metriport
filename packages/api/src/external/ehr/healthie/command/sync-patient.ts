@@ -91,45 +91,56 @@ export async function syncHealthiePatientIntoMetriport({
   }
 
   log("no existing mapping found");
-  const healthiePatient = await healthieApi.getPatient({ cxId, patientId: healthiePatientId });
-  const demographics = createMetriportPatientDemographics(healthiePatient);
+  try {
+    const healthiePatient = await healthieApi.getPatient({ cxId, patientId: healthiePatientId });
+    const demographics = createMetriportPatientDemographics(healthiePatient);
 
-  const metriportPatient = await getOrCreateMetriportPatient({
-    source: EhrSources.healthie,
-    cxId,
-    practiceId: healthiePracticeId,
-    demographics,
-    externalId: healthiePatientId,
-    inputMetriportPatientId,
-  });
-  log("Metriport patient created/retrieved:", metriportPatient.id);
-  const metriportPatientId = metriportPatient.id;
-  const facilityId = await getPatientPrimaryFacilityIdOrFail({
-    cxId,
-    patientId: metriportPatient.id,
-  });
-  if (triggerDq) {
-    queryDocumentsAcrossHIEs({
-      cxId,
-      patientId: metriportPatientId,
-      facilityId,
-    }).catch(processAsyncError(`Healthie queryDocumentsAcrossHIEs`));
-  }
-  await Promise.all([
-    findOrCreatePatientMapping({
-      cxId,
-      patientId: metriportPatientId,
-      externalId: healthiePatientId,
+    const metriportPatient = await getOrCreateMetriportPatient({
       source: EhrSources.healthie,
-    }),
-    updateHealthiePatientQuickNotes({
+      cxId,
+      practiceId: healthiePracticeId,
+      demographics,
+      externalId: healthiePatientId,
+      inputMetriportPatientId,
+    });
+    log("Metriport patient created/retrieved:", metriportPatient.id);
+    const metriportPatientId = metriportPatient.id;
+    const facilityId = await getPatientPrimaryFacilityIdOrFail({
+      cxId,
+      patientId: metriportPatient.id,
+    });
+    if (triggerDq) {
+      queryDocumentsAcrossHIEs({
+        cxId,
+        patientId: metriportPatientId,
+        facilityId,
+      }).catch(processAsyncError(`Healthie queryDocumentsAcrossHIEs`));
+    }
+    await Promise.all([
+      findOrCreatePatientMapping({
+        cxId,
+        patientId: metriportPatientId,
+        externalId: healthiePatientId,
+        source: EhrSources.healthie,
+        secondaryMappings: { practiceId: healthiePracticeId },
+      }),
+      updateHealthiePatientQuickNotes({
+        cxId,
+        healthiePracticeId,
+        healthiePatientId,
+        healthieApi,
+      }),
+    ]);
+    return metriportPatientId;
+  } catch (error) {
+    await updateHealthiePatientQuickNotes({
       cxId,
       healthiePracticeId,
       healthiePatientId,
       healthieApi,
-    }),
-  ]);
-  return metriportPatientId;
+    }).catch(processAsyncError(`Healthie updateHealthiePatientQuickNotes error`));
+    throw error;
+  }
 }
 
 function createMetriportPatientDemographics(patient: HealthiePatient): PatientDemoData {

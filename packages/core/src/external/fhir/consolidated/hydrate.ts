@@ -8,10 +8,12 @@ export async function hydrate({
   cxId,
   patientId,
   bundle,
+  isVerbose = true,
 }: {
   cxId: string;
   patientId: string;
   bundle: Bundle<Resource>;
+  isVerbose?: boolean;
 }): Promise<Bundle<Resource>> {
   const { log } = out(`Hydrate. cx: ${cxId}, pt: ${patientId}`);
   const startedAt = new Date();
@@ -35,7 +37,7 @@ export async function hydrate({
     };
   }
 
-  log(`Finished hydration in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
+  isVerbose && log(`Finished hydration in ${duration} ms... Metrics: ${JSON.stringify(metrics)}`);
   await analyticsAsync(metrics);
   return hydratedBundle;
 }

@@ -5,6 +5,7 @@ import { getConsolidatedWebhook } from "../get-consolidated-webhook";
 import { WebhookRequest } from "../../../../models/webhook-request";
 
 const webhookUrl = "http://example.com";
+const gzipWebhookUrl = "http://example.com.gz";
 
 const successConsolidatedWebhook = {
   patients: [
@@ -17,6 +18,13 @@ const successConsolidatedWebhook = {
                 {
                   attachment: {
                     url: webhookUrl,
+                    contentType: "application/json",
+                  },
+                },
+                {
+                  attachment: {
+                    url: gzipWebhookUrl,
+                    contentType: "application/gzip",
                   },
                 },
               ],
@@ -66,6 +74,7 @@ describe("getConsolidatedWebhook", () => {
     expect(result).toEqual({
       conversionType: "pdf",
       fileUrl: webhookUrl,
+      gzipUrl: gzipWebhookUrl,
       status: "completed",
       requestId,
     });

@@ -3,27 +3,27 @@ dotenv.config();
 
 import { Hl7Server } from "@medplum/hl7";
 import { buildHl7NotificationWebhookSender } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-factory";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
-  getOrCreateMessageDatetime,
   getSendingApplication,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
-import { createFileKeyHl7Message } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { getCxIdAndPatientIdOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import { getHieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 import { capture } from "@metriport/core/util";
 import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
-import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
-import { ParsedHl7Data, parseHl7Message, persistHl7MessageError } from "./parsing";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { initSentry } from "./sentry";
 import {
   asString,
   bucketName,
+  createRawHl7MessageFileKey,
   getCleanIpAddress,
-  lookupHieTzEntryForIp,
+  getHieConfig,
   s3Utils,
+  translateMessage,
   withErrorHandling,
 } from "./utils";
 
@@ -33,37 +33,44 @@ const MLLP_DEFAULT_PORT = 2575;
 
 async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const { log } = logger;
-  const hieConfigDictionary = getHieConfigDictionary();
 
   const server = new Hl7Server(connection => {
     connection.addEventListener(
       "message",
       withErrorHandling(connection, logger, async ({ message: rawMessage }) => {
         const clientIp = getCleanIpAddress(connection.socket.remoteAddress);
-        const clientPort = connection.socket.remotePort;
-        const { hieName, timezone } = lookupHieTzEntryForIp(hieConfigDictionary, clientIp);
+        const rawFileKey = createRawHl7MessageFileKey(clientIp);
 
-        log(`New message from ${hieName} over connection ${clientIp}:${clientPort}`);
-
-        let parsedData: ParsedHl7Data;
-        try {
-          parsedData = await parseHl7Message(rawMessage, timezone);
-        } catch (parseError: unknown) {
-          await persistHl7MessageError(rawMessage, parseError, logger);
-          throw parseError;
+        const uploadResult = await uploadFileSafely(
+          s3Utils,
+          bucketName,
+          rawFileKey,
+          asString(rawMessage)
+        );
+        if (!uploadResult.success) {
+          capture.error(uploadResult.error);
         }
 
-        const { message, cxId, patientId } = parsedData;
+        const clientPort = connection.socket.remotePort;
 
-        const messageId = getMessageUniqueIdentifier(message);
-        const sendingApplication = getSendingApplication(message) ?? "Unknown HIE";
-        const timestamp = basicToExtendedIso8601(getOrCreateMessageDatetime(message));
-        const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
-
-        log(
-          `cx: ${cxId}, pt: ${patientId} Received ${triggerEvent} message from ${sendingApplication} at ${timestamp} (messageId: ${messageId})`
+        log(`New message over connection ${clientIp}:${clientPort}`);
+        const hieConfigDictionary = getHieConfigDictionary();
+        const { hieName, impersonationTimezone } = getHieConfig(
+          hieConfigDictionary,
+          clientIp,
+          rawMessage
         );
 
+        const newMessage = translateMessage(rawMessage, hieName);
+        const { cxId, patientId } = getCxIdAndPatientIdOrFail(newMessage);
+
+        const messageId = getMessageUniqueIdentifier(newMessage);
+        const sendingApplication = getSendingApplication(newMessage) ?? "Unknown HIE";
+        const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(newMessage);
+        const messageReceivedTimestamp = buildDayjs(Date.now()).toISOString();
+        log(
+          `cx: ${cxId}, pt: ${patientId} Received ${triggerEvent} message from ${sendingApplication} at ${messageReceivedTimestamp} (messageId: ${messageId})`
+        );
         capture.setExtra({
           cxId,
           patientId,
@@ -71,45 +78,16 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           triggerEvent,
         });
 
-        const rawDataFileKey = createFileKeyHl7Message({
-          cxId,
-          patientId,
-          timestamp,
-          messageId,
-          messageCode,
-          triggerEvent,
-        });
-
         await buildHl7NotificationWebhookSender().execute({
           cxId,
           patientId,
-          message: asString(message),
-          sourceTimestamp: timestamp,
-          messageReceivedTimestamp: new Date().toISOString(),
-          rawDataFileKey,
+          message: asString(newMessage),
+          messageReceivedTimestamp,
+          hieName,
+          impersonationTimezone,
         });
 
-        connection.send(message.buildAck());
-
-        log(`Init S3 upload to bucket ${bucketName} with key ${rawDataFileKey}`);
-        s3Utils.uploadFile({
-          bucket: bucketName,
-          key: rawDataFileKey,
-          file: Buffer.from(asString(message)),
-          contentType: "text/plain",
-        });
-
-        analytics({
-          distinctId: cxId,
-          event: EventTypes.hl7NotificationReceived,
-          properties: {
-            cxId,
-            patientId,
-            messageCode,
-            triggerEvent,
-            platform: "mllp-server",
-          },
-        });
+        connection.send(newMessage.buildAck());
       })
     );
 
@@ -127,6 +105,27 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   });
 
   return server;
+}
+
+type UploadResult = { success: true } | { success: false; error: unknown };
+
+async function uploadFileSafely(
+  s3Utils: S3Utils,
+  bucket: string,
+  key: string,
+  content: string
+): Promise<UploadResult> {
+  try {
+    await s3Utils.uploadFile({
+      bucket,
+      key,
+      file: Buffer.from(content),
+      contentType: "text/plain",
+    });
+    return { success: true };
+  } catch (error) {
+    return { success: false, error };
+  }
 }
 
 async function main() {

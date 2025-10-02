@@ -65,6 +65,10 @@ import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
 import { SurescriptsNestedStack } from "./surescripts/surescripts-stack";
 import { QuestNestedStack } from "./quest/quest-stack";
+import {
+  createUploadRosterScheduledLambda,
+  createDownloadResponseScheduledLambda,
+} from "./quest/scheduled-lambda";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
@@ -417,6 +421,20 @@ export class APIStack extends Stack {
     }
 
     //-------------------------------------------
+    // Analytics Platform
+    //-------------------------------------------
+    let analyticsPlatformStack: AnalyticsPlatformsNestedStack | undefined = undefined;
+    if (!isSandbox(props.config)) {
+      analyticsPlatformStack = new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatforms", {
+        config: props.config,
+        vpc: this.vpc,
+        lambdaLayers,
+        medicalDocumentsBucket,
+        featureFlagsTable,
+      });
+    }
+
+    //-------------------------------------------
     // General lambdas
     //-------------------------------------------
     const {
@@ -462,6 +480,7 @@ export class APIStack extends Stack {
         consolidatedIndexName: props.config.openSearch.openSearch.consolidatedIndexName,
         documentIndexName: props.config.openSearch.openSearch.indexName,
       },
+      analyticsQueue: analyticsPlatformStack?.getAssets()?.fhirToCsvIncrementalQueue,
     });
 
     //-------------------------------------------
@@ -480,6 +499,7 @@ export class APIStack extends Stack {
           outgoingHl7NotificationBucket,
           hl7ConversionBucket,
           secrets,
+          incomingHl7NotificationBucket,
         }
       );
 
@@ -530,19 +550,6 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
       lambdaLayers,
     });
-
-    //-------------------------------------------
-    // Analytics Platform
-    //-------------------------------------------
-    let analyticsPlatformStack: AnalyticsPlatformsNestedStack | undefined = undefined;
-    if (!isSandbox(props.config)) {
-      analyticsPlatformStack = new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatforms", {
-        config: props.config,
-        vpc: this.vpc,
-        lambdaLayers,
-        medicalDocumentsBucket,
-      });
-    }
 
     //-------------------------------------------
     // Rate Limiting
@@ -728,6 +735,7 @@ export class APIStack extends Stack {
         iheResponsesBucketName: props.config.iheResponsesBucketName,
         iheParsedResponsesBucketName: props.config.iheParsedResponsesBucketName,
         alarmAction: slackNotification?.alarmAction,
+        featureFlagsTable,
       });
     }
 
@@ -792,13 +800,15 @@ export class APIStack extends Stack {
       ...(surescriptsStack?.getLambdas() ?? []),
       ...(questStack?.getLambdas() ?? []),
       jobsStack.getAssets().runPatientJobLambda,
-      analyticsPlatformStack?.getAssets().fhirToCsvLambda,
+      analyticsPlatformStack?.getAssets().fhirToCsvBulkLambda,
     ];
     const apiUrl = `http://${apiDirectUrl}`;
     lambdasToGetApiUrl.forEach(lambda => lambda?.addEnvironment("API_URL", apiUrl));
 
-    // TODO move this to each place where it's used
-    // Access grant for medical documents bucket
+    /**
+     * @deprecated This should be done on the code where it's used.
+     * @see `setupFhirToCsvLambda()`` in the analytics-platform-stack.ts
+     */
     sandboxSeedDataBucket &&
       sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
@@ -806,12 +816,6 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantRead(fhirConverterLambda);
     medicalDocumentsBucket.grantRead(ehrComputeResourceDiffBundlesLambda);
     medicalDocumentsBucket.grantRead(ehrWriteBackResourceDiffBundlesLambda);
-    if (analyticsPlatformStack) {
-      medicalDocumentsBucket.grantRead(
-        analyticsPlatformStack.fhirToCsvBatchJobContainer.executionRole
-      );
-      medicalDocumentsBucket.grantRead(analyticsPlatformStack.fhirToCsvTransformLambda);
-    }
 
     createDocQueryChecker({
       lambdaLayers,
@@ -830,6 +834,22 @@ export class APIStack extends Stack {
     });
 
     createJobsScheduler({
+      lambdaLayers,
+      stack: this,
+      vpc: this.vpc,
+      apiAddress: apiDirectUrl,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+
+    createUploadRosterScheduledLambda({
+      lambdaLayers,
+      stack: this,
+      vpc: this.vpc,
+      apiAddress: apiDirectUrl,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+
+    createDownloadResponseScheduledLambda({
       lambdaLayers,
       stack: this,
       vpc: this.vpc,

@@ -7,11 +7,13 @@
   "scripts": {
     "test": "jest",
     "start": "ts-node src/app.ts",
+    "dev": "PORT=8666 ts-node-dev --transpile-only --respawn --inspect=0.0.0.0:9230 --project tsconfig.dev.json --files src/app.ts",
     "clean": "rimraf dist && rimraf node_modules",
     "build": "tsc -p tsconfig.build.json",
-    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "prettier-fix": "npx prettier '**/*.{js,ts,md}' --write --ignore-path ../../.prettierignore",
     "seed-lookup": "npx --node-options='--max-old-space-size=8192' ts-node src/seed/seedUmlsLookup.ts",
     "seed-crosswalk": "npx --node-options='--max-old-space-size=8192' ts-node src/seed/seedUmlsCrosswalk.ts",
+    "seed-snomed-icd10": "npx --node-options='--max-old-space-size=8192' ts-node src/seed/seedSnomedIcd10Map.ts",
     "seed-ndc-lookup": "npx --node-options='--max-old-space-size=8192' ts-node src/seed/seed-ndc-from-nlm.ts",
     "seed-fda-descriptions": "npx --node-options='--max-old-space-size=8192' ts-node src/seed/seed-ndc-from-fda.ts",
     "load-test": "artillery run src/__tests__/load-test.yml"
@@ -37,6 +39,7 @@
     "dayjs": "^1.11.9",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "form-data": ">=4.0.4",
     "http-status": "^2.0.0",
     "jest": "^29.7.0",
     "lodash": "^4.17.21",

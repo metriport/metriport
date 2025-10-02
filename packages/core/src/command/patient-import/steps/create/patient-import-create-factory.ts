@@ -5,10 +5,7 @@ import { PatientImportCreateLocal } from "./patient-import-create-local";
 
 export function buildPatientImportCreateHandler(): PatientImportCreate {
   if (Config.isDev()) {
-    const patientImportBucket = Config.getPatientImportBucket();
-    const waitTimeAtTheEndInMillis = 0;
-    return new PatientImportCreateLocal(patientImportBucket, waitTimeAtTheEndInMillis);
+    return new PatientImportCreateLocal();
   }
-  const patientCreateQueueUrl = Config.getPatientImportCreateQueueUrl();
-  return new PatientImportCreateCloud(patientCreateQueueUrl);
+  return new PatientImportCreateCloud();
 }

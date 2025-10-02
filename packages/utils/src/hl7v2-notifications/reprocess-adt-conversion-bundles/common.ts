@@ -8,6 +8,11 @@ import { Config } from "@metriport/core/util/config";
 import { out } from "@metriport/core/util/log";
 import { FhirBundleSdk } from "@metriport/fhir-sdk";
 import { parseFhirBundle } from "@metriport/shared/medical/fhir/bundle";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+import { sleep } from "@metriport/shared/common/sleep";
+
+dayjs.extend(duration);
 
 const bucketName = Config.getHl7ConversionBucketName();
 
@@ -35,13 +40,22 @@ export async function reprocessAdtConversionBundles(
 
   const s3Utils = new S3Utils(Config.getAWSRegion());
 
-  console.log(`Running in ${dryRun ? "dryRun" : "⚠️ write"} mode`);
+  if (!dryRun) {
+    console.log(`⚠️ Running in write mode`);
+    await displayWarningAndConfirmation(prefixes);
+  } else {
+    console.log(`Running in dryRun mode`);
+  }
+
   const promises = prefixes.map(async prefix => {
     const { log } = out(prefix);
     const results = await s3Utils.listObjects(bucketName, prefix);
-    log(`Found ${results.length} objects for prefix: ${prefix}`);
+    const noFolderResults = results.filter(result => {
+      return result.Size !== 0;
+    });
+    log(`Found ${noFolderResults.length} objects for prefix: ${prefix}`);
     let processedCount = 0;
-    const fileProcessingPromises = results.map(async result => {
+    const fileProcessingPromises = noFolderResults.map(async result => {
       const [cxId, ptId] = prefix.replace("cxId=", "").replace("ptId=", "").split("/");
       if (result.Key === undefined) {
         log("Key is undefined - and it shouldn't be");
@@ -79,4 +93,22 @@ export async function reprocessAdtConversionBundles(
 
   await Promise.all(promises);
   console.log("Done");
+}
+
+const confirmationTime = dayjs.duration(10, "seconds");
+
+async function displayWarningAndConfirmation(prefixes: string[]) {
+  console.log(``);
+  console.log(
+    `THIS IS SUPER DESTRUCTIVE!! IT WILL MODIFY ADT CONVERSION BUNDLES IN S3! ONLY CONTINUE IF YOU KNOW WHAT YOU ARE DOING!`
+  );
+  console.log(``);
+  console.log(
+    `Modifying ALL conversion bundles in ${bucketName} for prefixes: ${prefixes.join(
+      ", "
+    )} in ${confirmationTime.asSeconds()} seconds...`
+  );
+  await sleep(confirmationTime.asMilliseconds());
+  console.log(`ok, continuing...`);
+  await sleep(dayjs.duration(1, "seconds").asMilliseconds());
 }

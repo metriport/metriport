@@ -1,13 +1,12 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { FhirBundleSdk } from "@metriport/fhir-sdk";
 import { MetriportError } from "@metriport/shared";
-import { cloneDeep } from "lodash";
+import _, { cloneDeep } from "lodash";
 import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
-import { groupSameEncountersDateOnly } from "../../../fhir-deduplication/resources/encounter";
+import { groupSameEncountersDatetimeOnly } from "../../../fhir-deduplication/resources/encounter";
 import { normalizeFhir } from "../normalization/normalize-fhir";
-import { buildBundle, buildBundleEntry, RequiredBundleType } from "./bundle";
-import _ from "lodash";
 import { isEncounter } from "../shared";
+import { buildBundle, buildBundleEntry, RequiredBundleType } from "./bundle";
+import { FhirBundleSdk } from "@metriport/fhir-sdk";
 
 export function mergeBundles({
   cxId,
@@ -37,13 +36,24 @@ export function mergeBundles({
   return normalizeFhir(newBundle);
 }
 
+/**
+ * Additional deduplication logic for ADT encounters to more aggresively deduplicate than
+ * our core deduplication logic. This is only used for ADT encounters.
+ *
+ * ⚠️ NOTE: This function relies on the assumption that all resource ids in the bundle
+ * are stable, because we do not use the refReplacementMap from `groupSameEncountersDatetimeOnly`.
+ * If resource ids are not stable, and there are references pointing to an encounter, the
+ * references will not be updated and will be left broken.
+ *
+ * TODO: Fix this ^, ticket at ENG-876
+ */
 export function dedupeAdtEncounters(existing: Bundle<Resource>): Bundle<Resource> {
   const [encounters, nonEncounters] = _(existing.entry)
     .map("resource")
     .partition(isEncounter)
     .value();
 
-  const { encountersMap: dedupedEncountersMap } = groupSameEncountersDateOnly(encounters);
+  const { encountersMap: dedupedEncountersMap } = groupSameEncountersDatetimeOnly(encounters);
 
   const encounterBundleEntries = [...dedupedEncountersMap.values()].map(buildBundleEntry);
   const nonEncounterBundleEntries = _(nonEncounters).compact().map(buildBundleEntry).value();

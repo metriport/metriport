@@ -117,6 +117,7 @@ export const config: EnvConfigNonSandbox = {
   commonwell: {
     envVars: {
       CW_MEMBER_NAME: "Test Org",
+      CW_MEMBER_ID: "123",
       CW_MEMBER_OID: "1.2.3.1.4.1.11.12.29.2022.123",
       CW_GATEWAY_ENDPOINT: "https://api.myhealthapp.com/oauth/fhir",
       CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT:
@@ -158,12 +159,17 @@ export const config: EnvConfigNonSandbox = {
     incomingMessageBucketName: "test-incoming-message-bucket-name",
     outgoingMessageBucketName: "test-outgoing-message-bucket-name",
     hl7ConversionBucketName: "test-hl7-conversion-bucket-name",
+    rawIncomingMessageBucketName: "test-raw-incoming-message-bucket-name",
     notificationWebhookSenderQueue: {
       arn: "arn:aws:sqs:us-west-1:000000000000:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
       url: "https://sqs.us-west-1.amazonaws.com/000000000000/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     },
     secrets: {
       HL7_BASE64_SCRAMBLER_SEED: "your-base64-scrambler-seed",
+      LAHIE_INGESTION_PASSPHRASE: "your-lahie-ingestion-passphrase",
+      LAHIE_INGESTION_PRIVATE_KEY: "your-lahie-ingestion-private-key",
+      LAHIE_INGESTION_PASSWORD: "your-lahie-ingestion-password",
+      ALOHR_INGESTION_PASSWORD: "your-alohr-ingestion-password",
     },
     mllpServer: {
       sentryDSN: "your-sentry-dsn",
@@ -177,6 +183,24 @@ export const config: EnvConfigNonSandbox = {
     hl7v2RosterUploadLambda: {
       bucketName: "your-roster-bucket",
     },
+    LahieSftpIngestionLambda: {
+      sftpConfig: {
+        host: "your-sftp-host",
+        port: 22,
+        username: "your-sftp-username",
+        remotePath: "your-directory-path",
+      },
+      bucketName: "your-bucket-name",
+    },
+    AlohrSftpIngestionLambda: {
+      sftpConfig: {
+        host: "your-sftp-host",
+        port: 22,
+        username: "your-sftp-username",
+        remotePath: "your-directory-path",
+      },
+      bucketName: "your-bucket-name",
+    },
     hieConfigs: {
       YOUR_HIE_NAME: {
         name: "YOUR_HIE_NAME",
@@ -184,7 +208,7 @@ export const config: EnvConfigNonSandbox = {
         states: [USState.TX],
         timezone: "America/Chicago",
         gatewayPublicIp: "200.1.1.1",
-        internalCidrBlock: "10.10.0.0/16",
+        internalCidrBlocks: ["10.10.0.0/16"],
         subscriptions: ["adt"],
         mapping: {
           ID: "scrambledId",
@@ -201,6 +225,12 @@ export const config: EnvConfigNonSandbox = {
           ZIP: "address1Zip",
           FACCODE: "cxShortcode",
           ASSIGNERID: "assigningAuthorityIdentifier",
+        },
+        sftpConfig: {
+          host: "your-sftp-host",
+          port: 22,
+          username: "your-sftp-username",
+          remotePath: "your-directory-path",
         },
       },
     },
@@ -233,8 +263,9 @@ export const config: EnvConfigNonSandbox = {
   },
   analyticsPlatform: {
     bucketName: "test-bucket",
-    secrets: {
-      SNOWFLAKE_CREDS: "your-snowflake-creds-as-json",
+    secretNames: {
+      SNOWFLAKE_CREDS: "name-of-secret",
+      FHIR_TO_CSV_DB_PASSWORD: "name-of-secret",
     },
     snowflake: {
       warehouse: "test-warehouse",
@@ -242,6 +273,21 @@ export const config: EnvConfigNonSandbox = {
       integrationName: "test-integration",
       integrationUserArn: "arn:aws:iam::000000000000:role/SnowflakeIntegrationRole",
       integrationExternalId: "000000000000",
+    },
+    rds: {
+      name: "my_db",
+      username: "my_db_user",
+      maintenanceWindow: "Sun:02:00-Sun:02:30",
+      minCapacity: 0.5,
+      maxCapacity: 1,
+      alarmThresholds: {
+        acuUtilizationPct: 80,
+        cpuUtilizationPct: 80,
+        freeableMemoryMb: 1_000,
+        volumeReadIops: 2_000,
+        volumeWriteIops: 2_000,
+      },
+      fhirToCsvDbUsername: "my_db_user",
     },
   },
 };

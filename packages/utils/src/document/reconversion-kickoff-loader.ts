@@ -43,8 +43,11 @@ dayjs.extend(duration);
  */
 const RECONVESION_KICKOFF_JOB = "reconversion-kickoff-job";
 
-const sqsClient = new SQSClient({ region: getEnvVarOrFail("AWS_REGION") });
+/**
+ * Set this environment variable to the URL of the SQS queue named something like "ReconversionKickoffQueue"
+ */
 const sqsUrl = getEnvVarOrFail("RECONVERSION_KICKOFF_QUEUE_URL");
+const sqsClient = new SQSClient({ region: getEnvVarOrFail("AWS_REGION") });
 
 /**
  * AWS SQS limit is 3000 messages/second, but we'll be safe and scale down a bit

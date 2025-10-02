@@ -65,7 +65,6 @@
                             {{/if}}
                         {{/if}}
                     {{/if}}
-
                     {{#each (toArray drEntry.organizer.component) as |obsEntry|}}
                         {{#if obsEntry.observation}}
                             {{#if (not obsEntry.observation.value._b64)}}
@@ -104,13 +103,12 @@
                             {{>Resources/Procedure.hbs procedureEntry=obsEntry.procedure ID=(generateUUID (toJsonString obsEntry.procedure))}}
                             {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                                 {{>References/Procedure/subject.hbs ID=(generateUUID (toJsonString obsEntry.procedure)) REF=(concat 'Patient/' patientId.Id)}},
+                                {{>References/Procedure/report.hbs ID=(generateUUID (toJsonString obsEntry.procedure)) REF=(concat 'DiagnosticReport/' (generateUUID (toJsonString drEntry.organizer)))}}
                             {{/with}}
-
                             {{#if drEntry.organizer.performer.assignedEntity}}
                                 {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=drEntry.organizer.performer.assignedEntity) as |practitionerId|}}
                                     {{>References/Procedure/performer.actor.hbs ID=(generateUUID (toJsonString obsEntry.procedure)) REF=(concat 'Practitioner/' practitionerId.Id)}}
                                 {{/with}}
-
                                 {{#if drEntry.organizer.performer.assignedEntity.representedOrganization}}
                                     {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=drEntry.organizer.performer.assignedEntity.representedOrganization) as |orgId|}}
                                         {{>References/Procedure/performer.actor.hbs ID=(generateUUID (toJsonString obsEntry.procedure)) REF=(concat 'Organization/' orgId.Id)}},
@@ -120,7 +118,6 @@
                                 {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=drEntry.organizer.author.assignedAuthor) as |practitionerId|}}
                                     {{>References/Procedure/performer.actor.hbs ID=(generateUUID (toJsonString obsEntry.procedure)) REF=(concat 'Practitioner/' practitionerId.Id)}},
                                 {{/with}}
-
                                 {{#if drEntry.organizer.author.assignedAuthor.representedOrganization}}
                                     {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=drEntry.organizer.author.assignedAuthor.representedOrganization) as |orgId|}}
                                         {{>References/Procedure/performer.actor.hbs ID=(generateUUID (toJsonString obsEntry.procedure)) REF=(concat 'Organization/' orgId.Id)}},

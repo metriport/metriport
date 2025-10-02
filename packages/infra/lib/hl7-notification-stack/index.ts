@@ -20,11 +20,25 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
   constructor(scope: Construct, id: string, props: Hl7NotificationStackProps) {
     super(scope, id, props);
 
-    const incomingHl7NotificationBucket = s3.Bucket.fromBucketName(
-      this,
-      "IncomingHl7NotificationBucket",
-      props.config.hl7Notification.incomingMessageBucketName
-    );
+    const rawHl7MessageBucket = new s3.Bucket(this, "RawHl7MessageBucket", {
+      bucketName: props.config.hl7Notification.rawIncomingMessageBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
+      cors: [
+        {
+          allowedOrigins: ["*"],
+          allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
+        },
+      ],
+    });
+
+    const ecrRepo = new Repository(this, "MllpServerRepo", {
+      repositoryName: "metriport/mllp-server",
+      lifecycleRules: [{ maxImageCount: 5000 }],
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      emptyOnDelete: true,
+    });
 
     const vpc = new ec2.Vpc(this, "Vpc", {
       maxAzs: NUM_AZS,
@@ -49,18 +63,13 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
       privateDnsEnabled: true,
     });
 
-    const ecrRepo = new Repository(this, "MllpServerRepo", {
-      repositoryName: "metriport/mllp-server",
-      lifecycleRules: [{ maxImageCount: 5000 }],
-    });
-
     new MllpStack(this, "NestedMllpStack", {
       stackName: "NestedMllpStack",
       config: props.config,
       version: props.version,
       vpc,
       ecrRepo,
-      incomingHl7NotificationBucket,
+      rawHl7MessageBucket,
       description: "HL7 Notification MLLP Server",
     });
 

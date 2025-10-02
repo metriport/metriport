@@ -3,17 +3,17 @@ import {
   Organization,
   OrganizationData,
   OrganizationBizType,
-  OrgType,
 } from "@metriport/core/domain/organization";
 import { makeBaseDomain } from "../../__tests__/base-domain";
 import { makeAddressStrict } from "./location-address";
+import { TreatmentType } from "@metriport/shared/domain/organization";
 
 export const makeOrgNumber = () => faker.number.int({ min: 0, max: 1_000_000 });
 
 export const makeOrganizationData = (): OrganizationData => {
   return {
     name: faker.string.uuid(),
-    type: faker.helpers.arrayElement(Object.values(OrgType)),
+    type: faker.helpers.arrayElement(Object.values(TreatmentType)),
     location: makeAddressStrict(),
   };
 };

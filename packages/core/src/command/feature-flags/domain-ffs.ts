@@ -101,6 +101,10 @@ export async function getCxsWithFeatureFlagEnabled(
   return [];
 }
 
+export async function isDebugFeatureFlagEnabled(): Promise<boolean> {
+  return await isFeatureFlagEnabled("debugFeatureFlag");
+}
+
 export async function isCommonwellEnabled(): Promise<boolean> {
   return isFeatureFlagEnabled("commonwellFeatureFlag");
 }
@@ -225,6 +229,14 @@ export async function isBmiFeatureFlagEnabledForCx(cxId: string): Promise<boolea
   return cxIdsWithBmiEnabled.some(i => i === cxId);
 }
 
+export async function getCxsWithSimpleFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithSimpleMrFeatureFlag");
+}
+export async function isSimpleFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithSimpleEnabled = await getCxsWithSimpleFeatureFlag();
+  return cxIdsWithSimpleEnabled.some(i => i === cxId);
+}
+
 export async function getCxsWithDermFeatureFlag(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithDermMrFeatureFlag");
 }
@@ -239,6 +251,14 @@ export async function getCxsWithPcpVisitAiSummaryFeatureFlag(): Promise<string[]
 export async function isPcpVisitAiSummaryFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithPcpVisitAiSummaryEnabled = await getCxsWithPcpVisitAiSummaryFeatureFlag();
   return cxIdsWithPcpVisitAiSummaryEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithRecentVisitAiSummary(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithRecentVisitAiSummary");
+}
+export async function isRecentVisitAiSummaryEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithRecentVisitAiSummaryEnabled = await getCxsWithRecentVisitAiSummary();
+  return cxIdsWithRecentVisitAiSummaryEnabled.some(i => i === cxId);
 }
 
 export async function getCxsWithHl7NotificationWebhookFeatureFlag(): Promise<string[]> {
@@ -302,7 +322,30 @@ export async function isSurescriptsNotificationsFeatureFlagEnabledForCx(
 export async function getCxsWithQuestFeatureFlag(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithQuestFeatureFlag");
 }
+
 export async function isQuestFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithQuestEnabled = await getCxsWithQuestFeatureFlag();
   return cxIdsWithQuestEnabled.some(i => i === cxId);
+}
+
+export async function getCxsEnabledForAnalyticsIncrementalIngestion(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("analyticsIncrementalIngestion");
+}
+export async function isAnalyticsIncrementalIngestionEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithCommonwellV2Enabled = await getCxsEnabledForAnalyticsIncrementalIngestion();
+  return cxIdsWithCommonwellV2Enabled.some(i => i === cxId);
+}
+
+// TODO: ENG-1089 - Remove this once we fully migrate to the new DOA flow on CQ.
+export async function isCqDoaEnabled(): Promise<boolean> {
+  return isFeatureFlagEnabled("cqDoaFeatureFlag");
+}
+
+export async function getCxsWithNewSoapEnvelopeFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithNewSoapEnvelopeFeatureFlag");
+}
+
+export async function isNewSoapEnvelopeFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithNewSoapEnvelopeEnabled = await getCxsWithNewSoapEnvelopeFeatureFlag();
+  return cxIdsWithNewSoapEnvelopeEnabled.some(i => i === cxId);
 }

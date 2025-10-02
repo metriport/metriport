@@ -28,6 +28,8 @@ import { deduplicateOrganizations } from "./resources/organization";
 import { deduplicatePractitioners } from "./resources/practitioner";
 import { deduplicateProcedures } from "./resources/procedure";
 import { deduplicateRelatedPersons } from "./resources/related-person";
+import { deduplicateServiceRequests } from "./resources/service-request";
+import { deduplicateSpecimens } from "./resources/specimen";
 import { createRef } from "./shared";
 
 const medicationRelatedTypes = [
@@ -140,6 +142,12 @@ export function dangerouslyDeduplicateFhir(
   const carePlansResult = deduplicateCarePlans(resourceArrays.carePlans);
   resourceArrays.carePlans = carePlansResult.combinedResources;
 
+  const serviceRequestsResult = deduplicateServiceRequests(resourceArrays.serviceRequests);
+  resourceArrays.serviceRequests = serviceRequestsResult.combinedResources;
+
+  const specimensResult = deduplicateSpecimens(resourceArrays.specimens);
+  resourceArrays.specimens = specimensResult.combinedResources;
+
   resourceArrays = replaceResourceReferences(resourceArrays, medicationsResult.refReplacementMap, [
     "coverages",
   ]);
@@ -171,6 +179,8 @@ export function dangerouslyDeduplicateFhir(
     ...famMemHistoriesResult.danglingReferences,
     ...coveragesResult.danglingReferences,
     ...carePlansResult.danglingReferences,
+    ...serviceRequestsResult.danglingReferences,
+    ...specimensResult.danglingReferences,
   ]);
 
   // Combine all the remaining replacementMaps into one map
@@ -196,6 +206,8 @@ export function dangerouslyDeduplicateFhir(
     ...famMemHistoriesResult.refReplacementMap,
     ...coveragesResult.refReplacementMap,
     ...carePlansResult.refReplacementMap,
+    ...serviceRequestsResult.refReplacementMap,
+    ...specimensResult.refReplacementMap,
   ]);
 
   resourceArrays = replaceResourceReferences(resourceArrays, combinedReplacementMap);
@@ -397,6 +409,21 @@ function removeDanglingReferences<T extends Resource>(
     );
     if (!entry.attester?.length) delete entry.attester;
   }
+  if ("report" in entry) {
+    entry.report = entry.report?.filter(r => r.reference && !danglingLinks.has(r.reference));
+    if (!entry.report?.length) delete entry.report;
+  }
+
+  if ("authorizingPrescription" in entry && Array.isArray(entry.authorizingPrescription)) {
+    entry.authorizingPrescription = entry.authorizingPrescription.filter(prescription => {
+      if (prescription.reference && danglingLinks.has(prescription.reference)) {
+        return false;
+      }
+      return true;
+    });
+    if (entry.authorizingPrescription?.length < 1) delete entry.authorizingPrescription;
+  }
+
   return entry;
 }
 
@@ -511,6 +538,20 @@ function removeDuplicateReferences<T extends Resource>(entry: T): T {
     entry.payor = entry.payor?.filter(payor => {
       if (uniquePayors.has(payor.reference)) return false;
       uniquePayors.add(payor.reference);
+      return true;
+    });
+  }
+
+  if (
+    "report" in entry &&
+    entry.report &&
+    entry.resourceType === "Procedure" &&
+    Array.isArray(entry.report)
+  ) {
+    const uniqueReports = new Set();
+    entry.report = entry.report.filter(r => {
+      if (uniqueReports.has(r.reference)) return false;
+      uniqueReports.add(r.reference);
       return true;
     });
   }
@@ -720,6 +761,16 @@ function replaceResourceReference<T extends Resource>(
         });
       }
       return section;
+    });
+  }
+
+  if (entry.resourceType === "Procedure" && "report" in entry && Array.isArray(entry.report)) {
+    entry.report = entry.report.map(r => {
+      if (r.reference) {
+        const newRef = referenceMap.get(r.reference);
+        if (newRef) r.reference = newRef;
+      }
+      return r;
     });
   }
 

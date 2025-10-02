@@ -10,6 +10,8 @@ import { out } from "@metriport/core/util";
 import { getFileExtension } from "@metriport/core/util/mime";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction, sleep } from "@metriport/shared";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
@@ -23,7 +25,10 @@ import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { ContentMimeType, isConvertible } from "../../fhir-converter/converter";
 import { DocumentReferenceWithId } from "../../fhir/document";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
-import { sandboxSleepTime } from "./shared";
+
+dayjs.extend(duration);
+
+const sandboxSleepTime = dayjs.duration({ seconds: 5 });
 
 const randomDates = [
   "2023-06-15",

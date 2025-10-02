@@ -6,7 +6,7 @@ import { createElationHealthClient } from "../shared";
 export async function getAppointments(
   params: GetAppointmentsClientRequest
 ): Promise<BookedAppointment[]> {
-  const { cxId, practiceId, fromDate, toDate, tokenId } = params;
+  const { cxId, practiceId, fromDate, toDate } = params;
   if (!fromDate || !toDate) {
     throw new BadRequestError("fromDate and toDate are required", undefined, {
       method: "getAppointments",
@@ -17,11 +17,7 @@ export async function getAppointments(
       toDate: toDate?.toISOString(),
     });
   }
-  const client = await createElationHealthClient({
-    cxId,
-    practiceId,
-    ...(tokenId && { tokenId }),
-  });
+  const client = await createElationHealthClient({ cxId, practiceId });
   const appointments = await client.getAppointments({ cxId, fromDate, toDate });
   return appointments;
 }

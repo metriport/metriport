@@ -1,17 +1,20 @@
 import { Hl7Message } from "@medplum/core";
 import { Bundle, CodeableConcept, Period, Resource } from "@medplum/fhirtypes";
-import { executeWithNetworkRetries } from "@metriport/shared";
+import { executeWithNetworkRetries, MetriportError } from "@metriport/shared";
+import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
 import { DischargeData } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import { TcmEncounterUpsertInput } from "@metriport/shared/domain/tcm-encounter";
 import axios from "axios";
 import dayjs from "dayjs";
+import { analytics, EventTypes } from "../../external/analytics/posthog";
 import { S3Utils } from "../../external/aws/s3";
+import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 import {
   mergeBundleIntoAdtSourcedEncounter,
   saveAdtConversionBundle,
 } from "../../external/fhir/adt-encounters";
-import { buildBundleEntry, buildCollectionBundle } from "../../external/fhir/bundle/bundle";
 import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion";
+import { getHieConfigDictionary } from "../../external/hl7-notification/hie-config-dictionary";
 import { capture, out } from "../../util";
 import { Config } from "../../util/config";
 import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
@@ -24,12 +27,47 @@ import {
 import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
+  getOrCreateMessageDatetime,
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
+import { createIncomingMessageFileKey } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
 import {
   Hl7NotificationSenderParams,
   Hl7NotificationWebhookSender,
 } from "./hl7-notification-webhook-sender";
-import { isSupportedTriggerEvent, SupportedTriggerEvent } from "./utils";
+import { getBambooTimezone, getKonzaTimezone } from "./timezone";
+import {
+  asString,
+  isSupportedTriggerEvent,
+  ParsedHl7Data,
+  parseHl7Message,
+  persistHl7MessageError,
+  SupportedTriggerEvent,
+} from "./utils";
+
+type HieConfig = { timezone: string };
+
+function getTimezoneFromHieName(
+  hieName: string,
+  hl7Message: Hl7Message,
+  log: typeof console.log
+): string {
+  if (hieName === "Bamboo") {
+    log("HIE is Bamboo, getting timezone based off state in the custom ZFA segment");
+    return getBambooTimezone(hl7Message);
+  } else if (hieName === "Konza") {
+    log("HIE is Konza, getting timezone based off state in PV1.39");
+    return getKonzaTimezone(hl7Message);
+  } else {
+    const hieConfigDictionary = getHieConfigDictionary() as Record<string, HieConfig>;
+    const hieConfig = hieConfigDictionary[hieName];
+
+    if (!hieConfig?.timezone) {
+      throw new MetriportError(`HIE timezone not found for HIE: ${hieName}`);
+    }
+
+    return hieConfig.timezone;
+  }
+}
 
 export const dischargeEventCode = "A03";
 
@@ -63,12 +101,47 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
    * @returns - A promise that resolves when the message is sent to the API.
    */
   async execute(params: Hl7NotificationSenderParams): Promise<void> {
-    const message = Hl7Message.parse(params.message);
-    const { cxId, patientId, sourceTimestamp, messageReceivedTimestamp } = params;
+    const s3Utils = new S3Utils(Config.getAWSRegion());
+    const bucketName = Config.getHl7IncomingMessageBucketName();
+    const { log } = out(`${this.context}, cx: ${params.cxId}, pt: ${params.patientId}`);
+
+    const hl7Message = Hl7Message.parse(params.message);
+    let parsedData: ParsedHl7Data;
+
+    const timezone = params.impersonationTimezone
+      ? params.impersonationTimezone
+      : getTimezoneFromHieName(params.hieName, hl7Message, log);
+    try {
+      parsedData = await parseHl7Message(hl7Message, timezone);
+    } catch (parseError: unknown) {
+      await persistHl7MessageError(hl7Message, parseError, log);
+      throw parseError;
+    }
+
+    const { message, cxId, patientId } = parsedData;
     const encounterId = createEncounterId(message, patientId);
-    const { log } = out(`${this.context}, cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`);
 
     const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
+
+    const timestamp = basicToExtendedIso8601(getOrCreateMessageDatetime(message));
+
+    const rawDataFileKey = createIncomingMessageFileKey({
+      cxId,
+      patientId,
+      timestamp,
+      messageId: getMessageUniqueIdentifier(message),
+      messageCode,
+      triggerEvent,
+    });
+
+    log(`Init S3 upload to bucket ${bucketName} with key ${rawDataFileKey}`);
+    await s3Utils.uploadFile({
+      bucket: bucketName,
+      key: rawDataFileKey,
+      file: Buffer.from(asString(message)),
+      contentType: "text/plain",
+    });
+
     if (!isSupportedTriggerEvent(triggerEvent)) {
       log(`Trigger event ${triggerEvent} is not supported. Skipping...`);
       return;
@@ -82,8 +155,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       cxId,
       patientId,
       encounterId,
-      sourceTimestamp,
-      messageReceivedTimestamp,
+      sourceTimestamp: timestamp,
+      messageReceivedTimestamp: params.messageReceivedTimestamp,
       messageCode,
       triggerEvent,
       facilityName,
@@ -100,17 +173,15 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     );
     const fhirPatient = toFhirPatient({ id: patientId, data: patient.data });
 
-    const conversionResult = convertHl7v2MessageToFhir({
+    const newEncounterData = convertHl7v2MessageToFhir({
       message,
       cxId,
       patientId,
-      rawDataFileKey: params.rawDataFileKey,
-    });
-
-    const newEncounterData = prependPatientToBundle({
-      bundle: conversionResult,
+      rawDataFileKey: rawDataFileKey,
+      hieName: params.hieName,
       fhirPatient,
     });
+
     log(`Conversion complete and patient entry added`);
 
     const clinicalInformation = this.extractClinicalInformation(newEncounterData);
@@ -136,7 +207,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
         cxId,
         patientId,
         encounterId,
-        timestamp: sourceTimestamp,
+        timestamp: timestamp,
         messageId: getMessageUniqueIdentifier(message),
         messageCode,
         triggerEvent,
@@ -171,9 +242,29 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
             presignedUrl: bundlePresignedUrl,
             ...(encounterPeriod?.start ? { admitTimestamp: encounterPeriod.start } : undefined),
             ...(encounterPeriod?.end ? { dischargeTimestamp: encounterPeriod.end } : undefined),
-            whenSourceSent: messageReceivedTimestamp,
+            whenSourceSent: params.messageReceivedTimestamp,
           },
         })
+    );
+
+    const posthogApiKeyArn = Config.getPostHogApiKey();
+    if (!posthogApiKeyArn) {
+      throw new Error("Posthog API key not found");
+    }
+
+    const posthogApiKey = await getSecretValueOrFail(posthogApiKeyArn, Config.getAWSRegion());
+    analytics(
+      {
+        distinctId: cxId,
+        event: EventTypes.hl7NotificationReceived,
+        properties: {
+          cxId,
+          patientId,
+          messageCode,
+          triggerEvent,
+        },
+      },
+      posthogApiKey
     );
 
     log(`Done. API notified...`);
@@ -270,16 +361,4 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     return clinicalInformation;
   }
-}
-
-function prependPatientToBundle({
-  bundle,
-  fhirPatient,
-}: {
-  bundle: Bundle<Resource>;
-  fhirPatient: Resource;
-}): Bundle<Resource> {
-  const fhirPatientEntry = buildBundleEntry(fhirPatient);
-  const combinedEntries = bundle.entry ? [fhirPatientEntry, ...bundle.entry] : [];
-  return buildCollectionBundle(combinedEntries);
 }

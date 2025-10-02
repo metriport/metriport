@@ -80,6 +80,7 @@ export class SecretsStack extends Stack {
       }
     }
 
+    // rename this to productAnalytics...
     for (const secretName of Object.values(props.config.analyticsSecretNames)) {
       const secret = makeSecret(secretName);
       logSecretInfo(this, secret, secretName);
@@ -118,12 +119,28 @@ export class SecretsStack extends Stack {
         logSecretInfo(this, secret, secretName);
       }
 
-      if (props.config.analyticsPlatform) {
-        for (const secretName of Object.values(props.config.analyticsPlatform.secrets)) {
-          const secret = makeSecret(secretName);
-          logSecretInfo(this, secret, secretName);
-        }
+      const hieSftpSecretNames = Object.values(props.config.hl7Notification.hieConfigs).map(c =>
+        getHieSftpPasswordSecretName(c.name)
+      );
+
+      for (const secretName of hieSftpSecretNames) {
+        const secret = makeSecret(secretName);
+        logSecretInfo(this, secret, secretName);
+      }
+
+      for (const secretName of Object.values(props.config.analyticsPlatform.secretNames)) {
+        const secret = makeSecret(secretName, {
+          generateSecretString: {
+            excludePunctuation: true,
+            excludeCharacters: PROBLEMATIC_IPSEC_CHARACTERS,
+          },
+        });
+        logSecretInfo(this, secret, secretName);
       }
     }
   }
+}
+
+export function getHieSftpPasswordSecretName(hieName: string): string {
+  return `RosterUploadSftpPassword-${hieName}`;
 }

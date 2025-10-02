@@ -8,12 +8,13 @@ import { createOrganization } from "../../../command/medical/organization/create
 import { getOrganizationsOrFail } from "../../../command/medical/organization/get-organization";
 import { updateOrganization } from "../../../command/medical/organization/update-organization";
 import { createOrUpdateOrganization as cqCreateOrUpdateOrganization } from "../../../external/carequality/command/create-or-update-organization";
-import { createOrUpdateCWOrganization } from "../../../external/commonwell/command/create-or-update-cw-organization";
+import { createOrUpdateCWOrganizationV2 } from "../../../external/commonwell-v2/command/organization/create-or-update-cw-organization";
 import { requestLogger } from "../../helpers/request-logger";
 import { internalDtoFromModel } from "../../medical/dtos/organizationDTO";
 import { organizationInternalDetailsSchema } from "../../medical/schemas/organization";
 import { getUUIDFrom, validateUUID } from "../../schemas/uuid";
 import { asyncHandler, getFromQueryAsArrayOrFail, getFromQueryAsBoolean } from "../../util";
+
 const router = Router();
 
 /** ---------------------------------------------------------------------------
@@ -60,17 +61,17 @@ router.put(
     if (syncInHie && org.cqApproved) {
       cqCreateOrUpdateOrganization({ org }).catch(processAsyncError("cq.internal.organization"));
     }
-    // COMMONWELL
     if (syncInHie && org.cwApproved) {
-      createOrUpdateCWOrganization({
+      // COMMONWELL
+      createOrUpdateCWOrganizationV2({
         cxId,
         org: {
           oid: org.oid,
           data: org.data,
           active: org.cwActive,
+          isInitiatorAndResponder: true,
         },
-        isObo: false,
-      }).catch(processAsyncError("cw.internal.organization"));
+      }).catch(processAsyncError("cwV2.internal.organization"));
     }
     return res.status(httpStatus.OK).json(internalDtoFromModel(org));
   })

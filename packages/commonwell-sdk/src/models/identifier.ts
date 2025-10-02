@@ -1,42 +1,38 @@
 import { z } from "zod";
+import { emptyStringToUndefinedSchema } from "../common/zod";
 import { periodSchema } from "./period";
 
-// Identifies the use for an identifier, if known. This value set defines its own
-// terms in the system http://hl7.org/fhir/identifier-use
-// See: https://specification.commonwellalliance.org/appendix/terminology-bindings#c8-identifier-use-codes
-export const identifierUseCodesSchema = z.enum([
-  "usual",
-  "official",
-  "temp",
-  "secondary",
-  "old",
-  "unspecified",
-]);
+export enum KnownIdentifierSystems {
+  SSN = "http://hl7.org/fhir/sid/us-ssn",
+  NPI = "http://hl7.org/fhir/sid/us-npi",
+  URI = "urn:ietf:rfc:3986",
+}
 
-export type IdentifierUseCodes = z.infer<typeof identifierUseCodesSchema>;
+const referenceInIdentifierSchema = z.object({
+  reference: z.string().nullish(),
+  type: z.string().nullish(),
+  identifier: z.any().nullish(),
+  display: z.string().nullish(),
+});
 
-// An identifier intended for use external to the FHIR protocol. As an external identifier,
-// it may be changed or retired due to human or system process and errors.
-// See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.11 Identifier)
-export const identifierSchema = z.object({
+export const patientIdentifierSchema = z.object({
+  /** Patient identifier that uniquely identifies the patient in the Edge System */
+  value: z.string(),
+  /** Assigning Authority ID for the unique Patient ID */
   system: z.string(),
-  key: z.string(),
-  use: identifierUseCodesSchema.optional().nullable(),
-  label: z.string().optional().nullable(),
-  period: periodSchema.optional().nullable(),
-  assigner: z.string().optional().nullable(),
+  use: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
+  type: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
+  assigner: emptyStringToUndefinedSchema,
+  period: periodSchema.nullish(),
+});
+export type PatientIdentifier = z.infer<typeof patientIdentifierSchema>;
+
+export const identifierSchema = z.object({
+  value: z.string(),
+  system: z.string().nullish(),
+  use: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
+  type: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
+  assigner: referenceInIdentifierSchema.nullish(),
+  period: periodSchema.nullish(),
 });
 export type Identifier = z.infer<typeof identifierSchema>;
-
-export const strongIdSchema = identifierSchema
-  .omit({
-    system: true,
-    key: true,
-  })
-  .merge(
-    identifierSchema.required({
-      system: true,
-      key: true,
-    })
-  );
-export type StrongId = z.infer<typeof strongIdSchema>;

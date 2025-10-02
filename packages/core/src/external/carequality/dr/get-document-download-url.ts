@@ -1,6 +1,5 @@
 import { DocumentReference, InboundDocumentRetrievalReq } from "@metriport/ihe-gateway-sdk";
-import { createUploadFilePath } from "../../../domain/document/upload";
-import { parseFileName } from "../../../domain/filename";
+import { rebuildUploadsFilePath } from "../../../shareback/file";
 import { Config } from "../../../util/config";
 import { S3Utils } from "../../aws/s3";
 import { XDSRegistryError } from "../error";
@@ -70,13 +69,4 @@ async function retrieveDocumentReferences(
     p.status === "fulfilled" ? p.value : []
   );
   return successfulDocRefs;
-}
-
-function rebuildUploadsFilePath(id: string): string {
-  if (id.includes("/")) return id;
-
-  const fileNameParts = parseFileName(id);
-  if (!fileNameParts) return id;
-
-  return createUploadFilePath(fileNameParts.cxId, fileNameParts.patientId, fileNameParts.fileId);
 }

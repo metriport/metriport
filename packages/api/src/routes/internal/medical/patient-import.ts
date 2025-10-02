@@ -3,12 +3,13 @@ import {
   createFileKeyResults,
 } from "@metriport/core/command/patient-import/patient-import-shared";
 import { buildPatientImportParseHandler } from "@metriport/core/command/patient-import/steps/parse/patient-import-parse-factory";
+import { getResultEntries } from "@metriport/core/command/patient-import/steps/result/patient-import-result-command";
 import { buildPatientImportResult } from "@metriport/core/command/patient-import/steps/result/patient-import-result-factory";
-import { getResultEntries } from "@metriport/core/command/patient-import/steps/result/patient-import-result-local";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { capture } from "@metriport/core/util";
+import { capture, out } from "@metriport/core/util";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { Config } from "@metriport/core/util/config";
+import { BadRequestError } from "@metriport/shared";
 import {
   addPatientMappingSchema,
   updateJobSchema,
@@ -23,6 +24,7 @@ import status from "http-status";
 import { z } from "zod";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { createPatientImportJob } from "../../../command/medical/patient/patient-import/create";
+import { tryToFinishPatientImportJob } from "../../../command/medical/patient/patient-import/finish-job";
 import {
   getPatientImportJobList,
   getPatientImportJobOrFail,
@@ -32,9 +34,12 @@ import {
   CreatePatientImportMappingCmd,
 } from "../../../command/medical/patient/patient-import/mapping/create";
 import { updatePatientImportParams } from "../../../command/medical/patient/patient-import/update-params";
-import { updatePatientImportTracking } from "../../../command/medical/patient/patient-import/update-tracking";
+import {
+  PatientImportUpdateStatusCmd,
+  updatePatientImportTracking,
+} from "../../../command/medical/patient/patient-import/update-tracking";
 import { getCQData } from "../../../external/carequality/patient";
-import { getCWData } from "../../../external/commonwell/patient";
+import { getCWData } from "../../../external/commonwell-v1/patient";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import {
@@ -49,6 +54,8 @@ import {
 dayjs.extend(duration);
 
 const router = Router();
+
+const maxPatientsOnDebugGetBulk = 100;
 
 /** ---------------------------------------------------------------------------
  * POST /internal/patient/bulk
@@ -127,7 +134,7 @@ router.post(
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
     const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const disableWebhooks = getFromQueryAsBoolean("disableWebhooks", req);
-    const dryRun = getFromQueryAsBooleanOrFail("dryRun", req);
+    const dryRun = getFromQueryAsBoolean("dryRun", req);
     // request param - just being passed as parameter to this particular request
     const forceStatusUpdate = getFromQueryAsBoolean("forceStatusUpdate", req);
     capture.setExtra({ cxId, jobId });
@@ -209,20 +216,53 @@ router.post(
     const updateParams = updateJobSchema.parse(req.body);
     capture.setExtra({ cxId, jobId });
 
-    const patientImport = await updatePatientImportTracking({
+    const params: PatientImportUpdateStatusCmd = {
       jobId,
       cxId,
       status: updateParams.status,
+      reason: updateParams.reason,
       total: updateParams.total,
       failed: updateParams.failed,
+      successful: updateParams.successful,
       forceStatusUpdate: updateParams.forceStatusUpdate,
-    });
+    };
+
+    const patientImport = await updatePatientImportTracking(params);
 
     return res.status(status.OK).json(patientImport);
   })
 );
 
-const detailSchema = z.enum(["info", "debug"]).optional().default("info");
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/bulk/:id/record/:rowNumber/failed
+ *
+ * Updates the job tracking to indicate that a patient record failed.
+ * If all records are completed (successful or failed), the job will be finished.
+ *
+ * @param req.params.id The patient import job ID.
+ * @param req.params.rowNumber The row number of the patient in the CSV file.
+ * @param req.query.cxId The customer ID.
+ */
+router.post(
+  "/:id/record/:rowNumber/failed",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const jobId = getFromParamsOrFail("id", req);
+    const rowNumber = getFromParamsOrFail("rowNumber", req);
+    capture.setExtra({ cxId, jobId, rowNumber });
+
+    out(`${cxId} ${jobId}`).log(`Row ${rowNumber} failed, updating job tracking`);
+
+    await tryToFinishPatientImportJob({
+      jobId,
+      cxId,
+      entryStatus: "failed",
+    });
+
+    return res.status(status.OK).json({ message: "Updated" });
+  })
+);
 
 type PatientImportJobWithUrls = PatientImportJob & {
   validEntriesUrl: string;
@@ -275,6 +315,8 @@ router.get(
   })
 );
 
+const detailSchema = z.enum(["info", "debug"]).optional().default("info");
+
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/bulk/:id
  *
@@ -296,8 +338,11 @@ router.get(
 
     const patientImport = await getPatientImportJobOrFail({ cxId, jobId });
 
-    if (patientImport.status === "processing" && detail === "debug") {
-      const details: Record<string, string | number | null>[] = [];
+    if (detail === "debug" && patientImport.total > maxPatientsOnDebugGetBulk) {
+      throw new BadRequestError(`Debug mode is not supported for jobs with many patients`);
+    }
+    if (detail === "debug") {
+      const details: Record<string, string | number | null | undefined>[] = [];
       const resultEntries = await getResultEntries({
         cxId,
         jobId,
@@ -314,6 +359,8 @@ router.get(
               patientId: patient.id,
               rowNumber: entry.rowNumber,
               status: entry.status,
+              reasonForCx: entry.reasonForCx,
+              reasonForDev: entry.reasonForDev,
               globalDownloadStatus: patient.data.documentQueryProgress?.download?.status ?? null,
               globalConvertStatus: patient.data.documentQueryProgress?.convert?.status ?? null,
               cqPqStatus: cqData?.discoveryStatus ?? null,
@@ -328,6 +375,8 @@ router.get(
               patientId: null,
               rowNumber: entry.rowNumber,
               status: entry.status,
+              reasonForCx: entry.reasonForCx,
+              reasonForDev: entry.reasonForDev,
             });
           }
         },

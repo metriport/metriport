@@ -135,6 +135,7 @@ These are messages you can expect to receive in the following scenarios:
 {
   "meta": {
     "messageId": "<message-id>",
+    "requestId": "<request-id>",
     "when": "<date-time-in-utc>",
     "type": "medical.document-download"
     "data": {
@@ -259,8 +260,10 @@ Patients can have a large amount of data, so in order to have access to a Patien
 1. Your app can check the status by calling [get consolidated query status](/medical-api/api-reference/fhir/consolidated-data-query-get) (optional);
 1. When the result is ready, we'll send a webhook message with the results (below).
 
-Note that inside the `Bundle` you'll find a `DocumentReference` resource with the first item in the `content` array containing
-an attachment with a `url` which can be used to download the data.
+Note that inside the `Bundle` you'll find a `DocumentReference` resource with attachments in the `content` array:
+
+- The first item contains an attachment with a `url` which can be used to download the data.
+- If requested `conversionType` is `json`, an additional attachment with `contentType: "application/gzip"` provides a gzip-compressed copy for faster downloads.
 
 <Info>
   If there was no data available for the Patient, the
@@ -274,6 +277,7 @@ Example payload:
 {
   "meta": {
     "messageId": "1e82424a-1220-473d-a0d1-6e5fde15159e",
+    "requestId": "00000000-0000-0000-0000-000000000000",
     "when": "2023-08-23T22:09:11.373Z",
     "type": "medical.consolidated-data"
   },
@@ -304,6 +308,12 @@ Example payload:
                   "attachment": {
                     "contentType": "application/json",
                     "url": "https://documents.s3.amazonaws.com/abc123-Amz-SignedHeaders=host"
+                  }
+                },
+                {
+                  "attachment": {
+                    "contentType": "application/gzip",
+                    "url": "https://documents.s3.amazonaws.com/abc123.gz-Amz-SignedHeaders=host"
                   }
                 }
               ]
@@ -367,8 +377,13 @@ The format follows:
     </ResponseField>
 
     <ResponseField name="bundle" type="Bundle">
-      A FHIR [Bundle](/medical-api/fhir/resources/bundle) containing a `DocumentReference` resource with the first item in the `content` array containing
-      an attachment with a `url` which can be used to download the FHIR JSON payload - the `url` is valid for 3 minutes.
+      A FHIR [Bundle](/medical-api/fhir/resources/bundle) containing a `DocumentReference` resource with attachments in the `content` array.
+      For JSON requests, two attachments are provided:
+      <ul>
+        <li>Main attachment with the requested format (JSON, HTML, or PDF)</li>
+        <li>Gzip-compressed attachment (JSON only) with `contentType: "application/gzip"` for faster downloads</li>
+      </ul>
+      Each attachment has a `url` which is valid for 3 minutes.
     </ResponseField>
 
   </Expandable>
@@ -398,7 +413,8 @@ Example payload:
 ```json
 {
   "meta": {
-    "messageId": "00000000-00000000-00000000-00000000",
+    "messageId": "1e82424a-1220-473d-a0d1-6e5fde15159e",
+    "requestId": "00000000-0000-0000-0000-000000000000",
     "when": "2024-12-30T05:05:12.215Z",
     "type": "medical.bulk-patient-create"
   },
@@ -497,6 +513,7 @@ Here is an example payload:
 {
 "meta": {
     "messageId": "bd4184dd-3b35-4c60-8130-447d1d528fea",
+    "requestId": "00000000-0000-0000-0000-000000000000",
     "when": "2023-11-30T05:05:12.215Z",
     "type": "medical.document-bulk-download-urls"
   },

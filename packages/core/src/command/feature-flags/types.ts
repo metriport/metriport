@@ -14,6 +14,8 @@ export type BooleanFF = z.infer<typeof ffBooleanSchema>;
 export const booleanFFsSchema = z.object({
   commonwellFeatureFlag: ffBooleanSchema,
   carequalityFeatureFlag: ffBooleanSchema,
+  cqDoaFeatureFlag: ffBooleanSchema,
+  debugFeatureFlag: ffBooleanSchema,
 });
 export type BooleanFeatureFlags = z.infer<typeof booleanFFsSchema>;
 
@@ -24,6 +26,7 @@ export const cxBasedFFsSchema = z.object({
   cxsWithADHDMRFeatureFlag: ffStringValuesSchema,
   cxsWithNoMrLogoFeatureFlag: ffStringValuesSchema,
   cxsWithBmiMrFeatureFlag: ffStringValuesSchema,
+  cxsWithSimpleMrFeatureFlag: ffStringValuesSchema,
   cxsWithDermMrFeatureFlag: ffStringValuesSchema,
   cxsWithAiBriefFeatureFlag: ffStringValuesSchema,
   cxsWithSurescriptsFeatureFlag: ffStringValuesSchema,
@@ -38,10 +41,13 @@ export const cxBasedFFsSchema = z.object({
   cxsWithStrictMatchingAlgorithm: ffStringValuesSchema,
   cxsWithAthenaCustomFieldsEnabled: ffStringValuesSchema,
   cxsWithPcpVisitAiSummaryFeatureFlag: ffStringValuesSchema,
+  cxsWithRecentVisitAiSummary: ffStringValuesSchema,
   cxsWithHl7NotificationWebhookFeatureFlag: ffStringValuesSchema,
   cxsWithDischargeSlackNotificationFeatureFlag: ffStringValuesSchema,
   cxsWithDischargeRequeryFeatureFlag: ffStringValuesSchema,
   cxsWithXmlRedownloadFeatureFlag: ffStringValuesSchema,
+  analyticsIncrementalIngestion: ffStringValuesSchema,
+  cxsWithNewSoapEnvelopeFeatureFlag: ffStringValuesSchema,
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 

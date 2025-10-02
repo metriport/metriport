@@ -1,39 +1,68 @@
+import {
+  dateStringToIsoDateString,
+  isoDateSchema,
+  MetriportError,
+  usDateSchema,
+} from "@metriport/shared";
 import { z } from "zod";
-import { isoDateTimeSchema } from "./iso-datetime";
-import { identifierSchema } from "./identifier";
-import { humanNameSchema } from "./human-name";
-import { contactSchema } from "./contact";
 import { addressSchema } from "./address";
-import { isoDateSchema } from "./iso-date";
+import { contactSchema } from "./contact";
+import { humanNameSchema } from "./human-name";
+import { patientIdentifierSchema } from "./identifier";
 
+/** @see https://hl7.org/fhir/R4/valueset-administrative-gender.html */
 export enum GenderCodes {
-  /** Female */
   F = "F",
-  /** Male */
   M = "M",
-  /* Undifferentiated: the gender of a person could not be uniquely defined as male or female, such as hermaphrodite. */
-  UN = "UN",
+  O = "O",
+  U = "U", // Unknown
 }
-export const genderCodesSchema = z.enum(Object.keys(GenderCodes) as [string, ...string[]]);
 
-export const genderSchema = z.object({
-  code: genderCodesSchema,
-  display: z.string().optional().nullable(),
-  system: z.string().optional().nullable(),
-});
+const preprocessGender = (v: unknown) => (v == null || v === "" ? undefined : coerceGender(v));
+export const genderCodesSchema = z.preprocess(
+  preprocessGender,
+  z.nativeEnum(GenderCodes).optional()
+);
 
-export type Gender = z.infer<typeof genderSchema>;
+export type Gender = z.infer<typeof genderCodesSchema>;
+
+export const birthDateSchema = isoDateSchema.or(usDateSchema).transform(dateStringToIsoDateString);
 
 // The demographic details for a Person.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.8 Demographics)
 export const demographicsSchema = z.object({
-  identifier: z.array(identifierSchema).optional().nullable(),
+  identifier: z.array(patientIdentifierSchema).min(1),
   name: z.array(humanNameSchema).min(1),
-  telecom: z.array(contactSchema).optional().nullable(),
-  gender: genderSchema,
-  birthDate: isoDateTimeSchema.or(isoDateSchema),
-  address: z.array(addressSchema),
-  picture: z.any().optional().nullable(), // not supported
+  gender: genderCodesSchema.nullish(),
+  birthDate: birthDateSchema,
+  address: z.array(addressSchema).min(1),
+  telecom: z.array(contactSchema).nullish(),
 });
-
 export type Demographics = z.infer<typeof demographicsSchema>;
+
+export function coerceGender(value: unknown): GenderCodes {
+  if (typeof value !== "string") {
+    throw new MetriportError(`Invalid gender`, undefined, { value: String(value) });
+  }
+  const v = value.toLowerCase().trim();
+
+  switch (v) {
+    case "f":
+    case "female":
+      return GenderCodes.F;
+    case "m":
+    case "male":
+      return GenderCodes.M;
+    case "o":
+    case "other":
+    case "un":
+    case "undifferentiated":
+      return GenderCodes.O;
+    case "u":
+    case "unk":
+    case "unknown":
+      return GenderCodes.U;
+    default:
+      throw new MetriportError(`Invalid gender`, undefined, { value });
+  }
+}

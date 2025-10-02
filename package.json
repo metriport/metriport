@@ -11,8 +11,9 @@
     "clean": "npm run clean --workspaces --if-present && SCRIPT='clean' npm run lambdas",
     "deepclean": "npm run deepclean --workspaces --if-present && echo 'rimraf node_modules' && rimraf node_modules && SCRIPT='deepclean' npm run lambdas",
     "prep-lambdas": "cd packages/lambdas && npm run prep-deploy && cd ../..",
-    "prep-deploy": "npm run install-deps && npm run build:cloud && npm run test && npm run prep-lambdas",
-    "prep-deploy-staging": "npm run install-deps && npm run build:staging && npm run test && npm run prep-lambdas",
+    "prep-converter": "cd packages/fhir-converter && npm run prep-deploy && cd ../..",
+    "prep-deploy": "npm run install-deps && npm run build:cloud && npm run test && npm run prep-lambdas && npm run prep-converter",
+    "prep-deploy-staging": "npm run install-deps && npm run build:staging && npm run test && npm run prep-lambdas && npm run prep-converter",
     "package": "npm run prep-deploy",
     "install-deps": "npm ci --ignore-scripts --no-fund && SCRIPT='ci --ignore-scripts --no-fund' npm run lambdas:no-run",
     "build": "if npm run build --workspaces && SCRIPT='build' npm run lambdas; then echo '\n\\033[1;32mBuild successful\\033[0m'; else echo '\n\\033[1;31m>>> Build failed <<<\\033[0m' && exit 1; fi",
@@ -23,6 +24,7 @@
     "lint-fix": "npm run lint-fix --workspaces --if-present",
     "lint-staged": "npx lint-staged",
     "prettier-fix": "npm run prettier-fix --workspaces --if-present",
+    "prettier-fix-modified": "(git diff --name-only --cached && git diff --name-only && git ls-files --others --exclude-standard) | sort -u | grep -E '\\.(js|jsx|ts|tsx|css|scss|json|md)$' | xargs npx prettier --write",
     "test": "./packages/scripts/run-tests.sh",
     "test:e2e": "npm run test:e2e --workspaces --if-present",
     "lambdas:no-run": "cd packages/lambdas && npm $SCRIPT && cd ../..",
@@ -69,6 +71,7 @@
   },
   "dependencies": {
     "axios": ">=1.8.2",
+    "form-data": ">=4.0.4",
     "sharp": "^0.33.5",
     "semver": ">=5.7.2"
   },

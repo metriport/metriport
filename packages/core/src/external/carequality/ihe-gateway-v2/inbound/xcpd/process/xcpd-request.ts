@@ -7,7 +7,11 @@ import { out } from "../../../../../../util/log";
 import { mapIheGenderToFhir } from "../../../../shared";
 import { storeXcpdRequest } from "../../../monitor/store";
 import { extractText } from "../../../utils";
-import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
+import {
+  convertSamlHeaderToAttributes,
+  extractTimestamp,
+  validateDelegatedRequest,
+} from "../../shared";
 import { Iti55Request, iti55RequestSchema } from "./schema";
 
 export function transformIti55RequestToPatientResource(
@@ -62,6 +66,7 @@ export function transformIti55RequestToPatientResource(
 
   return patientResource;
 }
+
 export async function processInboundXcpdRequest(
   request: string
 ): Promise<InboundPatientDiscoveryReq> {
@@ -79,7 +84,6 @@ export async function processInboundXcpdRequest(
     const iti55Request = iti55RequestSchema.parse(jsonObj);
     const samlAttributes = convertSamlHeaderToAttributes(iti55Request.Envelope.Header);
     const patientResource = transformIti55RequestToPatientResource(iti55Request);
-
     const inboundRequest = {
       id: extractText(iti55Request.Envelope.Header.MessageID),
       timestamp: extractTimestamp(iti55Request.Envelope.Header),
@@ -91,12 +95,19 @@ export async function processInboundXcpdRequest(
     };
 
     await storeXcpdRequest({ request, inboundRequest });
+    if (samlAttributes.principalOid) {
+      log(
+        `Validating delegated request: principal - ${samlAttributes.principalOid}, delegate -${samlAttributes.homeCommunityId}`
+      );
+      await validateDelegatedRequest(samlAttributes.principalOid, samlAttributes.homeCommunityId);
+      log("Successfully validated");
+    }
 
     return inboundRequest;
   } catch (error) {
     const msg = "Failed to parse ITI-55 request";
     log(
-      `${msg}: Error - ${errorToString(error)}, iti55Request: ${JSON.stringify(
+      `${msg}: Error - ${errorToString(error, { detailed: true })}, iti55Request: ${JSON.stringify(
         jsonObj
       )}, request: ${request}`
     );
@@ -106,6 +117,6 @@ export async function processInboundXcpdRequest(
         request,
       },
     });
-    throw new Error(`${msg}: ${error}`);
+    throw new Error(`${msg}: ${errorToString(error, { detailed: true })}`);
   }
 }

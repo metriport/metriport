@@ -1,9 +1,9 @@
-import { XCPDGateway, OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
+import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
+import { out } from "../../../../../../util";
 import { errorToString } from "../../../../../../util/error/shared";
-import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { SamlClientResponse, sendSignedXml } from "../../../saml/saml-client";
+import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { SignedXcpdRequest } from "../create/iti55-envelope";
-import { out } from "../../../../../../util/log";
 import { storeXcpdResponses } from "../../../monitor/store";
 
 const { log } = out("Sending XCPD Requests");
@@ -38,7 +38,8 @@ export async function sendSignedXcpdRequest({
         request.gateway.oid
       }`
     );
-    await storeXcpdResponses({
+    // ENG-1048 Disable S3 storage for IHE raw requests/responses
+    void storeXcpdResponses({
       response,
       outboundRequest: request.outboundRequest,
       gateway: request.gateway,

@@ -192,6 +192,10 @@ export class Config {
     return getEnvVar("USAGE_URL");
   }
 
+  static getCxBillingUrl(): string | undefined {
+    return getEnvVar("CX_BILLING_URL");
+  }
+
   static getFHIRServerUrl(): string {
     return getEnvVarOrFail("FHIR_SERVER_URL");
   }
@@ -237,8 +241,12 @@ export class Config {
   static getCWMemberOrgName(): string {
     return getEnvVarOrFail("CW_MEMBER_NAME");
   }
+  /** @deprecated TODO ENG-554 Remove this - CW v1 only */
   static getCWMemberOID(): string {
     return getEnvVarOrFail("CW_MEMBER_OID");
+  }
+  static getCWMemberID(): string {
+    return getEnvVarOrFail("CW_MEMBER_ID");
   }
 
   static getCdaToFhirConversionBucketName(): string {

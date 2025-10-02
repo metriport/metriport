@@ -1,8 +1,8 @@
 import { Encounter } from "@medplum/fhirtypes";
 import {
   DeduplicationResult,
-  assignMostDescriptiveStatus,
-  assignMostSevereClass,
+  dangerouslyAssignMostDescriptiveStatus,
+  dangerouslyAssignMostSevereClass,
   combineResources,
   createKeysFromObjectArray,
   createRef,
@@ -37,11 +37,11 @@ export const statusRanking: Record<EncounterStatus, number> = {
 };
 
 function preprocessStatus(existing: Encounter, target: Encounter) {
-  return assignMostDescriptiveStatus(statusRanking, existing, target);
+  return dangerouslyAssignMostDescriptiveStatus(statusRanking, existing, target);
 }
 
 function preprocessClass(existing: Encounter, target: Encounter) {
-  return assignMostSevereClass(existing, target);
+  return dangerouslyAssignMostSevereClass(existing, target);
 }
 
 export function deduplicateEncounters(encounters: Encounter[]): DeduplicationResult<Encounter> {
@@ -126,7 +126,7 @@ export function groupSameEncounters(encounters: Encounter[]): {
   };
 }
 
-export function groupSameEncountersDateOnly(encounters: Encounter[]): {
+export function groupSameEncountersDatetimeOnly(encounters: Encounter[]): {
   encountersMap: Map<string, Encounter>;
   refReplacementMap: Map<string, string>;
   danglingReferences: Set<string>;

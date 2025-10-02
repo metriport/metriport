@@ -1,14 +1,15 @@
 import { Coding, DocumentReference, DocumentReferenceContent } from "@medplum/fhirtypes";
 import { parseStringPromise } from "xml2js";
+import { rebuildUploadsFilePath } from "../../shareback/file";
 import { metriportDataSourceExtension } from "../../external/fhir/shared/extensions/metriport";
 import { base64ToString } from "../../util/base64";
+import { Config } from "../../util/config";
 import {
   XDSDocumentEntryClassCode,
   XDSDocumentEntryHealthcareFacilityTypeCode,
   XDSDocumentEntryPracticeSettingCode,
   XDSDocumentEntryUniqueId,
 } from "./constants";
-import { Config } from "../../util/config";
 
 interface ExtrinsicObjectXMLData {
   ExtrinsicObject: {
@@ -104,18 +105,17 @@ export async function parseExtrinsicObjectXmlToDocumentReference({
   });
 
   extrinsicObject.ExternalIdentifier.forEach(identifier => {
-    const value = identifier.$.value;
-
     switch (identifier.$.identificationScheme) {
-      case XDSDocumentEntryUniqueId:
+      case XDSDocumentEntryUniqueId: {
+        const stringValue = base64ToString(identifier.$.value);
+        const filePath = rebuildUploadsFilePath(stringValue);
         docRefContent.attachment = {
           ...docRefContent.attachment,
-          url: `https://${Config.getMedicalDocumentsBucketName()}.s3.${Config.getAWSRegion()}.amazonaws.com/${base64ToString(
-            value
-          )}`,
-          title: base64ToString(value),
+          url: `https://${Config.getMedicalDocumentsBucketName()}.s3.${Config.getAWSRegion()}.amazonaws.com/${filePath}`,
+          title: filePath,
         };
         break;
+      }
     }
   });
   documentReference.content = [docRefContent];

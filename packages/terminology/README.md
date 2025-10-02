@@ -54,7 +54,6 @@ Once you have the file, start the server and run the following commands:
 
 ```bash
 npm run seed-lookup <path-to-metathesaurus-zip>
-npm run seed-crosswalk <path-to-metathesaurus-zip>
 ```
 
 Once that's done, you'll have everything besides NDC and its crosswalk to RxNorm.
@@ -63,6 +62,12 @@ To seed the NDC codes with descriptions (including packaging data), you'll need 
 
 ```bash
 npm run seed-fda-descriptions <path-to-products-file.csv> <path-to-packages-file.csv>
+```
+
+To seed the SNOMED-CT to ICD-10-CM crosswalk, you'll need to download the [SNOMED-CT to ICD-10-CM map](https://www.nlm.nih.gov/research/umls/mapping_projects/snomedct_to_icd10cm.html) and run this command:
+
+```bash
+npm run seed-snomed-icd10 <path-to-snomed-icd10-map.txt>
 ```
 
 Lastly, let's seed the NDC crosswalks from RxNorm.

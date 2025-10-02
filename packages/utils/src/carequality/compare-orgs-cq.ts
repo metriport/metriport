@@ -6,7 +6,7 @@ import {
   CarequalityManagementAPI,
   CarequalityManagementApiFhir,
 } from "@metriport/carequality-sdk";
-import { Organization, OrganizationBizType, OrgType } from "@metriport/core/domain/organization";
+import { Organization, OrganizationBizType } from "@metriport/core/domain/organization";
 import { out } from "@metriport/core/util/log";
 import { getEnvVarOrFail, sleep, USStateForAddress } from "@metriport/shared";
 import axios from "axios";
@@ -79,7 +79,7 @@ export async function main() {
           ...org.location,
           state: org.location.state as USStateForAddress,
         },
-        type: org.type as unknown as OrgType,
+        type: org.type,
       },
       oid: org.oid,
       cqActive: org.cqActive ?? false,
@@ -95,7 +95,7 @@ export async function main() {
       log(`Provider - Processing org...`);
       const cqCmd = getCqCommandForOrganization({ org: inputMetriportOrg });
       const cqOrgDetails = await cmdToCqOrgDetails(cqCmd);
-      const metriportOrg = getOrganizationFhirTemplate(cqOrgDetails);
+      const metriportOrg = await getOrganizationFhirTemplate(cqOrgDetails);
       await process("org", org, metriportOrg, outputFolderName, cqApi);
       // empty line
     } else if (org.businessType === OrganizationBizType.healthcareITVendor) {
@@ -129,7 +129,7 @@ export async function main() {
         };
         const cqCmd = getCqCommandForFacility({ org: inputMetriportOrg, facility: inputFacility });
         const cqOrgDetails = await cmdToCqOrgDetails(cqCmd);
-        const metriportOrg = getOrganizationFhirTemplate(cqOrgDetails);
+        const metriportOrg = await getOrganizationFhirTemplate(cqOrgDetails);
         await process("fac", facility, metriportOrg, outputFolderName, cqApi);
       }
     } else {

@@ -54,6 +54,62 @@ export function unpackPidFieldOrFail(pid: string) {
   return { cxId, patientId };
 }
 
+// Turn + into - , and = into .
+export function toBambooId(id: string) {
+  return id.replace(/\+/g, "-").replace(/=/g, ".");
+}
+
+// Reverse: - back to + , . back to =
+export function fromBambooId(id: string) {
+  return id.replace(/-/g, "+").replace(/\./g, "=");
+}
+
+const PATIENT_ID_FIELD_INDEX = 3;
+export function remapMessageReplacingPid3(
+  message: Hl7Message,
+  newId: string,
+  oldIdIndex?: number
+): Hl7Message {
+  const updatedPid = setPid3Id(getSegmentByNameOrFail(message, "PID"), newId, oldIdIndex);
+  const newSegments = message.segments.map(seg => (seg.name === "PID" ? updatedPid : seg));
+
+  return new Hl7Message(newSegments, message.context);
+}
+
+/**
+ * Sets PID-3 (Patient Identifier List) to `newId`. If `oldIdIndex` is provided, the old patient id will be moved to the given index.
+ */
+function setPid3Id(pid: Hl7Segment, newId: string, oldIdIndex?: number): Hl7Segment {
+  const newFields = [...pid.fields];
+  const oldPatientIdField = newFields[PATIENT_ID_FIELD_INDEX];
+
+  if (!oldPatientIdField) {
+    throw new MetriportError(
+      "Old patient id field not found, when trying to replace it with a new one",
+      undefined,
+      { oldIdIndex }
+    );
+  }
+
+  const newComponents = oldPatientIdField.components.map(c => [...c]);
+  if (!newComponents[0]) newComponents[0] = [];
+  newComponents[0][0] = newId;
+
+  const newPatientIdField = new Hl7Field(newComponents, pid.context);
+
+  if (oldIdIndex !== undefined) {
+    if (oldIdIndex >= newFields.length || oldIdIndex < 0) {
+      throw new MetriportError("oldIdIndex out of bounds", undefined, {
+        oldIdIndex,
+        fieldsLength: newFields.length,
+      });
+    }
+    newFields[oldIdIndex] = oldPatientIdField;
+  }
+  newFields[PATIENT_ID_FIELD_INDEX] = newPatientIdField;
+
+  return new Hl7Segment(newFields, pid.context);
+}
 export function getCxIdAndPatientIdOrFail(msg: Hl7Message): { cxId: string; patientId: string } {
   const pid = getSegmentByNameOrFail(msg, "PID");
   const idComponent = pid.getComponent(3, 1);
@@ -69,11 +125,9 @@ export function getRequiredValueFromMessage(
   const segment = getSegmentByNameOrFail(msg, targetSegmentName);
   const value = getOptionalValueFromSegment(segment, fieldIndex, componentIndex);
   if (!value) {
-    const patientIds = getCxIdAndPatientIdOrFail(msg);
     const datetime = getMessageDatetime(msg);
     const messageId = getMessageUniqueIdentifier(msg);
     throw new MetriportError("Missing required value", undefined, {
-      ids: JSON.stringify(patientIds),
       targetSegmentName,
       fieldIndex,
       componentIndex,
@@ -100,11 +154,9 @@ export function getOptionalValueFromMessage(
 export function getSegmentByNameOrFail(msg: Hl7Message, targetSegmentName: string): Hl7Segment {
   const segment = msg.getSegment(targetSegmentName);
   if (!segment) {
-    const patientIds = getCxIdAndPatientIdOrFail(msg);
     const datetime = getMessageDatetime(msg);
     const messageId = getMessageUniqueIdentifier(msg);
     throw new MetriportError("Missing required segment", undefined, {
-      ids: JSON.stringify(patientIds),
       targetSegmentName,
       datetime,
       messageId,
@@ -155,7 +207,7 @@ export function mapHl7SystemNameToSystemUrl(systemName: string | undefined): str
   return systemUrl;
 }
 
-export function createFileKeyHl7Message({
+export function createIncomingMessageFileKey({
   cxId,
   patientId,
   messageId,

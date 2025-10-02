@@ -3,13 +3,13 @@ import {
   isCWEnabledForCx,
 } from "@metriport/core/command/feature-flags/domain-ffs";
 import { Patient } from "@metriport/core/domain/patient";
-import { MedicalDataSource } from "@metriport/core/external/index";
+import { MedicalDataSource } from "@metriport/core/external";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
 import z from "zod";
 import { Config } from "../../shared/config";
-import { CwLink } from "../commonwell/cw-patient-data";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
+import { CwLink, isCwLinkV1 } from "./patient/cw-patient-data/shared";
 
 export async function getCwInitiator(
   patient: Pick<Patient, "id" | "cxId">,
@@ -35,7 +35,7 @@ export function buildCwOrgNameForFacility({
   oboOid: string | undefined;
 }): string {
   if (oboOid) {
-    return `${vendorName} - ${orgName} -OBO- ${oboOid}`;
+    return `${orgName} (${vendorName})`;
   }
   return `${vendorName} - ${orgName}`;
 }
@@ -67,11 +67,6 @@ export async function validateCWEnabled({
 }): Promise<boolean> {
   const { cxId } = patient;
   const isSandbox = Config.isSandbox();
-
-  if (!isCommonwellEnabledForPatient(patient)) {
-    log(`CW disabled for patient, skipping...`);
-    return false;
-  }
 
   if (forceCW || isSandbox) {
     log(`CW forced, proceeding...`);
@@ -113,11 +108,10 @@ export async function validateCWEnabled({
   }
 }
 
-function isCommonwellEnabledForPatient(patient: Patient): boolean {
-  if (patient.data.genderAtBirth === "U") return false;
-  return true;
-}
-
 export function getLinkOid(link: CwLink): string | undefined {
-  return link.patient?.identifier?.find(identifier => identifier.assigner !== "Commonwell")?.system;
+  if (isCwLinkV1(link)) {
+    return link.patient?.identifier?.find(identifier => identifier.assigner !== "Commonwell")
+      ?.system;
+  }
+  return link.Patient?.managingOrganization?.identifier?.[0]?.system;
 }

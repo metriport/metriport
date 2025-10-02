@@ -1,7 +1,9 @@
 import { ProcessPatientQueryRequest } from "@metriport/core/command/patient-import/steps/query/patient-import-query";
-import { PatientImportQueryLocal } from "@metriport/core/command/patient-import/steps/query/patient-import-query-local";
-import { errorToString } from "@metriport/shared";
-import * as Sentry from "@sentry/serverless";
+import {
+  processPatientQuery,
+  ProcessPatientQueryCommandRequest,
+} from "@metriport/core/command/patient-import/steps/query/patient-import-query-command";
+import { errorToString, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
@@ -24,11 +26,13 @@ const patientImportBucket = getEnvOrFail("PATIENT_IMPORT_BUCKET_NAME");
 const waitTimeInMillisRaw = getEnvOrFail("WAIT_TIME_IN_MILLIS");
 const waitTimeInMillis = parseInt(waitTimeInMillisRaw);
 
-// TODO move to capture.wrapHandler()
-export const handler = Sentry.AWSLambda.wrapHandler(async function handler(event: SQSEvent) {
+export const handler = capture.wrapHandler(async function handler(event: SQSEvent) {
   capture.setExtra({ event, context: lambdaName });
   const startedAt = new Date().getTime();
   try {
+    if (Number.isNaN(waitTimeInMillis)) {
+      throw new MetriportError(`Invalid waitTimeInMillis`, undefined, { waitTimeInMillis });
+    }
     const message = getSingleMessageOrFail(event.Records, lambdaName);
     if (!message) return;
 
@@ -46,8 +50,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(async function handler(event
       )}, patientImportBucket ${patientImportBucket}, waitTimeInMillis ${waitTimeInMillis}`
     );
 
-    const patientImportHandler = new PatientImportQueryLocal(patientImportBucket, waitTimeInMillis);
-    await patientImportHandler.processPatientQuery(parsedBody);
+    const processPatientQueryCmd: ProcessPatientQueryCommandRequest = {
+      ...parsedBody,
+      patientImportBucket,
+      waitTimeAtTheEndInMillis: waitTimeInMillis,
+    };
+    await processPatientQuery(processPatientQueryCmd);
 
     const finishedAt = new Date().getTime();
     console.log(`Done local duration: ${finishedAt - startedAt}ms`);
