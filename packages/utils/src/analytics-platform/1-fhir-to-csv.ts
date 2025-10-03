@@ -105,6 +105,7 @@ async function main({
   const uniquePatientIds = [...new Set(patientsToInsert)];
 
   let filtererdPatientIds: string[] = [];
+  let patientsWithoutConsolidatedData: string[] = [];
   if (checkConsolidatedExists) {
     const localStartedAt = Date.now();
     log(
@@ -116,13 +117,29 @@ async function main({
         localStartedAt
       )}`
     );
-    const difference = uniquePatientIds.filter(id => !filtererdPatientIds.includes(id));
-    log(`>>> Patients without consolidated data (${difference.length}):\n${difference.join(", ")}`);
+    patientsWithoutConsolidatedData = uniquePatientIds.filter(
+      id => !filtererdPatientIds.includes(id)
+    );
+    if (patientsWithoutConsolidatedData.length > 0) {
+      log(
+        `\n>>> Patients without consolidated data (${
+          patientsWithoutConsolidatedData.length
+        }):\n${patientsWithoutConsolidatedData.join("\n")}\n`
+      );
+    } else {
+      log(`>>> All patients have consolidated data!`);
+    }
   } else {
     filtererdPatientIds = uniquePatientIds;
   }
 
-  await displayWarningAndConfirmation(filtererdPatientIds, isAllPatients, orgName, log);
+  await displayWarningAndConfirmation(
+    filtererdPatientIds,
+    isAllPatients,
+    patientsWithoutConsolidatedData,
+    orgName,
+    log
+  );
   log(
     `>>> Running it... ${filtererdPatientIds.length} patients, fhirToCsvJobId: ${fhirToCsvJobId}`
   );
@@ -202,13 +219,19 @@ async function getPatientsWithConsolidatedData({ patientIds }: { patientIds: str
 async function displayWarningAndConfirmation(
   patientsToInsert: string[],
   isAllPatients: boolean,
+  patientsWithoutConsolidatedData: string[],
   orgName: string,
   log: typeof console.log
 ) {
   const allPatientsMsg = isAllPatients ? ` That's all patients of customer ${cxId}!` : "";
+  const patientsWithoutConsolidatedDataMsg =
+    patientsWithoutConsolidatedData.length > 0
+      ? `\n\n>>> HEADS UP! There are ${patientsWithoutConsolidatedData.length} patients without consolidated ` +
+        `data! You should probably run bulk-recreate-consolidated.ts for these patients first.\n`
+      : "";
   const msg =
     `You are about to trigger the conversion of ${patientsToInsert.length} patients of ` +
-    `customer ${orgName} (${cxId}) from JSON to CSV, are you sure?${allPatientsMsg}`;
+    `customer ${orgName} (${cxId}) from JSON to CSV.${allPatientsMsg}${patientsWithoutConsolidatedDataMsg}`;
   log(msg);
   log("Are you sure you want to proceed?");
   const rl = readline.createInterface({
