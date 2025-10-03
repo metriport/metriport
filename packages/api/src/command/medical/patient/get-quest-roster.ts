@@ -15,13 +15,15 @@ import { Pagination, getPaginationFilters, getPaginationLimits } from "../../pag
 
 export type GetQuestRosterParams = {
   pagination?: Pagination;
+  notifications?: boolean;
 };
 
 const MAX_ATTEMPTS_TO_CREATE_EXTERNAL_ID = 2;
 const EXTERNAL_ID_LOOKUP_CONCURRENCY = 10;
 
-function getCommonQueryOptions({ pagination }: GetQuestRosterParams) {
+function getCommonQueryOptions({ pagination, notifications }: GetQuestRosterParams) {
   const order: Order = [["id", "DESC"]];
+  const settingsKey = notifications ? "questMonitoring" : "quest";
 
   return {
     where: {
@@ -32,7 +34,7 @@ function getCommonQueryOptions({ pagination }: GetQuestRosterParams) {
               SELECT 1
               FROM patient_settings ps
               WHERE ps.patient_id = "PatientModelReadOnly"."id"
-              AND ps.subscriptions->'quest' IS NOT NULL
+              AND ps.subscriptions->'${settingsKey}' IS NOT NULL
           )
           `),
       ],
@@ -49,13 +51,16 @@ function getCommonQueryOptions({ pagination }: GetQuestRosterParams) {
   };
 }
 
-export async function getQuestRoster({ pagination }: GetQuestRosterParams): Promise<Patient[]> {
+export async function getQuestRoster({
+  pagination,
+  notifications,
+}: GetQuestRosterParams): Promise<Patient[]> {
   const { log } = out(`Quest roster`);
   log(`Pagination params: ${JSON.stringify(pagination)}`);
 
   try {
     const findOptions: FindOptions<PatientModelReadOnly> = {
-      ...getCommonQueryOptions({ pagination }),
+      ...getCommonQueryOptions({ pagination, notifications }),
     };
 
     const patientResults = await PatientModelReadOnly.findAll(findOptions);

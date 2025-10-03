@@ -21,10 +21,11 @@ dayjs.extend(duration);
 const router = Router();
 
 /** ---------------------------------------------------------------------------
- * GET /internal/quest/roster
+ * GET /internal/quest/roster/:rosterType
  *
  * This is a paginated route.
- * Gets all patients that are enrolled in Quest monitoring.
+ * Gets all patients that are enrolled in Quest monitoring. The roster type can be "backfill" or "notifications", which
+ * determines which setting to use in retrieving patients.
  *
  * @param req.query.fromItem The minimum item to be included in the response, inclusive.
  * @param req.query.toItem The maximum item to be included in the response, inclusive.
@@ -34,15 +35,22 @@ const router = Router();
  * - `meta` - Pagination information, including how to get to the next page.
  */
 router.get(
-  "/roster",
+  "/roster/:rosterType",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
+    const rosterType = getFromParamsOrFail("rosterType", req);
+    if (rosterType !== "backfill" && rosterType !== "notifications") {
+      return res.sendStatus(status.BAD_REQUEST);
+    }
+    const notifications = rosterType === "notifications";
+
     const { meta, items } = await paginated({
       request: req,
       additionalQueryParams: {},
       getItems: (pagination: Pagination) => {
         return getQuestRoster({
           pagination,
+          notifications,
         });
       },
       getTotalCount: () => {
