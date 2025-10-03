@@ -42,7 +42,6 @@ export const handler = capture.wrapHandler(
     req: DocumentDownloaderLambdaRequest | DocumentDownloaderLambdaRequestV1
   ): Promise<DownloadResult> => {
     // TODO ENG-923 revert to the full deconstruction and remove the 'if' statement
-    // const { orgName, orgOid, npi, cxId } = req;
     const { orgName, orgOid, npi, cxId } = req;
 
     let sourceDocument: Document;
