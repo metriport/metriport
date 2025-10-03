@@ -137,14 +137,6 @@ export async function isAthenaCustomFieldsEnabledForCx(cxId: string): Promise<bo
   return cxsWithAthenaCustomFieldsEnabled.includes(cxId);
 }
 
-export async function getCxsWithEnhancedCoverageFeatureFlagValue(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsWithEnhancedCoverageFeatureFlag");
-}
-export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithECEnabled = await getCxsWithEnhancedCoverageFeatureFlagValue();
-  return cxIdsWithECEnabled.some(i => i === cxId);
-}
-
 export async function getCxsWithCQDirectFeatureFlagValue(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithCQDirectFeatureFlag");
 }

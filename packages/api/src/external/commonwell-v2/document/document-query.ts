@@ -7,11 +7,7 @@ import {
   operationOutcomeResourceType,
 } from "@metriport/commonwell-sdk";
 import { ingestIntoSearchEngine } from "@metriport/core/command/consolidated/search/document-reference/ingest";
-import {
-  isCQDirectEnabledForCx,
-  isEnhancedCoverageEnabledForCx,
-  isStalePatientUpdateEnabledForCx,
-} from "@metriport/core/command/feature-flags/domain-ffs";
+import { isStalePatientUpdateEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { reportMetric } from "@metriport/core/external/aws/cloudwatch";
@@ -89,7 +85,6 @@ type File = DownloadResult & { isNew: boolean };
 export async function queryAndProcessDocuments({
   patient: patientParam,
   facilityId,
-  forceQuery = false,
   forcePatientDiscovery = false,
   forceDownload,
   ignoreDocRefOnFHIRServer,
@@ -100,7 +95,6 @@ export async function queryAndProcessDocuments({
 }: {
   patient: Patient;
   facilityId?: string | undefined;
-  forceQuery?: boolean;
   forcePatientDiscovery?: boolean;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
@@ -174,21 +168,6 @@ export async function queryAndProcessDocuments({
       return;
     }
 
-    const [isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
-      isEnhancedCoverageEnabledForCx(cxId),
-      isCQDirectEnabledForCx(cxId),
-    ]);
-
-    const isWaitingForEnhancedCoverage =
-      isECEnabledForThisCx &&
-      patientCWData.cqLinkStatus && // we're not waiting for EC if the patient was created before cqLinkStatus was introduced
-      patientCWData.cqLinkStatus !== "linked";
-
-    const isTriggerDQ = forceQuery || !isWaitingForEnhancedCoverage || isCQDirectEnabledForThisCx;
-
-    if (!isTriggerDQ) return;
-
-    // Only set processing status when we're actually going to process documents
     const startedAt = new Date();
     await setDocQueryProgress({
       patient: { id: patientId, cxId },

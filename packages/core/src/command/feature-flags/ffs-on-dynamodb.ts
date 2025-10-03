@@ -37,7 +37,6 @@ export type FeatureFlagsRecord = z.infer<typeof featureFlagsRecordSchema>;
 
 // TODO 2840 Consider removing this, or just making all FFs optional by default.
 export const initialFeatureFlags: FeatureFlagDatastore = {
-  cxsWithEnhancedCoverageFeatureFlag: { enabled: false, values: [] },
   cxsWithCQDirectFeatureFlag: { enabled: false, values: [] },
   cxsWithCWFeatureFlag: { enabled: false, values: [] },
   cxsWithADHDMRFeatureFlag: { enabled: false, values: [] },
