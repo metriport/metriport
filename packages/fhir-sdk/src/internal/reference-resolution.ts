@@ -9,12 +9,91 @@ import {
 import { ReverseReferenceOptions } from "../types/sdk-types";
 
 /**
- * Check if a reference field expects an array of references
+ * Navigate through a nested path in a resource to get the value at that path.
+ * Handles both simple paths ("subject") and nested paths ("diagnosis.condition").
+ *
+ * For nested paths where the intermediate level is an array:
+ * - "diagnosis.condition" navigates to resource.diagnosis[], extracts .condition from each element
+ * - Returns an array of all reference values found
+ *
+ * For nested paths where the intermediate level is an object:
+ * - "hospitalization.origin" navigates to resource.hospitalization.origin
+ * - Returns the single reference value
+ *
+ * @param resource - The FHIR resource to navigate
+ * @param path - Dot-separated path to the reference field
+ * @returns The value at the path, which could be a reference, array of references, or undefined
+ */
+function getNestedValue(resource: Resource, path: string): unknown {
+  const parts = path.split(".");
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let current: any = resource;
+
+  for (const part of parts) {
+    if (!current) {
+      return undefined;
+    }
+
+    // If current is an array, map over it and collect values
+    if (Array.isArray(current)) {
+      const values = current.map(item => item?.[part]).filter(v => v !== undefined);
+      current = values.length > 0 ? values : undefined;
+    } else {
+      current = current[part];
+    }
+  }
+
+  return current;
+}
+
+/**
+ * Check if a reference field expects an array of references.
+ * Handles both simple paths ("performer") and nested paths ("diagnosis.condition").
+ *
+ * For nested paths, if the intermediate level is an array, the method returns an array.
+ * For example, "diagnosis.condition" returns an array because diagnosis is an array field.
  */
 export function isArrayReferenceField(fieldName: string): boolean {
-  // Known array reference fields
+  // Known simple array reference fields
   const arrayFields = new Set(["performer", "participant", "result", "generalPractitioner"]);
-  return arrayFields.has(fieldName);
+
+  // Check if this is a simple array field
+  if (arrayFields.has(fieldName)) {
+    return true;
+  }
+
+  // For nested paths, check if the base field (first part) is an array
+  // Examples: "diagnosis.condition", "participant.individual", "media.link"
+  if (fieldName.includes(".")) {
+    const parts = fieldName.split(".");
+    const baseField = parts[0];
+
+    // Known base fields that are arrays (and thus make their nested references arrays)
+    const arrayBaseFields = new Set([
+      "diagnosis",
+      "participant",
+      "location",
+      "contact",
+      "qualification",
+      "link",
+      "media",
+      "performer",
+      "attester",
+      "relatesTo",
+      "event",
+      "section",
+      "stage",
+      "evidence",
+      "protocolApplied",
+      "reaction",
+      "ingredient",
+    ]);
+
+    return arrayBaseFields.has(baseField ?? "");
+  }
+
+  return false;
 }
 
 /**
@@ -77,8 +156,8 @@ export function resolveReference(
     return undefined;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const referenceValue = (resource as any)[referenceField];
+  // Use getNestedValue to handle both simple and nested paths
+  const referenceValue = getNestedValue(resource, referenceField);
   if (!referenceValue) {
     // FR-5.6: Return appropriate empty value for missing references
     return isArrayReferenceField(referenceField) ? [] : undefined;

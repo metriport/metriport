@@ -14,10 +14,10 @@ describe("Reverse References", () => {
       // - diagnostic-report-002 (subject)
       const referencingResources = sdk.getResourcesReferencingId("patient-123");
 
-      expect(referencingResources).toHaveLength(3);
+      expect(referencingResources).toHaveLength(4);
 
       const resourceTypes = referencingResources.map(r => r.resourceType).sort();
-      expect(resourceTypes).toEqual(["DiagnosticReport", "Encounter", "Observation"]);
+      expect(resourceTypes).toEqual(["Condition", "DiagnosticReport", "Encounter", "Observation"]);
     });
 
     it("should return empty array when no resources reference the given ID", async () => {
@@ -104,7 +104,7 @@ describe("Reverse References", () => {
         referenceField: "subject",
       });
 
-      expect(subjectReferences).toHaveLength(3);
+      expect(subjectReferences).toHaveLength(4);
       expect(
         subjectReferences.every(r => {
           const resource = r as any;
@@ -167,9 +167,9 @@ describe("Reverse References", () => {
 
       const referencingResources = (patient as any).getReferencingResources();
 
-      expect(referencingResources).toHaveLength(3);
+      expect(referencingResources).toHaveLength(4);
       const resourceTypes = referencingResources.map((r: any) => r.resourceType).sort();
-      expect(resourceTypes).toEqual(["DiagnosticReport", "Encounter", "Observation"]);
+      expect(resourceTypes).toEqual(["Condition", "DiagnosticReport", "Encounter", "Observation"]);
     });
 
     it("should support filtering options on smart resource method", async () => {
@@ -192,7 +192,7 @@ describe("Reverse References", () => {
         referenceField: "subject",
       });
 
-      expect(subjectReferences).toHaveLength(3);
+      expect(subjectReferences).toHaveLength(4);
     });
 
     it("should return empty array when smart resource is not referenced", async () => {

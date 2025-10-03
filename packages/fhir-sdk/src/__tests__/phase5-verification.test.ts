@@ -331,4 +331,177 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
       expect(inspected).not.toContain("__isSmartResource");
     });
   });
+
+  describe("Nested Reference Path Resolution", () => {
+    describe("Encounter.diagnosis.condition", () => {
+      it("should resolve diagnosis.condition nested array reference", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const encounters = sdk.getEncounters();
+
+        expect(encounters.length).toBeGreaterThan(0);
+        const encounter = encounters[0]!;
+
+        expect(typeof encounter.getDiagnosisCondition).toBe("function");
+        const conditions = encounter.getDiagnosisCondition();
+
+        expect(Array.isArray(conditions)).toBe(true);
+        expect(conditions.length).toBe(1);
+        expect(conditions[0]?.resourceType).toBe("Condition");
+        expect(conditions[0]?.id).toBe("condition-222");
+      });
+
+      it("should preserve original diagnosis array field", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const encounters = sdk.getEncounters();
+
+        expect(encounters.length).toBeGreaterThan(0);
+        const encounter = encounters[0]!;
+
+        expect(encounter.diagnosis).toBeDefined();
+        expect(Array.isArray(encounter.diagnosis)).toBe(true);
+        expect(encounter.diagnosis?.[0]?.condition).toEqual({
+          reference: "Condition/condition-222",
+        });
+      });
+    });
+
+    describe("Encounter.participant.individual", () => {
+      it("should resolve participant.individual nested array reference", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const encounters = sdk.getEncounters();
+
+        expect(encounters.length).toBeGreaterThan(0);
+        const encounter = encounters[0]!;
+
+        expect(typeof encounter.getParticipants).toBe("function");
+        const participants = encounter.getParticipants();
+
+        expect(Array.isArray(participants)).toBe(true);
+        expect(participants.length).toBe(1);
+        expect(participants[0]?.resourceType).toBe("Practitioner");
+        expect(participants[0]?.id).toBe("practitioner-456");
+      });
+    });
+
+    describe("Encounter.location.location", () => {
+      it("should resolve location.location nested array reference", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const encounters = sdk.getEncounters();
+
+        expect(encounters.length).toBeGreaterThan(0);
+        const encounter = encounters[0]!;
+
+        expect(typeof encounter.getLocation).toBe("function");
+        const locations = encounter.getLocation();
+
+        expect(Array.isArray(locations)).toBe(true);
+        expect(locations.length).toBe(1);
+        expect(locations[0]?.resourceType).toBe("Location");
+        expect(locations[0]?.id).toBe("location-111");
+      });
+    });
+
+    describe("Encounter.hospitalization.origin", () => {
+      it("should resolve hospitalization.origin nested single reference", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const encounters = sdk.getEncounters();
+
+        expect(encounters.length).toBeGreaterThan(0);
+        const encounter = encounters[0]!;
+
+        expect(typeof encounter.getHospitalizationOrigin).toBe("function");
+        const origin = encounter.getHospitalizationOrigin();
+
+        expect(origin).toBeDefined();
+        expect(origin?.resourceType).toBe("Location");
+        expect(origin?.id).toBe("location-111");
+      });
+    });
+
+    describe("Encounter.hospitalization.destination", () => {
+      it("should resolve hospitalization.destination nested single reference", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const encounters = sdk.getEncounters();
+
+        expect(encounters.length).toBeGreaterThan(0);
+        const encounter = encounters[0]!;
+
+        expect(typeof encounter.getHospitalizationDestination).toBe("function");
+        const destination = encounter.getHospitalizationDestination();
+
+        expect(destination).toBeDefined();
+        expect(destination?.resourceType).toBe("Location");
+        expect(destination?.id).toBe("location-111");
+      });
+    });
+
+    describe("Patient.contact.organization", () => {
+      it("should resolve contact.organization nested array reference", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const patients = sdk.getPatients();
+
+        expect(patients.length).toBeGreaterThan(0);
+        const patient = patients[0]!;
+
+        expect(typeof patient.getContactOrganization).toBe("function");
+        const organizations = patient.getContactOrganization();
+
+        expect(Array.isArray(organizations)).toBe(true);
+        expect(organizations.length).toBe(1);
+        expect(organizations[0]?.resourceType).toBe("Organization");
+        expect(organizations[0]?.id).toBe("org-123");
+      });
+    });
+
+    describe("Practitioner.qualification.issuer", () => {
+      it("should resolve qualification.issuer nested array reference", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const practitioners = sdk.getPractitioners();
+
+        expect(practitioners.length).toBeGreaterThan(0);
+        const practitioner = practitioners[0]!;
+
+        expect(typeof practitioner.getQualificationIssuer).toBe("function");
+        const issuers = practitioner.getQualificationIssuer();
+
+        expect(Array.isArray(issuers)).toBe(true);
+        expect(issuers.length).toBe(1);
+        expect(issuers[0]?.resourceType).toBe("Organization");
+        expect(issuers[0]?.id).toBe("org-123");
+      });
+    });
+
+    describe("Missing nested references", () => {
+      it("should return empty array when nested array reference field is missing", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const diagnosticReports = sdk.getDiagnosticReports();
+
+        expect(diagnosticReports.length).toBeGreaterThan(0);
+        const report = diagnosticReports[0]!;
+
+        // DiagnosticReport has no media.link in our fixture
+        expect(typeof report.getMediaLink).toBe("function");
+        const mediaLinks = report.getMediaLink();
+
+        expect(Array.isArray(mediaLinks)).toBe(true);
+        expect(mediaLinks.length).toBe(0);
+      });
+
+      it("should return undefined when nested single reference field is missing", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const patients = sdk.getPatients();
+
+        expect(patients.length).toBeGreaterThan(0);
+        const patient = patients[0]!;
+
+        // Patient has no link.other in our fixture
+        expect(typeof patient.getLinkOther).toBe("function");
+        const linkOthers = patient.getLinkOther();
+
+        // getLinkOther returns an array since link is an array field
+        expect(Array.isArray(linkOthers)).toBe(true);
+        expect(linkOthers.length).toBe(0);
+      });
+    });
+  });
 });
