@@ -31,9 +31,11 @@ const questionsByResourceType = {
     "What was the context in which this lab was taken?",
   ],
   Condition: [
-    "When was this diagnosed and by who?",
-    "What is the reasoning for the diagnosis",
-    "Are there any related notes on the diagnosis",
+    "- How was this diagnosed?",
+    "- How did this come to be?",
+    "- Where, when, and by whom was this diagnosed?",
+    "- Is there any documentation (notes, reports, imaging) associated with this condition? If so, what are they?",
+    "- If present, what is the plan to treat this resource in the future? Are there any follow-up appointments, medications, or other plans in the source document?",
   ],
 };
 
