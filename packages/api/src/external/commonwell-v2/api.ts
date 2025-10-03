@@ -52,7 +52,7 @@ export function makeCommonWellAPI(
   orgName: string,
   orgOID: string,
   npi: string,
-  queryGrantorOid?: string
+  queryGrantorOid?: string | undefined
 ): CommonWellAPI {
   if (Config.isSandbox()) {
     return new CommonWellMock(orgName, orgOID);
