@@ -263,7 +263,6 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       vpc: props.vpc,
       analyticsBucket: analyticsPlatformBucket,
       alarmAction: props.alarmAction,
-      analyticsBucket: analyticsPlatformBucket,
     });
     this.dbCredsSecret = dbCredsSecret;
 
