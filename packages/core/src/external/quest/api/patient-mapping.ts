@@ -20,7 +20,7 @@ export async function getPatientMapping(
 ): Promise<PatientMapping> {
   const { log } = out(`Quest getPatientMapping - externalId ${externalId}`);
   const api = axiosInstance ?? axios.create({ baseURL: Config.getApiUrl() });
-  const getPatientMappingUrl = `/internal/quest/patient/${externalId}`;
+  const getPatientMappingUrl = `/internal/quest/patient-mapping/${externalId}`;
   try {
     const response = await executeWithNetworkRetries(async () => {
       return api.get(getPatientMappingUrl);
