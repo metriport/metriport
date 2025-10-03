@@ -24,14 +24,12 @@ export async function recreateConsolidated({
   context,
   requestId,
   isDq = false,
-  useMostRecentAiSummary = false,
 }: {
   patient: Patient;
   conversionType?: ConsolidationConversionType;
   context?: string;
   requestId?: string;
   isDq?: boolean;
-  useMostRecentAiSummary?: boolean;
 }): Promise<void> {
   const { log } = out(`${context ? context + " " : ""}recreateConsolidated - pt ${patient.id}`);
   try {
@@ -45,7 +43,7 @@ export async function recreateConsolidated({
   try {
     if (conversionType) {
       log(`Getting consolidated bundle with conversion type ${conversionType} (sync)`);
-      await getConsolidated({ patient, conversionType, useMostRecentAiSummary });
+      await getConsolidated({ patient, conversionType });
       log(`Consolidated recreated`);
     } else {
       log(`Building consolidated bundle without conversion (async)`);

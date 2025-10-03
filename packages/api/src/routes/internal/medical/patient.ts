@@ -1100,22 +1100,14 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const useMostRecentAiSummary = getFrom("query").optional("useMostRecentAiSummary", req);
     const id = getFromParamsOrFail("id", req);
-    const { log } = out(
-      `consolidated/refresh, cx - ${cxId}, pt - ${id} useMostRecentAiSummary - ${useMostRecentAiSummary}`
-    );
+    const { log } = out(`consolidated/refresh, cx - ${cxId}, pt - ${id} `);
 
     const patient = await getPatientOrFail({ id, cxId });
     const requestId = uuidv7();
 
     try {
-      await recreateConsolidated({
-        patient,
-        context: "internal",
-        requestId,
-        useMostRecentAiSummary,
-      });
+      await recreateConsolidated({ patient, context: "internal", requestId });
       log(`Done recreating consolidated`);
     } catch (err) {
       const msg = `Error recreating consolidated`;
