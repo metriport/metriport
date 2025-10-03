@@ -253,17 +253,6 @@ export async function isRecentVisitAiSummaryEnabledForCx(cxId: string): Promise<
   return cxIdsWithRecentVisitAiSummaryEnabled.some(i => i === cxId);
 }
 
-export async function getCxsWithHl7NotificationWebhookFeatureFlag(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsWithHl7NotificationWebhookFeatureFlag");
-}
-export async function isHl7NotificationWebhookFeatureFlagEnabledForCx(
-  cxId: string
-): Promise<boolean> {
-  const cxIdsWithHl7NotificationWebhookEnabled =
-    await getCxsWithHl7NotificationWebhookFeatureFlag();
-  return cxIdsWithHl7NotificationWebhookEnabled.some(i => i === cxId);
-}
-
 // ENG-536 remove this once we automatically find the discharge summary
 export async function getCxsWithDischargeSlackNotificationFeatureFlag(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithDischargeSlackNotificationFeatureFlag");
