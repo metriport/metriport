@@ -272,7 +272,12 @@ async function internalGetDocuments({
       additionalDimension: "CommonWell",
     });
   }
-  const commonWell = makeCommonWellAPI(initiator.name, initiator.oid, initiator.npi);
+  const commonWell = makeCommonWellAPI(
+    initiator.name,
+    initiator.oid,
+    initiator.npi,
+    initiator.queryGrantorOid
+  );
 
   const docs: CwDocumentReference[] = [];
   const cwErrs: OperationOutcome[] = [];
