@@ -827,21 +827,23 @@ export class APIStack extends Stack {
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
-    createUploadRosterScheduledLambda({
-      lambdaLayers,
-      stack: this,
-      vpc: this.vpc,
-      apiAddress: apiDirectUrl,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
+    if (props.config.quest) {
+      createUploadRosterScheduledLambda({
+        lambdaLayers,
+        stack: this,
+        vpc: this.vpc,
+        apiAddress: apiDirectUrl,
+        alarmSnsAction: slackNotification?.alarmAction,
+      });
 
-    createDownloadResponseScheduledLambda({
-      lambdaLayers,
-      stack: this,
-      vpc: this.vpc,
-      apiAddress: apiDirectUrl,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
+      createDownloadResponseScheduledLambda({
+        lambdaLayers,
+        stack: this,
+        vpc: this.vpc,
+        apiAddress: apiDirectUrl,
+        alarmSnsAction: slackNotification?.alarmAction,
+      });
+    }
 
     //-------------------------------------------
     // API Gateway
