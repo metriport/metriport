@@ -5,6 +5,11 @@ import {
 import { getArtifact } from "./shared";
 
 describe("Quest source document generator", () => {
+  beforeAll(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2025-08-22T12:00:00-07:00"));
+  });
+
   it("should split a response file into source documents with a single patient", () => {
     const responseFile = getArtifact("response/single-patient.txt");
     const sourceDocuments = splitResponseFileIntoSourceDocuments({
@@ -17,10 +22,10 @@ describe("Quest source document generator", () => {
 
     // The file only has one patient, so there should only be a single source document
     expect(firstSourceDocument.fileName).toBe(
-      "ptId=0A1B2C3D4E5F6G7/dateId=202501010102/0A1B2C3D4E5F6G7_202501010102_source.tsv"
+      "externalId=0A1B2C3D4E5F6G7/dateId=202501010102/0A1B2C3D4E5F6G7_202501010102_source.tsv"
     );
     expect(firstSourceDocument.fileContent.toString()).toBe(responseFile.toString());
-    expect(firstSourceDocument.patientId).toBe("0A1B2C3D4E5F6G7");
+    expect(firstSourceDocument.externalId).toBe("0A1B2C3D4E5F6G7");
   });
 
   it("should split multiple response files into source documents", () => {
