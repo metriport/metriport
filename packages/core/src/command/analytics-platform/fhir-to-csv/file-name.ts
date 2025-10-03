@@ -62,7 +62,36 @@ export function parseTableNameFromFhirToCsvIncrementalFileKey(key: string): stri
   const tableName =
     fileNameWithExt?.substring(0, fileNameWithExt.lastIndexOf(".")) ?? fileNameWithExt;
   if (!tableName) {
-    throw new MetriportError(`Failed to parse tableName from fhirToCsvFileKey`, undefined, { key });
+    throw new MetriportError(
+      `Failed to parse tableName from fhirToCsvIncrementalFileKey`,
+      undefined,
+      { key }
+    );
   }
   return tableName;
+}
+
+export function parseResourceTypeFromConfigurationFileName(fileName: string): string {
+  const resourceType = fileName.split("_").slice(1).join("_")?.replace(".ini", "")?.toLowerCase();
+  if (!resourceType) {
+    throw new MetriportError(
+      `Failed to parse resourceType from configuration fileName`,
+      undefined,
+      { fileName }
+    );
+  }
+  return resourceType;
+}
+
+export function buildCoreSchemaS3Prefix({ cxId }: { cxId: string }): string {
+  return `core-schema/cx=${cxId}`;
+}
+export function buildCoreTableS3Prefix({
+  cxId,
+  tableName,
+}: {
+  cxId: string;
+  tableName: string;
+}): string {
+  return `${buildCoreSchemaS3Prefix({ cxId })}/${tableName}.csv`;
 }

@@ -1,30 +1,45 @@
-import { DbCreds } from "@metriport/shared";
+import { DbCredsWithSchema } from "@metriport/shared";
 import { Client } from "pg";
 import { capture, out } from "../../../util";
 import {
   getCreateCxDbCommand,
-  getCreateDbUserCommand,
+  getCreateDbUserIfNotExistsCommand,
+  getCreateSchemaCommand,
   getCxDbExistsCommand,
   getCxDbName,
   getGrantAccessToDbUserCommand,
+  getGrantFullAccessToAllSchemasCommand,
+  getSchemaExistsCommand,
+  rawDbSchema,
 } from "./db-asset-defs";
 
+export type SingleUserAndPassword = { username: string; password: string };
+
+export type UsersToCreateAndGrantAccess = {
+  f2c: SingleUserAndPassword;
+  r2c: SingleUserAndPassword;
+};
+
 /**
- * Streams patient CSV files from S3 and inserts them into PostgreSQL database.
- * Each CSV file represents a FHIR resource type (e.g., Patient, Condition, Encounter).
+ * Creates the customer analytics database in the main analytics DB instance, and set it up
+ * for usage.
+ *
+ * It also creates the additional users if provided. Those are typically dedicated users with
+ * limited access, used for specific purposes, like lambda functions.
  *
  * @param param.cxId - Customer ID
- * @param param.region - AWS region
  * @param param.dbCreds - Database credentials
+ * @param param.dbUsersToCreateAndGrantAccess - Additional users to create and grant access to
+ *                                              the database
  */
 export async function setupCustomerAnalyticsDb({
   cxId,
   dbCreds,
-  lambdaUsers,
+  dbUsersToCreateAndGrantAccess,
 }: {
   cxId: string;
-  dbCreds: DbCreds;
-  lambdaUsers: { username: string; password: string }[];
+  dbCreds: DbCredsWithSchema;
+  dbUsersToCreateAndGrantAccess: UsersToCreateAndGrantAccess;
 }): Promise<void> {
   const { log } = out(`setupCustomerAnalyticsDb - cx ${cxId}`);
 
@@ -41,10 +56,9 @@ export async function setupCustomerAnalyticsDb({
     })}`
   );
 
-  let dbClient = new Client({
+  const dbClient = new Client({
     host: dbCreds.host,
     port: dbCreds.port,
-    // connect to the main analytics db
     database: dbCreds.dbname,
     user: dbCreds.username,
     password: dbCreds.password,
@@ -53,22 +67,16 @@ export async function setupCustomerAnalyticsDb({
     const cxDbName = getCxDbName(cxId, dbCreds.dbname);
     await dbClient.connect();
     log(`Connected to database`);
-    await createCustomerAnalyticsDb({ dbClient, cxDbName, log });
-    await dbClient.end();
-    log(`Disconnected from main database, connecting again to the cx db...`);
 
-    dbClient = new Client({
-      host: dbCreds.host,
-      port: dbCreds.port,
-      database: cxDbName,
-      user: dbCreds.username,
-      password: dbCreds.password,
-    });
-    await dbClient.connect();
-    await createLambdasUsersInAnalyticsDb({
+    await initializeDbInstanceIfNeeded({ dbClient, log });
+
+    await createCustomerAnalyticsDb({ dbClient, cxDbName, schemaName: dbCreds.schemaName, log });
+
+    await createUsersInAnalyticsDb({
       dbClient,
       dbName: cxDbName,
-      lambdaUsers,
+      schemaName: dbCreds.schemaName,
+      dbUsersToCreateAndGrantAccess,
     });
     log(`Successfully created analytics database and lambdas users`);
   } finally {
@@ -77,40 +85,79 @@ export async function setupCustomerAnalyticsDb({
   }
 }
 
+async function initializeDbInstanceIfNeeded({
+  dbClient,
+  log,
+}: {
+  dbClient: Client;
+  log: typeof console.log;
+}): Promise<void> {
+  const cmdExists = `SELECT extname, extversion FROM pg_extension WHERE extname = 'aws_s3'`;
+  const exists = await dbClient.query(cmdExists);
+  if (exists.rowCount > 0) return;
+  const cmdCreate = `CREATE EXTENSION aws_s3 CASCADE`;
+  await dbClient.query(cmdCreate);
+  log(`Created aws_s3 extension`);
+}
+
 async function createCustomerAnalyticsDb({
   dbClient,
   cxDbName,
+  schemaName,
   log,
 }: {
   dbClient: Client;
   cxDbName: string;
+  schemaName: string;
   log: typeof console.log;
 }): Promise<void> {
-  const cmdExists = getCxDbExistsCommand({ cxDbName });
-  const exists = await dbClient.query(cmdExists);
-  if (exists.rowCount > 0) {
-    log(`Database ${cxDbName} already exists, continuing...`);
-    return;
+  const cmdDbExists = getCxDbExistsCommand({ cxDbName });
+  const dbExists = await dbClient.query(cmdDbExists);
+  if (dbExists.rowCount < 1) {
+    const cmdCreate = getCreateCxDbCommand({ cxDbName });
+    await dbClient.query(cmdCreate);
+    log(`Database ${cxDbName} created`);
+  } else {
+    log(`Database ${cxDbName} already exists`);
   }
-  const cmdCreate = getCreateCxDbCommand({ cxDbName });
-  await dbClient.query(cmdCreate);
+
+  const cmdSchemaExists = getSchemaExistsCommand({ schemaName });
+  const schemaExists = await dbClient.query(cmdSchemaExists);
+  if (schemaExists.rowCount < 1) {
+    const cmdCreate = getCreateSchemaCommand({ schemaName });
+    await dbClient.query(cmdCreate);
+    log(`Schema ${rawDbSchema} created`);
+  } else {
+    log(`Schema ${rawDbSchema} already exists`);
+  }
 }
 
-async function createLambdasUsersInAnalyticsDb({
+async function createUsersInAnalyticsDb({
   dbClient,
   dbName,
-  lambdaUsers,
+  schemaName,
+  dbUsersToCreateAndGrantAccess,
 }: {
   dbClient: Client;
   dbName: string;
-  lambdaUsers: { username: string; password: string }[];
+  schemaName: string;
+  dbUsersToCreateAndGrantAccess: UsersToCreateAndGrantAccess;
 }): Promise<void> {
-  const promises = lambdaUsers.map(async ({ username, password }) => {
-    const cmdCreate = getCreateDbUserCommand({ username, password });
-    await dbClient.query(cmdCreate);
+  const { f2c, r2c } = dbUsersToCreateAndGrantAccess;
 
-    const cmdGrant = getGrantAccessToDbUserCommand({ dbName, username });
-    await dbClient.query(cmdGrant);
+  const cmdCreateF2c = getCreateDbUserIfNotExistsCommand({
+    username: f2c.username,
+    password: f2c.password,
   });
-  for (const promise of promises) await promise;
+  await dbClient.query(cmdCreateF2c);
+  const cmdGrantF2c = getGrantAccessToDbUserCommand({ dbName, schemaName, username: f2c.username });
+  await dbClient.query(cmdGrantF2c);
+
+  const cmdCreateR2c = getCreateDbUserIfNotExistsCommand({
+    username: r2c.username,
+    password: r2c.password,
+  });
+  await dbClient.query(cmdCreateR2c);
+  const cmdGrantR2c = getGrantFullAccessToAllSchemasCommand({ dbName, username: r2c.username });
+  await dbClient.query(cmdGrantR2c);
 }

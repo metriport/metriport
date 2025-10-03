@@ -1,3 +1,5 @@
+export const rawDbSchema = "raw";
+
 export const tableJobName = "metriport_incremental_job";
 
 export const columnPatientIdName = "m_patient_id";
@@ -12,11 +14,16 @@ export const columnJobIdDefinition = `${columnJobIdName} ${defaultColumnType}`;
 
 export const additionalColumnDefs = `${columnPatientIdDefinition}, ${columnJobIdDefinition}`;
 
-export const createTableJobCommand =
-  `CREATE TABLE IF NOT EXISTS ${tableJobName} (` +
-  `id VARCHAR PRIMARY KEY, ${columnPatientIdDefinition})`;
+export function getCreateTableJobCommand(schemaName: string): string {
+  return (
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableJobName} (` +
+    `id VARCHAR PRIMARY KEY, ${columnPatientIdDefinition})`
+  );
+}
 
-export const insertTableJobCommand = `INSERT INTO ${tableJobName} (id, ${columnPatientIdName}) VALUES ($1, $2)`;
+export function getInsertTableJobCommand(schemaName: string): string {
+  return `INSERT INTO ${schemaName}.${tableJobName} (id, ${columnPatientIdName}) VALUES ($1, $2)`;
+}
 
 export function getCreateTableCommand(tableName: string, columnsDef: string): string {
   return (
@@ -40,11 +47,11 @@ export function getCreateViewJobCommand(tableName: string): { cmd: string; viewN
   const cmd = `CREATE or replace VIEW ${viewName} as
           SELECT a.*
           FROM ${tableName} a
-            join ${tableJobName} j on
+            join ${rawDbSchema}.${tableJobName} j on
               a.${columnJobIdName} = j.id and 
               a.${columnPatientIdName} = j.${columnPatientIdName}
           WHERE j.id = (
-            select max(id) from ${tableJobName} jj
+            select max(id) from ${rawDbSchema}.${tableJobName} jj
             where jj.${columnPatientIdName} = a.${columnPatientIdName}
           );`;
   return { cmd, viewName };
@@ -79,8 +86,14 @@ export function getCreateCxDbCommand({ cxDbName }: { cxDbName: string }): string
 export function getCxDbExistsCommand({ cxDbName }: { cxDbName: string }): string {
   return `SELECT 1 FROM pg_database WHERE datname = '${cxDbName}'`;
 }
+export function getCreateSchemaCommand({ schemaName }: { schemaName: string }): string {
+  return `CREATE SCHEMA IF NOT EXISTS "${schemaName}"`;
+}
+export function getSchemaExistsCommand({ schemaName }: { schemaName: string }): string {
+  return `SELECT TRUE FROM information_schema.schemata WHERE schema_name = '${schemaName}'`;
+}
 
-export function getCreateDbUserCommand({
+export function getCreateDbUserIfNotExistsCommand({
   username,
   password,
 }: {
@@ -90,13 +103,35 @@ export function getCreateDbUserCommand({
   const cmd = `DO $$
     BEGIN
         IF NOT EXISTS (SELECT 1 FROM pg_user WHERE usename = '${username}') THEN
-            CREATE USER '${username}' WITH PASSWORD '${password}';
+            CREATE USER ${username} WITH PASSWORD '${password}';
         END IF;
     END
     $$;`;
   return cmd;
 }
+
 export function getGrantAccessToDbUserCommand({
+  dbName,
+  schemaName,
+  username,
+}: {
+  dbName: string;
+  schemaName: string;
+  username: string;
+}): string {
+  const cmd = `GRANT CONNECT ON DATABASE ${dbName} TO ${username};
+    GRANT ALL ON SCHEMA ${schemaName} TO ${username};
+    GRANT ALL ON ALL TABLES IN SCHEMA ${schemaName} TO ${username};
+    GRANT ALL ON ALL SEQUENCES IN SCHEMA ${schemaName} TO ${username};
+    GRANT ALL ON ALL ROUTINES IN SCHEMA ${schemaName} TO ${username};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA ${schemaName} GRANT ALL ON TABLES TO ${username};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA ${schemaName} GRANT ALL ON SEQUENCES TO ${username};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA ${schemaName} GRANT ALL ON ROUTINES TO ${username};
+    `;
+  return cmd;
+}
+
+export function getGrantFullAccessToAllSchemasCommand({
   dbName,
   username,
 }: {
@@ -104,15 +139,25 @@ export function getGrantAccessToDbUserCommand({
   username: string;
 }): string {
   const cmd = `GRANT CONNECT ON DATABASE ${dbName} TO ${username};
-    GRANT USAGE ON SCHEMA public TO ${username};
-    grant all on schema public to ${username};
-    grant all on all tables in schema public to ${username};
-    grant all on all sequences in schema public to ${username};
-    grant all on all functions in schema public to ${username};
-    grant all on all procedures in schema public to ${username};
-    grant all on all routines in schema public to ${username};
-    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ${username};
-    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO ${username};
+    GRANT CREATE ON DATABASE ${dbName} TO ${username};
+    DO $$
+    DECLARE
+        schema_name text;
+    BEGIN
+        FOR schema_name IN 
+            SELECT s.schema_name 
+            FROM information_schema.schemata s
+            WHERE s.schema_name NOT IN ('pg_catalog', 'information_schema', 'pg_toast', 'pg_temp_1', 'pg_toast_temp_1')
+        LOOP
+            EXECUTE format('GRANT ALL ON SCHEMA %I TO %I', schema_name, '${username}');
+            EXECUTE format('GRANT ALL ON ALL TABLES IN SCHEMA %I TO %I', schema_name, '${username}');
+            EXECUTE format('GRANT ALL ON ALL SEQUENCES IN SCHEMA %I TO %I', schema_name, '${username}');
+            EXECUTE format('GRANT ALL ON ALL ROUTINES IN SCHEMA %I TO %I', schema_name, '${username}');
+            EXECUTE format('ALTER DEFAULT PRIVILEGES IN SCHEMA %I GRANT ALL ON TABLES TO %I', schema_name, '${username}');
+            EXECUTE format('ALTER DEFAULT PRIVILEGES IN SCHEMA %I GRANT ALL ON SEQUENCES TO %I', schema_name, '${username}');
+            EXECUTE format('ALTER DEFAULT PRIVILEGES IN SCHEMA %I GRANT ALL ON ROUTINES TO %I', schema_name, '${username}');
+        END LOOP;
+    END $$;
     `;
   return cmd;
 }

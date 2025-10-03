@@ -23,6 +23,7 @@ type QueueAndLambdaSettingsBase = {
     timeout: Duration;
     reservedConcurrentExecutions?: number;
     ephemeralStorageSize?: Size;
+    runtime?: LambdaSettings["runtime"];
   };
   queue: {
     fifo?: boolean;
@@ -61,3 +62,11 @@ export type LambdaSettingsWithNameAndEntry = Pick<
   QueueAndLambdaSettings,
   "name" | "entry" | "lambda"
 >;
+
+export type LambdaSettingsV2 = LambdaSettings & {
+  entry: string;
+};
+export type LambdaSetup = {
+  name: string;
+  lambda: LambdaSettingsV2;
+};

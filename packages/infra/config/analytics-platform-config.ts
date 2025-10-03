@@ -5,6 +5,7 @@ export interface AnalyticsPlatformConfig {
   secretNames: {
     SNOWFLAKE_CREDS: string;
     FHIR_TO_CSV_DB_PASSWORD: string;
+    RAW_TO_CORE_DB_PASSWORD: string;
   };
   snowflake: {
     warehouse: string;
@@ -15,5 +16,6 @@ export interface AnalyticsPlatformConfig {
   };
   rds: RDSConfigExtended & {
     fhirToCsvDbUsername: string;
+    rawToCoreDbUsername: string;
   };
 }
