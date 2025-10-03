@@ -1,7 +1,7 @@
 import {
   parseAdtSubscriptionRequest,
   parsePatientSettingsRequest,
-  parseQuestMonitoringRequest,
+  parseQuestPatientRequest,
 } from "@metriport/core/domain/patient-settings";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -123,11 +123,12 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const { patientIds } = parseQuestMonitoringRequest(req.body);
+    const { notifications, patientIds } = parseQuestPatientRequest(req.body);
 
     const result = await addQuestSubscriptionToPatients({
       cxId,
       patientIds,
+      notifications,
     });
 
     return res.status(status.OK).json(result);
@@ -149,11 +150,12 @@ router.delete(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const { patientIds } = parseQuestMonitoringRequest(req.body);
+    const { notifications, patientIds } = parseQuestPatientRequest(req.body);
 
     const result = await removeQuestSubscriptionFromPatients({
       cxId,
       patientIds,
+      notifications,
     });
 
     return res.status(status.OK).json(result);

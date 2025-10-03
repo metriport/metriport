@@ -4,8 +4,8 @@ import {
   createQueryMetaSchema,
   PatientSettingsRequest,
   patientSettingsRequestSchema,
-  QuestMonitoringRequest,
-  questMonitoringRequestSchema,
+  QuestPatientRequest,
+  questPatientRequestSchema,
 } from "@metriport/shared";
 import { z } from "zod";
 import {
@@ -20,6 +20,7 @@ const { log } = out("PatientSettings");
 export type Subscriptions = {
   adt?: string[];
   quest?: boolean;
+  questMonitoring?: boolean;
 };
 
 export type PatientSettingsData = {
@@ -74,6 +75,6 @@ export function parseAdtSubscriptionRequest(data: unknown): AdtSubscriptionReque
   return result;
 }
 
-export function parseQuestMonitoringRequest(data: unknown): QuestMonitoringRequest {
-  return questMonitoringRequestSchema.parse(data);
+export function parseQuestPatientRequest(data: unknown): QuestPatientRequest {
+  return questPatientRequestSchema.parse(data);
 }

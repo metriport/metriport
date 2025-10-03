@@ -14,9 +14,11 @@ import { PatientListProcessingResult, verifyPatients } from "./common";
 export async function addQuestSubscriptionToPatients({
   cxId,
   patientIds,
+  notifications,
 }: {
   cxId: string;
   patientIds: string[];
+  notifications?: boolean;
 }): Promise<PatientListProcessingResult> {
   const { validPatientIds, invalidPatientIds: patientsNotFound } = await verifyPatients({
     cxId,
@@ -27,6 +29,7 @@ export async function addQuestSubscriptionToPatients({
     await _addQuestSubscriptionToPatients({
       patientIds: batch,
       cxId,
+      notifications,
     });
   }
 
@@ -53,9 +56,11 @@ export async function addQuestSubscriptionToPatients({
 export async function removeQuestSubscriptionFromPatients({
   cxId,
   patientIds,
+  notifications,
 }: {
   cxId: string;
   patientIds: string[];
+  notifications?: boolean;
 }): Promise<PatientListProcessingResult> {
   const { validPatientIds, invalidPatientIds: patientsNotFound } = await verifyPatients({
     cxId,
@@ -66,13 +71,14 @@ export async function removeQuestSubscriptionFromPatients({
     await _removeQuestSubscriptionsFromPatients({
       patientIds: batch,
       cxId,
+      notifications,
     });
   }
 
   const result = await processPatientsInBatches(validPatientIds, batchProcessor, {
     cxId,
     operationName: "removeQuestSubscriptionFromPatients",
-    errorMessage: "Failed to remove Quest monitoring subscriptions for patients",
+    errorMessage: "Failed to remove Quest settings for patients",
     throwOnNoPatients: true,
   });
 
@@ -88,14 +94,17 @@ export async function removeQuestSubscriptionFromPatients({
 async function _addQuestSubscriptionToPatients({
   patientIds,
   cxId,
+  notifications,
 }: {
   patientIds: string[];
   cxId: string;
+  notifications?: boolean;
 }): Promise<void> {
   const sequelize = PatientSettingsModel.sequelize;
   if (!sequelize) {
     throw new Error("Sequelize instance not available");
   }
+  const settingsKey: "quest" | "questMonitoring" = notifications ? "questMonitoring" : "quest";
 
   // Create patient settings records for patients who don't have them yet
   await PatientSettingsModel.bulkCreate(
@@ -104,7 +113,7 @@ async function _addQuestSubscriptionToPatients({
       cxId,
       patientId,
       subscriptions: {
-        quest: true,
+        [settingsKey]: true,
       },
     })),
     {
@@ -118,13 +127,13 @@ async function _addQuestSubscriptionToPatients({
     UPDATE patient_settings 
     SET 
         subscriptions = CASE 
-            WHEN subscriptions IS NULL OR jsonb_typeof(subscriptions) != 'object' THEN '{"quest": true}'::jsonb
-            ELSE jsonb_set(subscriptions, '{quest}', 'true'::jsonb, true)
+            WHEN subscriptions IS NULL OR jsonb_typeof(subscriptions) != 'object' THEN '{"${settingsKey}": true}'::jsonb
+            ELSE jsonb_set(subscriptions, '{${settingsKey}}', 'true'::jsonb, true)
         END,
         updated_at = NOW()
     WHERE cx_id = :cxId::uuid 
       AND patient_id in (:patientIds)
-      AND (subscriptions IS NULL OR subscriptions->'quest' IS DISTINCT FROM 'true'::jsonb)
+      AND (subscriptions IS NULL OR subscriptions->'${settingsKey}' IS DISTINCT FROM 'true'::jsonb)
   `;
 
   await sequelize.query(addSubscriptionQuery, {
@@ -142,25 +151,28 @@ async function _addQuestSubscriptionToPatients({
 async function _removeQuestSubscriptionsFromPatients({
   patientIds,
   cxId,
+  notifications,
 }: {
   patientIds: string[];
   cxId: string;
+  notifications?: boolean;
 }): Promise<void> {
   const sequelize = PatientSettingsModel.sequelize;
   if (!sequelize) {
     throw new Error("Sequelize instance not available");
   }
+  const settingsKey: "quest" | "questMonitoring" = notifications ? "questMonitoring" : "quest";
 
   // Remove Quest monitoring subscription from existing subscriptions (only if it exists)
   // SQL explanation: Use JSONB - operator to remove the 'quest' key from the subscriptions object
   const removeSubscriptionQuery = `
     UPDATE patient_settings 
     SET 
-        subscriptions = subscriptions - 'quest',
+        subscriptions = subscriptions - '${settingsKey}',
         updated_at = NOW()
     WHERE cx_id = :cxId::uuid 
       AND patient_id in (:patientIds)
-      AND subscriptions ? 'quest'
+      AND subscriptions ? '${settingsKey}'
   `;
 
   await sequelize.query(removeSubscriptionQuery, {
