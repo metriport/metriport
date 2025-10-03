@@ -290,5 +290,6 @@ export const config: EnvConfigNonSandbox = {
       fhirToCsvDbUsername: "my_db_user",
     },
   },
+  aiBriefBucketName: "your-ai-brief-bucket-name",
 };
 export default config;

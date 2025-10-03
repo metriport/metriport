@@ -361,6 +361,21 @@ export class APIStack extends Stack {
       }
     };
 
+    let aiBriefBucket: s3.Bucket | undefined;
+    if (!isSandbox(props.config)) {
+      aiBriefBucket = new s3.Bucket(this, "AiBriefBucket", {
+        bucketName: props.config.aiBriefBucketName,
+        publicReadAccess: false,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+        cors: [
+          {
+            allowedOrigins: ["*"],
+            allowedMethods: [s3.HttpMethods.GET],
+          },
+        ],
+      });
+    }
+
     const sandboxSeedDataBucket = isSandbox(props.config)
       ? getSandboxSeedDataBucket(props.config)
       : undefined;
@@ -677,6 +692,7 @@ export class APIStack extends Stack {
       incomingHl7NotificationBucket,
       conversionBucket: fhirConverterBucket,
       medicalDocumentsUploadBucket,
+      aiBriefBucket,
       ehrResponsesBucket,
       fhirToMedicalRecordLambda2,
       fhirToCdaConverterLambda,

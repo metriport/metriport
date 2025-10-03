@@ -265,6 +265,7 @@ export type EnvConfigNonSandbox = EnvConfigBase & {
   hl7Notification: Hl7NotificationConfig;
   fhirConversionBucketName: string;
   analyticsPlatform: AnalyticsPlatformConfig;
+  aiBriefBucketName: string;
 };
 
 export type EnvConfigSandbox = EnvConfigBase & {

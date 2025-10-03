@@ -127,6 +127,7 @@ export function createAPIService({
   conversionBucket,
   medicalDocumentsUploadBucket,
   ehrResponsesBucket,
+  aiBriefBucket,
   fhirToBundleLambda,
   fhirToBundleCountLambda,
   fhirToMedicalRecordLambda2,
@@ -178,6 +179,7 @@ export function createAPIService({
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
   ehrResponsesBucket: s3.IBucket | undefined;
+  aiBriefBucket: s3.Bucket | undefined;
   fhirToBundleLambda: ILambda;
   fhirToBundleCountLambda: ILambda;
   fhirToMedicalRecordLambda2: ILambda | undefined;
@@ -357,6 +359,9 @@ export function createAPIService({
           SEARCH_INDEX: searchIndexName,
           CONSOLIDATED_SEARCH_LAMBDA_NAME: consolidatedSearchLambda.functionName,
           CONSOLIDATED_INGESTION_QUEUE_URL: consolidatedIngestionQueue.queueUrl,
+          ...(aiBriefBucket && {
+            AI_BRIEF_BUCKET_NAME: aiBriefBucket.bucketName,
+          }),
           CONSOLIDATED_INGESTION_INITIAL_DATE:
             props.config.openSearch.consolidatedDataIngestionInitialDate,
           ...(props.config.carequality?.envVars?.CQ_ORG_URLS && {
