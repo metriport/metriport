@@ -39,6 +39,7 @@ export async function getHieInitiator(
     npi: facility.data.npi,
     facilityId: facility.id,
     orgName: organization.data.name,
+    queryGrantorOid: facility.cwOboOid ?? undefined,
   };
 }
 
