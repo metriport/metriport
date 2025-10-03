@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { inspect } from "util";
 import { FhirBundleSdk } from "../index";
 import {
   validCompleteBundle,
@@ -249,6 +250,85 @@ describe("Phase 5 Verification - Smart Reference Resolution", () => {
 
       // Check the smart resource marker
       expect(observation.__isSmartResource).toBe(true);
+    });
+  });
+
+  describe("Smart Resource toString() method", () => {
+    it("should render resources without proxy limitations", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
+      const observations = sdk.getObservations();
+
+      expect(observations.length).toBeGreaterThan(0);
+      const observation = observations[0]!;
+
+      const stringified = observation.toString();
+
+      expect(typeof stringified).toBe("string");
+      expect(stringified).toContain('"resourceType"');
+      expect(stringified).toContain('"id"');
+      expect(stringified).not.toContain("__isSmartResource");
+      expect(stringified).not.toContain("getSubject");
+    });
+
+    it("should render nested objects deeply", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
+      const observation = sdk.getObservationById("observation-001");
+
+      expect(observation).toBeDefined();
+      const stringified = observation!.toString();
+
+      const parsed = JSON.parse(stringified);
+      expect(parsed.subject).toBeDefined();
+      expect(parsed.subject.reference).toBeDefined();
+      expect(parsed.encounter).toBeDefined();
+      expect(parsed.encounter.reference).toBeDefined();
+    });
+
+    it("should support custom spacing", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
+      const observation = sdk.getObservationById("observation-001");
+
+      expect(observation).toBeDefined();
+      const compactString = observation!.toString(0);
+      const spacedString = observation!.toString(4);
+
+      expect(compactString.length).toBeLessThan(spacedString.length);
+      expect(compactString).not.toContain("\n");
+      expect(spacedString).toContain("\n");
+    });
+
+    it("should render complex nested structures", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
+      const patients = sdk.getPatients();
+
+      expect(patients.length).toBeGreaterThan(0);
+      const patient = patients[0]!;
+      const stringified = patient.toString();
+
+      const parsed = JSON.parse(stringified);
+      expect(parsed.resourceType).toBe("Patient");
+      expect(parsed.id).toBe("patient-123");
+      if (parsed.name && parsed.name.length > 0) {
+        expect(parsed.name[0]).toBeDefined();
+      }
+    });
+
+    it("should automatically format for console.log and REPL via util.inspect", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
+      const observation = sdk.getObservationById("observation-001");
+
+      expect(observation).toBeDefined();
+
+      // util.inspect is what console.log and REPL use under the hood
+      const inspected = inspect(observation);
+
+      // Should be formatted as readable object output, not [Object] or [Proxy]
+      expect(inspected).toContain("resourceType:");
+      expect(inspected).toContain("Observation");
+      expect(inspected).toContain("id:");
+      expect(inspected).not.toContain("[Proxy]");
+      expect(inspected).not.toContain("getSubject");
+      expect(inspected).not.toContain("__isSmartResource");
     });
   });
 });

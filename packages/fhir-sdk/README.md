@@ -7,7 +7,11 @@ TypeScript SDK for parsing, querying, and manipulating FHIR R4 bundles with smar
 ```typescript
 import { FhirBundleSdk } from "@metriport/fhir-sdk";
 
+// Create an SDK instance
 const sdk = await FhirBundleSdk.create(fhirBundle);
+
+// Access static methods directly on the class
+const cleaned = FhirBundleSdk.stripNonClinicalData(patient);
 ```
 
 ## Core Functionality
@@ -44,6 +48,63 @@ const observation = sdk.getObservationById("obs-123");
 // Direct access to referenced resources
 const patient = observation.getSubject<Patient>();
 ```
+
+#### Smart Resource Methods
+
+All smart resources include these utility methods:
+
+**Automatic console.log formatting** - Resources automatically render nicely when printed:
+
+```typescript
+const patient = sdk.getPatientById("patient-123");
+
+// Just use console.log directly - no need to call toString()!
+console.log(patient);
+// Output:
+// {
+//   resourceType: 'Patient',
+//   id: 'patient-123',
+//   name: [ { family: 'Doe', given: [Array] } ],
+//   ...
+// }
+```
+
+**toString()** - Manual formatting with custom spacing:
+
+```typescript
+// Use toString() if you need custom spacing
+console.log(patient.toString(4)); // 4 spaces
+const jsonString = patient.toString(0); // Compact JSON
+```
+
+This is useful for debugging and inspecting deeply nested structures. The output automatically excludes smart resource methods and shows the raw FHIR resource data.
+
+**getReferencingResources()** - Find all resources that reference this resource:
+
+```typescript
+const patient = sdk.getPatientById("patient-123");
+
+// Find all resources referencing this patient
+const references = patient.getReferencingResources();
+
+// Filter by resource type
+const observations = patient.getReferencingResources({ resourceType: "Observation" });
+```
+
+**getReferencedResources()** - Find all resources referenced by this resource:
+
+```typescript
+const observation = sdk.getObservationById("obs-123");
+
+// Get all resources this observation references
+const referencedResources = observation.getReferencedResources();
+// Returns: [Patient, Encounter, Practitioner, etc.] based on REFERENCE_METHOD_MAPPING
+
+// SDK-level method also available
+const refs = sdk.getResourcesReferencedBy(observation);
+```
+
+This method automatically discovers and returns all resources referenced by the current resource based on the configured reference methods in `REFERENCE_METHOD_MAPPING`. It handles both single references and array references.
 
 ### 3. Bundle Export
 
@@ -219,17 +280,24 @@ const jsonContext = sdk.generateLLMContext(observation, {
 - Groups resources by type within each depth level
 - Logs resource counts for debugging (not included in output)
 
-**Static Helper:**
+**Static Methods:**
 
-You can also strip non-clinical data from any resource independently:
+The `FhirBundleSdk` class provides static utility methods that don't require an SDK instance:
 
 ```typescript
 import { FhirBundleSdk } from "@metriport/fhir-sdk";
 
+// Strip non-clinical data from any resource
 const cleanedPatient = FhirBundleSdk.stripNonClinicalData(patient);
-// Removes: meta, extension, modifierExtension, text
+// Removes: meta, extension, modifierExtension, text, id, identifier, and all reference fields
 // Returns immutable copy
+
+// Create SDK instances
+const sdk = await FhirBundleSdk.create(bundle); // Async (for backwards compatibility)
+const sdk2 = FhirBundleSdk.createSync(bundle); // Synchronous
 ```
+
+This is especially useful in REPL sessions where you want quick access to utility functions without creating a full SDK instance.
 
 ## Example Use Cases
 

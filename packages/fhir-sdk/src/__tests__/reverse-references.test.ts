@@ -306,4 +306,75 @@ describe("Reverse References", () => {
       expect(avgTime).toBeLessThan(1);
     });
   });
+
+  describe("getReferencedResources - forward reference lookup", () => {
+    it("should expose getReferencedResources on smart resources", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
+      const observation = sdk.getObservationById("observation-001");
+
+      expect(observation).toBeDefined();
+      expect(typeof (observation as any).getReferencedResources).toBe("function");
+    });
+
+    it("should return all resources referenced by a resource", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
+      const observation = sdk.getObservationById("observation-001");
+
+      const referencedResources = (observation as any).getReferencedResources();
+
+      // observation-001 references:
+      // - patient-123 (subject)
+      // - encounter-789 (encounter)
+      // - practitioner-456 (performer)
+      expect(referencedResources.length).toBeGreaterThan(0);
+
+      const resourceTypes = new Set(referencedResources.map((r: any) => r.resourceType));
+      expect(resourceTypes.has("Patient")).toBe(true);
+    });
+
+    it("should return empty array for resources with no references", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
+      const patient = sdk.getPatientById("patient-123");
+
+      const referencedResources = (patient as any).getReferencedResources();
+
+      // Patient may have no outgoing references or very few
+      expect(Array.isArray(referencedResources)).toBe(true);
+    });
+
+    it("should work with SDK-level method getResourcesReferencedBy", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
+      const observation = sdk.getObservationById("observation-001");
+
+      expect(observation).toBeDefined();
+      if (!observation) {
+        throw new Error("Observation not found");
+      }
+      const referencedResources = sdk.getResourcesReferencedBy(observation);
+
+      expect(Array.isArray(referencedResources)).toBe(true);
+      expect(referencedResources.length).toBeGreaterThan(0);
+    });
+
+    it("should handle array reference fields", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
+      const diagnosticReport = sdk.getDiagnosticReportById("diagnostic-report-002");
+
+      const referencedResources = (diagnosticReport as any).getReferencedResources();
+
+      // DiagnosticReport references multiple resources including results array
+      expect(Array.isArray(referencedResources)).toBe(true);
+      expect(referencedResources.length).toBeGreaterThan(0);
+    });
+
+    it("should not include undefined values", async () => {
+      const sdk = await FhirBundleSdk.create(validCompleteBundle);
+      const observation = sdk.getObservationById("observation-001");
+
+      const referencedResources = (observation as any).getReferencedResources();
+
+      // All returned resources should be defined
+      expect(referencedResources.every((r: any) => r !== undefined)).toBe(true);
+    });
+  });
 });

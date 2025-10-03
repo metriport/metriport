@@ -54,6 +54,19 @@ export interface SmartResourceBase {
   getReferencingResources<T extends Resource = Resource>(
     options?: ReverseReferenceOptions
   ): Smart<T>[];
+
+  /**
+   * Get all resources referenced by this resource (forward reference lookup)
+   * @returns Array of smart resources referenced by this resource based on REFERENCE_METHOD_MAPPING
+   */
+  getReferencedResources<T extends Resource = Resource>(): Smart<T>[];
+
+  /**
+   * Convert the resource to a string representation without proxy limitations
+   * @param space - Number of spaces to use for indentation (default: 2)
+   * @returns JSON string representation of the resource
+   */
+  toString(space?: number): string;
 }
 
 /**

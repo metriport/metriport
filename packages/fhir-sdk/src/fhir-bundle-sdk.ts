@@ -301,7 +301,7 @@ export class FhirBundleSdk {
 
   /**
    * Strip non-clinical metadata from a FHIR resource to reduce noise for LLM consumption.
-   * Removes: meta, extension, modifierExtension, text
+   * Removes: meta, extension, modifierExtension, text, id, identifier, and all reference fields
    * Returns an immutable copy without mutating the original.
    */
   static stripNonClinicalData<T extends Resource>(resource: T): T {
@@ -680,6 +680,17 @@ export class FhirBundleSdk {
     }
 
     return smartResources;
+  }
+
+  /**
+   * Get all resources referenced by a given resource (forward reference lookup).
+   * Returns all resources that the given resource points to based on REFERENCE_METHOD_MAPPING.
+   *
+   * @param resource - The smart resource to get references from
+   * @returns Array of smart resources referenced by the given resource
+   */
+  getResourcesReferencedBy<T extends Resource = Resource>(resource: Smart<Resource>): Smart<T>[] {
+    return resource.getReferencedResources<T>();
   }
 
   /**

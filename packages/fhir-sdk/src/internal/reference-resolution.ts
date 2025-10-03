@@ -1,5 +1,11 @@
+import { inspect } from "util";
 import { Resource } from "@medplum/fhirtypes";
-import { Smart, getReferenceField, isReferenceMethod } from "../types/smart-resources";
+import {
+  Smart,
+  getReferenceField,
+  isReferenceMethod,
+  REFERENCE_METHOD_MAPPING,
+} from "../types/smart-resources";
 import { ReverseReferenceOptions } from "../types/sdk-types";
 
 /**
@@ -150,6 +156,53 @@ export function createSmartResource<T extends Resource>(
         };
       }
 
+      // Handle forward reference method
+      if (prop === "getReferencedResources") {
+        return () => {
+          const referencedResources: Smart<Resource>[] = [];
+          const referenceMethods = REFERENCE_METHOD_MAPPING[target.resourceType];
+
+          if (!referenceMethods) {
+            return referencedResources;
+          }
+
+          // Iterate through all reference methods for this resource type
+          for (const methodName of Object.keys(referenceMethods)) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const result = (smartResource as any)[methodName]();
+
+            if (!result) {
+              continue;
+            }
+
+            // Handle both single and array references
+            if (Array.isArray(result)) {
+              referencedResources.push(
+                ...result.filter((r: Smart<Resource> | undefined) => r !== undefined)
+              );
+            } else {
+              referencedResources.push(result);
+            }
+          }
+
+          return referencedResources;
+        };
+      }
+
+      // Handle toString method
+      if (prop === "toString") {
+        return (space?: number) => {
+          return JSON.stringify(target, null, space ?? 2);
+        };
+      }
+
+      // Handle Node.js util.inspect.custom for console.log and REPL
+      if (prop === inspect.custom) {
+        return () => {
+          return JSON.stringify(target, null, 2);
+        };
+      }
+
       // Check if this is a reference method call
       if (typeof prop === "string" && isReferenceMethod(prop, target.resourceType)) {
         return () =>
@@ -172,12 +225,23 @@ export function createSmartResource<T extends Resource>(
     // Ensure JSON serialization works correctly (FR-5.8)
     ownKeys: target => {
       return Reflect.ownKeys(target).filter(
-        key => key !== "__isSmartResource" && key !== "getReferencingResources"
+        key =>
+          key !== "__isSmartResource" &&
+          key !== "getReferencingResources" &&
+          key !== "getReferencedResources" &&
+          key !== "toString" &&
+          key !== inspect.custom
       );
     },
 
     getOwnPropertyDescriptor: (target, prop) => {
-      if (prop === "__isSmartResource" || prop === "getReferencingResources") {
+      if (
+        prop === "__isSmartResource" ||
+        prop === "getReferencingResources" ||
+        prop === "getReferencedResources" ||
+        prop === "toString" ||
+        prop === inspect.custom
+      ) {
         return undefined;
       }
       return Reflect.getOwnPropertyDescriptor(target, prop);

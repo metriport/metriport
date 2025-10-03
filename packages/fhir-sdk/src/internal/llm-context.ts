@@ -1,35 +1,60 @@
 import { Resource } from "@medplum/fhirtypes";
-import { Smart } from "../types/smart-resources";
+import { Smart, REFERENCE_METHOD_MAPPING } from "../types/smart-resources";
 import { LLMContextOptions, WalkResult } from "../types/sdk-types";
 
 /**
+ * Build a set of all reference field names from REFERENCE_METHOD_MAPPING.
+ * Extracts base field names, handling nested paths (e.g., "participant.individual" -> "participant")
+ */
+function buildReferenceFieldSet(): Set<string> {
+  const fields = new Set<string>();
+  for (const resourceMapping of Object.values(REFERENCE_METHOD_MAPPING)) {
+    for (const fieldPath of Object.values(resourceMapping)) {
+      // Handle nested paths - take the first part
+      const parts = fieldPath.split(".");
+      const baseField = parts[0];
+      if (baseField !== undefined) {
+        fields.add(baseField);
+      }
+    }
+  }
+  return fields;
+}
+
+const REFERENCE_FIELDS = buildReferenceFieldSet();
+
+/**
  * Strip non-clinical metadata from a FHIR resource to reduce noise for LLM consumption.
- * Removes: meta, extension, modifierExtension, text
+ * Removes: meta, extension, modifierExtension, text, id, identifier, and all reference fields
+ * defined in REFERENCE_METHOD_MAPPING
  * Returns an immutable copy without mutating the original.
  */
 export function stripNonClinicalData<T extends Resource>(resource: T): T {
-  function deepCloneAndStrip(obj: unknown): unknown {
+  function deepCloneAndStrip(obj: unknown, resourceType?: string): unknown {
     if (obj === null || obj === undefined) {
       return obj;
     }
 
     if (Array.isArray(obj)) {
-      return obj.map(item => deepCloneAndStrip(item));
+      return obj.map(item => deepCloneAndStrip(item, resourceType));
     }
 
     if (typeof obj === "object") {
       const result: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(obj)) {
-        // Skip non-clinical fields
+        // Skip non-clinical fields, identifiers, and reference fields
         if (
           key === "meta" ||
           key === "extension" ||
           key === "modifierExtension" ||
-          key === "text"
+          key === "text" ||
+          key === "id" ||
+          key === "identifier" ||
+          REFERENCE_FIELDS.has(key)
         ) {
           continue;
         }
-        result[key] = deepCloneAndStrip(value);
+        result[key] = deepCloneAndStrip(value, resourceType);
       }
       return result;
     }
@@ -37,7 +62,7 @@ export function stripNonClinicalData<T extends Resource>(resource: T): T {
     return obj;
   }
 
-  return deepCloneAndStrip(resource) as T;
+  return deepCloneAndStrip(resource, resource.resourceType) as T;
 }
 
 /**

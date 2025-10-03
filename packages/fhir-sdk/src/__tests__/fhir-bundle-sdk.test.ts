@@ -895,7 +895,7 @@ describe("FhirBundleSdk", () => {
 
         expect(cleaned.meta).toBeUndefined();
         expect(cleaned.name).toEqual([{ family: "Smith", given: ["John"] }]);
-        expect(cleaned.id).toBe("patient-123");
+        expect(cleaned.id).toBeUndefined();
       });
 
       it("should remove extension field", () => {
@@ -950,8 +950,12 @@ describe("FhirBundleSdk", () => {
 
         const cleaned = FhirBundleSdk.stripNonClinicalData(patient);
 
+        // Original should be unchanged
         expect(patient.meta).toBeDefined();
+        expect(patient.id).toBe("patient-123");
+        // Cleaned should have removed them
         expect(cleaned.meta).toBeUndefined();
+        expect(cleaned.id).toBeUndefined();
       });
 
       it("should handle nested extension fields", () => {
@@ -976,6 +980,64 @@ describe("FhirBundleSdk", () => {
 
         expect(cleaned.name?.[0]?.extension).toBeUndefined();
         expect(cleaned.name?.[0]?.family).toBe("Smith");
+      });
+
+      it("should remove id field", () => {
+        const patient: Patient = {
+          resourceType: "Patient",
+          id: "patient-123",
+          name: [{ family: "Smith", given: ["John"] }],
+        };
+
+        const cleaned = FhirBundleSdk.stripNonClinicalData(patient);
+
+        expect(cleaned.id).toBeUndefined();
+        expect(cleaned.name).toEqual([{ family: "Smith", given: ["John"] }]);
+      });
+
+      it("should remove identifier field", () => {
+        const patient: Patient = {
+          resourceType: "Patient",
+          id: "patient-123",
+          identifier: [
+            {
+              system: "http://hospital.example.org",
+              value: "123456",
+            },
+          ],
+          name: [{ family: "Smith", given: ["John"] }],
+        };
+
+        const cleaned = FhirBundleSdk.stripNonClinicalData(patient);
+
+        expect(cleaned.identifier).toBeUndefined();
+        expect(cleaned.name).toEqual([{ family: "Smith", given: ["John"] }]);
+      });
+
+      it("should remove all reference fields from REFERENCE_METHOD_MAPPING", () => {
+        const observation: Observation = {
+          resourceType: "Observation",
+          id: "obs-123",
+          status: "final",
+          code: {
+            coding: [{ system: "http://loinc.org", code: "12345" }],
+          },
+          subject: { reference: "Patient/patient-123" },
+          encounter: { reference: "Encounter/encounter-456" },
+          performer: [{ reference: "Practitioner/practitioner-789" }],
+          basedOn: [{ reference: "ServiceRequest/sr-001" }],
+        };
+
+        const cleaned = FhirBundleSdk.stripNonClinicalData(observation);
+
+        // All reference fields should be removed
+        expect(cleaned.subject).toBeUndefined();
+        expect(cleaned.encounter).toBeUndefined();
+        expect(cleaned.performer).toBeUndefined();
+        expect(cleaned.basedOn).toBeUndefined();
+        // Clinical data should remain
+        expect(cleaned.status).toBe("final");
+        expect(cleaned.code).toBeDefined();
       });
     });
 
