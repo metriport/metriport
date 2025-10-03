@@ -42,7 +42,7 @@ export const handler = capture.wrapHandler(
     req: DocumentDownloaderLambdaRequest | DocumentDownloaderLambdaRequestV1
   ): Promise<DownloadResult> => {
     // TODO ENG-923 revert to the full deconstruction and remove the 'if' statement
-    const { orgName, orgOid, npi, cxId } = req;
+    const { orgName, orgOid, npi, cxId, queryGrantorOid } = req;
     // const { orgName, orgOid, npi, cxId, sourceDocument, destinationFileInfo } = req;
     let sourceDocument: Document;
     let destinationFileInfo: FileInfo;
@@ -63,7 +63,9 @@ export const handler = capture.wrapHandler(
         `npi: ${npi}, cxId: ${cxId}, destinationFileInfo: ${JSON.stringify(
           destinationFileInfo
         )}, ` +
-        `sourceDocument: ${JSON.stringify(sourceDocument)}`
+        `sourceDocument: ${JSON.stringify(sourceDocument)} ${
+          queryGrantorOid ? `, queryGrantorOid: ${queryGrantorOid}` : ""
+        }`
     );
 
     const [cwOrgCertificate, cwOrgPrivateKey] = await Promise.all([
@@ -86,6 +88,7 @@ export const handler = capture.wrapHandler(
       homeCommunityId: orgOid,
       npi,
       apiMode,
+      queryGrantorOid,
       options: { timeout: timeout.asMilliseconds() },
     });
 
