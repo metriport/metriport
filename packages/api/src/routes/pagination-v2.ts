@@ -1,4 +1,5 @@
 import { Config } from "@metriport/core/util/config";
+import { replacePathParams } from "@metriport/core/util/replace-path-params";
 import {
   createQueryMetaSchemaV2,
   defaultItemsPerPage,
@@ -226,7 +227,7 @@ export function getRequestMeta(req: Request, maxItemsPerPage: number): Paginatio
  * @param maxItemsPerPage - The maximum number of items per page.
  * @returns An object containing the paginationV2 metadata and the current page's items.
  */
-export async function paginatedV2<T extends { id: string } & Record<string, unknown>>({
+export async function paginatedV2<T extends { id: string }>({
   request,
   additionalQueryParams,
   getItems,
@@ -339,14 +340,6 @@ function getPaginationV2Url(
     ...(item.toItem ? { toItem: encodeCursor(item.toItem) } : {}),
   };
 
-  if (item.fromItem) {
-    console.log("generating fromItem cursor: ", item.fromItem);
-  }
-
-  if (item.toItem) {
-    console.log("generating toItem cursor: ", item.toItem);
-  }
-
   const params = new URLSearchParams(encodedItem);
   params.append("count", requestMeta.count.toString());
   if (requestMeta.originalSort.length > 0) {
@@ -358,8 +351,13 @@ function getPaginationV2Url(
     }
   }
 
-  if ("_reconstructedRoute" in req) {
-    return hostUrl + req._reconstructedRoute + "?" + params.toString();
+  if ("_reconstructedRoute" in req && typeof req._reconstructedRoute === "string") {
+    return (
+      hostUrl + replacePathParams(req._reconstructedRoute, req.params) + "?" + params.toString()
+    );
   }
-  return hostUrl + req.baseUrl + "?" + params.toString();
+
+  // Use just the pathname (without query parameters)
+  const pathname = req.originalUrl.split("?")[0];
+  return hostUrl + pathname + "?" + params.toString();
 }

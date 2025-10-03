@@ -28,6 +28,7 @@ export * from "./domain/db";
 export * from "./domain/dob";
 export * from "./domain/externalId";
 export * from "./domain/gender";
+export * from "./domain/cohort";
 export * from "./domain/jwt-token";
 export { metriportCompanyDetails } from "./domain/metriport";
 export * from "./domain/patient/patient";

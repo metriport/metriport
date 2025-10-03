@@ -1,7 +1,8 @@
-import { PatientCohort } from "@metriport/core/domain/cohort";
+import { PatientCohort } from "@metriport/shared/domain/patient-cohort";
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../_default";
 import { CohortModel } from "./cohort";
+import { OrganizationModel } from "./organization";
 import { PatientModel } from "./patient";
 
 export class PatientCohortModel extends BaseModel<PatientCohortModel> implements PatientCohort {
@@ -9,6 +10,7 @@ export class PatientCohortModel extends BaseModel<PatientCohortModel> implements
 
   declare patientId: string;
   declare cohortId: string;
+  declare cxId: string;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     PatientCohortModel.init(
@@ -26,6 +28,13 @@ export class PatientCohortModel extends BaseModel<PatientCohortModel> implements
           references: {
             model: CohortModel.NAME,
             key: "id",
+          },
+        },
+        cxId: {
+          type: DataTypes.UUID,
+          references: {
+            model: OrganizationModel.NAME,
+            key: "cx_id",
           },
         },
       },

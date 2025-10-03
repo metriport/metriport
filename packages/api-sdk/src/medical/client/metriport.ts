@@ -1,5 +1,12 @@
 import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@medplum/fhirtypes";
-import { PaginatedResponse } from "@metriport/shared";
+import {
+  CohortCreateRequest,
+  CohortDTO,
+  CohortSettings,
+  CohortUpdateRequest,
+  CohortWithSizeDTO,
+  PaginatedResponse,
+} from "@metriport/shared";
 import {
   WebhookRequest,
   WebhookRequestParsingFailure,
@@ -51,6 +58,7 @@ const NO_DATA_MESSAGE = "No data returned from API";
 const BASE_PATH = "/medical/v1";
 const ORGANIZATION_URL = `/organization`;
 const FACILITY_URL = `/facility`;
+const COHORT_URL = `/cohort`;
 const NETWORK_ENTRY_URL = `/network-entry`;
 const PATIENT_URL = `/patient`;
 const DOCUMENT_URL = `/document`;
@@ -700,6 +708,150 @@ export class MetriportMedicalApi {
 
   async listPatientsPage(url: string): Promise<PaginatedResponse<PatientDTO, "patients">> {
     const resp = await this.api.get(url);
+    return resp.data;
+  }
+
+  /**
+   * Creates a new cohort.
+   * @param data The properties to create the cohort with.
+   * @returns The created cohort.
+   */
+  async createCohort(data: CohortCreateRequest): Promise<CohortWithSizeDTO> {
+    const resp = await this.api.post(`${COHORT_URL}`, data);
+    return resp.data;
+  }
+
+  /**
+   * Deletes an existing cohort.
+   * @param id The ID of the cohort to delete.
+   * @returns The deleted cohort.
+   */
+  async deleteCohort(id: string): Promise<void> {
+    const resp = await this.api.delete(`${COHORT_URL}/${id}`);
+    return resp.data;
+  }
+
+  /**
+   * Update an existing cohort. This does a full-overwrite of the payload contents.
+   * ⚠️ Be careful updating the name of your cohort, as it can be used as an identifier and may break your implementation elsewhere.
+   * @param id The ID of the cohort to update.
+   * @param data The properties to update on the cohort.
+   * @returns The updated cohort.
+   */
+  async updateCohort(id: string, data: CohortUpdateRequest): Promise<CohortWithSizeDTO> {
+    const resp = await this.api.put(`${COHORT_URL}/${id}`, data);
+    return resp.data;
+  }
+
+  /**
+   * Returns the cohort with the given ID.
+   * @param id The ID of the cohort to return.
+   * @returns The cohort with the given ID.
+   */
+  async getCohort(id: string): Promise<CohortWithSizeDTO> {
+    const resp = await this.api.get(`${COHORT_URL}/${id}`);
+    return resp.data;
+  }
+
+  /**
+   * Returns the cohort with the given name.
+   * @param name The name of the cohort to return.
+   * @returns The cohort with the given name.
+   */
+  async getCohortByName(name: string): Promise<{ cohort: CohortDTO }> {
+    const resp = await this.api.get(`${COHORT_URL}`, { params: { name } });
+    if (!resp.data) throw new Error("No cohort found with the given name");
+    return { cohort: resp.data.cohorts[0] };
+  }
+
+  /**
+   * Returns all available cohorts.
+   * @returns All available cohorts.
+   */
+  async listCohorts(): Promise<{ cohorts: CohortDTO[] }> {
+    const resp = await this.api.get(`${COHORT_URL}`);
+    return resp.data;
+  }
+
+  /**
+   * Add patients to a cohort.
+   * @param cohortId The ID of the cohort to add patients to.
+   * @param patientIds The IDs of the patients to add to the cohort.
+   * @returns The updated cohort.
+   */
+  async addPatientsToCohort({
+    cohortId,
+    patientIds,
+  }: {
+    cohortId: string;
+    patientIds: string[];
+  }): Promise<void> {
+    await this.api.post(`${COHORT_URL}/${cohortId}/patient`, { patientIds });
+  }
+
+  /**
+   * Remove patients from a cohort.
+   * @param cohortId The ID of the cohort to remove patients from.
+   * @param patientIds The IDs of the patients to remove from the cohort.
+   * @returns The updated cohort.
+   */
+  async removePatientsFromCohort({
+    cohortId,
+    patientIds,
+  }: {
+    cohortId: string;
+    patientIds: string[];
+  }): Promise<void> {
+    await this.api.delete(`${COHORT_URL}/${cohortId}/patient`, { data: { patientIds } });
+  }
+
+  /**
+   * Lists patients in a cohort.
+   * @param cohortId The ID of the cohort to list patients from.
+   * @param pagination Pagination settings, optional. If not provided, the first page will be returned.
+   *                   See https://docs.metriport.com/medical-api/more-info/pagination
+   * @returns An object containing:
+   * - `patients` - A single page containing the patients in the cohort.
+   * - `meta` - Pagination information, including how to get to the next page.
+   */
+  async listPatientsInCohort({
+    cohortId,
+    pagination,
+  }: {
+    cohortId: string;
+    pagination?: Pagination | undefined;
+  }): Promise<PaginatedResponse<PatientDTO, "patients">> {
+    const resp = await this.api.get(`${COHORT_URL}/${cohortId}/patient`, {
+      params: {
+        ...getPaginationParams(pagination),
+      },
+    });
+    if (!resp.data) return { meta: { itemsOnPage: 0 }, patients: [] };
+    return resp.data;
+  }
+
+  async listPatientsInCohortPage(url: string): Promise<PaginatedResponse<PatientDTO, "patients">> {
+    const resp = await this.api.get(url);
+    return resp.data;
+  }
+
+  /**
+   * Returns all cohorts assigned to a patient.
+   * @param patientId The ID of the patient.
+   * @returns The list of cohorts assigned to the patient.
+   */
+  async listCohortsForPatient(patientId: string): Promise<{ cohorts: CohortDTO[] }> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/cohort`);
+    return resp.data;
+  }
+
+  /**
+   * Returns the settings for a patient.
+   * @param patientId The ID of the patient.
+   * @returns The settings for the patient.
+   */
+  async getPatientSettings(patientId: string): Promise<{ settings: CohortSettings }> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/settings`);
     return resp.data;
   }
 

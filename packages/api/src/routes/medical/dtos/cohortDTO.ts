@@ -1,31 +1,20 @@
-import { Cohort } from "@metriport/core/domain/cohort";
+import { Cohort, CohortColors, CohortSettings } from "@metriport/shared/domain/cohort";
 import { toBaseDTO } from "./baseDTO";
 
 export type CohortDTO = {
   id: string;
-  cxId: string;
   name: string;
-  monitoring?: {
-    adt?: boolean;
-  };
-  dateCreated?: Date;
+  description: string;
+  color: CohortColors;
+  settings: CohortSettings;
 };
 
-export type CohortWithCountDTO = {
-  cohort: CohortDTO;
-  patientCount: number;
-};
-
-export type CohortWithPatientIdsAndCountDTO = CohortWithCountDTO & {
-  patientIds: string[];
-};
-
-export function dtoFromCohort(cohort: Cohort): CohortDTO {
+export function dtoFromCohort(cohort: Cohort & { eTag: string }): CohortDTO {
   return {
     ...toBaseDTO(cohort),
     name: cohort.name,
-    cxId: cohort.cxId,
-    monitoring: cohort.monitoring,
-    dateCreated: cohort.createdAt,
+    color: cohort.color,
+    settings: cohort.settings,
+    description: cohort.description,
   };
 }

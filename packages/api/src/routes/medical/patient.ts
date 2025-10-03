@@ -19,6 +19,7 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { orderBy } from "lodash";
 import { z } from "zod";
+import { getCohortsForPatient } from "../../command/medical/cohort/get-cohort";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { startConsolidatedQuery } from "../../command/medical/patient/consolidated-get";
 import {
@@ -31,6 +32,8 @@ import { forceEhrPatientSync } from "../../command/medical/patient/force-ehr-pat
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import { getPatientFacilities } from "../../command/medical/patient/get-patient-facilities";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
+import { getPatientSettings } from "../../command/medical/patient/get-settings";
+import { getLatestSuspectsBySuspectGroup } from "../../command/medical/patient/get-suspect";
 import { setPatientFacilities } from "../../command/medical/patient/set-patient-facilities";
 import { getHieOptOut, setHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
@@ -39,6 +42,7 @@ import { countResources } from "../../external/fhir/patient/count-resources";
 import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
+import { handleParams } from "../helpers/handle-params";
 import { getOutputFormatFromRequest } from "../helpers/output-format";
 import { requestLogger } from "../helpers/request-logger";
 import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
@@ -54,7 +58,6 @@ import {
 } from "./schemas/patient";
 import { setPatientFacilitiesSchema } from "./schemas/patient-facilities";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { getLatestSuspectsBySuspectGroup } from "../../command/medical/patient/get-suspect";
 
 const router = Router();
 
@@ -627,6 +630,47 @@ router.get(
     const suspects = await getLatestSuspectsBySuspectGroup({ cxId, patientId });
 
     return res.status(status.OK).json({ suspects });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/cohort
+ *
+ * Returns a list of all cohorts the patient is a member of.
+ *
+ * @param   req.cxId      The customer ID.
+ * @return  The suspects for the patient.
+ */
+router.get(
+  "/cohort",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+
+    const cohorts = await getCohortsForPatient({ cxId, patientId });
+
+    return res.status(status.OK).json({ cohorts });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/settings
+ *
+ * Returns a settings object of all settings that are enabled for a patient, based on their cohorts
+ *
+ * @param   req.cxId      The customer ID.
+ * @return  The patient's definitive settings
+ */
+router.get(
+  "/settings",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+
+    const settings = await getPatientSettings({ cxId, patientId });
+
+    return res.status(status.OK).json({ settings });
   })
 );
 

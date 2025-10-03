@@ -1,90 +1,111 @@
-import { Cohort } from "@metriport/core/domain/cohort";
-import { NotFoundError } from "@metriport/shared";
-import { col, fn, Op, Transaction } from "sequelize";
+import { BadRequestError, NotFoundError } from "@metriport/shared";
+import { Cohort, CohortWithSize } from "@metriport/shared/domain/cohort";
 import { CohortModel } from "../../../models/medical/cohort";
-import { getPatientIdsAssignedToCohort } from "./patient-cohort/get-assigned-ids";
+import { getCohortSize } from "./patient-cohort/get-cohort-size";
 
-const countAttr = "count";
-
-export type CohortWithCount = { cohort: Cohort; count: number };
-export type CohortWithPatientIdsAndCount = CohortWithCount & { patientIds: string[] };
+export type CohortWithDetails = { cohort: Cohort; details: { size: number } };
 
 export type GetCohortProps = {
   id: string;
   cxId: string;
-} & (
-  | {
-      transaction?: never;
-      lock?: never;
-    }
-  | {
-      /**
-       * @see executeOnDBTx() for details about the 'transaction' parameter.
-       */
-      transaction: Transaction;
-      /**
-       * @see executeOnDBTx() for details about the 'lock' parameter.
-       */
-      lock?: boolean;
-    }
-);
+};
 
-/**
- * @see executeOnDBTx() for details about the 'transaction' and 'lock' parameters.
- */
-export async function getCohortModelOrFail({
-  id,
-  cxId,
-  transaction,
-  lock,
-}: GetCohortProps): Promise<CohortModel> {
+export async function getCohortOrFail({ id, cxId }: GetCohortProps): Promise<CohortModel> {
   const cohort = await CohortModel.findOne({
     where: { id, cxId },
-    transaction,
-    lock,
   });
 
   if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id, cxId });
   return cohort;
 }
 
-export async function getCohortWithCountOrFail({
+export async function getCohortWithSizeOrFail({
   id,
   cxId,
-}: GetCohortProps): Promise<CohortWithPatientIdsAndCount> {
-  const [cohort, patientIds] = await Promise.all([
-    getCohortModelOrFail({ id, cxId }),
-    getPatientIdsAssignedToCohort({ cohortId: id, cxId }),
+}: GetCohortProps): Promise<CohortWithSize> {
+  const [cohort, size] = await Promise.all([
+    getCohortOrFail({ id, cxId }),
+    getCohortSize({ cohortId: id, cxId }),
   ]);
   if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id, cxId });
 
-  return { cohort: cohort.dataValues, count: patientIds.length, patientIds };
+  return { cohort: cohort.dataValues, size };
 }
 
-export async function getCohorts({ cxId }: { cxId: string }): Promise<CohortWithCount[]> {
-  const cohortsWithCounts = await CohortModel.findAll({
+export async function getCohorts({ cxId }: { cxId: string }): Promise<Cohort[]> {
+  const cohorts = await CohortModel.findAll({
+    where: { cxId },
+  });
+
+  return cohorts.map(_ => _.dataValues);
+}
+
+export async function getCohortsForPatient({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}): Promise<Cohort[]> {
+  const cohorts = await CohortModel.findAll({
     where: { cxId },
     include: [
       {
         association: CohortModel.associations.PatientCohort,
+        where: { patientId },
         attributes: [],
-        required: false,
+        required: true,
       },
     ],
-    attributes: {
-      include: [[fn("COUNT", col("PatientCohort.id")), countAttr]],
-    },
-    group: [col("CohortModel.id")],
   });
 
-  return cohortsWithCounts.map(cohort => ({
-    cohort: cohort.dataValues,
-    // Type assertion needed because Sequelize's get() method returns any for computed attributes
-    count: Number((cohort.get(countAttr) as number | null) ?? 0),
-  }));
+  return cohorts.map(_ => _.dataValues);
 }
 
+/**
+ * Returns the cohort with the specified name.
+ * @param cxId The ID of the CX.
+ * @param name The name of the cohort.
+ * @returns The cohort with the specified name.
+ */
 export async function getCohortByName({
+  cxId,
+  name,
+}: {
+  cxId: string;
+  name: string;
+}): Promise<Cohort> {
+  const trimmedName = name.trim();
+
+  const cohorts = await CohortModel.findAll({
+    where: {
+      cxId,
+      name: trimmedName,
+    },
+  });
+
+  if (cohorts.length === 0) {
+    throw new NotFoundError("No cohorts found with the specified name", undefined, {
+      cxId,
+      name: trimmedName,
+    });
+  } else if (cohorts.length > 1) {
+    throw new BadRequestError("Multiple cohorts found with the specified name", undefined, {
+      cxId,
+      name: trimmedName,
+    });
+  }
+
+  return cohorts[0].dataValues;
+}
+
+/**
+ * Returns the cohort with the specified name, or undefined if not found or multiple found.
+ * @param cxId The ID of the CX.
+ * @param name The name of the cohort.
+ * @returns The cohort with the specified name, or undefined if not found or multiple cohorts exist.
+ */
+export async function getCohortByNameSafe({
   cxId,
   name,
 }: {
@@ -93,13 +114,16 @@ export async function getCohortByName({
 }): Promise<Cohort | undefined> {
   const trimmedName = name.trim();
 
-  const cohort = await CohortModel.findOne({
+  const cohorts = await CohortModel.findAll({
     where: {
       cxId,
-      name: {
-        [Op.iLike]: trimmedName,
-      },
+      name: trimmedName,
     },
   });
-  return cohort?.dataValues ?? undefined;
+
+  if (cohorts.length !== 1) {
+    return undefined;
+  }
+
+  return cohorts[0].dataValues;
 }

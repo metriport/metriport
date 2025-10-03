@@ -1,18 +1,15 @@
 import { out } from "@metriport/core/util";
-import { BadRequestError } from "@metriport/shared";
 import { CohortModel } from "../../../models/medical/cohort";
-import { getCountOfPatientsAssignedToCohort } from "./patient-cohort/get-count";
+import { NotFoundError } from "@metriport/shared";
 
 export async function deleteCohort({ id, cxId }: { id: string; cxId: string }): Promise<void> {
   const { log } = out(`deleteCohort - cx: ${cxId}, id: ${id}`);
 
-  const count = await getCountOfPatientsAssignedToCohort({ cohortId: id, cxId });
-  if (count > 0) {
-    throw new BadRequestError("Unassign all patients before deleting the cohort.");
+  const result = await CohortModel.destroy({ where: { id, cxId } });
+
+  if (result === 0) {
+    throw new NotFoundError(`Could not find cohort`, undefined, { cxId, cohortId: id });
   }
 
-  await CohortModel.destroy({ where: { id, cxId } });
-
   log(`Done.`);
-  return;
 }
