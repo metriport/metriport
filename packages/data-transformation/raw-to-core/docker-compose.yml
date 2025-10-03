@@ -8,6 +8,7 @@ services:
       dockerfile: ./Dockerfile.dev
     volumes:
       - .:/usr/app/data
+      - ~/.aws:/root/.aws
     environment:
       DBT_PG_HOST: ${DBT_PG_HOST}
       DBT_PG_PORT: ${DBT_PG_PORT}

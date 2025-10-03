@@ -1,0 +1,57 @@
+version: 2
+models:
+  - name: input_layer__condition
+    description: |
+      Mapping check to make sure all columns are mapped appropriately into the input layer.
+      The condition table contains information related to medical conditions 
+      patients have, including problems, admitting diagnosis codes, and billable 
+      diagnosis codes.
+    config:
+      schema: input_layer
+      tags: input_layer
+      materialized: view
+    columns:
+      - name: condition_id
+        description: '{{ doc("condition_id") }}'
+      - name: person_id
+        description: '{{ doc("person_id") }}'
+      - name: patient_id
+        description: '{{ doc("patient_id") }}'
+      - name: encounter_id
+        description: '{{ doc("encounter_id") }}'
+      - name: claim_id
+        description: '{{ doc("claim_id") }}'
+      - name: recorded_date
+        description: '{{ doc("recorded_date") }}'
+      - name: onset_date
+        description: '{{ doc("onset_date") }}'
+      - name: resolved_date
+        description: '{{ doc("resolved_date") }}'
+      - name: status
+        description: '{{ doc("status") }}'
+      - name: condition_type
+        description: '{{ doc("condition_type") }}'
+      - name: source_code_type
+        description: '{{ doc("source_code_type") }}'
+      - name: source_code
+        description: '{{ doc("source_code") }}'
+      - name: source_description
+        description: '{{ doc("source_description") }}'
+      - name: normalized_code_type
+        description: '{{ doc("normalized_code_type") }}'
+      - name: normalized_code
+        description: '{{ doc("normalized_code") }}'
+      - name: normalized_description
+        description: '{{ doc("normalized_description") }}'
+      - name: condition_rank
+        description: '{{ doc("condition_rank") }}'
+      - name: present_on_admit_code
+        description: '{{ doc("present_on_admit_code") }}'
+      - name: present_on_admit_description
+        description: '{{ doc("present_on_admit_description") }}'
+      - name: data_source
+        description: '{{ doc("data_source") }}'
+      - name: file_name
+        description: '{{ doc("file_name") }}'
+      - name: ingest_datetime
+        description: '{{ doc("ingest_datetime") }}'

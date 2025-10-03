@@ -26,6 +26,8 @@ RUN python -m pip install --upgrade "pip==24.0" "setuptools==69.2.0" "wheel==0.4
 COPY . /usr/app/dbt/
 WORKDIR /usr/app/dbt/
 
+RUN pip install -r requirements.txt
+
 ARG commit_ref=main
 
 FROM base AS dbt-core
