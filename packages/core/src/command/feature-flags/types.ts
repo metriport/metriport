@@ -42,7 +42,6 @@ export const cxBasedFFsSchema = z.object({
   cxsWithAthenaCustomFieldsEnabled: ffStringValuesSchema,
   cxsWithPcpVisitAiSummaryFeatureFlag: ffStringValuesSchema,
   cxsWithRecentVisitAiSummary: ffStringValuesSchema,
-  cxsWithHl7NotificationWebhookFeatureFlag: ffStringValuesSchema,
   cxsWithDischargeSlackNotificationFeatureFlag: ffStringValuesSchema,
   cxsWithDischargeRequeryFeatureFlag: ffStringValuesSchema,
   cxsWithXmlRedownloadFeatureFlag: ffStringValuesSchema,
