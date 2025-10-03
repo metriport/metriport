@@ -45,6 +45,7 @@ import hieRoutes from "./hie";
 import carequalityRoutes from "./hie/carequality";
 import commonwellRoutes from "./hie/commonwell";
 import questRoutes from "./integration/quest";
+import surescriptsRoutes from "./integration/surescripts";
 import jwtToken from "./jwt-token";
 import docsRoutes from "./medical/docs";
 import facilityRoutes from "./medical/facility";
@@ -74,6 +75,7 @@ router.use("/ehr", ehr);
 router.use("/tcm/encounter", tcmEncounter);
 router.use("/analytics-platform", analyticsPlatformRoutes);
 router.use("/quest", questRoutes);
+router.use("/surescripts", surescriptsRoutes);
 router.use("/suspect", suspectRoutes);
 
 /** ---------------------------------------------------------------------------
