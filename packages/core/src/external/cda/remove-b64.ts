@@ -98,6 +98,7 @@ export function removeBase64PdfEntries(payloadRaw: string): {
     attributeNamePrefix: "_",
     suppressEmptyNode: true,
     suppressBooleanAttributes: false,
+    preserveOrder: true, // Preserve order of elements and text
   });
   const xml = builder.build(json);
 
@@ -137,6 +138,8 @@ function getJsonFromXml(payloadRaw: string): any {
     ignoreAttributes: false,
     attributeNamePrefix: "_",
     removeNSPrefix: true,
+    trimValues: false, // Don't trim whitespace from text values
+    preserveOrder: true, // Preserve order of elements and text
   });
 
   try {

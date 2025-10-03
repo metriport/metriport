@@ -663,9 +663,9 @@ function buildPatientMergeEndpoint(orgId: string, nonSurvivingPatientId: string)
   return `${buildPatientEndpoint(orgId, nonSurvivingPatientId)}/Merge`;
 }
 
-function buildDocumentQueryUrl(subjectId: string, params: DocumentQueryParams): string {
+function buildDocumentQueryUrl(patientId: string, params: DocumentQueryParams): string {
   const urlParams = new URLSearchParams();
-  urlParams.append("subject.id", subjectId);
+  urlParams.append("patient.identifier", patientId);
   if (params.status) urlParams.append("status", params.status);
   if (params.author?.given) urlParams.append("author.given", params.author.given);
   if (params.author?.family) urlParams.append("author.family", params.author.family);
