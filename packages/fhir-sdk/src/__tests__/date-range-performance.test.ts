@@ -3,7 +3,8 @@
 import { FhirBundleSdk } from "../index";
 import { Bundle, Observation } from "@medplum/fhirtypes";
 
-describe("Date Range Search - Large Scale Performance", () => {
+// Skip these tests by default as its a performance test that is slow and will slow down CI.
+describe.skip("Date Range Search - Large Scale Performance", () => {
   const ONE_MILLION = 1_000_000;
 
   describe("1 Million Resources", () => {

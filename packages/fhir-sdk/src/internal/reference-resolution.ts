@@ -75,7 +75,7 @@ export function resolveReference(
   const referenceValue = (resource as any)[referenceField];
   if (!referenceValue) {
     // FR-5.6: Return appropriate empty value for missing references
-    return isArrayReferenceField(referenceField, resource.resourceType) ? [] : undefined;
+    return isArrayReferenceField(referenceField) ? [] : undefined;
   }
 
   // Handle array references

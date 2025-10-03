@@ -216,8 +216,8 @@ export function generateLLMContext<T extends Resource>(
 
   // Format based on selected format
   if (format === "json") {
-    return formatAsJSON(cleanedResourcesByDepth, startResource);
+    return formatAsJSON(cleanedResourcesByDepth);
   } else {
-    return formatAsStructuredText(cleanedResourcesByDepth, startResource);
+    return formatAsStructuredText(cleanedResourcesByDepth);
   }
 }
