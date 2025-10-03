@@ -10,15 +10,20 @@ import { out, LogFunction } from "../../util";
 import { S3Utils, storeInS3WithRetries } from "../aws/s3";
 
 const QUEST_ROSTER_ROUTE = "/internal/quest/roster";
+const QUEST_NOTIFICATIONS_ROSTER_ROUTE = "/internal/quest/notifications-roster";
 const NUMBER_OF_ATTEMPTS = 3;
 const BASE_DELAY = dayjs.duration({ milliseconds: 100 });
 
-export async function generateQuestRoster(): Promise<{
+export async function generateQuestRoster({
+  notifications,
+}: {
+  notifications?: boolean | undefined;
+}): Promise<{
   rosterFileName: string;
   rosterContent: Buffer;
 }> {
   const { log } = out("QuestRoster");
-  const enrolledPatients = await getAllEnrolledPatients(log);
+  const enrolledPatients = await getAllEnrolledPatients({ notifications, log });
   const rosterContent = buildRosterFile(enrolledPatients);
   log(`Generated roster file with ${enrolledPatients.length} patients`);
 
@@ -27,9 +32,16 @@ export async function generateQuestRoster(): Promise<{
   return { rosterFileName, rosterContent };
 }
 
-async function getAllEnrolledPatients(log: LogFunction): Promise<Patient[]> {
+async function getAllEnrolledPatients({
+  notifications,
+  log,
+}: {
+  notifications?: boolean | undefined;
+  log: LogFunction;
+}): Promise<Patient[]> {
   const enrolledPatients: Patient[] = [];
-  let currentUrl: string | undefined = Config.getApiUrl() + QUEST_ROSTER_ROUTE;
+  const questRosterRoute = notifications ? QUEST_NOTIFICATIONS_ROSTER_ROUTE : QUEST_ROSTER_ROUTE;
+  let currentUrl: string | undefined = Config.getApiUrl() + questRosterRoute;
   while (currentUrl) {
     const response = await getWithNetworkRetries(currentUrl, log);
     const rosterPage = questRosterResponseSchema.parse(response.data);

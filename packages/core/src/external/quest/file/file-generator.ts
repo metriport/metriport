@@ -13,16 +13,17 @@ import {
 } from "../schema/request";
 import { OutgoingFileRowSchema } from "../schema/shared";
 
-export function buildRosterFile(patients: Patient[]): Buffer {
-  const header = buildRosterHeader();
+export function buildRosterFile(patients: Patient[], notifications?: boolean): Buffer {
+  const header = buildRosterHeader(notifications);
   const { body, requestedPatientIds } = buildRosterTable(patients);
   const footer = buildRosterFooter(requestedPatientIds);
   return Buffer.concat([header, body, footer]);
 }
 
-function buildRosterHeader(): Buffer {
+function buildRosterHeader(notifications?: boolean): Buffer {
+  const generalMnemonic = notifications ? "METRIP" : "IVMETRI";
   return buildQuestRequestRow(
-    { recordType: "H", generalMnemonic: "METRIP", fileCreationDate: new Date() },
+    { recordType: "H", generalMnemonic, fileCreationDate: new Date() },
     requestHeaderSchema,
     requestHeaderRow
   );

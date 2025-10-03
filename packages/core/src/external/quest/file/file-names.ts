@@ -6,9 +6,9 @@ const RESPONSE_FILE_EXTENSION = ".txt";
 const DATE_ID_REGEX = /^\d{12}$/;
 const SOURCE_DOCUMENT_KEY_REGEX = /\/externalId=([\w\d-]+)\/dateId=(\d+)\//;
 
-export function buildRosterFileName() {
+export function buildRosterFileName({ notifications }: { notifications?: boolean | undefined }) {
   const dateId = buildDayjs().format("YYYYMMDD");
-  return `Metriport_roster_${dateId}.txt`;
+  return `Metriport_${notifications ? "notifications" : "backfill"}_${dateId}.txt`;
 }
 
 /**
