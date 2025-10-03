@@ -112,6 +112,9 @@ jobs:
         working-directory: metriport
         shell: bash
 
+      - name: If branch to staging, rebase against develop
+        uses: ./.github/actions/rebase-develop
+
       - name: Install dependencies for relevant packages
         run: |
           npm ci --ignore-scripts --no-fund

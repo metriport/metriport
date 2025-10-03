@@ -57,10 +57,14 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v3
+
       - name: Log Git Ref
         run: |
           echo "Git ref: $(git rev-parse HEAD)"
         shell: bash
+
+      - name: If branch to staging, rebase against develop
+        uses: ./.github/actions/rebase-develop
 
       - name: Setup AWS CLI
         run: |
