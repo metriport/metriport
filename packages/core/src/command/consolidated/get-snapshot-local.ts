@@ -161,7 +161,7 @@ async function getBundle(
   log(`forceDataFromFhir: ${forceDataFromFhir}`);
   if (isGetFromS3) {
     const startedAt = new Date();
-    const consolidatedBundle = await getConsolidatedFromS3({ ...params, cxId });
+    const consolidatedBundle = await getConsolidatedFromS3({ cxId, ...params });
     if (consolidatedBundle) {
       log(`(from S3) Took ${elapsedTimeFromNow(startedAt)}ms`);
       return consolidatedBundle;

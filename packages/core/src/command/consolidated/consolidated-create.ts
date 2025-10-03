@@ -3,7 +3,7 @@ import { errorToString } from "@metriport/shared";
 import { parseFhirBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { generateAiBriefBundleEntry } from "../../domain/ai-brief/generate";
+import { generateAiBriefBundleEntry, getAiBriefFromS3 } from "../../domain/ai-brief/generate";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
@@ -48,6 +48,7 @@ export type ConsolidatePatientDataCommand = {
   patient: Patient;
   destinationBucketName?: string | undefined;
   sourceBucketName?: string | undefined;
+  skipAiBriefGeneration?: boolean | undefined;
 };
 
 type BundleLocation = { bucket: string; key: string };
@@ -60,6 +61,7 @@ export async function createConsolidatedFromConversions({
   patient,
   destinationBucketName = getConsolidatedLocation(),
   sourceBucketName = getConsolidatedSourceLocation(),
+  skipAiBriefGeneration,
 }: ConsolidatePatientDataCommand): Promise<Bundle> {
   const patientId = patient.id;
   const { log } = out(`createConsolidatedFromConversions - cx ${cxId}, pat ${patientId}`);
@@ -128,8 +130,15 @@ export async function createConsolidatedFromConversions({
   log(`...done, from ${lengthWithDups} to ${bundle.entry?.length} resources`);
 
   // TODO This whole section with AI-related logic should be moved to the `generateAiBriefBundleEntry`.
-  log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
-  if (isAiBriefFeatureFlagEnabled && bundle.entry && bundle.entry.length > 0) {
+  log(
+    `isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled} skipAiBriefGeneration: ${skipAiBriefGeneration}`
+  );
+  if (
+    isAiBriefFeatureFlagEnabled &&
+    !skipAiBriefGeneration &&
+    bundle.entry &&
+    bundle.entry.length > 0
+  ) {
     const aiBriefControls: AiBriefControls = {
       cancelled: false,
     };
@@ -147,6 +156,17 @@ export async function createConsolidatedFromConversions({
       });
     } else if (binaryBundleEntry) {
       bundle.entry?.push(binaryBundleEntry);
+    }
+  }
+
+  if (isAiBriefFeatureFlagEnabled && skipAiBriefGeneration) {
+    log(`Getting AI Brief from S3`);
+    const aiBrief = await getAiBriefFromS3(cxId, patientId, log);
+    if (aiBrief) {
+      log("AI summary found in S3");
+      dangerouslyAddEntriesToBundle(bundle, [buildBundleEntry(aiBrief)]);
+    } else {
+      log("No AI summary found in s3");
     }
   }
 

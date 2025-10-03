@@ -24,12 +24,14 @@ export async function recreateConsolidated({
   context,
   requestId,
   isDq = false,
+  skipAiBriefGeneration = false,
 }: {
   patient: Patient;
   conversionType?: ConsolidationConversionType;
   context?: string;
   requestId?: string;
   isDq?: boolean;
+  skipAiBriefGeneration?: boolean;
 }): Promise<void> {
   const { log } = out(`${context ? context + " " : ""}recreateConsolidated - pt ${patient.id}`);
   try {
@@ -43,7 +45,7 @@ export async function recreateConsolidated({
   try {
     if (conversionType) {
       log(`Getting consolidated bundle with conversion type ${conversionType} (sync)`);
-      await getConsolidated({ patient, conversionType });
+      await getConsolidated({ patient, conversionType, skipAiBriefGeneration });
       log(`Consolidated recreated`);
     } else {
       log(`Building consolidated bundle without conversion (async)`);
@@ -51,6 +53,7 @@ export async function recreateConsolidated({
         patient,
         isAsync: false,
         sendAnalytics: true,
+        skipAiBriefGeneration,
       };
       const connector = buildConsolidatedSnapshotConnector();
       await connector.execute(payload);
