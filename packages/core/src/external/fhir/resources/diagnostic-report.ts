@@ -1,7 +1,7 @@
 import { Attachment, CodeableConcept, DiagnosticReport } from "@medplum/fhirtypes";
 import { DIAGNOSTIC_SERVICE_SECTIONS_URL } from "@metriport/shared/medical";
 import { cleanUpNote } from "../../../domain/ai-brief/modify-resources";
-import { base64ToString } from "../../../util/base64";
+import { stringToBase64 } from "@metriport/shared/util/base64";
 import { removeHtmlTags } from "../../html/remove-tags";
 
 export function presentedFormsToText(report: DiagnosticReport): string[] {
@@ -22,7 +22,7 @@ export function presentedFormsToText(report: DiagnosticReport): string[] {
 export function attachmentToText(attachment: Attachment): string | undefined {
   if (!attachment.data) return undefined;
   if (attachment.language && !attachment.language.startsWith("en")) return undefined;
-  const formTextRaw = base64ToString(attachment.data);
+  const formTextRaw = stringToBase64(attachment.data);
   const text = cleanUpNote(formTextRaw);
   const extraCleanText = additionalNoteCleanup(text);
   return extraCleanText;
