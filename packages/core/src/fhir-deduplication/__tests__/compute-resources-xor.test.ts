@@ -34,7 +34,7 @@ describe("computeResourcesXorAlongResourceType", () => {
       targetResources,
     });
     expect(sourceOnly.length).toBe(3);
-    expect(targetOnly.length).toBe(2);
+    expect(targetOnly.length).toBe(4);
     const sourceIds = sourceOnly.map(resource => resource?.id);
     const targetIds = targetOnly.map(resource => resource?.id);
     expect(sourceIds).toEqual(
@@ -47,7 +47,9 @@ describe("computeResourcesXorAlongResourceType", () => {
     expect(targetIds).toEqual(
       expect.arrayContaining([
         "b9b78ee6-118f-4414-b748-eede96359f02",
+        "ba187039-1672-4040-bc8b-05d9ec199f2f",
         "a0850f7e-43f2-4688-a1e0-758286caf728",
+        "8835e10a-74f3-4878-ba48-d42461e72588",
       ])
     );
   });
