@@ -16,7 +16,7 @@ import { getDiagnosticReportCategory } from "../../fhir/resources/diagnostic-rep
 import { getServiceRequestReference } from "./service-request";
 import { getQuestDataSourceExtension } from "./shared";
 import { getObservationReference } from "./observation";
-import { base64ToString } from "@metriport/shared/util/base64";
+import { stringToBase64 } from "@metriport/shared/util/base64";
 
 export function getDiagnosticReport(
   detail: ResponseDetail,
@@ -64,7 +64,7 @@ export function getDiagnosticReport(
 
 function getPresentedForm(detail: ResponseDetail): DiagnosticReport["presentedForm"] | undefined {
   if (!detail.resultComments || detail.resultComments.trim().length === 0) return undefined;
-  return [{ contentType: "text/plain", data: base64ToString(detail.resultComments) }];
+  return [{ contentType: "text/plain", data: stringToBase64(detail.resultComments) }];
 }
 
 function getDiagnosticReportCoding(detail: ResponseDetail): CodeableConcept | undefined {

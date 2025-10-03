@@ -30,8 +30,12 @@ export class QuestSftpClient extends SftpClient {
    * Generates a new roster file and uploads it to the Quest SFTP server. If this client is configured
    * with a replica, it will also upload the roster file to the S3 replica bucket.
    */
-  async generateAndUploadRoster(): Promise<void> {
-    const { rosterFileName, rosterContent } = await generateQuestRoster();
+  async generateAndUploadRoster({
+    notifications,
+  }: {
+    notifications?: boolean | undefined;
+  }): Promise<void> {
+    const { rosterFileName, rosterContent } = await generateQuestRoster({ notifications });
     try {
       await this.connect();
       await this.writeToQuest(rosterFileName, rosterContent);

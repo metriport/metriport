@@ -2,6 +2,7 @@ import { Bundle } from "@medplum/fhirtypes";
 import { out, LogFunction } from "../../../../util";
 import { Config } from "../../../../util/config";
 import { S3Utils } from "../../../aws/s3";
+import { dangerouslyDeduplicate } from "../../../fhir/consolidated/deduplicate";
 import {
   buildPatientLabConversionPrefix,
   buildLatestConversionFileName,
@@ -24,9 +25,11 @@ export async function buildConsolidatedLabBundle({
   const bundles = await getAllResponseBundles({ s3, cxId, patientId, labBucketName, log });
   const latestBundle = dangerouslyMergeBundles(bundles);
   if (!latestBundle) {
-    log("No consolidated bundle found");
+    log("No merged bundle found");
     return undefined;
   }
+
+  await dangerouslyDeduplicate({ cxId, patientId, bundle: latestBundle });
   const latestBundleName = buildLatestConversionFileName(cxId, patientId);
   const fileContent = Buffer.from(JSON.stringify(latestBundle));
   await s3.uploadFile({ bucket: labBucketName, key: latestBundleName, file: fileContent });

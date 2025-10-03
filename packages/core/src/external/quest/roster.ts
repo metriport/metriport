@@ -13,23 +13,38 @@ const QUEST_ROSTER_ROUTE = "/internal/quest/roster";
 const NUMBER_OF_ATTEMPTS = 3;
 const BASE_DELAY = dayjs.duration({ milliseconds: 100 });
 
-export async function generateQuestRoster(): Promise<{
+function getQuestRosterRoute(notifications?: boolean | undefined) {
+  return QUEST_ROSTER_ROUTE + (notifications ? "/notifications" : "/backfill");
+}
+
+export async function generateQuestRoster({
+  notifications,
+}: {
+  notifications?: boolean | undefined;
+}): Promise<{
   rosterFileName: string;
   rosterContent: Buffer;
 }> {
   const { log } = out("QuestRoster");
-  const enrolledPatients = await getAllEnrolledPatients(log);
+  const enrolledPatients = await getAllEnrolledPatients({ notifications, log });
   const rosterContent = buildRosterFile(enrolledPatients);
   log(`Generated roster file with ${enrolledPatients.length} patients`);
 
-  const rosterFileName = buildRosterFileName();
+  const rosterFileName = buildRosterFileName({ notifications });
   await storeRosterInS3(rosterFileName, rosterContent, log);
   return { rosterFileName, rosterContent };
 }
 
-async function getAllEnrolledPatients(log: LogFunction): Promise<Patient[]> {
+async function getAllEnrolledPatients({
+  notifications,
+  log,
+}: {
+  notifications?: boolean | undefined;
+  log: LogFunction;
+}): Promise<Patient[]> {
   const enrolledPatients: Patient[] = [];
-  let currentUrl: string | undefined = Config.getApiUrl() + QUEST_ROSTER_ROUTE;
+  const questRosterRoute = getQuestRosterRoute(notifications);
+  let currentUrl: string | undefined = Config.getApiUrl() + questRosterRoute;
   while (currentUrl) {
     const response = await getWithNetworkRetries(currentUrl, log);
     const rosterPage = questRosterResponseSchema.parse(response.data);

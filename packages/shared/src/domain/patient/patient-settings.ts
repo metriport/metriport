@@ -28,7 +28,8 @@ export const adtSubscriptionRequestSchema = z.object({
 });
 export type AdtSubscriptionRequest = z.infer<typeof adtSubscriptionRequestSchema>;
 
-export const questMonitoringRequestSchema = z.object({
+export const questPatientRequestSchema = z.object({
+  notifications: z.boolean().optional(),
   patientIds: z.array(z.string()).nonempty(),
 });
-export type QuestMonitoringRequest = z.infer<typeof questMonitoringRequestSchema>;
+export type QuestPatientRequest = z.infer<typeof questPatientRequestSchema>;
