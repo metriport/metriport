@@ -10,6 +10,7 @@ export {
   ReverseReferenceOptions,
   DateRangeSearchOptions,
 } from "./types/sdk-types";
+export { getClinicalDateRange, ResourceDateRange } from "./clinical-dates";
 
 export {
   AllergyIntolerance,
