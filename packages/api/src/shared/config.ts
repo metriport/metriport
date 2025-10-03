@@ -208,6 +208,18 @@ export class Config {
     return getEnvVarOrFail("SYSTEM_ROOT_ORG_NAME");
   }
 
+  // Reads SYSTEM_ROOT_ORG_OFFSET to apply a base offset for organization numbers (useful for isolating ID ranges in testing/dev)
+  static getSystemRootOrgOffset(): number {
+    const offset = getEnvVar("SYSTEM_ROOT_ORG_OFFSET");
+    if (offset != null) {
+      const parsed = parseInt(offset);
+      if (Number.isFinite(parsed) && parsed >= 0) {
+        return parsed;
+      }
+    }
+    return 0;
+  }
+
   static getGatewayEndpoint(): string {
     return getEnvVarOrFail("CW_GATEWAY_ENDPOINT");
   }
