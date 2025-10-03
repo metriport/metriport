@@ -6,14 +6,14 @@ import { getConfig } from "../shared/config";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { createScheduledLambda } from "../shared/lambda-scheduled";
 
-export type EnhancedCoverageConnectorProps = {
+type DbMaintenanceConnectorProps = {
   stack: Construct;
   lambdaLayers: LambdaLayers;
   vpc: IVpc;
   apiAddress: string;
 };
 
-function getSettings(props: EnhancedCoverageConnectorProps) {
+function getSettings(props: DbMaintenanceConnectorProps) {
   return {
     ...props,
     name: "ScheduledDBMaintenance",
@@ -28,7 +28,7 @@ function getSettings(props: EnhancedCoverageConnectorProps) {
   };
 }
 
-export function createScheduledDBMaintenance(props: EnhancedCoverageConnectorProps): IFunction {
+export function createScheduledDBMaintenance(props: DbMaintenanceConnectorProps): IFunction {
   const config = getConfig();
   const { stack, lambdaLayers, vpc, name, lambdaTimeout, scheduleExpression, url } =
     getSettings(props);
