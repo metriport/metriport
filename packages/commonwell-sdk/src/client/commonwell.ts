@@ -57,7 +57,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
   private _oid: string;
   private _npi: string;
   private _homeCommunityId: string;
-  private _queryGrantorOid?: string | undefined;
+  private _authGrantorReferenceOid?: string | undefined;
   private onError500: OnError500Options;
 
   /**
@@ -72,7 +72,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
     npi,
     homeCommunityId,
     apiMode,
-    queryGrantorOid,
+    authGrantorReferenceOid: authGrantorReference,
     options = {},
   }: {
     /** The certificate (public key) for the organization. */
@@ -93,7 +93,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
     /** The mode the client will be running. */
     apiMode: APIMode;
     /** The OID of the principal organization who authorized the request, aka The Principal. */
-    queryGrantorOid?: string | undefined;
+    authGrantorReferenceOid?: string | undefined;
     /** Optional parameters. */
     options?: CommonWellOptions;
   }) {
@@ -107,7 +107,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
     this._oid = oid;
     this._npi = npi;
     this._homeCommunityId = homeCommunityId;
-    this._queryGrantorOid = queryGrantorOid;
+    this._authGrantorReferenceOid = authGrantorReference;
     this.onError500 = { ...defaultOnError500, ...options.onError500 };
   }
 
@@ -616,7 +616,9 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
     return {
       ...base,
       npi: this.npi,
-      ...(this._queryGrantorOid ? { authGrantorReference: this._queryGrantorOid } : {}),
+      ...(this._authGrantorReferenceOid
+        ? { authGrantorReference: this._authGrantorReferenceOid }
+        : {}),
     };
   }
 

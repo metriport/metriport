@@ -88,7 +88,7 @@ export const handler = capture.wrapHandler(
       homeCommunityId: orgOid,
       npi,
       apiMode,
-      queryGrantorOid,
+      authGrantorReferenceOid: queryGrantorOid,
       options: { timeout: timeout.asMilliseconds() },
     });
 

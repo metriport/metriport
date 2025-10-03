@@ -66,7 +66,7 @@ export function makeCommonWellAPI(
     homeCommunityId: orgOID,
     npi,
     apiMode,
-    queryGrantorOid,
+    authGrantorReferenceOid: queryGrantorOid,
   });
 }
 
