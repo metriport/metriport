@@ -9,6 +9,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import express, { Application, Request, Response } from "express";
 import helmet from "helmet";
+import { initEvents } from "./event";
 import { initFeatureFlags } from "./external/feature-flags";
 import initDB from "./models/db";
 import { VERSION_HEADER_NAME } from "./routes/header";
@@ -79,6 +80,8 @@ if (isSentryEnabled()) {
 app.use(errorHandler);
 
 app.all("*", ...notFoundHandlers);
+
+initEvents();
 
 const port = 8080;
 const server = app.listen(port, "0.0.0.0", async () => {
