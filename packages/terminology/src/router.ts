@@ -68,8 +68,9 @@ fhirRouter.post(
 const importConceptMapQueryParamsSchema = z.object({
   isReversible: z.enum(["true", "false"]).transform(val => val === "true"),
 });
+
 fhirRouter.post(
-  "/concept-map/import",
+  "/concept-map",
   asyncHandler(async (req: Request, res: Response) => {
     const { isReversible } = importConceptMapQueryParamsSchema.parse(req.query);
 

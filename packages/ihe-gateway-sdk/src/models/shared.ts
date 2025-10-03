@@ -18,6 +18,7 @@ export const oidStringSchema = z
 
 export const SamlAttributesSchema = z.object({
   subjectId: z.string(),
+  queryGrantorOid: z.string().optional(),
   subjectRole: z.object({
     display: z.string(),
     code: z.string(),
@@ -26,6 +27,7 @@ export const SamlAttributesSchema = z.object({
   organizationId: z.string(),
   homeCommunityId: z.string(),
   purposeOfUse: z.string(),
+  principalOid: z.string().optional(),
 });
 export type SamlAttributes = z.infer<typeof SamlAttributesSchema>;
 

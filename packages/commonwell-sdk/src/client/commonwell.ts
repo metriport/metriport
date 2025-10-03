@@ -527,47 +527,62 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
     options?: BaseOptions
   ): Promise<RetrieveDocumentResponse> {
     const headers = this.buildQueryHeaders(options?.meta);
-    const binary = await this.executeWithRetriesOn500IfEnabled(() =>
-      downloadFileInMemory({
-        url: inputUrl,
-        client: this.api,
-        responseType: "json",
-        headers,
-      })
-    );
 
-    if (typeof binary === "string") {
-      try {
-        const dataBuffer = base64ToBuffer(binary);
-        outputStream.write(dataBuffer);
-        outputStream.end();
-        return { contentType: "application/xml", size: dataBuffer.byteLength };
-      } catch (error) {
-        // Continue with the flow...
+    try {
+      const binary = await this.executeWithRetriesOn500IfEnabled(() =>
+        downloadFileInMemory({
+          url: inputUrl,
+          client: this.api,
+          responseType: "json",
+          headers,
+        })
+      );
+
+      if (typeof binary === "string") {
+        try {
+          const dataBuffer = base64ToBuffer(binary);
+          outputStream.write(dataBuffer);
+          outputStream.end();
+          return { contentType: "application/xml", size: dataBuffer.byteLength };
+        } catch (error) {
+          // Continue with the flow...
+        }
       }
-    }
 
-    const errorMessage = "Invalid binary contents";
-    if (!("resourceType" in binary)) {
-      throw new CommonwellError(errorMessage, undefined, { reason: "Missing resourceType" });
+      const errorMessage = "Invalid binary contents";
+      if (!("resourceType" in binary)) {
+        throw new CommonwellError(errorMessage, undefined, { reason: "Missing resourceType" });
+      }
+      const resourceType = binary.resourceType;
+      if (typeof resourceType !== "string" || resourceType !== "Binary") {
+        throw new CommonwellError(errorMessage, undefined, { reason: "Invalid resourceType" });
+      }
+      const contentType = binary.contentType;
+      if (!contentType || typeof contentType !== "string") {
+        throw new CommonwellError(errorMessage, undefined, {
+          reason: "Missing or invalid contentType",
+          contentType,
+        });
+      }
+      const data = binary.data;
+      if (!data)
+        throw new CommonwellError(errorMessage, undefined, {
+          reason: "Missing data",
+          contentType,
+          resourceType,
+          properties:
+            typeof binary === "object" && binary != null
+              ? Object.keys(binary).join(", ")
+              : "not-an-object",
+          inputUrl,
+        });
+      const dataBuffer = base64ToBuffer(data);
+      outputStream.write(dataBuffer);
+      outputStream.end();
+      return { contentType, size: dataBuffer.byteLength };
+    } catch (error) {
+      throw this.getDescriptiveError(error, "Failed to download document");
     }
-    const resourceType = binary.resourceType;
-    if (typeof resourceType !== "string" || resourceType !== "Binary") {
-      throw new CommonwellError(errorMessage, undefined, { reason: "Invalid resourceType" });
-    }
-    const contentType = binary.contentType;
-    if (!contentType || typeof contentType !== "string") {
-      throw new CommonwellError(errorMessage, undefined, {
-        reason: "Missing or invalid contentType",
-        contentType,
-      });
-    }
-    const data = binary.data;
-    if (!data) throw new CommonwellError(errorMessage, undefined, { reason: "Missing data" });
-    const dataBuffer = base64ToBuffer(data);
-    outputStream.write(dataBuffer);
-    outputStream.end();
-    return { contentType, size: dataBuffer.byteLength };
   }
 
   //--------------------------------------------------------------------------------------------
@@ -648,9 +663,9 @@ function buildPatientMergeEndpoint(orgId: string, nonSurvivingPatientId: string)
   return `${buildPatientEndpoint(orgId, nonSurvivingPatientId)}/Merge`;
 }
 
-function buildDocumentQueryUrl(subjectId: string, params: DocumentQueryParams): string {
+function buildDocumentQueryUrl(patientId: string, params: DocumentQueryParams): string {
   const urlParams = new URLSearchParams();
-  urlParams.append("subject.id", subjectId);
+  urlParams.append("patient.identifier", patientId);
   if (params.status) urlParams.append("status", params.status);
   if (params.author?.given) urlParams.append("author.given", params.author.given);
   if (params.author?.family) urlParams.append("author.family", params.author.family);

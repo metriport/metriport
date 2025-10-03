@@ -1,7 +1,7 @@
 import { Hl7Message } from "@medplum/core";
 import { Bundle, CodeableConcept, Resource } from "@medplum/fhirtypes";
-import { executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
+import { executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { CreateDischargeRequeryParams } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import { TcmEncounterUpsertInput } from "@metriport/shared/domain/tcm-encounter";
 import axios from "axios";
@@ -41,7 +41,8 @@ import {
   persistHl7MessageError,
   SupportedTriggerEvent,
 } from "./utils";
-import { getBambooTimezone } from "./timezone";
+import { getBambooTimezone, getKonzaTimezone } from "./timezone";
+import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 
 type HieConfig = { timezone: string };
 
@@ -51,8 +52,11 @@ function getTimezoneFromHieName(
   log: typeof console.log
 ): string {
   if (hieName === "Bamboo") {
-    log("HIE is Bamboo, getting timezone based off state in the facility");
+    log("HIE is Bamboo, getting timezone based off state in the custom ZFA segment");
     return getBambooTimezone(hl7Message);
+  } else if (hieName === "Konza") {
+    log("HIE is Konza, getting timezone based off state in PV1.39");
+    return getKonzaTimezone(hl7Message);
   } else {
     const hieConfigDictionary = getHieConfigDictionary() as Record<string, HieConfig>;
     const hieConfig = hieConfigDictionary[hieName];
@@ -103,7 +107,10 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     const hl7Message = Hl7Message.parse(params.message);
     let parsedData: ParsedHl7Data;
-    const timezone = getTimezoneFromHieName(params.hieName, hl7Message, log);
+
+    const timezone = params.impersonationTimezone
+      ? params.impersonationTimezone
+      : getTimezoneFromHieName(params.hieName, hl7Message, log);
     try {
       parsedData = await parseHl7Message(hl7Message, timezone);
     } catch (parseError: unknown) {
@@ -112,18 +119,11 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     }
 
     const { message, cxId, patientId } = parsedData;
-    const encounterId = createEncounterId(message, patientId);
+    const encounterId = createEncounterId(message, patientId, params.hieName);
 
     const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
-    if (!isSupportedTriggerEvent(triggerEvent)) {
-      log(`Trigger event ${triggerEvent} is not supported. Skipping...`);
-      return;
-    }
-    const timestamp = basicToExtendedIso8601(getOrCreateMessageDatetime(message));
 
-    const encounterPeriod = getEncounterPeriod(message);
-    const encounterClass = getEncounterClass(message);
-    const facilityName = getFacilityName(message);
+    const timestamp = basicToExtendedIso8601(getOrCreateMessageDatetime(message));
 
     const rawDataFileKey = createIncomingMessageFileKey({
       cxId,
@@ -142,16 +142,15 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       contentType: "text/plain",
     });
 
-    analytics({
-      distinctId: cxId,
-      event: EventTypes.hl7NotificationReceived,
-      properties: {
-        cxId,
-        patientId,
-        messageCode,
-        triggerEvent,
-      },
-    });
+    if (!isSupportedTriggerEvent(triggerEvent)) {
+      log(`Trigger event ${triggerEvent} is not supported. Skipping...`);
+      return;
+    }
+
+    //TODO: use strategy pattern based on hieName for the following functions
+    const encounterPeriod = getEncounterPeriod(message);
+    const encounterClass = getEncounterClass(message);
+    const facilityName = getFacilityName(message, params.hieName);
 
     capture.setExtra({
       cxId,
@@ -260,6 +259,26 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
             whenSourceSent: params.messageReceivedTimestamp,
           },
         })
+    );
+
+    const posthogApiKeyArn = Config.getPostHogApiKey();
+    if (!posthogApiKeyArn) {
+      throw new Error("Posthog API key not found");
+    }
+
+    const posthogApiKey = await getSecretValueOrFail(posthogApiKeyArn, Config.getAWSRegion());
+    analytics(
+      {
+        distinctId: cxId,
+        event: EventTypes.hl7NotificationReceived,
+        properties: {
+          cxId,
+          patientId,
+          messageCode,
+          triggerEvent,
+        },
+      },
+      posthogApiKey
     );
 
     log(`Done. API notified...`);

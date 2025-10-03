@@ -49,9 +49,8 @@ function getMedicationCoding(detail: ResponseDetail): Coding[] | undefined {
   if (!detail.ndcNumber && !detail.productCode && !detail.deaSchedule) return undefined;
 
   const ndcCode = getMedicationNdcCode(detail);
-  const productCode = getMedicationProductCode(detail);
   const deaCode = getMedicationDeaScheduleCode(detail);
-  const coding = [ndcCode, productCode, deaCode].filter(Boolean) as Coding[];
+  const coding = [ndcCode, deaCode].filter(Boolean) as Coding[];
 
   return coding;
 }
@@ -71,16 +70,7 @@ function getMedicationNdcCode(detail: ResponseDetail): Coding | undefined {
   if (!detail.ndcNumber) return undefined;
   return {
     system: NDC_URL,
-    code: detail.ndcNumber,
-    ...(detail.drugDescription ? { display: detail.drugDescription } : undefined),
-  };
-}
-
-function getMedicationProductCode(detail: ResponseDetail): Coding | undefined {
-  if (!detail.productCode) return undefined;
-  return {
-    system: NDC_URL,
-    code: detail.productCode,
+    code: detail.ndcNumber ?? detail.productCode,
     ...(detail.drugDescription ? { display: detail.drugDescription } : undefined),
   };
 }
@@ -115,16 +105,12 @@ function getMedicationAmount(detail: ResponseDetail): Ratio | undefined {
     return undefined;
   }
   const quantityUnitOfMeasureDisplay = getNcpdpName(detail.quantityUnitOfMeasure);
+  if (!quantityUnitOfMeasureDisplay) return undefined;
 
   return {
     numerator: {
       value: Number(detail.quantityDispensed),
-      unit: detail.quantityUnitOfMeasure,
-      ...(quantityUnitOfMeasureDisplay ? { display: quantityUnitOfMeasureDisplay } : undefined),
-    },
-    denominator: {
-      value: 1,
-      unit: "1",
+      unit: quantityUnitOfMeasureDisplay,
     },
   };
 }

@@ -1,4 +1,5 @@
-import { Endpoint, Organization } from "@medplum/fhirtypes";
+import { Endpoint, Extension, Organization } from "@medplum/fhirtypes";
+import { isDoaExtension } from "@metriport/core/external/carequality/extension";
 import { isEndpoint, isLocation } from "@metriport/core/external/fhir/shared/index";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -56,6 +57,8 @@ export async function parseCQOrganization(
 
   const endpoints: Endpoint[] = org.contained?.filter(isEndpoint) ?? [];
 
+  const delegateOids = getDelegateOids(org.extension);
+
   return {
     id,
     name: org.name,
@@ -71,6 +74,7 @@ export async function parseCQOrganization(
     active,
     lastUpdatedAtCQ,
     data: org,
+    delegateOids,
     ...getUrls(endpoints),
   };
 }
@@ -156,4 +160,19 @@ function getUrlType(value: string | undefined): ChannelUrl | undefined {
     level: "warning",
   });
   return;
+}
+
+function getDelegateOids(extensions: Extension[] | undefined): string[] {
+  const delegateOids: string[] = [];
+
+  extensions?.forEach(ext => {
+    if (isDoaExtension(ext)) {
+      const reference = ext.valueReference?.reference;
+      if (!reference) return;
+      const oid = reference.split("/")[1];
+      oid && delegateOids.push(oid);
+    }
+  });
+
+  return delegateOids;
 }

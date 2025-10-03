@@ -420,6 +420,20 @@ export class APIStack extends Stack {
     }
 
     //-------------------------------------------
+    // Analytics Platform
+    //-------------------------------------------
+    let analyticsPlatformStack: AnalyticsPlatformsNestedStack | undefined = undefined;
+    if (!isSandbox(props.config)) {
+      analyticsPlatformStack = new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatforms", {
+        config: props.config,
+        vpc: this.vpc,
+        lambdaLayers,
+        medicalDocumentsBucket,
+        featureFlagsTable,
+      });
+    }
+
+    //-------------------------------------------
     // General lambdas
     //-------------------------------------------
     const {
@@ -465,6 +479,7 @@ export class APIStack extends Stack {
         consolidatedIndexName: props.config.openSearch.openSearch.consolidatedIndexName,
         documentIndexName: props.config.openSearch.openSearch.indexName,
       },
+      analyticsQueue: analyticsPlatformStack?.getAssets()?.fhirToCsvIncrementalQueue,
     });
 
     //-------------------------------------------
@@ -534,19 +549,6 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
       lambdaLayers,
     });
-
-    //-------------------------------------------
-    // Analytics Platform
-    //-------------------------------------------
-    let analyticsPlatformStack: AnalyticsPlatformsNestedStack | undefined = undefined;
-    if (!isSandbox(props.config)) {
-      analyticsPlatformStack = new AnalyticsPlatformsNestedStack(this, "AnalyticsPlatforms", {
-        config: props.config,
-        vpc: this.vpc,
-        lambdaLayers,
-        medicalDocumentsBucket,
-      });
-    }
 
     //-------------------------------------------
     // Rate Limiting
@@ -719,6 +721,7 @@ export class APIStack extends Stack {
         iheResponsesBucketName: props.config.iheResponsesBucketName,
         iheParsedResponsesBucketName: props.config.iheParsedResponsesBucketName,
         alarmAction: slackNotification?.alarmAction,
+        featureFlagsTable,
       });
     }
 
@@ -783,7 +786,7 @@ export class APIStack extends Stack {
       ...(surescriptsStack?.getLambdas() ?? []),
       ...(questStack?.getLambdas() ?? []),
       jobsStack.getAssets().runPatientJobLambda,
-      analyticsPlatformStack?.getAssets().fhirToCsvLambda,
+      analyticsPlatformStack?.getAssets().fhirToCsvBulkLambda,
     ];
     const apiUrl = `http://${apiDirectUrl}`;
     lambdasToGetApiUrl.forEach(lambda => lambda?.addEnvironment("API_URL", apiUrl));

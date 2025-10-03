@@ -1,8 +1,16 @@
-import { DocumentReference, DocumentReferenceContext, Identifier } from "@medplum/fhirtypes";
+import {
+  DocumentReference,
+  DocumentReferenceContext,
+  Identifier,
+  Organization,
+  Resource,
+} from "@medplum/fhirtypes";
 import { DocumentReference as CwDocumentReference } from "@metriport/commonwell-sdk";
 import { Patient } from "@metriport/core/domain/patient";
 import { cwExtension } from "@metriport/core/external/commonwell/extension";
+import { isOrganization } from "@metriport/core/external/fhir/shared/index";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { out } from "@metriport/core/util";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import { createDocReferenceContent } from "../../fhir/document";
@@ -61,12 +69,20 @@ export function cwToFHIR(
   // Get date from content or use current date
   const date = firstContent?.attachment?.creation ?? new Date().toISOString();
 
+  const containedContent: Resource[] = [];
+
+  const contained = doc.contained;
+  if (contained?.length) {
+    contained.forEach(cwResource => {
+      const fhirResource = convertCwResourceToFhirOrganization(cwResource, patient.id);
+      if (fhirResource) containedContent.push(fhirResource);
+    });
+  }
   // Create basic FHIR DocumentReference
   const fhirDocRef: DocumentReferenceWithId = {
     id: docId,
     resourceType: "DocumentReference",
-    // TODO: Maybe not even needed, but we have it on CW v1
-    // contained: containedContent,
+    ...(containedContent.length ? { contained: containedContent } : {}),
     masterIdentifier: {
       system: doc.masterIdentifier?.system ?? undefined,
       value: doc.masterIdentifier?.value ?? docId,
@@ -116,4 +132,67 @@ function convertContextToFHIR(
     ...context,
     encounter: context.encounter ? [context.encounter] : undefined,
   }) as DocumentReferenceContext;
+}
+
+/**
+ * Type guard to check if an object is a valid FHIR Resource
+ */
+function isValidFHIRResource(obj: unknown): obj is Resource {
+  return (
+    obj !== undefined &&
+    typeof obj === "object" &&
+    obj !== null &&
+    "resourceType" in obj &&
+    typeof obj.resourceType === "string"
+  );
+}
+
+/**
+ * Safely converts a CommonWell contained resource to FHIR format.
+ * Validates the input before processing to prevent runtime errors.
+ *
+ * This only handles Organization resources for now, which is used on the Dashboard to specify
+ * the organization that created the document.
+ */
+function convertCwResourceToFhirOrganization(
+  resource: unknown,
+  patientId: string
+): Resource | undefined {
+  const { log } = out(`convertCwResourceToFhirOrganization - patient ${patientId}`);
+
+  // Validate that the input is a valid FHIR resource
+  if (!isValidFHIRResource(resource)) {
+    log(`Invalid FHIR resource structure, skipping: ${JSON.stringify(resource)}`);
+    return undefined;
+  }
+
+  // Check if it's an Organization resource
+  if (isOrganization(resource)) {
+    return containedOrgToFHIRResource(resource, patientId);
+  }
+
+  return undefined;
+}
+
+function containedOrgToFHIRResource(
+  org: Organization,
+  patientId: string
+): Organization | undefined {
+  const { log } = out(`containedOrgToFHIRResource - patient ${patientId}`);
+
+  const name = org.name ? org.name : org.alias?.join(", ");
+  if (!name) {
+    log(`Organization with no valid name, skipping it: ${JSON.stringify(org)}`);
+    return undefined;
+  }
+
+  const fhirOrg: Organization = {
+    resourceType: "Organization",
+    ...(org.id && typeof org.id === "string" ? { id: org.id } : {}),
+    name: name,
+  };
+
+  //TODO: 1177 Add more contained resources
+
+  return fhirOrg;
 }

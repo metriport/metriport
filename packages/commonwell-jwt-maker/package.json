@@ -1,6 +1,6 @@
 {
   "name": "@metriport/commonwell-jwt-maker",
-  "version": "1.27.5",
+  "version": "1.27.7-alpha.0",
   "description": "CLI to create a JWT for use in CommonWell queries - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -34,7 +34,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
-    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "prettier-fix": "npx prettier '**/*.{js,ts,md}' --write --ignore-path ../../.prettierignore",
     "test": "echo \"No test specified yet\""
   },
   "bugs": {

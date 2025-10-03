@@ -27,6 +27,7 @@ import { createAndSignBulkXCPDRequests, SignedXcpdRequest } from "./xcpd/create/
 import { isRetryable as isRetryableXcpd } from "./xcpd/process/error";
 import { processXCPDResponse } from "./xcpd/process/xcpd-response";
 import { sendSignedXcpdRequest } from "./xcpd/send/xcpd-requests";
+import { isNewSoapEnvelopeFeatureFlagEnabledForCx } from "../../../../command/feature-flags/domain-ffs";
 
 dayjs.extend(duration);
 
@@ -152,7 +153,13 @@ export async function createSignSendProcessXCPDRequest({
   cxId: string;
 }): Promise<void> {
   const log = getLog("createSignSendProcessXCPDRequest");
-  const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest, samlCertsAndKeys);
+
+  const isNewSoapEnabled = await isNewSoapEnvelopeFeatureFlagEnabledForCx(cxId);
+  const signedRequests = createAndSignBulkXCPDRequests(
+    xcpdRequest,
+    samlCertsAndKeys,
+    isNewSoapEnabled
+  );
   const resultS3PayloadsWithFilePaths: [string, string][] = [];
   const resultPromises = signedRequests.map(async (signedRequest, index) => {
     const result = await sendProcessXcpdRequest({

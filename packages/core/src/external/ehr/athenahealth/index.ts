@@ -697,13 +697,19 @@ class AthenaHealthApi {
       throw new BadRequestError("No medication statements found", undefined, additionalInfo);
     }
     const rxnormCoding = getMedicationRxnormCoding(medicationWithRefs.medication);
-    if (!rxnormCoding) {
-      throw new BadRequestError("No RXNORM code found for medication", undefined, additionalInfo);
+    const text = medicationWithRefs.medication.code?.text;
+    if (!rxnormCoding && !text) {
+      throw new BadRequestError(
+        "No RXNORM code or text found for medication",
+        undefined,
+        additionalInfo
+      );
     }
     const medicationReference = await this.searchForMedication({
       cxId,
       patientId,
       coding: rxnormCoding,
+      text,
     });
     if (!medicationReference) {
       throw new BadRequestError("No medication option found via search", undefined, additionalInfo);
@@ -1104,26 +1110,33 @@ class AthenaHealthApi {
     if (!reaction || reaction.length < 1) {
       throw new BadRequestError("No reactions found for allergy", undefined, additionalInfo);
     }
-    const codingsWithSeverityPairs: [Coding, Coding, string | undefined][] = reaction.flatMap(r => {
+    const codingsWithSeverityPairs: [
+      Coding | undefined,
+      string | undefined,
+      Coding | undefined,
+      string | undefined
+    ][] = reaction.flatMap(r => {
       const substanceRxnormCoding = getAllergyIntoleranceSubstanceRxnormCoding(r);
-      if (!substanceRxnormCoding) return [];
+      const substanceText = r.substance?.text;
+      if (!substanceRxnormCoding && !substanceText) return [];
       const manifestationSnomedCoding = getAllergyIntoleranceManifestationSnomedCoding(r);
-      if (!manifestationSnomedCoding) return [];
-      return [[substanceRxnormCoding, manifestationSnomedCoding, r.severity]];
+      return [[substanceRxnormCoding, substanceText, manifestationSnomedCoding, r.severity]];
     });
     const codingsWithSeverityPair = codingsWithSeverityPairs[0];
     if (!codingsWithSeverityPair) {
       throw new BadRequestError(
-        "No RXNORM and SNOMED codes found for allergy reaction",
+        "No RXNORM code or text found for allergy reaction",
         undefined,
         additionalInfo
       );
     }
-    const [substanceRxnormCoding, manifestationSnomedCoding, severity] = codingsWithSeverityPair;
+    const [substanceRxnormCoding, substanceText, manifestationSnomedCoding, severity] =
+      codingsWithSeverityPair;
     const allergenReference = await this.searchForAllergen({
       cxId,
       patientId,
       coding: substanceRxnormCoding,
+      text: substanceText,
     });
     if (!allergenReference) {
       throw new BadRequestError("No allergen option found via search", undefined, additionalInfo);
@@ -1135,32 +1148,30 @@ class AthenaHealthApi {
       allergenId: allergenReference.allergenid,
     });
     const existingReactions = existingAllergy?.reactions ?? [];
-    const possibleReactions = await this.getCompleteAllergyReactions({ cxId });
-    const reactionReference = possibleReactions.find(
-      r => r.snomedcode === manifestationSnomedCoding.code
-    );
-    if (!reactionReference) {
-      throw new BadRequestError(
-        "No reaction reference found for allergy reaction manifestation",
-        undefined,
-        additionalInfo
+    if (manifestationSnomedCoding) {
+      const possibleReactions = await this.getCompleteAllergyReactions({ cxId });
+      const reactionReference = possibleReactions.find(
+        r => r.snomedcode === manifestationSnomedCoding.code
       );
+      if (reactionReference) {
+        const possibleSeverities = await this.getCompleteAllergySeverities({ cxId });
+        const severityReference = severity
+          ? possibleSeverities.find(s => s.severity.toLowerCase() === severity.toLowerCase())
+          : undefined;
+        const newReaction = {
+          reactionname: reactionReference.reactionname,
+          snomedcode: reactionReference.snomedcode,
+          ...(severityReference
+            ? {
+                severity: severityReference.severity,
+                severitysnomedcode: severityReference.snomedcode,
+              }
+            : {}),
+        };
+        existingReactions.push(newReaction);
+      }
     }
-    const possibleSeverities = await this.getCompleteAllergySeverities({ cxId });
-    const severityReference = severity
-      ? possibleSeverities.find(s => s.severity.toLowerCase() === severity.toLowerCase())
-      : undefined;
-    const newReaction = {
-      reactionname: reactionReference.reactionname,
-      snomedcode: reactionReference.snomedcode,
-      ...(severityReference
-        ? {
-            severity: severityReference.severity,
-            severitysnomedcode: severityReference.snomedcode,
-          }
-        : {}),
-    };
-    const allReactions = uniqBy([...existingReactions, newReaction], "snomedcode");
+    const allReactions = uniqBy([...existingReactions], "snomedcode");
     const onsetDate = getAllergyIntoleranceOnsetDate(allergyIntolerance);
     const formattedOnsetDate = this.formatDate(onsetDate);
     if (!formattedOnsetDate) {
@@ -1178,7 +1189,7 @@ class AthenaHealthApi {
             }
           : { criticality, onsetdate: formattedOnsetDate }),
         note: "Added via Metriport App",
-        reactions: allReactions,
+        reactions: allReactions.length < 1 ? undefined : allReactions,
       },
     ];
     const data = {
@@ -1327,10 +1338,12 @@ class AthenaHealthApi {
     cxId,
     patientId,
     coding,
+    text,
   }: {
     cxId: string;
     patientId: string;
-    coding: Coding;
+    coding?: Coding | undefined;
+    text?: string | undefined;
   }): Promise<MedicationReference | undefined> {
     const { log, debug } = out(
       `AthenaHealth searchForMedication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
@@ -1340,11 +1353,12 @@ class AthenaHealthApi {
       cxId,
       practiceId: this.practiceId,
       patientId,
-      code: coding.code,
-      system: coding.system,
-      display: coding.display,
+      code: coding?.code,
+      system: coding?.system,
+      display: coding?.display,
+      text,
     };
-    const codingDisplay = coding.display;
+    const codingDisplay = coding?.display || text;
     if (!codingDisplay) {
       throw new BadRequestError("No display found for coding", undefined, additionalInfo);
     }
@@ -1409,10 +1423,12 @@ class AthenaHealthApi {
     cxId,
     patientId,
     coding,
+    text,
   }: {
     cxId: string;
     patientId: string;
-    coding: Coding;
+    coding?: Coding | undefined;
+    text?: string | undefined;
   }): Promise<AllergenReference | undefined> {
     const { log, debug } = out(
       `AthenaHealth searchForAllergen - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
@@ -1422,11 +1438,12 @@ class AthenaHealthApi {
       cxId,
       practiceId: this.practiceId,
       patientId,
-      code: coding.code,
-      system: coding.system,
-      display: coding.display,
+      code: coding?.code,
+      system: coding?.system,
+      display: coding?.display,
+      text,
     };
-    const codingDisplay = coding.display;
+    const codingDisplay = coding?.display || text;
     if (!codingDisplay) {
       throw new BadRequestError("No display found for coding", undefined, additionalInfo);
     }
@@ -1495,14 +1512,14 @@ class AthenaHealthApi {
     const { debug } = out(
       `AthenaHealth searchForAllergyReactions - cxId ${cxId} practiceId ${this.practiceId}`
     );
-    const referenceUrl = this.createReferencePath("allergies/reactions");
+    const referenceUrl = "/reference/allergies/reactions";
     const additionalInfo = {
       cxId,
       practiceId: this.practiceId,
     };
     const allergyReactionReferences = await this.makeRequest<AllergyReactionReferences>({
       cxId,
-      s3Path: "reference/allergies/reactions",
+      s3Path: this.createReferencePath("allergies/reactions"),
       method: "GET",
       url: referenceUrl,
       schema: allergyReactionReferencesSchema,

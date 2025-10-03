@@ -31,10 +31,7 @@ import { mapDocRefToMetriport } from "../../../shared/external";
 import { cwToFHIR } from "../../commonwell-v2/document/cw-to-fhir";
 import { sandboxGetDocRefsAndUpsert } from "../../commonwell/document/document-query-sandbox";
 import { getCWData, update } from "../../commonwell/patient/patient";
-import {
-  getPatientWithCWData,
-  PatientWithCWData,
-} from "../../commonwell/patient/patient-external-data";
+import { PatientDataCommonwell } from "../../commonwell/patient/patient-shared";
 import { getCwInitiator, validateCWEnabled } from "../../commonwell/shared";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
@@ -47,7 +44,6 @@ import { HieInitiator } from "../../hie/get-hie-initiator";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
-import { setDocQueryStartAt } from "../../hie/set-doc-query-start";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
@@ -61,7 +57,7 @@ import {
   getDocPrintableDetails,
 } from "./shared";
 
-const staleLookbackWeeks = 1;
+const staleLookbackWeeks = 2;
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -130,20 +126,10 @@ export async function queryAndProcessDocuments({
   if (!isCwEnabled) return interrupt(`CW disabled for cxId ${cxId} patientId ${patientId}`);
 
   try {
-    // TODO: ENG-934 - MINOR UPDATE TO THE LOGIC
-    const [initiator] = await Promise.all([
+    const [initiator, currentPatient] = await Promise.all([
       getCwInitiator(patientParam, facilityId),
-      setDocQueryProgress({
-        patient: { id: patientId, cxId },
-        downloadProgress: { status: "processing" },
-        convertProgress: { status: "processing" },
-        requestId,
-        source: MedicalDataSource.COMMONWELL,
-        triggerConsolidated,
-      }),
+      getPatientOrFail({ id: patientId, cxId }),
     ]);
-
-    const currentPatient = await getPatientOrFail({ id: patientId, cxId });
     const patientCWData = getCWData(currentPatient.data.externalData);
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
     const isProcessing = patientCWData?.status === "processing";
@@ -183,31 +169,26 @@ export async function queryAndProcessDocuments({
     }
 
     const startedAt = new Date();
-    await setDocQueryStartAt({
+    await setDocQueryProgress({
       patient: { id: patientId, cxId },
+      downloadProgress: { status: "processing" },
+      convertProgress: { status: "processing" },
+      requestId,
       source: MedicalDataSource.COMMONWELL,
+      triggerConsolidated,
       startedAt,
     });
 
-    const patient = await getPatientWithCWData(patientParam);
-
-    if (!patient) {
-      const msg = `Couldn't get CW Data for Patient`;
-      throw new MetriportError(msg, undefined, {
-        cxId,
-        patientId,
-      });
-    }
-
-    log(`Querying for documents of patient ${patient.id}...`);
+    log(`Querying for documents of patient ${currentPatient.id}...`);
     const cwDocuments = await internalGetDocuments({
-      patient,
+      patientId: currentPatient.id,
+      cwData: patientCWData,
       initiator,
     });
     log(`Got ${cwDocuments.length} documents from CW`);
 
     const fhirDocRefs = await downloadDocsAndUpsertFHIR({
-      patient,
+      patient: currentPatient,
       facilityId,
       documents: cwDocuments,
       forceDownload,
@@ -271,16 +252,16 @@ export async function queryAndProcessDocuments({
  * @returns document references with CW format
  */
 async function internalGetDocuments({
-  patient,
+  patientId,
+  cwData,
   initiator,
 }: {
-  patient: PatientWithCWData;
+  patientId: string;
+  cwData: PatientDataCommonwell;
   initiator: HieInitiator;
 }): Promise<CwDocumentReference[]> {
   const context = "cw.queryDocument";
-  const { log, debug } = out(`CW internalGetDocuments - M patient ${patient.id}`);
-
-  const cwData = patient.data.externalData.COMMONWELL;
+  const { log, debug } = out(`CW internalGetDocuments - M patient ${patientId}`);
 
   function reportDocQueryMetric(queryStart: number) {
     const queryDuration = Date.now() - queryStart;
@@ -314,7 +295,7 @@ async function internalGetDocuments({
         errors: cwErrs,
         context: {
           cwReference: commonWell.lastTransactionId,
-          patientId: patient.id,
+          patientId,
         },
         log,
       });
@@ -325,6 +306,7 @@ async function internalGetDocuments({
       if (d.masterIdentifier?.value && d.content?.[0]?.attachment.url) {
         const docRef: CwDocumentReference = {
           ...d,
+          description: d.description ?? getDescriptionFromAttachment(d.content),
           id: d.masterIdentifier?.value,
         };
         return docRef;
@@ -338,6 +320,10 @@ async function internalGetDocuments({
       context,
     });
   }
+}
+
+function getDescriptionFromAttachment(content: CwDocumentReference["content"]): string | undefined {
+  return content?.find(c => c.attachment?.title)?.attachment?.title ?? undefined;
 }
 
 function reportCWErrors({
