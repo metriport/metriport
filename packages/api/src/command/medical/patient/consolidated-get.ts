@@ -43,6 +43,7 @@ export type GetConsolidatedParams = {
   bundle?: SearchSetBundle;
   requestId?: string;
   documentIds?: string[];
+  useMostRecentAiSummary?: boolean;
 } & GetConsolidatedFilters;
 
 export type GetConsolidatedSendToCxParams = GetConsolidatedParams & {
@@ -218,8 +219,10 @@ export async function getConsolidated({
   dateTo,
   requestId,
   conversionType,
+  useMostRecentAiSummary,
   bundle,
 }: GetConsolidatedParams): Promise<ConsolidatedData> {
+  console.log(useMostRecentAiSummary);
   const { cxId, id: patientId } = patient;
   const { log } = out(`API getConsolidated - cxId ${cxId}, patientId ${patientId}`);
   const filters = {
