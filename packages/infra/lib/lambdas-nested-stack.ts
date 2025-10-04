@@ -83,6 +83,7 @@ interface LambdasNestedStackProps extends NestedStackProps {
   bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
   openSearch: OpenSearchConfigForLambdas;
   analyticsQueue?: IQueue | undefined;
+  aiBriefBucket: s3.Bucket | undefined;
 }
 
 type GenericConsolidatedLambdaProps = {
@@ -103,6 +104,7 @@ type GenericConsolidatedLambdaProps = {
   consolidatedIngestionQueue: IQueue;
   bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
   analyticsQueue?: IQueue;
+  aiBriefBucket: s3.Bucket | undefined;
 };
 
 type ConsolidatedLambdaProps = Omit<GenericConsolidatedLambdaProps, "name" | "entry" | "memory">;
@@ -247,6 +249,7 @@ export class LambdasNestedStack extends NestedStack {
       bedrock: props.config.bedrock,
       consolidatedIngestionQueue: this.consolidatedIngestionQueue,
       analyticsQueue: props.analyticsQueue,
+      aiBriefBucket: props.aiBriefBucket,
     });
     this.fhirToBundleCountLambda = this.setupFhirBundleCountLambda({
       lambdaLayers: props.lambdaLayers,
@@ -263,6 +266,7 @@ export class LambdasNestedStack extends NestedStack {
       featureFlagsTable: props.featureFlagsTable,
       bedrock: props.config.bedrock,
       consolidatedIngestionQueue: this.consolidatedIngestionQueue,
+      aiBriefBucket: props.aiBriefBucket,
     });
 
     this.consolidatedSearchLambda = this.setupConsolidatedSearchLambda({
@@ -768,6 +772,7 @@ export class LambdasNestedStack extends NestedStack {
     bundleBucket,
     conversionsBucket,
     pharmacyBundleBucket,
+    aiBriefBucket,
     hl7ConversionBucket,
     labBundleBucket,
     sentryDsn,
@@ -813,6 +818,9 @@ export class LambdasNestedStack extends NestedStack {
         ...(analyticsQueue && {
           FHIR_TO_CSV_INCREMENTAL_QUEUE_URL: analyticsQueue.queueUrl,
         }),
+        ...(aiBriefBucket && {
+          AI_BRIEF_BUCKET_NAME: aiBriefBucket.bucketName,
+        }),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       memory: 6144,
@@ -828,6 +836,7 @@ export class LambdasNestedStack extends NestedStack {
     pharmacyBundleBucket?.grantRead(theLambda);
     labBundleBucket?.grantRead(theLambda);
     hl7ConversionBucket?.grantRead(theLambda);
+    aiBriefBucket?.grantReadWrite(theLambda);
 
     featureFlagsTable.grantReadData(theLambda);
 

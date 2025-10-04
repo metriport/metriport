@@ -506,4 +506,8 @@ export class Config {
   static getAlohrIngestionTimezone(): string {
     return getEnvVarOrFail("ALOHR_INGESTION_TIMEZONE");
   }
+
+  static getAiBriefBucketName(): string {
+    return getEnvVarOrFail("AI_BRIEF_BUCKET_NAME");
+  }
 }
