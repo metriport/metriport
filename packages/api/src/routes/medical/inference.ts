@@ -69,7 +69,7 @@ router.post(
       },
     });
 
-    const agent = new AnthropicAgent<"claude-sonnet-3.7">({
+    const agent = new AnthropicAgent({
       version: "claude-sonnet-3.7",
       region: "us-west-2",
       systemPrompt: `You are seasoned physician who answers questions given a patient's comprehensive medical record.`,
