@@ -1,11 +1,21 @@
 import { Resource } from "@medplum/fhirtypes";
+import {
+  defaultQuestions,
+  getPrompt,
+  questionsByResourceType,
+  systemPrompt,
+} from "@metriport/core/command/llm/inference/prompts";
 import { summarizeResource } from "@metriport/core/command/llm/inference/resources";
+import { escapeCsvValue } from "@metriport/core/command/patient-import/csv/shared";
 import { out } from "@metriport/core/util/log";
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, errorToString } from "@metriport/shared";
 import { uuidv7 } from "@metriport/shared/util";
 import { createSession } from "better-sse";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
+import fs from "fs";
+import { Groq } from "groq-sdk";
+import path from "path";
 import { z } from "zod";
 import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
@@ -26,6 +36,8 @@ const sidePanelInferenceSchema = z.object({
   context: z.string(),
 });
 
+let lastRequestTime = 0;
+
 /** ---------------------------------------------------------------------------
  * POST /internal/inference/side-panel
  *
@@ -37,6 +49,15 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { log } = out(`side-panel`);
+
+    // TODO REMOVE THIS: avoiding duplicate requests from FE on local
+    // TODO REMOVE THIS: avoiding duplicate requests from FE on local
+    // TODO REMOVE THIS: avoiding duplicate requests from FE on local
+    const now = Date.now();
+    if (now - lastRequestTime < 3_000) {
+      return;
+    }
+    lastRequestTime = now;
 
     // const cxId = getCxIdOrFail(req);
     const { resourceType, resourceDisplays, context } = sidePanelInferenceSchema.parse(req.body);
@@ -72,20 +93,267 @@ router.post(
       eventId: uuidv7(),
     });
 
+    const questions =
+      questionsByResourceType[resourceType as keyof typeof questionsByResourceType] ??
+      defaultQuestions;
+    const prompt = getPrompt({
+      resourceType,
+      resourceDisplays,
+      resourcesAsString: context,
+      questions,
+    });
+    log(`Input (${prompt.length} chars):\n\n${prompt}\n`);
+
+    appendToCsv({ type: "", content: "" });
+    appendToCsv({ type: "", content: "" });
+    appendToCsv({ type: "", content: "" });
+    appendToCsv({
+      type: resourceDisplays.join(", "),
+      content: prompt,
+      duration: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+    });
+
+    const prefix = "+++++++++++++++++";
+    const separator = `>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>`;
+    console.log(separator);
+
+    const startTimeGroq = Date.now();
+    const {
+      output: message,
+      inputTokens,
+      outputTokens,
+    } = await askGroq({
+      context,
+      resourceType,
+      resourceDisplays,
+      model: "openai/gpt-oss-20b",
+    });
+    console.log(
+      `${prefix} Groq 20b (duration ${
+        Date.now() - startTimeGroq
+      }ms, input ${inputTokens}, output ${outputTokens}):\n\n${message}\n${separator}`
+    );
+    appendLlmResponseToCsv({
+      model: "openai/gpt-oss-20b",
+      response: message,
+      duration: Date.now() - startTimeGroq,
+      inputTokens,
+      outputTokens,
+      resourceType,
+      resourceDisplays,
+    });
+
+    const startTimeGroq120b = Date.now();
+    askGroq({
+      context,
+      resourceType,
+      resourceDisplays,
+      model: "openai/gpt-oss-120b",
+    }).then(({ output: message, inputTokens, outputTokens }) => {
+      console.log(
+        `${prefix} Groq 120b (duration ${
+          Date.now() - startTimeGroq120b
+        }ms, input ${inputTokens}, output ${outputTokens}):\n\n${message}\n${separator}`
+      );
+      appendLlmResponseToCsv({
+        model: "openai/gpt-oss-120b",
+        response: message,
+        duration: Date.now() - startTimeGroq120b,
+        inputTokens,
+        outputTokens,
+        resourceType,
+        resourceDisplays,
+      });
+    });
+
     // askOllama({ system: systemPrompt, userPrompt: prompt });
-    const message = await summarizeResource({
+
+    const startTimeClaude4 = Date.now();
+    summarizeResource({
       resourceType,
       resourceDisplays,
       resources: resourcesAsArray,
-    });
+      model: "claude-sonnet-4",
+    })
+      .then(msg => {
+        console.log(
+          `${prefix} Claude 4 (duration ${
+            Date.now() - startTimeClaude4
+          }ms):\n\n${msg}\n${separator}`
+        );
+        appendLlmResponseToCsv({
+          model: "claude-sonnet-4",
+          response: msg,
+          duration: Date.now() - startTimeClaude4,
+          inputTokens: 0,
+          outputTokens: 0,
+          resourceType,
+          resourceDisplays,
+        });
+      })
+      .catch(error => {
+        console.error(`>>> Claude 4 error: ${errorToString(error)}`);
+      });
+
+    const startTimeClaude3_7 = Date.now();
+    summarizeResource({
+      resourceType,
+      resourceDisplays,
+      resources: resourcesAsArray,
+      model: "claude-sonnet-3.7",
+    })
+      .then(msg => {
+        console.log(
+          `${prefix} Claude 3.7 (duration ${
+            Date.now() - startTimeClaude3_7
+          }ms):\n\n${msg}\n${separator}`
+        );
+        appendLlmResponseToCsv({
+          model: "claude-sonnet-3.7",
+          response: msg,
+          duration: Date.now() - startTimeClaude3_7,
+          inputTokens: 0,
+          outputTokens: 0,
+          resourceType,
+          resourceDisplays,
+        });
+      })
+      .catch(error => {
+        console.error(`>>> Claude 3.7 error: ${errorToString(error)}`);
+      });
+
+    // const message = await summarizeResource({
+    //   resourceType,
+    //   resourceDisplays,
+    //   resources: resourcesAsArray,
+    // });
 
     sse.push({
       message,
       eventName: "side-panel-response",
       eventId: uuidv7(),
     });
+
+    // return res.status(200).send(message);
   })
 );
+
+function appendLlmResponseToCsv(data: {
+  resourceType: string;
+  resourceDisplays: string[];
+  model: string;
+  response: string | undefined;
+  duration: number;
+  inputTokens: number | undefined;
+  outputTokens: number | undefined;
+}): void {
+  appendToCsv({
+    type: data.model,
+    content: data.response,
+    duration: data.duration,
+    inputTokens: data.inputTokens,
+    outputTokens: data.outputTokens,
+  });
+}
+function appendToCsv(data: {
+  type: string;
+  content: string | undefined;
+  duration?: number | undefined;
+  inputTokens?: number | undefined;
+  outputTokens?: number | undefined;
+}): void {
+  const csvHeader = ["type", "content", "duration", "inputTokens", "outputTokens"];
+  // const csvHeader = ["resourceType", "resourceDisplays", "model", "inputTokens", "outputTokens"];
+
+  const csvFilePath = path.join(__dirname, "inference.csv");
+  if (!fs.existsSync(csvFilePath)) {
+    fs.writeFileSync(csvFilePath, csvHeader.join(",") + "\n");
+  }
+  const csvContentRaw = [
+    data.type,
+    data.content,
+    data.duration,
+    data.inputTokens,
+    data.outputTokens,
+  ];
+  const csvContent: (string | undefined)[] = [];
+  for (const content of csvContentRaw) {
+    const theContent = content?.toString() ?? "";
+    csvContent.push(escapeCsvValue(theContent));
+  }
+  //   data.resourceType,
+  //   data.resourceDisplays,
+  //   data.model,
+  //   data.inputTokens,
+  //   data.outputTokens,
+  // ];
+  fs.appendFileSync(csvFilePath, csvContent.join(",") + "\n");
+}
+
+async function askGroq({
+  context,
+  resourceType,
+  resourceDisplays,
+  model,
+}: {
+  context: string;
+  resourceType: string;
+  resourceDisplays: string[];
+  model: string;
+}): Promise<{
+  output: string | undefined;
+  inputTokens: number | undefined;
+  outputTokens: number | undefined;
+}> {
+  // const baseUrl = "http://0.0.0.0:11434";
+  // const model = "medllama2:7b";
+  const questions =
+    questionsByResourceType[resourceType as keyof typeof questionsByResourceType] ??
+    defaultQuestions;
+  const prompt = getPrompt({
+    resourceType,
+    resourceDisplays,
+    resourcesAsString: context,
+    questions,
+  });
+
+  try {
+    const groq = new Groq();
+
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      model,
+      temperature: 0,
+      max_completion_tokens: 8192,
+      top_p: 1,
+      stream: false,
+      reasoning_effort: "medium",
+      stop: null,
+    });
+
+    chatCompletion.usage?.completion_tokens;
+    const message = chatCompletion.choices[0]?.message.content ?? undefined;
+    return {
+      output: message,
+      inputTokens: chatCompletion.usage?.prompt_tokens,
+      outputTokens: chatCompletion.usage?.completion_tokens,
+    };
+  } catch (error) {
+    console.error(`>>> Groq error:`, error);
+    return { output: undefined, inputTokens: undefined, outputTokens: undefined };
+  }
+}
 
 async function askOllama({ system, userPrompt }: { system: string; userPrompt: string }) {
   const baseUrl = "http://0.0.0.0:11434";
