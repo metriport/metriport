@@ -2,8 +2,8 @@
    Purpose
    -------
    Flag "morbid_obesity" suspects when:
-     (A) Direct BMI (LOINC 39156-5) >= 40, OR
-     (B) Derived BMI from weight (29463-7) and height (8302-2) >= 40,
+     (A) Direct BMI (LOINC 39156-5) >= 35, OR
+     (B) Derived BMI from weight (29463-7) and height (8302-2) >= 35,
    while EXCLUDING patients who already have an obesity diagnosis.
 
    Exclusions
@@ -29,7 +29,7 @@ WITH obesity_dx_exclusion AS (
 ),
 
 /* ------------------------------------------------------------
-   (A) Direct BMI path (LOINC 39156-5). Flags if BMI >= 40.
+   (A) Direct BMI path (LOINC 39156-5). Flags if BMI >= 35.
    ------------------------------------------------------------ */
 bmi_direct AS (
   SELECT
