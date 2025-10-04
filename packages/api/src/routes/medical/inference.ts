@@ -1,3 +1,4 @@
+import { summarizeResource } from "@metriport/core/command/llm/inference/resources";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -200,6 +201,13 @@ ${context}
         additionalDimension: `ResourceType=${resourceType},cxId=${cxId}`,
       }),
     ]);
+
+    const message = await summarizeResource({
+      resourceType,
+      resourceDisplays,
+      resources: resourcesAsArray,
+    });
+    console.log(`>>> summarizeResource response:\n${message}\n`);
 
     const responseText = (response.content[response.content.length - 1] as AnthropicMessageText)
       .text;
