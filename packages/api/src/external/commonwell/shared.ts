@@ -1,6 +1,5 @@
 import {
   isCommonwellEnabled,
-  isCwDoaEnabled,
   isCWEnabledForCx,
 } from "@metriport/core/command/feature-flags/domain-ffs";
 import { Patient } from "@metriport/core/domain/patient";
@@ -16,8 +15,7 @@ export async function getCwInitiator(
   patient: Pick<Patient, "id" | "cxId">,
   facilityId?: string
 ): Promise<HieInitiator> {
-  const isCwDoaFeatureFlagEnabled = await isCwDoaEnabled();
-  return getHieInitiator(patient, facilityId, isCwDoaFeatureFlagEnabled);
+  return getHieInitiator(patient, facilityId, true);
 }
 
 export async function isFacilityEnabledToQueryCW(
