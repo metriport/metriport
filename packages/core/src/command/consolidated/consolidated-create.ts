@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry } from "@medplum/fhirtypes";
+import { Binary, Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/shared";
 import { parseFhirBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
@@ -133,40 +133,36 @@ export async function createConsolidatedFromConversions({
   log(
     `isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled} skipAiBriefGeneration: ${skipAiBriefGeneration}`
   );
-  if (
+  const shouldGenerateAiBrief =
     isAiBriefFeatureFlagEnabled &&
     !skipAiBriefGeneration &&
     bundle.entry &&
-    bundle.entry.length > 0
-  ) {
-    const aiBriefControls: AiBriefControls = {
-      cancelled: false,
-    };
-    const binaryBundleEntry = await Promise.race([
-      generateAiBriefBundleEntry(bundle, cxId, patientId, log, aiBriefControls),
-      controlDuration(AI_BRIEF_TIMEOUT.asMilliseconds(), TIMED_OUT),
-    ]);
+    bundle.entry.length > 0;
 
-    if (binaryBundleEntry === TIMED_OUT) {
-      aiBriefControls.cancelled = true;
-      log(`AI Brief generation timed out after ${AI_BRIEF_TIMEOUT.asMinutes()} minutes`);
-      capture.message("AI Brief generation timed out", {
-        extra: { cxId, patientId, timeoutMinutes: AI_BRIEF_TIMEOUT.asMinutes() },
-        level: "warning",
-      });
-    } else if (binaryBundleEntry) {
-      bundle.entry?.push(binaryBundleEntry);
+  if (shouldGenerateAiBrief) {
+    const aiBriefEntry = await generateAiBriefWithTimeout(
+      () => generateAiBriefBundleEntry(bundle, cxId, patientId, log),
+      cxId,
+      patientId,
+      log
+    );
+    if (aiBriefEntry) {
+      bundle.entry?.push(aiBriefEntry);
     }
   }
 
-  if (isAiBriefFeatureFlagEnabled && skipAiBriefGeneration) {
-    log(`Getting AI Brief from S3`);
-    const aiBrief = await getAiBriefFromS3(cxId, patientId, log);
-    if (aiBrief) {
-      log("AI summary found in S3");
-      dangerouslyAddEntriesToBundle(bundle, [buildBundleEntry(aiBrief)]);
-    } else {
-      log("No AI summary found in s3");
+  const shouldGetAiBriefFromS3 =
+    isAiBriefFeatureFlagEnabled && skipAiBriefGeneration && bundle.entry && bundle.entry.length > 0;
+
+  if (shouldGetAiBriefFromS3) {
+    const aiBriefEntry = await generateAiBriefWithTimeout(
+      () => getAiBriefFromS3({ cxId, patientId, bundle, log }),
+      cxId,
+      patientId,
+      log
+    );
+    if (aiBriefEntry) {
+      bundle.entry?.push(aiBriefEntry);
     }
   }
 
@@ -263,4 +259,31 @@ async function listConversionBundlesFromS3({
     o.Key ? { bucket: sourceBucketName, key: o.Key } : []
   );
   return conversionBundles;
+}
+
+async function generateAiBriefWithTimeout(
+  aiBriefGenerator: () => Promise<BundleEntry<Binary> | undefined>,
+  cxId: string,
+  patientId: string,
+  log: typeof console.log
+): Promise<BundleEntry<Binary> | undefined> {
+  const aiBriefControls: AiBriefControls = {
+    cancelled: false,
+  };
+  const aiBriefEntry = await Promise.race([
+    aiBriefGenerator(),
+    controlDuration(AI_BRIEF_TIMEOUT.asMilliseconds(), TIMED_OUT),
+  ]);
+
+  if (aiBriefEntry === TIMED_OUT) {
+    aiBriefControls.cancelled = true;
+    log(`AI Brief generation timed out after ${AI_BRIEF_TIMEOUT.asMinutes()} minutes`);
+    capture.message("AI Brief generation timed out", {
+      extra: { cxId, patientId, timeoutMinutes: AI_BRIEF_TIMEOUT.asMinutes() },
+      level: "warning",
+    });
+    return undefined;
+  }
+
+  return aiBriefEntry;
 }

@@ -82,7 +82,7 @@ async function uploadAiBriefToS3(
       resources: [aiBriefFhirResource],
     });
     const s3Utils = new S3Utils(Config.getAWSRegion());
-    const key = getAiBriefFilePath(cxId, patientId);
+    const key = getAiBriefFileKey(cxId, patientId);
     await s3Utils.uploadFile({
       bucket: Config.getAiBriefBucketName(),
       key,
@@ -101,30 +101,52 @@ async function uploadAiBriefToS3(
   }
 }
 
-export async function getAiBriefFromS3(
-  cxId: string,
-  patientId: string,
-  log: typeof console.log
-): Promise<Binary | undefined> {
+/**
+ * Gets the AI Brief from S3, if it doesn't exist, generates a new one.
+ *
+ * @param cxId - The customer id.
+ * @param patientId - The patient id.
+ * @param bundle - The bundle to get the AI Brief from.
+ * @param log - The log function.
+ * @returns The AI Brief bundle entry.
+ */
+export async function getAiBriefFromS3({
+  cxId,
+  patientId,
+  bundle,
+  log,
+}: {
+  cxId: string;
+  patientId: string;
+  bundle: Bundle<Resource>;
+  log: typeof console.log;
+}): Promise<BundleEntry<Binary> | undefined> {
+  log("Getting AI Brief from S3");
+  const s3Utils = new S3Utils(Config.getAWSRegion());
+  const filePath = getAiBriefFileKey(cxId, patientId);
+
   try {
-    const s3Utils = new S3Utils(Config.getAWSRegion());
-    const filePath = getAiBriefFilePath(cxId, patientId);
     const aiBrief = await s3Utils.getFileContentsAsString(Config.getAiBriefBucketName(), filePath);
+
     if (!aiBrief) {
-      return undefined;
+      log(`No AI Brief found in S3, generating new one`);
+      return await generateAiBriefBundleEntry(bundle, cxId, patientId, log);
     }
+
     log(`Got AI Brief from S3`);
-    const bundle = parseFhirBundle(aiBrief) as Bundle<Binary>;
-    if (!bundle) {
-      throw new Error("Failed to parse AI Brief bundle");
+    const aiBriefBundle = parseFhirBundle(aiBrief) as Bundle<Binary>;
+    if (!aiBriefBundle) {
+      log(`Failed to parse AI Brief bundle, generating new one`);
+      return await generateAiBriefBundleEntry(bundle, cxId, patientId, log);
     }
 
-    const aiBriefResource = getAiBriefResourceFromBundle(bundle);
+    const aiBriefResource = getAiBriefResourceFromBundle(aiBriefBundle);
     if (!aiBriefResource) {
-      return undefined;
+      log(`No AI Brief resource found in bundle, generating new one`);
+      return await generateAiBriefBundleEntry(bundle, cxId, patientId, log);
     }
 
-    return aiBriefResource;
+    return buildBundleEntry(aiBriefResource);
   } catch (err) {
     const msg = `Failed to get AI Brief from S3`;
     log(`${msg}: ${errorToString(err)}`);
@@ -135,7 +157,8 @@ export async function getAiBriefFromS3(
         error: err,
       },
     });
-    return undefined;
+    log(`Generating new AI Brief due to error`);
+    return await generateAiBriefBundleEntry(bundle, cxId, patientId, log);
   }
 }
 
@@ -151,6 +174,6 @@ function getAiBriefResourceFromBundle(bundle: Bundle<Binary>): Binary {
   return firstEntry.resource as Binary;
 }
 
-function getAiBriefFilePath(cxId: string, patientId: string): string {
+function getAiBriefFileKey(cxId: string, patientId: string): string {
   return `${cxId}/${patientId}/${AI_BRIEF_FILE_NAME}`;
 }
