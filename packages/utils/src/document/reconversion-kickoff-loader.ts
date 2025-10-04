@@ -50,15 +50,15 @@ const sqsUrl = getEnvVarOrFail("RECONVERSION_KICKOFF_QUEUE_URL");
 const sqsClient = new SQSClient({ region: getEnvVarOrFail("AWS_REGION") });
 
 /**
- * AWS SQS limit is 3000 messages/second, but we'll be safe and use 2000
+ * AWS SQS limit is 3000 messages/second, but we'll be safe and scale down a bit
  *
  * @see https://aws.amazon.com/sqs/faqs/#topic-3:~:text=What%20is%20the%20throughput%20quota%20for%20an%20Amazon%20SQS%20FIFO%20queue%3F
  */
-const SQS_BATCH_SIZE = 2000;
-const MIN_JITTER_BETWEEN_BATCHES = dayjs.duration(1, "seconds");
+const SQS_BATCH_SIZE = 200;
+const MIN_JITTER_BETWEEN_BATCHES = dayjs.duration(2, "seconds");
 
 const fileName = "";
-const dateFrom = "2025-06-01"; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-10 12:00
+const dateFrom = ""; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-10 12:00
 const dateTo = ""; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-11 12:00
 
 async function main() {
