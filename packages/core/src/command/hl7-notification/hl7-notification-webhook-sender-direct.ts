@@ -119,7 +119,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     }
 
     const { message, cxId, patientId } = parsedData;
-    const encounterId = createEncounterId(message, patientId);
+    const encounterId = createEncounterId(message, patientId, params.hieName);
 
     const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(message);
 
@@ -147,9 +147,10 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       return;
     }
 
+    //TODO: use strategy pattern based on hieName for the following functions
     const encounterPeriod = getEncounterPeriod(message);
     const encounterClass = getEncounterClass(message);
-    const facilityName = getFacilityName(message);
+    const facilityName = getFacilityName(message, params.hieName);
 
     capture.setExtra({
       cxId,

@@ -29,7 +29,7 @@ export async function generateQuestRoster(): Promise<{
 
 async function getAllEnrolledPatients(log: LogFunction): Promise<Patient[]> {
   const enrolledPatients: Patient[] = [];
-  let currentUrl: string | undefined = `${Config.getApiUrl()}/${QUEST_ROSTER_ROUTE}`;
+  let currentUrl: string | undefined = Config.getApiUrl() + QUEST_ROSTER_ROUTE;
   while (currentUrl) {
     const response = await getWithNetworkRetries(currentUrl, log);
     const rosterPage = questRosterResponseSchema.parse(response.data);

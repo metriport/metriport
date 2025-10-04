@@ -1,9 +1,5 @@
 import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
-import {
-  getCxsWithCQDirectFeatureFlagValue,
-  getCxsWithEnhancedCoverageFeatureFlagValue,
-} from "@metriport/core/command/feature-flags/domain-ffs";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { Patient } from "@metriport/core/domain/patient";
 import { hl7v2SubscribersQuerySchema } from "@metriport/core/domain/patient-settings";
@@ -72,11 +68,6 @@ import cwCommands from "../../../external/commonwell";
 import { findDuplicatedPersons } from "../../../external/commonwell-v1/admin/find-patient-duplicates";
 import { patchDuplicatedPersonsForPatient } from "../../../external/commonwell-v1/admin/patch-patient-duplicates";
 import { recreatePatientsAtCW } from "../../../external/commonwell-v1/admin/recreate-patients-at-hies";
-import { checkStaleEnhancedCoverage } from "../../../external/commonwell-v1/cq-bridge/coverage-enhancement-check-stale";
-import { initEnhancedCoverage } from "../../../external/commonwell-v1/cq-bridge/coverage-enhancement-init";
-import { setCQLinkStatuses } from "../../../external/commonwell-v1/cq-bridge/cq-link-status";
-import { ECUpdaterLocal } from "../../../external/commonwell-v1/cq-bridge/ec-updater-local";
-import { cqLinkStatus } from "../../../external/commonwell/patient/patient-shared";
 import { PatientUpdaterCommonWell } from "../../../external/commonwell/patient/patient-updater-commonwell";
 import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
@@ -91,12 +82,7 @@ import { hl7NotificationSchema } from "../../medical/schemas/hl7-notification";
 import { linkCreateSchema } from "../../medical/schemas/link";
 import { schemaCreateToPatientData } from "../../medical/schemas/patient";
 import { paginated } from "../../pagination";
-import {
-  nonEmptyStringListFromQuerySchema,
-  stringIntegerSchema,
-  stringListFromQuerySchema,
-} from "../../schemas/shared";
-import { getUUIDFrom, uuidSchema } from "../../schemas/uuid";
+import { getUUIDFrom } from "../../schemas/uuid";
 import {
   asyncHandler,
   getFrom,
@@ -516,175 +502,6 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").optional();
     const resultCW = await recreatePatientsAtCW(cxId);
     return res.status(status.OK).json(resultCW);
-  })
-);
-
-const initEnhancedCoverageSchema = z.object({
-  cxId: uuidSchema.optional(),
-  patientIds: stringListFromQuerySchema.optional(),
-  fromOrgPos: stringIntegerSchema.optional(),
-});
-
-/** ---------------------------------------------------------------------------
- * POST /internal/patient/enhance-coverage
- *
- * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
- *
- * Trigger the job to enhance coverage of provided patients. Before doing that,
- * it also checks/fixes any stale enhanced coverage process.
- *
- * @param req.query.cxId The customer ID (optional, default to all cxs with the
- *                       respective Feature Flag enabled).
- * @param req.query.patientIds A list of patient IDs to enhance coverage (optional,
- *                             default to all elibible patients of the given customers).
- *                             If set, cxId must also be set.
- * @param req.query.fromOrgPos The position on the array of CQ Orgs to start the
- *                             Enhanced Coverage from. If set, it disables the
- *                             validation/check of Patient's cqLinkStatus
- * @return 200 OK - processing asynchronously
- */
-router.post(
-  "/enhance-coverage",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const { cxId, patientIds, fromOrgPos } = initEnhancedCoverageSchema.parse(req.query);
-
-    if (patientIds && patientIds.length && !cxId) {
-      throw new BadRequestError(`Customer ID is required when patient IDs are set`);
-    }
-
-    const startedAt = Date.now();
-    const { log } = out(`EC endpoint - cx ${cxId ? cxId : "FF-based"}`);
-    log(`Starting at ${new Date().toISOString()}`);
-
-    try {
-      const cxIds: string[] = cxId ? [cxId] : [];
-      if (!cxIds.length) {
-        cxIds.push(...(await getCxsWithEnhancedCoverageFeatureFlagValue()));
-      }
-
-      // Filter out customers that have CQ Direct feature flag enabled
-      const cqDirectCxIds = await getCxsWithCQDirectFeatureFlagValue();
-      const filteredCxIds = cxIds.filter(cxId => !cqDirectCxIds.includes(cxId));
-
-      if (filteredCxIds.length < 1 && cxIds.length == 1) {
-        log(`Customer ${cxIds[0]} has CQ Direct enabled, skipping...`);
-        return res.status(status.OK).json({ patientIds: [] });
-      } else if (filteredCxIds.length < 1) {
-        log(`No customers to Enhanced Coverage, skipping...`);
-        return res.status(status.OK).json({ patientIds: [] });
-      }
-      log(`Using these cxIds: ${cxIds.join(", ")}`);
-
-      const checkStaleEC = !fromOrgPos || fromOrgPos <= 0;
-      if (checkStaleEC) await checkStaleEnhancedCoverage(filteredCxIds);
-
-      const patientIdsUpdated = await initEnhancedCoverage(filteredCxIds, patientIds, fromOrgPos);
-
-      return res.status(status.OK).json({ patientIds: patientIdsUpdated });
-    } finally {
-      const duration = Date.now() - startedAt;
-      const durationMin = dayjs.duration(duration).asMinutes();
-      log(`Done, duration: ${duration} ms / ${durationMin} min`);
-    }
-  })
-);
-
-const cqLinkStatusSchema = z.enum(cqLinkStatus);
-
-/**
- * POST /internal/patient/enhance-coverage/set-cq-link-statuses
- *
- * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
- *
- * Sets the CQ link statuses to complete the enhanced coverage flow for a list of patients.
- * @param req.query.cxId The customer ID.
- * @param req.query.patientIds The IDs of the patients to complete the process for.
- * @param req.query.cqLinkStatus The status to set the CQ link to.
- */
-router.post(
-  "/enhance-coverage/set-cq-link-statuses",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientIds = getFromQueryAsArrayOrFail("patientIds", req);
-    const cqLinkStatusParam = getFrom("query").orFail("cqLinkStatus", req);
-    const cqLinkStatus = cqLinkStatusSchema.parse(cqLinkStatusParam);
-
-    await setCQLinkStatuses({ cxId, patientIds, cqLinkStatus });
-    return res.sendStatus(status.OK);
-  })
-);
-
-const updateECAfterIncludeListSchema = z.object({
-  ecId: uuidSchema,
-  cxId: uuidSchema,
-  patientIds: nonEmptyStringListFromQuerySchema,
-  cqOrgIds: nonEmptyStringListFromQuerySchema,
-});
-
-/** ---------------------------------------------------------------------------
- * POST /internal/patient/enhance-coverage/after-include-list
- *
- * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
- *
- * Store the result of running Enhanced Coverage from the local environment.
- *
- * @return 200 OK
- */
-router.post(
-  "/enhance-coverage/after-include-list",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const { ecId, cxId, patientIds, cqOrgIds } = updateECAfterIncludeListSchema.parse(req.query);
-    if (patientIds && !patientIds.length) throw new BadRequestError(`Patient IDs are required`);
-    if (cqOrgIds && !cqOrgIds.length) throw new BadRequestError(`CQ Org IDs are required`);
-
-    await new ECUpdaterLocal().storeECAfterIncludeList({
-      ecId,
-      cxId,
-      patientIds,
-      cqOrgIds,
-    });
-    return res.sendStatus(status.OK);
-  })
-);
-
-const updateECAfterDocQuerySchema = z.object({
-  ecId: uuidSchema,
-  cxId: uuidSchema,
-  patientId: uuidSchema,
-  docsFound: stringIntegerSchema,
-});
-
-/** ---------------------------------------------------------------------------
- * POST /internal/patient/enhance-coverage/after-doc-query
- *
- * @deprecated #1543 REMOVE THIS AND RELATED/DOWNSTREAM CODE
- *
- * Store the result of running Enhanced Coverage from the local environment.
- *
- * @return 200 OK
- */
-router.post(
-  "/enhance-coverage/after-doc-query",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const { ecId, cxId, patientId, docsFound } = updateECAfterDocQuerySchema.parse(req.query);
-    if (docsFound < 0) {
-      console.log(
-        `[/enhance-coverage/after-doc-query] Invalid docsFound: ${docsFound}, patientId: ${patientId}, ecId: ${ecId}`
-      );
-      throw new BadRequestError(`Docs found must be >= 0`);
-    }
-
-    await new ECUpdaterLocal().storeECAfterDocQuery({
-      ecId,
-      cxId,
-      patientId,
-      docsFound,
-    });
-    return res.sendStatus(status.OK);
   })
 );
 

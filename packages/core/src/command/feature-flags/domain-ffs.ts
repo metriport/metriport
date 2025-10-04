@@ -137,14 +137,6 @@ export async function isAthenaCustomFieldsEnabledForCx(cxId: string): Promise<bo
   return cxsWithAthenaCustomFieldsEnabled.includes(cxId);
 }
 
-export async function getCxsWithEnhancedCoverageFeatureFlagValue(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsWithEnhancedCoverageFeatureFlag");
-}
-export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithECEnabled = await getCxsWithEnhancedCoverageFeatureFlagValue();
-  return cxIdsWithECEnabled.some(i => i === cxId);
-}
-
 export async function getCxsWithCQDirectFeatureFlagValue(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithCQDirectFeatureFlag");
 }
@@ -261,17 +253,6 @@ export async function isRecentVisitAiSummaryEnabledForCx(cxId: string): Promise<
   return cxIdsWithRecentVisitAiSummaryEnabled.some(i => i === cxId);
 }
 
-export async function getCxsWithHl7NotificationWebhookFeatureFlag(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsWithHl7NotificationWebhookFeatureFlag");
-}
-export async function isHl7NotificationWebhookFeatureFlagEnabledForCx(
-  cxId: string
-): Promise<boolean> {
-  const cxIdsWithHl7NotificationWebhookEnabled =
-    await getCxsWithHl7NotificationWebhookFeatureFlag();
-  return cxIdsWithHl7NotificationWebhookEnabled.some(i => i === cxId);
-}
-
 // ENG-536 remove this once we automatically find the discharge summary
 export async function getCxsWithDischargeSlackNotificationFeatureFlag(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithDischargeSlackNotificationFeatureFlag");
@@ -339,6 +320,10 @@ export async function isAnalyticsIncrementalIngestionEnabledForCx(cxId: string):
 // TODO: ENG-1089 - Remove this once we fully migrate to the new DOA flow on CQ.
 export async function isCqDoaEnabled(): Promise<boolean> {
   return isFeatureFlagEnabled("cqDoaFeatureFlag");
+}
+
+export async function isCwDoaEnabled(): Promise<boolean> {
+  return isFeatureFlagEnabled("cwDoaFeatureFlag");
 }
 
 export async function getCxsWithNewSoapEnvelopeFeatureFlag(): Promise<string[]> {
