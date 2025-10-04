@@ -1,8 +1,14 @@
 export type ParsingError = { field: string; error: string };
 
 export function escapeCsvValueIfNeeded(value: string) {
-  if (value.includes(",")) {
-    return `"${value}"`;
+  const theValue = value.replace(/"/g, '""');
+  if (theValue.includes(",")) {
+    return `"${theValue}"`;
   }
-  return value;
+  return theValue;
+}
+
+export function escapeCsvValue(value: string) {
+  const theValue = value.replace(/"/g, '""');
+  return `"${theValue}"`;
 }

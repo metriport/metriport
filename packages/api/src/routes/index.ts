@@ -40,8 +40,15 @@ export default (app: Application) => {
   app.use("/user", processCxId, reportDeviceUsage, user);
 
   // medical routes with API key auth - report usage is on individual routes
-  app.use("/medical/v1", processCxId, checkMAPIAccess, medical);
-  app.use(`${dash}/medical/v1`, processCxId, checkMAPIAccess, medicalDash);
+  // TODO REVERT THIS
+  // TODO REVERT THIS
+  // TODO REVERT THIS
+  // TODO REVERT THIS
+  // TODO REVERT THIS
+  // app.use("/medical/v1", processCxId, checkMAPIAccess, medical);
+  // app.use(`${dash}/medical/v1`, processCxId, checkMAPIAccess, medicalDash);
+  app.use("/medical/v1", medical);
+  app.use(`${dash}/medical/v1`, medicalDash);
   app.use("/fhir/R4", processCxId, checkMAPIAccess, fhirRouter);
 
   // routes with API key auth - validated on the API Gateway
