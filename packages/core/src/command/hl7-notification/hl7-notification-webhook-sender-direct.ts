@@ -136,6 +136,14 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       triggerEvent,
     });
 
+    await this.notifyAnalytics({
+      cxId,
+      patientId,
+      messageCode,
+      triggerEvent,
+      hieName: params.hieName,
+    });
+
     log(`Init S3 upload to bucket ${bucketName} with key ${rawDataFileKey}`);
     await s3Utils.uploadFile({
       bucket: bucketName,
@@ -143,8 +151,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       file: Buffer.from(asString(message)),
       contentType: "text/plain",
     });
-
-    await this.notifyAnalytics({ cxId, patientId, messageCode, triggerEvent });
 
     if (!isSupportedTriggerEvent(triggerEvent)) {
       log(`Trigger event ${triggerEvent} is not supported. Skipping...`);
@@ -265,7 +271,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
         })
     );
 
-    log("Calling refreshConsolidated");
+    log(`Calling refresh consolidated callback endpoint in API...`);
     await this.refreshConsolidated(triggerEvent, cxId, patientId);
 
     log(`Done. API notified...`);
@@ -360,11 +366,13 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     patientId,
     messageCode,
     triggerEvent,
+    hieName,
   }: {
     cxId: string;
     patientId: string;
     messageCode: string;
     triggerEvent: string;
+    hieName: string;
   }) {
     try {
       const posthogApiKeyArn = Config.getPostHogApiKey();
@@ -382,13 +390,14 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
             patientId,
             messageCode,
             triggerEvent,
+            hieName,
           },
         },
         posthogApiKey
       );
     } catch (error) {
       capture.error("Failed to notify analytics", {
-        extra: { cxId, patientId, messageCode, triggerEvent, error },
+        extra: { cxId, patientId, messageCode, triggerEvent, hieName, error },
       });
     }
   }

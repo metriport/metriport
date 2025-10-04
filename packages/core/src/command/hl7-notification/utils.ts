@@ -18,12 +18,17 @@ export interface ParsedHl7Data {
 }
 
 const supportedTypes = ["A01", "A03"] as const;
+const CONSOLIDATED_REFRESH_TRIGGER_EVENTS = ["A01", "A03"] as const;
 
 export type SupportedTriggerEvent = (typeof supportedTypes)[number];
 export function isSupportedTriggerEvent(
   triggerEvent: string
 ): triggerEvent is SupportedTriggerEvent {
   return supportedTypes.includes(triggerEvent as SupportedTriggerEvent);
+}
+
+export function isConsolidatedRefreshTriggerEvent(triggerEvent: string): boolean {
+  return CONSOLIDATED_REFRESH_TRIGGER_EVENTS.includes(triggerEvent as SupportedTriggerEvent);
 }
 
 export async function parseHl7Message(
@@ -81,9 +86,4 @@ export async function persistHl7MessageError(
  */
 export function asString(message: Hl7Message) {
   return message.segments.map(s => s.toString()).join("\n");
-}
-
-const CONSOLIDATED_REFRESH_TRIGGER_EVENTS = ["A01", "A03"] as const;
-export function isConsolidatedRefreshTriggerEvent(triggerEvent: string): boolean {
-  return CONSOLIDATED_REFRESH_TRIGGER_EVENTS.includes(triggerEvent as SupportedTriggerEvent);
 }
