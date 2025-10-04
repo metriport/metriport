@@ -495,6 +495,7 @@ export class APIStack extends Stack {
         documentIndexName: props.config.openSearch.openSearch.indexName,
       },
       analyticsQueue: analyticsPlatformStack?.getAssets()?.fhirToCsvIncrementalQueue,
+      aiBriefBucket,
     });
 
     //-------------------------------------------
@@ -692,7 +693,6 @@ export class APIStack extends Stack {
       incomingHl7NotificationBucket,
       conversionBucket: fhirConverterBucket,
       medicalDocumentsUploadBucket,
-      aiBriefBucket,
       ehrResponsesBucket,
       fhirToMedicalRecordLambda2,
       fhirToCdaConverterLambda,
