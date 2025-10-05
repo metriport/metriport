@@ -9,6 +9,7 @@ import { asyncHandler } from "../util";
 import { AnthropicAgent } from "@metriport/core/external/bedrock/agent/anthropic";
 import { AnthropicMessageText } from "@metriport/core/external/bedrock/model/anthropic/messages";
 import { reportMetric } from "@metriport/core/external/aws/cloudwatch";
+import { initTimer } from "@metriport/shared/common/timer";
 
 const router = Router();
 
@@ -95,7 +96,10 @@ router.post(
       `
     );
 
+    const timer = initTimer();
     const response = await agent.continueConversation();
+    const duration = timer.getElapsedTime();
+
     sse.push({
       message: (response.content[response.content.length - 1] as AnthropicMessageText).text,
       eventName: "resource-summary-response",
@@ -103,6 +107,12 @@ router.post(
     });
 
     await Promise.all([
+      reportMetric({
+        name: "LLM.ResourceSummary.Duration",
+        unit: "Milliseconds",
+        value: duration,
+        additionalDimension: `ResourceType=${resourceType}`,
+      }),
       reportMetric({
         name: "LLM.ResourceSummary.InputTokens",
         unit: "Count",
