@@ -57,6 +57,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
   private _oid: string;
   private _npi: string;
   private _homeCommunityId: string;
+  private _authGrantorReferenceOid?: string | undefined;
   private onError500: OnError500Options;
 
   /**
@@ -71,6 +72,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
     npi,
     homeCommunityId,
     apiMode,
+    authGrantorReferenceOid: authGrantorReference,
     options = {},
   }: {
     /** The certificate (public key) for the organization. */
@@ -90,6 +92,8 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
     homeCommunityId: string;
     /** The mode the client will be running. */
     apiMode: APIMode;
+    /** The OID of the principal organization who authorized the request, aka The Principal. */
+    authGrantorReferenceOid?: string | undefined;
     /** Optional parameters. */
     options?: CommonWellOptions;
   }) {
@@ -103,6 +107,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
     this._oid = oid;
     this._npi = npi;
     this._homeCommunityId = homeCommunityId;
+    this._authGrantorReferenceOid = authGrantorReference;
     this.onError500 = { ...defaultOnError500, ...options.onError500 };
   }
 
@@ -608,7 +613,13 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
 
   private buildOrganizationQueryMeta(): OrganizationRequestMetadata {
     const base = buildBaseQueryMeta(this.orgName);
-    return { ...base, npi: this.npi };
+    return {
+      ...base,
+      npi: this.npi,
+      ...(this._authGrantorReferenceOid
+        ? { authGrantorReference: this._authGrantorReferenceOid }
+        : {}),
+    };
   }
 
   private async executeWithRetriesOn500IfEnabled<T>(fn: () => Promise<T>): Promise<T> {
@@ -663,9 +674,9 @@ function buildPatientMergeEndpoint(orgId: string, nonSurvivingPatientId: string)
   return `${buildPatientEndpoint(orgId, nonSurvivingPatientId)}/Merge`;
 }
 
-function buildDocumentQueryUrl(subjectId: string, params: DocumentQueryParams): string {
+function buildDocumentQueryUrl(patientId: string, params: DocumentQueryParams): string {
   const urlParams = new URLSearchParams();
-  urlParams.append("subject.id", subjectId);
+  urlParams.append("patient.identifier", patientId);
   if (params.status) urlParams.append("status", params.status);
   if (params.author?.given) urlParams.append("author.given", params.author.given);
   if (params.author?.family) urlParams.append("author.family", params.author.family);

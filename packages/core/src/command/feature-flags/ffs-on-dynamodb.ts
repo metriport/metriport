@@ -37,7 +37,6 @@ export type FeatureFlagsRecord = z.infer<typeof featureFlagsRecordSchema>;
 
 // TODO 2840 Consider removing this, or just making all FFs optional by default.
 export const initialFeatureFlags: FeatureFlagDatastore = {
-  cxsWithEnhancedCoverageFeatureFlag: { enabled: false, values: [] },
   cxsWithCQDirectFeatureFlag: { enabled: false, values: [] },
   cxsWithCWFeatureFlag: { enabled: false, values: [] },
   cxsWithADHDMRFeatureFlag: { enabled: false, values: [] },
@@ -61,7 +60,6 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   debugFeatureFlag: { enabled: false },
   cxsWithPcpVisitAiSummaryFeatureFlag: { enabled: false, values: [] },
   cxsWithRecentVisitAiSummary: { enabled: false, values: [] },
-  cxsWithHl7NotificationWebhookFeatureFlag: { enabled: false, values: [] },
   cxsWithDischargeRequeryFeatureFlag: { enabled: false, values: [] },
   cxsWithDischargeSlackNotificationFeatureFlag: { enabled: false, values: [] },
   cxsWithXmlRedownloadFeatureFlag: { enabled: false, values: [] },
@@ -70,6 +68,7 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   cxsWithQuestFeatureFlag: { enabled: false, values: [] },
   analyticsIncrementalIngestion: { enabled: false, values: [] },
   cqDoaFeatureFlag: { enabled: false },
+  cwDoaFeatureFlag: { enabled: false },
   cxsWithNewSoapEnvelopeFeatureFlag: { enabled: false, values: [] },
 };
 

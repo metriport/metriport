@@ -1,4 +1,4 @@
-import { QuestSftpClient } from "../../../quest/client";
+import { QuestSftpClient } from "../../client";
 import { QuestUploadRosterHandler } from "./upload-roster";
 
 export class QuestUploadRosterHandlerDirect implements QuestUploadRosterHandler {

@@ -1,9 +1,9 @@
-import { Bundle } from "@medplum/fhirtypes";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
 import { S3Utils } from "../../../aws/s3";
 import { buildLabConversionFileNameForDate } from "../../file/file-names";
+import { QuestFhirConversionResponse } from "../../types";
 
 /**
  * Saves a bundle with Quest data to the repository.
@@ -18,12 +18,7 @@ export async function saveBundle({
   cxId,
   patientId,
   dateId,
-}: {
-  bundle: Bundle;
-  cxId: string;
-  patientId: string;
-  dateId: string;
-}): Promise<void> {
+}: QuestFhirConversionResponse): Promise<void> {
   const { log } = out(`quest.saveBundle - cx ${cxId}, pat ${patientId}, date ${dateId}`);
   const bucketName = Config.getLabConversionBucketName();
   if (!bucketName) {

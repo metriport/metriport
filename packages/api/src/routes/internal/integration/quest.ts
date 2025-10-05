@@ -9,10 +9,13 @@ import { getQuestRoster } from "../../../command/medical/patient/get-quest-roste
 import { QuestUploadRosterHandlerCloud } from "@metriport/core/external/quest/command/upload-roster/upload-roster-cloud";
 import { QuestDownloadResponseHandlerCloud } from "@metriport/core/external/quest/command/download-response/download-response-cloud";
 import { Pagination } from "../../../command/pagination";
-import { dtoFromModel, PatientDTO } from "../../medical/dtos/patientDTO";
+import { dtoFromModel as dtoFromPatientModel, PatientDTO } from "../../medical/dtos/patientDTO";
+import { dtoFromModel as dtoFromPatientMappingModel } from "../../medical/dtos/patient-mapping";
 import { requestLogger } from "../../helpers/request-logger";
 import { paginated } from "../../pagination";
-import { asyncHandler } from "../../util";
+import { asyncHandler, getFromParamsOrFail } from "../../util";
+import { findPatientWithExternalId } from "../../../command/mapping/patient";
+import { questSource } from "@metriport/shared/interface/external/quest/source";
 
 dayjs.extend(duration);
 const router = Router();
@@ -51,7 +54,7 @@ router.get(
 
     const response: PaginatedResponse<PatientDTO, "patients"> = {
       meta,
-      patients: items.map(item => dtoFromModel(item)),
+      patients: items.map(item => dtoFromPatientModel(item)),
     };
     return res.status(status.OK).json(response);
   })
@@ -75,6 +78,26 @@ router.post(
     const handler = new QuestUploadRosterHandlerCloud();
     await handler.generateAndUploadLatestQuestRoster();
     return res.sendStatus(status.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/quest/patient-mapping/:externalId
+ *
+ * Returns the patient ID and CX ID for a given external ID associated with a patient uploaded to the Quest roster.
+ * @param req.params.externalId A 15 character external ID for the patient, associated with Quest.
+ * @returns 200 OK with the Metriport patient ID and CX ID, or 404 if no mapping is found.
+ */
+router.get(
+  "/patient-mapping/:externalId",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const externalId = getFromParamsOrFail("externalId", req);
+    const patientMapping = await findPatientWithExternalId({ externalId, source: questSource });
+    if (patientMapping) {
+      return res.status(status.OK).json(dtoFromPatientMappingModel(patientMapping));
+    }
+    return res.sendStatus(status.NOT_FOUND);
   })
 );
 

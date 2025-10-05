@@ -63,7 +63,6 @@ function buildDocumentQueryUrl({
     patientId,
     requestId,
     triggerConsolidated: triggerConsolidated.toString(),
-    forceQuery: "false",
   });
   return `/internal/docs/query?${urlParams.toString()}`;
 }
