@@ -2,10 +2,11 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { omit } from "lodash";
 import { QueryTypes } from "sequelize";
+import { TcmEncounterEventType } from "../../../domain/medical/tcm-encounter";
 import { PatientModel } from "../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
-import { PaginationV2WithQueryClauses } from "../../pagination-v2";
 import { PatientMappingModel } from "../../../models/patient-mapping";
+import { PaginationV2WithQueryClauses } from "../../pagination-v2";
 
 /**
  * Add a default filter date far in the past to guarantee hitting the compound index
@@ -266,4 +267,22 @@ function constructExternalUrl(
     default:
       return undefined;
   }
+}
+
+export async function getTcmEncountersForPatient({
+  cxId,
+  patientId,
+  latestEvent,
+}: {
+  cxId: string;
+  patientId: string;
+  latestEvent?: TcmEncounterEventType | undefined;
+}): Promise<TcmEncounterModel[]> {
+  return await TcmEncounterModel.findAll({
+    where: {
+      cxId,
+      patientId,
+      latestEvent,
+    },
+  });
 }
