@@ -265,6 +265,7 @@ export const config: EnvConfigNonSandbox = {
     bucketName: "test-bucket",
     secretNames: {
       SNOWFLAKE_CREDS: "name-of-secret",
+      SNOWFLAKE_CUSTOM_CX_SETTINGS: "name-of-secret",
       FHIR_TO_CSV_DB_PASSWORD: "name-of-secret",
       RAW_TO_CORE_DB_PASSWORD: "name-of-secret",
     },

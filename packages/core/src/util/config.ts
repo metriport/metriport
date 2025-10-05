@@ -1,8 +1,14 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
+import { DbCreds, dbCredsSchema } from "@metriport/shared/domain/db";
 import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
 import { SftpConfig } from "../external/sftp/types";
+import {
+  CustomSnowflakeSettings,
+  customSnowflakeSettingsSchema,
+  SnowflakeCreds,
+  snowflakeCredsSchema,
+} from "../external/snowflake/creds";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
-import { dbCredsSchema, DbCreds } from "@metriport/shared/domain/db";
 
 /**
  * Shared configs, still defining how to work with this. For now:
@@ -399,8 +405,8 @@ export class Config {
     return getEnvVarOrFail("FHIR_CONVERTER_BUCKET_NAME");
   }
 
-  static getAnalyticsBucketName(): string | undefined {
-    return getEnvVar("ANALYTICS_BUCKET_NAME");
+  static getAnalyticsBucketName(): string {
+    return getEnvVarOrFail("ANALYTICS_BUCKET_NAME");
   }
   static getAnalyticsDbCreds(): DbCreds {
     return dbCredsSchema.parse(getEnvVarOrFail("ANALYTICS_DB_CREDS"));
@@ -433,6 +439,15 @@ export class Config {
   }
   static getCoreTransformBatchJobDefinitionArn(): string {
     return getEnvVarOrFail("CORE_TRANSFORM_BATCH_JOB_DEFINITION_ARN");
+  }
+  static getSnowflakeConnectorQueueUrl(): string {
+    return getEnvVarOrFail("SNOWFLAKE_CONNECTOR_QUEUE_URL");
+  }
+  static getSnowflakeCreds(): SnowflakeCreds {
+    return snowflakeCredsSchema.parse(getEnvVarOrFail("SNOWFLAKE_CREDS"));
+  }
+  static getCustomSnowflakeSettings(): CustomSnowflakeSettings {
+    return customSnowflakeSettingsSchema.parse(getEnvVarOrFail("CUSTOM_SNOWFLAKE_SETTINGS"));
   }
 
   static getRosterUploadSftpPasswordArn(): string {

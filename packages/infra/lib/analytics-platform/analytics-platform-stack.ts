@@ -45,7 +45,7 @@ type BatchJobSettings = {
   cpu: number;
 };
 
-type CoreToS3LambdaSettings = LambdaSetup & {
+type CoreToDwhLambdaSettings = LambdaSetup & {
   eventSource: SnsEventSourceProps;
 };
 
@@ -61,7 +61,8 @@ interface AnalyticsPlatformsSettings {
   mergeCsvs: QueueAndLambdaSettings;
   coreTransform: BatchJobSettings;
   coreTransformScheduled: CoreTransformScheduledSettings;
-  coreToS3Lambda: CoreToS3LambdaSettings;
+  coreToDwhLambda: CoreToDwhLambdaSettings;
+  snowflakeConnector: QueueAndLambdaSettings;
 }
 
 function settings(envType: EnvType): AnalyticsPlatformsSettings {
@@ -72,6 +73,7 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
   );
   const coreTransformScheduledLambdaInterval = Duration.minutes(20);
   const coreTransformConnectorLambdaTimeout = Duration.minutes(15).minus(Duration.seconds(2));
+  const snowflakeConnectorLambdaTimeout = Duration.minutes(15).minus(Duration.seconds(2));
 
   const fhirToCsvBulk: QueueAndLambdaSettings = {
     name: "FhirToCsvBulk",
@@ -161,15 +163,37 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
     endpoint: `/internal/analytics-platform/ingestion/core/rebuild`,
     scheduleExpression: `0/${coreTransformScheduledLambdaInterval.toMinutes()} * * * ? *`,
   };
-  const coreToS3Lambda: CoreToS3LambdaSettings = {
+  const coreToDwhLambda: CoreToDwhLambdaSettings = {
     name: "CoreToS3",
     lambda: {
       memory: 1024,
-      entry: "analytics-platform/core-to-s3",
+      entry: "analytics-platform/core-to-dwh-lambda",
       timeout: coreTransformConnectorLambdaTimeout,
       runtime: lambda.Runtime.NODEJS_20_X,
     },
     eventSource: {},
+  };
+  const snowflakeConnector: QueueAndLambdaSettings = {
+    name: "SnowflakeConnector",
+    entry: "analytics-platform/external/snowflake-connector-lambda",
+    lambda: {
+      memory: 512,
+      timeout: snowflakeConnectorLambdaTimeout,
+      runtime: lambda.Runtime.NODEJS_20_X,
+    },
+    queue: {
+      alarmMaxAgeOfOldestMessage: Duration.minutes(30),
+      maxMessageCountAlarmThreshold: 10,
+      maxReceiveCount: 3,
+      visibilityTimeout: Duration.seconds(snowflakeConnectorLambdaTimeout.toSeconds()),
+      createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+      maxConcurrency: 1,
+    },
+    waitTime: Duration.seconds(0),
   };
   return {
     fhirToCsvBulk,
@@ -178,7 +202,8 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
     mergeCsvs,
     coreTransform,
     coreTransformScheduled,
-    coreToS3Lambda,
+    coreToDwhLambda,
+    snowflakeConnector,
   };
 }
 
@@ -204,8 +229,10 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
   readonly analyticsPlatformBucket: s3.Bucket;
   readonly coreTransformJobCompletionTopic: sns.Topic;
   readonly coreTransformScheduledLambda: lambda.Function;
-  readonly coreToS3Lambda: lambda.Function;
+  readonly coreToDwhLambda: lambda.Function;
   readonly dbCredsSecret: secret.Secret;
+  readonly snowflakeConnectorLambda: lambda.Function;
+  readonly snowflakeConnectorQueue: Queue;
 
   constructor(scope: Construct, id: string, props: AnalyticsPlatformsNestedStackProps) {
     super(scope, id, props);
@@ -370,7 +397,23 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       vpc: props.vpc,
     });
 
-    this.coreToS3Lambda = this.setupCoreToS3Lambda({
+    const { lambda: snowflakeConnectorLambda, queue: snowflakeConnectorQueue } =
+      this.setupSnowflakeConnector({
+        config: props.config,
+        envType: props.config.environmentType,
+        awsRegion: props.config.region,
+        lambdaLayers: props.lambdaLayers,
+        vpc: props.vpc,
+        sentryDsn: props.config.sentryDSN,
+        alarmAction: props.alarmAction,
+        analyticsPlatformBucket,
+        featureFlagsTable: props.featureFlagsTable,
+        medicalDocumentsBucket: props.medicalDocumentsBucket,
+      });
+    this.snowflakeConnectorLambda = snowflakeConnectorLambda;
+    this.snowflakeConnectorQueue = snowflakeConnectorQueue;
+
+    this.coreToDwhLambda = this.setupCoreToDwhLambda({
       config: props.config,
       envType: props.config.environmentType,
       awsRegion: props.config.region,
@@ -384,13 +427,8 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       dbCluster,
       dbCredsSecret,
       coreTransformJobCompletionTopic,
+      snowflakeConnectorQueue,
     });
-
-    // TODO ENG-858 reintroduce this
-    // const snowflakeCreds = buildSecret(
-    //   this,
-    //   props.config.analyticsPlatform.secrets.SNOWFLAKE_CREDS
-    // );
   }
 
   getAssets(): AnalyticsPlatformsAssets {
@@ -408,6 +446,9 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       coreTransformJobCompletionTopic: this.coreTransformJobCompletionTopic,
       coreTransformScheduledLambda: this.coreTransformScheduledLambda,
       dbCredsSecret: this.dbCredsSecret,
+      snowflakeConnectorLambda: this.snowflakeConnectorLambda,
+      snowflakeConnectorQueue: this.snowflakeConnectorQueue,
+      coreToDwhLambda: this.coreToDwhLambda,
     };
   }
 
@@ -983,7 +1024,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     return lambda;
   }
 
-  private setupCoreToS3Lambda(ownProps: {
+  private setupCoreToDwhLambda(ownProps: {
     config: EnvConfigNonSandbox;
     envType: EnvType;
     awsRegion: string;
@@ -997,6 +1038,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     dbCluster: rds.DatabaseCluster;
     dbCredsSecret: secret.Secret;
     coreTransformJobCompletionTopic: sns.Topic;
+    snowflakeConnectorQueue: Queue;
   }): lambda.Function {
     const {
       lambdaLayers,
@@ -1009,9 +1051,10 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       dbCluster,
       dbCredsSecret,
       coreTransformJobCompletionTopic,
+      snowflakeConnectorQueue,
     } = ownProps;
 
-    const { name, lambda: lambdaSettings, eventSource } = settings(envType).coreToS3Lambda;
+    const { name, lambda: lambdaSettings, eventSource } = settings(envType).coreToDwhLambda;
 
     const lambda = createLambda({
       ...lambdaSettings,
@@ -1023,6 +1066,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
         ANALYTICS_BUCKET_NAME: analyticsPlatformBucket.bucketName,
         FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
         DB_CREDS_ARN: dbCredsSecret.secretArn,
+        SNOWFLAKE_CONNECTOR_QUEUE_URL: snowflakeConnectorQueue.queueUrl,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain, lambdaLayers.analyticsPlatform],
@@ -1048,7 +1092,85 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
     dbCredsSecret.grantRead(lambda);
     analyticsPlatformBucket.grantReadWrite(lambda);
     featureFlagsTable.grantReadData(lambda);
+    snowflakeConnectorQueue.grantSendMessages(lambda);
 
     return lambda;
+  }
+
+  private setupSnowflakeConnector(ownProps: {
+    config: EnvConfigNonSandbox;
+    envType: EnvType;
+    awsRegion: string;
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+    analyticsPlatformBucket: s3.Bucket;
+    featureFlagsTable: dynamodb.Table;
+    medicalDocumentsBucket: s3.Bucket;
+  }): {
+    lambda: lambda.Function;
+    queue: Queue;
+  } {
+    const {
+      lambdaLayers,
+      vpc,
+      envType,
+      sentryDsn,
+      alarmAction,
+      analyticsPlatformBucket,
+      featureFlagsTable,
+    } = ownProps;
+    const analyticsConfig = ownProps.config.analyticsPlatform;
+
+    const {
+      name,
+      entry,
+      lambda: lambdaSettings,
+      queue: queueSettings,
+      eventSource,
+    } = settings(envType).snowflakeConnector;
+
+    const queue = createQueue({
+      ...queueSettings,
+      stack: this,
+      name,
+      fifo: true,
+      createDLQ: true,
+      envType,
+      alarmSnsAction: alarmAction,
+    });
+
+    const snowflakeCreds = buildSecret(this, analyticsConfig.secretNames.SNOWFLAKE_CREDS);
+    const customSettingsPerCx = buildSecret(
+      this,
+      analyticsConfig.secretNames.SNOWFLAKE_CUSTOM_CX_SETTINGS
+    );
+
+    const lambda = createLambda({
+      ...lambdaSettings,
+      stack: this,
+      name,
+      entry,
+      envType,
+      envVars: {
+        ANALYTICS_BUCKET_NAME: analyticsPlatformBucket.bucketName,
+        FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
+        SNOWFLAKE_CREDS_ARN: snowflakeCreds.secretArn,
+        SNOWFLAKE_CUSTOM_CX_SETTINGS_ARN: customSettingsPerCx.secretArn,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared, lambdaLayers.langchain, lambdaLayers.analyticsPlatform],
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    lambda.addEventSource(new SqsEventSource(queue, eventSource));
+
+    snowflakeCreds.grantRead(lambda);
+    analyticsPlatformBucket.grantReadWrite(lambda);
+    featureFlagsTable.grantReadData(lambda);
+
+    return { lambda, queue };
   }
 }

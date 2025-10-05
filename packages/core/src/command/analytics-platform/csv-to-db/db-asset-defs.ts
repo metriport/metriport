@@ -11,7 +11,6 @@ const indexSuffixName = "idx_brin";
 
 export const columnPatientIdDefinition = `${columnPatientIdName} ${defaultColumnType}`;
 export const columnJobIdDefinition = `${columnJobIdName} ${defaultColumnType}`;
-
 export const additionalColumnDefs = `${columnPatientIdDefinition}, ${columnJobIdDefinition}`;
 
 export function getCreateTableJobCommand(schemaName: string): string {

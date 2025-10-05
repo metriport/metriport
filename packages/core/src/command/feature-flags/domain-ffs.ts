@@ -336,6 +336,14 @@ export async function isAnalyticsIncrementalIngestionEnabledForCx(cxId: string):
   return cxIdsWithFFEnabled.some(i => i === cxId);
 }
 
+export async function getCxsEnabledForDatawarehouseSnowflake(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("datawarehouseSnowflake");
+}
+export async function isDatawarehouseSnowflakeEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithFFEnabled = await getCxsEnabledForDatawarehouseSnowflake();
+  return cxIdsWithFFEnabled.some(i => i === cxId);
+}
+
 // TODO: ENG-1089 - Remove this once we fully migrate to the new DOA flow on CQ.
 export async function isCqDoaEnabled(): Promise<boolean> {
   return isFeatureFlagEnabled("cqDoaFeatureFlag");
