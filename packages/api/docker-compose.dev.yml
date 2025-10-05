@@ -23,6 +23,10 @@ services:
       # so this ensures our database is loaded first
       postgres:
         condition: service_healthy
+      postgres-analytics:
+        condition: service_healthy
+      dynamodb:
+        condition: service_healthy
     environment:
       - DB_CREDS={"password":"admin","dbname":"db","engine":"postgres","port":5432,"host":"postgres","username":"admin"}
       - NODE_ENV=development
@@ -85,6 +89,34 @@ services:
       - "5432:5432"
     networks:
       - metriportNetwork
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 2s
+      timeout: 2s
+      retries: 2
+  # This is the configuration for our PostgreSQL database container
+  # Note the `postgres-analytics` name is important, in our Node app when we refer
+  # to  `host: "postgres"` that value is mapped on the network to the
+  # address of this container.
+  postgres-analytics:
+    image: postgres:14.4-alpine
+    restart: always
+    command: -c 'max_connections=350'
+    environment:
+      # You can set the value of environment variables
+      # in your docker-compose.yml file
+      # Our Node app will use these to connect
+      # to the database
+      - POSTGRES_USER=analytics_admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=analytics
+    ports:
+      # Standard port for PostgreSQL databases
+      - "5434:5432"
+    networks:
+      - metriportNetwork
+    volumes:
+      - ~/postgres_data/analytics:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
       interval: 2s
