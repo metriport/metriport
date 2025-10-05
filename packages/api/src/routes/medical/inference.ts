@@ -8,6 +8,7 @@ import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler } from "../util";
 import { AnthropicAgent } from "@metriport/core/external/bedrock/agent/anthropic";
 import { AnthropicMessageText } from "@metriport/core/external/bedrock/model/anthropic/messages";
+import { reportMetric } from "@metriport/core/external/aws/cloudwatch";
 
 const router = Router();
 
@@ -16,13 +17,6 @@ const sidePanelInferenceSchema = z.object({
   resourceDisplays: z.array(z.string()),
   context: z.string(),
 });
-
-router.get(
-  "/health",
-  asyncHandler(async (req: Request, res: Response) => {
-    res.status(200).send("OK");
-  })
-);
 
 const questionsByResourceType = {
   DiagnosticReport: [
@@ -46,12 +40,12 @@ const defaultQuestions = [
 ];
 
 /** ---------------------------------------------------------------------------
- * POST /internal/inference/side-panel
+ * POST /internal/inference/resource/summary
  *
  * Creates or updates a feedback (group of multiple feedback entries).
  */
 router.post(
-  "/side-panel",
+  "/resource/summary",
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
@@ -80,7 +74,7 @@ router.post(
 
     sse.push({
       message: "Request received!",
-      eventName: "side-panel-request",
+      eventName: "resource-summary-request",
       eventId: uuidv7(),
     });
 
@@ -104,9 +98,24 @@ router.post(
     const response = await agent.continueConversation();
     sse.push({
       message: (response.content[response.content.length - 1] as AnthropicMessageText).text,
-      eventName: "side-panel-response",
+      eventName: "resource-summary-response",
       eventId: uuidv7(),
     });
+
+    await Promise.all([
+      reportMetric({
+        name: "LLM.ResourceSummary.InputTokens",
+        unit: "Count",
+        value: response.usage.input_tokens,
+        additionalDimension: `ResourceType=${resourceType}`,
+      }),
+      reportMetric({
+        name: "LLM.ResourceSummary.OutputTokens",
+        unit: "Count",
+        value: response.usage.output_tokens,
+        additionalDimension: `ResourceType=${resourceType}`,
+      }),
+    ]);
   })
 );
 
