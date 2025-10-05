@@ -10,6 +10,7 @@ import { AnthropicAgent } from "@metriport/core/external/bedrock/agent/anthropic
 import { AnthropicMessageText } from "@metriport/core/external/bedrock/model/anthropic/messages";
 import { reportMetric } from "@metriport/core/external/aws/cloudwatch";
 import { initTimer } from "@metriport/shared/common/timer";
+import { buildDayjs } from "@metriport/shared/common/date";
 
 const router = Router();
 
@@ -43,7 +44,8 @@ const defaultQuestions = [
 /** ---------------------------------------------------------------------------
  * POST /internal/inference/resource/summary
  *
- * Creates or updates a feedback (group of multiple feedback entries).
+ * Runs a Q&A style summary over some context surrounding a resource.
+ * Uses server-sent events to stream the response back to the client.
  */
 router.post(
   "/resource/summary",
@@ -59,8 +61,7 @@ router.post(
         id: uuidv7(),
         name: "Side Panel Inference",
         description: "Side Panel Inference",
-        startTimeMillis: Date.now().toString(),
-        endTimeMillis: Date.now().toString(),
+        startTimeMillis: buildDayjs().valueOf().toString(),
       },
     });
 
