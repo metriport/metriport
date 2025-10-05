@@ -5,7 +5,7 @@ import Router from "express-promise-router";
 import { z } from "zod";
 import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
-import { asyncHandler } from "../util";
+import { asyncHandler, getCxIdOrFail } from "../util";
 import { AnthropicAgent } from "@metriport/core/external/bedrock/agent/anthropic";
 import { AnthropicMessageText } from "@metriport/core/external/bedrock/model/anthropic/messages";
 import { reportMetric } from "@metriport/core/external/aws/cloudwatch";
@@ -50,7 +50,7 @@ router.post(
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    // const cxId = getCxIdOrFail(req);
+    const cxId = getCxIdOrFail(req);
     const { resourceType, resourceDisplays, context } = sidePanelInferenceSchema.parse(req.body);
     console.log(`resourceType: ${resourceType}, resourceDisplays: ${resourceDisplays.join(", ")}`);
 
@@ -111,19 +111,19 @@ router.post(
         name: "LLM.ResourceSummary.Duration",
         unit: "Milliseconds",
         value: duration,
-        additionalDimension: `ResourceType=${resourceType}`,
+        additionalDimension: `ResourceType=${resourceType},cxId=${cxId}`,
       }),
       reportMetric({
         name: "LLM.ResourceSummary.InputTokens",
         unit: "Count",
         value: response.usage.input_tokens,
-        additionalDimension: `ResourceType=${resourceType}`,
+        additionalDimension: `ResourceType=${resourceType},cxId=${cxId}`,
       }),
       reportMetric({
         name: "LLM.ResourceSummary.OutputTokens",
         unit: "Count",
         value: response.usage.output_tokens,
-        additionalDimension: `ResourceType=${resourceType}`,
+        additionalDimension: `ResourceType=${resourceType},cxId=${cxId}`,
       }),
     ]);
   })
