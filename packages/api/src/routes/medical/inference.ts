@@ -14,7 +14,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
 
 const router = Router();
 
-const sidePanelInferenceSchema = z.object({
+const resourceSummaryInferenceSchema = z.object({
   resourceType: z.string(),
   resourceDisplays: z.array(z.string()),
   context: z.string(),
@@ -53,14 +53,16 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const { resourceType, resourceDisplays, context } = sidePanelInferenceSchema.parse(req.body);
+    const { resourceType, resourceDisplays, context } = resourceSummaryInferenceSchema.parse(
+      req.body
+    );
     console.log(`resourceType: ${resourceType}, resourceDisplays: ${resourceDisplays.join(", ")}`);
 
     const sse = await createSession(req, res, {
       state: {
         id: uuidv7(),
-        name: "Side Panel Inference",
-        description: "Side Panel Inference",
+        name: "Resource Summary Inference",
+        description: "Resource Summary Inference",
         startTimeMillis: buildDayjs().valueOf().toString(),
       },
     });
