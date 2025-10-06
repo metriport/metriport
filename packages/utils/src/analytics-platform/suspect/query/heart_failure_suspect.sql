@@ -87,11 +87,11 @@ symptom_hits AS (
   FROM CONDITION c
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
     AND (
-         c.NORMALIZED_CODE LIKE 'R06.0%'   -- dyspnea
-      OR c.NORMALIZED_CODE = 'R53.83'     -- fatigue
-      OR c.NORMALIZED_CODE LIKE 'R07.9%'  -- chest pain
+         c.NORMALIZED_CODE LIKE 'R060%'   -- dyspnea
+      OR c.NORMALIZED_CODE = 'R5383'     -- fatigue
+      OR c.NORMALIZED_CODE LIKE 'R079%'  -- chest pain
       OR c.NORMALIZED_CODE LIKE 'R60%'    -- edema
-      OR c.NORMALIZED_CODE = 'R09.89'     -- JVD
+      OR c.NORMALIZED_CODE = 'R0989'     -- JVD
     )
     AND NOT EXISTS (SELECT 1 FROM hf_dx_exclusion x WHERE x.PATIENT_ID = c.PATIENT_ID)
 ),
