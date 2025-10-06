@@ -21,10 +21,11 @@ const resourceSummaryInferenceSchema = z.object({
 });
 
 const questionsByResourceType = {
-  DiagnosticReport: [
-    "Why was this done?",
-    "Are there any notes associated?",
-    "What was the context in which this lab was taken?",
+  AllergyIntolerance: [
+    "- What type of reaction occurred (symptoms/manifestations)?",
+    "- How severe was the reaction, and is this life-threatening?",
+    "- When was this allergy first identified?",
+    "- Are there any related allergies or cross-reactivities to be aware of?",
   ],
   Condition: [
     "- How was this diagnosed?",
@@ -32,6 +33,42 @@ const questionsByResourceType = {
     "- Where, when, and by whom was this diagnosed?",
     "- Is there any documentation (notes, reports, imaging) associated with this condition? If so, what are they?",
     "- If present, what is the plan to treat this resource in the future? Are there any follow-up appointments, medications, or other plans in the source document?",
+  ],
+  MedicationStatement: [
+    "- What condition is this medication treating (indication)?",
+    "- What is the dosage, frequency, and duration?",
+    "- Is the patient currently taking this medication, or has it been discontinued?",
+    "- Who prescribed this medication and when?",
+  ],
+  Procedure: [
+    "- Why was this procedure performed (indication)?",
+    "- When and where was it performed, and by whom?",
+    "- Were there any complications or adverse events?",
+    "- What were the outcomes or findings from this procedure?",
+  ],
+  Encounter: [
+    "- What was the reason for this visit (chief complaint)?",
+    "- What diagnoses were made or conditions addressed during this encounter?",
+    "- What treatments or interventions were provided?",
+    "- What was the disposition (admitted, discharged home, follow-up plans)?",
+  ],
+  Immunization: [
+    "- What vaccine was administered and for which disease?",
+    "- When was it given, and which dose in the series is this?",
+    "- Were there any adverse reactions or side effects?",
+    "- When is the next dose due, if applicable?",
+  ],
+  DiagnosticReport: [
+    "- If a test, why was this test ordered?",
+    "- What were the key findings or results?",
+    "- Are there any abnormal values that require attention?",
+    "- What clinical notes or interpretation are provided?",
+  ],
+  Observation: [
+    "- What was measured and what is the value?",
+    "- Is this value normal, or does it indicate an abnormality?",
+    "- Why was this observation made (clinical context)?",
+    "- How does this compare to previous measurements (trend)?",
   ],
 };
 
@@ -89,10 +126,31 @@ router.post(
     agent.addUserMessageText(
       `
       This is about a patient - ${resourceType}: ${resourceDisplays.join(", ")}
+      
+      ### Citing claims
+      In your response, create a source list at the bottom. These sources MUST use markdown link syntax, but have the link point to the UUID of the resource that contains proof of the claim.
+      Each source should look like: \`[{source-index} - {phrase}](uuid-of-source-resource)\` where {source-index} is a number, {phrase} is a short two or three wordphrase that describes the source, such as "glucose measurement", "urinalysis", "", etc.
+
+      If a source is referenced multiple times, include it exactly once, and no more, in the source list.
+      
+      \`\`\`
+      Sources: 
+      - [1 - {phrase}](uuid-of-source-resource1)
+      - [2 - {phrase}](uuid-of-source-resource2)
+      - [3 - {phrase}](uuid-of-source-resource3)
+      ... etc.
+      \`\`\`
+
+      Then, ensure to include a source for each and every claim you make, using syntax \`_({source-index})_\` at the end of each claim.
+
+      ### Questions
+      
       Answer the following question(s):
       ${questions.join("\n")}
 
-      In your response, please include a source for each and every claim. These sources should use markdown link syntax, but refer to the UUID of the resource that contains proof of the claim. Each reference should look like: [view](uuid-of-source-resource). Keep your answer concise, in bullet point form.
+      If you ever don't know the a piece of information, instead of saying so, simply say nothing about it.
+
+      Keep your answer concise, in bullet point form.
 
       The patient's medical record is:
       ${context}
