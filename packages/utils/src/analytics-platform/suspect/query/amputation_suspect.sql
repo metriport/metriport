@@ -1,9 +1,10 @@
 /* ============================================================
-   AMPUTATION — SUSPECT QUERY (Procedure-code based)
+   AMPUTATION — SUSPECT QUERY (Procedure-code based, with EXCLUSION)
    ------------------------------------------------------------
    Purpose
      Flag patients with evidence of limb amputation based solely
-     on the presence of definitive amputation CPT procedures.
+     on definitive amputation CPT procedures, while EXCLUDING
+     patients already documented with amputation status (ICD-10 Z89.*).
 
    Evidence (PROCEDURE.NORMALIZED_CODE in):
      • 27590  — Amputation, thigh (above-knee)
@@ -16,16 +17,25 @@
      • 28825  — Toe amputation; interphalangeal joint
 
    Notes
-     - This query treats the presence of these procedures as
-       sufficient to flag "amputation_history" suspects.
-     - Minimal FHIR Procedure resources are embedded so the UI can render.
+     - Presence of these procedures is sufficient to flag
+       "amputation_history" suspects.
+     - Patients with Z89.* (acquired absence of limb) are excluded.
+     - Minimal FHIR Procedure resources are embedded for the UI.
 
    Output
      • One row per patient with suspect_group = 'amputation_history'
      • responsible_resources = array of supporting Procedure FHIRs
    ============================================================ */
 
-WITH amputation_procedures AS (
+WITH amputation_dx_exclusion AS (
+  -- Exclude patients already carrying an amputation/absence status diagnosis (ICD-10 Z89.*)
+  SELECT DISTINCT c.PATIENT_ID
+  FROM CONDITION c
+  WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
+    AND c.NORMALIZED_CODE LIKE 'Z89%'
+),
+
+amputation_procedures AS (
   SELECT
     p.PATIENT_ID,
 
@@ -52,6 +62,11 @@ WITH amputation_procedures AS (
     '28820',  -- Toe amputation; MTP joint
     '28825'   -- Toe amputation; interphalangeal joint
   )
+    AND NOT EXISTS (  -- Exclude patients already confirmed via diagnosis
+      SELECT 1
+      FROM amputation_dx_exclusion x
+      WHERE x.PATIENT_ID = p.PATIENT_ID
+    )
 ),
 
 /* Build minimal FHIR for each supporting Procedure */
