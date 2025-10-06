@@ -1,7 +1,6 @@
-import { uuidv7 } from "@metriport/shared/util";
-import { createSession } from "better-sse";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
+import status from "http-status";
 import { z } from "zod";
 import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
@@ -10,7 +9,6 @@ import { AnthropicAgent } from "@metriport/core/external/bedrock/agent/anthropic
 import { AnthropicMessageText } from "@metriport/core/external/bedrock/model/anthropic/messages";
 import { reportMetric } from "@metriport/core/external/aws/cloudwatch";
 import { initTimer } from "@metriport/shared/common/timer";
-import { buildDayjs } from "@metriport/shared/common/date";
 
 const router = Router();
 
@@ -45,7 +43,7 @@ const defaultQuestions = [
  * POST /internal/inference/resource/summary
  *
  * Runs a Q&A style summary over some context surrounding a resource.
- * Uses server-sent events to stream the response back to the client.
+ * Returns a JSON response with the AI-generated summary.
  */
 router.post(
   "/resource/summary",
@@ -58,15 +56,6 @@ router.post(
     );
     console.log(`resourceType: ${resourceType}, resourceDisplays: ${resourceDisplays.join(", ")}`);
 
-    const sse = await createSession(req, res, {
-      state: {
-        id: uuidv7(),
-        name: "Resource Summary Inference",
-        description: "Resource Summary Inference",
-        startTimeMillis: buildDayjs().valueOf().toString(),
-      },
-    });
-
     const agent = new AnthropicAgent({
       version: "claude-sonnet-3.7",
       region: "us-west-2",
@@ -74,12 +63,6 @@ router.post(
       maxTokens: 1024,
       temperature: 0,
       tools: [],
-    });
-
-    sse.push({
-      message: "Request received!",
-      eventName: "resource-summary-request",
-      eventId: uuidv7(),
     });
 
     const questions =
@@ -103,12 +86,6 @@ router.post(
     const response = await agent.continueConversation();
     const duration = timer.getElapsedTime();
 
-    sse.push({
-      message: (response.content[response.content.length - 1] as AnthropicMessageText).text,
-      eventName: "resource-summary-response",
-      eventId: uuidv7(),
-    });
-
     await Promise.all([
       reportMetric({
         name: "LLM.ResourceSummary.Duration",
@@ -129,6 +106,11 @@ router.post(
         additionalDimension: `ResourceType=${resourceType},cxId=${cxId}`,
       }),
     ]);
+
+    const responseText = (response.content[response.content.length - 1] as AnthropicMessageText)
+      .text;
+
+    return res.status(status.OK).json({ summary: responseText });
   })
 );
 
