@@ -35,9 +35,6 @@ WITH fev1fvc_raw AS (
     lr.NORMALIZED_CODE_TYPE,
     lr.NORMALIZED_CODE,
     lr.NORMALIZED_DESCRIPTION,
-    lr.SOURCE_DESCRIPTION,
-    lr.SOURCE_COMPONENT,
-    lr.NORMALIZED_COMPONENT,
     lr.RESULT,
     COALESCE(NULLIF(lr.NORMALIZED_UNITS,''), lr.SOURCE_UNITS) AS units,
     /* Extract the first numeric chunk (e.g., "70", "0.68", "≤0.68") */
@@ -71,9 +68,6 @@ fev1fvc_norm AS (
     r.resource_id,
     r.NORMALIZED_CODE,
     r.NORMALIZED_DESCRIPTION,
-    r.SOURCE_DESCRIPTION,
-    r.SOURCE_COMPONENT,
-    r.NORMALIZED_COMPONENT,
     r.RESULT,
     r.units,
     r.obs_date,
@@ -82,27 +76,23 @@ fev1fvc_norm AS (
     /* Parsed numeric */
     TRY_TO_DOUBLE(r.value_token) AS value_clean,
 
-    /* Text-based bronchodilator status (raw) from any descriptive field incl. RESULT */
+    /* Text-based bronchodilator status (raw) using description/result text */
     CASE
       WHEN CONCAT_WS(' ',
-             COALESCE(r.NORMALIZED_COMPONENT,''), COALESCE(r.SOURCE_COMPONENT,''),
-             COALESCE(r.SOURCE_DESCRIPTION,''),  COALESCE(r.NORMALIZED_DESCRIPTION,''),
+             COALESCE(r.NORMALIZED_DESCRIPTION,''),
              COALESCE(r.RESULT,'')
            ) ILIKE '%post%bronch%' OR
            CONCAT_WS(' ',
-             COALESCE(r.NORMALIZED_COMPONENT,''), COALESCE(r.SOURCE_COMPONENT,''),
-             COALESCE(r.SOURCE_DESCRIPTION,''),  COALESCE(r.NORMALIZED_DESCRIPTION,''),
+             COALESCE(r.NORMALIZED_DESCRIPTION,''),
              COALESCE(r.RESULT,'')
            ) ILIKE '%post-bronchodilator%'
         THEN 'post'
       WHEN CONCAT_WS(' ',
-             COALESCE(r.NORMALIZED_COMPONENT,''), COALESCE(r.SOURCE_COMPONENT,''),
-             COALESCE(r.SOURCE_DESCRIPTION,''),  COALESCE(r.NORMALIZED_DESCRIPTION,''),
+             COALESCE(r.NORMALIZED_DESCRIPTION,''),
              COALESCE(r.RESULT,'')
            ) ILIKE '%pre%bronch%'  OR
            CONCAT_WS(' ',
-             COALESCE(r.NORMALIZED_COMPONENT,''), COALESCE(r.SOURCE_COMPONENT,''),
-             COALESCE(r.SOURCE_DESCRIPTION,''),  COALESCE(r.NORMALIZED_DESCRIPTION,''),
+             COALESCE(r.NORMALIZED_DESCRIPTION,''),
              COALESCE(r.RESULT,'')
            ) ILIKE '%pre-bronchodilator%'
         THEN 'pre'
@@ -128,24 +118,20 @@ fev1fvc_norm AS (
       ELSE
         CASE
           WHEN CONCAT_WS(' ',
-                 COALESCE(r.NORMALIZED_COMPONENT,''), COALESCE(r.SOURCE_COMPONENT,''),
-                 COALESCE(r.SOURCE_DESCRIPTION,''),  COALESCE(r.NORMALIZED_DESCRIPTION,''),
+                 COALESCE(r.NORMALIZED_DESCRIPTION,''),
                  COALESCE(r.RESULT,'')
                ) ILIKE '%post%bronch%' OR
                CONCAT_WS(' ',
-                 COALESCE(r.NORMALIZED_COMPONENT,''), COALESCE(r.SOURCE_COMPONENT,''),
-                 COALESCE(r.SOURCE_DESCRIPTION,''),  COALESCE(r.NORMALIZED_DESCRIPTION,''),
+                 COALESCE(r.NORMALIZED_DESCRIPTION,''),
                  COALESCE(r.RESULT,'')
                ) ILIKE '%post-bronchodilator%'
             THEN 'post'
           WHEN CONCAT_WS(' ',
-                 COALESCE(r.NORMALIZED_COMPONENT,''), COALESCE(r.SOURCE_COMPONENT,''),
-                 COALESCE(r.SOURCE_DESCRIPTION,''),  COALESCE(r.NORMALIZED_DESCRIPTION,''),
+                 COALESCE(r.NORMALIZED_DESCRIPTION,''),
                  COALESCE(r.RESULT,'')
                ) ILIKE '%pre%bronch%'  OR
                CONCAT_WS(' ',
-                 COALESCE(r.NORMALIZED_COMPONENT,''), COALESCE(r.SOURCE_COMPONENT,''),
-                 COALESCE(r.SOURCE_DESCRIPTION,''),  COALESCE(r.NORMALIZED_DESCRIPTION,''),
+                 COALESCE(r.NORMALIZED_DESCRIPTION,''),
                  COALESCE(r.RESULT,'')
                ) ILIKE '%pre-bronchodilator%'
             THEN 'pre'

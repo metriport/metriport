@@ -1,8 +1,6 @@
 /* ============================================================
    ASTHMA SUSPECTS via Bronchodilator Reversibility (BDR)
    ------------------------------------------------------
-   FROM SCRATCH — aligned to your value set and data profile.
-
    WHAT THIS DOES
    - Flags "asthma suspects" when spirometry shows reversibility:
        • FEV1 same-day change ≥12% OR ≥200 mL
@@ -17,29 +15,18 @@
    - PEF (flow):
        • 33452-4  Peak Expiratory Flow (L/min)
 
-   IMPORTANT DATA REALITIES WE HANDLE
-   - FEV1 examples include plausible liters (e.g., 1.45) and obvious
-     percent/mistyped values (e.g., 79.61, 76) — we drop those via guards.
-   - PEF examples include L/s (e.g., 6.68 L/s) and blank units with values
-     that look like L/s (e.g., 5.5, 4.44, 6.34) or L/min (e.g., 300.7).
-     We normalize to L/min with heuristics.
-
-   EXCLUSIONS
-   - Known asthma diagnosis (ICD-10-CM J45.*) → excluded.
+   EXCLUSIONS (dotless ICD-10 compare)
+   - Known asthma diagnosis → exclude (REPLACE(code,'.','') LIKE 'J45%')
 
    OUTPUT
    - One row per patient × suspect_group with the two supporting lab
      results bundled in an array (pre/low and post/high).
    - Minimal FHIR Observation JSON per supporting lab row.
-
-   NOTE
-   - This query emphasizes clarity & correctness on your data. You can
-     expand unit heuristics/LOINCs later if needed.
    ============================================================ */
 
 WITH
 /* ------------------------------------------------------------
-   0) EXCLUDE known asthma diagnoses
+   0) EXCLUDE known asthma diagnoses (dotless ICD-10 logic)
    ------------------------------------------------------------ */
 asthma_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
@@ -60,10 +47,8 @@ raw_spirometry AS (
     CAST(lr.RESULT_DATE AS DATE)                         AS obs_date,
     lr.LAB_RESULT_ID                                     AS resource_id,
     lr.NORMALIZED_CODE                                   AS loinc,
-    lr.NORMALIZED_DESCRIPTION                             AS normalized_description,
+    lr.NORMALIZED_DESCRIPTION                            AS normalized_description,
     lr.SOURCE_DESCRIPTION,
-    lr.SOURCE_COMPONENT,
-    lr.NORMALIZED_COMPONENT,
     COALESCE(NULLIF(lr.NORMALIZED_UNITS, ''), lr.SOURCE_UNITS) AS units_raw,
     lr.RESULT                                            AS result_raw,
     REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
@@ -94,28 +79,28 @@ classified AS (
     END AS metric,
 
     TRIM(CONCAT_WS(' ',
-      COALESCE(r.NORMALIZED_COMPONENT,''), COALESCE(r.SOURCE_COMPONENT,''),
-      COALESCE(r.SOURCE_DESCRIPTION,''),  COALESCE(r.normalized_description,'')
+      COALESCE(r.SOURCE_DESCRIPTION,''),
+      COALESCE(r.normalized_description,'')
     )) AS all_text,
 
     CASE
       WHEN r.loinc = '20155-8' THEN 'post'
       WHEN TRIM(CONCAT_WS(' ',
-             COALESCE(r.NORMALIZED_COMPONENT,''), COALESCE(r.SOURCE_COMPONENT,''),
-             COALESCE(r.SOURCE_DESCRIPTION,''),  COALESCE(r.normalized_description,'')
+             COALESCE(r.SOURCE_DESCRIPTION,''),
+             COALESCE(r.normalized_description,'')
            )) ILIKE '%post%bronch%' OR
            TRIM(CONCAT_WS(' ',
-             COALESCE(r.NORMALIZED_COMPONENT,''), COALESCE(r.SOURCE_COMPONENT,''),
-             COALESCE(r.SOURCE_DESCRIPTION,''),  COALESCE(r.normalized_description,'')
+             COALESCE(r.SOURCE_DESCRIPTION,''),
+             COALESCE(r.normalized_description,'')
            )) ILIKE '%post-bronchodilator%'
         THEN 'post'
       WHEN TRIM(CONCAT_WS(' ',
-             COALESCE(r.NORMALIZED_COMPONENT,''), COALESCE(r.SOURCE_COMPONENT,''),
-             COALESCE(r.SOURCE_DESCRIPTION,''),  COALESCE(r.normalized_description,'')
+             COALESCE(r.SOURCE_DESCRIPTION,''),
+             COALESCE(r.normalized_description,'')
            )) ILIKE '%pre%bronch%' OR
            TRIM(CONCAT_WS(' ',
-             COALESCE(r.NORMALIZED_COMPONENT,''), COALESCE(r.SOURCE_COMPONENT,''),
-             COALESCE(r.SOURCE_DESCRIPTION,''),  COALESCE(r.normalized_description,'')
+             COALESCE(r.SOURCE_DESCRIPTION,''),
+             COALESCE(r.normalized_description,'')
            )) ILIKE '%pre-bronchodilator%'
         THEN 'pre'
       ELSE 'unknown'
@@ -233,9 +218,8 @@ grouped AS (
 
 /* ------------------------------------------------------------
    6) COMPUTE deltas and apply MD thresholds
-      - FEV1:  Δ% ≥12 OR ΔmL ≥200  (use post vs pre when POST exists,
-                                    else max vs min same-day)
-      - PEF:   Δ% ≥20              (same rule for direction)
+      - FEV1:  Δ% ≥12 OR ΔmL ≥200
+      - PEF:   Δ% ≥20
    ------------------------------------------------------------ */
 evaluated AS (
   SELECT
@@ -260,7 +244,6 @@ evaluated AS (
 
 /* ------------------------------------------------------------
    7) EMIT suspect pairs (one row per metric/day)
-      - Label post-BD vs unknown based on presence of explicit POST that day
    ------------------------------------------------------------ */
 bdr_pairs AS (
   /* FEV1 */
@@ -295,8 +278,7 @@ bdr_pairs AS (
 ),
 
 /* ------------------------------------------------------------
-   8) FLATTEN to one row per supporting lab result (so we
-      can build an Observation FHIR for each contributing row)
+   8) FLATTEN to one row per supporting lab result (for FHIR)
    ------------------------------------------------------------ */
 pair_rows AS (
   SELECT
@@ -321,9 +303,7 @@ pair_rows AS (
 ),
 
 /* ------------------------------------------------------------
-   9) JOIN back to LAB_RESULT for code/description/raw units/result,
-      and compute the normalized value/unit again for FHIR display.
-      (We re-use the same normalization heuristics for consistency.)
+   9) JOIN back to LAB_RESULT and re-normalize for FHIR display
    ------------------------------------------------------------ */
 pair_rows_enriched AS (
   SELECT
@@ -352,7 +332,7 @@ pair_rows_enriched AS (
 
     CASE
       WHEN lr.NORMALIZED_CODE IN ('20150-9','20155-8') THEN
-        /* FEV1 → L with guards (same logic as above, condensed) */
+        /* FEV1 → L (guards condensed) */
         CASE
           WHEN COALESCE(NULLIF(lr.NORMALIZED_UNITS,''), lr.SOURCE_UNITS) ILIKE '%ml%' THEN TRY_TO_DOUBLE(REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+'))/1000.0
           WHEN COALESCE(NULLIF(lr.NORMALIZED_UNITS,''), lr.SOURCE_UNITS) ILIKE '%l%'  THEN
@@ -397,7 +377,6 @@ pair_rows_enriched AS (
 
 /* ------------------------------------------------------------
    10) BUILD minimal FHIR Observation JSON per supporting row
-       (mirrors your hyperlipidemia example, adapted for spirometry)
    ------------------------------------------------------------ */
 obs_with_fhir AS (
   SELECT
@@ -411,7 +390,6 @@ obs_with_fhir AS (
     e.RESULT,
     e.units_raw AS units,
 
-    /* Minimal Observation FHIR */
     OBJECT_CONSTRUCT(
       'resourceType', 'Observation',
       'id',            e.resource_id,
@@ -441,9 +419,7 @@ obs_with_fhir AS (
 )
 
 -- ------------------------------------------------------------
--- 11) FINAL RESULT SET:
---     - One row per patient × suspect_group
---     - Bundle both supporting Observations into responsible_resources
+-- 11) FINAL RESULT SET
 -- ------------------------------------------------------------
 SELECT
   PATIENT_ID,
@@ -463,4 +439,4 @@ SELECT
   CURRENT_TIMESTAMP() AS last_run
 FROM obs_with_fhir
 GROUP BY PATIENT_ID, suspect_group, suspect_icd10_code, suspect_icd10_short_description
-ORDER BY PATIENT_ID, suspect_group
+ORDER BY PATIENT_ID, suspect_group;
