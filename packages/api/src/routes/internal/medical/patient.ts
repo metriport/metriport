@@ -26,7 +26,6 @@ import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import {
@@ -65,9 +64,6 @@ import { Pagination } from "../../../command/pagination";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import { PatientUpdaterCarequality } from "../../../external/carequality/patient-updater-carequality";
 import cwCommands from "../../../external/commonwell";
-import { findDuplicatedPersons } from "../../../external/commonwell-v1/admin/find-patient-duplicates";
-import { patchDuplicatedPersonsForPatient } from "../../../external/commonwell-v1/admin/patch-patient-duplicates";
-import { recreatePatientsAtCW } from "../../../external/commonwell-v1/admin/recreate-patients-at-hies";
 import { PatientUpdaterCommonWell } from "../../../external/commonwell/patient/patient-updater-commonwell";
 import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
@@ -393,115 +389,6 @@ router.delete(
     }
 
     return res.sendStatus(status.NO_CONTENT);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * TODO ENG-554 Remove entirely once we've migrated to CWv2
- *
- * GET /internal/patient/duplicates
- * *
- * @param req.query.cxId The customer ID (optional, defaults to all customers).
- *
- * @return list of cxs with patients that have duplicated persons, along w/ each
- *         person, who enrolled and when
- */
-router.get(
-  "/duplicates",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const result = await findDuplicatedPersons(cxId);
-    console.log(`Result: ${stringify(result)}`);
-    return res.status(status.OK).json(result);
-  })
-);
-
-// Zod schema to validate the request body based on the response of GET /duplicates
-const patchDuplicatesSchema = z.record(
-  // cx
-  z.record(
-    // patient
-    z.record(
-      z
-        .object({
-          // person
-        })
-        .nullish()
-    )
-  )
-);
-
-/** ---------------------------------------------------------------------------
- * PATCH /internal/patient/duplicates
- *
- * Links the patient to the chosen person.
- * Additionally, unenroll those enrolled by Metriport:
- * - any other person linked to the patient; AND
- * - all other persons matching the patient's demographics if the `unenrollByDemographics`
- *   query param is set to true (defaults to false).
- *
- * @param req.body The request body in the same format of the output of "GET /duplicates".
- *     Each patient must have one chosen person. Less than one it gets skipped; more
- *     than one it throws an error.
- */
-router.patch(
-  "/duplicates",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const unenrollByDemographics = stringToBoolean(
-      getFrom("query").optional("unenrollByDemographics", req)
-    );
-    const payload = patchDuplicatesSchema.parse(req.body);
-
-    const result = await Promise.allSettled(
-      Object.entries(payload).flatMap(([cxId, patients]) => {
-        return Object.entries(patients).flatMap(async ([patientId, persons]) => {
-          const personEntries = Object.entries(persons);
-          if (personEntries.length < 1) return;
-          if (personEntries.length > 1)
-            throw new BadRequestError(
-              `Failed to patch patient ${patientId} - One chosen person per patient allowed`
-            );
-          const personId = personEntries[0][0] as string;
-          return patchDuplicatedPersonsForPatient(
-            cxId,
-            patientId,
-            personId,
-            unenrollByDemographics,
-            getCqOrgIdsToDenyOnCw
-          ).catch(e => {
-            console.log(`Error: ${e}, ${String(e)}`);
-            throw `Failed to patch patient ${patientId} - ${String(e)}`;
-          });
-        });
-      })
-    );
-    const succeded = result.filter(r => r.status === "fulfilled");
-    const failed = result.flatMap(r => (r.status === "rejected" ? r.reason : []));
-    return res.status(status.OK).json({
-      succededCount: succeded.length,
-      failedCount: failed.length,
-      failed,
-    });
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/patient/recreate-at-hies
- *
- * Recreates patients at HIEs.
- *
- * @param req.query.cxId The customer ID (optional, default to all cxs).
- * @return 200 OK
- */
-router.post(
-  "/recreate-at-hies",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").optional();
-    const resultCW = await recreatePatientsAtCW(cxId);
-    return res.status(status.OK).json(resultCW);
   })
 );
 
