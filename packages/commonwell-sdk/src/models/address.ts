@@ -1,6 +1,6 @@
 import { normalizeState, normalizeStateSafe } from "@metriport/shared";
 import { z } from "zod";
-import { emptyStringToUndefinedSchema } from "../common/zod";
+import { trimAndEmptyToUndefinedSchema } from "../common/zod";
 import { periodSchema } from "./period";
 
 const MIN_LINE_LENGTH = 3;
@@ -27,13 +27,13 @@ export enum AddressTypeCodes {
 // A postal address.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.3 Address)
 export const addressSchema = z.object({
-  line: z.array(z.string()).nullish(),
-  city: emptyStringToUndefinedSchema,
+  line: z.array(z.string().transform(s => s.trim())).nullish(),
+  city: trimAndEmptyToUndefinedSchema,
   state: z.preprocess(normalizeStatePreprocess, z.string().nullish()),
-  country: emptyStringToUndefinedSchema,
-  postalCode: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
-  use: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
-  type: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
+  country: trimAndEmptyToUndefinedSchema,
+  postalCode: trimAndEmptyToUndefinedSchema.pipe(z.string().nullish()),
+  use: trimAndEmptyToUndefinedSchema.pipe(z.string().nullish()),
+  type: trimAndEmptyToUndefinedSchema.pipe(z.string().nullish()),
   period: periodSchema.nullish(),
 });
 export type Address = z.infer<typeof addressSchema>;
@@ -46,13 +46,13 @@ export function normalizeStatePreprocess(arg: unknown): unknown {
 
 // Safe address schema that filters out invalid addresses instead of throwing errors
 export const addressSchemaSafe = z.object({
-  line: z.array(z.string()).nullish(),
-  city: emptyStringToUndefinedSchema,
-  state: z.preprocess(normalizeStatePreprocessSafe, emptyStringToUndefinedSchema),
-  country: emptyStringToUndefinedSchema,
-  postalCode: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
-  use: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
-  type: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
+  line: z.array(z.string().transform(s => s.trim())).nullish(),
+  city: trimAndEmptyToUndefinedSchema,
+  state: z.preprocess(normalizeStatePreprocessSafe, trimAndEmptyToUndefinedSchema),
+  country: trimAndEmptyToUndefinedSchema,
+  postalCode: trimAndEmptyToUndefinedSchema.pipe(z.string().nullish()),
+  use: trimAndEmptyToUndefinedSchema.pipe(z.string().nullish()),
+  type: trimAndEmptyToUndefinedSchema.pipe(z.string().nullish()),
   period: periodSchema.nullish(),
 });
 

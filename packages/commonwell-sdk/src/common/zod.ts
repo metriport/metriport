@@ -20,3 +20,23 @@ export function literalStringToUndefined(arg: unknown): unknown {
   if (typeof arg === "string" && arg.trim().toLocaleLowerCase() === "string") return undefined;
   return arg ?? undefined;
 }
+
+export function trimString(arg: unknown): unknown {
+  if (typeof arg === "string") return arg.trim();
+  return arg;
+}
+
+export function trimAndEmptyToUndefined(arg: unknown): unknown {
+  if (typeof arg === "string") {
+    const trimmed = arg.trim();
+    if (["", "undefined", "null"].includes(trimmed)) return undefined;
+    return trimmed;
+  }
+  return arg ?? undefined;
+}
+
+export const trimStringSchema = z.preprocess(trimString, z.string());
+export const trimAndEmptyToUndefinedSchema = z.preprocess(
+  trimAndEmptyToUndefined,
+  z.string().nullish()
+);
