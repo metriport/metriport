@@ -28,9 +28,7 @@ export function trimString(arg: unknown): unknown {
 
 export function trimAndEmptyToUndefined(arg: unknown): unknown {
   if (typeof arg === "string") {
-    const trimmed = arg.trim();
-    if (["", "undefined", "null"].includes(trimmed)) return undefined;
-    return trimmed;
+    return emptyStringToUndefined(arg.trim());
   }
   return arg ?? undefined;
 }

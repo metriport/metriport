@@ -24,41 +24,37 @@ export enum AddressTypeCodes {
   both = "both",
 }
 
-// A postal address.
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.3 Address)
-export const addressSchema = z.object({
+// Base address schema with all common fields
+const addressSchemaBase = z.object({
   line: z.array(z.string().transform(s => s.trim())).nullish(),
   city: trimAndEmptyToUndefinedSchema,
-  state: z.preprocess(normalizeStatePreprocess, z.string().nullish()),
   country: trimAndEmptyToUndefinedSchema,
   postalCode: trimAndEmptyToUndefinedSchema.pipe(z.string().nullish()),
   use: trimAndEmptyToUndefinedSchema.pipe(z.string().nullish()),
   type: trimAndEmptyToUndefinedSchema.pipe(z.string().nullish()),
   period: periodSchema.nullish(),
+});
+
+export const addressSchema = addressSchemaBase.extend({
+  state: z.preprocess(normalizeStatePreprocess, z.string().nullish()),
 });
 export type Address = z.infer<typeof addressSchema>;
 
 export function normalizeStatePreprocess(arg: unknown): unknown {
   if (typeof arg === "string" && ["", "undefined", "null"].includes(arg.trim())) return undefined;
   if (typeof arg === "string") return normalizeState(arg);
-  return undefined;
+  return undefined; // Convert non-string values to undefined
 }
 
 // Safe address schema that filters out invalid addresses instead of throwing errors
-export const addressSchemaSafe = z.object({
-  line: z.array(z.string().transform(s => s.trim())).nullish(),
-  city: trimAndEmptyToUndefinedSchema,
+export const addressSchemaSafe = addressSchemaBase.extend({
   state: z.preprocess(normalizeStatePreprocessSafe, trimAndEmptyToUndefinedSchema),
-  country: trimAndEmptyToUndefinedSchema,
-  postalCode: trimAndEmptyToUndefinedSchema.pipe(z.string().nullish()),
-  use: trimAndEmptyToUndefinedSchema.pipe(z.string().nullish()),
-  type: trimAndEmptyToUndefinedSchema.pipe(z.string().nullish()),
-  period: periodSchema.nullish(),
 });
 
 export function normalizeStatePreprocessSafe(arg: unknown): unknown {
   if (typeof arg === "string") return normalizeStateSafe(arg);
-  return arg;
+  return undefined; // Convert non-string values to undefined so they get filtered out
 }
 
 // Safe address array schema that filters out invalid addresses

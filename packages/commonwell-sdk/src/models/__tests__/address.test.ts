@@ -138,13 +138,58 @@ describe("address validation", () => {
         {
           line: ["101 Elm St"],
           city: "Boston",
-          state: "XX", // Invalid state
+          state: "XX", // Invalid state code
+        },
+        {
+          line: ["555 Oak St"],
+          city: "Miami",
+          state: "invalid state name", // Invalid state name
         },
       ];
 
       const result = addressArraySchemaSafe.parse(addresses);
       expect(result).toHaveLength(1);
       expect(result[0]?.city).toBe("New York");
+    });
+
+    it("filters out addresses with non-string state values", async () => {
+      const addresses = [
+        {
+          line: ["123 Main St"],
+          city: "New York",
+          state: "NY", // Valid string state
+        },
+        {
+          line: ["456 Oak Ave"],
+          city: "Los Angeles",
+          state: 123, // Number state - invalid
+        },
+        {
+          line: ["789 Pine St"],
+          city: "Chicago",
+          state: true, // Boolean state - invalid
+        },
+        {
+          line: ["101 Elm St"],
+          city: "Boston",
+          state: false, // Boolean state - invalid
+        },
+        {
+          line: ["555 Oak St"],
+          city: "Miami",
+          state: {}, // Object state - invalid
+        },
+        {
+          line: ["777 Pine St"],
+          city: "Seattle",
+          state: "WA", // Valid string state
+        },
+      ];
+
+      const result = addressArraySchemaSafe.parse(addresses);
+      expect(result).toHaveLength(2);
+      expect(result[0]?.city).toBe("New York");
+      expect(result[1]?.city).toBe("Seattle");
     });
 
     it("returns empty array when all addresses are invalid", async () => {
