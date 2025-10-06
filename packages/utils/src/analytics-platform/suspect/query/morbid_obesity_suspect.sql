@@ -173,7 +173,7 @@ bmi_derived AS (
     p.weight_obs_id                                 AS resource_id,
     'Observation'                                   AS resource_type,
     /* suspect bucket */
-    CASE WHEN (p.weight_kg / NULLIF(p.height_m * p.height_m, 0)) >= 40
+    CASE WHEN (p.weight_kg / NULLIF(p.height_m * p.height_m, 0)) >= 35
          THEN 'morbid_obesity_derived' ELSE NULL END AS suspect_group,
     'E66.01'                                        AS suspect_icd10_code,
     'Morbid (severe) obesity due to excess calories' AS suspect_icd10_short_description,
