@@ -423,6 +423,4 @@ SELECT
     supportinginformation_1_reference,
     filename,
     processed_date 
-FROM {{source('raw', 'medicationrequest') }} x
-
-QUALIFY rank() over(partition by filename order by processed_date desc) = 1
+FROM {{source('raw', 'medicationrequest_view') }} x

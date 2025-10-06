@@ -128,6 +128,7 @@ export async function convert(
       cxId,
       patientId,
       bundle: combinedBundle,
+      isVerbose: false,
     });
   }
 

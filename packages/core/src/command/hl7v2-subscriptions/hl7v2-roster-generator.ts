@@ -13,10 +13,10 @@ import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
 import _ from "lodash";
+import { stripInvalidCharactersFromPatientData } from "../../domain/character-sanitizer";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
 import { capture, out } from "../../util";
-import { stripInvalidCharactersFromPatientData } from "../../domain/character-sanitizer";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
 import { METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER } from "./constants";
@@ -34,6 +34,7 @@ import {
   VpnlessHieConfig,
 } from "./types";
 import { createScrambledId } from "./utils";
+import { toBambooId } from "./hl7v2-to-fhir-conversion/shared";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
@@ -106,8 +107,8 @@ export class Hl7v2RosterGenerator {
 
       return createRosterRowInput(p, { shortcode: org.shortcode }, states);
     });
-
-    const rosterRows = rosterRowInputs.map(input => createRosterRow(input, config.mapping));
+    const newRosterRowInputs = customizeInputsForHies(rosterRowInputs, hieName);
+    const rosterRows = newRosterRowInputs.map(input => createRosterRow(input, config.mapping));
     const rosterCsv = this.generateCsv(rosterRows);
     log("Created CSV");
 
@@ -197,6 +198,19 @@ export function createFileNameHl7v2Roster(hieName: string): string {
   const todaysDate = buildDayjs();
   const fileDate = todaysDate.format(FILE_DATE_FORMAT);
   return `Metriport_${hieName}_Patient_Enrollment_${fileDate}.${CSV_FILE_EXTENSION}`;
+}
+
+function customizeInputsForHies(
+  rosterRowInputs: RosterRowData[],
+  hieName: string
+): RosterRowData[] {
+  if (hieName === "Bamboo") {
+    return rosterRowInputs.map(({ scrambledId, ...rest }) => ({
+      scrambledId: toBambooId(scrambledId),
+      ...rest,
+    }));
+  }
+  return rosterRowInputs;
 }
 
 export function createRosterRow(

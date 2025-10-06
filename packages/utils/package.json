@@ -1,6 +1,6 @@
 {
   "name": "utils",
-  "version": "1.27.5",
+  "version": "1.27.7",
   "description": "",
   "private": true,
   "scripts": {
@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
-    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "prettier-fix": "npx prettier '**/*.{js,ts,md}' --write --ignore-path ../../.prettierignore",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
     "cq-stats": "npx --node-options='--max-old-space-size=8192' ts-node src/carequality/cq-monthly-stats/index.ts",
     "fhir-uploader": "ts-node src/fhir-uploader.ts",
@@ -28,7 +28,7 @@
     "quest": "ts-node src/quest/index.ts",
     "medical-coding": "ts-node src/medical-coding/index.ts",
     "mock-ihe-gateway": "ts-node src/saml/mock-ihe-gateway",
-    "integration-test-and-compare-total-resource-counts": "bash src/fhir-converter/scripts/run_integration_and_compare.sh",
+    "integration-test-and-compare-total-resource-counts": "bash src/fhir/fhir-converter/scripts/run_integration_and_compare.sh",
     "compare-total-resource-counts": "bash src/fhir-converter/scripts/compare_total_resource_counts.sh",
     "compare-resource-counts-per-file": "bash src/fhir-converter/scripts/compare_resource_counts_per_file.sh",
     "compare-total-resource-count-post-fhir-insert": "bash src/fhir-converter/scripts/compare_total_resource_count_post_fhir_insert.sh",

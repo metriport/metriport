@@ -139,7 +139,6 @@ export function createAPIService({
   consolidatedSearchLambda,
   consolidatedIngestionQueue,
   featureFlagsTable,
-  cookieStore,
   surescriptsAssets,
   questAssets,
   jobAssets,
@@ -191,7 +190,6 @@ export function createAPIService({
   consolidatedSearchLambda: ILambda;
   consolidatedIngestionQueue: IQueue;
   featureFlagsTable: dynamodb.Table;
-  cookieStore: secret.ISecret | undefined;
   surescriptsAssets: SurescriptsAssets | undefined;
   questAssets: QuestAssets | undefined;
   jobAssets: JobsAssets;
@@ -220,7 +218,6 @@ export function createAPIService({
     ? props.config.connectWidgetUrl
     : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
 
-  const coverageEnhancementConfig = props.config.commonwell.coverageEnhancement;
   const dbReadReplicaEndpointAsString = JSON.stringify({
     host: dbReadReplicaEndpoint.hostname,
     port: dbReadReplicaEndpoint.port,
@@ -376,12 +373,6 @@ export function createAPIService({
             PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
           }),
           FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
-          ...(coverageEnhancementConfig && {
-            CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
-          }),
-          ...(cookieStore && {
-            CW_MANAGEMENT_COOKIE_SECRET_ARN: cookieStore.secretArn,
-          }),
           ...(props.config.iheGateway?.trustStoreBucketName && {
             CQ_TRUST_BUNDLE_BUCKET_NAME: props.config.iheGateway.trustStoreBucketName,
           }),
@@ -434,8 +425,14 @@ export function createAPIService({
               props.config.hl7Notification.dischargeNotificationSlackUrl,
           }),
           ...(analyticsPlatformAssets && {
-            FHIR_TO_CSV_QUEUE_URL: analyticsPlatformAssets.fhirToCsvQueue.queueUrl,
+            FHIR_TO_CSV_BULK_QUEUE_URL: analyticsPlatformAssets.fhirToCsvBulkQueue.queueUrl,
+            FHIR_TO_CSV_INCREMENTAL_QUEUE_URL:
+              analyticsPlatformAssets.fhirToCsvIncrementalQueue.queueUrl,
             ANALYTICS_BUCKET_NAME: analyticsPlatformAssets.analyticsPlatformBucket.bucketName,
+            CORE_TRANSFORM_BATCH_JOB_QUEUE_ARN:
+              analyticsPlatformAssets.coreTransformBatchJobQueue.jobQueueArn,
+            CORE_TRANSFORM_BATCH_JOB_DEFINITION_ARN:
+              analyticsPlatformAssets.coreTransformBatchJob.jobDefinitionArn,
           }),
           ...(props.config.hl7Notification?.hieConfigs && {
             HIE_CONFIG_DICTIONARY: JSON.stringify(
@@ -557,11 +554,6 @@ export function createAPIService({
     fhirToMedicalRecordLambda2.grantInvoke(fargateService.taskDefinition.taskRole);
   }
 
-  if (cookieStore) {
-    cookieStore.grantRead(fargateService.service.taskDefinition.taskRole);
-    cookieStore.grantWrite(fargateService.service.taskDefinition.taskRole);
-  }
-
   provideAccessToQueue({
     accessType: "send",
     queue: ehrSyncPatientQueue,
@@ -596,9 +588,18 @@ export function createAPIService({
   if (analyticsPlatformAssets) {
     provideAccessToQueue({
       accessType: "send",
-      queue: analyticsPlatformAssets.fhirToCsvQueue,
+      queue: analyticsPlatformAssets.fhirToCsvBulkQueue,
       resource: fargateService.taskDefinition.taskRole,
     });
+    provideAccessToQueue({
+      accessType: "send",
+      queue: analyticsPlatformAssets.fhirToCsvIncrementalQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+    analyticsPlatformAssets.coreTransformBatchJob.grantSubmitJob(
+      fargateService.taskDefinition.taskRole,
+      analyticsPlatformAssets.coreTransformBatchJobQueue
+    );
   }
 
   if (dischargeRequeryQueue) {

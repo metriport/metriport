@@ -48,7 +48,12 @@ export function makeCommonWellMemberAPI(): CommonWellMemberAPI {
  * @param npi Organization NPI
  * @returns CommonWell API
  */
-export function makeCommonWellAPI(orgName: string, orgOID: string, npi: string): CommonWellAPI {
+export function makeCommonWellAPI(
+  orgName: string,
+  orgOID: string,
+  npi: string,
+  queryGrantorOid?: string | undefined
+): CommonWellAPI {
   if (Config.isSandbox()) {
     return new CommonWellMock(orgName, orgOID);
   }
@@ -61,6 +66,7 @@ export function makeCommonWellAPI(orgName: string, orgOID: string, npi: string):
     homeCommunityId: orgOID,
     npi,
     apiMode,
+    authGrantorReferenceOid: queryGrantorOid,
   });
 }
 

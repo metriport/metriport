@@ -20,6 +20,4 @@ SELECT
     code_coding_3_system,
     filename,
     processed_date 
-FROM {{source('raw', 'familymemberhistory_condition') }} x
-
-QUALIFY rank() over(partition by filename order by processed_date desc) = 1
+FROM {{source('raw', 'familymemberhistory_condition_view') }} x

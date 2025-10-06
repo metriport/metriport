@@ -190,6 +190,4 @@ SELECT
     verificationstatus_text,
     filename,
     processed_date 
-FROM {{source('raw', 'condition') }} x
-
-QUALIFY rank() over(partition by filename order by processed_date desc) = 1
+FROM {{source('raw', 'condition_view') }} x

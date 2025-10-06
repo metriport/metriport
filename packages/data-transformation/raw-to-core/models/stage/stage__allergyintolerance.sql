@@ -149,6 +149,4 @@ SELECT
     recorder_reference,
     filename,
     processed_date 
-FROM {{source('raw', 'allergyintolerance') }} x
-
-QUALIFY rank() over(partition by filename order by processed_date desc) = 1
+FROM {{source('raw', 'allergyintolerance_view') }} x

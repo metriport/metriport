@@ -2,9 +2,10 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import {
-  buildFhirToCsvJobPrefix,
-  parsePatientIdFromFhirToCsvPatientPrefix,
+  buildFhirToCsvBulkJobPrefix,
+  parsePatientIdFromFhirToCsvBulkPatientPrefix,
 } from "@metriport/core/command/analytics-platform/fhir-to-csv/file-name";
+import { groupAndMergeCSVs } from "@metriport/core/command/analytics-platform/merge-csvs/index";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { SQSClient } from "@metriport/core/external/aws/sqs";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -64,12 +65,19 @@ program
   .name("2-merge-csvs")
   .description("CLI to trigger the merging of patients' CSV files into single files")
   .requiredOption("-f2c, --fhir-to-csv-job-id <id>", "The FhirToCsv job ID to merge the CSVs for")
+  .option("-l, --run-on-local", "Run the merge on local")
   .showHelpAfterError()
   .action(main);
 
 const sqsClient = new SQSClient({ region });
 
-async function main({ fhirToCsvJobId }: { fhirToCsvJobId: string }) {
+async function main({
+  fhirToCsvJobId,
+  runOnLocal = false,
+}: {
+  fhirToCsvJobId: string;
+  runOnLocal: boolean;
+}) {
   await sleep(100);
   const { log } = out("");
 
@@ -96,7 +104,7 @@ async function main({ fhirToCsvJobId }: { fhirToCsvJobId: string }) {
   const uniquePatientIds = [...new Set(patientsToMerge)];
   const patientIdChunks = chunk(uniquePatientIds, maxPatientCountPerLambda);
 
-  await displayWarningAndConfirmation(uniquePatientIds, isAllPatients, orgName, log);
+  await displayWarningAndConfirmation(uniquePatientIds, isAllPatients, orgName, runOnLocal, log);
   log(
     `>>> Running it for ${uniquePatientIds.length} patients (${patientIdChunks.length} chunks of ` +
       `${maxPatientCountPerLambda} patients each)...\n- mergeCsvJobId: ${mergeCsvJobId}\n- fhirToCsvJobId: ${fhirToCsvJobId}` +
@@ -118,12 +126,21 @@ async function main({ fhirToCsvJobId }: { fhirToCsvJobId: string }) {
           ...defaultPayload,
           patientIds: ptIdsOfThisRun,
         };
-        const payloadString = JSON.stringify(payload);
-        await sqsClient.sendMessageToQueue(queueUrl, payloadString, {
-          fifo: true,
-          messageDeduplicationId: createUuidFromText(ptIdsOfThisRun.join(",")),
-          messageGroupId: uuidv4(),
-        });
+        if (runOnLocal) {
+          await groupAndMergeCSVs({
+            ...payload,
+            sourceBucket: bucketName,
+            destinationBucket: bucketName,
+            region,
+          });
+        } else {
+          const payloadString = JSON.stringify(payload);
+          await sqsClient.sendMessageToQueue(queueUrl, payloadString, {
+            fifo: true,
+            messageDeduplicationId: createUuidFromText(ptIdsOfThisRun.join(",")),
+            messageGroupId: uuidv4(),
+          });
+        }
 
         amountOfPatientsProcessed += ptIdsOfThisRun.length;
         log(
@@ -166,13 +183,13 @@ async function getPatientIdsFromFhirToCsvJob({
 }: {
   fhirToCsvJobId: string;
 }): Promise<string[]> {
-  const basePrefix = buildFhirToCsvJobPrefix({ cxId, jobId: fhirToCsvJobId });
+  const basePrefix = buildFhirToCsvBulkJobPrefix({ cxId, jobId: fhirToCsvJobId });
   const files = await s3Utils.listFirstLevelSubdirectories({
     bucket: bucketName,
     prefix: basePrefix + "/",
   });
   const patientIds = files.flatMap(file =>
-    file.Prefix ? parsePatientIdFromFhirToCsvPatientPrefix(file.Prefix) : []
+    file.Prefix ? parsePatientIdFromFhirToCsvBulkPatientPrefix(file.Prefix) : []
   );
   return patientIds;
 }
@@ -181,12 +198,14 @@ async function displayWarningAndConfirmation(
   patientsToInsert: string[],
   isAllPatients: boolean,
   orgName: string,
+  runOnLocal: boolean,
   log: typeof console.log
 ) {
   const allPatientsMsg = isAllPatients ? ` That's all patients of customer ${cxId}!` : "";
+  const runOnLocalMsg = runOnLocal ? `\n\nRUNNING ON LOCAL!\n` : "";
   const msg =
     `You are about to merge CSV files for ${patientsToInsert.length} patients of ` +
-    `customer ${orgName} (${cxId}). Are you sure?${allPatientsMsg}`;
+    `customer ${orgName} (${cxId}). ${allPatientsMsg}${runOnLocalMsg}`;
   log(msg);
   log("Are you sure you want to proceed?");
   const rl = readline.createInterface({

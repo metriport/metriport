@@ -1,6 +1,6 @@
 {
   "name": "@metriport/commonwell-cert-runner",
-  "version": "2.1.5",
+  "version": "2.1.7",
   "description": "Tool to run through Edge System CommonWell certification test cases - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -34,7 +34,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
-    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "prettier-fix": "npx prettier '**/*.{js,ts,md}' --write --ignore-path ../../.prettierignore",
     "test": "echo \"No test specified yet\""
   },
   "bugs": {
