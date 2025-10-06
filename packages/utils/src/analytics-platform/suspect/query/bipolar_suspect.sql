@@ -19,7 +19,7 @@
 WITH bipolar_dx_exclusion AS (
   -- Patients already diagnosed with Bipolar Disorder
   SELECT DISTINCT c.PATIENT_ID
-  FROM CONDITION c
+  FROM core_v2.CORE_V2__CONDITION c 
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
     AND c.NORMALIZED_CODE LIKE 'F31%'
 ),
@@ -27,7 +27,7 @@ WITH bipolar_dx_exclusion AS (
 substance_induced_exclusion AS (
   -- Patients with substance/medication-induced mood disorder
   SELECT DISTINCT c.PATIENT_ID
-  FROM CONDITION c
+  FROM core_v2.CORE_V2__CONDITION c 
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
     AND c.NORMALIZED_CODE IN ('F10.14','F15.24','F19.14')
 ),
@@ -48,7 +48,7 @@ lithium_hits AS (
     COALESCE(NULLIF(lr.NORMALIZED_UNITS,''), lr.SOURCE_UNITS) AS units,
     CAST(lr.RESULT_DATE AS DATE) AS obs_date,
     lr.DATA_SOURCE
-  FROM LAB_RESULT lr
+  FROM core_v2.CORE_V2__LAB_RESULT lr
   WHERE lr.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND lr.NORMALIZED_CODE = '14334-7'  -- Lithium, serum level
     AND NOT EXISTS (SELECT 1 FROM bipolar_dx_exclusion x WHERE x.PATIENT_ID = lr.PATIENT_ID)

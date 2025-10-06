@@ -10,7 +10,7 @@
 WITH pad_dx_exclusion AS (
   -- Patients already diagnosed with PAD (exclude these)
   SELECT DISTINCT c.PATIENT_ID
-  FROM CONDITION c
+  FROM core_v2.CORE_V2__CONDITION c 
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
     AND c.NORMALIZED_CODE LIKE 'I702%'
 ),
@@ -30,7 +30,7 @@ revasc_hits AS (
     p.NORMALIZED_DESCRIPTION,
     CAST(p.PROCEDURE_DATE AS DATE) AS obs_date,
     p.DATA_SOURCE
-  FROM PROCEDURE p
+  FROM core_v2.CORE_V2__PROCEDURE p
   WHERE p.NORMALIZED_CODE IN (
     '37226',  -- Peripheral angioplasty
     '37221'   -- Peripheral atherectomy

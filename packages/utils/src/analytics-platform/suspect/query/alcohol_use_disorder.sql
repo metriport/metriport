@@ -34,7 +34,7 @@
 WITH aud_dx_exclusion AS (
   /* Patients already diagnosed with alcohol-related disorders (exclude) */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CONDITION c
+  FROM core_v2.CORE_V2__CONDITION c 
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
     AND c.NORMALIZED_CODE LIKE 'F10%'
 ),
@@ -55,7 +55,7 @@ ethanol_raw AS (
     REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
     CAST(lr.RESULT_DATE AS DATE)                      AS obs_date,
     lr.DATA_SOURCE
-  FROM LAB_RESULT lr
+  FROM core_v2.CORE_V2__LAB_RESULT lr
   WHERE lr.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND lr.NORMALIZED_CODE = '5643-2'   -- Ethanol [Mass/volume] in Serum or Plasma
     AND REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL

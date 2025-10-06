@@ -14,7 +14,7 @@
 WITH hf_dx_exclusion AS (
   -- Patients already diagnosed with HF (I50.*)
   SELECT DISTINCT c.PATIENT_ID
-  FROM CONDITION c
+  FROM core_v2.CORE_V2__CONDITION c 
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
     AND c.NORMALIZED_CODE LIKE 'I50%'
 ),
@@ -42,7 +42,7 @@ peptide_hits AS (
     END AS suspect_group,
     'I50.9' AS suspect_icd10_code,
     'Heart failure, unspecified' AS suspect_icd10_short_description
-  FROM LAB_RESULT lr
+  FROM core_v2.CORE_V2__LAB_RESULT lr
   WHERE lr.NORMALIZED_CODE IN ('30934-4','42637-9','33762-6','83107-3')
     AND TRY_TO_DOUBLE(lr.RESULT) IS NOT NULL
     AND NOT EXISTS (SELECT 1 FROM hf_dx_exclusion x WHERE x.PATIENT_ID = lr.PATIENT_ID)
@@ -63,7 +63,7 @@ echo_hits AS (
     'hf_echo_present' AS suspect_group,
     'I50.9' AS suspect_icd10_code,
     'Heart failure, unspecified' AS suspect_icd10_short_description
-  FROM PROCEDURE pr
+  FROM core_v2.CORE_V2__PROCEDURE pr
   WHERE (pr.NORMALIZED_DESCRIPTION ILIKE '%echocardiography%'
      OR pr.NORMALIZED_CODE IN ('93306','93307','C8929'))
     AND NOT EXISTS (SELECT 1 FROM hf_dx_exclusion x WHERE x.PATIENT_ID = pr.PATIENT_ID)
@@ -84,7 +84,7 @@ symptom_hits AS (
     'hf_symptom_present' AS suspect_group,
     'I50.9' AS suspect_icd10_code,
     'Heart failure, unspecified' AS suspect_icd10_short_description
-  FROM CONDITION c
+  FROM core_v2.CORE_V2__CONDITION c 
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
     AND (
          c.NORMALIZED_CODE LIKE 'R060%'   -- dyspnea
@@ -124,9 +124,9 @@ obs_with_fhir AS (
     f.suspect_icd10_code,
     f.suspect_icd10_short_description,
     OBJECT_CONSTRUCT(
-      'resourceType', f.resource_type,
+      'resourceType',  f.resource_type,
       'id',            f.resource_id,
-      'status',        'final',
+      'status',        case when f.resource_type = 'Procedure' then 'completed' when f.resource_type = 'Condition' then null else 'final' end,
       'code', OBJECT_CONSTRUCT(
         'text',   NULLIF(f.NORMALIZED_DESCRIPTION,''),
         'coding', ARRAY_CONSTRUCT(

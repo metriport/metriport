@@ -31,7 +31,7 @@
 -- Exclude patients already diagnosed with hypothyroidism
 WITH hypo_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CONDITION c
+  FROM core_v2.CORE_V2__CONDITION c 
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
     AND c.NORMALIZED_CODE LIKE 'E03%'
 ),
@@ -51,7 +51,7 @@ tsh_raw AS (
     REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')               AS value_token,
     CAST(lr.RESULT_DATE AS DATE)                                                        AS obs_date,
     lr.DATA_SOURCE
-  FROM LAB_RESULT lr
+  FROM core_v2.CORE_V2__LAB_RESULT lr
   WHERE lr.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND lr.NORMALIZED_CODE IN ('11580-8','3016-3','3015-5')  -- TSH
     AND REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
@@ -110,7 +110,7 @@ ft4_raw AS (
     REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')               AS value_token,
     CAST(lr.RESULT_DATE AS DATE)                                                        AS obs_date,
     lr.DATA_SOURCE
-  FROM LAB_RESULT lr
+  FROM core_v2.CORE_V2__LAB_RESULT lr
   WHERE lr.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND lr.NORMALIZED_CODE IN ('3024-7','6892-4')  -- Free T4
     AND REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
@@ -165,7 +165,7 @@ tt4_raw AS (
     REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')               AS value_token,
     CAST(lr.RESULT_DATE AS DATE)                                                        AS obs_date,
     lr.DATA_SOURCE
-  FROM LAB_RESULT lr
+  FROM core_v2.CORE_V2__LAB_RESULT lr
   WHERE lr.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND lr.NORMALIZED_CODE = '3026-2'  -- Total T4
     AND REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL

@@ -15,7 +15,7 @@
 WITH cas_dx_exclusion AS (
   -- Exclude patients already diagnosed with carotid occlusion/stenosis
   SELECT DISTINCT c.PATIENT_ID
-  FROM CONDITION c
+  FROM core_v2.CORE_V2__CONDITION c 
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
     AND c.NORMALIZED_CODE LIKE 'I65%'
 ),
@@ -38,7 +38,7 @@ strong_hits AS (
     p.NORMALIZED_DESCRIPTION,
     CAST(p.PROCEDURE_DATE AS DATE) AS obs_date,
     p.DATA_SOURCE
-  FROM PROCEDURE p
+  FROM core_v2.CORE_V2__PROCEDURE p
   WHERE p.NORMALIZED_CODE IN (
     '36215',  -- Catheter angiography (selective)
     '35301'   -- Carotid endarterectomy

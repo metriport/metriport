@@ -29,7 +29,7 @@
 WITH angina_dx_exclusion AS (
   -- Exclude patients already diagnosed with Angina (I20.*)
   SELECT DISTINCT c.PATIENT_ID
-  FROM CONDITION c
+  FROM core_v2.CORE_V2__CONDITION c 
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
     AND c.NORMALIZED_CODE LIKE 'I20%'
 ),
@@ -46,7 +46,7 @@ troponin_raw AS (
     REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
     CAST(lr.RESULT_DATE AS DATE) AS obs_date,
     lr.DATA_SOURCE
-  FROM LAB_RESULT lr
+  FROM core_v2.CORE_V2__LAB_RESULT lr
   WHERE lr.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND lr.NORMALIZED_CODE IN ('10839-9','89579-7','6598-7','67151-1')
     AND REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
@@ -81,7 +81,7 @@ patient_sex AS (
       WHEN p.SEX ILIKE 'f%' THEN 'F'
       ELSE 'U'
     END AS sex_code
-  FROM PATIENT p
+  FROM core_v2.CORE_V2__PATIENT p
 ),
 
 troponin_hits AS (

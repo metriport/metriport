@@ -41,7 +41,7 @@ WITH fev1fvc_raw AS (
     REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
     CAST(lr.RESULT_DATE AS DATE)                      AS obs_date,
     lr.DATA_SOURCE
-  FROM LAB_RESULT lr
+  FROM core_v2.CORE_V2__LAB_RESULT lr
   WHERE lr.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND lr.NORMALIZED_CODE = '19926-5'                -- FEV1/FVC ratio
     AND REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
@@ -55,7 +55,7 @@ post_context AS (
     lr.PATIENT_ID,
     COALESCE(lr.ENCOUNTER_ID,'') AS ENCOUNTER_ID,
     CAST(lr.RESULT_DATE AS DATE) AS obs_date
-  FROM LAB_RESULT lr
+  FROM core_v2.CORE_V2__LAB_RESULT lr
   WHERE lr.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND lr.NORMALIZED_CODE = '20155-8'   -- FEV1 post-bronchodilation
 ),
@@ -149,7 +149,7 @@ fev1fvc_norm AS (
 copd_dx_exclusion AS (
   /* Exclude patients with existing COPD diagnosis */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CONDITION c
+  FROM core_v2.CORE_V2__CONDITION c 
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
     AND c.NORMALIZED_CODE LIKE 'J44%'
 ),

@@ -70,7 +70,7 @@ WITH diabetes_observations AS (
     o.OBSERVATION_DATE AS OBS_DATE,
     o.RESULT,
     o.DATA_SOURCE
-  FROM OBSERVATION o
+  FROM core_v2.CORE_V2__OBSERVATION o
   WHERE
     o.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND o.NORMALIZED_CODE = '2345-7'                -- Glucose [Mass/volume] in Serum/Plasma
@@ -83,7 +83,7 @@ WITH diabetes_observations AS (
     ) >= 126
     AND NOT EXISTS (
       SELECT 1
-      FROM CONDITION c
+      FROM core_v2.CORE_V2__CONDITION c 
       WHERE c.PATIENT_ID = o.PATIENT_ID
         AND c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
         AND LEFT(c.NORMALIZED_CODE, 3) IN ('E08','E09','E10','E11','E13')
@@ -114,14 +114,14 @@ diabetes_labresults AS (
     lr.RESULT_DATE               AS OBS_DATE,
     lr.RESULT,
     lr.DATA_SOURCE
-  FROM LAB_RESULT lr
+  FROM core_v2.CORE_V2__LAB_RESULT lr
   WHERE lr.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND lr.NORMALIZED_CODE = '4548-4'   -- HbA1c
     AND lr.SOURCE_UNITS = '%'           -- % only
     AND TRY_TO_DOUBLE(lr.RESULT) IS NOT NULL
     AND NOT EXISTS (
       SELECT 1
-      FROM CONDITION c
+      FROM core_v2.CORE_V2__CONDITION c 
       WHERE c.PATIENT_ID = lr.PATIENT_ID
         AND c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
         AND LEFT(c.NORMALIZED_CODE, 3) IN ('E08','E09','E10','E11','E13')

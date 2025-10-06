@@ -19,7 +19,7 @@
 WITH cad_dx_exclusion AS (
   -- Exclude patients with existing CAD diagnosis
   SELECT DISTINCT c.PATIENT_ID
-  FROM CONDITION c
+  FROM core_v2.CORE_V2__CONDITION c 
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
     AND c.NORMALIZED_CODE LIKE 'I25%'
 ),
@@ -68,7 +68,7 @@ troponin_hits AS (
     CAST(lr.RESULT_DATE AS DATE) AS obs_date,
     lr.DATA_SOURCE
 
-  FROM LAB_RESULT lr
+  FROM core_v2.CORE_V2__LAB_RESULT lr
   WHERE lr.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND lr.NORMALIZED_CODE IN ('10839-9','6598-7')        -- cTnI, cTnT
     AND COALESCE(NULLIF(lr.NORMALIZED_UNITS,''), lr.SOURCE_UNITS) IS NOT NULL
@@ -123,7 +123,7 @@ revasc_hits AS (
     NULL AS value_num,
     CAST(p.PROCEDURE_DATE AS DATE) AS obs_date,
     p.DATA_SOURCE
-  FROM PROCEDURE p
+  FROM core_v2.CORE_V2__PROCEDURE p
   WHERE p.NORMALIZED_CODE IN ('92928','92929','33511','33512')
     AND NOT EXISTS (SELECT 1 FROM cad_dx_exclusion x WHERE x.PATIENT_ID = p.PATIENT_ID)
 ),

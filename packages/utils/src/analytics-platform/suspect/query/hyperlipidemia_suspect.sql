@@ -25,7 +25,7 @@
 WITH hyperlipidemia_dx_exclusion AS (
   /* Exclude patients with existing hyperlipidemia diagnoses */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CONDITION c
+  FROM core_v2.CORE_V2__CONDITION c 
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
     AND c.NORMALIZED_CODE LIKE 'E78%'
 ),
@@ -82,7 +82,7 @@ lipid_measurements AS (
       WHEN lr.NORMALIZED_CODE = '43396-1' THEN 'NON_HDL'
     END AS lipid_type
 
-  FROM LAB_RESULT lr
+  FROM core_v2.CORE_V2__LAB_RESULT lr
   WHERE lr.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND lr.NORMALIZED_CODE IN (
       '2089-1',   -- LDL direct

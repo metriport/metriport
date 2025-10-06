@@ -30,7 +30,7 @@ WITH
    ------------------------------------------------------------ */
 asthma_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CONDITION c
+  FROM core_v2.CORE_V2__CONDITION c 
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
     AND c.NORMALIZED_CODE LIKE 'J45%'
 ),
@@ -53,7 +53,7 @@ raw_spirometry AS (
     lr.RESULT                                            AS result_raw,
     REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
     lr.DATA_SOURCE
-  FROM LAB_RESULT lr
+  FROM core_v2.CORE_V2__LAB_RESULT lr
   WHERE lr.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND lr.NORMALIZED_CODE IN ('20150-9','20155-8','33452-4')
     AND REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
@@ -371,7 +371,7 @@ pair_rows_enriched AS (
       ELSE NULL
     END AS value_unit_std
   FROM pair_rows pr
-  JOIN LAB_RESULT lr
+  JOIN core_v2.CORE_V2__LAB_RESULT lr
     ON lr.LAB_RESULT_ID = pr.resource_id
 ),
 

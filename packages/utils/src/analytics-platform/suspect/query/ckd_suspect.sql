@@ -35,7 +35,7 @@ WITH egfr_lab AS (
     TRY_TO_DOUBLE(lr.RESULT)                  AS egfr,
     CAST(lr.RESULT_DATE AS DATE)              AS obs_date,
     lr.DATA_SOURCE
-  FROM LAB_RESULT lr
+  FROM core_v2.CORE_V2__LAB_RESULT lr
   WHERE lr.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND lr.NORMALIZED_CODE IN ('33914-3','62238-1','69405-9','98979-8')
     AND TRY_TO_DOUBLE(lr.RESULT) IS NOT NULL
@@ -79,7 +79,7 @@ valid_stage_patients AS (
 ckd_dx_exclusion AS (
   /* Exclude anyone already diagnosed with CKD (any N18.*) */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CONDITION c
+  FROM core_v2.CORE_V2__CONDITION c 
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
     AND c.NORMALIZED_CODE LIKE 'N18%'
 ),
@@ -131,7 +131,7 @@ albumin_lab AS (
     TRY_TO_DOUBLE(lr.RESULT)                  AS value_raw,
     CAST(lr.RESULT_DATE AS DATE)              AS obs_date,
     lr.DATA_SOURCE
-  FROM LAB_RESULT lr
+  FROM core_v2.CORE_V2__LAB_RESULT lr
   WHERE lr.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND lr.NORMALIZED_CODE = '9318-7'
     AND TRY_TO_DOUBLE(lr.RESULT) IS NOT NULL
@@ -194,7 +194,7 @@ dialysis_procedures AS (
     p.NORMALIZED_DESCRIPTION,
     CAST(p.PROCEDURE_DATE AS DATE) AS obs_date,
     p.DATA_SOURCE
-  FROM PROCEDURE p
+  FROM core_v2.CORE_V2__PROCEDURE p
   JOIN dialysis_code_list d
     ON p.NORMALIZED_CODE = d.NORMALIZED_CODE
 ),
