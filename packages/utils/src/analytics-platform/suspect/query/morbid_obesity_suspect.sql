@@ -25,7 +25,7 @@ WITH obesity_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
   FROM CONDITION c
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
-    AND c.NORMALIZED_CODE IN ('E66.01','E66.2','E66.813')
+    AND c.NORMALIZED_CODE IN ('E6601','E662','E66813')
 ),
 
 /* ------------------------------------------------------------

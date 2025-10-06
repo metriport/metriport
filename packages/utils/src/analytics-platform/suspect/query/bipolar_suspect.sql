@@ -21,7 +21,7 @@ WITH bipolar_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
   FROM CONDITION c
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
-    AND c.NORMALIZED_CODE LIKE 'F31.%'
+    AND c.NORMALIZED_CODE LIKE 'F31%'
 ),
 
 substance_induced_exclusion AS (

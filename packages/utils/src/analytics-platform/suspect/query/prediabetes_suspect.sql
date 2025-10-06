@@ -84,7 +84,7 @@ WITH prediabetes_observations AS (
       FROM CONDITION c
       WHERE c.PATIENT_ID = o.PATIENT_ID
         AND c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
-        AND c.NORMALIZED_CODE = 'R73.03'
+        AND c.NORMALIZED_CODE = 'R7303'
     )
 ),
 
@@ -123,7 +123,7 @@ prediabetes_labresults AS (
       FROM CONDITION c
       WHERE c.PATIENT_ID = lr.PATIENT_ID
         AND c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
-        AND c.NORMALIZED_CODE = 'R73.03'
+        AND c.NORMALIZED_CODE = 'R7303'
     )
 ),
 

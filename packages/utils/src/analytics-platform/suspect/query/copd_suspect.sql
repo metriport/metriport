@@ -165,7 +165,7 @@ copd_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
   FROM CONDITION c
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
-    AND c.NORMALIZED_CODE LIKE 'J44.%'
+    AND c.NORMALIZED_CODE LIKE 'J44%'
 ),
 
 copd_suspects AS (

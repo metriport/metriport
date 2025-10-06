@@ -31,7 +31,7 @@ WITH angina_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
   FROM CONDITION c
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
-    AND c.NORMALIZED_CODE LIKE 'I20.%'
+    AND c.NORMALIZED_CODE LIKE 'I20%'
 ),
 
 troponin_raw AS (

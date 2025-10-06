@@ -73,9 +73,9 @@ WITH depression_observations AS (
       WHERE c.PATIENT_ID = o.PATIENT_ID
         AND c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
         AND (
-             c.NORMALIZED_CODE LIKE 'F32.%'   -- MDD, single episode (incl. F32.A)
-          OR c.NORMALIZED_CODE LIKE 'F33.%'   -- MDD, recurrent
-          OR c.NORMALIZED_CODE = 'F34.1'      -- Dysthymia
+             c.NORMALIZED_CODE LIKE 'F32%'   -- MDD, single episode (incl. F32.A)
+          OR c.NORMALIZED_CODE LIKE 'F33%'   -- MDD, recurrent
+          OR c.NORMALIZED_CODE = 'F34%'      -- Dysthymia
         )
     )
 ),
