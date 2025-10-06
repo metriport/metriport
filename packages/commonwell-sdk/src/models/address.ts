@@ -47,7 +47,7 @@ export function normalizeStatePreprocess(arg: unknown): unknown {
 // Safe address schema that filters out invalid addresses instead of throwing errors
 export const addressSchemaSafe = z.object({
   line: z.array(z.string()).nullish(),
-  city: z.string().nullish(),
+  city: emptyStringToUndefinedSchema,
   state: z.preprocess(normalizeStatePreprocessSafe, emptyStringToUndefinedSchema),
   country: emptyStringToUndefinedSchema,
   postalCode: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
