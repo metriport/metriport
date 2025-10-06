@@ -141,7 +141,7 @@ export async function createConsolidatedFromConversions({
 
   if (shouldGenerateAiBrief) {
     const aiBriefEntry = await generateAiBriefWithTimeout(
-      () => generateAiBriefBundleEntry(bundle, cxId, patientId, log),
+      controls => generateAiBriefBundleEntry(bundle, cxId, patientId, log, controls),
       cxId,
       patientId,
       log
@@ -156,7 +156,7 @@ export async function createConsolidatedFromConversions({
 
   if (shouldGetAiBriefFromS3) {
     const aiBriefEntry = await generateAiBriefWithTimeout(
-      () => getAiBriefFromS3({ cxId, patientId, bundle, log }),
+      controls => getAiBriefFromS3({ cxId, patientId, bundle, log, aiBriefControls: controls }),
       cxId,
       patientId,
       log
@@ -262,7 +262,7 @@ async function listConversionBundlesFromS3({
 }
 
 async function generateAiBriefWithTimeout(
-  aiBriefGenerator: () => Promise<BundleEntry<Binary> | undefined>,
+  aiBriefGenerator: (controls: AiBriefControls) => Promise<BundleEntry<Binary> | undefined>,
   cxId: string,
   patientId: string,
   log: typeof console.log
@@ -270,8 +270,9 @@ async function generateAiBriefWithTimeout(
   const aiBriefControls: AiBriefControls = {
     cancelled: false,
   };
+  const aiBriefPromise = aiBriefGenerator(aiBriefControls);
   const aiBriefEntry = await Promise.race([
-    aiBriefGenerator(),
+    aiBriefPromise,
     controlDuration(AI_BRIEF_TIMEOUT.asMilliseconds(), TIMED_OUT),
   ]);
 

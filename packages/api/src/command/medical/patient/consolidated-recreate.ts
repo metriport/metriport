@@ -24,14 +24,14 @@ export async function recreateConsolidated({
   context,
   requestId,
   isDq = false,
-  skipAiBriefGeneration = false,
+  skipAiBriefGeneration,
 }: {
   patient: Patient;
   conversionType?: ConsolidationConversionType;
   context?: string;
   requestId?: string;
   isDq?: boolean;
-  skipAiBriefGeneration?: boolean;
+  skipAiBriefGeneration?: boolean | undefined;
 }): Promise<void> {
   const { log } = out(`${context ? context + " " : ""}recreateConsolidated - pt ${patient.id}`);
   try {

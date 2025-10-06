@@ -8,7 +8,7 @@ export type ConsolidatedSnapshotRequest = {
   resources?: ResourceTypeForConsolidation[] | undefined;
   dateFrom?: string | undefined;
   dateTo?: string | undefined;
-  skipAiBriefGeneration?: boolean;
+  skipAiBriefGeneration?: boolean | undefined;
 };
 
 export type ConsolidatedSnapshotRequestAsync = ConsolidatedSnapshotRequest & {
