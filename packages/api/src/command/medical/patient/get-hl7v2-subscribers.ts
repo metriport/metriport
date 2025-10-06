@@ -1,4 +1,3 @@
-import { PatientWithCohorts } from "@metriport/core/command/hl7v2-subscriptions/types";
 import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { MetriportError, errorToString } from "@metriport/shared";
@@ -8,45 +7,53 @@ import { Pagination, getPaginationFilters, getPaginationLimits } from "../../pag
 
 export type GetHl7v2SubscribersParams = {
   hieStates: string[];
+  hieName: string;
   pagination?: Pagination;
 };
 
 function getCommonQueryOptions({
   hieStates,
+  hieName,
   pagination,
 }: Omit<GetHl7v2SubscribersParams, "hieStates"> & { hieStates: string[] }) {
   const order: Order = [["id", "DESC"]];
-
+  const hieSpecificOverride = `adtMonitoring_override${hieName}`;
   return {
     where: {
       ...(pagination ? getPaginationFilters(pagination) : {}),
       [Op.and]: [
         Sequelize.literal(`
-          NOT EXISTS (
-            SELECT 1
-            FROM patient_cohort pc2
-            JOIN cohort ch2 ON pc2.cohort_id = ch2.id
-            WHERE pc2.patient_id = "PatientModelReadOnly".id
-              AND (ch2.settings->>'adtMonitoring' IS DISTINCT FROM 'true')
-          )
-        `),
-        Sequelize.literal(`
-          EXISTS (
-            SELECT 1
-            FROM jsonb_array_elements("PatientModelReadOnly".data->'address') addr
-            WHERE addr->>'state' = ANY(ARRAY[:hieStates])
+          (
+            (
+              EXISTS (
+                SELECT 1
+                FROM jsonb_array_elements("PatientModelReadOnly".data->'address') addr
+                WHERE addr->>'state' = ANY(ARRAY[:hieStates])
+              )
+              AND
+              EXISTS (
+                SELECT 1
+                FROM patient_cohort pc
+                JOIN cohort ch ON pc.cohort_id = ch.id
+                WHERE pc.patient_id = "PatientModelReadOnly".id
+                  AND ch.settings->>'adtMonitoring' = 'true'
+              )
+            )
+            OR
+            EXISTS (
+              SELECT 1
+              FROM patient_cohort pc
+              JOIN cohort ch ON pc.cohort_id = ch.id
+              WHERE pc.patient_id = "PatientModelReadOnly".id
+                AND jsonb_extract_path_text(ch.settings, :hieSpecificOverride) = 'true'
+            )
           )
         `),
       ],
     } as WhereOptions,
-    include: [
-      {
-        association: "Cohorts",
-        through: { attributes: [] },
-      },
-    ],
     replacements: {
       hieStates,
+      hieSpecificOverride,
     },
     ...(pagination ? getPaginationLimits(pagination) : {}),
     ...(pagination ? { order } : {}),
@@ -55,21 +62,22 @@ function getCommonQueryOptions({
 
 export async function getHl7v2Subscribers({
   hieStates,
+  hieName,
   pagination,
-}: GetHl7v2SubscribersParams): Promise<PatientWithCohorts[]> {
+}: GetHl7v2SubscribersParams): Promise<PatientModelReadOnly[]> {
   const { log } = out(`Get HL7v2 subscribers`);
   log(`HIE states: ${hieStates}, pagination params: ${JSON.stringify(pagination)}`);
 
   try {
     const findOptions: FindOptions<PatientModelReadOnly> = {
-      ...getCommonQueryOptions({ hieStates, pagination }),
+      ...getCommonQueryOptions({ hieStates, hieName, pagination }),
     };
 
     const patients = await PatientModelReadOnly.findAll(findOptions);
 
     log(`Done. Found ${patients.length} HL7v2 subscribers for this page`);
 
-    return patients as PatientWithCohorts[];
+    return patients;
   } catch (error) {
     const msg = `Failed to get HL7v2 subscribers`;
     log(`${msg} - err: ${errorToString(error)}`);

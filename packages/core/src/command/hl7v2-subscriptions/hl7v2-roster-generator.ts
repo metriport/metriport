@@ -1,6 +1,4 @@
 import {
-  Cohort,
-  CohortSettings,
   GenderAtBirth,
   InternalOrganizationDTO,
   internalOrganizationDTOSchema,
@@ -33,7 +31,6 @@ import {
   HiePatientRosterMapping,
   Hl7v2SubscriberApiResponse,
   Hl7v2SubscriberParams,
-  PatientWithCohorts,
   RosterRowData,
   VpnlessHieConfig,
 } from "./types";
@@ -153,12 +150,13 @@ export class Hl7v2RosterGenerator {
   private async getAllSubscribedPatients(
     hieStates: USState[],
     hieName: string
-  ): Promise<PatientWithCohorts[]> {
+  ): Promise<Patient[]> {
     const { log } = out(`getAllSubscribedPatients - states: ${hieStates.join(",")}`);
-    const allSubscribers: PatientWithCohorts[] = [];
+    const allSubscribers: Patient[] = [];
     let currentUrl: string | undefined = `${this.apiUrl}/${HL7V2_SUBSCRIBERS_ENDPOINT}`;
     let baseParams: Hl7v2SubscriberParams | undefined = {
       hieStates,
+      hieName,
       count: NUMBER_OF_PATIENTS_PER_PAGE,
     };
 
@@ -174,67 +172,8 @@ export class Hl7v2RosterGenerator {
       currentUrl = response.data.meta.nextPage;
       i += 1;
     }
-    const allSubscribersHieSpecific = this.getPatientsAfterHieSpecificFilter(
-      allSubscribers,
-      hieName
-    );
-    log(`Found ${allSubscribersHieSpecific.length} total patients in ${timer.getElapsedTime()}ms`);
-    return allSubscribersHieSpecific;
-  }
-
-  private getPatientsAfterHieSpecificFilter(
-    patients: PatientWithCohorts[],
-    hieName: string
-  ): PatientWithCohorts[] {
-    if (hieName === "HealthConnectTexas") {
-      return this.getHealthConnectTexasPatients(patients);
-    }
-    if (hieName === "HieTexasPcc") {
-      return this.getHieTexasPccPatients(patients);
-    }
-
-    return patients;
-  }
-
-  private getHealthConnectTexasPatients(patients: PatientWithCohorts[]): PatientWithCohorts[] {
-    const healthConnectTexasPatients = patients.filter(p => {
-      const settings = this.getSettings(p.Cohorts);
-      return (
-        settings.adtMonitoring_onlyHealthConnectTexas === true ||
-        (settings.adtMonitoring_onlyHieTexasPcc === false &&
-          settings.adtMonitoring_onlyHealthConnectTexas === false)
-      );
-    });
-
-    return healthConnectTexasPatients;
-  }
-
-  private getHieTexasPccPatients(patients: PatientWithCohorts[]): PatientWithCohorts[] {
-    const hieTexasPccPatients = patients.filter(p => {
-      const settings = this.getSettings(p.Cohorts);
-      return (
-        settings.adtMonitoring_onlyHieTexasPcc === true ||
-        (settings.adtMonitoring_onlyHealthConnectTexas === false &&
-          settings.adtMonitoring_onlyHieTexasPcc === false)
-      );
-    });
-
-    return hieTexasPccPatients;
-  }
-
-  private getSettings(cohorts: Cohort[]): CohortSettings {
-    if (cohorts.length === 0) return {};
-    const firstCohort = cohorts[0];
-    if (!firstCohort) return {};
-
-    const keys = Object.keys(firstCohort.settings ?? {}) as (keyof CohortSettings)[];
-    const result: CohortSettings = {};
-
-    for (const key of keys) {
-      result[key] = cohorts.every(c => c.settings?.[key] === true);
-    }
-
-    return result;
+    log(`Found ${allSubscribers.length} total patients in ${timer.getElapsedTime()}ms`);
+    return allSubscribers;
   }
 
   private async getOrganizations(cxIds: string[]): Promise<InternalOrganizationDTO[]> {
