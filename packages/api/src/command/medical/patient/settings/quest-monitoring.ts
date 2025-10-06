@@ -4,21 +4,27 @@ import { PatientSettingsModel } from "../../../../models/patient-settings";
 import { processPatientsInBatches } from "../batch-utils";
 import { PatientListProcessingResult, verifyPatients } from "./common";
 
+// type QuestSettingsKey = "questBackfill" | "questMonitoring";
+
 /**
  * Appends a Quest monitoring subscription to the patient settings for the given customer and patient IDs.
  *
  * @param cxId - The customer ID
  * @param patientIds - The patient IDs to add monitoring for.
+ * @param backfill - Whether to add a Quest backfill subscription for historical lab results.
+ * @param monitoring - Whether to add a Quest monitoring subscription for real-time notifications of new lab results.
  * @returns The number of patients updated and the list of patients not found.
  */
 export async function addQuestSubscriptionToPatients({
   cxId,
   patientIds,
-  notifications,
+  backfill,
+  monitoring,
 }: {
   cxId: string;
   patientIds: string[];
-  notifications?: boolean;
+  backfill?: boolean;
+  monitoring?: boolean;
 }): Promise<PatientListProcessingResult> {
   const { validPatientIds, invalidPatientIds: patientsNotFound } = await verifyPatients({
     cxId,
@@ -29,7 +35,8 @@ export async function addQuestSubscriptionToPatients({
     await _addQuestSubscriptionToPatients({
       patientIds: batch,
       cxId,
-      notifications,
+      backfill,
+      monitoring,
     });
   }
 
@@ -56,11 +63,13 @@ export async function addQuestSubscriptionToPatients({
 export async function removeQuestSubscriptionFromPatients({
   cxId,
   patientIds,
-  notifications,
+  backfill,
+  monitoring,
 }: {
   cxId: string;
   patientIds: string[];
-  notifications?: boolean;
+  backfill?: boolean;
+  monitoring?: boolean;
 }): Promise<PatientListProcessingResult> {
   const { validPatientIds, invalidPatientIds: patientsNotFound } = await verifyPatients({
     cxId,
@@ -71,7 +80,8 @@ export async function removeQuestSubscriptionFromPatients({
     await _removeQuestSubscriptionsFromPatients({
       patientIds: batch,
       cxId,
-      notifications,
+      backfill,
+      monitoring,
     });
   }
 
@@ -94,17 +104,21 @@ export async function removeQuestSubscriptionFromPatients({
 async function _addQuestSubscriptionToPatients({
   patientIds,
   cxId,
-  notifications,
+  backfill,
+  monitoring,
 }: {
   patientIds: string[];
   cxId: string;
-  notifications?: boolean;
+  backfill?: boolean;
+  monitoring?: boolean;
 }): Promise<void> {
   const sequelize = PatientSettingsModel.sequelize;
   if (!sequelize) {
     throw new Error("Sequelize instance not available");
   }
-  const settingsKey: "quest" | "questMonitoring" = notifications ? "questMonitoring" : "quest";
+  const settingsKey: "questBackfill" | "questMonitoring" = monitoring
+    ? "questMonitoring"
+    : "questBackfill";
 
   // Create patient settings records for patients who don't have them yet
   await PatientSettingsModel.bulkCreate(
@@ -123,11 +137,15 @@ async function _addQuestSubscriptionToPatients({
 
   // Add Quest monitoring subscription to existing subscriptions (only if not already present)
   // SQL explanation: If Quest monitoring already set to true, stays as true, otherwise set to true
+  const initialSubscriptionObject = JSON.stringify({
+    ...(backfill != null && { questBackfill: backfill }),
+    ...(monitoring != null && { questMonitoring: monitoring }),
+  });
   const addSubscriptionQuery = `
     UPDATE patient_settings 
     SET 
         subscriptions = CASE 
-            WHEN subscriptions IS NULL OR jsonb_typeof(subscriptions) != 'object' THEN '{"${settingsKey}": true}'::jsonb
+            WHEN subscriptions IS NULL OR jsonb_typeof(subscriptions) != 'object' THEN '${initialSubscriptionObject}'::jsonb
             ELSE jsonb_set(subscriptions, '{${settingsKey}}', 'true'::jsonb, true)
         END,
         updated_at = NOW()
@@ -151,28 +169,36 @@ async function _addQuestSubscriptionToPatients({
 async function _removeQuestSubscriptionsFromPatients({
   patientIds,
   cxId,
-  notifications,
+  backfill,
+  monitoring,
 }: {
   patientIds: string[];
   cxId: string;
-  notifications?: boolean;
+  backfill?: boolean;
+  monitoring?: boolean;
 }): Promise<void> {
   const sequelize = PatientSettingsModel.sequelize;
   if (!sequelize) {
     throw new Error("Sequelize instance not available");
   }
-  const settingsKey: "quest" | "questMonitoring" = notifications ? "questMonitoring" : "quest";
+  const settingsKeys: Array<"questBackfill" | "questMonitoring"> = [];
+  if (backfill) {
+    settingsKeys.push("questBackfill");
+  }
+  if (monitoring) {
+    settingsKeys.push("questMonitoring");
+  }
 
   // Remove Quest monitoring subscription from existing subscriptions (only if it exists)
   // SQL explanation: Use JSONB - operator to remove the 'quest' key from the subscriptions object
   const removeSubscriptionQuery = `
     UPDATE patient_settings 
     SET 
-        subscriptions = subscriptions - '${settingsKey}',
+        subscriptions = subscriptions - '${settingsKeys.join("' - '")}',
         updated_at = NOW()
     WHERE cx_id = :cxId::uuid 
       AND patient_id in (:patientIds)
-      AND subscriptions ? '${settingsKey}'
+      AND subscriptions ? '${settingsKeys[0]}'
   `;
 
   await sequelize.query(removeSubscriptionQuery, {
