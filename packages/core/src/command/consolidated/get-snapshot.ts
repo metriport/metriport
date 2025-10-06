@@ -8,7 +8,7 @@ export type ConsolidatedSnapshotRequest = {
   resources?: ResourceTypeForConsolidation[] | undefined;
   dateFrom?: string | undefined;
   dateTo?: string | undefined;
-  generateAiBrief?: boolean;
+  useCachedAiBrief?: boolean | undefined;
 };
 
 export type ConsolidatedSnapshotRequestAsync = ConsolidatedSnapshotRequest & {
@@ -17,6 +17,7 @@ export type ConsolidatedSnapshotRequestAsync = ConsolidatedSnapshotRequest & {
   conversionType: ConsolidationConversionType;
   fromDashboard?: boolean | undefined;
   sendAnalytics?: never;
+  useCachedAiBrief?: boolean | undefined;
 };
 
 export type ConsolidatedSnapshotRequestSync = ConsolidatedSnapshotRequest & {
@@ -26,6 +27,7 @@ export type ConsolidatedSnapshotRequestSync = ConsolidatedSnapshotRequest & {
   // TODO 2215 Remove this when we have contributed data as part of get consolidated (from S3)
   forceDataFromFhir?: boolean | undefined;
   sendAnalytics?: boolean | undefined;
+  useCachedAiBrief?: boolean | undefined;
 };
 
 export type ConsolidatedSnapshotResponse = {
