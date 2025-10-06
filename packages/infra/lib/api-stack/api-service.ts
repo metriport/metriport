@@ -227,6 +227,7 @@ export function createAPIService({
   const listenerPort = 80;
   const containerPort = 8080;
   const logGroup = LogGroup.fromLogGroupArn(stack, "ApiLogGroup", props.config.logArn);
+
   const {
     cpu,
     memoryLimitMiB,
@@ -451,6 +452,21 @@ export function createAPIService({
       minHealthyPercent,
     }
   );
+
+  const execRole = fargateService.taskDefinition.executionRole;
+  const taskRole = fargateService.taskDefinition.taskRole;
+
+  const injectedSecrets: secret.ISecret[] = [
+    dbCredsSecret,
+    searchAuth.secret,
+    ...Object.values(secretsToECS(secrets)),
+    ...Object.values(secretsToECS(buildSecrets(stack, props.config.propelAuth.secrets))),
+  ].filter((s): s is secret.ISecret => !!s);
+
+  for (const s of injectedSecrets) {
+    if (execRole) s.grantRead(execRole);
+    s.grantRead(taskRole);
+  }
   // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
   // fargateService.taskDefinition.defaultContainer?.addUlimits({ ... });
 
