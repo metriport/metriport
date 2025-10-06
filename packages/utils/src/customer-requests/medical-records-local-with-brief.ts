@@ -38,7 +38,7 @@ async function main() {
   const rawBundle = fs.readFileSync(sourceFilePath, "utf8");
   const bundle = JSON.parse(rawBundle);
 
-  const binaryBundleEntry = await generateAiBriefBundleEntry(bundle, cxId, patientId, log);
+  const binaryBundleEntry = await generateAiBriefBundleEntry({ bundle, cxId, patientId, log });
   console.log("binaryBundleEntry", JSON.stringify(binaryBundleEntry));
   console.log("bundle.leng bef", bundle.entry.length);
   if (binaryBundleEntry) {

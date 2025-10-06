@@ -917,10 +917,10 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const skipAiBriefGeneration = getFromQueryAsBoolean("skipAiBriefGeneration", req);
+    const useCachedAiBrief = getFromQueryAsBoolean("useCachedAiBrief", req);
     const id = getFromParamsOrFail("id", req);
     const { log } = out(
-      `consolidated/refresh, cx - ${cxId}, pt - ${id} skipAiBriefGeneration - ${skipAiBriefGeneration}`
+      `consolidated/refresh, cx - ${cxId}, pt - ${id} useCachedAiBrief - ${useCachedAiBrief}`
     );
 
     const patient = await getPatientOrFail({ id, cxId });
@@ -931,7 +931,7 @@ router.post(
         patient,
         context: "internal",
         requestId,
-        skipAiBriefGeneration,
+        useCachedAiBrief,
       });
       log(`Done recreating consolidated`);
     } catch (err) {

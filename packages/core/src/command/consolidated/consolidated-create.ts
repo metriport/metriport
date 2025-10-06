@@ -48,7 +48,7 @@ export type ConsolidatePatientDataCommand = {
   patient: Patient;
   destinationBucketName?: string | undefined;
   sourceBucketName?: string | undefined;
-  skipAiBriefGeneration?: boolean | undefined;
+  useCachedAiBrief?: boolean | undefined;
 };
 
 type BundleLocation = { bucket: string; key: string };
@@ -61,7 +61,7 @@ export async function createConsolidatedFromConversions({
   patient,
   destinationBucketName = getConsolidatedLocation(),
   sourceBucketName = getConsolidatedSourceLocation(),
-  skipAiBriefGeneration,
+  useCachedAiBrief,
 }: ConsolidatePatientDataCommand): Promise<Bundle> {
   const patientId = patient.id;
   const { log } = out(`createConsolidatedFromConversions - cx ${cxId}, pat ${patientId}`);
@@ -131,17 +131,15 @@ export async function createConsolidatedFromConversions({
 
   // TODO This whole section with AI-related logic should be moved to the `generateAiBriefBundleEntry`.
   log(
-    `isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled} skipAiBriefGeneration: ${skipAiBriefGeneration}`
+    `isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled} useCachedAiBrief: ${useCachedAiBrief}`
   );
   const shouldGenerateAiBrief =
-    isAiBriefFeatureFlagEnabled &&
-    !skipAiBriefGeneration &&
-    bundle.entry &&
-    bundle.entry.length > 0;
+    isAiBriefFeatureFlagEnabled && !useCachedAiBrief && bundle.entry && bundle.entry.length > 0;
 
   if (shouldGenerateAiBrief) {
     const aiBriefEntry = await generateAiBriefWithTimeout(
-      controls => generateAiBriefBundleEntry(bundle, cxId, patientId, log, controls),
+      controls =>
+        generateAiBriefBundleEntry({ bundle, cxId, patientId, log, aiBriefControls: controls }),
       cxId,
       patientId,
       log
@@ -152,7 +150,7 @@ export async function createConsolidatedFromConversions({
   }
 
   const shouldGetAiBriefFromS3 =
-    isAiBriefFeatureFlagEnabled && skipAiBriefGeneration && bundle.entry && bundle.entry.length > 0;
+    isAiBriefFeatureFlagEnabled && useCachedAiBrief && bundle.entry && bundle.entry.length > 0;
 
   if (shouldGetAiBriefFromS3) {
     const aiBriefEntry = await generateAiBriefWithTimeout(

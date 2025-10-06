@@ -9,7 +9,7 @@ import { getConsolidatedFromS3 } from "./consolidated-filter";
 
 export class ConsolidatedCounterImpl implements ConsolidatedCounter {
   async execute(params: ConsolidatedCounterRequest): Promise<ConsolidatedCounterResponse> {
-    const { patient, resources, dateFrom, dateTo, skipAiBriefGeneration } = params;
+    const { patient, resources, dateFrom, dateTo, useCachedAiBrief } = params;
     const { log } = out(`ConsolidatedCounterImpl - cx ${patient.cxId}, pt ${patient.id}`);
     const res = await getConsolidatedFromS3({
       cxId: patient.cxId,
@@ -17,7 +17,7 @@ export class ConsolidatedCounterImpl implements ConsolidatedCounter {
       resources,
       dateFrom,
       dateTo,
-      skipAiBriefGeneration,
+      useCachedAiBrief,
     });
     const resultingResources = (res.entry ?? []).flatMap(e => (e && e.resource ? e.resource : []));
 

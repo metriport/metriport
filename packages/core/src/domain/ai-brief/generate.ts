@@ -18,13 +18,19 @@ const AI_BRIEF_FILE_NAME = `ai_brief.${JSON_FILE_EXTENSION}`;
 const maxAttempts = 3;
 const waitTimeBetweenAttempts = dayjs.duration({ seconds: 0.2 });
 
-export async function generateAiBriefBundleEntry(
-  bundle: Bundle<Resource>,
-  cxId: string,
-  patientId: string,
-  log: typeof console.log,
-  aiBriefControls?: AiBriefControls
-): Promise<BundleEntry<Binary> | undefined> {
+export async function generateAiBriefBundleEntry({
+  bundle,
+  cxId,
+  patientId,
+  log,
+  aiBriefControls,
+}: {
+  bundle: Bundle<Resource>;
+  cxId: string;
+  patientId: string;
+  log: typeof console.log;
+  aiBriefControls?: AiBriefControls | undefined;
+}): Promise<BundleEntry<Binary> | undefined> {
   let aiBriefContent;
   let attemptNumber = 1;
 
@@ -126,26 +132,33 @@ export async function getAiBriefFromS3({
   log("Getting AI Brief from S3");
   const s3Utils = new S3Utils(Config.getAWSRegion());
   const filePath = getAiBriefFileKey(cxId, patientId);
+  const params = {
+    bundle,
+    cxId,
+    patientId,
+    log,
+    aiBriefControls,
+  };
 
   try {
     const aiBrief = await s3Utils.getFileContentsAsString(Config.getAiBriefBucketName(), filePath);
 
     if (!aiBrief) {
       log(`No AI Brief found in S3, generating new one`);
-      return await generateAiBriefBundleEntry(bundle, cxId, patientId, log, aiBriefControls);
+      return await generateAiBriefBundleEntry(params);
     }
 
     log(`Got AI Brief from S3`);
     const aiBriefBundle = parseFhirBundle(aiBrief) as Bundle<Binary>;
     if (!aiBriefBundle) {
       log(`Failed to parse AI Brief bundle, generating new one`);
-      return await generateAiBriefBundleEntry(bundle, cxId, patientId, log, aiBriefControls);
+      return await generateAiBriefBundleEntry(params);
     }
 
     const aiBriefResource = getAiBriefResourceFromBundle(aiBriefBundle);
     if (!aiBriefResource) {
       log(`No AI Brief resource found in bundle, generating new one`);
-      return await generateAiBriefBundleEntry(bundle, cxId, patientId, log, aiBriefControls);
+      return await generateAiBriefBundleEntry(params);
     }
 
     return buildBundleEntry(aiBriefResource);
@@ -153,7 +166,7 @@ export async function getAiBriefFromS3({
     const msg = `Failed to get AI Brief from S3`;
     log(`${msg}: ${err}`);
     log(`Generating new AI Brief due to error`);
-    return await generateAiBriefBundleEntry(bundle, cxId, patientId, log, aiBriefControls);
+    return await generateAiBriefBundleEntry(params);
   }
 }
 

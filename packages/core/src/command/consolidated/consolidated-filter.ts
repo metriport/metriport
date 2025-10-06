@@ -35,7 +35,7 @@ export async function getConsolidatedFromS3({
   resources?: ResourceTypeForConsolidation[] | undefined;
   dateFrom?: string | undefined;
   dateTo?: string | undefined;
-  skipAiBriefGeneration?: boolean | undefined;
+  useCachedAiBrief?: boolean | undefined;
 }): Promise<SearchSetBundle> {
   const patientId = patient.id;
   const { log } = out(`getConsolidatedFromS3 - cx ${cxId}, pat ${patientId}`);
@@ -44,7 +44,7 @@ export async function getConsolidatedFromS3({
   const consolidated = await getOrCreateConsolidatedOnS3({
     cxId,
     patient,
-    skipAiBriefGeneration: params.skipAiBriefGeneration,
+    useCachedAiBrief: params.useCachedAiBrief,
   });
   const consolidatedSearchset = toSearchSet(consolidated);
 
@@ -57,11 +57,11 @@ export async function getConsolidatedFromS3({
 async function getOrCreateConsolidatedOnS3({
   cxId,
   patient,
-  skipAiBriefGeneration,
+  useCachedAiBrief,
 }: {
   cxId: string;
   patient: Patient;
-  skipAiBriefGeneration?: boolean | undefined;
+  useCachedAiBrief?: boolean | undefined;
 }): Promise<Bundle> {
   const patientId = patient.id;
   const { log } = out(`getOrCreateConsolidatedOnS3 - cx ${cxId}, pat ${patientId}`);
@@ -77,7 +77,7 @@ async function getOrCreateConsolidatedOnS3({
   const newConsolidated = await createConsolidatedFromConversions({
     cxId,
     patient,
-    skipAiBriefGeneration,
+    useCachedAiBrief,
   });
   return newConsolidated;
 }
