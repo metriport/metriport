@@ -28,7 +28,7 @@ export enum AddressTypeCodes {
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.3 Address)
 export const addressSchema = z.object({
   line: z.array(z.string()).nullish(),
-  city: z.string().nullish(),
+  city: emptyStringToUndefinedSchema,
   state: z.preprocess(normalizeStatePreprocess, z.string().nullish()),
   country: emptyStringToUndefinedSchema,
   postalCode: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
@@ -44,17 +44,42 @@ export function normalizeStatePreprocess(arg: unknown): unknown {
   return undefined;
 }
 
+// Safe address schema that filters out invalid addresses instead of throwing errors
+export const addressSchemaSafe = z.object({
+  line: z.array(z.string()).nullish(),
+  city: z.string().nullish(),
+  state: z.preprocess(normalizeStatePreprocessSafe, emptyStringToUndefinedSchema),
+  country: emptyStringToUndefinedSchema,
+  postalCode: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
+  use: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
+  type: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
+  period: periodSchema.nullish(),
+});
+
 export function normalizeStatePreprocessSafe(arg: unknown): unknown {
-  if (typeof arg === "string" && ["", "undefined", "null"].includes(arg.trim())) return undefined;
   if (typeof arg === "string") return normalizeStateSafe(arg);
-  return undefined;
+  return arg;
+}
+
+// Safe address array schema that filters out invalid addresses
+export const addressArraySchemaSafe = z.array(addressSchemaSafe).transform(addresses => {
+  return addresses.filter(address => isValidAddress(address));
+});
+
+/**
+ * Validates if an address meets all minimum requirements
+ */
+function isValidAddress(address: Address): boolean {
+  return (
+    isValidAddressLine(address.line) && isValidCity(address.city) && isValidState(address.state)
+  );
 }
 
 /**
  * Validates if an address line has sufficient content
  */
 function isValidAddressLine(line: string[] | null | undefined): boolean {
-  if (!line || line.length === 0) return false;
+  if (!line || line.length < 1) return false;
   return line.some(lineItem => lineItem.trim().length >= MIN_LINE_LENGTH);
 }
 
@@ -73,35 +98,3 @@ function isValidState(state: string | null | undefined): boolean {
   if (!state) return false;
   return normalizeStateSafe(state) !== undefined;
 }
-
-/**
- * Validates if an address meets all minimum requirements
- */
-function isValidAddress(address: Address): boolean {
-  return (
-    isValidAddressLine(address.line) && isValidCity(address.city) && isValidState(address.state)
-  );
-}
-
-// Safe address schema that filters out invalid addresses instead of throwing errors
-export const addressSchemaSafe = z.object({
-  line: z.array(z.string()).nullish(),
-  city: z.string().nullish(),
-  state: z.preprocess(normalizeStatePreprocessSafe, z.string().nullish()),
-  country: emptyStringToUndefinedSchema,
-  postalCode: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
-  use: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
-  type: emptyStringToUndefinedSchema.pipe(z.string().nullish()),
-  period: periodSchema.nullish(),
-});
-
-// Safe address array schema that filters out invalid addresses
-export const addressArraySchemaSafe = z
-  .array(addressSchemaSafe)
-  .transform(addresses => {
-    // Filter out addresses that don't meet minimum requirements
-    return addresses.filter(address => isValidAddress(address));
-  })
-  .refine(addresses => addresses.length > 0, {
-    message: "At least one valid address is required",
-  });
