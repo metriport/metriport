@@ -75,7 +75,7 @@ export const dischargeEventCode = "A03";
 const INTERNAL_HL7_ENDPOINT = `notification`;
 const INTERNAL_PATIENT_ENDPOINT = "internal/patient";
 const DISCHARGE_REQUERY_ENDPOINT = "monitoring/discharge-requery";
-const SKIP_AI_BRIEF_GENERATION = true;
+const USE_CACHED_AI_BRIEF = true;
 const SIGNED_URL_DURATION_SECONDS = dayjs.duration({ minutes: 10 }).asSeconds();
 
 type ClinicalInformation = {
@@ -358,7 +358,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
   }
 
   private getConsolidatedRefreshEndpoint(patientId: string, cxId: string): string {
-    return `${this.apiUrl}/internal/patient/${patientId}/consolidated/refresh?cxId=${cxId}&skipAiBriefGeneration=${SKIP_AI_BRIEF_GENERATION}`;
+    return `${this.apiUrl}/internal/patient/${patientId}/consolidated/refresh?cxId=${cxId}&useCachedAiBrief=${USE_CACHED_AI_BRIEF}`;
   }
 
   private async notifyAnalytics({
