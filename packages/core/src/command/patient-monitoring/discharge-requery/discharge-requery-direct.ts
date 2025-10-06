@@ -20,6 +20,7 @@ dayjs.extend(duration);
 const defaultTriggerConsolidated = false;
 const defaultDisableWebhooks = true;
 const defaultRerunPdOnNewDemographics = true;
+const defaultOverride = true;
 
 function waitTimeBetweenPdAndDq() {
   return dayjs.duration(randomIntBetween(80, 120), "milliseconds");
@@ -58,6 +59,7 @@ export class DischargeRequeryDirect implements DischargeRequery {
           triggerConsolidated: defaultTriggerConsolidated,
           disableWebhooks: defaultDisableWebhooks,
           context: dischargeRequeryContext,
+          override: defaultOverride,
         });
         if (dataPipelineRequestId !== dqRequestId) {
           log(`DQ already running, using existing requestId: ${dqRequestId}`);
