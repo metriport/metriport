@@ -79,7 +79,7 @@ symptom_hits AS (
     c.NORMALIZED_DESCRIPTION,
     NULL AS RESULT,
     NULL AS units,
-    CAST(c.ONSET_DATE AS DATE) AS obs_date,
+    COALESCE(CAST(c.ONSET_DATE AS DATE), CAST(c.RECORDED_DATE AS DATE), CAST(c.RESOLVED_DATE AS DATE)) AS obs_date,
     c.DATA_SOURCE,
     'hf_symptom_present' AS suspect_group,
     'I50.9' AS suspect_icd10_code,
