@@ -460,7 +460,6 @@ export function createAPIService({
     dbCredsSecret,
     searchAuth.secret,
     ...Object.values(secretsToECS(secrets)),
-    ...Object.values(secretsToECS(buildSecrets(stack, props.config.propelAuth.secrets))),
   ].filter((s): s is secret.ISecret => !!s);
 
   for (const s of injectedSecrets) {
