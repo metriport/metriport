@@ -29,7 +29,11 @@ export async function notifyUserOnStart({
     }`
   );
   const envTypeMessage = `Running in env type:${
-    envType === "dev" ? "dev" : envType === "staging" ? "staging" : "⚠️ PRODUCTION ⚠️"
+    envType === "dev" || envType === "development"
+      ? "dev"
+      : envType === "staging"
+      ? "staging"
+      : "⚠️ PRODUCTION ⚠️"
   }`;
   const isStaging = region === "us-east-2";
   const isProd = region === "us-east-1";
