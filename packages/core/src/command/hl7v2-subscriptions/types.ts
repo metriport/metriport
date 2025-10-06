@@ -1,4 +1,4 @@
-import { Cohort, USState } from "@metriport/shared";
+import { USState } from "@metriport/shared";
 import { Patient } from "../../domain/patient";
 import { Hl7v2Subscription } from "../../domain/patient-settings";
 import { HieIanaTimezone } from "../../external/hl7-notification/hie-config-dictionary";
@@ -63,6 +63,7 @@ export type VpnlessHieConfig = Omit<HieConfig, "gatewayPublicIp" | "internalCidr
 
 export type Hl7v2SubscriberParams = {
   hieStates: USState[];
+  hieName: string;
   count?: number | undefined;
 };
 
@@ -71,10 +72,8 @@ export type Hl7v2RosterUploadDetails = {
   fileKey: string;
 };
 
-export type PatientWithCohorts = Patient & { Cohorts: Cohort[] };
-
 export type Hl7v2SubscriberApiResponse = {
-  patients: PatientWithCohorts[];
+  patients: Patient[];
   meta: {
     nextPage?: string;
   };
