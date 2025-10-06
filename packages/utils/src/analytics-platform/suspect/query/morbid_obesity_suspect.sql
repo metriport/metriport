@@ -2,8 +2,8 @@
    Purpose
    -------
    Flag "morbid_obesity" suspects when:
-     (A) Direct BMI (LOINC 39156-5) >= 40, OR
-     (B) Derived BMI from weight (29463-7) and height (8302-2) >= 40,
+     (A) Direct BMI (LOINC 39156-5) >= 35, OR
+     (B) Derived BMI from weight (29463-7) and height (8302-2) >= 35,
    while EXCLUDING patients who already have an obesity diagnosis.
 
    Exclusions
@@ -25,11 +25,11 @@ WITH obesity_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
   FROM CONDITION c
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
-    AND c.NORMALIZED_CODE IN ('E66.01','E66.2','E66.813')
+    AND c.NORMALIZED_CODE IN ('E6601','E662','E66813')
 ),
 
 /* ------------------------------------------------------------
-   (A) Direct BMI path (LOINC 39156-5). Flags if BMI >= 40.
+   (A) Direct BMI path (LOINC 39156-5). Flags if BMI >= 35.
    ------------------------------------------------------------ */
 bmi_direct AS (
   SELECT
@@ -173,7 +173,7 @@ bmi_derived AS (
     p.weight_obs_id                                 AS resource_id,
     'Observation'                                   AS resource_type,
     /* suspect bucket */
-    CASE WHEN (p.weight_kg / NULLIF(p.height_m * p.height_m, 0)) >= 40
+    CASE WHEN (p.weight_kg / NULLIF(p.height_m * p.height_m, 0)) >= 35
          THEN 'morbid_obesity_derived' ELSE NULL END AS suspect_group,
     'E66.01'                                        AS suspect_icd10_code,
     'Morbid (severe) obesity due to excess calories' AS suspect_icd10_short_description,
