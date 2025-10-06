@@ -151,14 +151,7 @@ export async function getAiBriefFromS3({
     return buildBundleEntry(aiBriefResource);
   } catch (err) {
     const msg = `Failed to get AI Brief from S3`;
-    log(`${msg}: ${errorToString(err)}`);
-    capture.error(msg, {
-      extra: {
-        cxId,
-        patientId,
-        error: err,
-      },
-    });
+    log(`${msg}: ${err}`);
     log(`Generating new AI Brief due to error`);
     return await generateAiBriefBundleEntry(bundle, cxId, patientId, log, aiBriefControls);
   }

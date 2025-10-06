@@ -250,6 +250,7 @@ type EnvConfigBase = {
     startScheduledPatientJobsScheduleExpression: string;
     startScheduledPatientJobsSchedulerUrl: string;
   };
+  aiBriefBucketName: string;
 };
 
 export type EnvConfigNonSandbox = EnvConfigBase & {
@@ -265,7 +266,6 @@ export type EnvConfigNonSandbox = EnvConfigBase & {
   hl7Notification: Hl7NotificationConfig;
   fhirConversionBucketName: string;
   analyticsPlatform: AnalyticsPlatformConfig;
-  aiBriefBucketName: string;
 };
 
 export type EnvConfigSandbox = EnvConfigBase & {
