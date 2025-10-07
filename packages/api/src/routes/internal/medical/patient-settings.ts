@@ -123,11 +123,12 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const { notifications, patientIds } = parseQuestPatientRequest(req.body);
+    const { notifications, backfill, patientIds } = parseQuestPatientRequest(req.body);
 
     const result = await addQuestSubscriptionToPatients({
       cxId,
       patientIds,
+      backfill,
       notifications,
     });
 
@@ -150,11 +151,12 @@ router.delete(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const { notifications, patientIds } = parseQuestPatientRequest(req.body);
+    const { notifications, backfill, patientIds } = parseQuestPatientRequest(req.body);
 
     const result = await removeQuestSubscriptionFromPatients({
       cxId,
       patientIds,
+      backfill,
       notifications,
     });
 

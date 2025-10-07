@@ -29,9 +29,7 @@ export const adtSubscriptionRequestSchema = z.object({
 export type AdtSubscriptionRequest = z.infer<typeof adtSubscriptionRequestSchema>;
 
 export const questPatientRequestSchema = z.object({
-  // TODO: remove
   notifications: z.boolean().optional(),
-  monitoring: z.boolean().optional(),
   backfill: z.boolean().optional(),
   patientIds: z.array(z.string()).nonempty(),
 });
