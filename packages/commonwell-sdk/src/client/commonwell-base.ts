@@ -1,6 +1,14 @@
 import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { Agent } from "https";
-import { APIMode, CommonWellOptions, DEFAULT_AXIOS_TIMEOUT_SECONDS } from "./common";
+import { executeWithNetworkRetries, defaultOptionsRequestNotAccepted } from "@metriport/shared";
+import httpStatus from "http-status";
+import {
+  APIMode,
+  CommonWellOptions,
+  DEFAULT_AXIOS_TIMEOUT_SECONDS,
+  defaultOnError500,
+  OnError500Options,
+} from "./common";
 
 /**
  * Implementation of the CommonWell API, v4.
@@ -17,6 +25,7 @@ export class CommonWellBase {
   protected rsaPrivateKey: string;
   private httpsAgent: Agent;
   private _lastTransactionId: string | undefined;
+  protected onError500: OnError500Options;
 
   /**
    * Creates a new instance of the CommonWell API client pertaining to an
@@ -43,6 +52,7 @@ export class CommonWellBase {
   }) {
     this.rsaPrivateKey = rsaPrivateKey;
     this.httpsAgent = new Agent({ cert: orgCert, key: rsaPrivateKey });
+    this.onError500 = { ...defaultOnError500, ...options.onError500 };
     this.api = axios.create({
       timeout: options?.timeout ?? DEFAULT_AXIOS_TIMEOUT_SECONDS * 1_000,
       baseURL:
@@ -105,5 +115,19 @@ export class CommonWellBase {
       if (resp) postRequestHook?.(resp);
       return Promise.reject(error);
     };
+  }
+
+  protected async executeWithRetriesOn500IfEnabled<T>(fn: () => Promise<T>): Promise<T> {
+    return this.onError500.retry
+      ? executeWithNetworkRetries(fn, {
+          ...this.onError500,
+          httpCodesToRetry: [...defaultOptionsRequestNotAccepted.httpCodesToRetry],
+          httpStatusCodesToRetry: [
+            ...defaultOptionsRequestNotAccepted.httpStatusCodesToRetry,
+            httpStatus.INTERNAL_SERVER_ERROR,
+            httpStatus.SERVICE_UNAVAILABLE,
+          ],
+        })
+      : fn();
   }
 }
