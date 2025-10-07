@@ -32,16 +32,21 @@ export function getCreatePartitionedTableCommand(
   return (
     `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName} (${columnsDef}) PARTITION BY RANGE (${columnJobIdName}); ` +
     `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_default PARTITION OF ${schemaName}.${tableName} DEFAULT; ` +
-    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_01 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20230101') TO ('20250930');` +
-    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_02 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20250930') TO ('20251031');` +
-    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_03 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20251031') TO ('20251130');` +
-    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_04 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20251130') TO ('20251231');` +
-    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_05 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20251231') TO ('20260131');` +
-    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_06 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260131') TO ('20260229');` +
-    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_07 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260229') TO ('20260331');` +
-    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_08 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260331') TO ('20260430');` +
-    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_09 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260430') TO ('20260531');` +
-    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_10 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260531') TO ('20260630');`
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_01 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('19000101') TO ('20251031');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_02 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20251031') TO ('20251130');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_03 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20251130') TO ('20251231');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_04 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20251231') TO ('20260131');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_05 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260131') TO ('20260229');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_06 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260229') TO ('20260331');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_07 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260331') TO ('20260430');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_08 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260430') TO ('20260531');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_09 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260531') TO ('20260630');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_10 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260630') TO ('20260731');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_11 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260731') TO ('20260831');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_12 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260831') TO ('20260930');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_13 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260930') TO ('20261031');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_14 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20261031') TO ('20261130');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_15 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20261130') TO ('20261231');`
   );
 }
 
