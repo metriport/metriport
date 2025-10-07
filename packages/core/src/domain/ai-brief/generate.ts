@@ -1,5 +1,5 @@
 import { Binary, Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
-import { errorToString, executeWithNetworkRetries } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { parseFhirBundle } from "@metriport/shared/medical/fhir/bundle";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -149,18 +149,18 @@ export async function getCachedAiBriefOrGenerateNewOne({
     const aiBrief = await s3Utils.getFileContentsAsString(Config.getAiBriefBucketName(), filePath);
 
     if (!aiBrief) {
-      throw new Error("No AI Brief found in S3");
+      throw new MetriportError("No AI Brief found in S3");
     }
 
     log(`Got AI Brief from S3`);
     const aiBriefBundle = parseFhirBundle(aiBrief) as Bundle<Binary>;
     if (!aiBriefBundle) {
-      throw new Error("Failed to parse AI Brief bundle");
+      throw new MetriportError("Failed to parse AI Brief bundle");
     }
 
     const aiBriefResource = getAiBriefResourceFromBundle(aiBriefBundle);
     if (!aiBriefResource) {
-      throw new Error("No AI Brief resource found in bundle");
+      throw new MetriportError("No AI Brief resource found in bundle");
     }
 
     return buildBundleEntry(aiBriefResource);
