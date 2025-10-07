@@ -18,7 +18,10 @@ describe("parseResponseFileName", () => {
   });
 
   it("builds a roster file name", () => {
-    expect(buildRosterFileName()).toBe("Metriport_roster_20250101.txt");
+    expect(buildRosterFileName()).toBe("Metriport_backfill_20250101.txt");
+    expect(buildRosterFileName({ notifications: true })).toBe(
+      "Metriport_notifications_20250101.txt"
+    );
   });
 
   it("parses a correct date interval", () => {
