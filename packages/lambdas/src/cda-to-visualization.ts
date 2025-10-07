@@ -85,12 +85,14 @@ async function convert({
   bucketName: string;
   isSanitize?: boolean;
 }) {
-  const document = isSanitize ? sanitizeXmlProcessingInstructions(docContents) : docContents;
-  const cleanedDocument = isSanitize ? cleanUpPayload(document) : document;
+  const sanitizedDocContents = isSanitize
+    ? sanitizeXmlProcessingInstructions(docContents)
+    : docContents;
+  const document = isSanitize ? cleanUpPayload(sanitizedDocContents) : sanitizedDocContents;
   if (conversionType === "html") {
     const url = await convertStoreAndReturnHtmlDocUrl({
       fileName,
-      document: cleanedDocument,
+      document,
       bucketName,
     });
     console.log("html", url);
@@ -99,7 +101,7 @@ async function convert({
 
   const url = await convertStoreAndReturnPdfDocUrl({
     fileName,
-    document: cleanedDocument,
+    document,
     bucketName,
   });
   console.log("pdf", url);
