@@ -37,39 +37,41 @@ describe("replaceAmpersand", () => {
   test("should be backwards compatible", () => {
     // The previous regex only searched for /\s&\s/g, so it would only work for cases where
     // " & " should be replaced by " &amp; "
-    expect(replaceAmpersand(" & ")).toBe(" &amp; ");
+    expect(replaceAmpersand(createTestCase(" & "))).toBe(createTestCase(" &amp; "));
   });
 
   test("should replace unescaped ampersand with escaped ampersand", () => {
-    expect(replaceAmpersand("a&b")).toBe("a&amp;b");
+    expect(replaceAmpersand(createTestCase("a&b"))).toBe(createTestCase("a&amp;b"));
   });
 
   test("should not replace escaped hexadecimal sequence", () => {
-    expect(replaceAmpersand("yo&#xA9;yo&ox3;")).toBe("yo&#xA9;yo&amp;ox3;");
+    expect(replaceAmpersand(createTestCase("yo&#xA9;yo&ox3;"))).toBe(
+      createTestCase("yo&#xA9;yo&amp;ox3;")
+    );
   });
 
   test("should not replace escaped decimal sequence", () => {
-    expect(replaceAmpersand("APPEARANCE:&#160;a&ox3.&#160;")).toBe(
-      "APPEARANCE:&#160;a&amp;ox3.&#160;"
+    expect(replaceAmpersand(createTestCase("APPEARANCE:&#160;a&ox3.&#160;"))).toBe(
+      createTestCase("APPEARANCE:&#160;a&amp;ox3.&#160;")
     );
   });
 
   test("should not replace the five predefined XML entities", () => {
-    expect(replaceAmpersand("&lt;")).toBe("&lt;");
-    expect(replaceAmpersand("&gt;")).toBe("&gt;");
-    expect(replaceAmpersand("&amp;")).toBe("&amp;");
-    expect(replaceAmpersand("&quot;")).toBe("&quot;");
-    expect(replaceAmpersand("&apos;")).toBe("&apos;");
+    expect(replaceAmpersand(createTestCase("&lt;"))).toBe(createTestCase("&lt;"));
+    expect(replaceAmpersand(createTestCase("&gt;"))).toBe(createTestCase("&gt;"));
+    expect(replaceAmpersand(createTestCase("&amp;"))).toBe(createTestCase("&amp;"));
+    expect(replaceAmpersand(createTestCase("&quot;"))).toBe(createTestCase("&quot;"));
+    expect(replaceAmpersand(createTestCase("&apos;"))).toBe(createTestCase("&apos;"));
   });
 
   test("should not replace already escaped ampersand", () => {
-    expect(replaceAmpersand("A &amp; B")).toBe("A &amp; B");
-    expect(replaceAmpersand("A &amp;amp; B")).toBe("A &amp;amp; B");
+    expect(replaceAmpersand(createTestCase("A &amp; B"))).toBe(createTestCase("A &amp; B"));
+    expect(replaceAmpersand(createTestCase("A &amp;amp; B"))).toBe(createTestCase("A &amp;amp; B"));
   });
 
   test("should work in edge cases", () => {
-    expect(replaceAmpersand("&")).toBe("&amp;");
-    expect(replaceAmpersand("&&amp;")).toBe("&amp;&amp;");
+    expect(replaceAmpersand(createTestCase("&"))).toBe(createTestCase("&amp;"));
+    expect(replaceAmpersand(createTestCase("&&amp;"))).toBe(createTestCase("&amp;&amp;"));
   });
 });
 
