@@ -36,7 +36,9 @@ function getCommonQueryOptions({
                 FROM patient_cohort pc
                 JOIN cohort ch ON pc.cohort_id = ch.id
                 WHERE pc.patient_id = "PatientModelReadOnly".id
-                  AND ch.settings->>'adtMonitoring' = 'true'
+                GROUP BY pc.patient_id
+                HAVING COUNT(*) > 0
+                  AND BOOL_AND(COALESCE(ch.settings->>'adtMonitoring','false') = 'true')
               )
             )
             OR
