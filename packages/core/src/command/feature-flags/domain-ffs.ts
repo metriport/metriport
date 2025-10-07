@@ -329,7 +329,7 @@ export async function isQuestFeatureFlagEnabledForCx(cxId: string): Promise<bool
 }
 
 export async function getCxsEnabledForAnalyticsIncrementalIngestion(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("analyticsIncrementalIngestion");
+  return getCxsWithFeatureFlagEnabled("cxsWithAnalyticsIncrementalIngestion");
 }
 export async function isAnalyticsIncrementalIngestionEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithFFEnabled = await getCxsEnabledForAnalyticsIncrementalIngestion();
@@ -337,7 +337,7 @@ export async function isAnalyticsIncrementalIngestionEnabledForCx(cxId: string):
 }
 
 export async function getCxsEnabledForDatawarehouseSnowflake(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("datawarehouseSnowflake");
+  return getCxsWithFeatureFlagEnabled("cxsWithDatawarehouseSnowflake");
 }
 export async function isDatawarehouseSnowflakeEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithFFEnabled = await getCxsEnabledForDatawarehouseSnowflake();
