@@ -358,7 +358,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
   }
 
   private getConsolidatedRefreshEndpoint(patientId: string, cxId: string): string {
-    return `${this.apiUrl}/internal/patient/${patientId}/consolidated/refresh?cxId=${cxId}&useCachedAiBrief=${USE_CACHED_AI_BRIEF}`;
+    const baseUrl = `${this.apiUrl}/internal/patient/${patientId}/consolidated/refresh`;
+    return `${baseUrl}?cxId=${cxId}&useCachedAiBrief=${USE_CACHED_AI_BRIEF}`;
   }
 
   private async notifyAnalytics({
