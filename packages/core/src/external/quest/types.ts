@@ -26,6 +26,13 @@ export type QuestRosterType = "notifications" | "backfill";
 export interface QuestPatientRequest {
   cxId: string;
   patientId: string;
+  backfill?: boolean;
+  notifications?: boolean;
+}
+
+export interface QuestPatientStatus {
+  backfill?: boolean;
+  notifications?: boolean;
 }
 
 /**

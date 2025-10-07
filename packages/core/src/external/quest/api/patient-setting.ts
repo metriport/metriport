@@ -3,13 +3,7 @@ import axios, { AxiosInstance } from "axios";
 import { z } from "zod";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-
-interface SetPatientSettingParams {
-  cxId: string;
-  patientId: string;
-  backfill?: boolean;
-  notifications?: boolean;
-}
+import { QuestPatientRequest } from "../types";
 
 const patientSettingsResponseSchema = z.object({
   patientsFoundAndUpdated: z.number(),
@@ -31,7 +25,7 @@ export type PatientSettingsResponse = z.infer<typeof patientSettingsResponseSche
  * Sets Quest-related patient subscriptions for
  */
 export async function setPatientSetting(
-  { cxId, patientId, backfill, notifications }: SetPatientSettingParams,
+  { cxId, patientId, backfill, notifications }: QuestPatientRequest,
   axiosInstance?: AxiosInstance
 ): Promise<PatientSettingsResponse> {
   const { log } = out(`Quest setPatientSetting - cxId ${cxId} - patientId ${patientId}`);
