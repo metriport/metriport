@@ -273,6 +273,8 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
    *
    * The links returned are confirmed links of LOLA 2 or higher.
    *
+   * Note, there is no retry logic included for this method, since it's best used with custom logic.
+   *
    * @param meta                Metadata about the request.
    * @param patientId           The person id to be link to a patient.
    * @returns Response with list of links to Patients
@@ -284,9 +286,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
     const headers = this.buildQueryHeaders(options?.meta);
     const url = buildPatientLinkEndpoint(this.oid, patientId);
     try {
-      const resp = await this.executeWithRetriesOn500IfEnabled(() =>
-        this.api.get(url, { headers })
-      );
+      const resp = await this.api.get(url, { headers });
       return patientExistingLinksSchema.parse(resp.data);
     } catch (error) {
       throw this.getDescriptiveError(error, "Failed to get patient links by patient id");
@@ -306,6 +306,8 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
    *
    * The links returned are LOLA 1.
    *
+   * Note, there is no retry logic included for this method, since it's best used with custom logic.
+   *
    * @param patientId The ID of the patient to get probable links for.
    * @returns Response with list of probable (LOLA1) links to other Patients
    */
@@ -317,9 +319,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
     const url = buildProbableLinkEndpoint(this.oid, patientId);
 
     try {
-      const resp = await this.executeWithRetriesOn500IfEnabled(() =>
-        this.api.get(url, { headers })
-      );
+      const resp = await this.api.get(url, { headers });
       return patientProbableLinksRespSchema.parse(resp.data);
     } catch (error) {
       throw this.getDescriptiveError(error, "Failed to get probable links by patient id");
