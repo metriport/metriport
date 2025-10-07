@@ -40,7 +40,6 @@ export async function startDocumentQuery({
   });
   const payload = disableWebhooks ? { metadata: disableWHMetadata } : {};
 
-  console.log("dqUrl", dqUrl);
   const res = await withDefaultApiErrorHandling({
     functionToRun: () => api.post(dqUrl, payload),
     messageWhenItFails: `Failure while starting document query @ ${context}`,

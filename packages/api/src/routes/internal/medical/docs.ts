@@ -381,7 +381,6 @@ router.post(
     const triggerConsolidated = getFromQueryAsBoolean("triggerConsolidated", req);
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
-    console.log("/internal/docs/query with forceDownload", forceDownload);
     const facilityId = facilityIdParam
       ? facilityIdParam
       : await getPatientPrimaryFacilityIdOrFail({

@@ -17,7 +17,7 @@ import {
 
 dayjs.extend(duration);
 
-const defaultTriggerConsolidated = true; // TODO: ENG-601 Not sure why this was set to false...
+const defaultTriggerConsolidated = true;
 const defaultDisableWebhooks = true;
 const defaultRerunPdOnNewDemographics = true;
 const defaultForceDownload = true;

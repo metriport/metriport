@@ -276,7 +276,7 @@ export async function getTcmEncountersForPatient({
 }: {
   cxId: string;
   patientId: string;
-  latestEvent?: TcmEncounterEventType | undefined;
+  latestEvent?: TcmEncounterEventType;
 }): Promise<TcmEncounterModel[]> {
   return await TcmEncounterModel.findAll({
     where: {
