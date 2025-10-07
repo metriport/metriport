@@ -125,6 +125,7 @@ export class CommonWellBase {
           httpStatusCodesToRetry: [
             ...defaultOptionsRequestNotAccepted.httpStatusCodesToRetry,
             httpStatus.INTERNAL_SERVER_ERROR,
+            httpStatus.BAD_GATEWAY,
             httpStatus.SERVICE_UNAVAILABLE,
           ],
         })
