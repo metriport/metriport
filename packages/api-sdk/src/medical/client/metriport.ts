@@ -53,6 +53,7 @@ import {
 } from "../models/patient";
 import { PatientDTO } from "../models/patientDTO";
 import { SettingsResponse } from "../models/settings-response";
+import { normalizeCohortName } from "@metriport/core/command/patient-import/csv/convert-patient";
 
 const NO_DATA_MESSAGE = "No data returned from API";
 const BASE_PATH = "/medical/v1";
@@ -759,7 +760,9 @@ export class MetriportMedicalApi {
    * @returns The cohort with the given name.
    */
   async getCohortByName(name: string): Promise<{ cohort: CohortDTO }> {
-    const resp = await this.api.get(`${COHORT_URL}`, { params: { name } });
+    const normalizedName = normalizeCohortName(name);
+    console.log("\n\n\n\n\nnormalizedName", normalizedName);
+    const resp = await this.api.get(`${COHORT_URL}`, { params: { name: normalizedName } });
     if (!resp.data) throw new Error("No cohort found with the given name");
     return { cohort: resp.data.cohorts[0] };
   }

@@ -35,6 +35,7 @@ import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail, getFromQuery } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { allOrSubsetPatientIdsSchema, patientIdsSchema } from "./schemas/shared";
+import { normalizeCohortName } from "@metriport/core/command/patient-import/csv/convert-patient";
 
 const router = Router();
 
@@ -136,8 +137,11 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const name = getFromQuery("name", req);
+    const normalizedName = normalizeCohortName(name ?? "");
 
-    const cohorts = name ? [await getCohortByName({ cxId, name })] : await getCohorts({ cxId });
+    const cohorts = name
+      ? [await getCohortByName({ cxId, name: normalizedName })]
+      : await getCohorts({ cxId });
 
     return res.status(status.OK).json({
       cohorts: cohorts.map(dtoFromCohort),
