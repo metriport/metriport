@@ -3,7 +3,10 @@ import { errorToString } from "@metriport/shared";
 import { parseFhirBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { generateAiBriefBundleEntry, getCachedAiBriefFromS3 } from "../../domain/ai-brief/generate";
+import {
+  generateAiBriefBundleEntry,
+  getCachedAiBriefOrGenerateNewOne,
+} from "../../domain/ai-brief/generate";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
@@ -156,7 +159,13 @@ export async function createConsolidatedFromConversions({
   if (shouldUseCachedAiBrief) {
     const aiBriefEntry = await generateAiBriefWithTimeout(
       controls =>
-        getCachedAiBriefFromS3({ cxId, patientId, bundle, log, aiBriefControls: controls }),
+        getCachedAiBriefOrGenerateNewOne({
+          cxId,
+          patientId,
+          bundle,
+          log,
+          aiBriefControls: controls,
+        }),
       cxId,
       patientId,
       log

@@ -121,7 +121,7 @@ async function uploadAiBriefToS3({
  * @param log - The log function.
  * @returns The AI Brief bundle entry.
  */
-export async function getCachedAiBriefFromS3({
+export async function getCachedAiBriefOrGenerateNewOne({
   cxId,
   patientId,
   bundle,
