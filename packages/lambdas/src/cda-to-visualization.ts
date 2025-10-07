@@ -86,7 +86,7 @@ async function convert({
   isSanitize?: boolean;
 }) {
   const document = isSanitize ? sanitizeXmlProcessingInstructions(docContents) : docContents;
-  const cleanedDocument = cleanUpPayload(document);
+  const cleanedDocument = isSanitize ? cleanUpPayload(document) : document;
   if (conversionType === "html") {
     const url = await convertStoreAndReturnHtmlDocUrl({
       fileName,
