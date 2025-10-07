@@ -23,7 +23,7 @@ export async function generateQuestRoster({
 }> {
   const { log } = out("QuestRoster");
   const enrolledPatients = await getAllEnrolledPatients({ rosterType, log });
-  const rosterContent = buildRosterFile(enrolledPatients);
+  const rosterContent = buildRosterFile(enrolledPatients, rosterType);
   log(`Generated roster file with ${enrolledPatients.length} patients`);
 
   const rosterFileName = buildRosterFileName({ rosterType });
