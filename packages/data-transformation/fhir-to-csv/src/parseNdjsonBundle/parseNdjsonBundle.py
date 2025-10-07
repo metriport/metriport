@@ -24,7 +24,7 @@ def ensure_folder_exists(folder_path):
     os.makedirs(folder_path, exist_ok=True)
 
 # METRIPORT CHANGE FROM INLINE TO FUNCTION
-def parse(input_path: str, outputs_folder: str) -> list[str]:
+def parse(input_path: str, outputs_folder: str, include_header: bool) -> list[str]:
     # First, group config files by their base resource type
     config_groups = {}
     for config_file in os.listdir(config_folder):
@@ -55,13 +55,17 @@ def parse(input_path: str, outputs_folder: str) -> list[str]:
             output_name = config_file.replace('config_', '').replace('.ini', '').lower()
             output_file_path = f'{outputs_folder}/{output_name}.{output_format}' # METRIPORT CHANGE TO RETURN LIST OF OUTPUT FILES
             output_files.append(output_file_path) # METRIPORT CHANGE TO RETURN LIST OF OUTPUT FILES
+            
+            # METRIPORT CHANGE to determine write mode based on include_header parameter
+            write_mode = 'w' if include_header else 'a'
+            
             parseFhir.parse(
                 configPath=os.path.join(config_folder, config_file),
                 inputPath=filtered_input,
                 inputFormat='ndjson',
                 outputPath=output_file_path, # METRIPORT CHANGE TO RETURN LIST OF OUTPUT FILES
                 outputFormat=output_format,
-                writeMode='a' # METRIPORT CHANGE FROM WRITE TO APPEND
+                writeMode=write_mode # METRIPORT CHANGE TO SUPPORT HEADER PARAMETERIZATION
             )
     
         # Clean up temporary file
