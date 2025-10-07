@@ -5,7 +5,8 @@ description: "Group and enable settings for your patients."
 ---
 
 # Overview
-Metriport supports **Cohorts** - a way to create groups of patients for use within both your own system and Metriport. 
+
+Metriport supports **Cohorts** - a way to create groups of patients for use within both your own system and Metriport.
 If you use Metriport to monitor patients for anything from ADT notifications to lab data, you'll do that by adding your patients to Cohorts.
 
 <Info>
@@ -130,22 +131,35 @@ const patient = await metriportApi.createPatient(
 ### Available monitoring settings
 
 We're actively building out additional monitoring capabilities. Today, these are the valid fields and values for cohort settings.
+
 ```json
 {
   "adtMonitoring": true,
-  "labMonitoring": true,
-  "medicationMonitoring": true,
-  "clinicalDocsMonitoring": true
+  "questMonitoring": true,
+  "adtMonitoring_overrideHealthConnectTexas": true,
+  "adtMonitoring_overrideTexasHiePcc": true
 }
 ```
 
 <Info>
-  ADT monitoring relies on the registered address of your patient - patients with `adtMonitoring: true` will receive ADTs from the state of their registered address, and _only_ that state.
+  {" "}
+  <strong>Default behavior:</strong> With <code>
+    adtMonitoring: true
+  </code>, a patient receives ADTs <em>only</em> from the state
+  of their registered address. <br /> <strong>
+    Override behavior:
+  </strong> Set <code>
+    adtMonitoring_overrideHieName: true
+  </code> to bypass state-based routing for that HIE. For example,
+  if <code>adtMonitoring_overrideTexasHiePcc</code> is <code>
+    true
+  </code>, we will <em>not</em> use the patient’s address to
+  decide for Texas HIE PCC. You can enable multiple overrides.{" "}
 </Info>
 
 ### Cohorts for convenience
 
-Additionally, you can use Cohorts to label your patients for your own purposes. 
-A cohort does not need to have any monitoring settings enabled - you can simply group patients 
-and paginate over them and patients can be a member of any number of cohorts - try it out and share your 
+Additionally, you can use Cohorts to label your patients for your own purposes.
+A cohort does not need to have any monitoring settings enabled - you can simply group patients
+and paginate over them and patients can be a member of any number of cohorts - try it out and share your
 thoughts with us at support@metriport.com
