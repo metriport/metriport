@@ -16,11 +16,10 @@ import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
  * as an argument - if it is a relative path, it must be relative to the utils directory.
  *
  * Usage:
- * npm run cda-to-html runs/cda-to-html/example-cda.xml
+ * > npm run cda-to-html -- runs/cda-to-html/example-cda.xml
+ * > npm run cda-to-html -- /Users/user/Documents/example-cda.xml
  *
- * In the example above, a relative path is provided to the gitignored "runs" directory. You can also
- * supply an absolute path for the XML file to convert to HTML. In the example above, the output HTML
- * will be written to the same directory as "example-cda.html".
+ * In the example above, the output HTML will be written to the same directory as "example-cda.html".
  */
 const program = new Command();
 program.name("cda-to-html");
