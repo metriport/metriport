@@ -1,10 +1,11 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { QueryTypes } from "sequelize";
 import { PatientSettingsModel } from "../../../../models/patient-settings";
+import { Subscriptions } from "@metriport/core/domain/patient-settings";
 import { processPatientsInBatches } from "../batch-utils";
 import { PatientListProcessingResult, verifyPatients } from "./common";
 
-type QuestSettingsKey = "questBackfill" | "questNotifications";
+type QuestSettingsKey = keyof Pick<Subscriptions, "questBackfill" | "questNotifications">;
 
 /**
  * Appends a Quest monitoring subscription to the patient settings for the given customer and patient IDs.
