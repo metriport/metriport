@@ -1,6 +1,6 @@
 import { isValidUuid } from "@metriport/core/util/uuid-v7";
 import { BadRequestError } from "@metriport/shared";
-import { getCohortOrFail } from "./get-cohort";
+import { getCohortModelOrFail } from "./get-cohort";
 
 /**
  * Takes a list of cohort identifiers (can be names or ids) and returns a list of unique cohort ids.
@@ -28,7 +28,7 @@ export async function resolveCohortIdentifiersToUuids({
         throw new BadRequestError(`Cohort not found with identifier ${trimmed}.`);
       }
 
-      const cohort = await getCohortOrFail({ cxId, id: trimmed });
+      const cohort = await getCohortModelOrFail({ cxId, id: trimmed });
       return cohort.dataValues.id;
     })
   );

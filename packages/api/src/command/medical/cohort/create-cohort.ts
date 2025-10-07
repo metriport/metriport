@@ -25,12 +25,11 @@ export async function createCohort({
 
   const monitoringSettings = settings?.monitoring;
   await validateMonitoringSettingsForCx(cxId, monitoringSettings, log);
-  const normalizedName = normalizeCohortName(name);
   const cohortCreate = {
     id: uuidv7(),
     cxId,
     name: normalizedName,
-    description: description ?? "",
+    description,
     color,
     settings,
   };
