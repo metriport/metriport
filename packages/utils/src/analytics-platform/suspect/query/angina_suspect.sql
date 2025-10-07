@@ -79,7 +79,7 @@ patient_sex AS (
     CASE
       WHEN p.SEX ILIKE 'm%' THEN 'M'
       WHEN p.SEX ILIKE 'f%' THEN 'F'
-      ELSE 'U'
+      ELSE NULL
     END AS sex_code
   FROM core_v2.CORE_V2__PATIENT p
 ),
@@ -103,10 +103,10 @@ troponin_hits AS (
       WHEN '67151-1' THEN CASE WHEN sx.sex_code = 'M' THEN 22.0 ELSE 14.0 END
     END AS url_cutoff_ng_l
   FROM troponin_norm n
-  LEFT JOIN patient_sex sx ON sx.PATIENT_ID = n.PATIENT_ID
+  INNER JOIN patient_sex sx ON sx.PATIENT_ID = n.PATIENT_ID
   WHERE n.value_ng_l IS NOT NULL
     AND n.value_ng_l > 0
-    AND n.value_ng_l <= 100000
+    AND n.value_ng_l <= 20000
     AND NOT EXISTS (SELECT 1 FROM angina_dx_exclusion x WHERE x.PATIENT_ID = n.PATIENT_ID)
 ),
 
