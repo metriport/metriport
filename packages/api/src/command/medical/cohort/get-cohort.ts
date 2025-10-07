@@ -3,6 +3,7 @@ import { NotFoundError } from "@metriport/shared";
 import { Cohort, CohortWithSize, normalizeCohortName } from "@metriport/shared/domain/cohort";
 import { CohortModel } from "../../../models/medical/cohort";
 import { getCohortSize } from "./patient-cohort/get-cohort-size";
+import { normalizeCohortName } from "@metriport/core/command/patient-import/csv/convert-patient";
 
 const COHORT_SIZE_LOOKUP_CONCURRENCY = 10;
 

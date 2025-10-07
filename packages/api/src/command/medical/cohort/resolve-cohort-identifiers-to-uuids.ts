@@ -19,16 +19,17 @@ export async function resolveCohortIdentifiersToUuids({
 }): Promise<string[]> {
   const results = await Promise.all(
     identifiers?.map(async cohortIdentifier => {
-      if (isValidUuid(cohortIdentifier)) {
-        return cohortIdentifier;
+      const trimmed = cohortIdentifier.trim();
+      if (isValidUuid(trimmed)) {
+        return trimmed;
       }
 
       const cohort = await getCohortByNameSafe({
         cxId,
-        name: normalizeCohortName(cohortIdentifier),
+        name: normalizeCohortName(trimmed),
       });
       if (cohort === undefined) {
-        throw new BadRequestError(`Cohort not found with name ${cohortIdentifier}.`);
+        throw new BadRequestError(`Cohort not found with identifier ${trimmed}.`);
       }
       return cohort.id;
     }) ?? []

@@ -14,8 +14,8 @@ export async function createCohort({
   settings,
 }: CohortCreateCmd): Promise<Cohort> {
   const { log } = out(`createCohort - cx: ${cxId}`);
-
-  const existingCohort = await getCohortByNameSafe({ cxId, name });
+  const normalizedName = normalizeCohortName(name);
+  const existingCohort = await getCohortByNameSafe({ cxId, name: normalizedName });
   if (existingCohort) {
     throw new BadRequestError("A cohort with this name already exists", undefined, {
       existingCohortId: existingCohort.id,
