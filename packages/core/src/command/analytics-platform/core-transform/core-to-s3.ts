@@ -15,6 +15,10 @@ import { buildCoreExportJobId } from "./id";
 const numberOfParallelExportTablesIntoS3 = 10;
 // const numberOfParallelExportDefinitionsIntoS3 = 50;
 
+const coreExportJobIdColumnName = "core_export_job_id";
+
+const localEnvOutputDirectory = "/tmp/pg/output";
+
 /**
  * Exports the core data from Postgres to S3.
  */
@@ -160,19 +164,55 @@ async function exportSingleTable({
   tableName: string;
   region: string;
 }): Promise<void> {
-  if (Config.isDev()) {
-    // TODO install https://github.com/chimpler/postgres-aws-s3 ???
-    console.log(`Would be exporting table ${tableName} to S3, skipping on local env...`);
-    return;
-  }
+  const cmd = Config.isDev()
+    ? getExportToS3CmdForLocalEnv({ coreExportJobId, schemaName, tableName })
+    : getExportToS3CmdForCloudEnv({
+        cxId,
+        coreExportJobId,
+        schemaName,
+        tableName,
+        bucketName,
+        region,
+      });
+  await dbClient.query(cmd);
+}
 
+function getExportToS3CmdForCloudEnv({
+  cxId,
+  coreExportJobId,
+  schemaName,
+  tableName,
+  bucketName,
+  region,
+}: {
+  cxId: string;
+  coreExportJobId: string;
+  schemaName: string;
+  tableName: string;
+  bucketName: string;
+  region: string;
+}): string {
   const s3Key = buildCoreTableS3Prefix({ cxId, tableName });
-  const cmd = `SELECT * from aws_s3.query_export_to_s3(
+  return `SELECT * from aws_s3.query_export_to_s3(
     'SELECT *, ''${coreExportJobId}'' FROM ${schemaName}.${tableName}', 
     aws_commons.create_s3_uri('${bucketName}', '${s3Key}', '${region}'),
     options :='format csv, header true'
   )`;
-  await dbClient.query(cmd);
+}
+
+function getExportToS3CmdForLocalEnv({
+  coreExportJobId,
+  schemaName,
+  tableName,
+}: {
+  coreExportJobId: string;
+  schemaName: string;
+  tableName: string;
+}): string {
+  return (
+    `COPY (select *, '${coreExportJobId}' as ${coreExportJobIdColumnName} from ${schemaName}.${tableName}) ` +
+    `TO '${localEnvOutputDirectory}/${tableName}.csv' WITH (FORMAT CSV, HEADER)`
+  );
 }
 
 /**
