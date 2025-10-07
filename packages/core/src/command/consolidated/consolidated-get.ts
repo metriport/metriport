@@ -121,6 +121,7 @@ export async function getConsolidatedPatientDataAsync({
   requestId,
   conversionType,
   fromDashboard,
+  useCachedAiBrief,
 }: GetConsolidatedPatientData & {
   requestId: string;
   conversionType: ConsolidationConversionType;
@@ -134,6 +135,7 @@ export async function getConsolidatedPatientDataAsync({
     dateTo,
     isAsync: true,
     fromDashboard,
+    useCachedAiBrief,
   };
   const connector = buildConsolidatedSnapshotConnector();
   connector

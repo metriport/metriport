@@ -1,5 +1,5 @@
 import { Binary, Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
-import { errorToString, executeWithNetworkRetries } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { parseFhirBundle } from "@metriport/shared/medical/fhir/bundle";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -56,7 +56,7 @@ export async function generateAiBriefBundleEntry({
 
     if (aiBriefContent) {
       const aiBriefFhirResource = generateAiBriefFhirResource(aiBriefContent);
-      await uploadAiBriefToS3(aiBriefFhirResource, cxId, patientId, log);
+      await uploadAiBriefToS3({ aiBriefFhirResource, cxId, patientId, log });
       return buildBundleEntry(aiBriefFhirResource);
     }
     return undefined;
@@ -77,12 +77,17 @@ export async function generateAiBriefBundleEntry({
   return undefined;
 }
 
-async function uploadAiBriefToS3(
-  aiBriefFhirResource: Binary,
-  cxId: string,
-  patientId: string,
-  log: typeof console.log
-) {
+async function uploadAiBriefToS3({
+  aiBriefFhirResource,
+  cxId,
+  patientId,
+  log,
+}: {
+  aiBriefFhirResource: Binary;
+  cxId: string;
+  patientId: string;
+  log: typeof console.log;
+}): Promise<void> {
   try {
     const aiBriefWrappedInBundle = buildBundleFromResources({
       resources: [aiBriefFhirResource],
@@ -116,7 +121,7 @@ async function uploadAiBriefToS3(
  * @param log - The log function.
  * @returns The AI Brief bundle entry.
  */
-export async function getAiBriefFromS3({
+export async function getCachedAiBriefOrGenerateNewOne({
   cxId,
   patientId,
   bundle,
@@ -144,21 +149,18 @@ export async function getAiBriefFromS3({
     const aiBrief = await s3Utils.getFileContentsAsString(Config.getAiBriefBucketName(), filePath);
 
     if (!aiBrief) {
-      log(`No AI Brief found in S3, generating new one`);
-      return await generateAiBriefBundleEntry(params);
+      throw new MetriportError("No AI Brief found in S3");
     }
 
     log(`Got AI Brief from S3`);
     const aiBriefBundle = parseFhirBundle(aiBrief) as Bundle<Binary>;
     if (!aiBriefBundle) {
-      log(`Failed to parse AI Brief bundle, generating new one`);
-      return await generateAiBriefBundleEntry(params);
+      throw new MetriportError("Failed to parse AI Brief bundle");
     }
 
     const aiBriefResource = getAiBriefResourceFromBundle(aiBriefBundle);
     if (!aiBriefResource) {
-      log(`No AI Brief resource found in bundle, generating new one`);
-      return await generateAiBriefBundleEntry(params);
+      throw new MetriportError("No AI Brief resource found in bundle");
     }
 
     return buildBundleEntry(aiBriefResource);
