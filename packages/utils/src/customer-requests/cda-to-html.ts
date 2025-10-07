@@ -12,7 +12,9 @@ import { elapsedTimeAsStr } from "../shared/duration";
 import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 
 /**
- * Script to convert a CDA document to HTML. Pass an absolute or relative path to the CDA/XML file
+ * IMPORTANT: Run `npm run build` before running this script.
+ *
+ * This script converts a CDA document to HTML. Pass an absolute or relative path to the CDA/XML file
  * as an argument - if it is a relative path, it must be relative to the utils directory.
  *
  * Usage:
