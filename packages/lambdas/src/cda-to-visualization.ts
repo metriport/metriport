@@ -90,20 +90,12 @@ async function convert({
     : docContents;
   const document = isSanitize ? cleanUpPayload(sanitizedDocContents) : sanitizedDocContents;
   if (conversionType === "html") {
-    const url = await convertStoreAndReturnHtmlDocUrl({
-      fileName,
-      document,
-      bucketName,
-    });
+    const url = await convertStoreAndReturnHtmlDocUrl({ fileName, document, bucketName });
     console.log("html", url);
     return { url };
   }
 
-  const url = await convertStoreAndReturnPdfDocUrl({
-    fileName,
-    document,
-    bucketName,
-  });
+  const url = await convertStoreAndReturnPdfDocUrl({ fileName, document, bucketName });
   console.log("pdf", url);
   return { url };
 }
