@@ -44,6 +44,11 @@ async function convertCdaToHtml(sourceFile: string) {
   console.log(`############## Started at ${new Date(startedAt).toISOString()} ##############`);
 
   const sourcePath = path.resolve(process.cwd(), sourceFile);
+  if (!fs.existsSync(sourcePath)) {
+    console.error(`Source file ${sourcePath} does not exist`);
+    return;
+  }
+
   const document = fs.readFileSync(sourcePath, { encoding: "utf8" });
 
   // Clean up the document according to the standard normalization process
