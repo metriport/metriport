@@ -1,5 +1,6 @@
 import { Input, Output } from "@metriport/core/domain/conversion/cda-to-html-pdf";
 import { sanitizeXmlProcessingInstructions } from "@metriport/core/external/cda/remove-b64";
+import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import * as Sentry from "@sentry/serverless";
 import chromium from "@sparticuz/chromium";
@@ -85,13 +86,22 @@ async function convert({
   isSanitize?: boolean;
 }) {
   const document = isSanitize ? sanitizeXmlProcessingInstructions(docContents) : docContents;
+  const cleanedDocument = cleanUpPayload(document);
   if (conversionType === "html") {
-    const url = await convertStoreAndReturnHtmlDocUrl({ fileName, document, bucketName });
+    const url = await convertStoreAndReturnHtmlDocUrl({
+      fileName,
+      document: cleanedDocument,
+      bucketName,
+    });
     console.log("html", url);
     return { url };
   }
 
-  const url = await convertStoreAndReturnPdfDocUrl({ fileName, document, bucketName });
+  const url = await convertStoreAndReturnPdfDocUrl({
+    fileName,
+    document: cleanedDocument,
+    bucketName,
+  });
   console.log("pdf", url);
   return { url };
 }
