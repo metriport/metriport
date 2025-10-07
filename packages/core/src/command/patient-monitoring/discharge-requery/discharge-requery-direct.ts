@@ -17,10 +17,10 @@ import {
 
 dayjs.extend(duration);
 
-const defaultTriggerConsolidated = false;
+const defaultTriggerConsolidated = true; // TODO: ENG-601 Not sure why this was set to false...
 const defaultDisableWebhooks = true;
 const defaultRerunPdOnNewDemographics = true;
-const defaultOverride = true;
+const defaultForceDownload = true;
 
 function waitTimeBetweenPdAndDq() {
   return dayjs.duration(randomIntBetween(80, 120), "milliseconds");
@@ -59,7 +59,7 @@ export class DischargeRequeryDirect implements DischargeRequery {
           triggerConsolidated: defaultTriggerConsolidated,
           disableWebhooks: defaultDisableWebhooks,
           context: dischargeRequeryContext,
-          override: defaultOverride,
+          forceDownload: defaultForceDownload,
         });
         if (dataPipelineRequestId !== dqRequestId) {
           log(`DQ already running, using existing requestId: ${dqRequestId}`);
