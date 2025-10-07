@@ -6,6 +6,7 @@ import { sleep } from "@metriport/shared";
 import fs from "fs";
 import SaxonJS from "saxon-js";
 import { elapsedTimeAsStr } from "../shared/duration";
+import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const styleSheetText = require("../../../lambdas/src/cda-to-visualization/stylesheet.js");
@@ -33,8 +34,8 @@ async function main() {
 
   const document = fs.readFileSync(SOURCE_FILE, { encoding: "utf8" });
 
-  // https://metriport-inc.sentry.io/issues/5641255225/?alert_rule_id=14442454&alert_type=issue&environment=production&notification_uuid=24c13683-7ce2-43bf-b620-7fc31eca8502&project=4505252341153792&referrer=slack
-  const normalizedDocument = normalizeDocument(document);
+  // Clean up the document according to the standard normalization process
+  const normalizedDocument = cleanUpPayload(document);
 
   console.log(`Converting to HTML...`);
   const htmlStartedAt = Date.now();
@@ -43,12 +44,6 @@ async function main() {
   fs.writeFileSync(`${SOURCE_FILE}_output.html`, html);
 
   console.log(`>>> Done in ${elapsedTimeAsStr(startedAt)}, HTML in ${htmlDuration}ms`);
-}
-
-// Based on packages/lambdas/src/cda-to-visualization.ts
-function normalizeDocument(document: string): string {
-  const normalizedDocument = document.replace(/\s&\s/g, " &amp; ");
-  return normalizedDocument;
 }
 
 // TODO #2619 Move this to core and point the lambda to it too
