@@ -3,6 +3,7 @@ export const xmlTranslationCodeRegex = /(<translation[^>]*\scode=")([^"]*?)(")/g
 export const LESS_THAN = "&lt;";
 export const GREATER_THAN = "&gt;";
 const AMPERSAND = "&amp;";
+const UNESCAPED_AMPERSAND_REGEX = /&(?!((?:lt|gt|amp|quot|apos);|#[0-9]+;|#x[0-9A-Fa-f]+;))/g;
 
 export function cleanUpPayload(payloadRaw: string): string {
   const payloadNoCdUnk = replaceCdUnkString(payloadRaw);
@@ -25,10 +26,8 @@ function replaceNullFlavor(payloadRaw: string): string {
   return payloadRaw.replace(stringToReplace, replacement);
 }
 
-function replaceAmpersand(payloadRaw: string): string {
-  const stringToReplace = /\s&\s/g;
-  const replacement = ` ${AMPERSAND} `;
-  return payloadRaw.replace(stringToReplace, replacement);
+export function replaceAmpersand(payloadRaw: string): string {
+  return payloadRaw.replace(UNESCAPED_AMPERSAND_REGEX, AMPERSAND);
 }
 
 export function replaceXmlTagChars(doc: string): string {
