@@ -377,7 +377,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     try {
       const posthogApiKeyArn = Config.getPostHogApiKey();
       if (!posthogApiKeyArn) {
-        throw new Error("No posthog API key provided in webhook sender");
+        throw new MetriportError("No posthog API key provided in webhook sender");
       }
 
       const posthogApiKey = await getSecretValueOrFail(posthogApiKeyArn, Config.getAWSRegion());
