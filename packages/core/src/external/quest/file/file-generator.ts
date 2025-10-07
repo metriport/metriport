@@ -12,16 +12,17 @@ import {
   requestFooterRow,
 } from "../schema/request";
 import { OutgoingFileRowSchema } from "../schema/shared";
+import { QuestRosterType } from "../types";
 
-export function buildRosterFile(patients: Patient[], notifications?: boolean): Buffer {
-  const header = buildRosterHeader(notifications);
+export function buildRosterFile(patients: Patient[], rosterType: QuestRosterType): Buffer {
+  const header = buildRosterHeader(rosterType);
   const { body, requestedPatientIds } = buildRosterTable(patients);
   const footer = buildRosterFooter(requestedPatientIds);
   return Buffer.concat([header, body, footer]);
 }
 
-function buildRosterHeader(notifications?: boolean): Buffer {
-  const generalMnemonic = notifications ? "METRIP" : "IVMETRI";
+function buildRosterHeader(rosterType: QuestRosterType): Buffer {
+  const generalMnemonic = rosterType === "notifications" ? "METRIP" : "IVMETRI";
   return buildQuestRequestRow(
     { recordType: "H", generalMnemonic, fileCreationDate: new Date() },
     requestHeaderSchema,
