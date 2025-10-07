@@ -1,4 +1,4 @@
-import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
+// import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
 import {
   isCarequalityEnabled,
   isCommonwellEnabled,
@@ -18,7 +18,7 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError, emptyFunction } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import { isPatientAssociatedWithFacility } from "../../../domain/medical/patient-facility";
-import { processAsyncError } from "../../../errors";
+// import { processAsyncError } from "../../../errors";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
@@ -143,7 +143,7 @@ export async function queryDocumentsAcrossHIEs({
     },
   });
 
-  let triggeredDocumentQuery = false;
+  // let triggeredDocumentQuery = false;
 
   const isForceRedownloadEnabled =
     forceDownload ?? (await isXmlRedownloadFeatureFlagEnabledForCx(cxId));
@@ -157,7 +157,7 @@ export async function queryDocumentsAcrossHIEs({
       requestId,
       getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
     }).catch(emptyFunction);
-    triggeredDocumentQuery = true;
+    // triggeredDocumentQuery = true;
   }
 
   if (isQueryCarequality) {
@@ -169,15 +169,15 @@ export async function queryDocumentsAcrossHIEs({
       cqManagingOrgName,
       forcePatientDiscovery,
     }).catch(emptyFunction);
-    triggeredDocumentQuery = true;
+    // triggeredDocumentQuery = true;
   }
 
-  if (triggeredDocumentQuery) {
-    deleteConsolidated({
-      cxId: patient.cxId,
-      patientId: patient.id,
-    }).catch(processAsyncError("Failed to delete consolidated bundle"));
-  }
+  // if (triggeredDocumentQuery) {
+  //   deleteConsolidated({
+  //     cxId: patient.cxId,
+  //     patientId: patient.id,
+  //   }).catch(processAsyncError("Failed to delete consolidated bundle"));
+  // }
 
   return createQueryResponse("processing", updatedPatient);
 }
