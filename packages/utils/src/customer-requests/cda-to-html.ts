@@ -4,12 +4,18 @@ dotenv.config();
 // keep that ^ on top
 import { sleep } from "@metriport/shared";
 import fs from "fs";
+import path from "path";
 import SaxonJS from "saxon-js";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const styleSheetText = require("../../../lambdas/src/cda-to-visualization/stylesheet.js");
+// Need to run from the utils directory to have a stable working directory
+const UTILS_DIR = process.cwd();
+const styleSheetText = require(path.join(
+  UTILS_DIR,
+  "../lambdas/src/cda-to-visualization/stylesheet.js"
+));
 
 /**
  * Script to convert a CDA document to HTML.
