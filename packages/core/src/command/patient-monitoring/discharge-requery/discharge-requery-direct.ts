@@ -17,7 +17,7 @@ import {
 
 dayjs.extend(duration);
 
-const defaultTriggerConsolidated = true;
+const defaultTriggerConsolidated = false;
 const defaultDisableWebhooks = true;
 const defaultRerunPdOnNewDemographics = true;
 const defaultForceDownload = true;

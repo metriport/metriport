@@ -33,6 +33,12 @@ export type TcmEncounterResult = TcmEncounterModel["dataValues"] & {
   externalUrls: Array<ExternalUrlItem>;
 };
 
+export type TcmEncounterFindOptions = {
+  cxId: string;
+  patientId: string;
+  latestEvent?: TcmEncounterEventType;
+};
+
 // Column validation and WHERE clause building is now handled centrally in the paginated() function
 
 export async function getTcmEncounters({
@@ -278,11 +284,18 @@ export async function getTcmEncountersForPatient({
   patientId: string;
   latestEvent?: TcmEncounterEventType;
 }): Promise<TcmEncounterModel[]> {
-  return await TcmEncounterModel.findAll({
-    where: {
-      cxId,
-      patientId,
-      latestEvent,
-    },
-  });
+  const where: {
+    cxId: string;
+    patientId: string;
+    latestEvent?: TcmEncounterEventType;
+  } = {
+    cxId,
+    patientId,
+  };
+
+  if (latestEvent) {
+    where.latestEvent = latestEvent;
+  }
+
+  return await TcmEncounterModel.findAll({ where });
 }
