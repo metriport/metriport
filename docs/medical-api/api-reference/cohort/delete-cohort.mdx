@@ -1,0 +1,25 @@
+---
+title: "Delete Cohort"
+description: "Deletes a cohort and removes all patient associations."
+api: "DELETE /medical/v1/cohort/{id}"
+---
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the cohort to delete.
+</ParamField>
+
+## Response
+`204` - No Content, upon successful delete.
+
+<ResponseExample>
+  ```javascript Metriport SDK
+  import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+  const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+  const cohortId = "018a80c4-292a-7486-a1234-9uiu76yhe234";
+  await metriport.deleteCohort(cohortId);
+  ```
+</ResponseExample>
