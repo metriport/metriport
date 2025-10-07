@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "1.29.7",
+  "version": "1.29.8",
   "description": "",
   "main": "app.js",
   "private": true,
@@ -45,6 +45,7 @@
     "aws-sdk": "^2.1243.0",
     "axios": "^1.8.2",
     "base64url": "^3.0.1",
+    "better-sse": "^0.15.1",
     "convert-units": "^2.3.4",
     "cors": "^2.8.5",
     "dayjs": "^1.11.9",

@@ -250,6 +250,7 @@ type EnvConfigBase = {
     startScheduledPatientJobsScheduleExpression: string;
     startScheduledPatientJobsSchedulerUrl: string;
   };
+  aiBriefBucketName: string;
 };
 
 export type EnvConfigNonSandbox = EnvConfigBase & {
