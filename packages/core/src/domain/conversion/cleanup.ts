@@ -3,7 +3,8 @@ export const xmlTranslationCodeRegex = /(<translation[^>]*\scode=")([^"]*?)(")/g
 export const LESS_THAN = "&lt;";
 export const GREATER_THAN = "&gt;";
 const AMPERSAND = "&amp;";
-const UNESCAPED_AMPERSAND_REGEX = /&(?!((?:lt|gt|amp|quot|apos);|#[0-9]+;|#x[0-9A-Fa-f]+;))/g;
+const UNESCAPED_AMPERSAND_REGEX =
+  /&(?!((?:lt|gt|amp|quot|apos|nbsp|ndash|mdash|copy|reg|trade|bullet);|#[0-9]+;|#x[0-9A-Fa-f]+;))/g;
 
 export function cleanUpPayload(payloadRaw: string): string {
   const payloadNoCdUnk = replaceCdUnkString(payloadRaw);
