@@ -56,7 +56,7 @@ export async function generateAiBriefBundleEntry({
 
     if (aiBriefContent) {
       const aiBriefFhirResource = generateAiBriefFhirResource(aiBriefContent);
-      await uploadAiBriefToS3(aiBriefFhirResource, cxId, patientId, log);
+      await uploadAiBriefToS3({ aiBriefFhirResource, cxId, patientId, log });
       return buildBundleEntry(aiBriefFhirResource);
     }
     return undefined;
@@ -77,12 +77,17 @@ export async function generateAiBriefBundleEntry({
   return undefined;
 }
 
-async function uploadAiBriefToS3(
-  aiBriefFhirResource: Binary,
-  cxId: string,
-  patientId: string,
-  log: typeof console.log
-) {
+async function uploadAiBriefToS3({
+  aiBriefFhirResource,
+  cxId,
+  patientId,
+  log,
+}: {
+  aiBriefFhirResource: Binary;
+  cxId: string;
+  patientId: string;
+  log: typeof console.log;
+}): Promise<void> {
   try {
     const aiBriefWrappedInBundle = buildBundleFromResources({
       resources: [aiBriefFhirResource],
@@ -116,7 +121,7 @@ async function uploadAiBriefToS3(
  * @param log - The log function.
  * @returns The AI Brief bundle entry.
  */
-export async function getAiBriefFromS3({
+export async function getCachedAiBriefFromS3({
   cxId,
   patientId,
   bundle,

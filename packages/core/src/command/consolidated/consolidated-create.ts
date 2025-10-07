@@ -3,7 +3,7 @@ import { errorToString } from "@metriport/shared";
 import { parseFhirBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { generateAiBriefBundleEntry, getAiBriefFromS3 } from "../../domain/ai-brief/generate";
+import { generateAiBriefBundleEntry, getCachedAiBriefFromS3 } from "../../domain/ai-brief/generate";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
@@ -149,12 +149,14 @@ export async function createConsolidatedFromConversions({
     }
   }
 
-  const shouldGetAiBriefFromS3 =
+  const shouldUseCachedAiBrief =
     isAiBriefFeatureFlagEnabled && useCachedAiBrief && bundle.entry && bundle.entry.length > 0;
 
-  if (shouldGetAiBriefFromS3) {
+  //Generates AI brief if it doesn't exist in S3
+  if (shouldUseCachedAiBrief) {
     const aiBriefEntry = await generateAiBriefWithTimeout(
-      controls => getAiBriefFromS3({ cxId, patientId, bundle, log, aiBriefControls: controls }),
+      controls =>
+        getCachedAiBriefFromS3({ cxId, patientId, bundle, log, aiBriefControls: controls }),
       cxId,
       patientId,
       log
