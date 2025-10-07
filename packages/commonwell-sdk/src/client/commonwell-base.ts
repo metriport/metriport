@@ -52,7 +52,7 @@ export class CommonWellBase {
   }) {
     this.rsaPrivateKey = rsaPrivateKey;
     this.httpsAgent = new Agent({ cert: orgCert, key: rsaPrivateKey });
-    this.onError500 = { ...defaultOnError500, ...options.onError500 };
+    this.onError500 = { ...defaultOnError500, ...(options.onError500 ?? {}) };
     this.api = axios.create({
       timeout: options?.timeout ?? DEFAULT_AXIOS_TIMEOUT_SECONDS * 1_000,
       baseURL:
