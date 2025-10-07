@@ -22,8 +22,9 @@ command.action(async ({ notifications }: { notifications?: boolean | undefined }
       : "Uploading roster for historical data"
   );
   const client = new QuestSftpClient({ logLevel: "debug" });
-  const handler = new QuestUploadRosterHandlerDirect(client, notifications);
-  await handler.generateAndUploadLatestQuestRoster();
+  const rosterType = notifications ? "notifications" : "backfill";
+  const handler = new QuestUploadRosterHandlerDirect(client);
+  await handler.generateAndUploadLatestQuestRoster({ rosterType });
   console.log("Upload of Quest roster completed");
 });
 

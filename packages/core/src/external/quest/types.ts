@@ -21,6 +21,8 @@ export const questRosterResponseSchema = z.object({
 
 export type QuestRosterResponse = z.infer<typeof questRosterResponseSchema>;
 
+export type QuestRosterType = "notifications" | "backfill";
+
 /**
  * A Quest response file may be prefixed with "Sweep_" or ""
  */

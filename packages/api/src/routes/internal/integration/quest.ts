@@ -6,8 +6,10 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { getQuestRoster } from "../../../command/medical/patient/get-quest-roster";
+import { QuestRosterType } from "@metriport/core/external/quest/types";
 import { QuestUploadRosterHandlerCloud } from "@metriport/core/external/quest/command/upload-roster/upload-roster-cloud";
 import { QuestDownloadResponseHandlerCloud } from "@metriport/core/external/quest/command/download-response/download-response-cloud";
+import { Subscriptions } from "@metriport/core/domain/patient-settings";
 import { Pagination } from "../../../command/pagination";
 import { dtoFromModel as dtoFromPatientModel, PatientDTO } from "../../medical/dtos/patientDTO";
 import { dtoFromModel as dtoFromPatientMappingModel } from "../../medical/dtos/patient-mapping";
@@ -19,6 +21,18 @@ import { questSource } from "@metriport/shared/interface/external/quest/source";
 
 dayjs.extend(duration);
 const router = Router();
+
+const settingsKeyForRosterType: Record<
+  QuestRosterType,
+  keyof Pick<Subscriptions, "questNotifications" | "questBackfill">
+> = {
+  backfill: "questBackfill",
+  notifications: "questNotifications",
+};
+
+function isRosterType(rosterType: string): rosterType is QuestRosterType {
+  return rosterType in settingsKeyForRosterType;
+}
 
 /** ---------------------------------------------------------------------------
  * GET /internal/quest/roster/:rosterType
@@ -38,11 +52,11 @@ router.get(
   "/roster/:rosterType",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const rosterType = getFromParamsOrFail("rosterType", req);
-    if (rosterType !== "backfill" && rosterType !== "notifications") {
+    const rosterType = getFromParamsOrFail("rosterType", req) as QuestRosterType;
+    const settingsKey = settingsKeyForRosterType[rosterType];
+    if (!settingsKey) {
       return res.sendStatus(status.BAD_REQUEST);
     }
-    const notifications = rosterType === "notifications";
 
     const { meta, items } = await paginated({
       request: req,
@@ -50,7 +64,7 @@ router.get(
       getItems: (pagination: Pagination) => {
         return getQuestRoster({
           pagination,
-          notifications,
+          settingsKey,
         });
       },
       getTotalCount: () => {
@@ -80,11 +94,15 @@ router.get(
  * @returns 200 OK
  */
 router.post(
-  "/upload-roster",
+  "/upload-roster/:rosterType",
   requestLogger,
-  asyncHandler(async (_: Request, res: Response) => {
+  asyncHandler(async (req: Request, res: Response) => {
+    const rosterType = getFromParamsOrFail("rosterType", req);
+    if (!isRosterType(rosterType)) {
+      return res.sendStatus(status.BAD_REQUEST);
+    }
     const handler = new QuestUploadRosterHandlerCloud();
-    await handler.generateAndUploadLatestQuestRoster();
+    await handler.generateAndUploadLatestQuestRoster({ rosterType });
     return res.sendStatus(status.OK);
   })
 );

@@ -2,7 +2,7 @@ import { MetriportError } from "@metriport/shared";
 import { Config } from "../../util/config";
 import { SftpClient } from "../sftp/client";
 import { generateQuestRoster } from "./roster";
-import { QuestSftpConfig, QuestResponseFile } from "./types";
+import { QuestSftpConfig, QuestResponseFile, QuestRosterType } from "./types";
 import { QuestReplica } from "./replica";
 
 export class QuestSftpClient extends SftpClient {
@@ -30,12 +30,8 @@ export class QuestSftpClient extends SftpClient {
    * Generates a new roster file and uploads it to the Quest SFTP server. If this client is configured
    * with a replica, it will also upload the roster file to the S3 replica bucket.
    */
-  async generateAndUploadRoster({
-    notifications,
-  }: {
-    notifications?: boolean | undefined;
-  }): Promise<void> {
-    const { rosterFileName, rosterContent } = await generateQuestRoster({ notifications });
+  async generateAndUploadRoster({ rosterType }: { rosterType: QuestRosterType }): Promise<void> {
+    const { rosterFileName, rosterContent } = await generateQuestRoster({ rosterType });
     try {
       await this.connect();
       await this.writeToQuest(rosterFileName, rosterContent);

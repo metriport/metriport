@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import { executeWithNetworkRetries } from "@metriport/shared";
 import { Config } from "../../util/config";
 import { Patient } from "@metriport/shared/domain/patient";
-import { questRosterResponseSchema } from "./types";
+import { questRosterResponseSchema, QuestRosterType } from "./types";
 import { buildRosterFileName } from "./file/file-names";
 import { buildRosterFile } from "./file/file-generator";
 import { out, LogFunction } from "../../util";
@@ -13,37 +13,33 @@ const QUEST_ROSTER_ROUTE = "/internal/quest/roster";
 const NUMBER_OF_ATTEMPTS = 3;
 const BASE_DELAY = dayjs.duration({ milliseconds: 100 });
 
-function getQuestRosterRoute(notifications?: boolean | undefined) {
-  return QUEST_ROSTER_ROUTE + (notifications ? "/notifications" : "/backfill");
-}
-
 export async function generateQuestRoster({
-  notifications,
+  rosterType,
 }: {
-  notifications?: boolean | undefined;
+  rosterType: QuestRosterType;
 }): Promise<{
   rosterFileName: string;
   rosterContent: Buffer;
 }> {
   const { log } = out("QuestRoster");
-  const enrolledPatients = await getAllEnrolledPatients({ notifications, log });
+  const enrolledPatients = await getAllEnrolledPatients({ rosterType, log });
   const rosterContent = buildRosterFile(enrolledPatients);
   log(`Generated roster file with ${enrolledPatients.length} patients`);
 
-  const rosterFileName = buildRosterFileName({ notifications });
+  const rosterFileName = buildRosterFileName({ rosterType });
   await storeRosterInS3(rosterFileName, rosterContent, log);
   return { rosterFileName, rosterContent };
 }
 
 async function getAllEnrolledPatients({
-  notifications,
+  rosterType,
   log,
 }: {
-  notifications?: boolean | undefined;
+  rosterType: QuestRosterType;
   log: LogFunction;
 }): Promise<Patient[]> {
   const enrolledPatients: Patient[] = [];
-  const questRosterRoute = getQuestRosterRoute(notifications);
+  const questRosterRoute = `${QUEST_ROSTER_ROUTE}/${rosterType}`;
   let currentUrl: string | undefined = Config.getApiUrl() + questRosterRoute;
   while (currentUrl) {
     const response = await getWithNetworkRetries(currentUrl, log);

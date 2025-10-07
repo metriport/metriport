@@ -1,3 +1,8 @@
+import { QuestRosterType } from "../../types";
 export interface QuestUploadRosterHandler {
-  generateAndUploadLatestQuestRoster(): Promise<void>;
+  generateAndUploadLatestQuestRoster({
+    rosterType,
+  }: {
+    rosterType: QuestRosterType;
+  }): Promise<void>;
 }

@@ -9,21 +9,21 @@ import {
   findFirstPatientMappingForSource,
   createPatientMapping,
 } from "../../../command/mapping/patient";
+import { Subscriptions } from "@metriport/core/domain/patient-settings";
 import { PatientModelReadOnly } from "../../../models/medical/patient-readonly";
 import { PatientSettingsModel } from "../../../models/patient-settings";
 import { Pagination, getPaginationFilters, getPaginationLimits } from "../../pagination";
 
 export type GetQuestRosterParams = {
   pagination?: Pagination;
-  notifications?: boolean;
+  settingsKey: keyof Pick<Subscriptions, "questNotifications" | "questBackfill">;
 };
 
 const MAX_ATTEMPTS_TO_CREATE_EXTERNAL_ID = 2;
 const EXTERNAL_ID_LOOKUP_CONCURRENCY = 10;
 
-function getCommonQueryOptions({ pagination, notifications }: GetQuestRosterParams) {
+function getCommonQueryOptions({ pagination, settingsKey }: GetQuestRosterParams) {
   const order: Order = [["id", "DESC"]];
-  const settingsKey = notifications ? "questMonitoring" : "quest";
 
   return {
     where: {
@@ -53,14 +53,14 @@ function getCommonQueryOptions({ pagination, notifications }: GetQuestRosterPara
 
 export async function getQuestRoster({
   pagination,
-  notifications,
+  settingsKey,
 }: GetQuestRosterParams): Promise<Patient[]> {
   const { log } = out(`Quest roster`);
   log(`Pagination params: ${JSON.stringify(pagination)}`);
 
   try {
     const findOptions: FindOptions<PatientModelReadOnly> = {
-      ...getCommonQueryOptions({ pagination, notifications }),
+      ...getCommonQueryOptions({ pagination, settingsKey }),
     };
 
     const patientResults = await PatientModelReadOnly.findAll(findOptions);

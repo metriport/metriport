@@ -19,7 +19,8 @@ describe("parseResponseFileName", () => {
 
   it("builds a roster file name", () => {
     expect(buildRosterFileName()).toBe("Metriport_backfill_20250101.txt");
-    expect(buildRosterFileName({ notifications: true })).toBe(
+    expect(buildRosterFileName({ rosterType: "backfill" })).toBe("Metriport_backfill_20250101.txt");
+    expect(buildRosterFileName({ rosterType: "notifications" })).toBe(
       "Metriport_notifications_20250101.txt"
     );
   });
