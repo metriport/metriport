@@ -149,21 +149,18 @@ export async function getCachedAiBriefOrGenerateNewOne({
     const aiBrief = await s3Utils.getFileContentsAsString(Config.getAiBriefBucketName(), filePath);
 
     if (!aiBrief) {
-      log(`No AI Brief found in S3, generating new one`);
-      return await generateAiBriefBundleEntry(params);
+      throw new Error("No AI Brief found in S3");
     }
 
     log(`Got AI Brief from S3`);
     const aiBriefBundle = parseFhirBundle(aiBrief) as Bundle<Binary>;
     if (!aiBriefBundle) {
-      log(`Failed to parse AI Brief bundle, generating new one`);
-      return await generateAiBriefBundleEntry(params);
+      throw new Error("Failed to parse AI Brief bundle");
     }
 
     const aiBriefResource = getAiBriefResourceFromBundle(aiBriefBundle);
     if (!aiBriefResource) {
-      log(`No AI Brief resource found in bundle, generating new one`);
-      return await generateAiBriefBundleEntry(params);
+      throw new Error("No AI Brief resource found in bundle");
     }
 
     return buildBundleEntry(aiBriefResource);
