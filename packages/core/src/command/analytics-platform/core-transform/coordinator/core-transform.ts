@@ -1,5 +1,6 @@
 export type ProcessCoreTransformRequest = {
   cxId: string;
+  jobId: string;
   databaseName: string;
   schemaName: string;
 };
