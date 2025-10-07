@@ -23,6 +23,11 @@ export type QuestRosterResponse = z.infer<typeof questRosterResponseSchema>;
 
 export type QuestRosterType = "notifications" | "backfill";
 
+export interface QuestPatientRequest {
+  cxId: string;
+  patientId: string;
+}
+
 /**
  * A Quest response file may be prefixed with "Sweep_" or ""
  */
