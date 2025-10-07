@@ -2,6 +2,7 @@ import {
   CommonPrefix,
   CopyObjectCommand,
   DeleteObjectCommand,
+  DeleteObjectsCommand,
   HeadObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
@@ -53,6 +54,20 @@ export type FileInfoNotExists = {
   eTag?: never;
   createdAt?: never;
   metadata?: never;
+};
+
+export type S3Object = {
+  key: string;
+  lastModified?: Date | undefined;
+  eTag?: string | undefined;
+  size?: number | undefined;
+  storageClass?: string | undefined;
+  owner?:
+    | {
+        displayName?: string | undefined;
+        id?: string | undefined;
+      }
+    | undefined;
 };
 
 export type GetSignedUrlWithBucketAndKey = {
@@ -528,12 +543,14 @@ export class S3Utils {
   }
 
   async deleteFile({ bucket, key }: { bucket: string; key: string }): Promise<void> {
-    const deleteParams = {
+    const deleteParams = new DeleteObjectCommand({
       Bucket: bucket,
       Key: key,
-    };
+    });
     try {
-      await executeWithRetriesS3(() => this._s3.deleteObject(deleteParams).promise());
+      await executeWithRetriesS3(async () => {
+        await this.s3Client.send(deleteParams);
+      });
     } catch (error) {
       const { log } = out("deleteFile");
       log(`Error during file deletion: ${errorToString(error)}`);
@@ -542,14 +559,17 @@ export class S3Utils {
   }
 
   async deleteFiles({ bucket, keys }: { bucket: string; keys: string[] }): Promise<void> {
-    const deleteParams = {
+    const deleteParams = new DeleteObjectsCommand({
       Bucket: bucket,
       Delete: {
         Objects: keys.map(key => ({ Key: key })),
+        Quiet: true,
       },
-    };
+    });
     try {
-      await executeWithRetriesS3(() => this._s3.deleteObjects(deleteParams).promise());
+      await executeWithRetriesS3(async () => {
+        await this.s3Client.send(deleteParams);
+      });
     } catch (error) {
       const { log } = out("deleteFiles");
       log(`Error during files deletion: ${errorToString(error)}`);
@@ -557,6 +577,7 @@ export class S3Utils {
     }
   }
 
+  /** @deprecated Use `listObjectsV3` instead */
   async listObjects(
     bucket: string,
     prefix: string,
@@ -578,6 +599,49 @@ export class S3Utils {
       );
       if (res.Contents) {
         allObjects.push(...res.Contents);
+      }
+      continuationToken = res.NextContinuationToken;
+    } while (continuationToken);
+    return allObjects;
+  }
+
+  async listObjectsV3(
+    bucket: string,
+    prefix: string,
+    options: { maxAttempts?: number } = {}
+  ): Promise<S3Object[]> {
+    const allObjects: S3Object[] = [];
+    let continuationToken: string | undefined;
+    do {
+      const res = await executeWithRetriesS3(
+        () =>
+          this.s3Client.send(
+            new ListObjectsV2Command({
+              Bucket: bucket,
+              Prefix: prefix,
+              ...(continuationToken ? { ContinuationToken: continuationToken } : {}),
+            })
+          ),
+        options
+      );
+      if (res.Contents) {
+        for (const obj of res.Contents) {
+          if (obj.Key) {
+            allObjects.push({
+              key: obj.Key,
+              lastModified: obj.LastModified,
+              eTag: obj.ETag,
+              size: obj.Size,
+              storageClass: obj.StorageClass,
+              owner: obj.Owner
+                ? {
+                    displayName: obj.Owner.DisplayName,
+                    id: obj.Owner.ID,
+                  }
+                : undefined,
+            });
+          }
+        }
       }
       continuationToken = res.NextContinuationToken;
     } while (continuationToken);
