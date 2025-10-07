@@ -9,6 +9,7 @@ import {
   snowflakeCredsSchema,
 } from "../external/snowflake/creds";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
+import { MetriportError } from "@metriport/shared";
 
 /**
  * Shared configs, still defining how to work with this. For now:
@@ -409,7 +410,11 @@ export class Config {
     return getEnvVarOrFail("ANALYTICS_BUCKET_NAME");
   }
   static getAnalyticsDbCreds(): DbCreds {
-    return dbCredsSchema.parse(getEnvVarOrFail("ANALYTICS_DB_CREDS"));
+    try {
+      return dbCredsSchema.parse(JSON.parse(getEnvVarOrFail("ANALYTICS_DB_CREDS")));
+    } catch (error) {
+      throw new MetriportError("Error parsing analytics db creds", error);
+    }
   }
 
   // ENG-536 remove this once we automatically find the discharge summary

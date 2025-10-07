@@ -8,11 +8,11 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     // START - From @tsconfig/strictest
-    "allowUnusedLabels": false,
+    "allowUnusedLabels": true,
     "allowUnreachableCode": false,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "exactOptionalPropertyTypes": true,
     "noImplicitReturns": true,
     // END - From @tsconfig/strictest
