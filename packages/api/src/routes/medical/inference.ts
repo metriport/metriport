@@ -15,6 +15,7 @@ const router = Router();
 const resourceSummaryInferenceSchema = z.object({
   resourceType: z.string(),
   resourceDisplays: z.array(z.string()),
+  resourceRowData: z.record(z.unknown()),
   context: z.string(),
 });
 
@@ -108,7 +109,12 @@ router.post(
 
     agent.addUserMessageText(
       `
-      This is about a patient - ${resourceType}: ${resourceDisplays.join(", ")}
+      This is about a patient.
+      The resource type is: ${resourceType}
+      The resource displays are: ${resourceDisplays.join(", ")}
+      The core relevant data for this resource is: ${JSON.stringify(resourceRowData, null, 2)}
+
+      ---
       
       ### Citing claims
       In your response, create a source list at the bottom. These sources MUST use markdown link syntax, but have the link point to the UUID of the resource that contains proof of the claim.
