@@ -6,8 +6,32 @@ description: "Group and enable settings for your patients."
 
 # Overview
 
-Metriport supports **Cohorts** - a way to create groups of patients for use within both your own system and Metriport.
-If you use Metriport to monitor patients for anything from ADT notifications to laboratory data, you'll do that by adding your patients to Cohorts.
+Cohorts allow you to configure settings for monitoring individuals' health in real-time. For example, you could create one cohort to monitor a group of chronically-ill individuals with all features enabled (ie ADTs, pharmacies, labs, HIE), and another cohort that monitors a less critical group of individuals with just HIE data enabled
+
+### Getting started
+
+Every cohort has a name and a collection of settings which apply to all patients within that cohort.
+By default, you have 3 cohorts with the following names + behaviors:
+
+<Note>
+  Names are full caps only (this will be done for you) E.G.,
+  "Low Risk" -> "LOW RISK"
+</Note>
+- LOW RISK ( 🟢 ): monthly medical record refresh - MEDIUM RISK
+( 🟡 ): monthly medical record refresh & prescription medication
+history - HIGH RISK ( 🔴 ): **weekly medical record refresh**,
+and monitoring enabled for all available sources{" "}
+
+<Note>
+  All of this can be personalized based on your needs,
+  either during onboarding or self-serve, via our API (See
+  our API reference for documentation on how to [update an
+  existing
+  cohort](/medical-api/api-reference/cohort/update-cohort)
+  or [add existing patients to a
+  cohort](/medical-api/api-reference/cohort/add-patients-to-cohort)).
+</Note>
+
 
 ### The Cohort Model
 
@@ -23,34 +47,47 @@ or retrieve the members of that cohort via API.
       "adt": true,
       "pharmacy": true,
       "hie": true,
-      "laboratory": true,
-    },
+      "laboratory": true
+    }
   }
 }
 ```
 
-### Getting started
 
-Every cohort has a name and a collection of settings which apply to all patients within that cohort.
-By default, you have 3 cohorts with the following names + behaviors:
+## Available settings
 
-<Note>
-  Names are full caps only (this will be done for you) E.G.,
-  "Low Risk" -> "LOW RISK"
-</Note>
-- LOW RISK ( 🟢 ): monthly medical record refresh  
-- MEDIUM RISK ( 🟡 ): monthly medical record refresh & prescription medication history  
-- HIGH RISK ( 🔴 ): **weekly medical record refresh**, and monitoring enabled for all available sources  
+### Example:
 
-<Note>
-  All of this can be personalized based on your needs,
-  either during onboarding or self-serve, via our API (See
-  our API reference for documentation on how to [update an
-  existing
-  cohort](/medical-api/api-reference/cohort/update-cohort)
-  or [add existing patients to a
-  cohort](/medical-api/api-reference/cohort/add-patients-to-cohort)).
-</Note>
+```json
+{
+  "settings": {
+    "monitoring": {
+      "adt": ["Hixny"],
+      "pharmacy": true,
+      "hie": true,
+      "laboratory": true
+    }
+  }
+}
+```
+
+### Settings fields fields
+
+Enable monitoring for certain data sources.
+
+- **`monitoring.adt`** — _allowed values: `true` or `false` or ["HieName", "HieName", ...], default: false_  
+  Subscribes the patient(s) to **ADT notifications** based on the patient’s **primary address state**.  
+  To force-enable for a specific state HIE instead of using the primary address state, simply input the name of the HIE(s) in an array.
+
+- **`monitoring.pharmacy`** — _allowed values: `true` or `false`, default: false_  
+  Enables **pharmacy / medication history** monitoring (e.g., retail fill data) where available.
+
+- **`monitoring.hie`** — _allowed values: `true` or `false`, default: true_  
+  Enables **HIE-based document monitoring / medical record refresh** (non-ADT).
+
+- **`monitoring.laboratory`** - _allowed values: `true` or `false`, default: false_  
+  Subscribes patient(s) for ongoing notifications of new labs
+
 
 ### Adding patients to cohorts
 
@@ -131,37 +168,3 @@ const patient = await metriportApi.createPatient(
 // from both the "High Risk" and "My Custom Cohort" cohorts
 // names will automatically be capatalized
 ```
-
-## Available monitoring settings
-
-### Example:
-
-```json
-{
-  "settings": {
-    "monitoring": {
-      "adt": ["Hixny"],
-      "pharmacy": true,
-      "hie": true,
-      "laboratory": true,
-    },
-  }
-}
-```
-
-### Monitoring fields
-
-Enable monitoring for certain data sources.
-
-- **`monitoring.adt`** — _allowed values: `true` or `false` or ["HieName", "HieName", ...], default: false_  
-  Subscribes the patient(s) to **ADT notifications** based on the patient’s **primary address state**.  
-  To force-enable for a specific state HIE instead of using the primary address state, simply input the name of the HIE(s) in an array.
-
-- **`monitoring.pharmacy`** — _allowed values: `true` or `false`, default: false_  
-  Enables **pharmacy / medication history** monitoring (e.g., retail fill data) where available.
-
-- **`monitoring.hie`** — _allowed values: `true` or `false`, default: true_  
-  Enables **HIE-based document monitoring / medical record refresh** (non-ADT).
-
-- **`monitoring.laboratory`** - _allowed values: `true` or `false`, default: false_  
-  Subscribes patient(s) for ongoing notifications of new labs
