@@ -1,15 +1,15 @@
+import { MetriportError } from "@metriport/shared";
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
 import { DbCreds, dbCredsSchema } from "@metriport/shared/domain/db";
 import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
 import { SftpConfig } from "../external/sftp/types";
 import {
-  CustomSnowflakeSettings,
-  customSnowflakeSettingsSchema,
   SnowflakeCreds,
   snowflakeCredsSchema,
+  SnowflakeSettingsForAllCxs,
+  snowflakeSettingsForAllCxsSchema,
 } from "../external/snowflake/creds";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
-import { MetriportError } from "@metriport/shared";
 
 /**
  * Shared configs, still defining how to work with this. For now:
@@ -448,11 +448,23 @@ export class Config {
   static getSnowflakeConnectorQueueUrl(): string {
     return getEnvVarOrFail("SNOWFLAKE_CONNECTOR_QUEUE_URL");
   }
-  static getSnowflakeCreds(): SnowflakeCreds {
-    return snowflakeCredsSchema.parse(getEnvVarOrFail("SNOWFLAKE_CREDS"));
+  static getSnowflakeCredsForAllRegions(): SnowflakeCreds {
+    try {
+      return snowflakeCredsSchema.parse(
+        JSON.parse(getEnvVarOrFail("SNOWFLAKE_CREDS_FOR_ALL_REGIONS"))
+      );
+    } catch (error) {
+      throw new MetriportError("Error parsing snowflake creds", error);
+    }
   }
-  static getCustomSnowflakeSettings(): CustomSnowflakeSettings {
-    return customSnowflakeSettingsSchema.parse(getEnvVarOrFail("CUSTOM_SNOWFLAKE_SETTINGS"));
+  static getSnowflakeSettingsForAllCustomers(): SnowflakeSettingsForAllCxs {
+    try {
+      return snowflakeSettingsForAllCxsSchema.parse(
+        JSON.parse(getEnvVarOrFail("SNOWFLAKE_SETTINGS_FOR_ALL_CXS"))
+      );
+    } catch (error) {
+      throw new MetriportError("Error parsing snowflake settings for all customers", error);
+    }
   }
 
   static getRosterUploadSftpPasswordArn(): string {

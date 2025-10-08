@@ -82,16 +82,3 @@ export function parseResourceTypeFromConfigurationFileName(fileName: string): st
   }
   return resourceType;
 }
-
-export function buildCoreSchemaS3Prefix({ cxId }: { cxId: string }): string {
-  return `core-schema/cx=${cxId}`;
-}
-export function buildCoreTableS3Prefix({
-  cxId,
-  tableName,
-}: {
-  cxId: string;
-  tableName: string;
-}): string {
-  return `${buildCoreSchemaS3Prefix({ cxId })}/${tableName}.csv`;
-}

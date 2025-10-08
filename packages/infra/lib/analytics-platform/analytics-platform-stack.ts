@@ -1141,10 +1141,13 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
-    const snowflakeCreds = buildSecret(this, analyticsConfig.secretNames.SNOWFLAKE_CREDS);
-    const customSettingsPerCx = buildSecret(
+    const snowflakeCredsForAllRegions = buildSecret(
       this,
-      analyticsConfig.secretNames.SNOWFLAKE_CUSTOM_CX_SETTINGS
+      analyticsConfig.secretNames.SNOWFLAKE_CREDS_FOR_ALL_REGIONS
+    );
+    const snowflakeSettingsForAllCxs = buildSecret(
+      this,
+      analyticsConfig.secretNames.SNOWFLAKE_SETTINGS_FOR_ALL_CXS
     );
 
     const lambda = createLambda({
@@ -1156,8 +1159,8 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       envVars: {
         ANALYTICS_BUCKET_NAME: analyticsPlatformBucket.bucketName,
         FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
-        SNOWFLAKE_CREDS_ARN: snowflakeCreds.secretArn,
-        SNOWFLAKE_CUSTOM_CX_SETTINGS_ARN: customSettingsPerCx.secretArn,
+        SNOWFLAKE_CREDS_FOR_ALL_REGIONS_ARN: snowflakeCredsForAllRegions.secretArn,
+        SNOWFLAKE_SETTINGS_FOR_ALL_CXS_ARN: snowflakeSettingsForAllCxs.secretArn,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain, lambdaLayers.analyticsPlatform],
@@ -1167,7 +1170,8 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
 
     lambda.addEventSource(new SqsEventSource(queue, eventSource));
 
-    snowflakeCreds.grantRead(lambda);
+    snowflakeCredsForAllRegions.grantRead(lambda);
+    snowflakeSettingsForAllCxs.grantRead(lambda);
     analyticsPlatformBucket.grantReadWrite(lambda);
     featureFlagsTable.grantReadData(lambda);
 

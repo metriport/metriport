@@ -26,24 +26,39 @@ export const snowflakeInstanceCredsSchema = z.object({
 export const snowflakeCredsSchema = z.record(snowflakeRegionsSchema, snowflakeInstanceCredsSchema);
 export type SnowflakeCreds = z.infer<typeof snowflakeCredsSchema>;
 
-const constomSnowflakeSettingsForCxSchema = z.object({
+/**
+ * Snowflake settings for a given customer.
+ *
+ * Example of valid JSON for snowflakeSettingsForCxSchema:
+ * {
+ *   "region": "us-east-1",
+ *   "dbName": "cx-db-name",
+ *   "dbSchema": "cx-db-schema"
+ * }
+ */
+const snowflakeSettingsForCxSchema = z.object({
+  region: snowflakeRegionsSchema,
   dbName: z.string(),
   dbSchema: z.string(),
 });
+export type SnowflakeSettingsForCx = z.infer<typeof snowflakeSettingsForCxSchema>;
+
 /**
- * Definition of the custom snowflake settings for a given customer.
- * Optional, if not provided, the default snowflake settings will be used.
+ * Snowflake settings for all customers.
  *
- * Example of valid JSON for customSnowflakeSettingsSchema:
+ * Example of valid JSON for snowflakeSettingsForAllCxsSchema:
  * {
  *   "cxId": {
- *     "dbName": "my-db-name",
- *     "dbSchema": "my-db-schema"
+ *     "region": "us-east-1",
+ *     "dbName": "cx-db-name",
+ *     "dbSchema": "cx-db-schema"
+ *   },
+ *   "cxId2": {
+ *     "region": "us-west-2",
+ *     "dbName": "cx-db-name",
+ *     "dbSchema": "cx-db-schema"
  *   }
  * }
  */
-export const customSnowflakeSettingsSchema = z.record(
-  z.string(),
-  constomSnowflakeSettingsForCxSchema
-);
-export type CustomSnowflakeSettings = z.infer<typeof customSnowflakeSettingsSchema>;
+export const snowflakeSettingsForAllCxsSchema = z.record(z.string(), snowflakeSettingsForCxSchema);
+export type SnowflakeSettingsForAllCxs = z.infer<typeof snowflakeSettingsForAllCxsSchema>;

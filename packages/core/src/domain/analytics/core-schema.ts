@@ -1,1 +1,1 @@
-export const coreSchemaName = "raw";
+export const coreSchemaName = "raw_core";

@@ -3,21 +3,12 @@ import { Client } from "pg";
 import { capture, executeAsynchronously, out } from "../../../util";
 import { Config } from "../../../util/config";
 import { getCxDbName, getListTableNames, tableJobName } from "../csv-to-db/db-asset-defs";
-import { buildCoreTableS3Prefix } from "../fhir-to-csv/file-name";
-import { buildCoreExportJobId } from "./id";
-
-// import { S3Utils } from "../../../external/aws/s3";
-// import { buildCoreSchemaS3Prefix, buildCoreTableS3Prefix } from "../fhir-to-csv/file-name";
-// import { CreateStatement, TableDefinition } from "../sql";
-// import { getSnowflakeDataTypeString } from "../connectors/snowflake/data-mapping";
-// const coreExportJobIdColumnName = "core_export_job_id";
+import { buildAnalyticsIncrementalLocalOutputDirectory, buildCoreExportJobId } from "./shared";
+import { buildCoreTableS3Prefix } from "../connectors/core-export-shared";
 
 const numberOfParallelExportTablesIntoS3 = 10;
-// const numberOfParallelExportDefinitionsIntoS3 = 50;
 
 const coreExportJobIdColumnName = "core_export_job_id";
-
-const localEnvOutputDirectory = "/tmp/pg/output";
 
 /**
  * Exports the core data from Postgres to S3.
@@ -142,9 +133,6 @@ async function runExport({
       errors: errors.map(e => `${e.tableName}: ${e.error}`).join(", "),
     });
   }
-
-  // TODO eng-1179 Likely not needed b/c we'll try to have Snowflake create the schema based on the file structure on S3
-  // await exportCoreSchemaDefinition({ dbClient, cxId, bucketName, region, schemaName });
 }
 
 async function exportSingleTable({
@@ -165,7 +153,7 @@ async function exportSingleTable({
   region: string;
 }): Promise<void> {
   const cmd = Config.isDev()
-    ? getExportToS3CmdForLocalEnv({ coreExportJobId, schemaName, tableName })
+    ? getExportToS3CmdForLocalEnv({ cxId, coreExportJobId, schemaName, tableName })
     : getExportToS3CmdForCloudEnv({
         cxId,
         coreExportJobId,
@@ -194,170 +182,26 @@ function getExportToS3CmdForCloudEnv({
 }): string {
   const s3Key = buildCoreTableS3Prefix({ cxId, tableName });
   return `SELECT * from aws_s3.query_export_to_s3(
-    'SELECT *, ''${coreExportJobId}'' FROM ${schemaName}.${tableName}', 
+    'SELECT *, ''${coreExportJobId}'' as ${coreExportJobIdColumnName}  FROM ${schemaName}.${tableName}', 
     aws_commons.create_s3_uri('${bucketName}', '${s3Key}', '${region}'),
     options :='format csv, header true'
   )`;
 }
 
 function getExportToS3CmdForLocalEnv({
+  cxId,
   coreExportJobId,
   schemaName,
   tableName,
 }: {
+  cxId: string;
   coreExportJobId: string;
   schemaName: string;
   tableName: string;
 }): string {
+  const outputDirectory = buildAnalyticsIncrementalLocalOutputDirectory(cxId);
   return (
     `COPY (select *, '${coreExportJobId}' as ${coreExportJobIdColumnName} from ${schemaName}.${tableName}) ` +
-    `TO '${localEnvOutputDirectory}/${tableName}.csv' WITH (FORMAT CSV, HEADER)`
+    `TO '${outputDirectory}/${tableName}.csv' WITH (FORMAT CSV, HEADER)`
   );
 }
-
-/**
- * Exports the core schema definitions to S3.
- *
- * TODO: eng-954 likely not needed if we can make the snowflake code create the schema based on the file structure on S3
- */
-// async function exportCoreSchemaDefinition({
-//   cxId,
-//   dbClient,
-//   schemaName,
-//   bucketName,
-//   region,
-// }: {
-//   cxId: string;
-//   dbClient: Client;
-//   schemaName: string;
-//   bucketName: string;
-//   region: string;
-// }): Promise<void> {
-//   const { log } = out(`exportCoreSchemaDefinition - cx ${cxId}`);
-
-//   try {
-//     log(`Exporting core schema definitions...`);
-
-//     // Get table definitions from the core schema
-//     const tableDefinitions = await getTableDefinitions({ dbClient, schemaName });
-
-//     // Generate CREATE statements
-//     const createStatements = generateCreateStatements(tableDefinitions);
-
-//     // Upload to S3
-//     await uploadSchemaDefinitionsToS3({
-//       cxId,
-//       bucketName,
-//       region,
-//       createStatements,
-//     });
-
-//     log(`Successfully exported core schema definitions`);
-//   } catch (error) {
-//     log(`Error exporting core schema definitions: ${errorToString(error)}`);
-//     throw new MetriportError(`Failed to export core schema definitions`, error, {
-//       cxId,
-//       error: errorToString(error),
-//     });
-//   }
-// }
-
-// async function getTableDefinitions({
-//   dbClient,
-//   schemaName,
-// }: {
-//   dbClient: Client;
-//   schemaName: string;
-// }): Promise<TableDefinition[]> {
-//   const tableNames = await getTableNamesFromDb({ dbClient, schemaName });
-//   const query = `
-//     SELECT
-//       t.table_name,
-//       c.column_name,
-//       c.data_type
-//     FROM information_schema.tables t
-//     JOIN information_schema.columns c ON t.table_name = c.table_name
-//     WHERE t.table_schema = '${schemaName}'
-//       AND t.table_name in (${tableNames.map(name => `'${name}'`).join(", ")})
-//     ORDER BY t.table_name, c.ordinal_position;
-//   `;
-
-//   const result = await dbClient.query(query);
-
-//   // Group columns by table
-//   const tableMap = new Map<string, TableDefinition>();
-
-//   for (const row of result.rows) {
-//     const tableName = row.table_name;
-
-//     if (!tableMap.has(tableName)) {
-//       tableMap.set(tableName, {
-//         tableName,
-//         columns: [],
-//       });
-//     }
-//     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-//     const table = tableMap.get(tableName)!;
-//     table.columns.push({
-//       columnName: row.column_name,
-//       dataType: row.data_type,
-//     });
-//     // table.columns.push({
-//     //   columnName: coreExportJobIdColumnName,
-//     //   dataType: "string",
-//     // });
-//   }
-//   // table.columns.push({
-//   //   columnName: coreExportJobIdColumnName,
-//   //   dataType: "string",
-//   // });
-
-//   return Array.from(tableMap.values());
-// }
-
-// function generateCreateStatements(tableDefinitions: TableDefinition[]): CreateStatement[] {
-//   const statements: CreateStatement[] = [];
-
-//   for (const table of tableDefinitions) {
-//     const columnDefinitions: string[] = [];
-
-//     for (const column of table.columns) {
-//       const columnDef = `  "${column.columnName}" ${getSnowflakeDataTypeString(column)}`;
-//       columnDefinitions.push(columnDef);
-//     }
-
-//     const createStatement = `CREATE TABLE ${table.tableName} (\n${columnDefinitions.join(
-//       ",\n"
-//     )}\n);`;
-//     statements.push({ tableName: table.tableName, createStatement });
-//   }
-
-//   return statements;
-// }
-
-// async function uploadSchemaDefinitionsToS3({
-//   cxId,
-//   bucketName,
-//   region,
-//   createStatements,
-// }: {
-//   cxId: string;
-//   bucketName: string;
-//   region: string;
-//   createStatements: CreateStatement[];
-// }): Promise<void> {
-//   await executeAsynchronously(
-//     createStatements,
-//     async statement => {
-//       const s3Key = `${buildCoreSchemaS3Prefix({ cxId })}/_meta/${statement.tableName}.sql`;
-//       const s3Utils = new S3Utils(region);
-//       await s3Utils.uploadFile({
-//         bucket: bucketName,
-//         key: s3Key,
-//         file: Buffer.from(statement.createStatement),
-//         contentType: "text/plain",
-//       });
-//     },
-//     { numberOfParallelExecutions: numberOfParallelExportDefinitionsIntoS3 }
-//   );
-// }

@@ -1,15 +1,15 @@
 import { Config } from "../../../../util/config";
 import { SnowflakeIngestor } from "./snowflake-ingestor";
 import { SnowflakeIngestorCloud } from "./snowflake-ingestor-cloud";
-import { SnowflakeIngestorDirect } from "./snowflake-ingestor-direct";
+import { SnowflakeIngestorLocal } from "./snowflake-ingestor-local";
 
 export function buildSnowflakeIngestor(): SnowflakeIngestor {
   if (Config.isDev()) {
-    return new SnowflakeIngestorDirect(
+    return new SnowflakeIngestorLocal(
       Config.getAnalyticsBucketName(),
       Config.getAWSRegion(),
-      Config.getSnowflakeCreds(),
-      Config.getCustomSnowflakeSettings()
+      Config.getSnowflakeCredsForAllRegions(),
+      Config.getSnowflakeSettingsForAllCustomers()
     );
   }
   return new SnowflakeIngestorCloud();

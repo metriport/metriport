@@ -3,7 +3,7 @@ import { ingestCoreIntoSnowflake } from "@metriport/core/command/analytics-platf
 import { SnowflakeIngestorRequest } from "@metriport/core/command/analytics-platform/connectors/snowflake/snowflake-ingestor";
 import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import {
-  customSnowflakeSettingsSchema,
+  snowflakeSettingsForAllCxsSchema,
   snowflakeCredsSchema,
 } from "@metriport/core/external/snowflake/creds";
 import { controlDuration } from "@metriport/core/util/race-control";
@@ -29,8 +29,8 @@ const region = getEnvVarOrFail("AWS_REGION");
 // Set by us
 const featureFlagsTableName = getEnvVarOrFail("FEATURE_FLAGS_TABLE_NAME");
 const analyticsBucketName = getEnvVarOrFail("ANALYTICS_BUCKET_NAME");
-const snowflakeCredsSecretArn = getEnvVarOrFail("SNOWFLAKE_CREDS_ARN");
-const customDbNamesSecretArn = getEnvVarOrFail("SNOWFLAKE_CUSTOM_CX_SETTINGS_ARN");
+const snowflakeCredsForAllRegionsSecretArn = getEnvVarOrFail("SNOWFLAKE_CREDS_FOR_ALL_REGIONS_ARN");
+const snowflakeSettingsForAllCxsSecretArn = getEnvVarOrFail("SNOWFLAKE_SETTINGS_FOR_ALL_CXS_ARN");
 
 FeatureFlags.init(region, featureFlagsTableName);
 
@@ -56,22 +56,29 @@ export const handler = capture.wrapHandler(async (event: SNSEvent, context: Cont
     const log = prefixedLog(`cxId ${cxId}`);
     log(`Parsed: ${JSON.stringify(parsedBody)}`);
 
-    const snowflakeCredsRaw = await (getSecret(snowflakeCredsSecretArn) as Promise<
-      string | undefined
-    >);
-    if (!snowflakeCredsRaw) {
+    const snowflakeCredsForAllRegionsRaw = await (getSecret(
+      snowflakeCredsForAllRegionsSecretArn
+    ) as Promise<string | undefined>);
+    if (!snowflakeCredsForAllRegionsRaw) {
       throw new MetriportError(`Snowflake creds not found`, undefined, {
-        secretArn: snowflakeCredsRaw,
+        secretArn: snowflakeCredsForAllRegionsSecretArn,
       });
     }
-    const snowflakeCreds = snowflakeCredsSchema.parse(JSON.parse(snowflakeCredsRaw));
+    const snowflakeCredsForAllRegions = snowflakeCredsSchema.parse(
+      JSON.parse(snowflakeCredsForAllRegionsRaw)
+    );
 
-    const customSnowflakeSettingsRaw = await (getSecret(customDbNamesSecretArn) as Promise<
-      string | undefined
-    >);
-    const customSnowflakeSettings = customSnowflakeSettingsRaw
-      ? customSnowflakeSettingsSchema.parse(JSON.parse(customSnowflakeSettingsRaw))
-      : {};
+    const snowflakeSettingsForAllCxsRaw = await (getSecret(
+      snowflakeSettingsForAllCxsSecretArn
+    ) as Promise<string | undefined>);
+    if (!snowflakeSettingsForAllCxsRaw) {
+      throw new MetriportError(`Snowflake customer config not found`, undefined, {
+        secretArn: snowflakeSettingsForAllCxsSecretArn,
+      });
+    }
+    const snowflakeSettingsForAllCxs = snowflakeSettingsForAllCxsSchema.parse(
+      JSON.parse(snowflakeSettingsForAllCxsRaw)
+    );
 
     const remainingLambdaExecutionTime = Math.max(0, context.getRemainingTimeInMillis() - 200);
 
@@ -84,8 +91,8 @@ export const handler = capture.wrapHandler(async (event: SNSEvent, context: Cont
         cxId,
         bucketName: analyticsBucketName,
         region,
-        snowflakeCreds,
-        snowflakeCustomCxSettings: customSnowflakeSettings,
+        snowflakeCredsForAllRegions,
+        snowflakeSettingsForAllCxs,
       }),
       controlDuration(remainingLambdaExecutionTime, timedOutResp),
     ]);
