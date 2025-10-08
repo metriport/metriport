@@ -9,13 +9,6 @@
        (C) Dialysis procedures (treat as Stage 5),
      excluding known CKD (N18.*), then emit ONLY the single
      highest-severity CKD bucket per patient.
-
-   Severity order (worst → best):
-     ckd_stage5 (incl. dialysis) >
-     ckd_stage4 >
-     ckd_stage3b >
-     ckd_stage3a >
-     ckd_albuminuria
    ============================================================ */
 
 WITH ckd_dx_exclusion AS (
@@ -59,7 +52,6 @@ albumin_raw AS (
     lr.NORMALIZED_DESCRIPTION,
     lr.RESULT,
     COALESCE(NULLIF(lr.NORMALIZED_UNITS,''), NULLIF(lr.SOURCE_UNITS,'')) AS units_raw,
-    LOWER(TRIM(COALESCE(NULLIF(lr.NORMALIZED_UNITS,''), lr.SOURCE_UNITS))) AS units_lc,
     REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')   AS value_token,
     CAST(lr.RESULT_DATE AS DATE)                        AS obs_date,
     lr.DATA_SOURCE
@@ -71,7 +63,7 @@ albumin_raw AS (
 ),
 
 /* -------------------------
-   RAW: Dialysis procedures (code list join)
+   RAW: Dialysis procedures (code list inline)
    ------------------------- */
 dialysis_raw AS (
   SELECT
@@ -87,18 +79,34 @@ dialysis_raw AS (
 ),
 
 /* -------------------------
-   NORM: eGFR → canonical units & numeric
+   NORM: eGFR → canonical value (accept common ml/min/1.73 m2 variants)
    ------------------------- */
 egfr_norm AS (
   SELECT
     r.*,
-    TRY_TO_DOUBLE(r.value_token) AS value_egfr,
-    'mL/min/1.73 m2'             AS units
+    /* canonical numeric */
+    CASE
+      /* Build a compact key like 'mlmin173m2', 'mlminm2', 'mlmin', etc. */
+      WHEN (
+        REGEXP_REPLACE(LOWER(r.units_raw), '[^a-z0-9]+', '') LIKE 'mlmin%'
+        AND (
+          REGEXP_REPLACE(LOWER(r.units_raw), '[^a-z0-9]+', '') LIKE '%173%'
+          OR REGEXP_REPLACE(LOWER(r.units_raw), '[^a-z0-9]+', '') LIKE '%m2%'
+        )
+      ) THEN TRY_TO_DOUBLE(r.value_token)
+      /* Accept plain mL/min as well (some labs drop the index) */
+      WHEN REGEXP_REPLACE(LOWER(r.units_raw), '[^a-z0-9]+', '') = 'mlmin'
+        THEN TRY_TO_DOUBLE(r.value_token)
+      ELSE NULL
+    END AS value_egfr,
+    
+    /* canonical units for downstream */
+    'mL/min/1.73 m2' AS units,
   FROM egfr_raw r
 ),
 
 /* -------------------------
-   NORM: ACR → keep mg/g variants, canonical units & numeric
+   NORM: ACR → normalize to mg/g, handle common variants
    ------------------------- */
 albumin_norm AS (
   SELECT
@@ -106,17 +114,14 @@ albumin_norm AS (
 
     /* Numeric conversion to canonical mg/g */
     CASE
-      /* mg/g variants */
+      /* mg/g variants (incl. {creat}, _creat, CREAT) */
       WHEN LOWER(r.units_raw) ILIKE '%mg/g%' THEN TRY_TO_DOUBLE(r.value_token)
-
       /* ug/mg or mcg/mg variants (numerically equal to mg/g) */
       WHEN LOWER(r.units_raw) ILIKE '%ug/mg%'  THEN TRY_TO_DOUBLE(r.value_token)
       WHEN LOWER(r.units_raw) ILIKE '%mcg/mg%' THEN TRY_TO_DOUBLE(r.value_token)
-
       /* mg/mg → mg/g (×1000) */
       WHEN LOWER(r.units_raw) ILIKE '%mg/mg%'  THEN TRY_TO_DOUBLE(r.value_token) * 1000.0
-
-      /* everything else (e.g., '1', '{}', unknown) → drop */
+      /* everything else (e.g., '1', '{}', 'mg/dL', 'See') → drop */
       ELSE NULL
     END AS acr_mgg,
 
@@ -129,7 +134,15 @@ albumin_norm AS (
    NORM: Dialysis (no normalization) pass-through
    ------------------------- */
 dialysis_norm AS (
-  SELECT * FROM dialysis_raw
+  SELECT
+    PATIENT_ID,
+    resource_id,
+    resource_type,
+    NORMALIZED_CODE,
+    NORMALIZED_DESCRIPTION,
+    obs_date,
+    DATA_SOURCE
+  FROM dialysis_raw
 ),
 
 /* -------------------------
@@ -167,7 +180,7 @@ dialysis_clean AS (
 ),
 
 /* -------------------------
-   SUSPECT (A): eGFR stage mapping
+   SUSPECT (A): eGFR stage mapping + two-date rule
    ------------------------- */
 egfr_stage_map AS (
   SELECT
@@ -191,7 +204,6 @@ egfr_stage_map AS (
   FROM egfr_clean c
   WHERE c.value_egfr < 60
 ),
-
 egfr_two_date_patients AS (
   SELECT PATIENT_ID, suspect_group
   FROM egfr_stage_map
@@ -199,7 +211,6 @@ egfr_two_date_patients AS (
   GROUP BY PATIENT_ID, suspect_group
   HAVING COUNT(DISTINCT obs_date) >= 2
 ),
-
 egfr_suspects AS (
   SELECT
     m.PATIENT_ID,
@@ -246,8 +257,8 @@ albumin_suspects AS (
     c.acr_mgg AS value_num,
     c.obs_date,
     c.DATA_SOURCE,
-    'ckd_albuminuria'           AS suspect_group,
-    'N18.2'                     AS suspect_icd10_code,
+    'ckd_albuminuria'                 AS suspect_group,
+    'N18.2'                           AS suspect_icd10_code,
     'Chronic kidney disease, stage 2' AS suspect_icd10_short_description
   FROM albumin_clean c
 ),
@@ -267,9 +278,9 @@ dialysis_suspects AS (
     NULL        AS value_num,
     c.obs_date,
     c.DATA_SOURCE,
-    'ckd_stage5'                    AS suspect_group,
-    'N18.5'                         AS suspect_icd10_code,
-    'Chronic kidney disease, stage 5' AS suspect_icd10_short_description
+    'ckd_stage5'                        AS suspect_group,
+    'N18.5'                             AS suspect_icd10_code,
+    'Chronic kidney disease, stage 5'   AS suspect_icd10_short_description
   FROM dialysis_clean c
 ),
 
