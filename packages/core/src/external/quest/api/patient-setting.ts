@@ -1,4 +1,4 @@
-import { errorToString, executeWithNetworkRetries, NotFoundError } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import axios, { AxiosInstance } from "axios";
 import { z } from "zod";
 import { Config } from "../../../util/config";
@@ -35,13 +35,13 @@ export async function setPatientSetting(
     const data = patientSettingsResponseSchema.parse(response.data);
     return data;
   } catch (error) {
-    const msg = "Failure while getting patient mapping @ Api";
+    const msg = "Failure while setting patient setting @ Api";
     log(`${msg}. Cause: ${errorToString(error)}`);
-    throw new NotFoundError(msg, error, {
+    throw new MetriportError(msg, error, {
       cxId,
       patientId,
       url: getPatientMappingUrl,
-      context: "quest.getPatientMapping",
+      context: "quest.setPatientSetting",
     });
   }
 }
