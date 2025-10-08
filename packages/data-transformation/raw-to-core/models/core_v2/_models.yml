@@ -1,6 +1,22 @@
 version: 2
 
 models:
+  - name: core_v2__condition_encounter_map
+    columns:
+      - name: condition_id
+        tests:
+          - relationships:
+              to: ref('core_v2__condition')
+              field: condition_id
+              config:
+                severity: warn
+      - name: encounter_id
+        tests:
+          - relationships:
+              to: ref('core_v2__encounter')
+              field: encounter_id
+              config:
+                severity: warn
   - name: core_v2__condition
     alias: condition
     columns:
