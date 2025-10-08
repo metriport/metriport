@@ -50,7 +50,7 @@ export async function queryDocumentsAcrossHIEs({
   patientId,
   facilityId,
   requestId: requestIdParam,
-  forceDownload,
+  forceDownload = false,
   cxDocumentRequestMetadata,
   forcePatientDiscovery = false,
   forceCommonwell = false,

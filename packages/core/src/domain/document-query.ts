@@ -19,6 +19,7 @@ export type DocumentQueryProgress = Partial<
     requestId: string;
     startedAt: Date;
     triggerConsolidated: boolean;
+    forceDownload: boolean;
   }
 >;
 

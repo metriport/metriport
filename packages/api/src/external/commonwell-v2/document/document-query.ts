@@ -154,6 +154,7 @@ export async function queryAndProcessDocuments({
         patient: { id: patientId, cxId },
         source: MedicalDataSource.COMMONWELL,
         triggerConsolidated,
+        forceDownload,
       });
 
       if ((forcePatientDiscovery || isStale) && !isProcessing) {
