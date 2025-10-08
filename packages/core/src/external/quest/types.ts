@@ -23,8 +23,9 @@ export type QuestRosterResponse = z.infer<typeof questRosterResponseSchema>;
 
 export type QuestRosterType = "notifications" | "backfill";
 
+export const rosterTypeSchema = z.enum(["notifications", "backfill"]);
 export const questRosterRequestSchema = z.object({
-  rosterType: z.enum(["notifications", "backfill"]),
+  rosterType: rosterTypeSchema,
 });
 
 export type QuestRosterRequest = z.infer<typeof questRosterRequestSchema>;
