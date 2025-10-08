@@ -1,262 +1,256 @@
 /* ============================================================
+   MORBID OBESITY — SUSPECT QUERY (BMI ≥ 35)
+   ------------------------------------------------------------
+   Standard flow: RAW → NORM → CLEAN → SUSPECT → FHIR → RETURN
    Purpose
-   -------
-   Flag "morbid_obesity" suspects when:
-     (A) Direct BMI (LOINC 39156-5) >= 35, OR
-     (B) Derived BMI from weight (29463-7) and height (8302-2) >= 35,
-   while EXCLUDING patients who already have an obesity diagnosis.
-
-   Exclusions
-   ----------
-   - Patients with ICD-10-CM in ('E66.01','E66.2','E66.813')
-
-   Notes
-   -----
-   - Weight normalized to kg; height normalized to meters.
-   - Weight and height used for derived BMI are taken from the
-     SAME ENCOUNTER_ID (contemporaneous) and we pick the LATEST
-     such encounter per patient.
-   - TRY_TO_DOUBLE used to avoid errors on non-numeric RESULT.
-   - Embeds minimal FHIR in responsible_resources so the UI
-     can render without a consolidated bundle.
+     Flag morbid obesity suspects from:
+       (A) Direct BMI (LOINC 39156-5) ≥ 35, and/or
+       (B) Derived BMI from same-encounter Weight (29463-7) + Height (8302-2) ≥ 35.
+     Exclude patients already diagnosed with obesity.
    ============================================================ */
 
 WITH obesity_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM core_v2.CORE_V2__CONDITION c 
+  FROM core_v2.CORE_V2__CONDITION c
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
-    AND c.NORMALIZED_CODE IN ('E6601','E662','E66813')
+    AND c.NORMALIZED_CODE IN ('E6601','E662','E66813')  -- E66.01, E66.2, E66.813 (no dots in normalized_code)
 ),
 
-/* ------------------------------------------------------------
-   (A) Direct BMI path (LOINC 39156-5). Flags if BMI >= 35.
-   ------------------------------------------------------------ */
-bmi_direct AS (
+/* -------------------------
+   RAW
+   ------------------------- */
+bmi_raw AS (
   SELECT
     o.PATIENT_ID,
-    o.OBSERVATION_ID                                  AS resource_id,
-    'Observation'                                     AS resource_type,
-    /* suspect bucket */
-    'morbid_obesity'                                  AS suspect_group,
-    /* suspect diagnosis label (for review; not a diagnosis itself) */
-    'E66.01'                                          AS suspect_icd10_code,
-    'Morbid (severe) obesity due to excess calories'  AS suspect_icd10_short_description,
-
-    /* fields to build FHIR */
+    o.OBSERVATION_ID                                   AS resource_id,
+    'Observation'                                      AS resource_type,
     o.NORMALIZED_CODE,
     o.NORMALIZED_DESCRIPTION,
     o.RESULT,
-    o.OBSERVATION_DATE,
+    COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) AS units_raw,
+    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    CAST(o.OBSERVATION_DATE AS DATE)                   AS obs_date,
     o.DATA_SOURCE
-
   FROM core_v2.CORE_V2__OBSERVATION o
   WHERE o.NORMALIZED_CODE_TYPE ILIKE 'loinc'
-    AND o.NORMALIZED_CODE = '39156-5'                    -- BMI
-    AND TRY_TO_DOUBLE(o.RESULT) >= 35
-    AND NOT EXISTS (SELECT 1 FROM obesity_dx_exclusion x WHERE x.PATIENT_ID = o.PATIENT_ID)
+    AND o.NORMALIZED_CODE = '39156-5'            -- BMI
+    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
 ),
-
-/* ------------------------------------------------------------
-   Helpers: Weight and Height normalization
-   ------------------------------------------------------------ */
-
-/* Weight (29463-7) normalized to kilograms. */
-weights AS (
+weight_raw AS (
   SELECT
     o.PATIENT_ID,
     o.ENCOUNTER_ID,
-    o.OBSERVATION_ID,
-    o.OBSERVATION_DATE,
-    COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) AS units,
-    o.DATA_SOURCE,
+    o.OBSERVATION_ID                                   AS resource_id,
+    'Observation'                                      AS resource_type,
+    o.NORMALIZED_CODE,
+    o.NORMALIZED_DESCRIPTION,
+    o.RESULT,
+    COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) AS units_raw,
+    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    CAST(o.OBSERVATION_DATE AS DATE)                   AS obs_date,
+    o.DATA_SOURCE
+  FROM core_v2.CORE_V2__OBSERVATION o
+  WHERE o.NORMALIZED_CODE_TYPE ILIKE 'loinc'
+    AND o.NORMALIZED_CODE = '29463-7'            -- Body weight
+    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+),
+height_raw AS (
+  SELECT
+    o.PATIENT_ID,
+    o.ENCOUNTER_ID,
+    o.OBSERVATION_ID                                   AS resource_id,
+    'Observation'                                      AS resource_type,
+    o.NORMALIZED_CODE,
+    o.NORMALIZED_DESCRIPTION,
+    o.RESULT,
+    COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) AS units_raw,
+    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    CAST(o.OBSERVATION_DATE AS DATE)                   AS obs_date,
+    o.DATA_SOURCE
+  FROM core_v2.CORE_V2__OBSERVATION o
+  WHERE o.NORMALIZED_CODE_TYPE ILIKE 'loinc'
+    AND o.NORMALIZED_CODE = '8302-2'             -- Body height
+    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+),
+
+/* -------------------------
+   NORM (strict unit handling; no heuristics for missing/other units)
+   ------------------------- */
+bmi_norm AS (
+  SELECT
+    r.*,
+    TRY_TO_DOUBLE(r.value_token) AS bmi_value,
+    'kg/m2'                      AS units
+  FROM bmi_raw r
+),
+weight_norm AS (
+  SELECT
+    r.*,
     CASE
-      WHEN COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) ILIKE '%kg%'
-        THEN TRY_TO_DOUBLE(o.RESULT)
-      WHEN COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) ILIKE '%lb%'
-        THEN TRY_TO_DOUBLE(o.RESULT) * 0.45359237
-      /* Heuristics if units are missing: */
-      WHEN TRY_TO_DOUBLE(o.RESULT) BETWEEN 30 AND 500
-        THEN TRY_TO_DOUBLE(o.RESULT)                       -- plausible kg
-      WHEN TRY_TO_DOUBLE(o.RESULT) BETWEEN 70 AND 1100
-        THEN TRY_TO_DOUBLE(o.RESULT) * 0.45359237          -- plausible lb
+      WHEN r.units_raw ilike '%kg%' THEN TRY_TO_DOUBLE(r.value_token)
+      WHEN r.units_raw ilike '%lb%' THEN TRY_TO_DOUBLE(r.value_token) * 0.45359237
+      WHEN r.units_raw ilike '%oz%' THEN TRY_TO_DOUBLE(r.value_token) * 0.028349523125
       ELSE NULL
     END AS weight_kg
-  FROM core_v2.CORE_V2__OBSERVATION o
-  WHERE o.NORMALIZED_CODE_TYPE ILIKE 'loinc'
-    AND o.NORMALIZED_CODE = '29463-7'           -- Body weight
+  FROM weight_raw r
 ),
-
-/* Height (8302-2) normalized to meters. */
-heights AS (
+height_norm AS (
   SELECT
-    o.PATIENT_ID,
-    o.ENCOUNTER_ID,
-    o.OBSERVATION_ID,
-    o.OBSERVATION_DATE,
-    COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) AS units,
-    o.DATA_SOURCE,
+    r.*,
     CASE
-      WHEN COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) ILIKE '%m%'
-           AND COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) NOT ILIKE '%cm%'
-        THEN TRY_TO_DOUBLE(o.RESULT)                      -- meters
-      WHEN COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) ILIKE '%cm%'
-        THEN TRY_TO_DOUBLE(o.RESULT) / 100                -- centimeters -> meters
-      WHEN COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) ILIKE '%in%'
-        THEN TRY_TO_DOUBLE(o.RESULT) * 0.0254             -- inches -> meters
-      WHEN COALESCE(NULLIF(o.NORMALIZED_UNITS,''), o.SOURCE_UNITS) ILIKE '%ft%'
-        THEN TRY_TO_DOUBLE(o.RESULT) * 0.3048             -- feet -> meters
-      /* Heuristics if units are missing: */
-      WHEN TRY_TO_DOUBLE(o.RESULT) BETWEEN 1.0 AND 2.5
-        THEN TRY_TO_DOUBLE(o.RESULT)                      -- meters (1.0-2.5m)
-      WHEN TRY_TO_DOUBLE(o.RESULT) BETWEEN 100 AND 250
-        THEN TRY_TO_DOUBLE(o.RESULT) / 100                -- centimeters -> meters (100-250cm)
-      WHEN TRY_TO_DOUBLE(o.RESULT) BETWEEN 48 AND 100
-        THEN TRY_TO_DOUBLE(o.RESULT) * 0.0254             -- inches -> meters (48-100in)
+      WHEN r.units_raw ilike '%in%' THEN TRY_TO_DOUBLE(r.value_token) * 0.0254
+      WHEN r.units_raw ilike '%cm%' THEN TRY_TO_DOUBLE(r.value_token) / 100.0
       ELSE NULL
     END AS height_m
-  FROM core_v2.CORE_V2__OBSERVATION o
-  WHERE o.NORMALIZED_CODE_TYPE ILIKE 'loinc'
-    AND o.NORMALIZED_CODE = '8302-2'           -- Body height
+  FROM height_raw r
 ),
 
-/* Latest weight per patient+encounter. */
-latest_weight_per_enc AS (
+/* -------------------------
+   CLEAN
+   ------------------------- */
+bmi_clean AS (
   SELECT *
-  FROM weights
-  WHERE weight_kg IS NOT NULL
-  QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY PATIENT_ID, ENCOUNTER_ID
-    ORDER BY OBSERVATION_DATE DESC, OBSERVATION_ID DESC
-  ) = 1
+  FROM bmi_norm n
+  WHERE n.bmi_value IS NOT NULL
+    AND n.bmi_value BETWEEN 10 AND 120             -- plausibility
+    AND NOT EXISTS (SELECT 1 FROM obesity_dx_exclusion x WHERE x.PATIENT_ID = n.PATIENT_ID)
 ),
-
-/* Latest height per patient+encounter. */
-latest_height_per_enc AS (
+weight_clean AS (
   SELECT *
-  FROM heights
-  WHERE height_m IS NOT NULL
-  QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY PATIENT_ID, ENCOUNTER_ID
-    ORDER BY OBSERVATION_DATE DESC, OBSERVATION_ID DESC
-  ) = 1
+  FROM weight_norm n
+  WHERE n.weight_kg IS NOT NULL
+    AND n.weight_kg BETWEEN 20 AND 500             -- plausibility
+),
+height_clean AS (
+  SELECT *
+  FROM height_norm n
+  WHERE n.height_m IS NOT NULL
+    AND n.height_m BETWEEN 1.0 AND 2.5             -- plausibility
 ),
 
-/* Encounters with BOTH weight and height; pick latest such encounter per patient. */
-latest_encounter_pair AS (
+/* Build same-encounter weight+height pairs; compute derived BMI */
+bmi_derived_clean AS (
   SELECT
     w.PATIENT_ID,
     w.ENCOUNTER_ID,
-    w.OBSERVATION_ID AS weight_obs_id,
-    h.OBSERVATION_ID AS height_obs_id,
-    w.DATA_SOURCE    AS weight_data_source,
-    h.DATA_SOURCE    AS height_data_source,
-    w.weight_kg,
-    h.height_m,
-    GREATEST(w.OBSERVATION_DATE, h.OBSERVATION_DATE) AS pair_observation_date
-  FROM latest_weight_per_enc w
-  JOIN latest_height_per_enc h
-    ON h.PATIENT_ID  = w.PATIENT_ID
+    /* use weight obs id as the resource id for the derived BMI "observation" */
+    w.resource_id,
+    'Observation' AS resource_type,
+    '39156-5'     AS NORMALIZED_CODE,
+    'Body mass index (BMI)' AS NORMALIZED_DESCRIPTION,
+    TO_VARCHAR(w.weight_kg / NULLIF(h.height_m*h.height_m,0)) AS RESULT,
+    'kg/m2'       AS units,
+    (w.weight_kg / NULLIF(h.height_m*h.height_m,0)) AS bmi_value,
+    GREATEST(w.obs_date, h.obs_date) AS obs_date,
+    COALESCE(w.DATA_SOURCE, h.DATA_SOURCE) AS DATA_SOURCE
+  FROM weight_clean w
+  JOIN height_clean h
+    ON h.PATIENT_ID = w.PATIENT_ID
    AND h.ENCOUNTER_ID = w.ENCOUNTER_ID
-  QUALIFY ROW_NUMBER() OVER (
-    PARTITION BY w.PATIENT_ID
-    ORDER BY pair_observation_date DESC, weight_obs_id DESC, height_obs_id DESC
-  ) = 1
+  WHERE (w.weight_kg / NULLIF(h.height_m*h.height_m,0)) IS NOT NULL
+    AND (w.weight_kg / NULLIF(h.height_m*h.height_m,0)) BETWEEN 10 AND 120
+    AND NOT EXISTS (SELECT 1 FROM obesity_dx_exclusion x WHERE x.PATIENT_ID = w.PATIENT_ID)
 ),
 
-/* ------------------------------------------------------------
-   (B) Derived BMI from the latest same-encounter W+H pair.
-   ------------------------------------------------------------ */
-bmi_derived AS (
+/* -------------------------
+   SUSPECT
+   ------------------------- */
+bmi_direct_suspects AS (
   SELECT
-    p.PATIENT_ID,
-    /* Use weight observation id as the resource identity */
-    p.weight_obs_id                                 AS resource_id,
-    'Observation'                                   AS resource_type,
-    /* suspect bucket */
-    CASE WHEN (p.weight_kg / NULLIF(p.height_m * p.height_m, 0)) >= 35
-         THEN 'morbid_obesity_derived' ELSE NULL END AS suspect_group,
-    'E66.01'                                        AS suspect_icd10_code,
+    c.PATIENT_ID,
+    'morbid_obesity' AS suspect_group,
+    'E66.01'  AS suspect_icd10_code,
     'Morbid (severe) obesity due to excess calories' AS suspect_icd10_short_description,
-
-    /* fields to build FHIR */
-    '39156-5'                                       AS NORMALIZED_CODE,          -- BMI
-    'Body mass index (BMI)'                         AS NORMALIZED_DESCRIPTION,
-    /* RESULT as string for uniform downstream handling */
-    TO_VARCHAR(p.weight_kg / NULLIF(p.height_m * p.height_m, 0)) AS RESULT,
-    p.pair_observation_date                         AS OBSERVATION_DATE,
-    /* Prefer weight data source; fall back to height */
-    COALESCE(p.weight_data_source, p.height_data_source) AS DATA_SOURCE
-
-  FROM latest_encounter_pair p
-  WHERE (p.weight_kg / NULLIF(p.height_m * p.height_m, 0)) >= 35
-    AND NOT EXISTS (SELECT 1 FROM obesity_dx_exclusion x WHERE x.PATIENT_ID = p.PATIENT_ID)
+    c.resource_id,
+    c.resource_type,
+    c.NORMALIZED_CODE,
+    c.NORMALIZED_DESCRIPTION,
+    c.RESULT,
+    c.units,
+    c.bmi_value AS value_num,
+    c.obs_date,
+    c.DATA_SOURCE
+  FROM bmi_clean c
+  WHERE c.bmi_value >= 35
+),
+bmi_derived_suspects AS (
+  SELECT
+    d.PATIENT_ID,
+    'morbid_obesity_derived' AS suspect_group,
+    'E66.01'  AS suspect_icd10_code,
+    'Morbid (severe) obesity due to excess calories' AS suspect_icd10_short_description,
+    d.resource_id,
+    d.resource_type,
+    d.NORMALIZED_CODE,
+    d.NORMALIZED_DESCRIPTION,
+    d.RESULT,
+    d.units,
+    d.bmi_value AS value_num,
+    d.obs_date,
+    d.DATA_SOURCE
+  FROM bmi_derived_clean d
+  WHERE d.bmi_value >= 35
 ),
 
-/* Union direct and derived BMI flags with a consistent shape. */
-all_obesity_flags AS (
-  SELECT * FROM bmi_direct
+all_obesity_suspects AS (
+  SELECT * FROM bmi_direct_suspects
   UNION ALL
-  SELECT * FROM bmi_derived
+  SELECT * FROM bmi_derived_suspects
 ),
 
-/* Build minimal FHIR Observation JSON for each supporting resource. */
+/* -------------------------
+   FHIR
+   ------------------------- */
 obs_with_fhir AS (
   SELECT
-    f.PATIENT_ID,
-    f.suspect_group,
-    f.suspect_icd10_code,
-    f.suspect_icd10_short_description,
-
+    s.PATIENT_ID,
+    s.suspect_group,
+    s.suspect_icd10_code,
+    s.suspect_icd10_short_description,
     OBJECT_CONSTRUCT(
       'resourceType', 'Observation',
-      'id',            f.resource_id,
+      'id',            s.resource_id,
       'status',        'final',
       'code', OBJECT_CONSTRUCT(
-        'text',   NULLIF(f.NORMALIZED_DESCRIPTION, ''),
+        'text',   NULLIF(s.NORMALIZED_DESCRIPTION,''),
         'coding', ARRAY_CONSTRUCT(
           OBJECT_CONSTRUCT(
             'system',  'http://loinc.org',
-            'code',     f.NORMALIZED_CODE,
-            'display',  f.NORMALIZED_DESCRIPTION
+            'code',     s.NORMALIZED_CODE,
+            'display',  s.NORMALIZED_DESCRIPTION
           )
         )
       ),
-      /* Date → FHIR date string */
-      'effectiveDateTime', TO_CHAR(f.OBSERVATION_DATE, 'YYYY-MM-DD'),
-      /* Value: BMI numeric as Quantity (kg/m2); fallback string if needed */
-      'valueQuantity',
-        IFF(TRY_TO_DOUBLE(f.RESULT) IS NOT NULL,
-            OBJECT_CONSTRUCT(
-              'value', TRY_TO_DOUBLE(f.RESULT),
-              'unit',  'kg/m2'
-            ),
-            NULL),
-      'valueString',
-        IFF(TRY_TO_DOUBLE(f.RESULT) IS NULL, f.RESULT, NULL)
+      'effectiveDateTime', TO_CHAR(s.obs_date, 'YYYY-MM-DD'),
+      'valueQuantity', OBJECT_CONSTRUCT(
+        'value', s.value_num,
+        'unit',  'kg/m2'
+      ),
+      'valueString', IFF(TRY_TO_DOUBLE(s.RESULT) IS NULL, s.RESULT, NULL)
     ) AS fhir,
-
-    f.resource_id,
-    f.resource_type,
-    f.DATA_SOURCE AS data_source
-  FROM all_obesity_flags f
+    s.resource_id,
+    s.resource_type,
+    s.DATA_SOURCE AS data_source
+  FROM all_obesity_suspects s
 )
 
+/* -------------------------
+   RETURN
+   ------------------------- */
 SELECT
   PATIENT_ID,
   suspect_group,
   suspect_icd10_code,
   suspect_icd10_short_description,
-  /* Enriched responsible_resources for the UI */
   ARRAY_AGG(
     OBJECT_CONSTRUCT(
       'id',            resource_id,
-      'resource_type', resource_type,   -- "Observation"
-      'data_source',   data_source,     -- from OBSERVATION.DATA_SOURCE or derived pair
-      'fhir',          fhir             -- minimal FHIR payload
+      'resource_type', resource_type,
+      'data_source',   data_source,
+      'fhir',          fhir
     )
   ) AS responsible_resources,
   CURRENT_TIMESTAMP() AS last_run
 FROM obs_with_fhir
-WHERE suspect_group IS NOT NULL
 GROUP BY PATIENT_ID, suspect_group, suspect_icd10_code, suspect_icd10_short_description
 ORDER BY PATIENT_ID, suspect_group;
