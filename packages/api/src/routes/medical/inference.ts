@@ -15,7 +15,7 @@ const router = Router();
 const resourceSummaryInferenceSchema = z.object({
   resourceType: z.string(),
   resourceDisplays: z.array(z.string()),
-  resourceRowData: z.record(z.unknown()),
+  resourceRowData: z.record(z.unknown()).optional(),
   context: z.string(),
 });
 
@@ -106,16 +106,20 @@ router.post(
       questionsByResourceType[resourceType as keyof typeof questionsByResourceType] ??
       defaultQuestions;
 
+    const resourceRowDataString = resourceRowData
+      ? `The core data for the resource we are asking about is: ${JSON.stringify(
+          resourceRowData,
+          null,
+          2
+        )}`
+      : "";
+
     agent.addUserMessageText(
       `
       This is about a patient.
       The resource type is: ${resourceType}
       The resource displays are: ${resourceDisplays.join(", ")}
-      The core data for the resource we are asking about is: ${JSON.stringify(
-        resourceRowData,
-        null,
-        2
-      )}
+      ${resourceRowDataString}
 
       ---
       
