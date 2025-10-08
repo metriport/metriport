@@ -39,6 +39,7 @@
     "saml-server": "ts-node src/saml/saml-server",
     "load-test": "artillery run ./src/terminology/load-test.yml",
     "npi": "ts-node src/facility/make-npi",
+    "fhir-converter-dlq": "ts-node src/fhir/fhir-converter/download-dlq.ts",
     "fhir-demo": "ts-node src/fhir-sdk-demo.ts",
     "test-typing": "ts-node src/test-typing.ts",
     "preview-consolidated": "ts-node src/preview-consolidated.ts"
@@ -54,6 +55,7 @@
     "@aws-sdk/client-cognito-identity-provider": "^3.800.0",
     "@aws-sdk/client-healthlake": "^3.800.0",
     "@aws-sdk/client-lambda": "^3.865.0",
+    "@aws-sdk/client-sqs": "^3.906.0",
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
     "@metriport/commonwell-sdk-v1": "npm:@metriport/commonwell-sdk@^5.9.11",
