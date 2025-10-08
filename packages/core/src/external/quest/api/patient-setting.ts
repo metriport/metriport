@@ -14,15 +14,8 @@ const patientSettingsResponseSchema = z.object({
 
 export type PatientSettingsResponse = z.infer<typeof patientSettingsResponseSchema>;
 
-// {
-//   patientsFoundAndUpdated: number;
-//   patientsNotFound: string[]; // Always present - empty array if all found
-//   failedCount?: number; // Only present if some failed
-//   failedIds?: string[]; // Only present if some failed
-// }
-
 /**
- * Sets Quest-related patient subscriptions for
+ * Sets Quest-related patient subscriptions for a given patient.
  */
 export async function setPatientSetting(
   { cxId, patientId, backfill, notifications }: QuestPatientRequest,

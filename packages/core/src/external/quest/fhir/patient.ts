@@ -14,6 +14,9 @@ export function getPatient(
   detail: ResponseDetail,
   { patientId }: { patientId?: string | undefined } = {}
 ): Patient {
+  // Use the patientId provided as external context if available, otherwise generate a new UUID
+  const id = patientId ?? uuidv7();
+
   const name = getPatientName(detail);
   const identifier = getPatientIdentifier(detail);
   const address = getPatientAddress(detail);
@@ -24,7 +27,7 @@ export function getPatient(
 
   return {
     resourceType: "Patient",
-    id: patientId ?? uuidv7(),
+    id,
     ...(name ? { name } : {}),
     ...(identifier ? { identifier } : {}),
     ...(address ? { address } : {}),
