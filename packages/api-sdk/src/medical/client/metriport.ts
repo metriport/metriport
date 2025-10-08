@@ -761,7 +761,6 @@ export class MetriportMedicalApi {
    */
   async getCohortByName(name: string): Promise<{ cohort: CohortDTO }> {
     const normalizedName = normalizeCohortName(name);
-    console.log("\n\n\n\n\nnormalizedName", normalizedName);
     const resp = await this.api.get(`${COHORT_URL}`, { params: { name: normalizedName } });
     if (!resp.data) throw new Error("No cohort found with the given name");
     return { cohort: resp.data.cohorts[0] };
