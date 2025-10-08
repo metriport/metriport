@@ -1,4 +1,5 @@
 import { buildEhrSyncPatientHandler } from "@metriport/core/external/ehr/command/sync-patient/ehr-sync-patient-factory";
+import { buildElationLinkPatientHandler } from "@metriport/core/external/ehr/elation/command/link-patient/elation-link-patient-factory";
 import { out } from "@metriport/core/util/log";
 import { MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
@@ -9,7 +10,6 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { getCxMappingOrFail } from "../../../command/mapping/cx";
-import { createOrUpdateElationPatientMetadata } from "../../../external/ehr/elation/command/sync-patient";
 import { elationWebhookCreatedDateDiffSeconds } from "../../../external/ehr/elation/shared";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
@@ -58,16 +58,17 @@ router.post(
     if (secondaryMappings.webhookAppointmentPatientLinkingDisabled) {
       return res.sendStatus(httpStatus.OK);
     }
-    await createOrUpdateElationPatientMetadata({
+    const linkPatientHandler = buildElationLinkPatientHandler();
+    await linkPatientHandler.processLinkPatient({
       cxId,
-      elationPracticeId,
-      elationPatientId: event.data.patient,
+      practiceId: elationPracticeId,
+      patientId: event.data.patient,
     });
     if (secondaryMappings.webhookAppointmentPatientProcessingDisabled) {
       return res.sendStatus(httpStatus.OK);
     }
-    const handler = buildEhrSyncPatientHandler();
-    await handler.processSyncPatient({
+    const syncPatientHandler = buildEhrSyncPatientHandler();
+    await syncPatientHandler.processSyncPatient({
       ehr: EhrSources.elation,
       cxId,
       practiceId: elationPracticeId,

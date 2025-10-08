@@ -11,12 +11,20 @@ import { analytics, EventTypes } from "../../external/analytics/posthog";
 import { getAnthropicModelId } from "../../external/bedrock/model/anthropic/version";
 import { BedrockChat } from "../../external/langchain/bedrock";
 import { out } from "../../util";
-import { isPcpVisitAiSummaryFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
+import {
+  isPcpVisitAiSummaryFeatureFlagEnabledForCx,
+  isRecentVisitAiSummaryEnabledForCx,
+} from "../feature-flags/domain-ffs";
 import {
   documentVariableName as pcpVisitDocumentVariableName,
   mainSummaryPrompt as pcpVisitMainSummaryPrompt,
   refinedSummaryPrompt as pcpVisitRefinedSummaryPrompt,
 } from "./pcp-visit-prompt";
+import {
+  documentVariableName as recentVisitDocumentVariableName,
+  mainSummaryPrompt as recentVisitMainSummaryPrompt,
+  refinedSummaryPrompt as recentVisitRefinedSummaryPrompt,
+} from "./recent-visit-prompt";
 import { documentVariableName, mainSummaryPrompt, refinedSummaryPrompt } from "./prompts";
 import { AiBriefControls } from "./shared";
 
@@ -147,7 +155,16 @@ async function getInputsForAiBriefGeneration(cxId: string): Promise<{
   refinedPrompt: string;
   documentVariable: string;
 }> {
+  const isRecentVisit = await isRecentVisitAiSummaryEnabledForCx(cxId);
   const isPcpVisit = await isPcpVisitAiSummaryFeatureFlagEnabledForCx(cxId);
+
+  if (isRecentVisit) {
+    return {
+      mainPrompt: recentVisitMainSummaryPrompt,
+      refinedPrompt: recentVisitRefinedSummaryPrompt,
+      documentVariable: recentVisitDocumentVariableName,
+    };
+  }
 
   if (isPcpVisit) {
     return {

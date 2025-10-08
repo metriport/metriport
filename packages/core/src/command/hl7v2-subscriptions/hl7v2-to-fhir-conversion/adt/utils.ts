@@ -40,7 +40,8 @@ export function getPatientClassCode(adt: Hl7Message): string | undefined {
   return getOptionalValueFromMessage(adt, "PV1", 2, 1);
 }
 
-export function getFacilityName(adt: Hl7Message): string | undefined {
+// Note this is a temporary hack to fix Konza adts. A proper solution with a strategy pattern is planned in the near future.
+export function getFacilityName(adt: Hl7Message, hieName: string): string | undefined {
   const evn = getSegmentByNameOrFail(adt, "EVN");
   const eventFacilityNamespace = getOptionalValueFromSegment(evn, 7, 1);
   const eventFacilityUniversalId = getOptionalValueFromSegment(evn, 7, 2);
@@ -51,11 +52,24 @@ export function getFacilityName(adt: Hl7Message): string | undefined {
   const pv1Segment = adt.getSegment("PV1");
   if (!pv1Segment) return undefined;
 
-  const servicingFacilityName = getOptionalValueFromSegment(pv1Segment, 39, 1);
+  const servicingFacilityName = getServicingFacilityName(adt, hieName);
   if (servicingFacilityName) return servicingFacilityName;
 
   const assignedPatientLocationFacility = getOptionalValueFromSegment(pv1Segment, 3, 4);
   return assignedPatientLocationFacility ?? undefined;
+}
+
+const KONZA_SERVICING_FACILITY_NAME_INDEX = 2; // HL7V2 component (1 indexed)
+const DEFAULT_SERVICING_FACILITY_NAME_INDEX = 1; // HL7V2 component (1 indexed)
+
+function getServicingFacilityName(adt: Hl7Message, hieName: string): string | undefined {
+  const pv1Segment = adt.getSegment("PV1");
+  if (!pv1Segment) return undefined;
+
+  if (hieName === "Konza") {
+    return getOptionalValueFromSegment(pv1Segment, 39, KONZA_SERVICING_FACILITY_NAME_INDEX);
+  }
+  return getOptionalValueFromSegment(pv1Segment, 39, DEFAULT_SERVICING_FACILITY_NAME_INDEX);
 }
 
 export function getAttendingDoctorNameDetails(adt: Hl7Message): HumanNameDetails | undefined {
@@ -92,12 +106,12 @@ export function getCoding(field: Hl7Field, codingPosition: CodingIndex): Coding 
   });
 }
 
-export function getPotentialIdentifiers(adt: Hl7Message) {
+export function getPotentialIdentifiers(adt: Hl7Message, hieName: string) {
   const visitNumber = getOptionalValueFromMessage(adt, "PV1", 19, 1);
   const accountNumber = getOptionalValueFromMessage(adt, "PV1", 18, 1);
   const mrn = getOptionalValueFromMessage(adt, "PID", 3, 1);
   const admitDate = getOptionalValueFromMessage(adt, "PV1", 44, 1);
-  const facilityName = getFacilityName(adt);
+  const facilityName = getFacilityName(adt, hieName);
   const messageId = getMessageUniqueIdentifier(adt);
 
   return {
@@ -110,9 +124,9 @@ export function getPotentialIdentifiers(adt: Hl7Message) {
   };
 }
 
-export function createEncounterId(adt: Hl7Message, patientId: string) {
+export function createEncounterId(adt: Hl7Message, patientId: string, hieName: string) {
   const { visitNumber, accountNumber, mrn, admitDate, facilityName, messageId } =
-    getPotentialIdentifiers(adt);
+    getPotentialIdentifiers(adt, hieName);
 
   if (visitNumber) return createUuidFromText(`${visitNumber}-${patientId}`);
   if (accountNumber) return createUuidFromText(`${accountNumber}-${patientId}`);

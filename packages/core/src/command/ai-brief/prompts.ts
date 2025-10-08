@@ -1,4 +1,6 @@
-const todaysDate = new Date().toISOString().split("T")[0];
+import { buildDayjs } from "@metriport/shared/common/date";
+
+const todaysDate = buildDayjs().format("YYYY-MM-DD");
 const systemPrompt = "You are an expert primary care doctor.";
 
 export const documentVariableName = "text";
