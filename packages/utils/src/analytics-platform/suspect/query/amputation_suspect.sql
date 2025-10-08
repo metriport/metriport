@@ -1,30 +1,14 @@
 /* ============================================================
    AMPUTATION — SUSPECT QUERY (Procedure-code based, with EXCLUSION)
    ------------------------------------------------------------
+   Standard flow: RAW → NORM → CLEAN → SUSPECT → FHIR → RETURN
    Purpose
-     Flag patients with evidence of limb amputation based solely
-     on definitive amputation CPT procedures, while EXCLUDING
-     patients already documented with amputation status (ICD-10 Z89.*).
+     Flag patients with evidence of limb amputation based on
+     definitive CPT procedures, while EXCLUDING patients already
+     documented with acquired absence of limb (ICD-10 Z89.*).
 
    Evidence (PROCEDURE.NORMALIZED_CODE in):
-     • 27590  — Amputation, thigh (above-knee)
-     • 27880  — Amputation, leg through tibia/fibula (below-knee)
-     • 27886  — Re-amputation, leg (below-knee revision)
-     • 28800  — Amputation, foot; midtarsal (Chopart)
-     • 28805  — Amputation, foot; transmetatarsal
-     • 28810  — Ray amputation (metatarsal with toe)
-     • 28820  — Toe amputation; MTP joint
-     • 28825  — Toe amputation; interphalangeal joint
-
-   Notes
-     - Presence of these procedures is sufficient to flag
-       "amputation_history" suspects.
-     - Patients with Z89.* (acquired absence of limb) are excluded.
-     - Minimal FHIR Procedure resources are embedded for the UI.
-
-   Output
-     • One row per patient with suspect_group = 'amputation_history'
-     • responsible_resources = array of supporting Procedure FHIRs
+     • 27590, 27880, 27886, 28800, 28805, 28810, 28820, 28825
    ============================================================ */
 
 WITH amputation_dx_exclusion AS (
@@ -35,16 +19,12 @@ WITH amputation_dx_exclusion AS (
     AND c.NORMALIZED_CODE LIKE 'Z89%'
 ),
 
-amputation_procedures AS (
+/* -------------------------
+   RAW: pull procedure rows
+   ------------------------- */
+amputation_raw AS (
   SELECT
     p.PATIENT_ID,
-
-    /* Suspect bucket & reviewer label (not a diagnosis by itself) */
-    'amputation_history' AS suspect_group,
-    'Z89.9'              AS suspect_icd10_code,
-    'Acquired absence of limb, unspecified' AS suspect_icd10_short_description,
-
-    /* Supporting resource fields */
     p.PROCEDURE_ID        AS resource_id,
     'Procedure'           AS resource_type,
     p.NORMALIZED_CODE,
@@ -62,64 +42,99 @@ amputation_procedures AS (
     '28820',  -- Toe amputation; MTP joint
     '28825'   -- Toe amputation; interphalangeal joint
   )
-    AND NOT EXISTS (  -- Exclude patients already confirmed via diagnosis
-      SELECT 1
-      FROM amputation_dx_exclusion x
-      WHERE x.PATIENT_ID = p.PATIENT_ID
-    )
 ),
 
-/* Build minimal FHIR for each supporting Procedure */
-with_fhir AS (
-  SELECT
-    a.PATIENT_ID,
-    a.suspect_group,
-    a.suspect_icd10_code,
-    a.suspect_icd10_short_description,
+/* -------------------------
+   NORM: (no normalization needed) pass-through
+   ------------------------- */
+amputation_norm AS (
+  SELECT * FROM amputation_raw
+),
 
-    a.resource_id,
-    a.resource_type,
-    a.NORMALIZED_CODE,
-    a.NORMALIZED_DESCRIPTION,
-    a.obs_date,
-    a.DATA_SOURCE,
+/* -------------------------
+   CLEAN: apply diagnosis exclusions
+   ------------------------- */
+amputation_clean AS (
+  SELECT *
+  FROM amputation_norm n
+  WHERE NOT EXISTS (
+    SELECT 1 FROM amputation_dx_exclusion x WHERE x.PATIENT_ID = n.PATIENT_ID
+  )
+),
+
+/* -------------------------
+   SUSPECT: assign suspect group & ICD label
+   ------------------------- */
+amputation_suspects AS (
+  SELECT
+    c.PATIENT_ID,
+    'amputation_history' AS suspect_group,
+    'Z89.9'              AS suspect_icd10_code,
+    'Acquired absence of limb, unspecified' AS suspect_icd10_short_description,
+
+    /* carry-through for FHIR */
+    c.resource_id,
+    c.resource_type,
+    c.NORMALIZED_CODE,
+    c.NORMALIZED_DESCRIPTION,
+    c.obs_date,
+    c.DATA_SOURCE
+  FROM amputation_clean c
+),
+
+/* -------------------------
+   FHIR: minimal Procedure per supporting hit
+   ------------------------- */
+amputation_with_fhir AS (
+  SELECT
+    s.PATIENT_ID,
+    s.suspect_group,
+    s.suspect_icd10_code,
+    s.suspect_icd10_short_description,
+
+    s.resource_id,
+    s.resource_type,
+    s.NORMALIZED_CODE,
+    s.NORMALIZED_DESCRIPTION,
+    s.obs_date,
+    s.DATA_SOURCE,
 
     OBJECT_CONSTRUCT(
       'resourceType', 'Procedure',
-      'id',            a.resource_id,
+      'id',            s.resource_id,
       'status',        'completed',
       'code', OBJECT_CONSTRUCT(
-        'text',   NULLIF(a.NORMALIZED_DESCRIPTION,''),
+        'text',   NULLIF(s.NORMALIZED_DESCRIPTION,''),
         'coding', ARRAY_CONSTRUCT(
           OBJECT_CONSTRUCT(
             'system',  'http://www.ama-assn.org/go/cpt',
-            'code',     a.NORMALIZED_CODE,
-            'display',  a.NORMALIZED_DESCRIPTION
+            'code',     s.NORMALIZED_CODE,
+            'display',  s.NORMALIZED_DESCRIPTION
           )
         )
       ),
-      'performedDateTime', TO_CHAR(a.obs_date, 'YYYY-MM-DD')
+      'performedDateTime', TO_CHAR(s.obs_date, 'YYYY-MM-DD')
     ) AS fhir
-  FROM amputation_procedures a
+  FROM amputation_suspects s
 )
 
+/* -------------------------
+   RETURN
+   ------------------------- */
 SELECT
   PATIENT_ID,
   suspect_group,
   suspect_icd10_code,
   suspect_icd10_short_description,
-
-  /* Enriched supporting resources for the UI */
   ARRAY_AGG(
     OBJECT_CONSTRUCT(
       'id',            resource_id,
       'resource_type', resource_type,  -- "Procedure"
-      'data_source',   data_source,
+      'data_source',   DATA_SOURCE,
       'fhir',          fhir
     )
   ) AS responsible_resources,
-
   CURRENT_TIMESTAMP() AS last_run
-FROM with_fhir
+FROM amputation_with_fhir
 GROUP BY PATIENT_ID, suspect_group, suspect_icd10_code, suspect_icd10_short_description
 ORDER BY PATIENT_ID, suspect_group;

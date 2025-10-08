@@ -1,136 +1,167 @@
 /* ============================================================
-   Purpose: Flag patients as "hypertension suspects" from
-            discrete BP observations (LOINC):
-              - 8480-6: Systolic blood pressure
-              - 8462-4: Diastolic blood pressure
-            while excluding anyone already diagnosed with HTN.
-   Staging thresholds used (single-observation labeling):
+   HYPERTENSION — SUSPECT QUERY (BP Observations)
+   ------------------------------------------------------------
+   Standard flow: RAW → NORM → CLEAN → SUSPECT → FHIR → RETURN
+   Purpose
+     Flag "hypertension suspects" from discrete BP observations:
+       - 8480-6: Systolic blood pressure
+       - 8462-4: Diastolic blood pressure
+     while excluding anyone already diagnosed with HTN (I10–I15).
+   Staging thresholds (single-observation labeling):
      - Stage 2 HTN: SBP ≥ 140  OR  DBP ≥ 90
      - Stage 1 HTN: SBP 130–139 OR DBP 80–89
-   Notes:
-     - Uses TRY_CAST(...) to avoid errors on non-numeric RESULT.
-     - CASE is ordered so Stage 2 matches take precedence over Stage 1.
-     - This flags by individual observations; it is not a clinical diagnosis.
    ============================================================ */
 
-WITH bp_observations AS (
+WITH htn_dx_exclusion AS (
+  SELECT DISTINCT c.PATIENT_ID
+  FROM core_v2.CORE_V2__CONDITION c
+  WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
+    AND LEFT(c.NORMALIZED_CODE,3) IN ('I10','I11','I12','I13','I15')
+),
+
+/* -------------------------
+   RAW: pull rows, extract numeric, require units
+   ------------------------- */
+bp_raw AS (
   SELECT
-    /* Who the flag applies to */
     o.PATIENT_ID,
-
-    /* Resource identity and type (UI expects capitalized FHIR type) */
-    o.OBSERVATION_ID              AS resource_id,
-    'Observation'                 AS resource_type,
-
-    /* Suspect grouping (stage precedence: stage2 > stage1) */
-    CASE
-      WHEN o.NORMALIZED_CODE = '8480-6' AND TRY_TO_DOUBLE(o.RESULT) >= 140 THEN 'stage2_systolic'
-      WHEN o.NORMALIZED_CODE = '8462-4' AND TRY_TO_DOUBLE(o.RESULT) >= 90  THEN 'stage2_diastolic'
-      WHEN o.NORMALIZED_CODE = '8480-6' AND TRY_TO_DOUBLE(o.RESULT) BETWEEN 130 AND 139 THEN 'stage1_systolic'
-      WHEN o.NORMALIZED_CODE = '8462-4' AND TRY_TO_DOUBLE(o.RESULT) BETWEEN 80  AND 89  THEN 'stage1_diastolic'
-      ELSE NULL
-    END AS suspect_group,
-
-    /* Target ICD-10 & label for HTN */
-    'I10'   AS suspect_icd10_code,
-    'Essential (primary) hypertension' AS suspect_icd10_short_description,
-
-    /* Fields to construct minimal FHIR */
+    o.OBSERVATION_ID                                AS resource_id,
+    'Observation'                                    AS resource_type,
     o.NORMALIZED_CODE_TYPE,
     o.NORMALIZED_CODE,
     o.NORMALIZED_DESCRIPTION,
     o.RESULT,
-    /* Prefer NORMALIZED_UNITS if present, else SOURCE_UNITS */
-    COALESCE(NULLIF(o.NORMALIZED_UNITS, ''), o.SOURCE_UNITS) AS units,
-    o.OBSERVATION_DATE,
+    COALESCE(NULLIF(o.NORMALIZED_UNITS,''), NULLIF(o.SOURCE_UNITS,'')) AS units_raw,
+    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')  AS value_token,
+    CAST(o.OBSERVATION_DATE AS DATE)                AS obs_date,
     o.DATA_SOURCE
-
   FROM core_v2.CORE_V2__OBSERVATION o
-  WHERE
-    /* Only normalized LOINC BP observations */
-    o.NORMALIZED_CODE_TYPE ILIKE 'loinc'
+  WHERE o.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND o.NORMALIZED_CODE IN ('8480-6','8462-4')
-
-    /* Ignore clearly non-hypertensive / non-numeric */
-    AND TRY_TO_DOUBLE(o.RESULT) >= 80
-
-    AND NOT EXISTS (
-      SELECT 1
-      FROM core_v2.CORE_V2__CONDITION c 
-      WHERE c.PATIENT_ID = o.PATIENT_ID
-        AND c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
-        AND LEFT(c.NORMALIZED_CODE,3) IN ('I10','I11','I12','I13','I15')
-    )
+    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND COALESCE(NULLIF(o.NORMALIZED_UNITS,''), NULLIF(o.SOURCE_UNITS,'')) IS NOT NULL
+    AND TRY_TO_DOUBLE(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')) > 0
 ),
 
-/* Build the minimal FHIR Observation JSON the UI actually reads */
+/* -------------------------
+   NORM: keep only mmHg variants; canonicalize to mmHg
+   (drop everything else by leaving value_mmhg NULL)
+   ------------------------- */
+bp_norm AS (
+  SELECT
+    r.*,
+    CASE
+      /* Normalize mm/Hg, mm Hg, mm[Hg], mmHg (and case/extra-symbol variants) */
+      WHEN REGEXP_REPLACE(LOWER(r.units_raw), '[^a-z]', '') = 'mmhg' THEN 'mmHg'
+      ELSE r.units_raw
+    END AS units_disp,
+    CASE
+      WHEN REGEXP_REPLACE(LOWER(r.units_raw), '[^a-z]', '') = 'mmhg'
+        THEN TRY_TO_DOUBLE(r.value_token)
+      ELSE NULL
+    END AS value_mmhg
+  FROM bp_raw r
+),
+
+/* -------------------------
+   CLEAN: keep plausible, canonicalized rows; drop known HTN dx
+   ------------------------- */
+bp_clean AS (
+  SELECT *
+  FROM bp_norm n
+  WHERE n.value_mmhg IS NOT NULL
+    AND n.value_mmhg >= 80
+    AND n.value_mmhg <= 250
+    AND NOT EXISTS (SELECT 1 FROM htn_dx_exclusion x WHERE x.PATIENT_ID = n.PATIENT_ID)
+),
+
+/* -------------------------
+   SUSPECT: assign stage buckets (stage2 precedence)
+   ------------------------- */
+bp_suspects AS (
+  SELECT
+    c.PATIENT_ID,
+    CASE
+      WHEN c.NORMALIZED_CODE = '8480-6' AND c.value_mmhg >= 140 THEN 'stage2_systolic'
+      WHEN c.NORMALIZED_CODE = '8462-4' AND c.value_mmhg >=  90 THEN 'stage2_diastolic'
+      WHEN c.NORMALIZED_CODE = '8480-6' AND c.value_mmhg BETWEEN 130 AND 139 THEN 'stage1_systolic'
+      WHEN c.NORMALIZED_CODE = '8462-4' AND c.value_mmhg BETWEEN  80 AND  89 THEN 'stage1_diastolic'
+      ELSE NULL
+    END AS suspect_group,
+
+    'I10'  AS suspect_icd10_code,
+    'Essential (primary) hypertension' AS suspect_icd10_short_description,
+
+    /* carry-through for FHIR */
+    c.resource_id,
+    c.resource_type,
+    c.NORMALIZED_CODE,
+    c.NORMALIZED_DESCRIPTION,
+    c.RESULT,
+    c.units_disp AS units,             -- canonical output
+    c.value_mmhg AS value_num,   -- canonical numeric
+    c.obs_date,
+    c.DATA_SOURCE
+  FROM bp_clean c
+  WHERE
+    ( (c.NORMALIZED_CODE = '8480-6' AND c.value_mmhg >= 130)   -- systolic thresholds
+      OR
+      (c.NORMALIZED_CODE = '8462-4' AND c.value_mmhg >= 80) )  -- diastolic thresholds
+),
+
+/* -------------------------
+   FHIR
+   ------------------------- */
 obs_with_fhir AS (
   SELECT
-    b.PATIENT_ID,
-    b.suspect_group,
-    b.suspect_icd10_code,
-    b.suspect_icd10_short_description,
-
-    /* Minimal FHIR Observation payload */
+    s.PATIENT_ID,
+    s.suspect_group,
+    s.suspect_icd10_code,
+    s.suspect_icd10_short_description,
     OBJECT_CONSTRUCT(
       'resourceType', 'Observation',
-      'id',            b.resource_id,
-
-      /* Status: not provided in schema; default to 'final' */
+      'id',            s.resource_id,
       'status',        'final',
-
-      /* CodeableConcept with LOINC */
       'code', OBJECT_CONSTRUCT(
-        'text',   NULLIF(b.NORMALIZED_DESCRIPTION, ''),
+        'text',   NULLIF(s.NORMALIZED_DESCRIPTION,''),
         'coding', ARRAY_CONSTRUCT(
           OBJECT_CONSTRUCT(
             'system',  'http://loinc.org',
-            'code',     b.NORMALIZED_CODE,
-            'display',  b.NORMALIZED_DESCRIPTION
+            'code',     s.NORMALIZED_CODE,
+            'display',  s.NORMALIZED_DESCRIPTION
           )
         )
       ),
-
-      /* effective[x]: we have a DATE → valid FHIR date string */
-      'effectiveDateTime', TO_CHAR(b.OBSERVATION_DATE, 'YYYY-MM-DD'),
-
-      /* Value: Quantity if numeric, else String */
-      'valueQuantity',
-        IFF(TRY_TO_DOUBLE(b.RESULT) IS NOT NULL,
-            OBJECT_CONSTRUCT(
-              'value', TRY_TO_DOUBLE(b.RESULT),
-              'unit',  b.units
-            ),
-            NULL),
-
-      'valueString',
-        IFF(TRY_TO_DOUBLE(b.RESULT) IS NULL, b.RESULT, NULL)
+      'effectiveDateTime', TO_CHAR(s.obs_date, 'YYYY-MM-DD'),
+      'valueQuantity', OBJECT_CONSTRUCT(
+        'value', s.value_num,
+        'unit',  'mmHg'
+      ),
+      'valueString', IFF(TRY_TO_DOUBLE(s.RESULT) IS NULL, s.RESULT, NULL)
     ) AS fhir,
-
-    b.resource_id,
-    b.resource_type,
-    b.DATA_SOURCE AS data_source
-  FROM bp_observations b
+    s.resource_id,
+    s.resource_type,
+    s.DATA_SOURCE AS data_source
+  FROM bp_suspects s
 )
 
+/* -------------------------
+   RETURN
+   ------------------------- */
 SELECT
   PATIENT_ID,
   suspect_group,
   suspect_icd10_code,
   suspect_icd10_short_description,
-
-  /* Enriched responsible_resources object array for the UI */
   ARRAY_AGG(
     OBJECT_CONSTRUCT(
       'id',            resource_id,
-      'resource_type', resource_type,   -- "Observation"
-      'data_source',   data_source,     -- from OBSERVATION.DATA_SOURCE
-      'fhir',          fhir             -- minimal FHIR payload
+      'resource_type', resource_type,
+      'data_source',   data_source,
+      'fhir',          fhir
     )
   ) AS responsible_resources,
-
   CURRENT_TIMESTAMP() AS last_run
-
 FROM obs_with_fhir
 WHERE suspect_group IS NOT NULL
 GROUP BY PATIENT_ID, suspect_group, suspect_icd10_code, suspect_icd10_short_description
