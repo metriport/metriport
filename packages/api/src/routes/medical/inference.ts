@@ -69,6 +69,10 @@ const questionsByResourceType = {
     "- Why was this observation made (clinical context)?",
     "- How does this compare to previous measurements (trend)?",
   ],
+  Suspects: [
+    "- Why was this suspect created?",
+    "- What are the related resources that are responsible for this suspect?",
+  ],
 };
 
 const defaultQuestions = [
@@ -122,15 +126,15 @@ router.post(
       ${resourceRowDataString}
 
       ---
-      
+
       ### Citing claims
       In your response, create a source list at the bottom. These sources MUST use markdown link syntax, but have the link point to the UUID of the resource that contains proof of the claim.
       Each source should look like: \`[{source-index} - {phrase}](uuid-of-source-resource)\` where {source-index} is a number, {phrase} is a short two or three wordphrase that describes the source, such as "glucose measurement", "urinalysis", "", etc.
 
       If a source is referenced multiple times, include it exactly once, and no more, in the source list.
-      
+
       \`\`\`
-      Sources: 
+      Sources:
       - [1 - {phrase}](uuid-of-source-resource1)
       - [2 - {phrase}](uuid-of-source-resource2)
       - [3 - {phrase}](uuid-of-source-resource3)
@@ -140,7 +144,7 @@ router.post(
       Then, ensure to include a source for each and every claim you make, using syntax \`_({source-index})_\` at the end of each claim.
 
       ### Questions
-      
+
       Answer the following question(s):
       ${questions.join("\n")}
 
