@@ -1,60 +1,34 @@
 /* ============================================================
-   OSTOMY — SUSPECT QUERY (Procedure-code based, with FHIR)
+   OSTOMY — SUSPECT QUERY (Procedure-code based, with EXCLUSION)
    ------------------------------------------------------------
+   Standard flow: RAW → NORM → CLEAN → SUSPECT → FHIR → RETURN
    Purpose
      Flag patients with evidence of an ostomy based on definitive
-     CPT/Procedure codes from the PROCEDURE table.
-     Exclude patients already diagnosed with ostomy (ICD-10 Z93.*).
+     CPT procedures, while EXCLUDING patients already documented
+     with ostomy status (ICD-10 Z93.*).
 
-   Evidence (any single procedure is sufficient)
-     • Colostomy creation (open/laparoscopic)
-     • Gastrostomy tube insert/replace
-     • Tracheostomy established
-     • Nephrostomy catheter placement
-     • Cholecystostomy placement
-
-   Output
-     • One row per patient × ostomy type (suspect_group)
-     • Minimal FHIR Procedure for each supporting procedure
+   Evidence (PROCEDURE.NORMALIZED_CODE in):
+     • Colostomy:       44320, 44188
+     • Gastrostomy:     43246, 43762, 49440
+     • Tracheostomy:    31615
+     • Nephrostomy:     50432
+     • Cholecystostomy: 47490
    ============================================================ */
 
 WITH ostomy_dx_exclusion AS (
-  -- Patients already diagnosed with an ostomy (exclude these)
+  -- Exclude patients already carrying an ostomy status diagnosis (ICD-10 Z93.*)
   SELECT DISTINCT c.PATIENT_ID
-  FROM core_v2.CORE_V2__CONDITION c 
+  FROM core_v2.CORE_V2__CONDITION c
   WHERE c.NORMALIZED_CODE_TYPE = 'icd-10-cm'
     AND c.NORMALIZED_CODE LIKE 'Z93%'
 ),
 
-ostomy_hits AS (
-  -- Match procedures directly by CPT codes
+/* -------------------------
+   RAW: pull procedure rows
+   ------------------------- */
+ostomy_raw AS (
   SELECT
     p.PATIENT_ID,
-
-    CASE
-      WHEN p.NORMALIZED_CODE IN ('44320','44188') THEN 'ostomy_colostomy'
-      WHEN p.NORMALIZED_CODE IN ('43246','43762','49440') THEN 'ostomy_gastrostomy'
-      WHEN p.NORMALIZED_CODE = '31615' THEN 'ostomy_tracheostomy'
-      WHEN p.NORMALIZED_CODE = '50432' THEN 'ostomy_nephrostomy'
-      WHEN p.NORMALIZED_CODE = '47490' THEN 'ostomy_cholecystostomy'
-    END AS suspect_group,
-
-    CASE
-      WHEN p.NORMALIZED_CODE IN ('44320','44188') THEN 'Z93.3'
-      WHEN p.NORMALIZED_CODE IN ('43246','43762','49440') THEN 'Z93.1'
-      WHEN p.NORMALIZED_CODE = '31615' THEN 'Z93.0'
-      WHEN p.NORMALIZED_CODE = '50432' THEN 'Z93.6'
-      WHEN p.NORMALIZED_CODE = '47490' THEN 'Z93.49'
-    END AS suspect_icd10_code,
-
-    CASE
-      WHEN p.NORMALIZED_CODE IN ('44320','44188') THEN 'Colostomy status'
-      WHEN p.NORMALIZED_CODE IN ('43246','43762','49440') THEN 'Gastrostomy status'
-      WHEN p.NORMALIZED_CODE = '31615' THEN 'Tracheostomy status'
-      WHEN p.NORMALIZED_CODE = '50432' THEN 'Nephrostomy status'
-      WHEN p.NORMALIZED_CODE = '47490' THEN 'Cholecystostomy status'
-    END AS suspect_icd10_short_description,
-
     p.PROCEDURE_ID        AS resource_id,
     'Procedure'           AS resource_type,
     p.NORMALIZED_CODE,
@@ -63,64 +37,126 @@ ostomy_hits AS (
     p.DATA_SOURCE
   FROM core_v2.CORE_V2__PROCEDURE p
   WHERE p.NORMALIZED_CODE IN (
-    '44320','44188', -- Colostomy
-    '43246','43762','49440', -- Gastrostomy
-    '31615', -- Tracheostomy
-    '50432', -- Nephrostomy
-    '47490'  -- Cholecystostomy
+    '44320','44188',              -- Colostomy
+    '43246','43762','49440',      -- Gastrostomy
+    '31615',                      -- Tracheostomy
+    '50432',                      -- Nephrostomy
+    '47490'                       -- Cholecystostomy
   )
-    AND NOT EXISTS (
-      SELECT 1 FROM ostomy_dx_exclusion x WHERE x.PATIENT_ID = p.PATIENT_ID
-    )
 ),
 
-with_fhir AS (
-  -- Wrap in minimal FHIR
+/* -------------------------
+   NORM: (no normalization) pass-through
+   ------------------------- */
+ostomy_norm AS (
+  SELECT * FROM ostomy_raw
+),
+
+/* -------------------------
+   CLEAN: apply diagnosis exclusions
+   ------------------------- */
+ostomy_clean AS (
+  SELECT *
+  FROM ostomy_norm n
+  WHERE NOT EXISTS (
+    SELECT 1 FROM ostomy_dx_exclusion x WHERE x.PATIENT_ID = n.PATIENT_ID
+  )
+),
+
+/* -------------------------
+   SUSPECT: assign suspect group & ICD label
+   ------------------------- */
+ostomy_suspects AS (
   SELECT
-    h.PATIENT_ID,
-    h.suspect_group,
-    h.suspect_icd10_code,
-    h.suspect_icd10_short_description,
+    c.PATIENT_ID,
+
+    CASE
+      WHEN c.NORMALIZED_CODE IN ('44320','44188') THEN 'ostomy_colostomy'
+      WHEN c.NORMALIZED_CODE IN ('43246','43762','49440') THEN 'ostomy_gastrostomy'
+      WHEN c.NORMALIZED_CODE =  '31615' THEN 'ostomy_tracheostomy'
+      WHEN c.NORMALIZED_CODE =  '50432' THEN 'ostomy_nephrostomy'
+      WHEN c.NORMALIZED_CODE =  '47490' THEN 'ostomy_cholecystostomy'
+    END AS suspect_group,
+
+    CASE
+      WHEN c.NORMALIZED_CODE IN ('44320','44188') THEN 'Z93.3'
+      WHEN c.NORMALIZED_CODE IN ('43246','43762','49440') THEN 'Z93.1'
+      WHEN c.NORMALIZED_CODE =  '31615' THEN 'Z93.0'
+      WHEN c.NORMALIZED_CODE =  '50432' THEN 'Z93.6'
+      WHEN c.NORMALIZED_CODE =  '47490' THEN 'Z93.49'
+    END AS suspect_icd10_code,
+
+    CASE
+      WHEN c.NORMALIZED_CODE IN ('44320','44188') THEN 'Colostomy status'
+      WHEN c.NORMALIZED_CODE IN ('43246','43762','49440') THEN 'Gastrostomy status'
+      WHEN c.NORMALIZED_CODE =  '31615' THEN 'Tracheostomy status'
+      WHEN c.NORMALIZED_CODE =  '50432' THEN 'Nephrostomy status'
+      WHEN c.NORMALIZED_CODE =  '47490' THEN 'Cholecystostomy status'
+    END AS suspect_icd10_short_description,
+
+    /* carry-through for FHIR */
+    c.resource_id,
+    c.resource_type,
+    c.NORMALIZED_CODE,
+    c.NORMALIZED_DESCRIPTION,
+    c.obs_date,
+    c.DATA_SOURCE
+  FROM ostomy_clean c
+),
+
+/* -------------------------
+   FHIR: minimal Procedure per supporting hit
+   ------------------------- */
+ostomy_with_fhir AS (
+  SELECT
+    s.PATIENT_ID,
+    s.suspect_group,
+    s.suspect_icd10_code,
+    s.suspect_icd10_short_description,
+
+    s.resource_id,
+    s.resource_type,
+    s.NORMALIZED_CODE,
+    s.NORMALIZED_DESCRIPTION,
+    s.obs_date,
+    s.DATA_SOURCE,
 
     OBJECT_CONSTRUCT(
       'resourceType', 'Procedure',
-      'id',            h.resource_id,
+      'id',            s.resource_id,
       'status',        'completed',
       'code', OBJECT_CONSTRUCT(
-        'text',   NULLIF(h.NORMALIZED_DESCRIPTION,''),
+        'text',   NULLIF(s.NORMALIZED_DESCRIPTION,''),
         'coding', ARRAY_CONSTRUCT(
           OBJECT_CONSTRUCT(
             'system',  'http://www.ama-assn.org/go/cpt',
-            'code',     h.NORMALIZED_CODE,
-            'display',  h.NORMALIZED_DESCRIPTION
+            'code',     s.NORMALIZED_CODE,
+            'display',  s.NORMALIZED_DESCRIPTION
           )
         )
       ),
-      'performedDateTime', TO_CHAR(h.obs_date, 'YYYY-MM-DD')
-    ) AS fhir,
-
-    h.resource_id,
-    h.resource_type,
-    h.DATA_SOURCE AS data_source
-  FROM ostomy_hits h
+      'performedDateTime', TO_CHAR(s.obs_date, 'YYYY-MM-DD')
+    ) AS fhir
+  FROM ostomy_suspects s
 )
 
+/* -------------------------
+   RETURN
+   ------------------------- */
 SELECT
   PATIENT_ID,
   suspect_group,
   suspect_icd10_code,
   suspect_icd10_short_description,
-
   ARRAY_AGG(
     OBJECT_CONSTRUCT(
       'id',            resource_id,
-      'resource_type', resource_type,
-      'data_source',   data_source,
+      'resource_type', resource_type,  -- "Procedure"
+      'data_source',   DATA_SOURCE,
       'fhir',          fhir
     )
   ) AS responsible_resources,
-
   CURRENT_TIMESTAMP() AS last_run
-FROM with_fhir
+FROM ostomy_with_fhir
 GROUP BY PATIENT_ID, suspect_group, suspect_icd10_code, suspect_icd10_short_description
 ORDER BY PATIENT_ID, suspect_group;
