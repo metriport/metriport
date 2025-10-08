@@ -13,6 +13,9 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
 import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-initial-patient-discovery";
 import { PatientModel } from "../../../models/medical/patient";
+import { PatientCohortModel } from "../../../models/medical/patient-cohort";
+import { executeOnDBTx } from "../../../models/transaction-wrapper";
+import { resolveCohortIdentifiersToUuids } from "../cohort/resolve-cohort-identifiers-to-uuids";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { attachPatientIdentifiers, getPatientByDemo, PatientWithIdentifiers } from "./get-patient";
@@ -30,6 +33,7 @@ export async function createPatient({
   forceCommonwell,
   forceCarequality,
   settings,
+  cohorts = [],
 }: {
   patient: PatientCreateCmd;
   runPd?: boolean;
@@ -37,6 +41,7 @@ export async function createPatient({
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
   settings?: PatientSettingsData;
+  cohorts?: string[];
 }): Promise<PatientWithIdentifiers> {
   const { cxId, facilityId, externalId } = patient;
   const { log } = out(`createPatient.${cxId}`);
@@ -66,15 +71,7 @@ export async function createPatient({
     cxId,
     facilityIds: [facilityId],
     externalId,
-    data: {
-      firstName,
-      lastName,
-      dob,
-      genderAtBirth,
-      personalIdentifiers,
-      address,
-      contact,
-    },
+    data: demo,
   };
   const addressWithCoordinates = await addCoordinatesToAddresses({
     addresses: patientCreate.data.address,
@@ -84,7 +81,25 @@ export async function createPatient({
   });
   if (addressWithCoordinates) patientCreate.data.address = addressWithCoordinates;
 
-  const newPatient = await PatientModel.create(patientCreate);
+  const cohortIdentifiers = await resolveCohortIdentifiersToUuids({
+    cxId,
+    identifiers: cohorts,
+  });
+
+  const newPatient = await executeOnDBTx(PatientModel.prototype, async transaction => {
+    const patient = await PatientModel.create(patientCreate, { transaction });
+
+    const patientCohortCreationRows = cohortIdentifiers.map(cohortId => ({
+      id: uuidv7(),
+      cxId,
+      patientId: patient.id,
+      cohortId,
+    }));
+
+    await PatientCohortModel.bulkCreate(patientCohortCreationRows, { transaction });
+
+    return patient;
+  });
 
   analytics({
     distinctId: cxId,

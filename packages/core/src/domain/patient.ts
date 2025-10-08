@@ -82,6 +82,7 @@ export interface PatientCreate extends BaseDomainCreate {
   facilityIds: string[];
   externalId?: string;
   hieOptOut?: boolean;
+  cohorts?: string[];
   data: PatientData;
 }
 

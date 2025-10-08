@@ -20,6 +20,7 @@ import status from "http-status";
 import { orderBy } from "lodash";
 import { z } from "zod";
 import { getCohortsForPatient } from "../../command/medical/cohort/get-cohort";
+import { addPatientToCohorts } from "../../command/medical/cohort/patient-cohort/add-cohorts-to-patient";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { startConsolidatedQuery } from "../../command/medical/patient/consolidated-get";
 import {
@@ -650,6 +651,27 @@ router.get(
     const cohorts = await getCohortsForPatient({ cxId, patientId });
 
     return res.status(status.OK).json({ cohorts });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /patient/:id/cohorts
+ *
+ * Add patient to cohorts.
+ *
+ * @param   req.cxId      The customer ID.
+ * @return  The cohorts the patient was added to.
+ */
+router.post(
+  "/cohorts",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+    const cohortIds = req.body.cohorts;
+
+    await addPatientToCohorts({ cxId, patientId, cohortIds });
+
+    return res.status(status.OK).json({ message: "Patient added to cohorts" });
   })
 );
 
