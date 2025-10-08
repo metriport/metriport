@@ -15,6 +15,7 @@ const router = Router();
 const resourceSummaryInferenceSchema = z.object({
   resourceType: z.string(),
   resourceDisplays: z.array(z.string()),
+  resourceRowData: z.record(z.unknown()).optional(),
   context: z.string(),
 });
 
@@ -88,9 +89,8 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const { resourceType, resourceDisplays, context } = resourceSummaryInferenceSchema.parse(
-      req.body
-    );
+    const { resourceType, resourceDisplays, resourceRowData, context } =
+      resourceSummaryInferenceSchema.parse(req.body);
     console.log(`resourceType: ${resourceType}, resourceDisplays: ${resourceDisplays.join(", ")}`);
 
     const agent = new AnthropicAgent({
@@ -106,9 +106,22 @@ router.post(
       questionsByResourceType[resourceType as keyof typeof questionsByResourceType] ??
       defaultQuestions;
 
+    const resourceRowDataString = resourceRowData
+      ? `The core data for the resource we are asking about is: ${JSON.stringify(
+          resourceRowData,
+          null,
+          2
+        )}`
+      : "";
+
     agent.addUserMessageText(
       `
-      This is about a patient - ${resourceType}: ${resourceDisplays.join(", ")}
+      This is about a patient.
+      The resource type is: ${resourceType}
+      The resource displays are: ${resourceDisplays.join(", ")}
+      ${resourceRowDataString}
+
+      ---
       
       ### Citing claims
       In your response, create a source list at the bottom. These sources MUST use markdown link syntax, but have the link point to the UUID of the resource that contains proof of the claim.
