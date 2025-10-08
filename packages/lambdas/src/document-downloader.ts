@@ -24,6 +24,9 @@ dayjs.extend(duration);
 
 const timeout = dayjs.duration({ minutes: 4 });
 
+const MAX_ATTEMPTS = 3;
+const INITIAL_DELAY = 1_000;
+
 // Automatically set by AWS
 const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
 const region = getEnvOrFail("AWS_REGION");
@@ -91,7 +94,14 @@ export const handler = capture.wrapHandler(
       npi,
       apiMode,
       authGrantorReferenceOid,
-      options: { timeout: timeout.asMilliseconds() },
+      options: {
+        timeout: timeout.asMilliseconds(),
+        onError500: {
+          retry: true,
+          maxAttempts: MAX_ATTEMPTS,
+          initialDelay: INITIAL_DELAY,
+        },
+      },
     });
 
     const docDownloader = new DocumentDownloaderLocalV2({
