@@ -1,4 +1,5 @@
 import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@medplum/fhirtypes";
+import { normalizeCohortName } from "@metriport/core/command/patient-import/csv/convert-patient";
 import {
   CohortCreateRequest,
   CohortDTO,
@@ -759,7 +760,8 @@ export class MetriportMedicalApi {
    * @returns The cohort with the given name.
    */
   async getCohortByName(name: string): Promise<{ cohort: CohortDTO }> {
-    const resp = await this.api.get(`${COHORT_URL}`, { params: { name } });
+    const normalizedName = normalizeCohortName(name);
+    const resp = await this.api.get(`${COHORT_URL}`, { params: { name: normalizedName } });
     if (!resp.data) throw new Error("No cohort found with the given name");
     return { cohort: resp.data.cohorts[0] };
   }
