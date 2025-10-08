@@ -17,6 +17,7 @@ const resourceSummaryInferenceSchema = z.object({
   resourceDisplays: z.array(z.string()),
   resourceRowData: z.record(z.unknown()).optional(),
   context: z.string(),
+  suspectsContext: z.string().optional(),
 });
 
 const questionsByResourceType = {
@@ -72,6 +73,7 @@ const questionsByResourceType = {
   Suspects: [
     "- Why was this suspect created?",
     "- What are the related resources that are responsible for this suspect?",
+    "- Other key observations related to this suspect?",
   ],
 };
 
@@ -93,7 +95,7 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const { resourceType, resourceDisplays, resourceRowData, context } =
+    const { resourceType, resourceDisplays, resourceRowData, context, suspectsContext } =
       resourceSummaryInferenceSchema.parse(req.body);
     console.log(`resourceType: ${resourceType}, resourceDisplays: ${resourceDisplays.join(", ")}`);
 
@@ -117,6 +119,23 @@ router.post(
           2
         )}`
       : "";
+
+    // Build context based on resource type
+    let finalContext = context;
+    if (resourceType === "Suspects" && suspectsContext) {
+      finalContext = `
+## Suspect Analysis Context
+
+The following FHIR resources were identified as responsible for creating this suspect:
+
+${suspectsContext}
+
+---
+
+## Patient's Medical Record Context
+${context}
+`;
+    }
 
     agent.addUserMessageText(
       `
@@ -153,7 +172,7 @@ router.post(
       Keep your answer concise, in bullet point form.
 
       The patient's medical record is:
-      ${context}
+      ${finalContext}
       `
     );
 
