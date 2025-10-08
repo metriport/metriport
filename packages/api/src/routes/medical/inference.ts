@@ -89,9 +89,8 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const { resourceType, resourceDisplays, context } = resourceSummaryInferenceSchema.parse(
-      req.body
-    );
+    const { resourceType, resourceDisplays, resourceRowData, context } =
+      resourceSummaryInferenceSchema.parse(req.body);
     console.log(`resourceType: ${resourceType}, resourceDisplays: ${resourceDisplays.join(", ")}`);
 
     const agent = new AnthropicAgent({
@@ -112,7 +111,11 @@ router.post(
       This is about a patient.
       The resource type is: ${resourceType}
       The resource displays are: ${resourceDisplays.join(", ")}
-      The core relevant data for this resource is: ${JSON.stringify(resourceRowData, null, 2)}
+      The core data for the resource we are asking about is: ${JSON.stringify(
+        resourceRowData,
+        null,
+        2
+      )}
 
       ---
       
