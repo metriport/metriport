@@ -19,6 +19,9 @@ const { log } = out("PatientSettings");
 
 export type Subscriptions = {
   adt?: string[];
+  /**
+   * @deprecated Use questNotifications and questBackfill instead.
+   */
   quest?: boolean;
   questNotifications?: boolean;
   questBackfill?: boolean;
