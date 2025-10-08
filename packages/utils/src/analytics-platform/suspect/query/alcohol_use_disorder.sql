@@ -1,34 +1,11 @@
 /* ============================================================
    ALCOHOL USE DISORDER — SUSPECT QUERY (Ethanol only)
    ------------------------------------------------------------
+   Standard flow: RAW → NORM → CLEAN → SUSPECT → FHIR → RETURN
    Purpose
      Flag "alcohol_use_disorder suspects" using blood alcohol level
      (BAL) from LAB_RESULT (LOINC 5643-2), normalizing mixed units
      to mg/dL and applying pragmatic screening thresholds.
-
-   Data signals (single-observation; screening, not diagnosis)
-     • LOINC 5643-2  Ethanol [Mass/volume] in Serum/Plasma
-     • Units seen in data: mg/dL, g/dL, %, (and some invalid like U/L)
-
-   Unit normalization → mg/dL
-     • mg/dL     → value as-is
-     • g/dL      → value * 1000
-     • % (w/v)   → value * 1000      -- e.g., 0.08% ≈ 80 mg/dL
-     • Others / empty units → ignored
-
-   Suggested screening buckets (tunable)
-     • ≥ 300 mg/dL → alcohol_very_high_300plus
-     • 200–299     → alcohol_high_200plus
-     • 80–199      → alcohol_positive_80plus       (≈ legal intoxication)
-     (All are “suspect” signals; clinical diagnosis requires more context.)
-
-   Exclusions
-     • Patients already diagnosed with alcohol-related disorders:
-       ICD-10-CM F10.*  → exclude from suspects
-
-   Output
-     • One row per patient × suspect_group
-     • Minimal FHIR Observation for UI rendering
    ============================================================ */
 
 WITH aud_dx_exclusion AS (
@@ -39,78 +16,65 @@ WITH aud_dx_exclusion AS (
     AND c.NORMALIZED_CODE LIKE 'F10%'
 ),
 
-/* ------------------------------------------------------------
-   Pull ethanol rows and extract a numeric token from RESULT
-   ------------------------------------------------------------ */
+/* -------------------------
+   RAW: pull rows, extract numeric, require units
+   ------------------------- */
 ethanol_raw AS (
   SELECT
     lr.PATIENT_ID,
-    lr.LAB_RESULT_ID                                  AS resource_id,
-    'Observation'                                     AS resource_type,
+    lr.LAB_RESULT_ID                                   AS resource_id,
+    'Observation'                                       AS resource_type,
     lr.NORMALIZED_CODE,
     lr.NORMALIZED_DESCRIPTION,
     lr.RESULT,
-    COALESCE(NULLIF(lr.NORMALIZED_UNITS,''), lr.SOURCE_UNITS) AS units_raw,
+    COALESCE(NULLIF(lr.NORMALIZED_UNITS,''), NULLIF(lr.SOURCE_UNITS,'')) AS units_raw,
     /* Extract the first numeric piece (handles "0.08 %", "300 mg/dL", etc.) */
-    REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    CAST(lr.RESULT_DATE AS DATE)                      AS obs_date,
+    REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')   AS value_token,
+    CAST(lr.RESULT_DATE AS DATE)                          AS obs_date,
     lr.DATA_SOURCE
   FROM core_v2.CORE_V2__LAB_RESULT lr
   WHERE lr.NORMALIZED_CODE_TYPE ILIKE 'loinc'
     AND lr.NORMALIZED_CODE = '5643-2'   -- Ethanol [Mass/volume] in Serum or Plasma
     AND REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     /* Ignore empty units up front */
-    AND COALESCE(NULLIF(lr.NORMALIZED_UNITS,''), lr.SOURCE_UNITS) IS NOT NULL
+    AND COALESCE(NULLIF(lr.NORMALIZED_UNITS,''), NULLIF(lr.SOURCE_UNITS,'')) IS NOT NULL
+    /* ensure numeric token > 0 */
+    AND TRY_TO_DOUBLE(REGEXP_SUBSTR(REPLACE(lr.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')) > 0
 ),
 
-/* ------------------------------------------------------------
-   Normalize units to mg/dL; drop non mass/volume or odd units
-   ------------------------------------------------------------ */
+/* -------------------------
+   NORM: normalize value → mg/dL and set canonical units
+   ------------------------- */
 ethanol_norm AS (
   SELECT
-    r.PATIENT_ID,
-    r.resource_id,
-    r.resource_type,
-    r.NORMALIZED_CODE,
-    r.NORMALIZED_DESCRIPTION,
-    r.RESULT,
-    r.units_raw,
-    r.obs_date,
-    r.DATA_SOURCE,
-
-    /* Canonicalized units label for display */
-    CASE
-      WHEN r.units_raw ILIKE '%mg/dl%' THEN 'mg/dL'
-      WHEN r.units_raw ILIKE '%g/dl%'  THEN 'g/dL'
-      WHEN r.units_raw ILIKE '%\%%'    THEN '%'
-      ELSE r.units_raw
-    END AS units_disp,
-
+    r.*,
     /* Convert to mg/dL for thresholding */
     CASE
       WHEN r.units_raw ILIKE '%mg/dl%' THEN TRY_TO_DOUBLE(r.value_token)
       WHEN r.units_raw ILIKE '%g/dl%'  THEN TRY_TO_DOUBLE(r.value_token) * 1000.0
       WHEN r.units_raw ILIKE '%\%%'    THEN TRY_TO_DOUBLE(r.value_token) * 1000.0   -- % w/v ≈ g/dL
       ELSE NULL
-    END AS value_mg_dl
+    END AS value_mg_dl,
+    /* canonical units for downstream use */
+    'mg/dL' AS units
   FROM ethanol_raw r
 ),
 
-/* ------------------------------------------------------------
-   Plausibility filter and exclusion of known AUD diagnoses
-   ------------------------------------------------------------ */
+/* -------------------------
+   CLEAN: plausibility & diagnosis exclusions
+   ------------------------- */
 ethanol_clean AS (
   SELECT *
   FROM ethanol_norm n
-  WHERE value_mg_dl IS NOT NULL
+  WHERE n.value_mg_dl IS NOT NULL
     /* conservative plausibility range for BAL values in mg/dL */
-    AND value_mg_dl BETWEEN 10 AND 1000
+    AND n.value_mg_dl BETWEEN 10 AND 1000
     AND NOT EXISTS (SELECT 1 FROM aud_dx_exclusion x WHERE x.PATIENT_ID = n.PATIENT_ID)
 ),
 
-/* ------------------------------------------------------------
-   Assign suspect buckets based on normalized BAL (mg/dL)
-   ------------------------------------------------------------ */
+/* -------------------------
+   SUSPECT: assign screening buckets (tunable)
+   ------------------------- */
 aud_suspects AS (
   SELECT
     e.PATIENT_ID,
@@ -126,24 +90,23 @@ aud_suspects AS (
     'F10.9'  AS suspect_icd10_code,
     'Alcohol use, unspecified (screen positive)' AS suspect_icd10_short_description,
 
-    /* Carry through for FHIR building */
+    /* carry-through for FHIR */
     e.resource_id,
     e.resource_type,
     e.NORMALIZED_CODE,
     e.NORMALIZED_DESCRIPTION,
     e.RESULT,
-    e.units_disp AS units,
-    e.value_mg_dl AS value_num,     -- normalized quantity for FHIR value
+    e.units,                    -- canonical units from NORM
+    e.value_mg_dl AS value_num, -- canonical numeric
     e.obs_date,
     e.DATA_SOURCE
   FROM ethanol_clean e
-  WHERE
-    (e.value_mg_dl >= 80)  -- lowest screening threshold
+  WHERE e.value_mg_dl >= 80  -- lowest screening threshold
 ),
 
-/* ------------------------------------------------------------
-   Minimal FHIR Observation for each supporting BAL
-   ------------------------------------------------------------ */
+/* -------------------------
+   FHIR: minimal Observation per supporting BAL
+   ------------------------- */
 obs_with_fhir AS (
   SELECT
     s.PATIENT_ID,
@@ -169,7 +132,7 @@ obs_with_fhir AS (
       'valueQuantity',
         OBJECT_CONSTRUCT(
           'value', s.value_num,
-          'unit',  'mg/dL'
+          'unit',  s.units
         ),
       /* Preserve original RESULT if needed (e.g., textual) */
       'valueString',
@@ -182,6 +145,9 @@ obs_with_fhir AS (
   FROM aud_suspects s
 )
 
+/* -------------------------
+   RETURN
+   ------------------------- */
 SELECT
   PATIENT_ID,
   suspect_group,
