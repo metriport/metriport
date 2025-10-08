@@ -7,6 +7,7 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { startCreateResourceDiffBundlesJobsAcrossEhrs } from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/start-jobs-across-ehrs";
 import { getConsolidated } from "../patient/consolidated-get";
+import { finishDischargeRequery } from "./patient-monitoring/discharge-requery/finish";
 
 /**
  * Recreates the consolidated bundle for a patient.
@@ -66,6 +67,18 @@ export async function recreateConsolidated({
         patientId: patient.id,
         requestId,
       }).catch(processAsyncError("Post-DQ startCreateResourceDiffBundlesJobsAcrossEhrs"));
+
+      if (requestId) {
+        console.log("REQUEST ID ON RECREATE CONSOLIDATED", requestId);
+        finishDischargeRequery({
+          cxId: patient.cxId,
+          patientId: patient.id,
+          requestId,
+          pipelineStatus: "successful",
+        }).catch(processAsyncError("Post-DQ startCreateResourceDiffBundlesJobsAcrossEhrs"));
+      } else {
+        log("No requestId provided, skipping finishDischargeRequery");
+      }
     }
   } catch (err) {
     processAsyncError(`Post-DQ getConsolidated`, log)(err);

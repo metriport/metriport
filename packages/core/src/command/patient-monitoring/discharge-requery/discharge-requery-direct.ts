@@ -17,7 +17,7 @@ import {
 
 dayjs.extend(duration);
 
-const defaultTriggerConsolidated = false;
+const defaultTriggerPdfConversion = false;
 const defaultDisableWebhooks = true;
 const defaultRerunPdOnNewDemographics = true;
 const defaultForceDownload = true;
@@ -56,7 +56,7 @@ export class DischargeRequeryDirect implements DischargeRequery {
           cxId,
           requestId: dataPipelineRequestId,
           patientId,
-          triggerConsolidated: defaultTriggerConsolidated,
+          triggerConsolidated: defaultTriggerPdfConversion,
           disableWebhooks: defaultDisableWebhooks,
           context: dischargeRequeryContext,
           forceDownload: defaultForceDownload,
