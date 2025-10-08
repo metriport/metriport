@@ -1,8 +1,9 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { DocumentQuery, MetriportMedicalApi } from "@metriport/api-sdk";
+import { DocumentQuery } from "@metriport/api-sdk";
 import { disableWHMetadata } from "@metriport/core/domain/document-query/trigger-and-query";
+import { Patient } from "@metriport/core/domain/patient";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import { sleep } from "@metriport/core/util/sleep";
@@ -18,6 +19,7 @@ import { initFile } from "./shared/file";
 import { buildGetDirPathInside, initRunsFolder } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
 import { logErrorToFile, logNotDryRun } from "./shared/log";
+import { getFileContents } from "./shared/fs";
 
 dayjs.extend(duration);
 
@@ -48,18 +50,16 @@ const preferredFacilityId: string | undefined = undefined;
 
 // add patient IDs here to kick off queries for specific patient IDs
 const patientIds: string[] = [];
+// bundled ids are used to trigger document queries for specific patients in specific customers
+const bundledIds: { cxId: string; patientId: string }[] = [];
+const bundledIdsFile = "";
 
 // If you're sure we want to trigger WH notifications to the CX, enable this
 const triggerWHNotificationsToCx = false;
 
 // auth stuff
-const cxId = getEnvVarOrFail("CX_ID");
-const apiKey = getEnvVarOrFail("API_KEY");
+const cxId = bundledIds.length < 1 && bundledIdsFile === "" ? getEnvVarOrFail("CX_ID") : undefined;
 const apiUrl = getEnvVarOrFail("API_URL");
-const metriportAPI = new MetriportMedicalApi(apiKey, {
-  baseAddress: apiUrl,
-  timeout: 120_000,
-});
 const apiInternal = axios.create({
   baseURL: apiUrl,
   timeout: 120_000,
@@ -94,6 +94,7 @@ async function displayWarningAndConfirmation(
 }
 
 async function queryDocsForPatient(
+  cxId: string,
   patientId: string,
   outputFileName: string,
   errorFileName: string,
@@ -101,7 +102,7 @@ async function queryDocsForPatient(
   log: typeof console.log
 ) {
   try {
-    const patient = await metriportAPI.getPatient(patientId);
+    const patient = await getPatient(cxId, patientId);
 
     if (!patient.facilityIds || patient.facilityIds.length === 0) {
       log(`Patient ${patientId} has no facilities, skipping...`);
@@ -109,13 +110,14 @@ async function queryDocsForPatient(
     }
 
     const facilityId = preferredFacilityId ?? patient.facilityIds[0];
-    const docQueryPromise = async () =>
-      triggerDocQuery(cxId, patientId, facilityId, triggerWHNotificationsToCx);
+    const docQueryPromise = async function () {
+      return triggerDocQuery(cxId, patientId, facilityId, triggerWHNotificationsToCx);
+    };
 
     if (dryRun) {
       log(
         `Would be triggering the DQ for patient ${patient.id} ` +
-          `${patient.firstName} ${patient.lastName}...`
+          `${patient.data.firstName} ${patient.data.lastName}...`
       );
       return;
     }
@@ -154,62 +156,103 @@ async function main() {
   const dryRun = dryRunParam ?? false;
   const { log } = out(dryRun ? "DRY-RUN" : "");
 
-  const startedAt = Date.now();
-  log(`>>> Starting with ${patientIds.length} patient IDs...`);
-
-  const { orgName } = await getCxData(cxId, undefined, false);
-  const { patientIds: patientIdsToQuery, isAllPatients } = await getPatientIds({
-    cxId,
-    patientIds,
-    axios,
-  });
-
-  await displayWarningAndConfirmation(
-    patientIdsToQuery.length,
-    isAllPatients,
-    orgName,
-    dryRun,
-    log
-  );
-
-  const outputFileName = getOutputFileName(orgName) + ".csv";
-  const errorFileName = getOutputFileName(orgName) + ".error";
-  if (!dryRun) {
-    initFile(outputFileName, csvHeader);
-    initFile(errorFileName);
-  }
-
-  log(`>>> Running it... (delay time is ${localGetDelay(log)} ms)`);
-
-  let count = 0;
-  const chunks = chunk(patientIdsToQuery, patientChunkSize);
-  for (const [i, chunk] of Object.entries(chunks)) {
-    log(`>>> Querying docs for chunk of ${chunk.length} patient from ${orgName}...`);
-    const docQueries: Promise<void>[] = [];
-    for (const patientId of chunk) {
-      docQueries.push(queryDocsForPatient(patientId, outputFileName, errorFileName, dryRun, log));
-      count++;
-    }
-    await Promise.allSettled(docQueries);
-
-    log(`>>> Progress: ${count}/${patientIdsToQuery.length} patient doc queries complete`);
-
-    if (parseInt(i) < chunks.length - 1) {
-      const delayTime = localGetDelay(log);
-      log(`... ... sleeping for ${delayTime} ms before the next chunk...`);
-      await sleep(delayTime);
-    }
-  }
-
-  if (patientsWithErrors.length > 0) {
+  if (patientIds.length > 0 && (bundledIds.length > 0 || bundledIdsFile !== "")) {
     log(
-      `>>> Patients with errors (${patientsWithErrors.length}): ${patientsWithErrors.join(", ")}`
+      `>>> You cannot provide both patientIds and bundledIds or bundledIdsFile. Please provide only one.`
     );
-    log(`>>> See file ${errorFileName} for more details.`);
-  } else {
-    log(`>>> No patient with errors!`);
+    process.exit(1);
+  } else if (bundledIds.length > 0 && bundledIdsFile !== "") {
+    log(`>>> You cannot provide both bundledIds and bundledIdsFile. Please provide only one.`);
+    process.exit(1);
   }
-  log(`>>> Done querying docs for all patients in ${Date.now() - startedAt} ms`);
+
+  if (bundledIdsFile !== "") {
+    const fileContents = getFileContents(bundledIdsFile);
+    const rows = fileContents
+      .split(/\r?\n/)
+      .map((row: string) => row.replaceAll('"', "").replaceAll("'", "").trim())
+      .filter((row: string) => row.length > 0);
+
+    // Skip the header row and parse the data rows
+    const dataRows = rows.slice(1);
+    bundledIds.push(
+      ...dataRows.map((row: string) => {
+        const [id, cxId] = row.split(",");
+        return { cxId: cxId.trim(), patientId: id.trim() };
+      })
+    );
+  }
+
+  const custommersToQuery = cxId
+    ? {
+        [cxId]: patientIds,
+      }
+    : bundledIds.reduce((acc, { cxId, patientId }) => {
+        acc[cxId] = [...(acc[cxId] || []), patientId];
+        return acc;
+      }, {} as Record<string, string[]>);
+
+  for (const [cxId, patientIds] of Object.entries(custommersToQuery)) {
+    const startedAt = Date.now();
+    log(`>>> Starting with ${patientIds.length} patient IDs...`);
+
+    const { orgName } = await getCxData(cxId, undefined, false);
+    const { patientIds: patientIdsToQuery, isAllPatients } = await getPatientIds({
+      cxId,
+      patientIds,
+      axios,
+    });
+
+    await displayWarningAndConfirmation(
+      patientIdsToQuery.length,
+      isAllPatients,
+      orgName,
+      dryRun,
+      log
+    );
+
+    const outputFileName = getOutputFileName(orgName) + ".csv";
+    const errorFileName = getOutputFileName(orgName) + ".error";
+    if (!dryRun) {
+      initFile(outputFileName, csvHeader);
+      initFile(errorFileName);
+    }
+
+    log(`>>> Running it... (delay time is ${localGetDelay(log)} ms)`);
+
+    let count = 0;
+    const chunks = chunk(patientIdsToQuery, patientChunkSize);
+    for (const [i, chunk] of Object.entries(chunks)) {
+      log(`>>> Querying docs for chunk of ${chunk.length} patient from ${orgName}...`);
+      const docQueries: Promise<void>[] = [];
+      for (const patientId of chunk) {
+        docQueries.push(
+          queryDocsForPatient(cxId, patientId, outputFileName, errorFileName, dryRun, log)
+        );
+        count++;
+      }
+      await Promise.allSettled(docQueries);
+
+      log(`>>> Progress: ${count}/${patientIdsToQuery.length} patient doc queries complete`);
+
+      if (parseInt(i) < chunks.length - 1) {
+        const delayTime = localGetDelay(log);
+        log(`... ... sleeping for ${delayTime} ms before the next chunk...`);
+        await sleep(delayTime);
+      }
+    }
+
+    if (patientsWithErrors.length > 0) {
+      log(
+        `>>> Patients with errors (${patientsWithErrors.length}): ${patientsWithErrors.join(", ")}`
+      );
+      log(`>>> See file ${errorFileName} for more details.`);
+    } else {
+      log(`>>> No patient with errors!`);
+    }
+    log(`>>> Done querying docs for all patients in ${Date.now() - startedAt} ms`);
+    log(`>>> Moving on to the next cx...`);
+  }
   process.exit(0);
 }
 
@@ -229,6 +272,11 @@ async function triggerDocQuery(
     payload
   );
   return resp.data.documentQueryProgress ?? undefined;
+}
+
+async function getPatient(cxId: string, patientId: string): Promise<Patient> {
+  const resp = await apiInternal.get(`/internal/patient/${patientId}?cxId=${cxId}`);
+  return resp.data;
 }
 
 main();
