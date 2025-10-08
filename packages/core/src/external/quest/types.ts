@@ -23,16 +23,20 @@ export type QuestRosterResponse = z.infer<typeof questRosterResponseSchema>;
 
 export type QuestRosterType = "notifications" | "backfill";
 
-export interface QuestPatientRequest {
+export const questRosterRequestSchema = z.object({
+  rosterType: z.enum(["notifications", "backfill"]),
+});
+
+export type QuestRosterRequest = z.infer<typeof questRosterRequestSchema>;
+
+export interface QuestPatientRequest extends QuestPatientStatus {
   cxId: string;
   patientId: string;
-  backfill?: boolean;
-  notifications?: boolean;
 }
 
 export interface QuestPatientStatus {
-  backfill?: boolean;
-  notifications?: boolean;
+  backfill: boolean;
+  notifications: boolean;
 }
 
 /**

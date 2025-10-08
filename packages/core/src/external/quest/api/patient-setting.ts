@@ -39,13 +39,6 @@ export async function setPatientSetting(
         notifications,
       });
     });
-    if (response.status === 404) {
-      throw new NotFoundError(`Patient setting could not be set for Quest`, undefined, {
-        cxId,
-        patientId,
-        url: getPatientMappingUrl,
-      });
-    }
     const data = patientSettingsResponseSchema.parse(response.data);
     return data;
   } catch (error) {

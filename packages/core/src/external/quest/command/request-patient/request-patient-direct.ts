@@ -6,8 +6,8 @@ export class QuestRequestPatientDirect implements QuestRequestPatientHandler {
   async requestPatient(requestData: QuestPatientRequest): Promise<QuestPatientStatus> {
     await setPatientSetting(requestData);
     return {
-      backfill: requestData.backfill ?? false,
-      notifications: requestData.notifications ?? false,
+      backfill: requestData.backfill,
+      notifications: requestData.notifications,
     };
   }
 }
