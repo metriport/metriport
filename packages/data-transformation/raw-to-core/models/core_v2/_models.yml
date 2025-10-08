@@ -1,7 +1,9 @@
 version: 2
 
 models:
-  - name: core_v2__condition_encounter_map
+  - name: core_v2__condition_encounter
+    schema: core_v2
+    alias: condition_encounter
     columns:
       - name: condition_id
         tests:
@@ -18,6 +20,7 @@ models:
               config:
                 severity: warn
   - name: core_v2__condition
+    schema: core_v2
     alias: condition
     columns:
       - name: patient_id
@@ -28,6 +31,7 @@ models:
               config:
                 severity: warn
   - name: core_v2__lab_result
+    schema: core_v2
     alias: lab_result
     columns:
       - name: patient_id
@@ -38,6 +42,7 @@ models:
               config:
                 severity: warn
   - name: core_v2__medication
+    schema: core_v2
     alias: medication
     columns:
       - name: patient_id
@@ -48,6 +53,7 @@ models:
               config:
                 severity: warn
   - name: core_v2__observation
+    schema: core_v2
     alias: observation
     columns:
       - name: patient_id
