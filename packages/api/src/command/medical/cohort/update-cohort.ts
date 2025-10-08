@@ -1,8 +1,8 @@
 import { out } from "@metriport/core/util";
-import { CohortWithSize, CohortUpdateCmd } from "@metriport/shared/domain/cohort";
+import { NotFoundError } from "@metriport/shared";
+import { CohortUpdateCmd, CohortWithSize } from "@metriport/shared/domain/cohort";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { CohortModel } from "../../../models/medical/cohort";
-import { NotFoundError } from "@metriport/shared";
 import { getCohortSize } from "./patient-cohort/get-cohort-size";
 
 export async function updateCohort({
