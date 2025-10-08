@@ -157,7 +157,7 @@
         "medical-api/handling-data/medical-record-summary",
         "medical-api/handling-data/webhooks",
         "medical-api/handling-data/realtime-patient-notifications",
-        "medical-api/handling-data/working-with-cohorts",
+        "medical-api/handling-data/cohorts",
         {
           "group": "Data Analytics and Warehousing",
           "icon": "database",

@@ -1,5 +1,5 @@
 ---
-title: "Working With Cohorts"
+title: "Cohorts"
 icon: "people-group"
 description: "Group and enable settings for your patients."
 ---
@@ -7,13 +7,7 @@ description: "Group and enable settings for your patients."
 # Overview
 
 Metriport supports **Cohorts** - a way to create groups of patients for use within both your own system and Metriport.
-If you use Metriport to monitor patients for anything from ADT notifications to lab data, you'll do that by adding your patients to Cohorts.
-
-<Info>
-  If you're interested in learning more about cohorts for
-  other use cases, such as analytics or reporting, let us
-  know at support@metriport.com
-</Info>
+If you use Metriport to monitor patients for anything from ADT notifications to laboratory data, you'll do that by adding your patients to Cohorts.
 
 ### The Cohort Model
 
@@ -22,12 +16,15 @@ or retrieve the members of that cohort via API.
 
 ```json
 {
-  "name": "High Risk",
+  "name": "HIGH RISK",
   "description": "Members of this cohort are opted-in to all available data sources.",
   "settings": {
-    "adtMonitoring": true,
-    "questMonitoring": true
-    // etc.
+    "monitoring": {
+      "adt": true,
+      "pharmacy": true,
+      "hie": true,
+      "laboratory": true,
+    },
   }
 }
 ```
@@ -37,9 +34,13 @@ or retrieve the members of that cohort via API.
 Every cohort has a name and a collection of settings which apply to all patients within that cohort.
 By default, you have 3 cohorts with the following names + behaviors:
 
-- Low Risk ( 🟢 ): monthly medical record refresh
-- Medium Risk ( 🟡 ): monthly medical record refresh & prescription medication history
-- High Risk ( 🔴 ): <b>weekly medical record refresh</b>, and monitoring enabled for all available sources
+<Note>
+  Names are full caps only (this will be done for you) E.G.,
+  "Low Risk" -> "LOW RISK"
+</Note>
+- LOW RISK ( 🟢 ): monthly medical record refresh  
+- MEDIUM RISK ( 🟡 ): monthly medical record refresh & prescription medication history  
+- HIGH RISK ( 🔴 ): **weekly medical record refresh**, and monitoring enabled for all available sources  
 
 <Note>
   All of this can be personalized based on your needs,
@@ -74,11 +75,13 @@ To do this, you create a cohort and specify the settings directly on the cohort.
 ```typescript
 // 1. Create a cohort
 const { cohort } = await metriportApi.createCohort({
-  name: "My Custom Cohort"
+  name: "MY CUSTOM COHORT"
   description: "This is my first cohort",
   color: "purple",
   settings: {
-    adtMonitoring: true
+    monitoring: {
+      adt: true
+    }
   }
  });
 
@@ -126,40 +129,39 @@ const patient = await metriportApi.createPatient(
 
 // The patient is now automatically subscribed to all monitoring settings
 // from both the "High Risk" and "My Custom Cohort" cohorts
+// names will automatically be capatalized
 ```
 
-### Available monitoring settings
+## Available monitoring settings
 
-We're actively building out additional monitoring capabilities. Today, these are the valid fields and values for cohort settings.
+### Example:
 
 ```json
 {
-  "adtMonitoring": true,
-  "questMonitoring": true,
-  "adtMonitoring_overrideHealthConnectTexas": true,
-  "adtMonitoring_overrideTexasHiePcc": true
+  "settings": {
+    "monitoring": {
+      "adt": ["Hixny"],
+      "pharmacy": true,
+      "hie": true,
+      "laboratory": true,
+    },
+  }
 }
 ```
 
-<Info>
-  {" "}
-  <strong>Default behavior:</strong> With <code>
-    adtMonitoring: true
-  </code>, a patient receives ADTs <em>only</em> from the state
-  of their registered address. <br /> <strong>
-    Override behavior:
-  </strong> Set <code>
-    adtMonitoring_overrideHieName: true
-  </code> to bypass state-based routing for that HIE. For example,
-  if <code>adtMonitoring_overrideTexasHiePcc</code> is <code>
-    true
-  </code>, we will <em>not</em> use the patient’s address to
-  decide for Texas HIE PCC. You can enable multiple overrides.{" "}
-</Info>
+### Monitoring fields
 
-### Cohorts for convenience
+Enable monitoring for certain data sources.
 
-Additionally, you can use Cohorts to label your patients for your own purposes.
-A cohort does not need to have any monitoring settings enabled - you can simply group patients
-and paginate over them and patients can be a member of any number of cohorts - try it out and share your
-thoughts with us at support@metriport.com
+- **`monitoring.adt`** — _allowed values: `true` or `false` or ["HieName", "HieName", ...], default: false_  
+  Subscribes the patient(s) to **ADT notifications** based on the patient’s **primary address state**.  
+  To force-enable for a specific state HIE instead of using the primary address state, simply input the name of the HIE(s) in an array.
+
+- **`monitoring.pharmacy`** — _allowed values: `true` or `false`, default: false_  
+  Enables **pharmacy / medication history** monitoring (e.g., retail fill data) where available.
+
+- **`monitoring.hie`** — _allowed values: `true` or `false`, default: true_  
+  Enables **HIE-based document monitoring / medical record refresh** (non-ADT).
+
+- **`monitoring.laboratory`** - _allowed values: `true` or `false`, default: false_  
+  Subscribes patient(s) for ongoing notifications of new labs

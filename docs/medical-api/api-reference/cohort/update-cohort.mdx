@@ -37,12 +37,14 @@ const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 const cohort = await metriport.updateCohort(
   "018a80c4-292a-7486-a1234-9uiu76yhe234",
   {
-    name: "Pilot - Eval",
+    name: "PILOT - EVAL",
     description:
       "Patients that are a part of our newest pilot program.",
-    settings: {
-      adtMonitoring: true,
-    },
+    "settings": {
+      "monitoring": {
+        "hie": true
+      }
+    }
   }
 );
 ```
@@ -52,10 +54,12 @@ const cohort = await metriport.updateCohort(
 {
   "id": "018a80c4-292a-7486-a1234-9uiu76yhe234",
   "eTag": "2",
-  "name": "Pilot - Eval",
+  "name": "LOW RISK",
   "description": "Patients that are a part of our newest pilot program.",
   "settings": {
-    "adtMonitoring": true
+    "monitoring": {
+      "hie": true
+    }
   }
 }
 ```
