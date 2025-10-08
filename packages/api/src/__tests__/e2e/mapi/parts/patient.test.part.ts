@@ -50,6 +50,7 @@ export function runPatientTestsPart1(e2e: E2eContext) {
       ...createPatient,
       id: patient.id,
       lastName: patient.lastName + `_${faker.person.lastName()}`,
+      cohorts: createPatient.cohorts ?? [],
     };
     e2e.patient = await medicalApi.updatePatient(patientUpdate, e2e.facility.id);
     expect(e2e.patient.lastName).toEqual(patientUpdate.lastName);

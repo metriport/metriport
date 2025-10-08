@@ -54,6 +54,7 @@ import {
 } from "../models/patient";
 import { PatientDTO } from "../models/patientDTO";
 import { SettingsResponse } from "../models/settings-response";
+import { normalizeCohortName } from "@metriport/core/command/patient-import/csv/convert-patient";
 
 const NO_DATA_MESSAGE = "No data returned from API";
 const BASE_PATH = "/medical/v1";
