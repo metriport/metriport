@@ -12,6 +12,7 @@ import {
   getHieConfigDictionary,
   throwOnInvalidHieName,
 } from "../external/hl7-notification/hie-config-dictionary";
+import { QuestRosterType } from "../external/quest/types";
 import { out } from "../util/log";
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
 
@@ -48,6 +49,14 @@ export const hl7v2SubscribersQuerySchema = z
     hieName: z.string(),
   })
   .and(createQueryMetaSchema());
+
+export const questSettingsKeyForRosterType: Record<
+  QuestRosterType,
+  keyof Pick<Subscriptions, "questNotifications" | "questBackfill">
+> = {
+  backfill: "questBackfill",
+  notifications: "questNotifications",
+};
 
 export function parsePatientSettingsRequest(data: unknown): PatientSettingsRequest {
   try {

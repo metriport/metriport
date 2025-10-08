@@ -9,7 +9,6 @@ import { getQuestRoster } from "../../../command/medical/patient/get-quest-roste
 import { QuestRosterType, rosterTypeSchema } from "@metriport/core/external/quest/types";
 import { QuestUploadRosterHandlerCloud } from "@metriport/core/external/quest/command/upload-roster/upload-roster-cloud";
 import { QuestDownloadResponseHandlerCloud } from "@metriport/core/external/quest/command/download-response/download-response-cloud";
-import { Subscriptions } from "@metriport/core/domain/patient-settings";
 import { Pagination } from "../../../command/pagination";
 import { dtoFromModel as dtoFromPatientModel, PatientDTO } from "../../medical/dtos/patientDTO";
 import { dtoFromModel as dtoFromPatientMappingModel } from "../../medical/dtos/patient-mapping";
@@ -21,14 +20,6 @@ import { questSource } from "@metriport/shared/interface/external/quest/source";
 
 dayjs.extend(duration);
 const router = Router();
-
-const settingsKeyForRosterType: Record<
-  QuestRosterType,
-  keyof Pick<Subscriptions, "questNotifications" | "questBackfill">
-> = {
-  backfill: "questBackfill",
-  notifications: "questNotifications",
-};
 
 /**
  * Validates the roster type from the request parameters, and throws a BadRequestError if it is invalid.
@@ -63,15 +54,13 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const rosterType = getRosterTypeFromParamsOrFail(req);
-
-    const settingsKey = settingsKeyForRosterType[rosterType];
     const { meta, items } = await paginated({
       request: req,
       additionalQueryParams: {},
       getItems: (pagination: Pagination) => {
         return getQuestRoster({
           pagination,
-          settingsKey,
+          rosterType,
         });
       },
       getTotalCount: () => {
