@@ -20,6 +20,9 @@ export const COHORT_COLORS = [
 export const cohortColorsSchema = z.enum(COHORT_COLORS);
 export const cohortSettingsSchema = z.object({
   adtMonitoring: z.boolean().optional(),
+  adtMonitoring_onlyHealthConnectTexas: z.boolean().optional(),
+  adtMonitoring_onlyHieTexasPcc: z.boolean().optional(),
+  questMonitoring: z.boolean().optional(),
 });
 export const baseCohortSchema = z.object({
   name: z.string().transform(val => val.trim().toUpperCase()),

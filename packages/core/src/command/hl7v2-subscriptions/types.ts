@@ -62,6 +62,7 @@ export type HieConfig = {
 export type VpnlessHieConfig = Omit<HieConfig, "gatewayPublicIp" | "internalCidrBlocks">;
 
 export type Hl7v2SubscriberParams = {
+  hieStates: USState[];
   hieName: string;
   count?: number | undefined;
 };
