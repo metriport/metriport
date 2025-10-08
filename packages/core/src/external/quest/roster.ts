@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import { executeWithNetworkRetries } from "@metriport/shared";
 import { Config } from "../../util/config";
 import { Patient } from "@metriport/shared/domain/patient";
-import { questRosterResponseSchema, QuestRosterType } from "./types";
+import { questRosterResponseSchema, QuestRosterType, QuestRosterRequest } from "./types";
 import { buildRosterFileName } from "./file/file-names";
 import { buildRosterFile } from "./file/file-generator";
 import { out, LogFunction } from "../../util";
@@ -13,11 +13,7 @@ const QUEST_ROSTER_ROUTE = "/internal/quest/roster";
 const NUMBER_OF_ATTEMPTS = 3;
 const BASE_DELAY = dayjs.duration({ milliseconds: 100 });
 
-export async function generateQuestRoster({
-  rosterType,
-}: {
-  rosterType: QuestRosterType;
-}): Promise<{
+export async function generateQuestRoster({ rosterType }: QuestRosterRequest): Promise<{
   rosterFileName: string;
   rosterContent: Buffer;
 }> {

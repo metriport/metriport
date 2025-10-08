@@ -8,6 +8,12 @@ import {
   buildLatestConversionFileName,
 } from "../../file/file-names";
 
+/**
+ * Deduplicates and merges all Quest response bundles for a given patient.
+ * @param cxId - The ID of the care experience.
+ * @param patientId - The ID of the patient.
+ * @returns A consolidated bundle with all Quest lab data, or undefined if no bundles were found.
+ */
 export async function buildConsolidatedLabBundle({
   cxId,
   patientId,
@@ -29,6 +35,7 @@ export async function buildConsolidatedLabBundle({
     return undefined;
   }
 
+  // Deduplicate all lab bundles and save the final result to S3.
   await dangerouslyDeduplicate({ cxId, patientId, bundle: latestBundle });
   const latestBundleName = buildLatestConversionFileName(cxId, patientId);
   const fileContent = Buffer.from(JSON.stringify(latestBundle));
@@ -37,6 +44,17 @@ export async function buildConsolidatedLabBundle({
   return latestBundle;
 }
 
+/**
+ * Returns all Quest response bundles for a given patient. This may contain both "backfill bundles" which contain a large number of historical entries,
+ * and "notification bundles" which contain a daily update when a particular patient visits a lab testing location.
+ *
+ * @param s3 - The S3 client.
+ * @param cxId - The ID of the care experience.
+ * @param patientId - The ID of the patient.
+ * @param labBucketName - The name of the lab conversion bucket.
+ * @param log - The logger.
+ * @returns
+ */
 async function getAllResponseBundles({
   s3,
   cxId,
