@@ -1,5 +1,5 @@
 import { Config } from "@metriport/core/util/config";
-import { PaginatedResponse } from "@metriport/shared";
+import { BadRequestError, PaginatedResponse } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -30,6 +30,20 @@ const settingsKeyForRosterType: Record<
   notifications: "questNotifications",
 };
 
+/**
+ * Validates the roster type from the request parameters, and throws a BadRequestError if it is invalid.
+ */
+function getRosterTypeFromParamsOrFail(req: Request): QuestRosterType {
+  const rosterTypeParam = getFromParamsOrFail("rosterType", req);
+  const rosterType = rosterTypeSchema.safeParse(rosterTypeParam);
+  if (!rosterType.success) {
+    throw new BadRequestError("Invalid roster type", undefined, {
+      rosterType: rosterTypeParam,
+    });
+  }
+  return rosterType.data;
+}
+
 /** ---------------------------------------------------------------------------
  * GET /internal/quest/roster/:rosterType
  *
@@ -48,10 +62,7 @@ router.get(
   "/roster/:rosterType",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const rosterType = getFromParamsOrFail("rosterType", req) as QuestRosterType;
-    if (!rosterTypeSchema.safeParse(rosterType).success) {
-      return res.sendStatus(status.BAD_REQUEST);
-    }
+    const rosterType = getRosterTypeFromParamsOrFail(req);
 
     const settingsKey = settingsKeyForRosterType[rosterType];
     const { meta, items } = await paginated({
@@ -93,10 +104,7 @@ router.post(
   "/upload-roster/:rosterType",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const rosterType = getFromParamsOrFail("rosterType", req) as QuestRosterType;
-    if (!rosterTypeSchema.safeParse(rosterType).success) {
-      return res.sendStatus(status.BAD_REQUEST);
-    }
+    const rosterType = getRosterTypeFromParamsOrFail(req);
     const handler = new QuestUploadRosterHandlerCloud();
     await handler.generateAndUploadLatestQuestRoster({ rosterType });
     return res.sendStatus(status.OK);
