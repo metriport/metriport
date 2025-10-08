@@ -1,4 +1,4 @@
-import { PatientCohortModelCreate } from "@metriport/core/domain/cohort";
+import { PatientCohortModelCreate } from "@metriport/shared/domain/cohort";
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../_default";
 import { CohortModel } from "./cohort";

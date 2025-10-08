@@ -1,4 +1,4 @@
-import { CohortColors, CohortModelCreate, CohortSettings } from "@metriport/core/domain/cohort";
+import { CohortColors, CohortModelCreate, CohortSettings } from "@metriport/shared/domain/cohort";
 import { CreationOptional, DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../_default";
 import { PatientCohortModel } from "./patient-cohort";

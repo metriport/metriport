@@ -1,4 +1,4 @@
-import { CohortColors, CohortEntity, CohortSettings } from "@metriport/core/domain/cohort";
+import { CohortColors, CohortEntity, CohortSettings } from "@metriport/shared/domain/cohort";
 import { toBaseDTO } from "./baseDTO";
 
 export type CohortDTO = {
