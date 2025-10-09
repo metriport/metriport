@@ -11,13 +11,20 @@ import { QuestSftpClient } from "@metriport/core/external/quest/client";
  */
 const command = new Command();
 command.name("upload-roster");
+command.option("--notifications", "Upload roster for real time notifications");
 command.description("Upload latest Quest roster to Quest Diagnostics");
 
-command.action(async () => {
+command.action(async ({ notifications }: { notifications?: boolean | undefined }) => {
   console.log("Uploading latest Quest roster to Quest Diagnostics...");
+  console.log(
+    notifications
+      ? "Uploading roster for real time notifications"
+      : "Uploading roster for historical data"
+  );
   const client = new QuestSftpClient({ logLevel: "debug" });
+  const rosterType = notifications ? "notifications" : "backfill";
   const handler = new QuestUploadRosterHandlerDirect(client);
-  await handler.generateAndUploadLatestQuestRoster();
+  await handler.generateAndUploadLatestQuestRoster({ rosterType });
   console.log("Upload of Quest roster completed");
 });
 

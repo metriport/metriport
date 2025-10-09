@@ -8,11 +8,7 @@ import {
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk-v1";
 import { ingestIntoSearchEngine } from "@metriport/core/command/consolidated/search/document-reference/ingest";
-import {
-  isCQDirectEnabledForCx,
-  isEnhancedCoverageEnabledForCx,
-  isStalePatientUpdateEnabledForCx,
-} from "@metriport/core/command/feature-flags/domain-ffs";
+import { isStalePatientUpdateEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { createDocumentRenderFilePaths } from "@metriport/core/domain/document/filename";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
@@ -67,7 +63,7 @@ import {
   getFileName,
 } from "./shared";
 
-const staleLookbackHours = 24;
+const staleLookbackWeeks = 1;
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -95,7 +91,6 @@ type File = DownloadResult & { isNew: boolean };
 export async function queryAndProcessDocuments({
   patient: patientParam,
   facilityId,
-  forceQuery = false,
   forcePatientDiscovery = false,
   forceDownload,
   ignoreDocRefOnFHIRServer,
@@ -106,7 +101,6 @@ export async function queryAndProcessDocuments({
 }: {
   patient: Patient;
   facilityId?: string | undefined;
-  forceQuery?: boolean;
   forcePatientDiscovery?: boolean;
   forceDownload?: boolean;
   ignoreDocRefOnFHIRServer?: boolean;
@@ -162,7 +156,7 @@ export async function queryAndProcessDocuments({
       : undefined;
     const isStale =
       updateStalePatients &&
-      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackHours, "hours");
+      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackWeeks, "weeks");
 
     if (hasNoCWStatus || isProcessing || forcePatientDiscovery || isStale) {
       log(
@@ -196,11 +190,7 @@ export async function queryAndProcessDocuments({
       startedAt,
     });
 
-    const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
-      getPatientWithCWData(patientParam),
-      isEnhancedCoverageEnabledForCx(cxId),
-      isCQDirectEnabledForCx(cxId),
-    ]);
+    const [patient] = await Promise.all([getPatientWithCWData(patientParam)]);
 
     if (!patient) {
       const msg = `Couldn't get CW Data for Patient`;
@@ -209,17 +199,6 @@ export async function queryAndProcessDocuments({
         patientId,
       });
     }
-
-    const cwData = patient.data.externalData.COMMONWELL;
-
-    const isWaitingForEnhancedCoverage =
-      isECEnabledForThisCx &&
-      cwData.cqLinkStatus && // we're not waiting for EC if the patient was created before cqLinkStatus was introduced
-      cwData.cqLinkStatus !== "linked";
-
-    const isTriggerDQ = forceQuery || !isWaitingForEnhancedCoverage || isCQDirectEnabledForThisCx;
-
-    if (!isTriggerDQ) return;
 
     log(`Querying for documents of patient ${patient.id}...`);
     const cwDocuments = await internalGetDocuments({

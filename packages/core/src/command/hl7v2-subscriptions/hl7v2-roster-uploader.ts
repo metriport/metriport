@@ -37,10 +37,10 @@ export async function uploadToRemoteSftp(
 
 async function sendViaSftp(sftpConfig: HieSftpConfig, file: string, remoteFileName: string) {
   const remoteFolderPath = sftpConfig.remotePath;
-  const passwordArn = Config.getRosterUploadSftpPasswordArn();
   const region = Config.getAWSRegion();
 
-  const password = await getSecretValueOrFail(passwordArn, region);
+  const passwordName = Config.getRosterUploadSftpPasswordName();
+  const password = await getSecretValueOrFail(passwordName, region);
 
   const client = new SftpClient({
     ...sftpConfig,

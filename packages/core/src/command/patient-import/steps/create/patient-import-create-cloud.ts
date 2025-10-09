@@ -4,11 +4,15 @@ import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { PatientImportCreate, ProcessPatientCreateRequest } from "./patient-import-create";
 
-const region = Config.getAWSRegion();
-const sqsClient = new SQSClient({ region });
+// All customers use the same virtual queue; i.e., their bulk imports DO NOT run in parallel
+// AKA, one bulk import at a time, across all customers
+const globalVirtualQueueId = "global-virtual-queue";
 
 export class PatientImportCreateCloud implements PatientImportCreate {
-  constructor(private readonly patientCreateQueueUrl: string) {}
+  constructor(
+    private readonly patientCreateQueueUrl = Config.getPatientImportCreateQueueUrl(),
+    private readonly sqsClient = new SQSClient({ region: Config.getAWSRegion() })
+  ) {}
 
   async processPatientCreate(params: ProcessPatientCreateRequest): Promise<void> {
     const { cxId, jobId, rowNumber } = params;
@@ -18,10 +22,11 @@ export class PatientImportCreateCloud implements PatientImportCreate {
 
     log(`Putting message on queue ${this.patientCreateQueueUrl}`);
     const payload = JSON.stringify(params);
-    await sqsClient.sendMessageToQueue(this.patientCreateQueueUrl, payload, {
+
+    await this.sqsClient.sendMessageToQueue(this.patientCreateQueueUrl, payload, {
       fifo: true,
       messageDeduplicationId: createUuidFromText(payload),
-      messageGroupId: cxId,
+      messageGroupId: globalVirtualQueueId,
     });
   }
 }

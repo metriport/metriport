@@ -1,19 +1,18 @@
 import {
   AdtSubscriptionRequest,
   adtSubscriptionRequestSchema,
-  BulkPatientSettingsRequest,
-  bulkPatientSettingsRequestSchema,
   createQueryMetaSchema,
   PatientSettingsRequest,
   patientSettingsRequestSchema,
-  QuestMonitoringRequest,
-  questMonitoringRequestSchema,
+  QuestPatientRequest,
+  questPatientRequestSchema,
 } from "@metriport/shared";
 import { z } from "zod";
 import {
   getHieConfigDictionary,
   throwOnInvalidHieName,
 } from "../external/hl7-notification/hie-config-dictionary";
+import { QuestRosterType } from "../external/quest/types";
 import { out } from "../util/log";
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
 
@@ -21,7 +20,12 @@ const { log } = out("PatientSettings");
 
 export type Subscriptions = {
   adt?: string[];
+  /**
+   * @deprecated Use questNotifications and questBackfill instead.
+   */
   quest?: boolean;
+  questNotifications?: boolean;
+  questBackfill?: boolean;
 };
 
 export type PatientSettingsData = {
@@ -46,6 +50,14 @@ export const hl7v2SubscribersQuerySchema = z
   })
   .and(createQueryMetaSchema());
 
+export const questSettingsKeyForRosterType: Record<
+  QuestRosterType,
+  keyof Pick<Subscriptions, "questNotifications" | "questBackfill">
+> = {
+  backfill: "questBackfill",
+  notifications: "questNotifications",
+};
+
 export function parsePatientSettingsRequest(data: unknown): PatientSettingsRequest {
   try {
     getHieConfigDictionary();
@@ -57,21 +69,6 @@ export function parsePatientSettingsRequest(data: unknown): PatientSettingsReque
   }
 
   const result = patientSettingsRequestSchema.parse(data);
-  result.settings.subscriptions?.adt?.forEach(throwOnInvalidHieName);
-  return result;
-}
-
-export function parseBulkPatientSettingsRequest(data: unknown): BulkPatientSettingsRequest {
-  try {
-    getHieConfigDictionary();
-  } catch (error) {
-    log(
-      "parseBulkPatientSettingsRequest - No HIE config dictionary found, skipping HIE name validation"
-    );
-    return bulkPatientSettingsRequestSchema.parse(data);
-  }
-
-  const result = bulkPatientSettingsRequestSchema.parse(data);
   result.settings.subscriptions?.adt?.forEach(throwOnInvalidHieName);
   return result;
 }
@@ -91,6 +88,6 @@ export function parseAdtSubscriptionRequest(data: unknown): AdtSubscriptionReque
   return result;
 }
 
-export function parseQuestMonitoringRequest(data: unknown): QuestMonitoringRequest {
-  return questMonitoringRequestSchema.parse(data);
+export function parseQuestPatientRequest(data: unknown): QuestPatientRequest {
+  return questPatientRequestSchema.parse(data);
 }

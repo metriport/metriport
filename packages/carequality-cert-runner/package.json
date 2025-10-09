@@ -1,6 +1,6 @@
 {
   "name": "@metriport/carequality-cert-runner",
-  "version": "1.20.4",
+  "version": "1.20.9",
   "description": "Tool to run through Carequality certification test cases - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -34,14 +34,14 @@
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
-    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "prettier-fix": "npx prettier '**/*.{js,ts,md}' --write --ignore-path ../../.prettierignore",
     "test": "echo \"No test specified yet\""
   },
   "bugs": {
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/ihe-gateway-sdk": "^0.21.4",
-    "@metriport/shared": "^0.26.4"
+    "@metriport/ihe-gateway-sdk": "^0.21.9",
+    "@metriport/shared": "^0.26.9"
   }
 }

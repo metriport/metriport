@@ -1,6 +1,6 @@
 {
   "name": "@metriport/api-sdk",
-  "version": "18.0.4",
+  "version": "18.0.9",
   "description": "Metriport helps you access and manage health and medical data, through a single open source API.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -44,7 +44,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
-    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "prettier-fix": "npx prettier '**/*.{js,ts,md}' --write --ignore-path ../../.prettierignore",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
     "test:e2e": "E2E=true jest --runInBand --detectOpenHandles"
   },
@@ -58,11 +58,12 @@
   },
   "dependencies": {
     "@medplum/fhirtypes": "^2.0.32",
-    "@metriport/shared": "^0.26.4",
+    "@metriport/shared": "^0.26.9",
     "axios": "^1.8.2",
     "dayjs": "^1.11.7",
     "dotenv": "^16.3.1",
     "semver": ">=5.7.2",
+    "validator": "^13.15.15",
     "zod": "^3.22.1"
   },
   "devDependencies": {

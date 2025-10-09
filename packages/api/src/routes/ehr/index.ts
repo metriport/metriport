@@ -22,6 +22,8 @@ import {
 } from "./healthie/auth/middleware";
 import healthieDash from "./healthie/routes/dash";
 import healthieWebhooks from "./healthie/routes/webhook";
+import { processCxIdDash as processCxIdSalesforceDash } from "./salesforce/auth/middleware";
+import salesforceDash from "./salesforce/routes/dash";
 
 const routes = Router();
 
@@ -30,6 +32,7 @@ routes.use("/canvas", processCxIdCanvasDash, checkMAPIAccess, canvasDash);
 routes.use("/elation", processCxIdElationDash, checkMAPIAccess, elationDash);
 routes.use("/healthie", processCxIdHealthieDash, checkMAPIAccess, healthieDash);
 routes.use("/eclinicalworks", processCxIdEclinicalworksDash, checkMAPIAccess, eclinicalworksDash);
+routes.use("/salesforce", processCxIdSalesforceDash, checkMAPIAccess, salesforceDash);
 
 routes.use("/webhook/canvas", processCxIdCanvasWebhooks, checkMAPIAccess, canvasWebhooks);
 routes.use("/webhook/elation", processCxIdElationWebhooks, checkMAPIAccess, elationWebhooks);

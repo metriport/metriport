@@ -1,25 +1,37 @@
 import { Resource } from "@medplum/fhirtypes";
 import { BadRequestError, JwtTokenInfo } from "@metriport/shared";
-import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
+import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import {
+  isAllergyIntolerance,
   isCondition,
   isDiagnosticReport,
   isMedication,
   isMedicationStatement,
   isObservation,
+  isProcedure,
 } from "../../../fhir/shared";
+import { writeBackAllergy } from "./allergy";
 import { writeBackCondition } from "./condition";
 import { EhrGroupedVitals, isEhrGroupedVitals, writeBackGroupedVitals } from "./grouped-vitals";
 import { writeBackLab } from "./lab";
 import { writeBackLabPanel } from "./lab-panel";
 import { writeBackMedicationStatement } from "./medication-statement";
+import { writeBackProcedure } from "./procedure";
+
+export const writeBackEhrSources = [EhrSources.athena, EhrSources.elation];
+export type WriteBackEhrSource = (typeof writeBackEhrSources)[number];
+export function isEhrSourceWithWriteBack(ehr: EhrSource): ehr is WriteBackEhrSource {
+  return writeBackEhrSources.includes(ehr as WriteBackEhrSource);
+}
 
 export type WriteBackResourceType =
   | "condition"
   | "lab"
   | "lab-panel"
   | "grouped-vitals"
-  | "medication-statement";
+  | "medication-statement"
+  | "procedure"
+  | "allergy";
 
 export type WriteBackResourceRequest = {
   ehr: EhrSource;
@@ -35,6 +47,11 @@ export type WriteBackResourceRequest = {
 export type WriteBackResourceClientRequest = Omit<WriteBackResourceRequest, "ehr">;
 
 export async function writeBackResource({ ...params }: WriteBackResourceRequest): Promise<void> {
+  if (!isEhrSourceWithWriteBack(params.ehr)) {
+    throw new BadRequestError("EHR source does not support write back", undefined, {
+      ehr: params.ehr,
+    });
+  }
   if (params.writeBackResource === "grouped-vitals") {
     if (!isEhrGroupedVitals(params.primaryResourceOrResources)) {
       throw new BadRequestError(
@@ -159,6 +176,36 @@ export async function writeBackResource({ ...params }: WriteBackResourceRequest)
       ...params,
       statements: [params.primaryResourceOrResources],
       medication,
+    });
+  } else if (params.writeBackResource === "procedure") {
+    if (!isProcedure(params.primaryResourceOrResources)) {
+      throw new BadRequestError(
+        "Procedure write back requires primary resource to be a procedure",
+        undefined,
+        {
+          ehr: params.ehr,
+          writeBackResource: params.writeBackResource,
+        }
+      );
+    }
+    return await writeBackProcedure({
+      ...params,
+      procedure: params.primaryResourceOrResources,
+    });
+  } else if (params.writeBackResource === "allergy") {
+    if (!isAllergyIntolerance(params.primaryResourceOrResources)) {
+      throw new BadRequestError(
+        "Allergy write back requires primary resource to be an allergy intolerance",
+        undefined,
+        {
+          ehr: params.ehr,
+          writeBackResource: params.writeBackResource,
+        }
+      );
+    }
+    return await writeBackAllergy({
+      ...params,
+      allergyIntolerance: params.primaryResourceOrResources,
     });
   }
   throw new BadRequestError("Could not find handler to write back resource", undefined, {

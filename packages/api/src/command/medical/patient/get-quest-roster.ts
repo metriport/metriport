@@ -9,19 +9,23 @@ import {
   findFirstPatientMappingForSource,
   createPatientMapping,
 } from "../../../command/mapping/patient";
+import { QuestRosterType } from "@metriport/core/external/quest/types";
+import { questSettingsKeyForRosterType } from "@metriport/core/domain/patient-settings";
 import { PatientModelReadOnly } from "../../../models/medical/patient-readonly";
 import { PatientSettingsModel } from "../../../models/patient-settings";
 import { Pagination, getPaginationFilters, getPaginationLimits } from "../../pagination";
 
 export type GetQuestRosterParams = {
   pagination?: Pagination;
+  rosterType: QuestRosterType;
 };
 
 const MAX_ATTEMPTS_TO_CREATE_EXTERNAL_ID = 2;
 const EXTERNAL_ID_LOOKUP_CONCURRENCY = 10;
 
-function getCommonQueryOptions({ pagination }: GetQuestRosterParams) {
+function getCommonQueryOptions({ pagination, rosterType }: GetQuestRosterParams) {
   const order: Order = [["id", "DESC"]];
+  const settingsKey = questSettingsKeyForRosterType[rosterType];
 
   return {
     where: {
@@ -32,7 +36,7 @@ function getCommonQueryOptions({ pagination }: GetQuestRosterParams) {
               SELECT 1
               FROM patient_settings ps
               WHERE ps.patient_id = "PatientModelReadOnly"."id"
-              AND ps.subscriptions->'quest' IS NOT NULL
+              AND ps.subscriptions->'${settingsKey}' IS NOT NULL
           )
           `),
       ],
@@ -49,13 +53,16 @@ function getCommonQueryOptions({ pagination }: GetQuestRosterParams) {
   };
 }
 
-export async function getQuestRoster({ pagination }: GetQuestRosterParams): Promise<Patient[]> {
+export async function getQuestRoster({
+  pagination,
+  rosterType,
+}: GetQuestRosterParams): Promise<Patient[]> {
   const { log } = out(`Quest roster`);
   log(`Pagination params: ${JSON.stringify(pagination)}`);
 
   try {
     const findOptions: FindOptions<PatientModelReadOnly> = {
-      ...getCommonQueryOptions({ pagination }),
+      ...getCommonQueryOptions({ pagination, rosterType }),
     };
 
     const patientResults = await PatientModelReadOnly.findAll(findOptions);

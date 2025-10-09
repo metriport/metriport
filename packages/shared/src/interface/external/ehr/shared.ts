@@ -51,6 +51,16 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
       disabled: z.boolean().optional(),
     })
     .optional(),
+  procedure: z
+    .object({
+      disabled: z.boolean().optional(),
+    })
+    .optional(),
+  allergy: z
+    .object({
+      disabled: z.boolean().optional(),
+    })
+    .optional(),
 });
 export type WriteBackFiltersPerResourceType = z.infer<typeof writeBackFiltersPerResourceTypeSchema>;
 

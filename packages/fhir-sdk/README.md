@@ -7,7 +7,11 @@ TypeScript SDK for parsing, querying, and manipulating FHIR R4 bundles with smar
 ```typescript
 import { FhirBundleSdk } from "@metriport/fhir-sdk";
 
+// Create an SDK instance
 const sdk = await FhirBundleSdk.create(fhirBundle);
+
+// Access static methods directly on the class
+const cleaned = FhirBundleSdk.stripNonClinicalData(patient);
 ```
 
 ## Core Functionality
@@ -45,6 +49,63 @@ const observation = sdk.getObservationById("obs-123");
 const patient = observation.getSubject<Patient>();
 ```
 
+#### Smart Resource Methods
+
+All smart resources include these utility methods:
+
+**Automatic console.log formatting** - Resources automatically render nicely when printed:
+
+```typescript
+const patient = sdk.getPatientById("patient-123");
+
+// Just use console.log directly - no need to call toString()!
+console.log(patient);
+// Output:
+// {
+//   resourceType: 'Patient',
+//   id: 'patient-123',
+//   name: [ { family: 'Doe', given: [Array] } ],
+//   ...
+// }
+```
+
+**toString()** - Manual formatting with custom spacing:
+
+```typescript
+// Use toString() if you need custom spacing
+console.log(patient.toString(4)); // 4 spaces
+const jsonString = patient.toString(0); // Compact JSON
+```
+
+This is useful for debugging and inspecting deeply nested structures. The output automatically excludes smart resource methods and shows the raw FHIR resource data.
+
+**getReferencingResources()** - Find all resources that reference this resource:
+
+```typescript
+const patient = sdk.getPatientById("patient-123");
+
+// Find all resources referencing this patient
+const references = patient.getReferencingResources();
+
+// Filter by resource type
+const observations = patient.getReferencingResources({ resourceType: "Observation" });
+```
+
+**getReferencedResources()** - Find all resources referenced by this resource:
+
+```typescript
+const observation = sdk.getObservationById("obs-123");
+
+// Get all resources this observation references
+const referencedResources = observation.getReferencedResources();
+// Returns: [Patient, Encounter, Practitioner, etc.] based on REFERENCE_METHOD_MAPPING
+
+// SDK-level method also available
+const refs = sdk.getResourcesReferencedBy(observation);
+```
+
+This method automatically discovers and returns all resources referenced by the current resource based on the configured reference methods in `REFERENCE_METHOD_MAPPING`. It handles both single references and array references.
+
 ### 3. Bundle Export
 
 You can export subsets of your bundle or export by resource type to quickly create custom bundles.
@@ -66,6 +127,177 @@ const result = sdk.lookForBrokenReferences();
 console.log(result.hasBrokenReferences); // true if at least one broken reference is found, false otherwise
 console.log(result.brokenReferences); // All broken references in bundle
 ```
+
+### 5. Reverse Reference Lookup
+
+Find all resources that reference a given resource (reverse lookup). This is useful for discovering what refers to a specific resource.
+
+```typescript
+const patient = sdk.getPatientById("patient-123");
+
+// Find all resources that reference this patient
+const referencingResources = sdk.getResourcesReferencingId("patient-123");
+console.log(referencingResources); // [Observation, Encounter, DiagnosticReport, ...]
+
+// Filter by resource type
+const observations = sdk.getResourcesReferencingId("patient-123", {
+  resourceType: "Observation",
+});
+
+// Filter by reference field
+const subjectReferences = sdk.getResourcesReferencingId("patient-123", {
+  referenceField: "subject",
+});
+
+// Use smart resource method
+const backRefs = patient.getReferencingResources();
+const encounteredObs = patient.getReferencingResources({
+  resourceType: "Observation",
+  referenceField: "subject",
+});
+```
+
+**Key Features:**
+
+- **O(1) lookup** - constant time performance
+- **Flexible filtering** - by resource type and/or reference field
+- **Smart resources** - returns fully functional Smart resources
+- **Bi-directional** - complements forward reference navigation
+
+### 6. Date Range Search
+
+Search for resources by date range using an interval tree index. This is useful for filtering resources by clinical dates efficiently.
+
+```typescript
+const sdk = await FhirBundleSdk.create(bundle);
+
+// Basic date range search
+const results = sdk.searchByDateRange({
+  dateFrom: "2024-01-01",
+  dateTo: "2024-01-31",
+});
+
+// Filter by resource type
+const observations = sdk.searchByDateRange({
+  dateFrom: "2024-01-01",
+  dateTo: "2024-12-31",
+  resourceTypes: ["Observation", "Condition"],
+});
+
+// Filter by specific date field
+const recordedConditions = sdk.searchByDateRange({
+  dateFrom: "2024-01-01",
+  dateTo: "2024-12-31",
+  dateFields: ["recordedDate"],
+});
+
+// Use Date objects
+const recentResources = sdk.searchByDateRange({
+  dateFrom: new Date("2024-01-01"),
+  dateTo: new Date(),
+});
+```
+
+**Key Features:**
+
+- **O(log n + k) search** - efficient interval tree-based search where k is the number of matching resources
+- **Multiple date fields** - indexes primary clinical dates (effectiveDateTime, onset, performed) and recorded dates
+- **Flexible filtering** - by resource type and/or specific date fields
+- **Smart resources** - returns fully functional Smart resources
+- **Period support** - handles both single date fields and date periods/ranges
+
+**Indexed Resource Types:**
+
+The following resource types and date fields are automatically indexed:
+
+- **Observation**: effectiveDateTime, effectivePeriod, effectiveInstant, issued
+- **Condition**: onsetDateTime, onsetPeriod, abatementDateTime, abatementPeriod, recordedDate
+- **Encounter**: period
+- **Procedure**: performedDateTime, performedPeriod
+- **Immunization**: occurrenceDateTime, recorded
+- **DiagnosticReport**: effectiveDateTime, effectivePeriod, issued
+- **MedicationRequest**: authoredOn
+- **MedicationAdministration**: effectiveDateTime, effectivePeriod
+- **MedicationStatement**: effectiveDateTime, effectivePeriod
+- **MedicationDispense**: whenHandedOver, whenPrepared
+- **DocumentReference**: date, context.period
+- **Composition**: date
+- **Coverage**: period
+- **AllergyIntolerance**: onsetDateTime, onsetPeriod, lastOccurrence, recordedDate
+
+### 7. Reference Walking (BFS Traversal)
+
+Walk the reference graph starting from any resource using breadth-first search (BFS). This is useful for discovering all resources connected to a specific resource.
+
+```typescript
+const observation = sdk.getObservationById("obs-123");
+
+// Walk all reachable resources
+const result = sdk.walkReferences(observation);
+console.log(result.allResources); // All resources reachable from observation
+console.log(result.resourcesByDepth); // Resources organized by depth level
+console.log(result.depthReached); // Maximum depth traversed
+
+// Limit traversal depth
+const limitedResult = sdk.walkReferences(observation, { maxDepth: 2 });
+
+// Exclude the start resource from results
+const withoutStart = sdk.walkReferences(observation, { includeStartResource: false });
+```
+
+### 7. LLM Context Generation
+
+Generate comprehensive, LLM-friendly context from a resource and its related resources. This automatically performs BFS traversal, strips non-clinical metadata, and formats the output for optimal LLM consumption.
+
+```typescript
+const observation = sdk.getObservationById("obs-123");
+
+// Generate structured text context (default, best for LLMs)
+const llmContext = sdk.generateLLMContext(observation, {
+  maxDepth: 2, // Default: 2
+  format: "structured-text", // Default: 'structured-text'
+});
+
+// Send to your LLM
+await llm.chat({
+  messages: [
+    { role: "system", content: "You are a medical data analyst." },
+    { role: "user", content: `Analyze this patient data:\n\n${llmContext}` },
+  ],
+});
+
+// Alternative: JSON format
+const jsonContext = sdk.generateLLMContext(observation, {
+  format: "json",
+});
+```
+
+**Features:**
+
+- Automatically discovers all related resources via BFS traversal
+- Strips non-clinical metadata (`meta`, `extension`, `text`) to reduce tokens by ~30-40%
+- Organizes resources hierarchically (primary → directly referenced → indirectly referenced)
+- Groups resources by type within each depth level
+- Logs resource counts for debugging (not included in output)
+
+**Static Methods:**
+
+The `FhirBundleSdk` class provides static utility methods that don't require an SDK instance:
+
+```typescript
+import { FhirBundleSdk } from "@metriport/fhir-sdk";
+
+// Strip non-clinical data from any resource
+const cleanedPatient = FhirBundleSdk.stripNonClinicalData(patient);
+// Removes: meta, extension, modifierExtension, text, id, identifier, and all reference fields
+// Returns immutable copy
+
+// Create SDK instances
+const sdk = await FhirBundleSdk.create(bundle); // Async (for backwards compatibility)
+const sdk2 = FhirBundleSdk.createSync(bundle); // Synchronous
+```
+
+This is especially useful in REPL sessions where you want quick access to utility functions without creating a full SDK instance.
 
 ## Example Use Cases
 
@@ -89,6 +321,28 @@ const buildPatientSummary = (patientId: string) => {
 ```typescript
 // Traverse multiple references in sequence
 const orgName = sdk.getPatients()[0]?.getManagingOrganization()?.name;
+```
+
+### Extract Related Resources
+
+```typescript
+// Get all resources related to a specific observation
+const extractRelatedResources = (observationId: string) => {
+  const observation = sdk.getObservationById(observationId);
+  if (!observation) return null;
+
+  // Walk the graph to find all related resources up to 2 levels deep
+  const result = sdk.walkReferences(observation, { maxDepth: 2 });
+
+  return {
+    observation,
+    relatedResourceCount: result.allResources.length,
+    resourcesByType: result.allResources.reduce((acc, resource) => {
+      acc[resource.resourceType] = (acc[resource.resourceType] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>),
+  };
+};
 ```
 
 ### Example Use Case: Processing a bundle
@@ -122,3 +376,24 @@ const processBundle = async (bundle: Bundle) => {
 - **getById**: O(1) lookup
 - **getByType**: O(n) where n = resources of that type
 - **Reference resolution**: O(1) traversal
+- **Reverse reference lookup**: O(1) lookup
+
+## Demo
+
+To see reverse reference functionality in action, run:
+
+```bash
+# From the utils package
+cd packages/utils
+npx ts-node src/fhir-sdk/demo-reverse-references.ts --bundle-path /path/to/your/bundle.json
+```
+
+The demo will:
+
+- Automatically find the first patient in your bundle
+- Showcase all reverse reference capabilities:
+  - Finding all resources that reference a specific resource
+  - Filtering by resource type and reference field
+  - Using smart resource methods
+  - Bi-directional navigation
+  - Performance characteristics

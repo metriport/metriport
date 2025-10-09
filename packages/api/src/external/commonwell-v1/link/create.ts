@@ -73,7 +73,6 @@ export async function create(
       patient,
       commonwellPatientId: cwPatientId,
       commonwellPersonId: personId,
-      cqLinkStatus: undefined,
     });
     await updatePatientDiscoveryStatus({ patient, status: "completed" });
 

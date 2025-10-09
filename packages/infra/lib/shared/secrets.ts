@@ -44,7 +44,7 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
     ...(config.hl7Notification?.secrets
       ? buildSecrets(scope, config.hl7Notification?.secrets)
       : undefined),
-    ...(!isSandbox(config) ? buildSecrets(scope, config.analyticsPlatform.secrets) : undefined),
+    ...(!isSandbox(config) ? buildSecrets(scope, config.analyticsPlatform.secretNames) : undefined),
     ...(!isSandbox(config)
       ? buildSecrets(scope, collectHiePasswordSecretNames(config.hl7Notification.hieConfigs))
       : undefined),
@@ -52,7 +52,7 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
   return secrets;
 }
 
-function collectHiePasswordSecretNames(
+export function collectHiePasswordSecretNames(
   hies: Record<string, HieConfig | VpnlessHieConfig>
 ): Record<string, string> {
   const out: Record<string, string> = {};

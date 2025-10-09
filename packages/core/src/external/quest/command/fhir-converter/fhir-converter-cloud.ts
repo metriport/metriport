@@ -17,15 +17,15 @@ export class QuestFhirConverterCommandCloud implements QuestFhirConverterCommand
   }
 
   async convertSourceDocumentToFhirBundle({
-    patientId,
-    sourceDocumentName,
+    externalId,
+    sourceDocumentKey,
   }: QuestFhirConversionRequest): Promise<void> {
-    const payload = JSON.stringify({ patientId, sourceDocumentName });
+    const payload = JSON.stringify({ externalId, sourceDocumentKey });
     await executeWithNetworkRetries(async () => {
       await this.sqsClient.sendMessageToQueue(this.questFhirConverterQueueUrl, payload, {
         fifo: true,
         messageDeduplicationId: createUuidFromText(payload),
-        messageGroupId: patientId,
+        messageGroupId: externalId,
       });
     });
   }

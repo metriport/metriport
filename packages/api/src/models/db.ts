@@ -30,7 +30,6 @@ import { FeedbackEntryModel } from "./feedback-entry";
 import { InvalidLinksModel } from "./invalid-links";
 import { JwtTokenModel } from "./jwt-token";
 import { CohortModel } from "./medical/cohort";
-import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
 import { DocRefMappingModel } from "./medical/docref-mapping";
 import { MAPIAccess } from "./medical/mapi-access";
 import { PatientModel } from "./medical/patient";
@@ -44,6 +43,7 @@ import { PatientMappingModel } from "./patient-mapping";
 import { PatientSettingsModel } from "./patient-settings";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
+import { SuspectModel } from "./suspect";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -64,7 +64,6 @@ const models: ModelSetup[] = [
   OutboundPatientDiscoveryRespModel.setup,
   OutboundDocumentQueryRespModel.setup,
   OutboundDocumentRetrievalRespModel.setup,
-  CoverageEnhancementModel.setup,
   FeedbackModel.setup,
   FeedbackEntryModel.setup,
   CxMappingModel.setup,
@@ -77,6 +76,7 @@ const models: ModelSetup[] = [
   CohortModel.setup,
   PatientCohortModel.setup,
   TcmEncounterModel.setup,
+  SuspectModel.setup,
 ];
 
 const modelsReadOnly: ModelSetup[] = [PatientModelReadOnly.setup];
@@ -88,10 +88,10 @@ export type MetriportDB = {
 };
 
 let db: MetriportDB | undefined;
-export const getDB = (): MetriportDB => {
+export function getDB(): MetriportDB {
   if (!db) throw new Error("DB not initialized");
   return db;
-};
+}
 
 export interface DocTableNames {
   token: string;

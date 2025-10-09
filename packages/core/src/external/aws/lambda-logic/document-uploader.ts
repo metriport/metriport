@@ -2,10 +2,7 @@ import { DocumentReference } from "@medplum/fhirtypes";
 import { errorToString, executeWithNetworkRetries, executeWithRetries } from "@metriport/shared";
 import axios from "axios";
 import { createDocumentFileName } from "../../../domain/document/filename";
-import {
-  createUploadFilePath,
-  createUploadMetadataFilePath,
-} from "../../../domain/document/upload";
+import { createUploadFilePath, createUploadMetadataFilePath } from "../../../shareback/file";
 import { parseFilePath } from "../../../domain/filename";
 import { createAndUploadDocumentMetadataFile } from "../../../shareback/create-and-upload-extrinsic-object";
 import { MetriportError } from "../../../util/error/metriport-error";

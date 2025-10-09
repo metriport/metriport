@@ -35,6 +35,21 @@ export const NDDF_URL = "http://terminology.hl7.org/CodeSystem/nddf";
 
 export const HL7_ACT_URL = "http://terminology.hl7.org/CodeSystem/v3-ActCode";
 
+export const CONDITION_CLINICAL_STATUS_URL =
+  "http://terminology.hl7.org/CodeSystem/condition-clinical";
+export const CONDITION_VERIFICATION_STATUS_URL =
+  "http://terminology.hl7.org/CodeSystem/condition-ver-status";
+
+export const PRACTITIONER_UPIN_URL = "http://hl7.org/fhir/sid/us-upin";
+export const PRACTITIONER_NPI_URL = "http://hl7.org/fhir/sid/us-npi";
+export const PRACTITIONER_ROLE_URL = "http://terminology.hl7.org/CodeSystem/practitioner-role";
+
+export const OBSERVATION_CATEGORY_URL =
+  "http://terminology.hl7.org/CodeSystem/observation-category";
+
+// https://build.fhir.org/valueset-diagnostic-service-sections.html
+export const DIAGNOSTIC_SERVICE_SECTIONS_URL = "http://terminology.hl7.org/CodeSystem/v2-0074";
+
 export const EPIC_PARTIAL_URN = "1.2.840.114350.1.13";
 export const HL7_PARTIAL_URN = "2.16.840.1.113883";
 

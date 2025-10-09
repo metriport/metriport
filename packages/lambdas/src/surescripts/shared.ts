@@ -1,10 +1,14 @@
 import { Config } from "@metriport/core/util/config";
+import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
 import { BadRequestError } from "@metriport/shared";
 import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
 import { SurescriptsReplica } from "@metriport/core/external/surescripts/replica";
 
 export async function makeSurescriptsClient(): Promise<SurescriptsSftpClient> {
+  // Feature flags are required by the client to validate requesters
+  FeatureFlags.init(Config.getAWSRegion(), Config.getFeatureFlagsTableName());
+
   const { surescriptsPublicKey, surescriptsPrivateKey, surescriptsSenderPassword } =
     await getSurescriptSecrets();
   return new SurescriptsSftpClient({

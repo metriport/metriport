@@ -1,18 +1,14 @@
 import {
   parseAdtSubscriptionRequest,
-  parseBulkPatientSettingsRequest,
-  parseQuestMonitoringRequest,
   parsePatientSettingsRequest,
+  parseQuestPatientRequest,
 } from "@metriport/core/domain/patient-settings";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import {
-  upsertPatientSettingsForCx,
-  upsertPatientSettingsForPatientList,
-} from "../../../command/medical/patient/settings/create-patient-settings";
+import { upsertPatientSettingsForPatientList } from "../../../command/medical/patient/settings/create-patient-settings";
 import {
   addHieSubscriptionToPatients,
   removeHieSubscriptionFromPatients,
@@ -127,11 +123,13 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const { patientIds } = parseQuestMonitoringRequest(req.body);
+    const { notifications, backfill, patientIds } = parseQuestPatientRequest(req.body);
 
     const result = await addQuestSubscriptionToPatients({
       cxId,
       patientIds,
+      backfill,
+      notifications,
     });
 
     return res.status(status.OK).json(result);
@@ -153,39 +151,13 @@ router.delete(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const { patientIds } = parseQuestMonitoringRequest(req.body);
+    const { notifications, backfill, patientIds } = parseQuestPatientRequest(req.body);
 
     const result = await removeQuestSubscriptionFromPatients({
       cxId,
       patientIds,
-    });
-
-    return res.status(status.OK).json(result);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/patient/settings/bulk
- *
- * Creates or updates patient settings across all patients for a CX.
- *
- * @param req.query.cxId The customer ID.
- * @param req.query.facilityId The facility ID. Optional.
- * @param req.body The patient settings to apply. Optional, defaults to empty object.
- * @returns 200 with the results of the operation.
- */
-router.post(
-  "/bulk",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const facilityId = getUUIDFrom("query", req, "facilityId").optional();
-    const { settings } = parseBulkPatientSettingsRequest(req.body);
-
-    const result = await upsertPatientSettingsForCx({
-      cxId,
-      facilityId,
-      settings,
+      backfill,
+      notifications,
     });
 
     return res.status(status.OK).json(result);

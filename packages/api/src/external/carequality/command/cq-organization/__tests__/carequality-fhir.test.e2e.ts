@@ -64,7 +64,7 @@ describe("CarequalityManagementApiFhir", () => {
   }
 
   async function makeOrganization(oid = getOid()): Promise<OrganizationWithId> {
-    const orgFhir = getOrganizationFhirTemplate({
+    const orgFhir = await getOrganizationFhirTemplate({
       oid,
       name: faker.company.name(),
       addressLine1: faker.location.streetAddress(),
