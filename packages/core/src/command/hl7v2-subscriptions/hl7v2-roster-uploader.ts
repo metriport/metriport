@@ -6,7 +6,7 @@ import { createFileNameHl7v2Roster } from "./hl7v2-roster-generator";
 import { simpleExecuteWithRetries } from "@metriport/shared";
 import { initTimer } from "@metriport/shared/common/timer";
 import { Config } from "../../util/config";
-import { getSecretValueOrFail, getSecretValue } from "../../external/aws/secret-manager";
+import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 
 export async function uploadToRemoteSftp(
   config: HieConfig | VpnlessHieConfig,
@@ -38,15 +38,9 @@ export async function uploadToRemoteSftp(
 async function sendViaSftp(sftpConfig: HieSftpConfig, file: string, remoteFileName: string) {
   const remoteFolderPath = sftpConfig.remotePath;
   const region = Config.getAWSRegion();
-  const passwordArn = Config.getRosterUploadSftpPasswordArn();
-  const passwordName = Config.getRosterUploadSftpPasswordName();
-  const passwordByName = await getSecretValue(passwordName, region);
-  if (passwordByName) {
-    console.log(`Got sftp password by name: ${passwordByName.slice(0, 5)}...`);
-  }
 
-  const password = await getSecretValueOrFail(passwordArn, region);
-  console.log(`Got sftp password by arn: ${password.slice(0, 5)}...`);
+  const passwordName = Config.getRosterUploadSftpPasswordName();
+  const password = await getSecretValueOrFail(passwordName, region);
 
   const client = new SftpClient({
     ...sftpConfig,
