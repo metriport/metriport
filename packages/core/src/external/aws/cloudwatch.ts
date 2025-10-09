@@ -3,6 +3,7 @@ import { Config } from "../../util/config";
 import { capture } from "../../util/notifications";
 
 export const METRICS_NAMESPACE = "Metriport";
+const MAX_DIMENSIONS = 3;
 
 const cw = new AWS.CloudWatch({ apiVersion: "2010-08-01", region: Config.getAWSRegion() });
 
@@ -72,14 +73,24 @@ export type AdvancedMetric = {
  *
  * @param service - The service that is reporting the metric.
  * @param metrics - The metrics to report.
+ * @param dimensionLimitOverride - Set to true to override the 3-metric safety limit.
  */
 export async function reportAdvancedMetric({
   service,
   metrics,
+  dimensionLimitOverride = false,
 }: {
   service: string;
   metrics: AdvancedMetric[];
+  dimensionLimitOverride?: boolean;
 }) {
+  if (!dimensionLimitOverride && metrics.length > MAX_DIMENSIONS) {
+    throw new Error(
+      `Attempting to report a metric with ${metrics.length} dimensions. This will likely blow up AWS costs. ` +
+        `If you've done a cost estimate, and still want to proceed, set dimensionLimitOverride to true.`
+    );
+  }
+
   try {
     const metricData = metrics.map(metric => {
       const dimensions = metric.dimensions
