@@ -154,6 +154,7 @@ export async function queryAndProcessDocuments({
         patient: { id: patientId, cxId },
         source: MedicalDataSource.COMMONWELL,
         triggerConsolidated,
+        forceDownload,
       });
 
       if ((forcePatientDiscovery || isStale) && !isProcessing) {
@@ -468,7 +469,7 @@ async function downloadDocsAndUpsertFHIR({
   const { log } = out(
     `CW downloadDocsAndUpsertFHIR - requestId ${requestId}, M patient ${patient.id}`
   );
-  forceDownload && log(`override=true, NOT checking whether docs exist`);
+  log(`override=${forceDownload} ${forceDownload ? "NOT" : ""} checking whether docs exist`);
 
   const cxId = patient.cxId;
   const fhirApi = makeFhirApi(patient.cxId);

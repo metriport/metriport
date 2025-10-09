@@ -17,9 +17,10 @@ import {
 
 dayjs.extend(duration);
 
-const defaultTriggerConsolidated = false;
+const defaultTriggerPdfConversion = false;
 const defaultDisableWebhooks = true;
 const defaultRerunPdOnNewDemographics = true;
+const defaultForceDownload = true;
 
 function waitTimeBetweenPdAndDq() {
   return dayjs.duration(randomIntBetween(80, 120), "milliseconds");
@@ -55,9 +56,10 @@ export class DischargeRequeryDirect implements DischargeRequery {
           cxId,
           requestId: dataPipelineRequestId,
           patientId,
-          triggerConsolidated: defaultTriggerConsolidated,
+          triggerConsolidated: defaultTriggerPdfConversion,
           disableWebhooks: defaultDisableWebhooks,
           context: dischargeRequeryContext,
+          forceDownload: defaultForceDownload,
         });
         if (dataPipelineRequestId !== dqRequestId) {
           log(`DQ already running, using existing requestId: ${dqRequestId}`);

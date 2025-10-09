@@ -2,10 +2,11 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { omit } from "lodash";
 import { QueryTypes } from "sequelize";
+import { TcmEncounterEventType } from "../../../domain/medical/tcm-encounter";
 import { PatientModel } from "../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
-import { PaginationV2WithQueryClauses } from "../../pagination-v2";
 import { PatientMappingModel } from "../../../models/patient-mapping";
+import { PaginationV2WithQueryClauses } from "../../pagination-v2";
 
 /**
  * Add a default filter date far in the past to guarantee hitting the compound index
@@ -30,6 +31,12 @@ export type TcmEncounterResult = TcmEncounterModel["dataValues"] & {
   patientData: PatientModel["dataValues"]["data"];
   patientFacilityIds: PatientModel["dataValues"]["facilityIds"];
   externalUrls: Array<ExternalUrlItem>;
+};
+
+export type TcmEncounterFindOptions = {
+  cxId: string;
+  patientId: string;
+  latestEvent?: TcmEncounterEventType;
 };
 
 // Column validation and WHERE clause building is now handled centrally in the paginated() function
@@ -266,4 +273,29 @@ function constructExternalUrl(
     default:
       return undefined;
   }
+}
+
+export async function getTcmEncountersForPatient({
+  cxId,
+  patientId,
+  latestEvent,
+}: {
+  cxId: string;
+  patientId: string;
+  latestEvent?: TcmEncounterEventType;
+}): Promise<TcmEncounterModel[]> {
+  const where: {
+    cxId: string;
+    patientId: string;
+    latestEvent?: TcmEncounterEventType;
+  } = {
+    cxId,
+    patientId,
+  };
+
+  if (latestEvent) {
+    where.latestEvent = latestEvent;
+  }
+
+  return await TcmEncounterModel.findAll({ where });
 }
