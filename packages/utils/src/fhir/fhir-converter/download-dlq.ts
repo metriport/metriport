@@ -1,9 +1,17 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+
 import { SQSClient, ReceiveMessageCommand } from "@aws-sdk/client-sqs";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import dayjs from "dayjs";
 import path from "path";
 import fs from "fs";
+import axios from "axios";
+import { execSync } from "child_process";
 import { setTimeout as wait } from "timers/promises";
+import { convert } from "./convert";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
 
 /**
  * This script is used to download all failing XML files from the FHIR Converter DLQ,
@@ -15,15 +23,27 @@ import { setTimeout as wait } from "timers/promises";
  *
  * This will create a file named "fhir-dlq-YYYY-MM-DD.json" in the current directory.
  */
-const REGION = "us-west-1"; // change to your region
-const QUEUE_URL = "https://sqs.us-west-1.amazonaws.com/463519787594/FHIRConverterDLQ";
+const REGION = getEnvVarOrFail("AWS_REGION");
+const QUEUE_URL = getEnvVarOrFail("FHIR_CONVERTER_DLQ_URL");
 const DATE_ID = dayjs().format("YYYY-MM-DD");
 const OUTPUT_FILE = path.join(process.cwd(), `runs/fhir-dlq-${DATE_ID}.json`);
 const MAX_MESSAGES = 10; // max AWS allows per call
-const MAX_TOTAL_MESSAGES = 30; // max total messages to read
+const MAX_TOTAL_MESSAGES = 1000; // max total messages to read
 const VISIBILITY_TIMEOUT = 0; // do not hide messages
 const WAIT_BETWEEN_REQUESTS_MS = 200; // avoid throttling
-const EXPECTED_BUCKET_NAME = "metriport-medical-documents";
+const EXPECTED_BUCKET_NAME = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+
+const LOCAL_FHIR_CONVERTER_URL = getEnvVarOrFail("LOCAL_FHIR_CONVERTER_URL");
+
+// A file that will definitely be converted successfully, to test that the FHIR converter is working.
+// Set to the empty string to skip the canary file test.
+const CANARY_TEST_FILE = "runs/hl7-example-cda.xml";
+
+// Path to CDA-to-HTML script
+const CDA_TO_HTML_PATH = path.join(
+  process.cwd(),
+  "dist/utils/src/customer-requests/cda-to-html.js"
+);
 
 interface DumpedMessage {
   MessageId: string;
@@ -37,10 +57,24 @@ interface ParsedBody {
   s3BucketName: string;
 }
 
+const localFhirConverter = axios.create({
+  baseURL: LOCAL_FHIR_CONVERTER_URL,
+});
+
 async function dumpDlq() {
+  if (CANARY_TEST_FILE) {
+    await convert(process.cwd() + "/", CANARY_TEST_FILE, localFhirConverter, {
+      hydrate: true,
+      normalize: true,
+      processAttachments: true,
+    });
+  }
+  console.log("✅ Canary conversion succeeded!");
+
   const sqs = new SQSClient({ region: REGION });
   const allMessages: DumpedMessage[] = [];
   let invalidBucketCount = 0;
+  let failureCount = 0;
 
   console.log(`📥 Reading messages from DLQ: ${QUEUE_URL}`);
 
@@ -98,18 +132,57 @@ async function dumpDlq() {
 
   let downloadedCount = 0;
   const s3 = new S3Utils(REGION);
-  for (const message of allMessages) {
-    const { s3FileName, s3BucketName } = message.Body;
-    const obj = await s3.downloadFile({ bucket: s3BucketName, key: s3FileName });
-    if (obj) {
-      const fileName = `failure_${downloadedCount}.xml`;
-      fs.writeFileSync(path.join(outputFolder, fileName), obj);
-      downloadedCount++;
-      if (downloadedCount % 10 === 0) {
-        console.log(`📥 Downloaded ${downloadedCount} files`);
+
+  await executeAsynchronously(
+    allMessages,
+    async message => {
+      const { s3FileName, s3BucketName } = message.Body;
+      const fileName = path.basename(s3FileName);
+      const outputFilePath = path.join(outputFolder, fileName);
+
+      if (fs.existsSync(outputFilePath)) {
+        console.log(`✅ ${fileName} already exists, skipping...`);
+        return;
       }
+
+      console.log(`📥 Downloading ${fileName}...`);
+      const obj = await s3.downloadFile({ bucket: s3BucketName, key: s3FileName });
+      if (obj) {
+        fs.writeFileSync(outputFilePath, obj);
+
+        try {
+          execSync(`node ${CDA_TO_HTML_PATH} ${outputFilePath}`);
+        } catch (error) {
+          console.error(`❌ Error converting ${outputFilePath} to HTML: ${error}`);
+        }
+
+        try {
+          const bundle = await convert(outputFolder + "/", fileName, localFhirConverter, {
+            hydrate: true,
+            normalize: true,
+            processAttachments: true,
+          });
+          fs.writeFileSync(
+            path.join(outputFolder, fileName.replace(".xml", ".json")),
+            JSON.stringify(bundle, null, 2)
+          );
+        } catch (error) {
+          console.error(`❌ Error converting ${outputFilePath} to FHIR: ${error}`);
+          failureCount++;
+        }
+
+        downloadedCount++;
+        if (downloadedCount % 10 === 0) {
+          console.log(`📥 Downloaded ${downloadedCount} files`);
+        }
+      }
+    },
+    {
+      numberOfParallelExecutions: 25,
     }
-  }
+  );
+
+  console.log(`❌ ${failureCount} files failed to convert`);
 }
 
 dumpDlq().catch(err => {
