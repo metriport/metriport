@@ -11,8 +11,32 @@
 
 {%- endmacro -%}
 
+{%- macro default__try_to_cast_datetime(column_name) -%}
+
+    {{ dbt.safe_cast(column_name, api.Column.translate_type("timestamp")).strip() }}
+
+{%- endmacro -%}
+
 {%- macro postgres__try_to_cast_datetime(column_name) -%}
 
     {{ dbt.safe_cast(column_name, api.Column.translate_type("timestamp")).strip() }}
+
+{%- endmacro -%}
+
+{%- macro redshift__try_to_cast_datetime(column_name) -%}
+
+    try_cast( {{ column_name }} as timestamp)
+
+{%- endmacro -%}
+
+{%- macro snowflake__try_to_cast_datetime(column_name) -%}
+
+    try_to_timestamp(cast( {{ column_name }} as string))
+
+{%- endmacro -%}
+
+{%- macro athena__try_to_cast_datetime(column_name) -%}
+
+    try_cast(cast( {{ column_name }} as varchar) as timestamp)
 
 {%- endmacro -%}

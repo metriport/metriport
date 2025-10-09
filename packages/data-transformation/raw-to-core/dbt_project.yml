@@ -1,8 +1,8 @@
-name: "metriport_connector"
+name: "core_transform"
 version: "1.0.0"
 config-version: 2
 
-profile: "postgres"
+profile: "snowflake"
 
 model-paths: ["models"]
 analysis-paths: ["analyses"]
@@ -25,3 +25,14 @@ vars:
   quality_measures_period_end: "2023-12-31"
   tuva_last_run: '{{ run_started_at.astimezone(modules.pytz.timezone("UTC")) }}'
   custom_bucket_name: tuva-public-resources
+
+models:
+  core_transform:
+    core_pipeline:
+      stage:
+        +materialized: ephemeral
+      intermediate:
+        +materialized: ephemeral
+      core:
+        +schema: core_v2
+        +materialized: table

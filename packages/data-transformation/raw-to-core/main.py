@@ -28,32 +28,17 @@ terminology_files = [
 ]
 
 def handler(event: dict, context: dict):
-    host = os.getenv("HOST") or os.getenv("DBT_PG_HOST")
-    if not host:
-        raise ValueError("Missing required environment variables: HOST")
-    os.environ['DBT_PG_HOST'] = host
-
-    user = os.getenv("USER") or os.getenv("DBT_PG_USER")
-    if not user:
-        raise ValueError("Missing required environment variables: USER")
-    os.environ['DBT_PG_USER'] = user
-
-    password = os.getenv("PASSWORD") or os.getenv("DBT_PG_PASSWORD")
-    if not password:
-        raise ValueError("Missing required environment variables: PASSWORD")
-    os.environ['DBT_PG_PASSWORD'] = password
-
     cliDatabase = sys.argv[1] if len(sys.argv) > 1 else None
-    database = cliDatabase or os.getenv("DATABASE") or os.getenv("DBT_PG_DATABASE")
+    database = cliDatabase or os.getenv("DATABASE") or os.getenv("DBT_TUVA_CI_DATABASE")
     if not database:
         raise ValueError("Missing required environment variables: DATABASE")
-    os.environ['DBT_PG_DATABASE'] = database
+    #os.environ['DBT_PG_DATABASE'] = database
 
     cliSchema = sys.argv[2] if len(sys.argv) > 2 else None
-    schema = cliSchema or os.getenv("SCHEMA") or os.getenv("DBT_PG_SCHEMA")
+    schema = cliSchema or os.getenv("SCHEMA") or os.getenv("DBT_SNOWFLAKE_CI_SCHEMA")
     if not schema:
         raise ValueError("Missing required environment variables: SCHEMA")
-    os.environ['DBT_PG_SCHEMA'] = schema
+    #os.environ['DBT_PG_SCHEMA'] = schema
 
     print(f"Downloading {len(terminology_files)} terminology files from {bucket_name} to {schema}")
     s3_client = boto3.client("s3")
