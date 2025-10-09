@@ -120,6 +120,6 @@ export async function reportAdvancedMetric({
       .promise();
   } catch (err) {
     console.error(`Error reporting metrics ${JSON.stringify(metrics)}: ${err}`);
-    capture.error(err, { extra: { metrics, context: "reportChartableMetric" } });
+    capture.error(err, { extra: { metrics, context: "reportAdvancedMetric" } });
   }
 }
