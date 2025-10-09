@@ -750,6 +750,12 @@ function getDbPoolSettings(config: EnvConfig): EnvConfig["apiDatabase"]["poolSet
 }
 
 function filterOutUnusedSecretsForApiService(secrets: Secrets, config: EnvConfig): Secrets {
+  const secretsWithoutRosterUpload = filterOutRosterUploadSecrets(secrets, config);
+
+  return secretsWithoutRosterUpload;
+}
+
+function filterOutRosterUploadSecrets(secrets: Secrets, config: EnvConfig): Secrets {
   const hl7Notification = config.hl7Notification;
   if (!hl7Notification) {
     return secrets;
