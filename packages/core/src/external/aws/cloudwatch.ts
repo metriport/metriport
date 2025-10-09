@@ -48,3 +48,64 @@ export async function reportMetric(metric: Metric) {
     capture.error(err, { extra: { metric, context: "reportMetric" } });
   }
 }
+
+export type AdvancedMetric = {
+  name: string;
+  unit: "Milliseconds" | "Count";
+  value: number | string;
+  timestamp?: Date;
+  dimensions: {
+    [key: string]: string;
+  };
+};
+
+/**
+ * Report a metric with advanced dimensions to CloudWatch.
+ *
+ * NOTE: This can be VERY expensive if you use high cardinality dimensions,
+ * or use a high number of dimensions on a metric.
+ *
+ * Each metric costs $0.30/mo for every new unique set of dimensions that appear.
+ * So a metric with 3 dimensions, each of which contains 10 possible values will cost $300/mo.
+ *
+ * Beware!!
+ *
+ * @param service - The service that is reporting the metric.
+ * @param metrics - The metrics to report.
+ */
+export async function reportAdvancedMetric({
+  service,
+  metrics,
+}: {
+  service: string;
+  metrics: AdvancedMetric[];
+}) {
+  try {
+    const metricData = metrics.map(metric => {
+      const dimensions = metric.dimensions
+        ? Object.entries(metric.dimensions).map(([name, value]) => ({
+            Name: name,
+            Value: value,
+          }))
+        : [];
+
+      return {
+        MetricName: metric.name,
+        Timestamp: metric.timestamp ?? new Date(),
+        Unit: metric.unit,
+        Value: typeof metric.value === "string" ? parseFloat(metric.value) : metric.value,
+        Dimensions: [{ Name: "Service", Value: service }, ...dimensions],
+      };
+    });
+
+    await cw
+      .putMetricData({
+        MetricData: metricData,
+        Namespace: METRICS_NAMESPACE,
+      })
+      .promise();
+  } catch (err) {
+    console.error(`Error reporting metrics ${JSON.stringify(metrics)}: ${err}`);
+    capture.error(err, { extra: { metrics, context: "reportChartableMetric" } });
+  }
+}

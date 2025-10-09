@@ -1,3 +1,7 @@
+import { reportAdvancedMetric } from "@metriport/core/external/aws/cloudwatch";
+import { AnthropicAgent } from "@metriport/core/external/bedrock/agent/anthropic";
+import { AnthropicMessageText } from "@metriport/core/external/bedrock/model/anthropic/messages";
+import { initTimer } from "@metriport/shared/common/timer";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -5,10 +9,6 @@ import { z } from "zod";
 import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail } from "../util";
-import { AnthropicAgent } from "@metriport/core/external/bedrock/agent/anthropic";
-import { AnthropicMessageText } from "@metriport/core/external/bedrock/model/anthropic/messages";
-import { reportMetric } from "@metriport/core/external/aws/cloudwatch";
-import { initTimer } from "@metriport/shared/common/timer";
 
 const router = Router();
 
@@ -181,23 +181,44 @@ ${context}
     const duration = timer.getElapsedTime();
 
     await Promise.all([
-      reportMetric({
-        name: "LLM.ResourceSummary.Duration",
-        unit: "Milliseconds",
-        value: duration,
-        additionalDimension: `ResourceType=${resourceType},cxId=${cxId}`,
+      reportAdvancedMetric({
+        service: "OSS API",
+        metrics: [
+          {
+            name: "LLM.ResourceSummary.Duration",
+            unit: "Milliseconds",
+            value: duration,
+            dimensions: {
+              cxId,
+            },
+          },
+        ],
       }),
-      reportMetric({
-        name: "LLM.ResourceSummary.InputTokens",
-        unit: "Count",
-        value: response.usage.input_tokens,
-        additionalDimension: `ResourceType=${resourceType},cxId=${cxId}`,
+      reportAdvancedMetric({
+        service: "OSS API",
+        metrics: [
+          {
+            name: "LLM.ResourceSummary.InputTokens",
+            unit: "Count",
+            value: response.usage.input_tokens,
+            dimensions: {
+              cxId,
+            },
+          },
+        ],
       }),
-      reportMetric({
-        name: "LLM.ResourceSummary.OutputTokens",
-        unit: "Count",
-        value: response.usage.output_tokens,
-        additionalDimension: `ResourceType=${resourceType},cxId=${cxId}`,
+      reportAdvancedMetric({
+        service: "OSS API",
+        metrics: [
+          {
+            name: "LLM.ResourceSummary.OutputTokens",
+            unit: "Count",
+            value: response.usage.output_tokens,
+            dimensions: {
+              cxId,
+            },
+          },
+        ],
       }),
     ]);
 
