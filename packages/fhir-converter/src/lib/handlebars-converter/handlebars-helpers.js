@@ -99,6 +99,7 @@ const validCarePlanActivityStatusCodes = [
 
 var evaluateTemplate = function (templatePath, inObj, returnEmptyObject = false) {
   try {
+    console.log("evaluateTemplate", templatePath);
     var getNamespace = require("cls-hooked").getNamespace;
     var session = getNamespace(constants.CLS_NAMESPACE);
     var handlebarsInstance = session.get(constants.CLS_KEY_HANDLEBAR_INSTANCE);
@@ -1274,12 +1275,14 @@ module.exports.external = [
         }
 
         if (childIndex > -1) {
+          console.log("childIndex", childIndex);
           do {
             if (msg.data[childIndex]) {
               segOut.push(msg.data[childIndex]);
             }
             childIndex++;
           } while (childIndex < msg.meta.length && msg.meta[childIndex] == childSegment);
+          console.log("childIndex done", childIndex);
         }
 
         ret[childSegment] = segOut;
