@@ -189,7 +189,7 @@ ${context}
             unit: "Milliseconds",
             value: duration,
             dimensions: {
-              cxId,
+              Customer: cxId,
             },
           },
         ],
@@ -202,7 +202,7 @@ ${context}
             unit: "Count",
             value: response.usage.input_tokens,
             dimensions: {
-              cxId,
+              Customer: cxId,
             },
           },
         ],
@@ -215,7 +215,7 @@ ${context}
             unit: "Count",
             value: response.usage.output_tokens,
             dimensions: {
-              cxId,
+              Customer: cxId,
             },
           },
         ],
