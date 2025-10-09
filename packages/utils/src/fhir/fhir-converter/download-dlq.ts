@@ -69,7 +69,7 @@ async function dumpDlq() {
       processAttachments: true,
     });
   }
-  console.log("✅ Canary conversion succeeded!");
+  console.log("Canary conversion succeeded!");
 
   const sqs = new SQSClient({ region: REGION });
   const allMessages: DumpedMessage[] = [];
@@ -90,7 +90,7 @@ async function dumpDlq() {
 
     const response = await sqs.send(command);
     const messages = response.Messages || [];
-    console.log(`📥 Read ${messages.length} messages from DLQ`);
+    console.log(`Read ${messages.length} messages from DLQ`);
 
     if (messages.length === 0) {
       break;
@@ -118,9 +118,8 @@ async function dumpDlq() {
     await wait(WAIT_BETWEEN_REQUESTS_MS);
   }
 
-  console.log(`📝 Writing ${allMessages.length} messages to ${OUTPUT_FILE}`);
+  console.log(`Writing ${allMessages.length} messages to ${OUTPUT_FILE}`);
   fs.writeFileSync(OUTPUT_FILE, JSON.stringify(allMessages, null, 2), "utf8");
-  console.log("✅ Done!");
 
   console.log(`❌ ${invalidBucketCount} messages had an invalid bucket name`);
 
@@ -152,6 +151,7 @@ async function dumpDlq() {
 
         try {
           execSync(`node ${CDA_TO_HTML_PATH} ${outputFilePath}`);
+          console.log(`✅ ${fileName} converted to HTML`);
         } catch (error) {
           console.error(`❌ Error converting ${outputFilePath} to HTML: ${error}`);
         }
@@ -162,6 +162,7 @@ async function dumpDlq() {
             normalize: true,
             processAttachments: true,
           });
+          console.log(`✅ ${fileName} converted to FHIR`);
           fs.writeFileSync(
             path.join(outputFolder, fileName.replace(".xml", ".json")),
             JSON.stringify(bundle, null, 2)
