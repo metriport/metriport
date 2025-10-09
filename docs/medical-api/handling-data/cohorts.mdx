@@ -17,9 +17,9 @@ By default, you have 3 cohorts with the following names + behaviors:
   Names are full caps only (this will be done for you) E.G.,
   "Low Risk" -> "LOW RISK"
 </Note>
-- LOW RISK ( 🟢 ): medical record refresh  
-- MEDIUM RISK( 🟡 ): medical record refresh & prescription medication history  
-- HIGH RISK ( 🔴 ): monitoring enabled for all available sources  
+- LOW RISK ( 🟢 ): Monthly medical record refresh & no additional monitoring 
+- MEDIUM RISK( 🟡 ): Monthly medical record refresh & prescription medication history  
+- HIGH RISK ( 🔴 ): Weekly medical record refresh & monitoring enabled for all available sources
 
 <Note>
   All of this can be personalized based on your needs,
@@ -43,28 +43,44 @@ or retrieve the members of that cohort via API.
   "color": "red",
   "settings": {
     "monitoring": {
-      "adt": true,
+      "adt": ["Hixny", "HealthConnectTexas"],
+      "hie": "weekly",
       "pharmacy": true,
       "laboratory": true
     }
   }
 }
 ```
+<Warning>
+  Attempting to enable **ADT**, **pharmacy**, or **laboratory** monitoring settings for an account without the monitoring service activated will result in a 400 error.
+</Warning>
 
 ### Available settings
 
 Use settings to enable monitoring for certain data sources.
 
+#### Enabled by default
+
+- **`monitoring.hie`**  
+  _allowed values: `never` | `monthly` | `biweekly` | `weekly`, default: monthly_  
+  Subscribes the patient(s) to HIE-based document monitoring (non-ADT) / medical record refresh based on the cadence.
+<Warning>
+  **HIE monitoring is coming soon!** While this feature is not yet live, you can configure your HIE monitoring settings now. These settings will automatically take effect when the feature launches.
+</Warning>
+
 #### Disabled by default
 
-- **`monitoring.adt`** — _allowed values: `true` | `false` | `["HieName", ...]`, default: false_  
-  Subscribes the patient(s) to **ADT notifications** based on the patient's **primary address state**.  
-  To force-enable for a specific state HIE instead of using the primary address state, simply input the name of the HIE(s) in an array.
+- **`monitoring.adt`**  
+  _allowed values: `true` | `false` | `["HieName", ...]`, default: false_  
+  Subscribes the patient(s) to ADT notifications based on the patient's [primary address state](/medical-api/api-reference/patient/create-patient#param-primary-address-index).  
+  To force-enable for a specific state HIE instead of using the [primary address state](/medical-api/api-reference/patient/create-patient#param-primary-address-index), simply input the name of the HIE(s) in an array.
 
-- **`monitoring.pharmacy`** — _allowed values: `true` | `false`, default: false_  
-  Enables **pharmacy / medication history** monitoring (e.g., retail fill data) where available.
+- **`monitoring.pharmacy`**  
+  _allowed values: `true` | `false`, default: false_  
+  Subscribes patient(s) for ongoing notifications of new pharmacy / medication data .
 
-- **`monitoring.laboratory`** - _allowed values: `true` | `false`, default: false_  
+- **`monitoring.laboratory`**  
+  _allowed values: `true` | `false`, default: false_  
   Subscribes patient(s) for ongoing notifications of new laboratory data
 
 ### Adding patients to cohorts
@@ -144,5 +160,5 @@ const patient = await metriportApi.createPatient(
 
 // The patient is now automatically subscribed to all monitoring settings
 // from both the "High Risk" and "My Custom Cohort" cohorts
-// names will automatically be capatalized
+// Cohort names will automatically be capatalized
 ```

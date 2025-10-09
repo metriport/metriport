@@ -25,6 +25,7 @@ const cohort = await metriport.createCohort({
   description: "Patients that need frequent and robust monitoring.",
   settings: {
     monitoring: {
+      hie: "weekly",
       adt: true,
       pharmacy: true,
       laboratory: true,

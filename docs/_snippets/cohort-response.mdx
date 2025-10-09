@@ -22,21 +22,31 @@
   Configuration settings for the cohort.
   <Expandable title="Settings properties">
      <ResponseField name="monitoring" type="object" optional>
+      <ResponseField name="hie" type="string" optional>
+        HIE-based document monitoring - subscribes patients to HIE-based document monitoring (non-ADT) / medical record refresh based on the cadence.
+        - `never` - Disables HIE monitoring
+        - `monthly` - Monthly medical record refresh (default)
+        - `biweekly` - Biweekly medical record refresh
+        - `weekly` - Weekly medical record refresh
+        <Warning>
+          **HIE monitoring is coming soon!** While this feature is not yet live, you can configure your HIE monitoring settings now. These settings will automatically take effect when the feature launches.
+        </Warning>
+      </ResponseField>
       <ResponseField name="adt" type="boolean|array" optional>
-        **ADT (Admission, Discharge, Transfer) monitoring** - subscribes patients to ADT notifications based on their **primary address state**.  
-        - **`true`** - Uses the patient's primary address to determine which state HIE to subscribe to
-        - **`false`** - Disables ADT monitoring (default)
-        - **`["HieName", "HieName", ...]`** - Force-enables for specific state HIE(s) instead of using primary address
+        ADT (Admission, Discharge, Transfer) monitoring - subscribes patients to ADT notifications based on their **[primary address state](/medical-api/api-reference/patient/create-patient#param-primary-address-index)**.  
+        - `true` - Uses the patient's [primary address](/medical-api/api-reference/patient/create-patient#param-primary-address-index) to determine which state HIE to subscribe to
+        - `false` - Disables ADT monitoring (default)
+        - `["HieName", "HieName", ...]` - Force-enables for specific state HIE(s) instead of using [primary address](/medical-api/api-reference/patient/create-patient#param-primary-address-index)
       </ResponseField>
       <ResponseField name="pharmacy" type="boolean" optional>
-        **Pharmacy / medication history monitoring** - enables retail fill data monitoring where available.  
-        - **`true`** - Enables pharmacy monitoring
-        - **`false`** - Disables pharmacy monitoring (default)
+        Pharmacy / medication history monitoring - enables retail fill data monitoring where available.  
+        - `true` - Enables pharmacy monitoring
+        - `false` - Disables pharmacy monitoring (default)
       </ResponseField>
       <ResponseField name="laboratory" type="boolean" optional>
-        **Laboratory notifications** - subscribes patients for ongoing notifications of new lab results.  
-        - **`true`** - Enables laboratory monitoring
-        - **`false`** - Disables laboratory monitoring (default)
+        Laboratory notifications - subscribes patients for ongoing notifications of new lab results.  
+        - `true` - Enables laboratory monitoring
+        - `false` - Disables laboratory monitoring (default)
       </ResponseField>
     </ResponseField>
   </Expandable>

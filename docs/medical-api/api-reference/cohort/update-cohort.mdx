@@ -41,6 +41,7 @@ const cohort = await metriport.updateCohort(
     description: "Patients that need frequent and robust monitoring.",
     "settings": {
       "monitoring": {
+        "high": "weekly",
         "adt": true,
         "pharmacy": true,
         "laboratory": true
@@ -60,9 +61,9 @@ const cohort = await metriport.updateCohort(
   "color": "red",
   "settings": {
     "monitoring": {
+      "hie": "weekly",
       "adt": true,
       "pharmacy": true,
-      "hie": true,
       "laboratory": true
     }
   }
