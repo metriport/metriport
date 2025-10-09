@@ -29,7 +29,7 @@ api: "GET /medical/v1/cohort"
   const allCohorts = await metriport.listCohorts();
 
   // Get a specific cohort by name
-  const specificCohort = await metriport.getCohortByName({ name: "Pilot - Eval" });
+  const specificCohort = await metriport.getCohortByName({ name: "High Risk" });
 ```
 </ResponseExample>
 
@@ -39,9 +39,16 @@ api: "GET /medical/v1/cohort"
     {
       "id": "018a80c4-292a-7486-a1234-9uiu76yhe234",
       "eTag": "1",
-      "name": "PILOT - EVAL",
-      "description": "Patients that are a part of our newest pilot program.",
-      "settings": {}
+      "name": "HIGH RISK",
+      "description": "Patients that need frequent and robust monitoring.",
+      "color": "red",
+      "settings": {
+        "monitoring": {
+          "adt": true,
+          "pharmacy": true,
+          "laboratory": true
+        }
+      }
     },
     {
       "id": "018a80c4-292a-7486-a1234-6hyt345tyu23",

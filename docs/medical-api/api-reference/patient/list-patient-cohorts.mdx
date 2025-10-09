@@ -37,9 +37,15 @@ const patientCohorts = await metriport.getPatientCohorts("018a80c4-292a-7486-a12
     {
       "id": "018a80c4-292a-7486-a1234-9uiu76yhe234",
       "eTag": "1",
-      "name": "Pilot - Eval",
+      "name": "High Risk",
       "description": "Patients that are a part of our newest pilot program.",
-      "settings": {}
+      "settings": {
+        "monitoring": {
+          "adt": true,
+          "pharmacy": true,
+          "laboratory": true
+        }
+      }
     },
     {
       "id": "018a80c4-292a-7486-a1234-6hyt345tyu23",

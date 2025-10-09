@@ -13,28 +13,21 @@
 <ParamField body="settings" type="object" optional>
   Configuration settings for the cohort.
   <Expandable title="Settings properties">
-    <ParamField body="monitoring" type="object" optional>
-      <ParamField body="adt" type="boolean|array" optional>
-        **ADT (Admission, Discharge, Transfer) monitoring** - subscribes patients to ADT notifications based on their **primary address state**.  
-        - **`true`** - Uses the patient's primary address to determine which state HIE to subscribe to
-        - **`false`** - Disables ADT monitoring (default)
-        - **`["HieName", "HieName", ...]`** - Force-enables for specific state HIE(s) instead of using primary address
-      </ParamField>
-      <ParamField body="pharmacy" type="boolean" optional>
-        **Pharmacy / medication history monitoring** - enables retail fill data monitoring where available.  
-        - **`true`** - Enables pharmacy monitoring
-        - **`false`** - Disables pharmacy monitoring (default)
-      </ParamField>
-      <ParamField body="hie" type="boolean" optional>
-        **HIE-based document monitoring / medical record refresh** - enables non-ADT medical record monitoring.  
-        - **`true`** - Enables HIE monitoring (default)
-        - **`false`** - Disables HIE monitoring
-      </ParamField>
-      <ParamField body="laboratory" type="boolean" optional>
-        **Laboratory notifications** - subscribes patients for ongoing notifications of new lab results.  
-        - **`true`** - Enables laboratory monitoring
-        - **`false`** - Disables laboratory monitoring (default)
-      </ParamField>
+    <ParamField body="adt" type="boolean|array" optional>
+      **ADT (Admission, Discharge, Transfer) monitoring** - subscribes patients to ADT notifications based on their **primary address state**.  
+      - **`true`** - Uses the patient's primary address to determine which state HIE to subscribe to
+      - **`false`** - Disables ADT monitoring (default)
+      - **`["HieName", "HieName", ...]`** - Force-enables for specific state HIE(s) instead of using primary address
+    </ParamField>
+    <ParamField body="pharmacy" type="boolean" optional>
+      **Pharmacy / medication history monitoring** - enables retail fill data monitoring where available.  
+      - **`true`** - Enables pharmacy monitoring
+      - **`false`** - Disables pharmacy monitoring (default)
+    </ParamField>
+    <ParamField body="laboratory" type="boolean" optional>
+      **Laboratory notifications** - subscribes patients for ongoing notifications of new lab results.  
+      - **`true`** - Enables laboratory monitoring
+      - **`false`** - Disables laboratory monitoring (default)
     </ParamField>
   </Expandable>
 </ParamField>

@@ -1,5 +1,5 @@
 <ResponseField name="id" type="string" required>
-  The unique identifier for the cohort.
+  The unique identifier for the cohort (ULID format, e.g., `018a80c4-292a-7486-a123-09ab76cde234`).
 </ResponseField>
 
 <ResponseField name="eTag" type="string" required>
@@ -21,24 +21,19 @@
 <ResponseField name="settings" type="object" required>
   Configuration settings for the cohort.
   <Expandable title="Settings properties">
-     <ResponseField body="monitoring" type="object" optional>
-      <ResponseField body="adt" type="boolean|array" optional>
+     <ResponseField name="monitoring" type="object" optional>
+      <ResponseField name="adt" type="boolean|array" optional>
         **ADT (Admission, Discharge, Transfer) monitoring** - subscribes patients to ADT notifications based on their **primary address state**.  
         - **`true`** - Uses the patient's primary address to determine which state HIE to subscribe to
         - **`false`** - Disables ADT monitoring (default)
         - **`["HieName", "HieName", ...]`** - Force-enables for specific state HIE(s) instead of using primary address
       </ResponseField>
-      <ResponseField body="pharmacy" type="boolean" optional>
+      <ResponseField name="pharmacy" type="boolean" optional>
         **Pharmacy / medication history monitoring** - enables retail fill data monitoring where available.  
         - **`true`** - Enables pharmacy monitoring
         - **`false`** - Disables pharmacy monitoring (default)
       </ResponseField>
-      <ResponseField body="hie" type="boolean" optional>
-        **HIE-based document monitoring / medical record refresh** - enables non-ADT medical record monitoring.  
-        - **`true`** - Enables HIE monitoring (default)
-        - **`false`** - Disables HIE monitoring
-      </ResponseField>
-      <ResponseField body="laboratory" type="boolean" optional>
+      <ResponseField name="laboratory" type="boolean" optional>
         **Laboratory notifications** - subscribes patients for ongoing notifications of new lab results.  
         - **`true`** - Enables laboratory monitoring
         - **`false`** - Disables laboratory monitoring (default)

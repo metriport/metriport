@@ -67,6 +67,10 @@
   </Expandable>
 </ResponseField>
 
+<ResponseField name="primaryAddressIndex" type="number" optional>
+  The index of the primary address for the patient within the `address` array. Defaults to 0 (the first address).
+</ResponseField>
+
 <ResponseField name="address" type="Address[]" required>
   <Snippet file="patient-address-response.mdx" />
 </ResponseField>
