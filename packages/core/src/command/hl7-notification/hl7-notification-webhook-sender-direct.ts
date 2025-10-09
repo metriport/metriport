@@ -44,6 +44,7 @@ import {
 } from "./utils";
 import { getBambooTimezone, getKonzaTimezone } from "./timezone";
 import { getSecretValueOrFail } from "../../external/aws/secret-manager";
+import { reportMetric } from "../../external/aws/cloudwatch";
 
 type HieConfig = { timezone: string };
 
@@ -381,21 +382,32 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
         throw new MetriportError("No posthog API key provided in webhook sender");
       }
 
-      const posthogApiKey = await getSecretValueOrFail(posthogApiKeyArn, Config.getAWSRegion());
-      analytics(
-        {
-          distinctId: cxId,
-          event: EventTypes.hl7NotificationReceived,
-          properties: {
-            cxId,
-            patientId,
-            messageCode,
-            triggerEvent,
-            hieName,
-          },
+      await Promise.all([
+        reportMetric({
+          name: "HL7.Notification.Received",
+          value: 1,
+          unit: "Count",
+          timestamp: new Date(),
+          additionalDimension: `Hie=${hieName},Customer=${cxId},Patient=${patientId},MessageCode=${messageCode},TriggerEvent=${triggerEvent}`,
+        }),
+        async () => {
+          const posthogApiKey = await getSecretValueOrFail(posthogApiKeyArn, Config.getAWSRegion());
+          return analytics(
+            {
+              distinctId: cxId,
+              event: EventTypes.hl7NotificationReceived,
+              properties: {
+                cxId,
+                patientId,
+                messageCode,
+                triggerEvent,
+                hieName,
+              },
+            },
+            posthogApiKey
+          );
         },
-        posthogApiKey
-      );
+      ]);
     } catch (error) {
       capture.error("Failed to notify analytics", {
         extra: { cxId, patientId, messageCode, triggerEvent, hieName, error },
