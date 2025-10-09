@@ -434,6 +434,9 @@ export class Config {
   static getRosterUploadSftpPasswordArn(): string {
     return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_ARN`);
   }
+  static getRosterUploadSftpPasswordName(): string {
+    return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_NAME`);
+  }
 
   static getLahieIngestionLambdaName(): string {
     return getEnvVarOrFail("LAHIE_INGESTION_LAMBDA_NAME");

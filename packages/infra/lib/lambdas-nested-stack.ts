@@ -1267,6 +1267,7 @@ export class LambdasNestedStack extends NestedStack {
             API_URL: config.loadBalancerDnsName,
             HL7_BASE64_SCRAMBLER_SEED_ARN: hl7ScramblerSeedSecret.secretArn,
             ROSTER_UPLOAD_SFTP_PASSWORD_ARN: passwordSecret.secretArn,
+            ROSTER_UPLOAD_SFTP_PASSWORD_NAME: passwordSecretName,
             ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
             POST_HOG_API_KEY_SECRET: posthogSecretName,
           },
