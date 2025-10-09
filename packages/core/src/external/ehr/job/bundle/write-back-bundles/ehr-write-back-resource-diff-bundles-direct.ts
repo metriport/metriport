@@ -479,7 +479,7 @@ export function shouldWriteBackResource({
     if (!isProcedure(resource)) return false;
     const procedure = resource;
     if (skipProcedureCptCode(procedure, writeBackFilters)) return false;
-    return isProcedure(resource);
+    return true;
   } else if (writeBackResourceType === "allergy") {
     if (writeBackFilters.allergy?.disabled) return false;
     return isAllergyIntolerance(resource);
