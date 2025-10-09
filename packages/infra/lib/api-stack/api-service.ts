@@ -262,7 +262,7 @@ export function createAPIService({
         secrets: {
           DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
           SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
-          ...secretsToECS(filterOutUnusedSecretsForApiService(secrets, props.config)),
+          ...secretsToECS(removeUnusedSecretsForApiService(secrets, props.config)),
           ...secretsToECS(buildSecrets(stack, props.config.propelAuth.secrets)),
         },
         environment: {
@@ -749,13 +749,13 @@ function getDbPoolSettings(config: EnvConfig): EnvConfig["apiDatabase"]["poolSet
   return dbPoolSettings;
 }
 
-function filterOutUnusedSecretsForApiService(secrets: Secrets, config: EnvConfig): Secrets {
-  const secretsWithoutRosterUpload = filterOutRosterUploadSecrets(secrets, config);
+function removeUnusedSecretsForApiService(secrets: Secrets, config: EnvConfig): Secrets {
+  const secretsWithoutRosterUpload = removeRosterUploadSecrets(secrets, config);
 
   return secretsWithoutRosterUpload;
 }
 
-function filterOutRosterUploadSecrets(secrets: Secrets, config: EnvConfig): Secrets {
+function removeRosterUploadSecrets(secrets: Secrets, config: EnvConfig): Secrets {
   const hl7Notification = config.hl7Notification;
   if (!hl7Notification) {
     return secrets;
