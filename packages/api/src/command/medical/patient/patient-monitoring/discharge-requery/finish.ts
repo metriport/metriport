@@ -317,9 +317,9 @@ function getDischargeSummaryStatusAndFilePath(encounters: Encounter[]): {
 
   if (encountersWithDischargeDisposition.length > 1) {
     return {
-      status: "failed",
+      status: "completed",
       reason: "Multiple discharge encounters found for the same date",
-      encounter: undefined,
+      encounter: encountersWithDischargeDisposition[0],
       sendNotification: true,
     };
   }
