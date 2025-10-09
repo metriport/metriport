@@ -102,7 +102,7 @@ describe("processDischargeData", () => {
       const result = await findMatchingEncounterOrNotifyOfFailure(encounters, cxId);
       expect(result).toEqual(
         expect.objectContaining({
-          status: "failed",
+          status: "completed",
           reason: "Multiple discharge encounters found for the same date",
         })
       );

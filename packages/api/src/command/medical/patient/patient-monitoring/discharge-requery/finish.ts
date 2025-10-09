@@ -130,7 +130,6 @@ export async function finishDischargeRequery({
     patientId
   );
 
-  console.log("UPDATE TCM?", JSON.stringify(completed, null, 2));
   // Update TCM encounters with discharge summary file paths for completed associations
   await updateTcmEncountersWithDischargeSummaryPaths(completed, cxId, patientId);
 
@@ -205,7 +204,6 @@ async function processDischargeSummaryAssociation(
     cxId,
     patientId,
   });
-  log(`Consolidated: ${JSON.stringify(consolidated)}`);
 
   if (!consolidated.bundle) {
     return {
@@ -220,12 +218,9 @@ async function processDischargeSummaryAssociation(
   }
 
   const encounters = findEncounterResources(consolidated.bundle);
-  console.log("ALL ENCOUNTERS", JSON.stringify(encounters, null, 2));
   const matchingResults = await Promise.all(
     dischargeData.map(async discharge => {
-      console.log("For this discharge:", discharge);
       const matchingEncounters = getPotentiallyMatchingEncounters(encounters, discharge);
-      console.log("POTENTIALLY MATCHING ENCOUNTERS", JSON.stringify(matchingEncounters, null, 2));
       const matchingResult = await findMatchingEncounterOrNotifyOfFailure(matchingEncounters, cxId);
 
       return {
@@ -258,14 +253,8 @@ export async function findMatchingEncounterOrNotifyOfFailure(
   encounters: Encounter[],
   cxId: string
 ): Promise<Omit<DischargeAssociationBreakdown, "discharge">> {
-  console.log("ENCOUNTERS FROM BUNDLE", JSON.stringify(encounters, null, 2));
   const { status, reason, encounter, sendNotification } =
     getDischargeSummaryStatusAndFilePath(encounters);
-
-  console.log("STATUS", JSON.stringify(status, null, 2));
-  console.log("REASON", JSON.stringify(reason, null, 2));
-  console.log("ENCOUNTER", JSON.stringify(encounter, null, 2));
-  console.log("SEND NOTIFICATION", JSON.stringify(sendNotification, null, 2));
 
   if (sendNotification) {
     const encounterIds = encounters.flatMap(e => e.id ?? []);
