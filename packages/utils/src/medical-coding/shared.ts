@@ -21,6 +21,18 @@ export interface HccSourceRow {
   rxhcc_v08_2024: string;
 }
 
+export interface UcumSourceRow {
+  code: string;
+  name: string;
+  definition: string;
+  created: string;
+  synonym: string;
+  kind: string;
+  revised: string;
+  concept_id: string;
+  dimension: string;
+}
+
 export async function readHccSource(year: string): Promise<HccSourceRow[]> {
   const hccSourcePath = path.resolve(process.cwd(), "runs/hcc", `${year}.csv`);
   return new Promise((resolve, reject) => {
@@ -39,8 +51,45 @@ export async function readHccSource(year: string): Promise<HccSourceRow[]> {
   });
 }
 
-export function writeHccMap(destination: string, generated: string): void {
-  const destinationPath = path.resolve(path.join(process.cwd(), ".."), destination);
+const initialUcumSourceData: UcumSourceRow[] = [
+  {
+    code: "U",
+    name: "unit",
+    definition: "unit",
+    created: "2025-01-01",
+    synonym: "u, unit",
+    kind: "unit",
+    revised: "2025-01-01",
+    concept_id: "",
+    dimension: "",
+  },
+];
+
+export async function readUcumSource(): Promise<UcumSourceRow[]> {
+  const ucumSourcePath = path.resolve(process.cwd(), "runs/ucum", `data.tsv`);
+  return new Promise((resolve, reject) => {
+    const rows: UcumSourceRow[] = initialUcumSourceData;
+    fs.createReadStream(ucumSourcePath)
+      .pipe(csv({ separator: "\t" }))
+      .on("data", function (row) {
+        rows.push(row);
+      })
+      .on("end", function () {
+        resolve(rows);
+      })
+      .on("error", function (error) {
+        reject(error);
+      });
+  });
+}
+
+export function writeToPackage(packageName: "core", destination: string, generated: string): void {
+  const destinationPath = path.resolve(
+    path.join(process.cwd(), ".."),
+    packageName,
+    "src",
+    destination
+  );
   const destinationDir = path.dirname(destinationPath);
   if (!fs.existsSync(destinationDir)) {
     fs.mkdirSync(destinationDir, { recursive: true });

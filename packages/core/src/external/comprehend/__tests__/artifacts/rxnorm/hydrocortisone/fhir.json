@@ -1,0 +1,77 @@
+[
+  {
+    "resourceType": "Medication",
+    "id": "01995080-f8f5-739c-acf8-945d559c68df",
+    "status": "active",
+    "code": {
+      "text": "Hydrocortisone",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "5492",
+          "display": "hydrocortisone"
+        }
+      ]
+    },
+    "form": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "385099005",
+          "display": "cream"
+        }
+      ]
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "2 grams of Hydrocortisone cream to affected area twice daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 6
+          },
+          "high": {
+            "value": 66
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01995080-f8f5-739c-acf8-945ec3c02f2c",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01995080-f8f5-739c-acf8-945d559c68df"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
+    },
+    "dosage": [
+      {
+        "text": "2 grams"
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "2 grams of Hydrocortisone cream to affected area twice daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 6
+          },
+          "high": {
+            "value": 66
+          }
+        }
+      }
+    ]
+  }
+]
