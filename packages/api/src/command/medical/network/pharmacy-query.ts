@@ -13,7 +13,8 @@ export async function queryDocumentsAcrossPharmacies({
   cxId,
   facilityId,
   patientId,
-}: NetworkQueryParams): Promise<SourceQueryProgress | undefined> {
+}: NetworkQueryParams): Promise<SourceQueryProgress[]> {
+  const queryProgress: SourceQueryProgress[] = [];
   const isSurescriptsEnabled = await isSurescriptsFeatureFlagEnabledForCx(cxId);
   if (isSurescriptsEnabled) {
     const surescriptsPharmacyQuery = await queryDocumentsAcrossSurescripts({
@@ -21,10 +22,9 @@ export async function queryDocumentsAcrossPharmacies({
       patientId,
       facilityId,
     });
-    return surescriptsPharmacyQuery;
+    queryProgress.push(surescriptsPharmacyQuery);
   }
-
-  return undefined;
+  return queryProgress;
 }
 
 /**
