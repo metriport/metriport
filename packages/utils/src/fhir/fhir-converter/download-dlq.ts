@@ -28,7 +28,8 @@ const QUEUE_URL = getEnvVarOrFail("FHIR_CONVERTER_DLQ_URL");
 const DATE_ID = dayjs().format("YYYY-MM-DD");
 const OUTPUT_FILE = path.join(process.cwd(), `runs/fhir-dlq-${DATE_ID}.json`);
 const MAX_MESSAGES = 10; // max AWS allows per call
-const MAX_TOTAL_MESSAGES = 1000; // max total messages to read
+const MAX_TOTAL_MESSAGES = 100; // max total messages to read
+const MAX_PARALLEL_CONVERSIONS = 1;
 const VISIBILITY_TIMEOUT = 0; // do not hide messages
 const WAIT_BETWEEN_REQUESTS_MS = 200; // avoid throttling
 const EXPECTED_BUCKET_NAME = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
@@ -64,8 +65,8 @@ const localFhirConverter = axios.create({
 async function dumpDlq() {
   if (CANARY_TEST_FILE) {
     await convert(process.cwd() + "/", CANARY_TEST_FILE, localFhirConverter, {
-      hydrate: true,
-      normalize: true,
+      hydrate: false,
+      normalize: false,
       processAttachments: true,
     });
   }
@@ -179,7 +180,7 @@ async function dumpDlq() {
       }
     },
     {
-      numberOfParallelExecutions: 25,
+      numberOfParallelExecutions: MAX_PARALLEL_CONVERSIONS,
     }
   );
 
