@@ -84,9 +84,12 @@ export async function reportAdvancedMetric({
   metrics: AdvancedMetric[];
   dimensionLimitOverride?: boolean;
 }) {
-  if (!dimensionLimitOverride && metrics.length > MAX_DIMENSIONS) {
+  const hasMetricsWithTooManyDimensions = metrics.some(
+    metric => Object.keys(metric.dimensions).length > MAX_DIMENSIONS
+  );
+  if (hasMetricsWithTooManyDimensions && !dimensionLimitOverride) {
     throw new Error(
-      `Attempting to report a metric with ${metrics.length} dimensions. This will likely blow up AWS costs. ` +
+      `Attempting to report a metric with more than ${MAX_DIMENSIONS} dimensions. This will likely blow up AWS costs. ` +
         `If you've done a cost estimate, and still want to proceed, set dimensionLimitOverride to true.`
     );
   }
