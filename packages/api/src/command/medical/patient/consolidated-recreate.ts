@@ -69,13 +69,12 @@ export async function recreateConsolidated({
       }).catch(processAsyncError("Post-DQ startCreateResourceDiffBundlesJobsAcrossEhrs"));
 
       if (requestId) {
-        console.log("REQUEST ID ON RECREATE CONSOLIDATED", requestId);
         finishDischargeRequery({
           cxId: patient.cxId,
           patientId: patient.id,
           requestId,
           pipelineStatus: "successful",
-        }).catch(processAsyncError("Post-DQ startCreateResourceDiffBundlesJobsAcrossEhrs"));
+        }).catch(processAsyncError("Post-DQ finishDischargeRequery"));
       } else {
         log("No requestId provided, skipping finishDischargeRequery");
       }

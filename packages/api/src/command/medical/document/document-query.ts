@@ -145,13 +145,10 @@ export async function queryDocumentsAcrossHIEs({
 
   let triggeredDocumentQuery = false;
 
-  log("forceDownload issss", forceDownload);
   const isForceRedownloadEnabled =
     forceDownload ?? (await isXmlRedownloadFeatureFlagEnabledForCx(cxId));
 
-  log("isForceRedownloadEnabled", isForceRedownloadEnabled);
   if (isQueryCommonwell) {
-    log("querying commonwell!");
     getDocumentsFromCW({
       patient: updatedPatient,
       facilityId,
