@@ -37,7 +37,7 @@ export class ComprehendClient {
   }
 
   async detectEntities(text: string): Promise<DetectEntitiesV2CommandOutput> {
-    this.debug("Detecting entities", text);
+    this.debug("Detecting entities...");
     const startTime = Date.now();
     const command = new DetectEntitiesV2Command({
       Text: text,
@@ -48,7 +48,7 @@ export class ComprehendClient {
   }
 
   async inferRxNorm(text: string): Promise<InferRxNormCommandOutput> {
-    this.debug("Inferring RxNorm codes", text);
+    this.debug("Inferring RxNorm...");
     const command = new InferRxNormCommand({
       Text: text,
     });
@@ -59,7 +59,7 @@ export class ComprehendClient {
   }
 
   async inferICD10CM(text: string): Promise<InferICD10CMCommandOutput> {
-    this.debug("Inferring ICD-10-CM codes", text);
+    this.debug("Inferring ICD-10-CM...");
     const startTime = Date.now();
     const command = new InferICD10CMCommand({
       Text: text,
@@ -70,7 +70,7 @@ export class ComprehendClient {
   }
 
   async inferSNOMEDCT(text: string): Promise<InferSNOMEDCTCommandOutput> {
-    this.debug("Inferring SNOMED CT codes", text);
+    this.debug("Inferring SNOMED CT...");
     const startTime = Date.now();
     const command = new InferSNOMEDCTCommand({
       Text: text,
@@ -81,7 +81,7 @@ export class ComprehendClient {
   }
 
   async detectPHI(text: string): Promise<DetectPHICommandOutput> {
-    this.debug("Detecting PHI", text);
+    this.debug("Detecting PHI...");
     const startTime = Date.now();
     const command = new DetectPHICommand({ Text: text });
     const response = await this.comprehend.send(command);
