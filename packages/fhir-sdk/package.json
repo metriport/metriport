@@ -1,13 +1,15 @@
 {
   "name": "@metriport/fhir-sdk",
-  "version": "1.2.6",
-  "private": true,
+  "version": "1.3.4",
   "description": "FHIR Bundle SDK for parsing, querying, and manipulating FHIR bundles with reference resolution",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist",
     "README.md",
@@ -24,6 +26,14 @@
       ]
     }
   },
+  "repository": {
+    "url": "https://github.com/metriport/metriport.git",
+    "type": "git",
+    "directory": "packages/fhir-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/metriport/metriport/issues"
+  },
   "scripts": {
     "clean": "rimraf dist",
     "deepclean": "npm run clean && rimraf node_modules",
@@ -39,8 +49,7 @@
     "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
   },
   "dependencies": {
-    "@medplum/fhirtypes": "^2.2.10",
-    "@metriport/shared": "file:packages/shared"
+    "@medplum/fhirtypes": "^2.2.10"
   },
   "devDependencies": {
     "@metriport/eslint-rules": "file:packages/eslint-rules",

@@ -1,0 +1,281 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+// keep that ^ on top
+
+import fs from "fs";
+import path from "path";
+import axios from "axios";
+import { Command } from "commander";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
+import {
+  readCsv,
+  streamCsv,
+  startOutputCsv,
+  appendToOutputCsv,
+  getCsvRunsPath,
+} from "../shared/csv";
+import { buildExternalIdToPatientMap } from "./shared";
+import { errorToString } from "@metriport/shared";
+
+/**
+ * This script reads a CSV roster and ensures that each patient is associated with the correct facility,
+ * by inspecting a specific column and mapping it to a facility based on a CSV file. It expects a CSV
+ * directory with the following files:
+ * - roster.csv: The CSV roster to validate
+ * - facility.csv: The CSV with facility mapping
+ *
+ * It will produce a file in the same directory with the name "changeset-<timestamp>.csv", that contains
+ * the facility changes that will be applied. If the --dry-run flag is provided, it will only produce this
+ * changeset file without applying any changes.
+ *
+ * Usage:
+ *
+ * ts-node src/patient-import/validate-facility.ts --cx-id <cxId> --csv-dir <csvDir> --dry-run
+ *
+ * After validating the changeset, you can run this script again with the --changeset flag to immediately start
+ * applying the changes.
+ *
+ * ts-node src/patient-import/validate-facility.ts --cx-id <cxId> --csv-dir <csvDir> --changeset "<changesetTimestamp>"
+ *
+ * Notes:
+ * - csvDir is a relative path within the "runs" directory.
+ * - The roster CSV header definition below must match the headers of the roster CSV.
+ * - The changeset timestamp is a UTC timestamp in the format "YYYY-MM-DDTHH:MM:SS.SSSZ", and is the final output of the dry run.
+ * - The --dry-run flag is optional and will just validate the CSV without actually requesting any facility changes.
+ * - The facility CSV headers are "facility_name" and "facility_id", where the facility name is matched against a column in the roster CSV.
+ */
+const program = new Command();
+program
+  .name("validate-facility")
+  .description("Validate the facility mapping")
+  .requiredOption("--cx-id <cxId>", "CX ID")
+  .requiredOption("--csv-dir <csvDir>", "Relative name of runs directory containing the CSV files")
+  .option("--changeset <changeset>", "The precomputed changeset file to apply")
+  .option("--dry-run", "Just validate the CSV without actually requesting any facility changes")
+  .action(main)
+  .showHelpAfterError();
+
+const apiUrl = getEnvVarOrFail("API_URL");
+const apiKey = getEnvVarOrFail("API_KEY");
+const numberOfParallelRequests = 10;
+const metriportAPI = axios.create({
+  baseURL: apiUrl,
+  headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
+});
+
+/**
+ * Specific headers for the roster CSV that can be adapted to other CSV header formats,
+ * as long as the corresponding function below to retrieve the headers is also updated.
+ */
+const CSV_ROSTER_HEADERS = [
+  "PRACTICE_ID",
+  "PATIENT_ID",
+  "PATIENT_FIRST_NAME",
+  "PATIENT_LAST_NAME",
+  "PATIENT_DOB",
+  "PATIENT_SEX",
+  "PATIENT_ZIP",
+  "PATIENT_CITY",
+  "PATIENT_STATE",
+  "PATIENT_ADDRESS_1",
+  "PATIENT_ADDRESS_2",
+  "PATIENT_HOME_PHONE",
+  "PATIENT_WORK_PHONE",
+  "PATIENT_MOBILE_PHONE",
+  "PATIENT_EMAIL",
+] as const;
+type CsvRosterHeader = (typeof CSV_ROSTER_HEADERS)[number];
+type CsvRosterRow = Record<CsvRosterHeader, string>;
+
+// Retrieve the external ID and facility name from the roster CSV row.
+// Can be adapted to other CSV header formats.
+function getExternalIdAndFacilityName(row: CsvRosterRow): {
+  externalId: string;
+  facilityName: string;
+} {
+  return { externalId: row.PATIENT_ID, facilityName: row.PRACTICE_ID };
+}
+
+interface FacilityChange {
+  externalId: string;
+  metriportPatientId: string;
+  currentFacilityId: string;
+  expectedFacilityId: string;
+}
+
+/**
+ * Main script that validates the facility mapping for the given customer roster.
+ */
+async function main({
+  cxId,
+  csvDir,
+  dryRun,
+  changeset,
+}: {
+  cxId: string;
+  csvDir: string;
+  dryRun?: boolean;
+  changeset?: string;
+}) {
+  // Prepare runs directory and references to file paths
+  const fullCsvDir = getCsvRunsPath(csvDir);
+  if (!fs.existsSync(fullCsvDir)) {
+    throw new Error(`CSV directory ${fullCsvDir} does not exist in "runs" directory`);
+  }
+
+  if (changeset) {
+    const changesetFile = path.join(fullCsvDir, `changeset-${changeset}.csv`);
+    if (!fs.existsSync(changesetFile)) {
+      throw new Error(`Changeset file ${changesetFile} does not exist in ${fullCsvDir}`);
+    }
+    await applyFacilityChangesFromFile(changesetFile);
+    return;
+  }
+
+  // CSV input and output file locations
+  const csvFacility = path.join(fullCsvDir, "facility.csv");
+  const csvRoster = path.join(fullCsvDir, "roster.csv");
+  const changesetTimestamp = new Date().toISOString();
+  const csvOutput = path.join(fullCsvDir, `changeset-${changesetTimestamp}.csv`);
+
+  // Validate that both CSV input files exist
+  if (!fs.existsSync(csvFacility) || !fs.existsSync(csvRoster)) {
+    throw new Error(`CSV files ${csvFacility} and ${csvRoster} must be present in ${fullCsvDir}`);
+  }
+  const isDryRun = Boolean(dryRun);
+
+  // Construct mappings of existing Metriport IDs
+  console.log("Building facility and external ID to patient mapping...");
+  const { facilityNameToId } = await buildFacilityMapping(csvFacility);
+  const externalIdToPatient = await buildExternalIdToPatientMap(cxId);
+
+  // Write output CSV with changes
+  startOutputCsv(csvOutput, [
+    "externalId",
+    "metriportPatientId",
+    "currentFacilityId",
+    "expectedFacilityId",
+  ]);
+  let totalFacilityChanges = 0;
+  let totalPatientsNotFound = 0;
+  let totalFacilityIdsNotFound = 0;
+  const facilityChanges: FacilityChange[] = [];
+
+  console.log("Processing roster to find facility changes...");
+  const { rowsProcessed, errorCount } = await streamCsv<CsvRosterRow>(csvRoster, row => {
+    const { externalId, facilityName } = getExternalIdAndFacilityName(row);
+    const patient = externalIdToPatient[externalId];
+    if (!patient) {
+      totalPatientsNotFound++;
+      return;
+    }
+
+    const currentFacilityId = patient.facilityIds[0];
+    if (!currentFacilityId) {
+      totalFacilityIdsNotFound++;
+      return;
+    }
+
+    // If the facility name is not being handled by the mapping, skip this row
+    const expectedFacilityId = facilityNameToId[facilityName];
+    if (!expectedFacilityId) {
+      return;
+    }
+
+    // Creates a change object if the current facility ID does not match the expected facility ID
+    if (currentFacilityId !== expectedFacilityId) {
+      facilityChanges.push({
+        externalId,
+        metriportPatientId: patient.id,
+        currentFacilityId,
+        expectedFacilityId,
+      });
+      appendToOutputCsv(csvOutput, [externalId, patient.id, currentFacilityId, expectedFacilityId]);
+      totalFacilityChanges++;
+    }
+  });
+  console.log(`Rows processed: ${rowsProcessed}`);
+  console.log(`Error count: ${errorCount}`);
+  console.log(`Total references not found: ${totalPatientsNotFound}`);
+  console.log(`Total facility IDs not found: ${totalFacilityIdsNotFound}`);
+  console.log(`Total facility changes required: ${totalFacilityChanges}`);
+
+  if (isDryRun) {
+    console.log(`Wrote dry run changes to ${csvOutput}`);
+    console.log(
+      `Run this script again with "--changeset ${changesetTimestamp}" to apply the changes`
+    );
+  } else {
+    await applyFacilityChanges(facilityChanges);
+  }
+}
+
+/**
+ * Applies the facility changes from a changeset file that was precomputed by a dry run.
+ * @param changesetFile The file containing the facility changes to apply.
+ */
+async function applyFacilityChangesFromFile(changesetFile: string) {
+  const changeset = await readCsv<FacilityChange>(changesetFile);
+  console.log(`Applying ${changeset.length} facility changes from ${changesetFile}`);
+  await applyFacilityChanges(changeset);
+}
+
+/**
+ * Applies the facility changes in parallel to the MAPI route:
+ * POST /medical/v1/patient/:id/facility
+ */
+async function applyFacilityChanges(facilityChanges: FacilityChange[]) {
+  let totalSuccess = 0;
+  await executeAsynchronously(
+    facilityChanges,
+    async change => {
+      const success = await applyFacilityChange(change);
+      if (success) {
+        totalSuccess++;
+      }
+    },
+    {
+      numberOfParallelExecutions: numberOfParallelRequests,
+    }
+  );
+
+  console.log(`Total successful changes: ${totalSuccess} / ${facilityChanges.length}`);
+}
+
+/**
+ * Applies the facility change for the given change.
+ */
+async function applyFacilityChange(change: FacilityChange): Promise<boolean> {
+  console.log(
+    `Applying change for ${change.externalId} from ${change.currentFacilityId} to ${change.expectedFacilityId}`
+  );
+  try {
+    const result = await metriportAPI.post(
+      `/medical/v1/patient/${change.metriportPatientId}/facility`,
+      {
+        facilityIds: [change.expectedFacilityId],
+      }
+    );
+    return result.status === 200;
+  } catch (error) {
+    console.error(`Error applying change for ${change.externalId}: ${errorToString(error)}`);
+    return false;
+  }
+}
+
+/**
+ * Construct both mappings from facility name to ID, and ID to name.
+ */
+async function buildFacilityMapping(csvFacility: string) {
+  const rows = await readCsv<{ facility_name: string; facility_id: string }>(csvFacility);
+  const facilityNameToId = Object.fromEntries(
+    rows.map(row => [row.facility_name, row.facility_id])
+  );
+  const facilityIdToName = Object.fromEntries(
+    rows.map(row => [row.facility_id, row.facility_name])
+  );
+  return { facilityNameToId, facilityIdToName };
+}
+
+program.parse(process.argv);

@@ -86,7 +86,12 @@ export const patientExistingLinksItemSchema = z.object({
 export type PatientExistingLink = z.infer<typeof patientExistingLinksItemSchema>;
 
 export const patientExistingLinksSchema = z.object({
-  Patients: z.array(patientExistingLinksItemSchema),
+  Patients: z.array(patientExistingLinksItemSchema).transform(patients => {
+    return patients.filter(patientItem => {
+      const patient = patientItem.Patient;
+      return patient && patient.address && patient.address.length > 0;
+    });
+  }),
   status: statusSchema.nullish(),
 });
 export type PatientExistingLinks = z.infer<typeof patientExistingLinksSchema>;
@@ -106,7 +111,12 @@ export const patientProbableLinksItemRespSchema = z.object({
 export type PatientProbableLink = z.infer<typeof patientProbableLinksItemRespSchema>;
 
 export const patientProbableLinksRespSchema = z.object({
-  Patients: z.array(patientProbableLinksItemRespSchema),
+  Patients: z.array(patientProbableLinksItemRespSchema).transform(patients => {
+    return patients.filter(patientItem => {
+      const patient = patientItem.Patient;
+      return patient && patient.address && patient.address.length > 0;
+    });
+  }),
   status: statusSchema.nullish(),
 });
 export type PatientProbableLinks = z.infer<typeof patientProbableLinksRespSchema>;

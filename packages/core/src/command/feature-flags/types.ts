@@ -20,7 +20,6 @@ export const booleanFFsSchema = z.object({
 export type BooleanFeatureFlags = z.infer<typeof booleanFFsSchema>;
 
 export const cxBasedFFsSchema = z.object({
-  cxsWithEnhancedCoverageFeatureFlag: ffStringValuesSchema,
   cxsWithCQDirectFeatureFlag: ffStringValuesSchema,
   cxsWithCWFeatureFlag: ffStringValuesSchema,
   cxsWithADHDMRFeatureFlag: ffStringValuesSchema,
@@ -42,7 +41,6 @@ export const cxBasedFFsSchema = z.object({
   cxsWithAthenaCustomFieldsEnabled: ffStringValuesSchema,
   cxsWithPcpVisitAiSummaryFeatureFlag: ffStringValuesSchema,
   cxsWithRecentVisitAiSummary: ffStringValuesSchema,
-  cxsWithHl7NotificationWebhookFeatureFlag: ffStringValuesSchema,
   cxsWithDischargeSlackNotificationFeatureFlag: ffStringValuesSchema,
   cxsWithDischargeRequeryFeatureFlag: ffStringValuesSchema,
   cxsWithXmlRedownloadFeatureFlag: ffStringValuesSchema,

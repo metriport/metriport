@@ -41,7 +41,7 @@ export function convertHl7v2MessageToFhir({
   const { messageCode } = getHl7MessageTypeOrFail(message);
 
   if (messageCode === "ADT") {
-    const resources = convertAdtToFhirResources(message, patientId);
+    const resources = convertAdtToFhirResources(message, patientId, hieName);
     const bundle = buildBundleFromResources({ type: "collection", resources });
     const duration = elapsedTimeFromNow(startedAt);
 

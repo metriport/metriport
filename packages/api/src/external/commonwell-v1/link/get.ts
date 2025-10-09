@@ -135,7 +135,6 @@ export const findCurrentLink = async (
         patient,
         commonwellPatientId: patientCWId,
         commonwellPersonId: undefined,
-        cqLinkStatus: undefined,
       });
       await updatePatientDiscoveryStatus({ patient, status: "failed" });
       return;
@@ -148,7 +147,6 @@ export const findCurrentLink = async (
         patient,
         commonwellPatientId: patientCWId,
         commonwellPersonId: undefined,
-        cqLinkStatus: undefined,
       });
       await updatePatientDiscoveryStatus({ patient, status: "failed" });
 

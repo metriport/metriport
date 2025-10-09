@@ -36,7 +36,7 @@ export const responseDetailSchema = z.object({
   requisitionNumber: z.string().optional(),
   labCode: z.string(),
   dateCollected: z.date().optional(),
-  patientId: z
+  externalId: z
     .string()
     .length(15)
     .regex(/^[A-Z0-9]{15}$/),
@@ -247,7 +247,7 @@ export const responseDetailRow: IncomingFileRowSchema<ResponseDetail> = [
   {
     field: 21,
     length: 25,
-    key: "patientId",
+    key: "externalId",
     header: "POLICY_NUMBER",
     fromQuest: fromQuestString(),
   },
