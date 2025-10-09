@@ -406,7 +406,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
             },
           ],
         }),
-        async () => {
+        (async () => {
           const posthogApiKey = await getSecretValueOrFail(posthogApiKeyArn, Config.getAWSRegion());
           return analytics(
             {
@@ -422,7 +422,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
             },
             posthogApiKey
           );
-        },
+        })(),
       ]);
     } catch (error) {
       capture.error("Failed to notify analytics", {
