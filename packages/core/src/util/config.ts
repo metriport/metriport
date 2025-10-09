@@ -431,8 +431,8 @@ export class Config {
     return getEnvVarOrFail("CORE_TRANSFORM_BATCH_JOB_DEFINITION_ARN");
   }
 
-  static getRosterUploadSftpPasswordArn(): string {
-    return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_ARN`);
+  static getRosterUploadSftpPasswordName(): string {
+    return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_NAME`);
   }
 
   static getLahieIngestionLambdaName(): string {
