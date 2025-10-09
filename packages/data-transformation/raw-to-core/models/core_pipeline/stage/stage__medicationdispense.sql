@@ -391,4 +391,4 @@ SELECT
     whenprepared,
     filename,
     processed_date
-FROM {{ source("raw", "medicationdispense") }}
+FROM {{ source("raw", "medicationdispense_view") }}

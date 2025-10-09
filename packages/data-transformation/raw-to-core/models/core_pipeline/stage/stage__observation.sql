@@ -181,4 +181,4 @@ SELECT
     valuetime,
     filename,
     processed_date
-FROM {{ source("raw", "observation") }}
+FROM {{ source("raw", "observation_view") }}

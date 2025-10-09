@@ -132,4 +132,4 @@ SELECT
     type_text,
     filename,
     processed_date
-FROM {{ source("raw", "location") }}
+FROM {{ source("raw", "location_view") }}

@@ -153,4 +153,4 @@ SELECT
     statusreason_text,
     filename,
     processed_date
-FROM {{ source("raw", "medicationadministration") }}
+FROM {{ source("raw", "medicationadministration_view") }}

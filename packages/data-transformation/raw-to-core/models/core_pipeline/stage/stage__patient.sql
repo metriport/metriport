@@ -93,4 +93,4 @@ SELECT
     text_status,
     filename,
     processed_date
-FROM {{ source("raw", "patient") }}
+FROM {{ source("raw", "patient_view") }}

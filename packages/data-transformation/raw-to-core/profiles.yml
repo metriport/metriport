@@ -1,13 +1,12 @@
-snowflake:
+postgres:
   outputs:
     default:
-      account: "{{ env_var('DBT_TUVA_SNOWFLAKE_ACCOUNT') }}"
-      database: "{{ env_var('DBT_TUVA_CI_DATABASE') }}"
-      password: "{{ env_var('DBT_SNOWFLAKE_CI_PASSWORD') }}"
-      role: "{{ env_var('DBT_SNOWFLAKE_CI_ROLE') }}"
-      schema: "{{ env_var('DBT_SNOWFLAKE_CI_SCHEMA') }}"
+      host: "{{ env_var('DBT_PG_HOST') }}"
+      user: "{{ env_var('DBT_PG_USER') }}"
+      password: "{{ env_var('DBT_PG_PASSWORD') }}"
+      port: 5432
+      dbname: "{{ env_var('DBT_PG_DATABASE') }}"
+      schema: "{{ env_var('DBT_PG_SCHEMA') }}"
+      type: postgres
       threads: 5
-      type: snowflake
-      user: "{{ env_var('DBT_SNOWFLAKE_CI_USER') }}"
-      warehouse: "{{ env_var('DBT_SNOWFLAKE_CI_WAREHOUSE') }}"
   target: default

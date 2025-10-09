@@ -190,4 +190,4 @@ SELECT
     verificationstatus_text,
     filename,
     processed_date
-FROM {{ source("raw", "condition") }}
+FROM {{ source("raw", "condition_view") }}

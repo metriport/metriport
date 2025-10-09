@@ -6,4 +6,4 @@ SELECT
     system,
     filename,
     processed_date
-FROM {{ source("raw", "condition_code_coding") }}
+FROM {{ source("raw", "condition_code_coding_view") }}

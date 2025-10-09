@@ -40,4 +40,4 @@ SELECT
     status,
     filename,
     processed_date
-FROM {{ source("raw", "familymemberhistory") }}
+FROM {{ source("raw", "familymemberhistory_view") }}

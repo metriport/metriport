@@ -148,4 +148,4 @@ SELECT
     status,
     filename,
     processed_date
-FROM {{ source("raw", "procedure") }}
+FROM {{ source("raw", "procedure_view") }}

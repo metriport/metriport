@@ -36,10 +36,10 @@ RUN python -m pip install --no-cache-dir "dbt-core @ git+https://github.com/dbt-
 
 ARG commit_ref=main
 
-FROM base AS dbt-snowflake
+FROM base AS dbt-postgres
 
 RUN python -m pip install --no-cache-dir "dbt-adapters @ git+https://github.com/dbt-labs/dbt-adapters@${commit_ref}#subdirectory=dbt-adapters"
-RUN python -m pip install --no-cache-dir "dbt-snowflake @ git+https://github.com/dbt-labs/dbt-adapters@${commit_ref}#subdirectory=dbt-snowflake"
+RUN python -m pip install --no-cache-dir "dbt-postgres @ git+https://github.com/dbt-labs/dbt-adapters@${commit_ref}#subdirectory=dbt-postgres"
 
 RUN dbt deps
 

@@ -26,4 +26,4 @@ SELECT
     onsetage_value,
     filename,
     processed_date
-FROM {{ source("raw", "familymemberhistory_condition") }}
+FROM {{ source("raw", "familymemberhistory_condition_view") }}

@@ -42,4 +42,4 @@ SELECT
     status,
     filename,
     processed_date
-FROM {{ source("raw", "coverage") }}
+FROM {{ source("raw", "coverage_view") }}

@@ -125,4 +125,4 @@ SELECT
     telecom_4_value,
     filename,
     processed_date
-FROM {{ source("raw", "practitioner") }}
+FROM {{ source("raw", "practitioner_view") }}

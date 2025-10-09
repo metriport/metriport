@@ -188,4 +188,4 @@ SELECT
     type_7_text,
     filename,
     processed_date
-FROM {{ source("raw", "encounter") }}
+FROM {{ source("raw", "encounter_view") }}

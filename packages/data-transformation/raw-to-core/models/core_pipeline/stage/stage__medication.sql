@@ -127,4 +127,4 @@ SELECT
     status,
     filename,
     processed_date
-FROM {{ source("raw", "medication") }}
+FROM {{ source("raw", "medication_view") }}

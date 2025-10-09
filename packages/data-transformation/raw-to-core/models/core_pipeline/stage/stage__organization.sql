@@ -122,4 +122,4 @@ SELECT
     telecom_9_value,
     filename,
     processed_date
-FROM {{ source("raw", "organization") }}
+FROM {{ source("raw", "organization_view") }}

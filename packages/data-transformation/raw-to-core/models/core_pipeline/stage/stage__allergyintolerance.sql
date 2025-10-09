@@ -148,4 +148,4 @@ SELECT
     recorder_reference,
     filename,
     processed_date
-FROM {{ source("raw", "allergyintolerance") }}
+FROM {{ source("raw", "allergyintolerance_view") }}

@@ -69,4 +69,4 @@ SELECT
     vaccinecode_text,
     filename,
     processed_date
-FROM {{ source("raw", "immunization") }}
+FROM {{ source("raw", "immunization_view") }}

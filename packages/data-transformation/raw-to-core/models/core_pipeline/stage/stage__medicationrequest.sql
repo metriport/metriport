@@ -422,4 +422,4 @@ SELECT
     supportinginformation_1_reference,
     filename,
     processed_date
-FROM {{ source("raw", "medicationrequest") }}
+FROM {{ source("raw", "medicationrequest_view") }}

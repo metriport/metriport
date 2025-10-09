@@ -9,4 +9,4 @@ SELECT
     state,
     filename,
     processed_date
-FROM {{ source("raw", "patient_address") }}
+FROM {{ source("raw", "patient_address_view") }}

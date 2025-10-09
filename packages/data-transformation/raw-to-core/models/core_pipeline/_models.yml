@@ -3,6 +3,7 @@ version: 2
 models:
   - name: core__condition_encounter
     schema: core_v2
+    enabled: false
     alias: condition_encounter
     materialized: table
     columns:
@@ -22,6 +23,7 @@ models:
                 severity: warn
   - name: core__condition
     schema: core_v2
+    enabled: false
     alias: condition
     materialized: table
     columns:
@@ -34,6 +36,7 @@ models:
                 severity: error
   - name: core__encounter
     schema: core_v2
+    enabled: false
     alias: encounter
     materialized: table
     columns:
@@ -46,6 +49,7 @@ models:
                 severity: error
   - name: core__immunization
     schema: core_v2
+    enabled: false
     alias: immunization
     materialized: table
     columns:
@@ -58,6 +62,7 @@ models:
                 severity: error
   - name: core__lab_result
     schema: core_v2
+    enabled: false
     alias: lab_result
     materialized: table
     columns:
@@ -70,10 +75,12 @@ models:
                 severity: error
   - name: core__location
     schema: core_v2
+    enabled: false
     alias: location
     materialized: table
   - name: core__medication
     schema: core_v2
+    enabled: false
     alias: medication
     materialized: table
     columns:
@@ -86,6 +93,7 @@ models:
                 severity: error
   - name: core__observation
     schema: core_v2
+    enabled: false
     alias: observation
     materialized: table
     columns:
@@ -102,6 +110,7 @@ models:
     materialized: table
   - name: core__practitioner
     schema: core_v2
+    enabled: false
     alias: practitioner
     materialized: table
   - name: core__procedure
