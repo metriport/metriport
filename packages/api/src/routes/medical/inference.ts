@@ -1,4 +1,4 @@
-import { reportAdvancedMetric } from "@metriport/core/external/aws/cloudwatch";
+import { reportAdvancedMetrics } from "@metriport/core/external/aws/cloudwatch";
 import { AnthropicAgent } from "@metriport/core/external/bedrock/agent/anthropic";
 import { AnthropicMessageText } from "@metriport/core/external/bedrock/model/anthropic/messages";
 import { initTimer } from "@metriport/shared/common/timer";
@@ -180,47 +180,35 @@ ${context}
     const response = await agent.continueConversation();
     const duration = timer.getElapsedTime();
 
-    await Promise.all([
-      reportAdvancedMetric({
-        service: "OSS API",
-        metrics: [
-          {
-            name: "LLM.ResourceSummary.Duration",
-            unit: "Milliseconds",
-            value: duration,
-            dimensions: {
-              Customer: cxId,
-            },
+    await reportAdvancedMetrics({
+      service: "OSS API",
+      metrics: [
+        {
+          name: "LLM.ResourceSummary.Duration",
+          unit: "Milliseconds",
+          value: duration,
+          dimensions: {
+            Customer: cxId,
           },
-        ],
-      }),
-      reportAdvancedMetric({
-        service: "OSS API",
-        metrics: [
-          {
-            name: "LLM.ResourceSummary.InputTokens",
-            unit: "Count",
-            value: response.usage.input_tokens,
-            dimensions: {
-              Customer: cxId,
-            },
+        },
+        {
+          name: "LLM.ResourceSummary.InputTokens",
+          unit: "Count",
+          value: response.usage.input_tokens,
+          dimensions: {
+            Customer: cxId,
           },
-        ],
-      }),
-      reportAdvancedMetric({
-        service: "OSS API",
-        metrics: [
-          {
-            name: "LLM.ResourceSummary.OutputTokens",
-            unit: "Count",
-            value: response.usage.output_tokens,
-            dimensions: {
-              Customer: cxId,
-            },
+        },
+        {
+          name: "LLM.ResourceSummary.OutputTokens",
+          unit: "Count",
+          value: response.usage.output_tokens,
+          dimensions: {
+            Customer: cxId,
           },
-        ],
-      }),
-    ]);
+        },
+      ],
+    });
 
     const responseText = (response.content[response.content.length - 1] as AnthropicMessageText)
       .text;

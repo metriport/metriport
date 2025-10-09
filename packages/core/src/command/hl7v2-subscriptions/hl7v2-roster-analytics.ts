@@ -2,7 +2,7 @@ import { InternalOrganizationDTO } from "@metriport/shared/domain/organization";
 import _ from "lodash";
 import { Patient } from "../../domain/patient";
 import { analyticsAsync, EventTypes } from "../../external/analytics/posthog";
-import { reportAdvancedMetric } from "../../external/aws/cloudwatch";
+import { reportAdvancedMetrics } from "../../external/aws/cloudwatch";
 import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 import { Config } from "../../util/config";
 
@@ -58,7 +58,7 @@ export async function trackRosterSizePerCustomer({
           },
           posthogSecret
         ),
-        reportAdvancedMetric({
+        reportAdvancedMetrics({
           service: "Hl7v2RosterGenerator",
           metrics: [
             {

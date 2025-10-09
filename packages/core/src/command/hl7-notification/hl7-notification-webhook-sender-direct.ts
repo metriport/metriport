@@ -7,7 +7,7 @@ import { TcmEncounterUpsertInput } from "@metriport/shared/domain/tcm-encounter"
 import axios from "axios";
 import dayjs from "dayjs";
 import { analytics, EventTypes } from "../../external/analytics/posthog";
-import { reportAdvancedMetric } from "../../external/aws/cloudwatch";
+import { reportAdvancedMetrics } from "../../external/aws/cloudwatch";
 import { S3Utils } from "../../external/aws/s3";
 import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 import {
@@ -383,7 +383,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       }
 
       await Promise.all([
-        reportAdvancedMetric({
+        reportAdvancedMetrics({
           service: "Hl7NotificationWebhookSender",
           metrics: [
             {

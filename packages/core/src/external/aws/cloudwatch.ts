@@ -75,7 +75,7 @@ export type AdvancedMetric = {
  * @param metrics - The metrics to report.
  * @param dimensionLimitOverride - Set to true to override the 3-metric safety limit.
  */
-export async function reportAdvancedMetric({
+export async function reportAdvancedMetrics({
   service,
   metrics,
   dimensionLimitOverride = false,
@@ -120,6 +120,6 @@ export async function reportAdvancedMetric({
       .promise();
   } catch (err) {
     console.error(`Error reporting metrics ${JSON.stringify(metrics)}: ${err}`);
-    capture.error(err, { extra: { metrics, context: "reportAdvancedMetric" } });
+    capture.error(err, { extra: { metrics, context: "reportAdvancedMetrics" } });
   }
 }
