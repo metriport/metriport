@@ -6,6 +6,7 @@ import {
   Observation,
   Resource,
   ResourceType,
+  Procedure,
 } from "@medplum/fhirtypes";
 import {
   BadRequestError,
@@ -61,6 +62,7 @@ import {
   getMedicationStatementStartDate,
   getObservationLoincCode,
   getObservationObservedDate,
+  getProcedureCptCode,
   isChronicCondition,
   isLab,
   isLabPanel,
@@ -474,6 +476,9 @@ export function shouldWriteBackResource({
     return true;
   } else if (writeBackResourceType === "procedure") {
     if (writeBackFilters.procedure?.disabled) return false;
+    if (!isProcedure(resource)) return false;
+    const procedure = resource;
+    if (skipProcedureCptCode(procedure, writeBackFilters)) return false;
     return isProcedure(resource);
   } else if (writeBackResourceType === "allergy") {
     if (writeBackFilters.allergy?.disabled) return false;
@@ -710,6 +715,17 @@ export function skipMedicationStatementDateAbsolute(
   const startDate = getMedicationStatementStartDate(medicationStatement);
   if (!startDate) return true;
   return buildDayjs(startDate).isBefore(buildDayjs(absoluteDate));
+}
+
+export function skipProcedureCptCode(
+  procedure: Procedure,
+  writeBackFilters: WriteBackFiltersPerResourceType
+): boolean {
+  const cptCodes = writeBackFilters?.procedure?.cptCodes;
+  if (!cptCodes) return false;
+  const cptCode = getProcedureCptCode(procedure);
+  if (!cptCode) return true;
+  return !cptCodes.includes(cptCode);
 }
 
 async function getSecondaryResourcesToWriteBackMap({
