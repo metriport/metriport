@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import { executeWithNetworkRetries } from "@metriport/shared";
 import { Config } from "../../util/config";
 import { Patient } from "@metriport/shared/domain/patient";
-import { questRosterResponseSchema } from "./types";
+import { questRosterResponseSchema, QuestRosterType, QuestRosterRequest } from "./types";
 import { buildRosterFileName } from "./file/file-names";
 import { buildRosterFile } from "./file/file-generator";
 import { out, LogFunction } from "../../util";
@@ -13,23 +13,30 @@ const QUEST_ROSTER_ROUTE = "/internal/quest/roster";
 const NUMBER_OF_ATTEMPTS = 3;
 const BASE_DELAY = dayjs.duration({ milliseconds: 100 });
 
-export async function generateQuestRoster(): Promise<{
+export async function generateQuestRoster({ rosterType }: QuestRosterRequest): Promise<{
   rosterFileName: string;
   rosterContent: Buffer;
 }> {
   const { log } = out("QuestRoster");
-  const enrolledPatients = await getAllEnrolledPatients(log);
-  const rosterContent = buildRosterFile(enrolledPatients);
+  const enrolledPatients = await getAllEnrolledPatients({ rosterType, log });
+  const rosterContent = buildRosterFile(enrolledPatients, rosterType);
   log(`Generated roster file with ${enrolledPatients.length} patients`);
 
-  const rosterFileName = buildRosterFileName();
+  const rosterFileName = buildRosterFileName({ rosterType });
   await storeRosterInS3(rosterFileName, rosterContent, log);
   return { rosterFileName, rosterContent };
 }
 
-async function getAllEnrolledPatients(log: LogFunction): Promise<Patient[]> {
+async function getAllEnrolledPatients({
+  rosterType,
+  log,
+}: {
+  rosterType: QuestRosterType;
+  log: LogFunction;
+}): Promise<Patient[]> {
   const enrolledPatients: Patient[] = [];
-  let currentUrl: string | undefined = Config.getApiUrl() + QUEST_ROSTER_ROUTE;
+  const questRosterRoute = `${QUEST_ROSTER_ROUTE}/${rosterType}`;
+  let currentUrl: string | undefined = Config.getApiUrl() + questRosterRoute;
   while (currentUrl) {
     const response = await getWithNetworkRetries(currentUrl, log);
     const rosterPage = questRosterResponseSchema.parse(response.data);

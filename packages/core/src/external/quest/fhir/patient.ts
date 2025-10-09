@@ -10,7 +10,13 @@ import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { ResponseDetail } from "../schema/response";
 import { getQuestDataSourceExtension } from "./shared";
 
-export function getPatient(detail: ResponseDetail): Patient {
+export function getPatient(
+  detail: ResponseDetail,
+  { patientId }: { patientId?: string | undefined } = {}
+): Patient {
+  // Use the patientId provided as external context if available, otherwise generate a new UUID
+  const id = patientId ?? uuidv7();
+
   const name = getPatientName(detail);
   const identifier = getPatientIdentifier(detail);
   const address = getPatientAddress(detail);
@@ -21,7 +27,7 @@ export function getPatient(detail: ResponseDetail): Patient {
 
   return {
     resourceType: "Patient",
-    id: uuidv7(),
+    id,
     ...(name ? { name } : {}),
     ...(identifier ? { identifier } : {}),
     ...(address ? { address } : {}),
