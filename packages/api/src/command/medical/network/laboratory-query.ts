@@ -1,7 +1,7 @@
 import { out } from "@metriport/core/util/log";
 import { NetworkQueryParams, SourceQueryProgress } from "@metriport/core/domain/network-query";
 import { isQuestFeatureFlagEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
-// import { } from "@metriport/core/external/quest/command/";
+import { QuestRequestPatientDirect } from "@metriport/core/external/quest/command/request-patient/request-patient-direct";
 
 export async function queryDocumentsAcrossLaboratories({
   cxId,
@@ -27,6 +27,14 @@ async function queryDocumentsAcrossQuest({
 }: NetworkQueryParams): Promise<SourceQueryProgress> {
   const { log } = out(`Quest DQ - cxId ${cxId}, patient ${patientId}`);
   log("Running Quest document query");
+
+  const handler = new QuestRequestPatientDirect();
+  await handler.requestPatient({
+    cxId,
+    patientId,
+    backfill: true,
+    notifications: false,
+  });
 
   return {
     type: "laboratory",
