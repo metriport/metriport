@@ -1,11 +1,12 @@
 import { Config } from "@metriport/core/util/config";
-import { PaginatedResponse } from "@metriport/shared";
+import { BadRequestError, PaginatedResponse } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { getQuestRoster } from "../../../command/medical/patient/get-quest-roster";
+import { QuestRosterType, rosterTypeSchema } from "@metriport/core/external/quest/types";
 import { QuestUploadRosterHandlerCloud } from "@metriport/core/external/quest/command/upload-roster/upload-roster-cloud";
 import { QuestDownloadResponseHandlerCloud } from "@metriport/core/external/quest/command/download-response/download-response-cloud";
 import { Pagination } from "../../../command/pagination";
@@ -13,18 +14,33 @@ import { dtoFromModel as dtoFromPatientModel, PatientDTO } from "../../medical/d
 import { dtoFromModel as dtoFromPatientMappingModel } from "../../medical/dtos/patient-mapping";
 import { requestLogger } from "../../helpers/request-logger";
 import { paginated } from "../../pagination";
-import { asyncHandler, getFromParamsOrFail } from "../../util";
+import { asyncHandler, getFromParamsOrFail, getFromQueryOrFail } from "../../util";
 import { findPatientWithExternalId } from "../../../command/mapping/patient";
 import { questSource } from "@metriport/shared/interface/external/quest/source";
 
 dayjs.extend(duration);
 const router = Router();
 
+/**
+ * Validates the roster type from the request parameters, and throws a BadRequestError if it is invalid.
+ */
+function getRosterTypeFromParamsOrFail(req: Request): QuestRosterType {
+  const rosterTypeParam = getFromParamsOrFail("rosterType", req);
+  const rosterType = rosterTypeSchema.safeParse(rosterTypeParam);
+  if (!rosterType.success) {
+    throw new BadRequestError("Invalid roster type", undefined, {
+      rosterType: rosterTypeParam,
+    });
+  }
+  return rosterType.data;
+}
+
 /** ---------------------------------------------------------------------------
- * GET /internal/quest/roster
+ * GET /internal/quest/roster/:rosterType
  *
  * This is a paginated route.
- * Gets all patients that are enrolled in Quest monitoring.
+ * Gets all patients that are enrolled in Quest monitoring. The roster type can be "backfill" or "notifications", which
+ * determines which setting to use in retrieving patients.
  *
  * @param req.query.fromItem The minimum item to be included in the response, inclusive.
  * @param req.query.toItem The maximum item to be included in the response, inclusive.
@@ -34,15 +50,17 @@ const router = Router();
  * - `meta` - Pagination information, including how to get to the next page.
  */
 router.get(
-  "/roster",
+  "/roster/:rosterType",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
+    const rosterType = getRosterTypeFromParamsOrFail(req);
     const { meta, items } = await paginated({
       request: req,
       additionalQueryParams: {},
       getItems: (pagination: Pagination) => {
         return getQuestRoster({
           pagination,
+          rosterType,
         });
       },
       getTotalCount: () => {
@@ -72,27 +90,28 @@ router.get(
  * @returns 200 OK
  */
 router.post(
-  "/upload-roster",
+  "/upload-roster/:rosterType",
   requestLogger,
-  asyncHandler(async (_: Request, res: Response) => {
+  asyncHandler(async (req: Request, res: Response) => {
+    const rosterType = getRosterTypeFromParamsOrFail(req);
     const handler = new QuestUploadRosterHandlerCloud();
-    await handler.generateAndUploadLatestQuestRoster();
+    await handler.generateAndUploadLatestQuestRoster({ rosterType });
     return res.sendStatus(status.OK);
   })
 );
 
 /** ---------------------------------------------------------------------------
- * GET /internal/quest/patient-mapping/:externalId
+ * GET /internal/quest/patient/mapping
  *
  * Returns the patient ID and CX ID for a given external ID associated with a patient uploaded to the Quest roster.
- * @param req.params.externalId A 15 character external ID for the patient, associated with Quest.
+ * @param req.query.externalId A 15 character external ID for the patient, associated with Quest.
  * @returns 200 OK with the Metriport patient ID and CX ID, or 404 if no mapping is found.
  */
 router.get(
-  "/patient-mapping/:externalId",
+  "/patient/mapping",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const externalId = getFromParamsOrFail("externalId", req);
+    const externalId = getFromQueryOrFail("externalId", req);
     const patientMapping = await findPatientWithExternalId({ externalId, source: questSource });
     if (patientMapping) {
       return res.status(status.OK).json(dtoFromPatientMappingModel(patientMapping));
