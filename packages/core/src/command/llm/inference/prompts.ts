@@ -139,15 +139,7 @@ export type ResourceTemplateHandler = (data: {
 }) => string;
 
 export const templateHandlersByResourceType: Record<string, ResourceTemplateHandler> = {
-  AllergyIntolerance: () => `### Response Structure
-
-Your response should be organized as a series of sections, each with informational bullet points below. Use the following section titles to structure your answer:
-- **Reaction Details**: Describe the symptoms and manifestations
-- **Severity and Risk**: Explain how severe the reaction is and life-threatening status
-- **Onset and History**: When this allergy was first identified
-- **Cross-Reactivities**: Related allergies or cross-reactivities to be aware of
-
-### Questions
+  AllergyIntolerance: () => `### Questions
 
 Answer the following question(s):
 - What type of reaction occurred (symptoms/manifestations)?
@@ -155,16 +147,7 @@ Answer the following question(s):
 - When was this allergy first identified?
 - Are there any related allergies or cross-reactivities to be aware of?`,
 
-  Condition: () => `### Response Structure
-
-Your response should be organized as a series of sections, each with informational bullet points below. Use the following section titles to structure your answer:
-- **Diagnosis**: How this condition was diagnosed
-- **Origin and Timeline**: How and when this condition came to be
-- **Clinical Context**: Where, when, and by whom this was diagnosed
-- **Documentation**: Associated notes, reports, or imaging
-- **Treatment Plan**: Future treatment plans, follow-up appointments, or medications
-
-### Questions
+  Condition: () => `### Questions
 
 Answer the following question(s):
 - How was this diagnosed?
@@ -173,15 +156,7 @@ Answer the following question(s):
 - Is there any documentation (notes, reports, imaging) associated with this condition? If so, what are they?
 - If present, what is the plan to treat this resource in the future? Are there any follow-up appointments, medications, or other plans in the source document?`,
 
-  MedicationStatement: () => `### Response Structure
-
-Your response should be organized as a series of sections, each with informational bullet points below. Use the following section titles to structure your answer:
-- **Indication**: The condition this medication is treating
-- **Dosage and Administration**: Dosage, frequency, and duration details
-- **Current Status**: Whether the patient is currently taking this or if it has been discontinued
-- **Prescriber Information**: Who prescribed this medication and when
-
-### Questions
+  MedicationStatement: () => `### Questions
 
 Answer the following question(s):
 - What condition is this medication treating (indication)?
@@ -189,15 +164,7 @@ Answer the following question(s):
 - Is the patient currently taking this medication, or has it been discontinued?
 - Who prescribed this medication and when?`,
 
-  Procedure: () => `### Response Structure
-
-Your response should be organized as a series of sections, each with informational bullet points below. Use the following section titles to structure your answer:
-- **Indication**: Why this procedure was performed
-- **Procedure Details**: When, where, and by whom it was performed
-- **Complications**: Any complications or adverse events
-- **Outcomes**: Outcomes or findings from the procedure
-
-### Questions
+  Procedure: () => `### Questions
 
 Answer the following question(s):
 - Why was this procedure performed (indication)?
@@ -205,15 +172,7 @@ Answer the following question(s):
 - Were there any complications or adverse events?
 - What were the outcomes or findings from this procedure?`,
 
-  Encounter: () => `### Response Structure
-
-Your response should be organized as a series of sections, each with informational bullet points below. Use the following section titles to structure your answer:
-- **Chief Complaint**: The reason for this visit
-- **Diagnoses**: Diagnoses made or conditions addressed during this encounter
-- **Treatments**: Treatments or interventions provided
-- **Disposition**: Disposition and follow-up plans (admitted, discharged, etc.)
-
-### Questions
+  Encounter: () => `### Questions
 
 Answer the following question(s):
 - What was the reason for this visit (chief complaint)?
@@ -221,15 +180,7 @@ Answer the following question(s):
 - What treatments or interventions were provided?
 - What was the disposition (admitted, discharged home, follow-up plans)?`,
 
-  Immunization: () => `### Response Structure
-
-Your response should be organized as a series of sections, each with informational bullet points below. Use the following section titles to structure your answer:
-- **Vaccine Information**: What vaccine was administered and for which disease
-- **Administration Details**: When it was given and which dose in the series
-- **Adverse Reactions**: Any adverse reactions or side effects
-- **Follow-up**: When the next dose is due, if applicable
-
-### Questions
+  Immunization: () => `### Questions
 
 Answer the following question(s):
 - What vaccine was administered and for which disease?
@@ -237,15 +188,7 @@ Answer the following question(s):
 - Were there any adverse reactions or side effects?
 - When is the next dose due, if applicable?`,
 
-  DiagnosticReport: () => `### Response Structure
-
-Your response should be organized as a series of sections, each with informational bullet points below. Use the following section titles to structure your answer:
-- **Indication**: Why this test was ordered
-- **Key Findings**: The key findings or results
-- **Abnormalities**: Any abnormal values that require attention
-- **Clinical Interpretation**: Clinical notes or interpretation provided
-
-### Questions
+  DiagnosticReport: () => `### Questions
 
 Answer the following question(s):
 - If a test, why was this test ordered?
@@ -253,15 +196,7 @@ Answer the following question(s):
 - Are there any abnormal values that require attention?
 - What clinical notes or interpretation are provided?`,
 
-  Observation: () => `### Response Structure
-
-Your response should be organized as a series of sections, each with informational bullet points below. Use the following section titles to structure your answer:
-- **Measurement**: What was measured and the value
-- **Clinical Significance**: Whether this value is normal or indicates an abnormality
-- **Context**: Why this observation was made (clinical context)
-- **Trends**: How this compares to previous measurements
-
-### Questions
+  Observation: () => `### Questions
 
 Answer the following question(s):
 - What was measured and what is the value?
@@ -269,14 +204,7 @@ Answer the following question(s):
 - Why was this observation made (clinical context)?
 - How does this compare to previous measurements (trend)?`,
 
-  Suspects: () => `### Response Structure
-
-Your response should be organized as a series of sections, each with informational bullet points below. Use the following section titles to structure your answer:
-- **Reason for Creation**: Why this suspect was created
-- **Related Resources**: The related resources that are responsible for this suspect
-- **Key Observations**: Other important observations related to this suspect
-
-### Questions
+  Suspects: () => `### Questions
 
 Answer the following question(s):
 - Why was this suspect created?
@@ -285,14 +213,7 @@ Answer the following question(s):
 };
 
 export function defaultTemplateHandler(): string {
-  return `### Response Structure
-
-Your response should be organized as a series of sections, each with informational bullet points below. Use the following section titles to structure your answer:
-- **Clinical Significance**: Why this is important
-- **Associated Notes**: Any related notes or documentation
-- **Context**: Important context surrounding this resource
-
-### Questions
+  return `### Questions
 
 Answer the following question(s):
 - Why is this important?

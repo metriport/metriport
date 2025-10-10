@@ -1,15 +1,14 @@
-import Groq from "groq-sdk";
 import { initTimer } from "@metriport/shared/common/timer";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { chunkWithOverlap } from "../../../util/string";
+import { AnthropicAgent } from "../../../external/bedrock/agent/anthropic";
+import { getAssistantResponseText } from "../../../external/bedrock/model/anthropic/response";
 import {
   getResourceSummaryCollationPrompt,
   getResourceSummaryPrompt,
   systemPrompt,
 } from "./prompts";
-
-const defaultModel = "openai/gpt-oss-20b";
 
 /**
  * The usual estimate is every 4 characters is a token.
@@ -107,6 +106,10 @@ export async function summarizeContext({
     };
   }
 
+  responses.forEach(response => {
+    log(`Response: ${response}`);
+  });
+
   // Collate summaries
   const collationTimer = initTimer();
   const collationResult = await collateSummaries({
@@ -135,8 +138,12 @@ export async function summarizeChunk({
   context,
   resourceRowData,
 }: ResourceInference): Promise<ChunkResult> {
-  const groq = new Groq({
-    apiKey: Config.getGroqApiKey(),
+  const agent = new AnthropicAgent({
+    version: "claude-sonnet-3.7",
+    region: Config.getAWSRegion(),
+    systemPrompt,
+    maxTokens: 8192,
+    temperature: 0,
   });
 
   const prompt = getResourceSummaryPrompt({
@@ -147,33 +154,20 @@ export async function summarizeChunk({
     ...(resourceRowData ? { resourceRowData } : {}),
   });
 
-  const chatCompletion = await groq.chat.completions.create({
-    messages: [
-      {
-        role: "system",
-        content: systemPrompt,
-      },
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
-    model: defaultModel,
-    temperature: 0,
-    max_completion_tokens: 8192,
-    stream: false,
-    stop: null,
-  });
+  agent.addUserMessageText(prompt);
+  const response = await agent.continueConversation();
 
-  const message = chatCompletion.choices[0]?.message.content ?? "";
+  const message = getAssistantResponseText(response) ?? "";
+  const usage = agent.getUsage();
+
   const result: ChunkResult = {
     summary: message,
   };
-  if (chatCompletion.usage?.prompt_tokens !== undefined) {
-    result.inputTokens = chatCompletion.usage.prompt_tokens;
+  if (usage.input_tokens !== undefined) {
+    result.inputTokens = usage.input_tokens;
   }
-  if (chatCompletion.usage?.completion_tokens !== undefined) {
-    result.outputTokens = chatCompletion.usage.completion_tokens;
+  if (usage.output_tokens !== undefined) {
+    result.outputTokens = usage.output_tokens;
   }
   return result;
 }
@@ -191,8 +185,12 @@ export async function collateSummaries({
   summaries: string[];
   resourceRowData?: Record<string, unknown>;
 }): Promise<ChunkResult> {
-  const groq = new Groq({
-    apiKey: Config.getGroqApiKey(),
+  const agent = new AnthropicAgent({
+    version: "claude-sonnet-3.7",
+    region: Config.getAWSRegion(),
+    systemPrompt,
+    maxTokens: 8192,
+    temperature: 0,
   });
 
   const prompt = getResourceSummaryCollationPrompt({
@@ -203,34 +201,20 @@ export async function collateSummaries({
     ...(resourceRowData ? { resourceRowData } : {}),
   });
 
-  const chatCompletion = await groq.chat.completions.create({
-    messages: [
-      {
-        role: "system",
-        content: systemPrompt,
-      },
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
-    model: defaultModel,
-    temperature: 0,
-    max_completion_tokens: 8192,
-    top_p: 1,
-    stream: false,
-    stop: null,
-  });
+  agent.addUserMessageText(prompt);
+  const response = await agent.continueConversation();
 
-  const message = chatCompletion.choices[0]?.message.content ?? "";
+  const message = getAssistantResponseText(response) ?? "";
+  const usage = agent.getUsage();
+
   const result: ChunkResult = {
     summary: message,
   };
-  if (chatCompletion.usage?.prompt_tokens !== undefined) {
-    result.inputTokens = chatCompletion.usage.prompt_tokens;
+  if (usage.input_tokens !== undefined) {
+    result.inputTokens = usage.input_tokens;
   }
-  if (chatCompletion.usage?.completion_tokens !== undefined) {
-    result.outputTokens = chatCompletion.usage.completion_tokens;
+  if (usage.output_tokens !== undefined) {
+    result.outputTokens = usage.output_tokens;
   }
   return result;
 }
