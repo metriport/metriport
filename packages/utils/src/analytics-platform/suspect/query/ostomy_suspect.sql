@@ -135,7 +135,7 @@ ostomy_with_fhir AS (
           )
         )
       ),
-      'performedDateTime', TO_CHAR(s.obs_date, 'YYYY-MM-DD')
+      'effectiveDateTime', TO_CHAR(s.obs_date, 'YYYY-MM-DD')
     ) AS fhir
   FROM ostomy_suspects s
 )

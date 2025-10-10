@@ -243,10 +243,7 @@ with_fhir AS (
           )
         )
       ),
-      'effectiveDateTime', IFF(f.resource_type IN ('Observation','Condition'),
-                               TO_CHAR(f.obs_date, 'YYYY-MM-DD'), NULL),
-      'performedDateTime', IFF(f.resource_type = 'Procedure',
-                               TO_CHAR(f.obs_date, 'YYYY-MM-DD'), NULL),
+      'effectiveDateTime', TO_CHAR(s.obs_date, 'YYYY-MM-DD'),
       'valueQuantity',
         IFF(f.resource_type = 'Observation' AND f.value_num IS NOT NULL,
             OBJECT_CONSTRUCT(

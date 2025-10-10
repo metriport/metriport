@@ -267,7 +267,7 @@ biopsy_with_fhir AS (
           OBJECT_CONSTRUCT('system','http://www.ama-assn.org/go/cpt','code',s.NORMALIZED_CODE,'display',s.NORMALIZED_DESCRIPTION)
         )
       ),
-      'performedDateTime',TO_CHAR(s.obs_date,'YYYY-MM-DD')
+      'effectiveDateTime',TO_CHAR(s.obs_date,'YYYY-MM-DD')
     ) AS fhir
   FROM biopsy_suspects s
 ),

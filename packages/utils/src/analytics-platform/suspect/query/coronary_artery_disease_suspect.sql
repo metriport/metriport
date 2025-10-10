@@ -189,7 +189,6 @@ cad_with_fhir AS (
       ),
       /* Date placement for both types (UI-ready) */
       'effectiveDateTime', TO_CHAR(s.obs_date, 'YYYY-MM-DD'),
-      'performedDateTime', TO_CHAR(s.obs_date, 'YYYY-MM-DD'),
       'valueQuantity',
         IFF(s.resource_type = 'Observation' AND s.value_num IS NOT NULL,
             OBJECT_CONSTRUCT('value', s.value_num, 'unit', 'ng/L'),
