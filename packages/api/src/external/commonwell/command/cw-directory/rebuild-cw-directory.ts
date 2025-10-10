@@ -20,7 +20,9 @@ import {
 
 dayjs.extend(duration);
 
+// CW Directory API is limited to 100 organizations per request
 const BATCH_SIZE = 100;
+
 const parallelQueriesToGetManagingOrg = 20;
 const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
 const heartbeatUrl = Config.getCwDirRebuildHeartbeatUrl();

@@ -1,6 +1,6 @@
 import { QueryTypes, Sequelize } from "sequelize";
 import { executeOnDBTx } from "../../../../models/transaction-wrapper";
-import { CwDirectoryEntry, CwDirectoryEntryData } from "../../cw-directory";
+import { CwDirectoryEntryData } from "../../cw-directory";
 import { CwDirectoryEntryViewModel } from "../../../commonwell/models/cw-directory-view";
 
 export const cwDirectoryEntry = `cw_directory_entry_new`;
@@ -39,6 +39,7 @@ export async function insertCwDirectoryEntries(
     entry.country,
     entry.networks ? JSON.stringify(entry.networks) : null,
     entry.active,
+    entry.npi ?? null,
   ]);
 
   const query = `INSERT INTO ${cwDirectoryEntryTemp} (${keys}) VALUES ${placeholders};`;
@@ -52,7 +53,7 @@ export async function insertCwDirectoryEntries(
 function createKeys(): string {
   // The order matters, it's tied to the insert below
   const allKeys: Record<
-    keyof Omit<CwDirectoryEntry, "createdAt" | "updatedAt" | "delegateOids">,
+    keyof Omit<CwDirectoryEntryData, "createdAt" | "updatedAt" | "delegateOids">,
     string
   > = {
     id: "id",
@@ -68,6 +69,7 @@ function createKeys(): string {
     country: "country",
     networks: "networks",
     active: "active",
+    npi: "npi",
   };
 
   return Object.values(allKeys).join(", ");

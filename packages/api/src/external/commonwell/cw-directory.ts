@@ -12,5 +12,6 @@ export type CwDirectoryEntryData = {
   country: string | undefined;
   networks: unknown;
   active: boolean;
+  npi?: string;
   delegateOids?: string[];
 };

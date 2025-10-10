@@ -37,6 +37,7 @@ export function parseCWOrganization(org: Organization): CwDirectoryEntryData {
   const zipCode = location.postalCode;
   const country = location.country;
   const networks = org.networks;
+  const npi = org.npiType1 || org.npiType2 || undefined;
 
   if (!addressLine1 || !city || !state || !zipCode || !country) {
     throw new MetriportError("Missing required address fields on CW Org", undefined, {
@@ -64,6 +65,7 @@ export function parseCWOrganization(org: Organization): CwDirectoryEntryData {
     country,
     networks,
     active: org.isActive,
+    npi,
     delegateOids,
   };
 }

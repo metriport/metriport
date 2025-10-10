@@ -21,6 +21,7 @@ export class CwDirectoryEntryViewModel
   declare country: string;
   declare networks: unknown;
   declare active: boolean;
+  declare npi?: string;
   static setup: ModelSetup = (sequelize: Sequelize) => {
     CwDirectoryEntryViewModel.init(
       {
@@ -71,6 +72,9 @@ export class CwDirectoryEntryViewModel
         },
         active: {
           type: DataTypes.BOOLEAN,
+        },
+        npi: {
+          type: DataTypes.STRING,
         },
       },
       {
