@@ -17,6 +17,10 @@ Issues:
 
 Check each PR.
 
+### Metrics
+
+Check each PR.
+
 ### Release Plan
 
 _[How does the changes on this PR impact/interact with the existing environment (database, configs, secrets, FFs, api contracts, etc.)?
@@ -29,6 +33,7 @@ _[You should execute the exact same steps when releasing to staging to validate 
 _[Add and remove items below accordingly]_
 
 - :warning: Points to `master`
+- :warning: We are in a code freeze. Do we have a release buddy?
 - :warning: This contains a DB migration
 - [ ] Maintenance window scheduled/created at Checkly (if needed)
 - [ ] Execute this on <env1>, <env2>

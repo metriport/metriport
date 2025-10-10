@@ -25,6 +25,20 @@ path and the alternative ones. Be specific.]_
   - [ ] _testing step 1_
   - [ ] _testing step 2_
 
+### Metrics
+
+_[Plan ahead how we are going to monitor your changes. Add images of metrics. If a metric is not applicable, explain why.]_
+
+- [ ] Alarms _[Alarms trigger pagerduty. These should only happen when there's a significant issue with the system. This is the most important metric.]_
+
+- [ ] Alerts _[Alerts go into the slack channel pagerduty. Alerts are not as important as alarms, but still let on-call know something went wrong.]_
+
+- [ ] Posthog metrics
+_[Image(s) of Posthog metrics]_
+
+- [ ] Cloudwatch metrics
+_[Image(s) of Cloudwatch metrics]_
+
 ### Release Plan
 
 _[How does the changes on this PR impact/interact with the existing environment (database, configs, secrets, FFs, api contracts, etc.)?
