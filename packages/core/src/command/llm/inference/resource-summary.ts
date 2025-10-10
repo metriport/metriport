@@ -49,6 +49,11 @@ export async function summarizeContext({
     )
   );
 
+  // Skip collation if there's only one summary we received - faster answer.
+  if (responses.length === 1) {
+    return responses[0];
+  }
+
   // Collate summaries
   return await collateSummaries({
     resourceType,
