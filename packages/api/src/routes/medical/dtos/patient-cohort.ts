@@ -1,4 +1,4 @@
-import { PatientCohort } from "@metriport/core/domain/cohort";
+import { PatientCohort } from "@metriport/shared/domain/patient-cohort";
 
 export type PatientCohortDTO = {
   patientId: string;
