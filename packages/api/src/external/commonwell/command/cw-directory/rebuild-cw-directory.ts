@@ -1,5 +1,4 @@
 import { safelyUploadPrincipalAndDelegatesToS3 } from "@metriport/core/external/hie-shared/principal-and-delegates";
-import { sendHeartbeatToMonitoringService } from "@metriport/core/external/monitoring/heartbeat";
 import { capture, executeAsynchronously } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { initDbPool } from "@metriport/core/util/sequelize";
@@ -25,7 +24,6 @@ const BATCH_SIZE = 100;
 
 const parallelQueriesToGetManagingOrg = 20;
 const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
-const heartbeatUrl = Config.getCwDirRebuildHeartbeatUrl();
 
 const dbCreds = Config.getDBCreds();
 const sequelize = initDbPool(dbCreds, {
@@ -143,6 +141,4 @@ export async function rebuildCwDirectory(failGracefully = false): Promise<void> 
   }
 
   log(`CW directory successfully rebuilt! :) Took ${Date.now() - startedAt}ms`);
-
-  if (heartbeatUrl) await sendHeartbeatToMonitoringService(heartbeatUrl);
 }
