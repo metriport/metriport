@@ -1,6 +1,6 @@
 ---
 title: "Add Patient to Cohorts"
-description: "Adds a single patient to multiple cohorts at once. Returns the cohorts the patient was successfully added to."
+description: "Adds a single patient to multiple cohorts at once. Returns all cohorts the patient is a part of."
 api: "POST /medical/v1/patient/{id}/cohorts"
 ---
 
@@ -79,4 +79,3 @@ const result = await metriport.addPatientToCohorts("00000000-0000-0000-0000-0000
 ## Notes
 
 - If the patient is already in some of the specified cohorts, those will be skipped (no error thrown)
-- Only successfully added cohorts are returned in the response
