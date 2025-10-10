@@ -79,12 +79,6 @@ export async function getCwDirectoryIds(sequelize: Sequelize): Promise<string[]>
   return result.map(row => row.id);
 }
 
-export async function deleteCwDirectoryEntries(sequelize: Sequelize, ids: string[]): Promise<void> {
-  if (ids.length === 0) return;
-  const query = `DELETE FROM ${cwDirectoryEntryTemp} WHERE id in ('${ids.join(`','`)}');`;
-  await sequelize.query(query, { type: QueryTypes.DELETE });
-}
-
 export async function createTempCwDirectoryTable(sequelize: Sequelize): Promise<void> {
   await deleteTempCwDirectoryTable(sequelize);
   // The PK is added later, on `updateCwDirectoryViewDefinition`

@@ -48,7 +48,7 @@ export function parseCWOrganization(org: Organization): CwDirectoryEntryData {
   const orgType = org.npiType1 || org.npiType2 || org.type || "Unknown";
 
   // Determine status based on active state
-  const delegateOids = getDelegateOids(org.networks);
+  const delegateOids = getDelegateOids(org.networks ?? []);
 
   return {
     id: organizationId,

@@ -2,7 +2,7 @@ import { Organization } from "@metriport/commonwell-sdk";
 import { out } from "@metriport/core/util/log";
 import { makeCommonWellMemberAPI } from "../../../commonwell-v2/api";
 
-const BATCH_SIZE = 1_000;
+const BATCH_SIZE = 100;
 
 /**
  * Lists organizations from the CommonWell Directory.
@@ -18,7 +18,7 @@ export async function listCwDirectory({
   oid?: string;
   limit?: number;
 }): Promise<Organization[]> {
-  const { log } = out(`listCQDirectory, oid ${oid}, limit ${limit}`);
+  const { log } = out(`listCwDirectory, oid ${oid}, limit ${limit}`);
 
   const cw = makeCommonWellMemberAPI();
   const orgs: Organization[] = [];
@@ -44,7 +44,7 @@ export async function listCwDirectory({
     }
   }
 
-  log(`Found ${orgs.length} organizations in the Carequality Directory`);
+  log(`Found ${orgs.length} organizations in the CommonWell Directory`);
 
   return orgs;
 }
