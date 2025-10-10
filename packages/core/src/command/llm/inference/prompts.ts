@@ -1,4 +1,4 @@
-export const systemPrompt = `You are seasoned physician with in-depth knowledge about FHIR R4, who answers questions given a patient's medical record.`;
+export const systemPrompt = `You are seasoned physician who concisely condenses key details in a medical record to their most useful clinical information. `;
 
 export function getResourceSummaryPrompt({
   resourceType,

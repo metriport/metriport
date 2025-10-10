@@ -137,6 +137,7 @@
     "dayjs": "^1.11.9",
     "express-rate-limit": "^7.4.1",
     "formidable": "^3.5.1",
+    "groq-sdk": "^0.33.0",
     "http-status": "~1.7.0",
     "ini": "^5.0.0",
     "ip-cidr": "^4.0.2",

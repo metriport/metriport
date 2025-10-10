@@ -1,7 +1,4 @@
-import { AnthropicAgent } from "../../../external/bedrock/agent/anthropic";
-import { BedrockRegion } from "../../../external/bedrock/client";
-import { AnthropicMessageText } from "../../../external/bedrock/model/anthropic/messages";
-import { AnthropicModelVersion } from "../../../external/bedrock/model/anthropic/version";
+import Groq from "groq-sdk";
 import { out } from "../../../util/log";
 import { chunkWithOverlap } from "../../../util/string";
 import {
@@ -10,8 +7,7 @@ import {
   systemPrompt,
 } from "./prompts";
 
-const defaultModel: AnthropicModelVersion = "claude-sonnet-3.7";
-const defaultRegion: BedrockRegion = "us-west-2";
+const defaultModel = "openai/gpt-oss-20b";
 
 /**
  * The usual estimate is every 4 characters is a token.
@@ -68,20 +64,29 @@ export async function summarizeChunk({
   questions,
   context,
 }: ResourceInference): Promise<string> {
-  const agent = new AnthropicAgent({
-    version: defaultModel,
-    region: defaultRegion,
-    systemPrompt,
-    tools: [],
-  });
+  const groq = new Groq();
 
   const prompt = getResourceSummaryPrompt({ resourceType, resourceDisplays, questions, context });
 
-  agent.addUserMessageText(prompt);
+  const chatCompletion = await groq.chat.completions.create({
+    messages: [
+      {
+        role: "system",
+        content: systemPrompt,
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    model: defaultModel,
+    temperature: 0,
+    max_completion_tokens: 8192,
+    stream: false,
+    stop: null,
+  });
 
-  const response = await agent.continueConversation();
-
-  const message = (response.content[response.content.length - 1] as AnthropicMessageText).text;
+  const message = chatCompletion.choices[0]?.message.content ?? "";
   return message;
 }
 
@@ -96,12 +101,7 @@ export async function collateSummaries({
   questions: string[];
   summaries: string[];
 }): Promise<string> {
-  const agent = new AnthropicAgent({
-    version: defaultModel,
-    region: defaultRegion,
-    systemPrompt,
-    tools: [],
-  });
+  const groq = new Groq();
 
   const prompt = getResourceSummaryCollationPrompt({
     resourceType,
@@ -110,10 +110,25 @@ export async function collateSummaries({
     responses: summaries,
   });
 
-  agent.addUserMessageText(prompt);
+  const chatCompletion = await groq.chat.completions.create({
+    messages: [
+      {
+        role: "system",
+        content: systemPrompt,
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    model: defaultModel,
+    temperature: 0,
+    max_completion_tokens: 8192,
+    top_p: 1,
+    stream: false,
+    stop: null,
+  });
 
-  const response = await agent.continueConversation();
-
-  const message = (response.content[response.content.length - 1] as AnthropicMessageText).text;
+  const message = chatCompletion.choices[0]?.message.content ?? "";
   return message;
 }
