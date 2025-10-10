@@ -27,7 +27,7 @@
       ADT (Admission, Discharge, Transfer) monitoring - subscribes patients to ADT notifications based on their [primary address](/medical-api/api-reference/patient/create-patient#param-is-primary).  
       - `true` - Uses the patient's [primary address](/medical-api/api-reference/patient/create-patient#param-is-primary) to determine which state HIE to subscribe to
       - `false` - Disables ADT monitoring (default)
-      - `["HieName", "HieName", ...]` - Force-enables for specific state HIE(s) instead of using [primary address](/medical-api/api-reference/patient/create-patient#param-is-primary)
+      - `["HieName", "HieName", ...]` - Force-enables for specific state HIE(s) ([click here for the list of supported hies](/medical-api/handling-data/cohorts#list-of-state-hies)) instead of using [primary address](/medical-api/api-reference/patient/create-patient#param-is-primary)
     </ParamField>
     <ParamField body="pharmacy" type="boolean" optional>
       Pharmacy / medication history monitoring - enables retail fill data monitoring where available.  
