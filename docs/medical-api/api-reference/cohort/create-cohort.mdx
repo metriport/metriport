@@ -20,7 +20,7 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
 const cohort = await metriport.createCohort({
-  name: "HIGH RISK",
+  name: "High Risk",
   color: "red",
   description: "Patients that need frequent and robust monitoring.",
   settings: {

@@ -1,5 +1,5 @@
 <ResponseField name="id" type="string" required>
-  The unique identifier for the cohort (UUID format, e.g., `018a80c4-292a-7486-a123-09ab76cde234`).
+  The unique identifier for the cohort (UUID format, e.g., `00000000-0000-0000-0000-000000000000`).
 </ResponseField>
 
 <ResponseField name="eTag" type="string" required>
@@ -7,7 +7,7 @@
 </ResponseField>
 
 <ResponseField name="name" type="string" required>
-  The name of the cohort (automatically converted to **uppercase**).
+  The unique name of the cohort within your organization.
 </ResponseField>
 
 <ResponseField name="description" type="string" required>
@@ -33,10 +33,10 @@
         </Warning>
       </ResponseField>
       <ResponseField name="adt" type="boolean|array" optional>
-        ADT (Admission, Discharge, Transfer) monitoring - subscribes patients to ADT notifications based on their **[primary address state](/medical-api/api-reference/patient/create-patient#param-primary-address-index)**.  
-        - `true` - Uses the patient's [primary address](/medical-api/api-reference/patient/create-patient#param-primary-address-index) to determine which state HIE to subscribe to
+        ADT (Admission, Discharge, Transfer) monitoring - subscribes patients to ADT notifications based on their **[primary address state](/medical-api/api-reference/patient/create-patient#param-is-primary)**.  
+        - `true` - Uses the patient's [primary address](/medical-api/api-reference/patient/create-patient#param-is-primary) to determine which state HIE to subscribe to
         - `false` - Disables ADT monitoring (default)
-        - `["HieName", "HieName", ...]` - Force-enables for specific state HIE(s) instead of using [primary address](/medical-api/api-reference/patient/create-patient#param-primary-address-index)
+        - `["HieName", "HieName", ...]` - Force-enables for specific state HIE(s) instead of using [primary address](/medical-api/api-reference/patient/create-patient#param-is-primary)
       </ResponseField>
       <ResponseField name="pharmacy" type="boolean" optional>
         Pharmacy / medication history monitoring - enables retail fill data monitoring where available.  

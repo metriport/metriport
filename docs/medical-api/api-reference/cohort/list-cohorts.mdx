@@ -1,14 +1,8 @@
 ---
 title: "List Cohorts"
-description: "Lists all cohorts defined by your organization, or returns a specific cohort by name."
+description: "Lists all cohorts defined by your organization."
 api: "GET /medical/v1/cohort"
 ---
-
-## Query Parameters
-
-<ParamField query="name" type="string" optional>
-  The name of a specific cohort to return. If provided, returns only the cohort with the specified name instead of all cohorts.
-</ParamField>
 
 ## Response
 
@@ -27,9 +21,6 @@ api: "GET /medical/v1/cohort"
 
   // List all cohorts
   const allCohorts = await metriport.listCohorts();
-
-  // Get a specific cohort by name
-  const specificCohort = await metriport.getCohortByName({ name: "High Risk" });
 ```
 </ResponseExample>
 
@@ -37,9 +28,9 @@ api: "GET /medical/v1/cohort"
 {
   "cohorts": [
     {
-      "id": "018a80c4-292a-7486-a1234-9uiu76yhe234",
+      "id": "00000000-0000-0000-0000-000000000000",
       "eTag": "1",
-      "name": "HIGH RISK",
+      "name": "High Risk",
       "description": "Patients that need frequent and robust monitoring.",
       "color": "red",
       "settings": {
@@ -52,9 +43,9 @@ api: "GET /medical/v1/cohort"
       }
     },
     {
-      "id": "018a80c4-292a-7486-a1234-6hyt345tyu23",
+      "id": "00000000-0000-0000-0000-000000000000",
       "eTag": "1",
-      "name": "CARDIAC CARE COHORT",
+      "name": "Cardiac Care Cohort",
       "description": "Patients receiving cardiac care and monitoring",
       "settings": {
         "monitoring": {

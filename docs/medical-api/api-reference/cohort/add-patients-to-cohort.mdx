@@ -15,11 +15,11 @@ api: "POST /medical/v1/cohort/{id}/patient"
 You must provide either `patientIds` or `all`, but not both.
 
 <ParamField body="patientIds" type="string[]" optional>
-  Array of patient IDs to assign to the cohort. Mutually exclusive with the `all` flag.
+  Array of patient IDs to assign to the cohort. Mutually exclusive with the `all` property.
 </ParamField>
 
 <ParamField body="all" type="boolean" optional>
-  Flag to confirm you want to assign all patients in your metriport instance to the cohort. Mutually exclusive with the `patientIds` array.
+  Property to confirm you want to assign all patients in your metriport instance to the cohort. Mutually exclusive with the `patientIds` array.
 </ParamField>
 
 ## Response
@@ -35,16 +35,16 @@ const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
 // Add specific patients to cohort
 const cohortWithPatients = await metriport.addPatientsToCohort({
-  cohortId: "018a80c4-292a-7486-a1234-9uiu76yhe234",
+  cohortId: "00000000-0000-0000-0000-000000000000",
   patientIds: [
-    "018a80c4-292a-7486-a1234-76yuhe23yu14",
-    "018a80c4-292a-7486-a1234-5ert32uij123"
+    "00000000-0000-0000-0000-000000000000",
+    "00000000-0000-0000-0000-000000000000"
   ]
 });
 
 // Add all patients to cohort
-const cohortWithAllPatients = await metriport.addAllPatientsToCohort({
-  cohortId: "018a80c4-292a-7486-a1234-9uiu76yhe234",
+const cohortWithAllPatients = await metriport.addPatientsToCohort({
+  cohortId: "00000000-0000-0000-0000-000000000000",
   all: true
 });
 ```

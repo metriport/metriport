@@ -1,5 +1,5 @@
 <ParamField body="name" type="string" required>
-  The name of the cohort. This will be trimmed of leading/trailing whitespace and **automatically converted to uppercase**.
+  The name of the cohort. The name must be unique within your organization. The name will also be trimmed of leading/trailing whitespace.
 </ParamField>
 
 <ParamField body="color" type="string" required>
@@ -24,10 +24,10 @@
       </Warning>
     </ParamField>
     <ParamField body="adt" type="boolean|array" optional>
-      ADT (Admission, Discharge, Transfer) monitoring - subscribes patients to ADT notifications based on their [primary address](/medical-api/api-reference/patient/create-patient#param-primary-address-index).  
-      - `true` - Uses the patient's [primary address](/medical-api/api-reference/patient/create-patient#param-primary-address-index) to determine which state HIE to subscribe to
+      ADT (Admission, Discharge, Transfer) monitoring - subscribes patients to ADT notifications based on their [primary address](/medical-api/api-reference/patient/create-patient#param-is-primary).  
+      - `true` - Uses the patient's [primary address](/medical-api/api-reference/patient/create-patient#param-is-primary) to determine which state HIE to subscribe to
       - `false` - Disables ADT monitoring (default)
-      - `["HieName", "HieName", ...]` - Force-enables for specific state HIE(s) instead of using [primary address](/medical-api/api-reference/patient/create-patient#param-primary-address-index)
+      - `["HieName", "HieName", ...]` - Force-enables for specific state HIE(s) instead of using [primary address](/medical-api/api-reference/patient/create-patient#param-is-primary)
     </ParamField>
     <ParamField body="pharmacy" type="boolean" optional>
       Pharmacy / medication history monitoring - enables retail fill data monitoring where available.  
