@@ -1,11 +1,14 @@
 ---
 title: "Delete Cohort"
-description: "Deletes a cohort and removes all patient associations."
+description: "Deletes a cohort and removes all patient associations. Click for additional information on [Cohorts](/medical-api/handling-data/cohorts)"
 api: "DELETE /medical/v1/cohort/{id}"
 ---
 
 ## Path Params
-
+<Warning>
+  Deleting a cohort will remove the settings applied to all the patients within the cohort.
+  This could potentially lead to turning off monitoring for a whole patient population.
+</Warning>
 <ParamField path="id" type="string" required>
   The ID of the cohort to delete.
 </ParamField>

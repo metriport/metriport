@@ -1,6 +1,6 @@
 ---
 title: "Add Patient to Cohorts"
-description: "Adds a single patient to multiple cohorts at once. Returns all cohorts the patient is a part of."
+description: "Adds a single patient to multiple cohorts at once. Returns all cohorts the patient is a part of. Click for additional information on [Cohorts](/medical-api/handling-data/cohorts)"
 api: "POST /medical/v1/patient/{id}/cohorts"
 ---
 
@@ -54,6 +54,21 @@ const result = await metriport.addPatientToCohorts("00000000-0000-0000-0000-0000
           "adt": true,
           "pharmacy": true,
           "laboratory": true
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "eTag": "1",
+      "name": "Low Risk",
+      "description": "Patients with minimal monitoring needs",
+      "color": "green",
+      "settings": {
+        "monitoring": {
+          "hie": "monthly",
+          "adt": false,
+          "pharmacy": false,
+          "laboratory": false
         }
       }
     },
