@@ -85,26 +85,11 @@
             "medical-api/api-reference/patient/get-patient-external-id",
             "medical-api/api-reference/patient/update-patient",
             "medical-api/api-reference/patient/match-patient",
-            "medical-api/api-reference/patient/delete-patient",
             "medical-api/api-reference/patient/list-patients",
+            "medical-api/api-reference/patient/delete-patient",
             "medical-api/api-reference/patient/create-patient-external-sync",
             "medical-api/api-reference/patient/hie-opt-out",
-            "medical-api/api-reference/patient/bulk-create-patient",
-            "medical-api/api-reference/patient/get-patient-settings",
-            "medical-api/api-reference/patient/list-patient-cohorts"
-          ]
-        },
-        {
-          "group": "Cohort",
-          "icon": "people-group",
-          "pages": [
-            "medical-api/api-reference/cohort/create-cohort",
-            "medical-api/api-reference/cohort/get-cohort",
-            "medical-api/api-reference/cohort/update-cohort",
-            "medical-api/api-reference/cohort/delete-cohort",
-            "medical-api/api-reference/cohort/list-cohorts",
-            "medical-api/api-reference/cohort/add-patients-to-cohort",
-            "medical-api/api-reference/cohort/remove-patients-from-cohort"
+            "medical-api/api-reference/patient/bulk-create-patient"
           ]
         },
         {
@@ -157,7 +142,6 @@
         "medical-api/handling-data/medical-record-summary",
         "medical-api/handling-data/webhooks",
         "medical-api/handling-data/realtime-patient-notifications",
-        "medical-api/handling-data/working-with-cohorts",
         {
           "group": "Data Analytics and Warehousing",
           "icon": "database",
