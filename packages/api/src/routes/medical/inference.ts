@@ -1,9 +1,12 @@
-import { summarizeContext } from "@metriport/core/command/llm/inference/resource-summary";
+import {
+  summarizeContext,
+  SummaryResult,
+} from "@metriport/core/command/llm/inference/resource-summary";
 import {
   defaultTemplateHandler,
   templateHandlersByResourceType,
 } from "@metriport/core/command/llm/inference/prompts";
-import { reportAdvancedMetrics } from "@metriport/core/external/aws/cloudwatch";
+import { AdvancedMetric, reportAdvancedMetrics } from "@metriport/core/external/aws/cloudwatch";
 import { initTimer } from "@metriport/shared/common/timer";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -12,6 +15,7 @@ import { z } from "zod";
 import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail } from "../util";
+import { out } from "@metriport/core/util/log";
 
 const router = Router();
 
@@ -35,9 +39,10 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
+    const { log } = out(`resource/summary - cx: ${cxId}`);
     const { resourceType, resourceDisplays, resourceRowData, context, suspectsContext } =
       resourceSummaryInferenceSchema.parse(req.body);
-    console.log(`resourceType: ${resourceType}, resourceDisplays: ${resourceDisplays.join(", ")}`);
+    log(`resourceType: ${resourceType}, resourceDisplays: ${resourceDisplays.join(", ")}`);
 
     const templateHandler = templateHandlersByResourceType[resourceType] ?? defaultTemplateHandler;
 
@@ -73,40 +78,71 @@ ${context}
       resourceRowData,
     });
     const duration = timer.getElapsedTime();
-    console.log("Duration of request: ", duration);
 
-    await reportAdvancedMetrics({
-      service: "OSS API",
-      metrics: [
-        {
-          name: "LLM.ResourceSummary.Duration",
-          unit: "Milliseconds",
-          value: duration,
-          dimensions: {
-            Customer: cxId,
-          },
-        },
-        {
-          name: "LLM.ResourceSummary.InputTokens",
-          unit: "Count",
-          value: result.inputTokens ?? 0,
-          dimensions: {
-            Customer: cxId,
-          },
-        },
-        {
-          name: "LLM.ResourceSummary.OutputTokens",
-          unit: "Count",
-          value: result.outputTokens ?? 0,
-          dimensions: {
-            Customer: cxId,
-          },
-        },
-      ],
-    });
+    await reportResourceSummaryMetrics({ cxId, duration, result });
 
     return res.status(status.OK).json({ summary: result.summary });
   })
 );
+
+async function reportResourceSummaryMetrics({
+  cxId,
+  duration,
+  result,
+}: {
+  cxId: string;
+  duration: number;
+  result: SummaryResult;
+}): Promise<void> {
+  const metrics: AdvancedMetric[] = [
+    {
+      name: "LLM.ResourceSummary.Duration",
+      unit: "Milliseconds",
+      value: duration,
+      dimensions: {
+        Customer: cxId,
+      },
+    },
+    {
+      name: "LLM.ResourceSummary.InputTokens",
+      unit: "Count",
+      value: result.inputTokens ?? 0,
+      dimensions: {
+        Customer: cxId,
+      },
+    },
+    {
+      name: "LLM.ResourceSummary.OutputTokens",
+      unit: "Count",
+      value: result.outputTokens ?? 0,
+      dimensions: {
+        Customer: cxId,
+      },
+    },
+  ];
+
+  if (result.chunksDuration !== undefined) {
+    metrics.push({
+      name: "LLM.ResourceSummary.ChunksDuration",
+      unit: "Milliseconds",
+      value: result.chunksDuration,
+      dimensions: {},
+    });
+  }
+
+  if (result.collationDuration !== undefined) {
+    metrics.push({
+      name: "LLM.ResourceSummary.CollationDuration",
+      unit: "Milliseconds",
+      value: result.collationDuration,
+      dimensions: {},
+    });
+  }
+
+  await reportAdvancedMetrics({
+    service: "OSS API",
+    metrics,
+  });
+}
 
 export default router;

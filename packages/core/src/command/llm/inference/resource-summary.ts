@@ -1,4 +1,5 @@
 import Groq from "groq-sdk";
+import { initTimer } from "@metriport/shared/common/timer";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { chunkWithOverlap } from "../../../util/string";
@@ -9,6 +10,15 @@ import {
 } from "./prompts";
 
 const defaultModel = "openai/gpt-oss-20b";
+
+/**
+ * The usual estimate is every 4 characters is a token.
+ * @param context
+ * @returns
+ */
+function getTokenCountForCharacters(characterCount: number) {
+  return Math.ceil(characterCount / 4);
+}
 
 /**
  * The usual estimate is every 4 characters is a token.
@@ -31,6 +41,8 @@ export type SummaryResult = {
   summary: string | undefined;
   inputTokens: number | undefined;
   outputTokens: number | undefined;
+  chunksDuration?: number;
+  collationDuration?: number;
 };
 
 type ChunkResult = {
@@ -48,20 +60,26 @@ export async function summarizeContext({
 }: ResourceInference): Promise<SummaryResult> {
   const { log } = out(`summarizeContext`);
 
-  const modelContextWindowTokens = 128_000;
+  // const modelContextWindowTokens = 128_000;
+  const modelContextWindowTokens = 8_000;
   const contextWindowSafetyMargin = 0.85;
   const chunkSizeChars = getCharacterCountForTokens(
     modelContextWindowTokens * contextWindowSafetyMargin
   );
   const chunkOverlap = chunkSizeChars * 0.1;
   const chunks = chunkWithOverlap(context, chunkSizeChars, chunkOverlap);
-  log(`Source context length: ${context.length} characters\nSummarizing ${chunks.length} chunks`);
+  log(
+    `Source context length: ${context.length} characters, or about ${getTokenCountForCharacters(
+      context.length
+    )} tokens\nSummarizing ${chunks.length} chunks`
+  );
 
   // Track tokens across all calls
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
 
   // Create all summaries
+  const chunksTimer = initTimer();
   const responses = await Promise.all(
     chunks.map(async chunk => {
       const result = await summarizeChunk({
@@ -76,6 +94,8 @@ export async function summarizeContext({
       return result.summary;
     })
   );
+  const chunksDuration = chunksTimer.getElapsedTime();
+  console.log(`Chunks processing duration: ${chunksDuration}ms`);
 
   // Skip collation if there's only one summary we received - faster answer.
   if (responses.length === 1) {
@@ -83,10 +103,12 @@ export async function summarizeContext({
       summary: responses[0],
       inputTokens: totalInputTokens,
       outputTokens: totalOutputTokens,
+      chunksDuration,
     };
   }
 
   // Collate summaries
+  const collationTimer = initTimer();
   const collationResult = await collateSummaries({
     resourceType,
     resourceDisplays,
@@ -94,11 +116,15 @@ export async function summarizeContext({
     summaries: responses,
     ...(resourceRowData ? { resourceRowData } : {}),
   });
+  const collationDuration = collationTimer.getElapsedTime();
+  console.log(`Collation duration: ${collationDuration}ms`);
 
   return {
     summary: collationResult.summary,
     inputTokens: totalInputTokens + (collationResult.inputTokens ?? 0),
     outputTokens: totalOutputTokens + (collationResult.outputTokens ?? 0),
+    chunksDuration,
+    collationDuration,
   };
 }
 
