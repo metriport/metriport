@@ -1,5 +1,4 @@
 import { Input, Output } from "@metriport/core/domain/conversion/cda-to-html-pdf";
-import { sanitizeXmlProcessingInstructions } from "@metriport/core/external/cda/remove-b64";
 import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import * as Sentry from "@sentry/serverless";
@@ -12,6 +11,7 @@ import * as uuid from "uuid";
 import { capture } from "./shared/capture";
 import { getEnv, getEnvOrFail } from "./shared/env";
 import { sleep } from "./shared/sleep";
+import { sanitizeXmlProcessingInstructions } from "@metriport/core/external/cda/get-file-contents";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const styleSheetText = require("./cda-to-visualization/stylesheet.js");
 
