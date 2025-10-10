@@ -1,0 +1,57 @@
+{% macro medication_dispense_category_code_system() %}
+    case 
+        when system = 'medication-category' then 0
+        when system = 'snomed-ct' then 1
+        else 2
+    end
+{% endmacro %}
+
+{% macro get_medication_dispense_category_codings(stage_table, max_index) %}
+    {% for i in range(max_index + 1) %}
+    select
+            id as medication_dispense_id
+        ,   category_coding_{{i}}_code as code
+        ,   case 
+                when category_coding_{{i}}_system = 'http://terminology.hl7.org/CodeSystem/medication-category' then 'medication-category'
+                when category_coding_{{i}}_system ilike '%snomed%' then 'snomed-ct'
+                else category_coding_{{i}}_system 
+            end as system
+        ,   category_coding_{{i}}_display as display
+        ,   coalesce(
+                category_coding_{{i}}_display,
+                category_text
+            ) as description
+    from {{ref(stage_table)}}
+    where  category_coding_{{i}}_code != ''
+    {% if not loop.last %}union all{% endif %}
+    {% endfor %}
+{% endmacro %}
+
+{% macro medication_dispense_type_code_system() %}
+    case 
+        when system = 'medication-dispense-type' then 0
+        when system = 'snomed-ct' then 1
+        else 2
+    end
+{% endmacro %}
+
+{% macro get_medication_dispense_type_codings(stage_table, max_index) %}
+    {% for i in range(max_index + 1) %}
+    select
+            id as medication_dispense_id
+        ,   type_coding_{{i}}_code as code
+        ,   case 
+                when type_coding_{{i}}_system = 'http://terminology.hl7.org/CodeSystem/medication-dispense-type' then 'medication-dispense-type'
+                when type_coding_{{i}}_system ilike '%snomed%' then 'snomed-ct'
+                else type_coding_{{i}}_system 
+            end as system
+        ,   type_coding_{{i}}_display as display
+        ,   coalesce(
+                type_coding_{{i}}_display,
+                type_text
+            ) as description
+    from {{ref(stage_table)}}
+    where  type_coding_{{i}}_code != ''
+    {% if not loop.last %}union all{% endif %}
+    {% endfor %}
+{% endmacro %}

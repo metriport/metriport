@@ -1,67 +1,53 @@
-with codings as (
-    select
-            condition_id
-        ,   code
-        ,   case 
-                when system ilike '%icd-10%' or system = 'urn:oid:2.16.840.1.113883.3.623.1' then 'icd-10-cm'
-                when system ilike '%snomed%' then 'snomed-ct'
-                when system ilike '%icd-9%' then 'icd-9-cm'
-                when system ilike '%loinc%' then 'loinc'
-                else system
-            end as system
-        ,   display
-    from {{ ref('stage__condition_code_coding') }}
-    where code != ''
+with target_coding as (
+   {{   
+        get_target_coding(
+            get_condition_codings,
+            'stage__condition', 
+            'condition_id', 
+            7, 
+            none, 
+            condition_code_system
+        ) 
+    }}
 ),
-codings_with_static_rank as (
-    select 
-            condition_id
-        ,   code
-        ,   system
-        ,   display
-        ,   case 
-                when system = 'icd-10-cm' then 0
-                when system = 'snomed-ct' then 1
-                when system = 'icd-9-cm' then 2
-                when system = 'loinc' then 3
-                else 4 
-            end as static_rank
-    from codings
+target_category_coding as (
+    {{ 
+        get_target_coding(
+            get_condition_category_codings, 
+            'stage__condition', 
+            'procedure_id', 
+            1, 
+            2, 
+            condition_category_code_system
+        ) }}
 ),
-codings_with_relative_rank as (
-    select
-            condition_id
-        ,   case 
-                when system in ('icd-10-cm', 'icd-9-cm') then replace(code, '.', '')
-                else code 
-            end as code
-        ,   system
-        ,   display
-        ,   row_number() over(partition by condition_id order by static_rank) as relative_rank
-    from codings_with_static_rank
-),
-target_coding as (
-    select
-        *
-    from codings_with_relative_rank
-    where relative_rank = 1
+target_clinical_status_coding as (
+    {{ 
+        get_target_coding(
+            get_condition_clinical_status_codings, 
+            'stage__condition', 
+            'procedure_id', 
+            9, 
+            0,
+            condition_clinical_status_code_system
+        ) 
+    }}
 )
 select
         cast(c.id as {{ dbt.type_string() }} )                                                              as condition_id
     ,   cast(p.id as {{ dbt.type_string() }} )                                                              as patient_id
-    ,   cast(try_to_cast_date('c.recordeddate') as {{ dbt.type_string() }} )                                as recorded_date
+    ,   {{ try_to_cast_date('c.recordeddate') }}                                                            as recorded_date
     ,   coalesce(
             {{ try_to_cast_date('c.onsetdatetime') }}, 
             {{ try_to_cast_date('c.onsetperiod_start') }},
             {{ try_to_cast_date('c.onsetstring') }}
         )                                                                                                   as onset_date
     ,   {{ try_to_cast_date('c.onsetperiod_end') }}                                                         as resolved_date
-    ,   cast(c.clinicalstatus_coding_0_display as {{ dbt.type_string() }} )                                 as status
     ,   cast(
             case 
-                when c.category_0_coding_0_code in ('75326-9', '55607006') then 'problem'
-                when c.category_0_coding_0_code in ('29308-4', '282291009') then 'diagnosis'
-                when c.category_0_coding_0_code = '64572001' then 'disease'
+                when ts_cat.code in ('75326-9', '55607006') then 'problem'
+                when ts_cat.code in ('29308-4', '282291009') then 'diagnosis'
+                when ts_cat.code = '64572001' then 'disease'
                 else null
             end as {{ dbt.type_string() }} 
         )                                                                                                   as category
@@ -93,12 +79,22 @@ select
                 loinc.long_common_name
             ) as {{ dbt.type_string() }} 
         )                                                                                                   as normalized_description
+    ,   cast(tc_cs.system as {{ dbt.type_string() }} )                                                      as status_code_type
+    ,   cast(tc_cs.code as {{ dbt.type_string() }} )                                                        as status_code
+    ,   cast(tc_cs.display as {{ dbt.type_string() }} )                                                     as status_description
+    ,   cast(tc_cat.system as {{ dbt.type_string() }} )                                                     as category_code_type
+    ,   cast(tc_cat.code as {{ dbt.type_string() }} )                                                       as category_code
+    ,   cast(tc_cat.display as {{ dbt.type_string() }} )                                                    as category_description
     ,   cast(c.meta_source as {{ dbt.type_string() }} )                                                     as data_source
 from {{ref('stage__condition')}} c
 left join {{ref('stage__patient')}} p
     on right(c.subject_reference, 36) = p.id 
 left join target_coding tc
     on c.id = tc.condition_id
+left join target_category_coding tc_cat
+    on c.id = tc_cat.condition_id
+left join target_clinical_status_coding tc_cs
+    on c.id = tc_cs.condition_id
 left join {{ref('terminology__icd_10_cm')}} icd10
     on tc.system  = 'icd-10-cm' and tc.code = icd10.icd_10_cm
 left join {{ref('terminology__snomed_ct')}} snomed

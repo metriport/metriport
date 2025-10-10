@@ -67,8 +67,18 @@ select
                 snomed.description
             ) as {{ dbt.type_string() }} 
         )                                                                                                           as normalized_description
-    ,   cast(note_0_text as {{ dbt.type_string() }} )                                                               as note
-    ,   cast(note_0_time as {{ dbt.type_string() }} )                                                               as note_time
+    ,   cast(
+            coalesce(
+                note_0_text,
+                note_1_text,
+                note_2_text,
+                note_3_text,
+                note_4_text,
+                note_5_text,
+                note_6_text,
+                note_7_text
+            ) as {{ dbt.type_string() }} 
+        )                                                                                                           as note
     ,   cast(tc_bs.system as {{ dbt.type_string() }} )                                                              as body_site_code_type
     ,   cast(tc_bs.code as {{ dbt.type_string() }} )                                                                as body_site_code
     ,   cast(tc_bs.display as {{ dbt.type_string() }} )                                                             as body_site_description
@@ -77,7 +87,7 @@ select
     ,   cast(tc_rc.display as {{ dbt.type_string() }} )                                                             as reason_description
     ,   cast(right(pro.performer_0_actor_reference, 36) as {{ dbt.type_string() }} )                                as practitioner_id
     ,   cast(pro.meta_source as {{ dbt.type_string() }} )                                                           as data_source
-from {{ ref('stage__procedure' ) }} pro
+from {{ref('stage__procedure' )}} pro
 left join {{ref('stage__patient')}} pat
     on right(pro.subject_reference, 36) = pat.id
 left join target_coding tc

@@ -1,10 +1,22 @@
 select
-      cast(pract.id as {{ dbt.type_string() }} ) as practitioner_id
-    , cast(null as {{ dbt.type_string() }} ) as npi
-    , cast(pract.name_0_given_0 as {{ dbt.type_string() }} ) as first_name
-    , cast(pract.name_0_family as {{ dbt.type_string() }} ) as last_name
-    , cast(null as {{ dbt.type_string() }} ) as practice_affiliation
-    , cast(pract.qualification_0_code_coding_0_display as {{ dbt.type_string() }} ) as specialty
-    , cast(null as {{ dbt.type_string() }} ) as sub_specialty
-    , cast(pract.meta_source as {{ dbt.type_string() }} ) as data_source
-from {{ ref('stage__practitioner') }} as pract
+      cast(id as {{ dbt.type_string() }} )                                    as practitioner_id
+    , cast(name_0_given_0 as {{ dbt.type_string() }} )                        as first_name
+    , cast(name_0_family as {{ dbt.type_string() }} )                         as last_name
+    , cast(
+        coalesce(
+          qualification_0_code_coding_0_display,
+          qualification_0_code_coding_1_display,
+          qualification_0_code_coding_2_display,
+          qualification_0_code_text,
+          qualification_1_code_coding_0_display,
+          qualification_1_code_coding_1_display,
+          qualification_1_code_coding_2_display,
+          qualification_1_code_text,
+          qualification_2_code_coding_0_display,
+          qualification_2_code_coding_1_display,
+          qualification_2_code_coding_2_display,
+          qualification_2_code_text
+        ) as {{ dbt.type_string() }} 
+      )                                                                       as specialty
+    , cast(meta_source as {{ dbt.type_string() }} )                           as data_source
+from {{ref('stage__practitioner')}}
