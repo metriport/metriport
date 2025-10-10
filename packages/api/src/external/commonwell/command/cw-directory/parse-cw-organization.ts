@@ -36,7 +36,6 @@ export function parseCWOrganization(org: Organization): CwDirectoryEntryData {
   const state = location.state;
   const zipCode = location.postalCode;
   const country = location.country;
-  const networks = org.networks;
   const npi = org.npiType1 || org.npiType2 || undefined;
 
   if (!addressLine1 || !city || !state || !zipCode || !country) {
@@ -63,7 +62,7 @@ export function parseCWOrganization(org: Organization): CwDirectoryEntryData {
     state: normalizeUSStateForAddressSafe(state) ?? undefined,
     zipCode: normalizeZipCodeNewSafe(zipCode) ?? undefined,
     country,
-    networks,
+    data: org,
     active: org.isActive,
     npi,
     delegateOids,

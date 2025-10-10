@@ -19,7 +19,7 @@ export class CwDirectoryEntryViewModel
   declare state: string;
   declare zipCode: string;
   declare country: string;
-  declare networks: unknown;
+  declare data: unknown;
   declare active: boolean;
   declare npi?: string;
   static setup: ModelSetup = (sequelize: Sequelize) => {
@@ -67,7 +67,7 @@ export class CwDirectoryEntryViewModel
         country: {
           type: DataTypes.STRING,
         },
-        networks: {
+        data: {
           type: DataTypes.JSONB,
         },
         active: {

@@ -26,7 +26,6 @@ export async function insertCwDirectoryEntries(
     .join(", ");
 
   const flattenedData = orgDataArray.flatMap(entry => [
-    entry.id,
     entry.organizationName,
     entry.organizationId,
     entry.orgType,
@@ -37,7 +36,7 @@ export async function insertCwDirectoryEntries(
     entry.state,
     entry.zipCode,
     entry.country,
-    entry.networks ? JSON.stringify(entry.networks) : null,
+    entry.data ? JSON.stringify(entry.data) : null,
     entry.active,
     entry.npi ?? null,
   ]);
@@ -53,10 +52,9 @@ export async function insertCwDirectoryEntries(
 function createKeys(): string {
   // The order matters, it's tied to the insert below
   const allKeys: Record<
-    keyof Omit<CwDirectoryEntryData, "createdAt" | "updatedAt" | "delegateOids">,
+    keyof Omit<CwDirectoryEntryData, "id" | "createdAt" | "updatedAt" | "delegateOids">,
     string
   > = {
-    id: "id",
     organizationName: "organization_name",
     organizationId: "organization_id",
     orgType: "org_type",
@@ -67,7 +65,7 @@ function createKeys(): string {
     state: "state",
     zipCode: "zip_code",
     country: "country",
-    networks: "networks",
+    data: "data",
     active: "active",
     npi: "npi",
   };

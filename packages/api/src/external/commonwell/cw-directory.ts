@@ -10,7 +10,7 @@ export type CwDirectoryEntryData = {
   state: string | undefined;
   zipCode: string | undefined;
   country: string | undefined;
-  networks: unknown;
+  data: unknown;
   active: boolean;
   npi?: string;
   delegateOids?: string[];
