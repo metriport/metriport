@@ -1,12 +1,22 @@
-postgres:
+profiles:
   outputs:
-    default:
+    postgres:
+      type: postgres
       host: "{{ env_var('DBT_PG_HOST') }}"
+      port: 5432
       user: "{{ env_var('DBT_PG_USER') }}"
       password: "{{ env_var('DBT_PG_PASSWORD') }}"
-      port: 5432
       dbname: "{{ env_var('DBT_PG_DATABASE') }}"
       schema: "{{ env_var('DBT_PG_SCHEMA') }}"
-      type: postgres
       threads: 5
-  target: default
+    snowflake:
+      type: snowflake
+      account: "{{ env_var('DBT_SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('DBT_SNOWFLAKE_USER') }}"
+      password: "{{ env_var('DBT_SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('DBT_SNOWFLAKE_ROLE') }}"
+      warehouse: "{{ env_var('DBT_SNOWFLAKE_WAREHOUSE') }}"
+      database: "{{ env_var('DBT_SNOWFLAKE_DATABASE') }}"
+      schema: "{{ env_var('DBT_SNOWFLAKE_SCHEMA') }}"
+      threads: 5
+  target: postgres

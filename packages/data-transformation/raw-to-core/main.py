@@ -28,39 +28,66 @@ terminology_files = [
 ]
 
 def handler(event: dict, context: dict):
-    host = os.getenv("HOST") or os.getenv("DBT_PG_HOST")
+    profile = os.getenv("PROFILE") or "postgres"
+    env_param_prefix = "DBT_SNOWFLAKE_" if profile == "snowflake" else "DBT_PG_"
+
+    host_suffix = "ACCOUNT" if profile == "snowflake" else "HOST"
+    host_env_param = f"{env_param_prefix}_{host_suffix}"
+    host = os.getenv(host_suffix) or os.getenv(host_env_param)
     if not host:
-        raise ValueError("Missing required environment variables: HOST")
-    os.environ['DBT_PG_HOST'] = host
+        raise ValueError(f"Missing required environment variables: {host_suffix}")
+    os.environ[host_env_param] = host
 
-    user = os.getenv("USER") or os.getenv("DBT_PG_USER")
+    user_suffix = "USER"
+    user_env_param = f"{env_param_prefix}_{user_suffix}" 
+    user = os.getenv(user_suffix) or os.getenv(user_env_param)
     if not user:
-        raise ValueError("Missing required environment variables: USER")
-    os.environ['DBT_PG_USER'] = user
+        raise ValueError(f"Missing required environment variables: {user_suffix}")
+    os.environ[user_env_param] = user
 
-    password = os.getenv("PASSWORD") or os.getenv("DBT_PG_PASSWORD")
+    password_suffix = "PASSWORD"
+    password_env_param = f"{env_param_prefix}_{password_suffix}"
+    password = os.getenv(password_suffix) or os.getenv(password_env_param)
     if not password:
-        raise ValueError("Missing required environment variables: PASSWORD")
-    os.environ['DBT_PG_PASSWORD'] = password
+        raise ValueError(f"Missing required environment variables: {password_suffix}")
+    os.environ[password_env_param] = password
+
+    if profile == "snowflake":
+        role = os.getenv("ROLE") or os.getenv("DBT_SNOWFLAKE_ROLE")
+        if not role:
+            raise ValueError("Missing required environment variables: ROLE")
+        os.environ['DBT_SNOWFLAKE_ROLE'] = role
 
     cliDatabase = sys.argv[1] if len(sys.argv) > 1 else None
-    database = cliDatabase or os.getenv("DATABASE") or os.getenv("DBT_PG_DATABASE")
+    database_suffix = "DATABASE"
+    database_env_param = f"{env_param_prefix}_{database_suffix}"
+    database = cliDatabase or os.getenv(database_suffix) or os.getenv(database_env_param)
     if not database:
-        raise ValueError("Missing required environment variables: DATABASE")
-    os.environ['DBT_PG_DATABASE'] = database
+        raise ValueError(f"Missing required environment variables: {database_suffix}")
+    os.environ[database_env_param] = database
 
     cliSchema = sys.argv[2] if len(sys.argv) > 2 else None
-    schema = cliSchema or os.getenv("SCHEMA") or os.getenv("DBT_PG_SCHEMA")
+    schema_suffix = "SCHEMA"
+    schema_env_param = f"{env_param_prefix}_{schema_suffix}"
+    schema = cliSchema or os.getenv(schema_suffix) or os.getenv(schema_env_param)
     if not schema:
         raise ValueError("Missing required environment variables: SCHEMA")
-    os.environ['DBT_PG_SCHEMA'] = schema
+    os.environ[schema_env_param] = schema
+
+    if profile == "snowflake":
+        warehouse_suffix = "WAREHOUSE"
+        warehouse_env_param = f"{env_param_prefix}_{warehouse_suffix}"
+        warehouse = os.getenv(warehouse_suffix) or os.getenv(warehouse_env_param)
+        if not warehouse:
+            raise ValueError(f"Missing required environment variables: {warehouse_suffix}")
+        os.environ[warehouse_env_param] = warehouse
 
     print(f"Downloading {len(terminology_files)} terminology files from {bucket_name} to {schema}")
     s3_client = boto3.client("s3")
-    
+
     # Start timing the download process
     download_start_time = time.time()
-    
+
     for filename in terminology_files:
         # Determine the S3 key based on filename
         if filename in ['other_provider_taxonomy.csv', 'provider.csv']:
@@ -69,11 +96,11 @@ def handler(event: dict, context: dict):
         else:
             # All other files are in versioned_terminology folder
             s3_key = f"versioned_terminology/0.15.1/{filename}_0_0_0.csv.gz"
-        
+
         # Set up file paths
         output_compressed_file = f"seeds/terminology/terminology__{filename}.gz"
         output_file = f"seeds/terminology/terminology__{filename}"
-        
+
         try:
             # Download the compressed file from S3
             s3_client.download_file(bucket_name, s3_key, output_compressed_file)
@@ -102,7 +129,7 @@ def handler(event: dict, context: dict):
                 print(f"Wrote {len(new_rows)} rows to new file {output_file}")
 
             print(f"Downloaded and processed file {s3_key}")
-            
+
         except Exception as e:
             print(f"Error processing {s3_key}: {str(e)}")
             continue
@@ -114,7 +141,7 @@ def handler(event: dict, context: dict):
 
     print(f"Running DBT build with database: {database}, schema: {schema}")
     dbt_runner = dbtRunner()
-    cli_args = ["build", "--vars", f'{{"input_database": "{database}", "input_schema": "{schema}"}}']
+    cli_args = ["build", "--profile", profile, "--vars", f'{{"input_database": "{database}", "input_schema": "{schema}"}}']
     result = dbt_runner.invoke(cli_args)
     if result.success:
         print("DBT build completed successfully")
@@ -132,4 +159,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()        
+    main()

@@ -1,45 +1,45 @@
 with target_coding as (
    {{   
         get_target_coding(
-            'get_procedcure_codings',
+            get_procedcure_codings,
             'stage__procedure', 
             'procedure_id', 
             7, 
-            null, 
-            'procedure_code_system'
+            none, 
+            procedure_code_system
         ) 
     }}
 ),
 target_bodysite_coding as (
     {{ 
         get_target_coding(
-            'get_procedcure_bodysite_codings', 
+            get_procedcure_bodysite_codings, 
             'stage__procedure', 
             'procedure_id', 
             1, 
             2, 
-            'procedure_bodysite_code_system'
+            procedure_code_system
         ) }}
 ),
 target_reason_coding as (
     {{ 
         get_target_coding(
-            'get_procedcure_reason_codings', 
+            get_procedcure_reason_codings, 
             'stage__procedure', 
             'procedure_id', 
             9, 
             0,
-            'procedure_reason_code_system'
+            procedure_code_system
         ) 
     }}
-),
+)
 select
         cast(pro.id as {{ dbt.type_string() }} )                                                                    as procedure_id
     ,   cast(pat.id as {{ dbt.type_string() }} )                                                                    as patient_id
     ,   cast(pro.status as {{ dbt.type_string() }} )                                                                as status
     ,   coalesce(
-            {{ try_to_cast_date('pro.performeddatetime') }},
-            {{ try_to_cast_date('pro.performedperiod_start') }}
+            {{ try_to_cast_date('pro.performeddatetime', 'YYYY-MM-DD') }},
+            {{ try_to_cast_date('pro.performedperiod_start', 'YYYY-MM-DD') }}
         )                                                                                                           as procedure_date
     ,   cast(tc.system as {{ dbt.type_string() }} )                                                                 as source_code_type
     ,   cast(tc.code as {{ dbt.type_string() }} )                                                                   as source_code
@@ -62,7 +62,7 @@ select
         )                                                                                                           as normalized_code
     ,   cast(
             coalesce(
-                hcpcs.long_description
+                hcpcs.long_description,
                 loinc.long_common_name,
                 snomed.description
             ) as {{ dbt.type_string() }} 
