@@ -1,0 +1,71 @@
+---
+title: "Add Patient to Cohorts"
+description: "Adds a single patient to multiple cohorts at once. Returns the cohorts the patient was successfully added to."
+api: "POST /medical/v1/patient/{id}/cohorts"
+---
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the patient to add to cohorts.
+</ParamField>
+
+## Body
+
+<ParamField body="cohortIds" type="string[]" required>
+  Array of cohort IDs to add the patient to. Both cohort names and IDs are valid identifiers.
+</ParamField>
+
+## Response
+
+<ResponseField name="cohorts" type="object[]" required>
+  Array of cohorts the patient was successfully added to.
+  <Expandable title="Cohort properties">
+    <ResponseField name="id" type="string" required>
+      The unique identifier for the cohort.
+    </ResponseField>
+    <ResponseField name="name" type="string" required>
+      The name of the cohort.
+    </ResponseField>
+    <ResponseField name="description" type="string" optional>
+      The description of the cohort.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const result = await metriport.addPatientToCohorts("00000000-0000-0000-0000-000000000000", {
+  cohortIds: ["00000000-0000-0000-0000-000000000000", "00000000-0000-0000-0000-000000000000"]
+});
+```
+
+</ResponseExample>
+
+```json
+{
+  "cohorts": [
+    {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "name": "High Risk",
+      "description": "Patients that need frequent and robust monitoring."
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000000", 
+      "name": "Medium Risk",
+      "description": "Patients with moderate monitoring needs."
+    }
+  ]
+}
+```
+
+## Notes
+
+- If the patient is already in some of the specified cohorts, those will be skipped (no error thrown)
+- Only successfully added cohorts are returned in the response
+- Both cohort names and IDs are accepted as identifiers

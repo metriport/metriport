@@ -91,7 +91,8 @@
             "medical-api/api-reference/patient/hie-opt-out",
             "medical-api/api-reference/patient/bulk-create-patient",
             "medical-api/api-reference/patient/get-patient-settings",
-            "medical-api/api-reference/patient/list-patient-cohorts"
+            "medical-api/api-reference/patient/list-patient-cohorts",
+            "medical-api/api-reference/patient/add-patient-to-cohorts"
           ]
         },
         {
@@ -315,7 +316,8 @@
     },
     {
       "group": "EHR Apps",
-      "pages": ["ehr-apps/overview", 
+      "pages": [
+        "ehr-apps/overview", 
         "ehr-apps/athena", 
         "ehr-apps/canvas", 
         "ehr-apps/elation", 

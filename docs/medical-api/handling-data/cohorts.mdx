@@ -161,3 +161,8 @@ Use settings to enable monitoring for certain data sources.
   _allowed values: `true` | `false`, default: false_  
   Subscribes patient(s) for ongoing notifications of new laboratory data
 
+#### How are settings combined across multiple cohorts?
+
+When a patient belongs to multiple cohorts, their settings are aggregated from all cohorts they belong to. 
+If there are conflicting settings between cohorts, the more restrictive option is applied (logical AND). 
+See [get patient settings](/medical-api/api-reference/patient/get-patient-settings) for details.
