@@ -90,7 +90,6 @@ function isSanitizationNeeded(payloadRaw: string): boolean {
     parser.parse(payloadRaw);
     return false;
   } catch (error) {
-    console.log("Sanitization needed");
     return true;
   }
 }
