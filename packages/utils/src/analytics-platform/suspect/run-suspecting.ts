@@ -270,7 +270,7 @@ async function saveToSnowflakeTable(
   }>
 ): Promise<void> {
   const tableName = result.queryName.toUpperCase();
-  const fullTableName = `CORE.${tableName}`;
+  const fullTableName = `CORE_V2.${tableName}`;
 
   try {
     console.log(`>>> Creating/updating table ${fullTableName} in Snowflake...`);
