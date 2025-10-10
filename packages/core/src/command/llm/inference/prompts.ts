@@ -51,10 +51,14 @@ ${customPromptSection}
 
 ---
 
-If you ever don't know a piece of information, instead of saying so, simply say nothing about it.
+### Essential instructions.
 
-Keep your answer concise, in bullet point form.
+- If you ever don't know a piece of information, instead of saying so, simply say nothing about it.
+- Skip introductory context like 'Based on...', and don't make reference to the instructions in your answer, just follow the instructions.
+- Refer to only the content of the record you are referring back to, never the schema or names of the fields.
+- Keep your answer concise, in bullet point form.
 
+### Context
 The patient's medical record is:
 ${context}
 `;
@@ -112,11 +116,14 @@ ${customPromptSection}
 
 ---
 
-If you ever don't know a piece of information, instead of saying so, simply say nothing about it.
+### Essential instructions.
 
-Keep your answer concise, in bullet point form.
-Skip introductory context like 'Based on...', and don't make reference to the instructions in your answer, just follow the instructions.
+- If you ever don't know a piece of information, instead of saying so, simply say nothing about it.
+- Skip introductory context like 'Based on...', and don't make reference to the instructions in your answer, just follow the instructions.
+- Refer to only the content of the record you are referring back to, never the schema or names of the fields.
+- Keep your answer concise, in bullet point form.
 
+### Context
 Here are the previous summaries written by you about this patient's medical history - follow the instructions above and summarize them:
 ${responses
   .map((summary, index) => `------ Summary ${index + 1} ------\n${summary}\n------`)

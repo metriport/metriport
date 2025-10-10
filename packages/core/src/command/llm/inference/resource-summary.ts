@@ -61,7 +61,7 @@ export async function summarizeContext({
   const { log } = out(`summarizeContext`);
 
   // const modelContextWindowTokens = 128_000;
-  const modelContextWindowTokens = 8_000;
+  const modelContextWindowTokens = 128_000;
   const contextWindowSafetyMargin = 0.85;
   const chunkSizeChars = getCharacterCountForTokens(
     modelContextWindowTokens * contextWindowSafetyMargin
@@ -95,7 +95,7 @@ export async function summarizeContext({
     })
   );
   const chunksDuration = chunksTimer.getElapsedTime();
-  console.log(`Chunks processing duration: ${chunksDuration}ms`);
+  log(`Chunks processing duration: ${chunksDuration}ms`);
 
   // Skip collation if there's only one summary we received - faster answer.
   if (responses.length === 1) {
@@ -117,7 +117,7 @@ export async function summarizeContext({
     ...(resourceRowData ? { resourceRowData } : {}),
   });
   const collationDuration = collationTimer.getElapsedTime();
-  console.log(`Collation duration: ${collationDuration}ms`);
+  log(`Collation duration: ${collationDuration}ms`);
 
   return {
     summary: collationResult.summary,
