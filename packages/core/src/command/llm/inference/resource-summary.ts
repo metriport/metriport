@@ -22,7 +22,7 @@ function getCharacterCountForTokens(tokenCount: number) {
 export type ResourceInference = {
   resourceType: string;
   resourceDisplays: string[];
-  questions: string[];
+  customPromptSection: string;
   context: string;
   resourceRowData?: Record<string, unknown>;
 };
@@ -42,7 +42,7 @@ type ChunkResult = {
 export async function summarizeContext({
   resourceType,
   resourceDisplays,
-  questions,
+  customPromptSection,
   context,
   resourceRowData,
 }: ResourceInference): Promise<SummaryResult> {
@@ -67,7 +67,7 @@ export async function summarizeContext({
       const result = await summarizeChunk({
         resourceType,
         resourceDisplays,
-        questions,
+        customPromptSection,
         context: chunk,
         ...(resourceRowData ? { resourceRowData } : {}),
       });
@@ -90,7 +90,7 @@ export async function summarizeContext({
   const collationResult = await collateSummaries({
     resourceType,
     resourceDisplays,
-    questions,
+    customPromptSection,
     summaries: responses,
     ...(resourceRowData ? { resourceRowData } : {}),
   });
@@ -105,7 +105,7 @@ export async function summarizeContext({
 export async function summarizeChunk({
   resourceType,
   resourceDisplays,
-  questions,
+  customPromptSection,
   context,
   resourceRowData,
 }: ResourceInference): Promise<ChunkResult> {
@@ -116,7 +116,7 @@ export async function summarizeChunk({
   const prompt = getResourceSummaryPrompt({
     resourceType,
     resourceDisplays,
-    questions,
+    customPromptSection,
     context,
     ...(resourceRowData ? { resourceRowData } : {}),
   });
@@ -155,13 +155,13 @@ export async function summarizeChunk({
 export async function collateSummaries({
   resourceType,
   resourceDisplays,
-  questions,
+  customPromptSection,
   summaries,
   resourceRowData,
 }: {
   resourceType: string;
   resourceDisplays: string[];
-  questions: string[];
+  customPromptSection: string;
   summaries: string[];
   resourceRowData?: Record<string, unknown>;
 }): Promise<ChunkResult> {
@@ -172,7 +172,7 @@ export async function collateSummaries({
   const prompt = getResourceSummaryCollationPrompt({
     resourceType,
     resourceDisplays,
-    questions,
+    customPromptSection,
     responses: summaries,
     ...(resourceRowData ? { resourceRowData } : {}),
   });
