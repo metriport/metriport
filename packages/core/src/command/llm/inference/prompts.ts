@@ -1,15 +1,15 @@
 export const systemPrompt = `You are seasoned physician with in-depth knowledge about FHIR R4, who answers questions given a patient's medical record.`;
 
-export function getPrompt({
+export function getResourceSummaryPrompt({
   resourceType,
   resourceDisplays,
-  resourcesAsString,
   questions,
+  context,
 }: {
   resourceType: string;
   resourceDisplays: string[];
-  resourcesAsString: string;
   questions: string[];
+  context: string;
 }): string {
   const prompt = `
 This is about a patient - ${resourceType}: ${resourceDisplays.join(", ")}
@@ -21,16 +21,16 @@ Each reference should look like: [view](uuid-of-source-resource). Don't ask foll
 Skip introductory context like 'Based on the...', just answer the questions.
 
 The patient's medical record is:
-${resourcesAsString}
+${context}
 `;
   return prompt;
 }
 
-export function getGroupedPrompt({
+export function getResourceSummaryCollationPrompt({
   resourceType,
   resourceDisplays,
-  responses,
   questions,
+  responses,
 }: {
   resourceType: string;
   resourceDisplays: string[];
@@ -46,8 +46,10 @@ In your response, please include a source for each and every claim. These source
 Each reference should look like: [view](uuid-of-source-resource). Don't ask follow-up questions. Keep your answer concise, in bullet point form.
 Skip introductory context like 'Based on...', and don't make reference to the questions in your answer, just answer the questions.
 
-Here are the previous summaries written by you about this patient's medical history - summarize them based on the instructions above:
-${responses.join("\n")}
+Here are the previous summaries written by you about this patient's medical history - follow the instructions above and summarize them in order to answer the questions:
+${responses
+  .map((summary, index) => `------ Summary ${index + 1} ------\n${summary}\n------`)
+  .join("\n")}
 `;
   return prompt;
 }

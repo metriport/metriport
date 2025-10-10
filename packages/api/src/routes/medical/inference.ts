@@ -1,4 +1,3 @@
-import { summarizeResource } from "@metriport/core/command/llm/inference/resources";
 import { reportAdvancedMetrics } from "@metriport/core/external/aws/cloudwatch";
 import { AnthropicAgent } from "@metriport/core/external/bedrock/agent/anthropic";
 import { AnthropicMessageText } from "@metriport/core/external/bedrock/model/anthropic/messages";
@@ -211,12 +210,12 @@ ${context}
       ],
     });
 
-    const message = await summarizeResource({
-      resourceType,
-      resourceDisplays,
-      resources: resourcesAsArray,
-    });
-    console.log(`>>> summarizeResource response:\n${message}\n`);
+    // const message = await summarizeResource({
+    //   resourceType,
+    //   resourceDisplays,
+    //   context,
+    // });
+    // console.log(`>>> summarizeResource response:\n${message}\n`);
 
     const responseText = (response.content[response.content.length - 1] as AnthropicMessageText)
       .text;
