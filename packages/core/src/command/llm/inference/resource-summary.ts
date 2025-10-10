@@ -1,7 +1,6 @@
 import { initTimer } from "@metriport/shared/common/timer";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-import { chunkWithOverlap } from "../../../util/string";
 import { AnthropicAgent } from "../../../external/bedrock/agent/anthropic";
 import { getAssistantResponseText } from "../../../external/bedrock/model/anthropic/response";
 import {
@@ -9,24 +8,7 @@ import {
   getResourceSummaryPrompt,
   systemPrompt,
 } from "./prompts";
-
-/**
- * The usual estimate is every 4 characters is a token.
- * @param context
- * @returns
- */
-function getTokenCountForCharacters(characterCount: number) {
-  return Math.ceil(characterCount / 4);
-}
-
-/**
- * The usual estimate is every 4 characters is a token.
- * @param context
- * @returns
- */
-function getCharacterCountForTokens(tokenCount: number) {
-  return tokenCount * 4;
-}
+import { chunkTextForModel, estimateTokenCount } from "./model-chunking";
 
 export type ResourceInference = {
   resourceType: string;
@@ -59,17 +41,11 @@ export async function summarizeContext({
 }: ResourceInference): Promise<SummaryResult> {
   const { log } = out(`summarizeContext`);
 
-  // const modelContextWindowTokens = 128_000;
-  const modelContextWindowTokens = 128_000;
-  const contextWindowSafetyMargin = 0.85;
-  const chunkSizeChars = getCharacterCountForTokens(
-    modelContextWindowTokens * contextWindowSafetyMargin
-  );
-  const chunkOverlap = chunkSizeChars * 0.1;
-  const chunks = chunkWithOverlap(context, chunkSizeChars, chunkOverlap);
+  const modelVersion = "claude-sonnet-3.7";
+  const { chunks } = chunkTextForModel({ text: context, modelVersion });
   log(
-    `Source context length: ${context.length} characters, or about ${getTokenCountForCharacters(
-      context.length
+    `Source context length: ${context.length} characters, or about ${estimateTokenCount(
+      context
     )} tokens\nSummarizing ${chunks.length} chunks`
   );
 
