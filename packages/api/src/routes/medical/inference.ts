@@ -1,6 +1,5 @@
+import { summarizeContext } from "@metriport/core/command/llm/inference/resource-summary";
 import { reportAdvancedMetrics } from "@metriport/core/external/aws/cloudwatch";
-import { AnthropicAgent } from "@metriport/core/external/bedrock/agent/anthropic";
-import { AnthropicMessageText } from "@metriport/core/external/bedrock/model/anthropic/messages";
 import { initTimer } from "@metriport/shared/common/timer";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -99,28 +98,11 @@ router.post(
       resourceSummaryInferenceSchema.parse(req.body);
     console.log(`resourceType: ${resourceType}, resourceDisplays: ${resourceDisplays.join(", ")}`);
 
-    const agent = new AnthropicAgent({
-      version: "claude-sonnet-3.7",
-      region: "us-west-2",
-      systemPrompt: `You are seasoned physician who answers questions given a patient's comprehensive medical record.`,
-      maxTokens: 1024,
-      temperature: 0,
-      tools: [],
-    });
-
     const questions =
       questionsByResourceType[resourceType as keyof typeof questionsByResourceType] ??
       defaultQuestions;
 
-    const resourceRowDataString = resourceRowData
-      ? `The core data for the resource we are asking about is: ${JSON.stringify(
-          resourceRowData,
-          null,
-          2
-        )}`
-      : "";
-
-    // Build context based on resource type
+    // Build context based on resource type (handle suspectsContext)
     let finalContext = context;
     if (resourceType === "Suspects" && suspectsContext) {
       finalContext = `
@@ -137,48 +119,16 @@ ${context}
 `;
     }
 
-    agent.addUserMessageText(
-      `
-      This is about a patient.
-      The resource type is: ${resourceType}
-      The resource displays are: ${resourceDisplays.join(", ")}
-      ${resourceRowDataString}
-
-      ---
-
-      ### Citing claims
-      In your response, create a source list at the bottom. These sources MUST use markdown link syntax, but have the link point to the UUID of the resource that contains proof of the claim.
-      Each source should look like: \`[{source-index} - {phrase}](uuid-of-source-resource)\` where {source-index} is a number, {phrase} is a short two or three wordphrase that describes the source, such as "glucose measurement", "urinalysis", "", etc.
-
-      If a source is referenced multiple times, include it exactly once, and no more, in the source list.
-
-      \`\`\`
-      Sources:
-      - [1 - {phrase}](uuid-of-source-resource1)
-      - [2 - {phrase}](uuid-of-source-resource2)
-      - [3 - {phrase}](uuid-of-source-resource3)
-      ... etc.
-      \`\`\`
-
-      Then, ensure to include a source for each and every claim you make, using syntax \`_({source-index})_\` at the end of each claim.
-
-      ### Questions
-
-      Answer the following question(s):
-      ${questions.join("\n")}
-
-      If you ever don't know the a piece of information, instead of saying so, simply say nothing about it.
-
-      Keep your answer concise, in bullet point form.
-
-      The patient's medical record is:
-      ${finalContext}
-      `
-    );
-
     const timer = initTimer();
-    const response = await agent.continueConversation();
+    const result = await summarizeContext({
+      resourceType,
+      resourceDisplays,
+      questions,
+      context: finalContext,
+      resourceRowData,
+    });
     const duration = timer.getElapsedTime();
+    console.log("Duration of request: ", duration);
 
     await reportAdvancedMetrics({
       service: "OSS API",
@@ -194,7 +144,7 @@ ${context}
         {
           name: "LLM.ResourceSummary.InputTokens",
           unit: "Count",
-          value: response.usage.input_tokens,
+          value: result.inputTokens ?? 0,
           dimensions: {
             Customer: cxId,
           },
@@ -202,7 +152,7 @@ ${context}
         {
           name: "LLM.ResourceSummary.OutputTokens",
           unit: "Count",
-          value: response.usage.output_tokens,
+          value: result.outputTokens ?? 0,
           dimensions: {
             Customer: cxId,
           },
@@ -210,17 +160,7 @@ ${context}
       ],
     });
 
-    // const message = await summarizeResource({
-    //   resourceType,
-    //   resourceDisplays,
-    //   context,
-    // });
-    // console.log(`>>> summarizeResource response:\n${message}\n`);
-
-    const responseText = (response.content[response.content.length - 1] as AnthropicMessageText)
-      .text;
-
-    return res.status(status.OK).json({ summary: responseText });
+    return res.status(status.OK).json({ summary: result.summary });
   })
 );
 

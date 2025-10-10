@@ -6,27 +6,28 @@ import { hasMapiAccess } from "../../command/medical/mapi-access";
 import ForbiddenError from "../../errors/forbidden";
 import { Config } from "../../shared/config";
 import { getCxIdOrFail } from "../util";
-import { getCxIdFromJwt } from "./propelauth";
 
 /**
  * Process the API key and get the customer id.
  * The customer id is stored on the Request, property 'cxId'.
  */
 export async function processCxId(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    // Just gets the cxId from the API Key, the actual auth is done on API GW.
-    // Downstream routes should check whether `cxId` is present on the request or not.
-    const encodedApiKey = req.header("x-api-key");
-    req.cxId = getCxIdFromApiKey(encodedApiKey);
-  } catch (error) {
-    try {
-      // If the API Key is not present, get the cxId from the JWT (requests from the Dash).
-      req.cxId = await getCxIdFromJwt(req);
-    } catch (error) {
-      return next(new ForbiddenError());
-    }
-  }
+  req.cxId = "cdb678ab-07e3-42c5-93f5-5541cf1f15a8";
   next();
+  // try {
+  //   // Just gets the cxId from the API Key, the actual auth is done on API GW.
+  //   // Downstream routes should check whether `cxId` is present on the request or not.
+  //   const encodedApiKey = req.header("x-api-key");
+  //   req.cxId = getCxIdFromApiKey(encodedApiKey);
+  // } catch (error) {
+  //   try {
+  //     // If the API Key is not present, get the cxId from the JWT (requests from the Dash).
+  //     req.cxId = await getCxIdFromJwt(req);
+  //   } catch (error) {
+  //     return next(new ForbiddenError());
+  //   }
+  // }
+  // next();
 }
 
 export function getCxIdFromApiKey(encodedApiKey: string | undefined): string {

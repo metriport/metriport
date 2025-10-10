@@ -1,4 +1,5 @@
 import Groq from "groq-sdk";
+import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { chunkWithOverlap } from "../../../util/string";
 import {
@@ -23,6 +24,19 @@ export type ResourceInference = {
   resourceDisplays: string[];
   questions: string[];
   context: string;
+  resourceRowData?: Record<string, unknown>;
+};
+
+export type SummaryResult = {
+  summary: string | undefined;
+  inputTokens: number | undefined;
+  outputTokens: number | undefined;
+};
+
+type ChunkResult = {
+  summary: string;
+  inputTokens?: number;
+  outputTokens?: number;
 };
 
 export async function summarizeContext({
@@ -30,7 +44,8 @@ export async function summarizeContext({
   resourceDisplays,
   questions,
   context,
-}: ResourceInference): Promise<string | undefined> {
+  resourceRowData,
+}: ResourceInference): Promise<SummaryResult> {
   const { log } = out(`summarizeContext`);
 
   const modelContextWindowTokens = 128_000;
@@ -42,25 +57,49 @@ export async function summarizeContext({
   const chunks = chunkWithOverlap(context, chunkSizeChars, chunkOverlap);
   log(`Source context length: ${context.length} characters\nSummarizing ${chunks.length} chunks`);
 
+  // Track tokens across all calls
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+
   // Create all summaries
   const responses = await Promise.all(
-    chunks.map(chunk =>
-      summarizeChunk({ resourceType, resourceDisplays, questions, context: chunk })
-    )
+    chunks.map(async chunk => {
+      const result = await summarizeChunk({
+        resourceType,
+        resourceDisplays,
+        questions,
+        context: chunk,
+        ...(resourceRowData ? { resourceRowData } : {}),
+      });
+      totalInputTokens += result.inputTokens ?? 0;
+      totalOutputTokens += result.outputTokens ?? 0;
+      return result.summary;
+    })
   );
 
   // Skip collation if there's only one summary we received - faster answer.
   if (responses.length === 1) {
-    return responses[0];
+    return {
+      summary: responses[0],
+      inputTokens: totalInputTokens,
+      outputTokens: totalOutputTokens,
+    };
   }
 
   // Collate summaries
-  return await collateSummaries({
+  const collationResult = await collateSummaries({
     resourceType,
     resourceDisplays,
     questions,
     summaries: responses,
+    ...(resourceRowData ? { resourceRowData } : {}),
   });
+
+  return {
+    summary: collationResult.summary,
+    inputTokens: totalInputTokens + (collationResult.inputTokens ?? 0),
+    outputTokens: totalOutputTokens + (collationResult.outputTokens ?? 0),
+  };
 }
 
 export async function summarizeChunk({
@@ -68,10 +107,19 @@ export async function summarizeChunk({
   resourceDisplays,
   questions,
   context,
-}: ResourceInference): Promise<string> {
-  const groq = new Groq();
+  resourceRowData,
+}: ResourceInference): Promise<ChunkResult> {
+  const groq = new Groq({
+    apiKey: Config.getGroqApiKey(),
+  });
 
-  const prompt = getResourceSummaryPrompt({ resourceType, resourceDisplays, questions, context });
+  const prompt = getResourceSummaryPrompt({
+    resourceType,
+    resourceDisplays,
+    questions,
+    context,
+    ...(resourceRowData ? { resourceRowData } : {}),
+  });
 
   const chatCompletion = await groq.chat.completions.create({
     messages: [
@@ -92,7 +140,16 @@ export async function summarizeChunk({
   });
 
   const message = chatCompletion.choices[0]?.message.content ?? "";
-  return message;
+  const result: ChunkResult = {
+    summary: message,
+  };
+  if (chatCompletion.usage?.prompt_tokens !== undefined) {
+    result.inputTokens = chatCompletion.usage.prompt_tokens;
+  }
+  if (chatCompletion.usage?.completion_tokens !== undefined) {
+    result.outputTokens = chatCompletion.usage.completion_tokens;
+  }
+  return result;
 }
 
 export async function collateSummaries({
@@ -100,19 +157,24 @@ export async function collateSummaries({
   resourceDisplays,
   questions,
   summaries,
+  resourceRowData,
 }: {
   resourceType: string;
   resourceDisplays: string[];
   questions: string[];
   summaries: string[];
-}): Promise<string> {
-  const groq = new Groq();
+  resourceRowData?: Record<string, unknown>;
+}): Promise<ChunkResult> {
+  const groq = new Groq({
+    apiKey: Config.getGroqApiKey(),
+  });
 
   const prompt = getResourceSummaryCollationPrompt({
     resourceType,
     resourceDisplays,
     questions,
     responses: summaries,
+    ...(resourceRowData ? { resourceRowData } : {}),
   });
 
   const chatCompletion = await groq.chat.completions.create({
@@ -135,5 +197,14 @@ export async function collateSummaries({
   });
 
   const message = chatCompletion.choices[0]?.message.content ?? "";
-  return message;
+  const result: ChunkResult = {
+    summary: message,
+  };
+  if (chatCompletion.usage?.prompt_tokens !== undefined) {
+    result.inputTokens = chatCompletion.usage.prompt_tokens;
+  }
+  if (chatCompletion.usage?.completion_tokens !== undefined) {
+    result.outputTokens = chatCompletion.usage.completion_tokens;
+  }
+  return result;
 }
