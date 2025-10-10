@@ -42,6 +42,7 @@ const patientCohorts = await metriport.getPatientCohorts("018a80c4-292a-7486-a12
       "settings": {
         "monitoring": {
           "adt": true,
+          "hie": "never",
           "pharmacy": true,
           "laboratory": true
         }
@@ -53,7 +54,12 @@ const patientCohorts = await metriport.getPatientCohorts("018a80c4-292a-7486-a12
       "name": "Cardiac Care Cohort",
       "description": "Patients receiving cardiac care and monitoring",
       "settings": {
-        "adtMonitoring": true
+        "monitoring": {
+          "adt": true,
+          "hie": "weekly",
+          "pharmacy": true,
+          "laboratory": true
+        }
       }
     }
   ]

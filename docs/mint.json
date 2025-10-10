@@ -92,6 +92,7 @@
             "medical-api/api-reference/patient/bulk-create-patient",
             "medical-api/api-reference/patient/get-patient-settings",
             "medical-api/api-reference/patient/add-patient-to-cohorts",
+            "medical-api/api-reference/patient/list-patients-in-cohort",
             "medical-api/api-reference/patient/list-patient-cohorts"
           ]
         },
