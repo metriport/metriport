@@ -32,7 +32,6 @@ const patient = await metriport.matchPatient(
         value: "51227265",
       },
     ],
-    primaryAddressIndex: 0,
     address: [
       {
         zip: "12345",
@@ -40,6 +39,7 @@ const patient = await metriport.matchPatient(
         state: USState.CA,
         country: "USA",
         addressLine1: "Guadalajara Street",
+        isPrimary: true
       },
     ],
     contact: [

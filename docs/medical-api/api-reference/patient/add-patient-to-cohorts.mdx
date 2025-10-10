@@ -18,18 +18,10 @@ api: "POST /medical/v1/patient/{id}/cohorts"
 
 ## Response
 
-<ResponseField name="cohorts" type="object[]" required>
+<ResponseField name="cohorts" type="Cohort[]" required>
   Array of cohorts the patient was successfully added to.
   <Expandable title="Cohort properties">
-    <ResponseField name="id" type="string" required>
-      The unique identifier for the cohort.
-    </ResponseField>
-    <ResponseField name="name" type="string" required>
-      The name of the cohort.
-    </ResponseField>
-    <ResponseField name="description" type="string" optional>
-      The description of the cohort.
-    </ResponseField>
+    <Snippet file="cohort-response.mdx" />
   </Expandable>
 </ResponseField>
 
@@ -52,13 +44,33 @@ const result = await metriport.addPatientToCohorts("00000000-0000-0000-0000-0000
   "cohorts": [
     {
       "id": "00000000-0000-0000-0000-000000000000",
+      "eTag": "1",
       "name": "High Risk",
-      "description": "Patients that need frequent and robust monitoring."
+      "description": "Patients that need frequent and robust monitoring.",
+      "color": "red",
+      "settings": {
+        "monitoring": {
+          "hie": "weekly",
+          "adt": true,
+          "pharmacy": true,
+          "laboratory": true
+        }
+      }
     },
     {
-      "id": "00000000-0000-0000-0000-000000000000", 
+      "id": "00000000-0000-0000-0000-000000000000",
+      "eTag": "1", 
       "name": "Medium Risk",
-      "description": "Patients with moderate monitoring needs."
+      "description": "Patients with moderate monitoring needs.",
+      "color": "yellow",
+      "settings": {
+        "monitoring": {
+          "hie": "monthly",
+          "adt": false,
+          "pharmacy": true,
+          "laboratory": false
+        }
+      }
     }
   ]
 }
@@ -68,4 +80,3 @@ const result = await metriport.addPatientToCohorts("00000000-0000-0000-0000-0000
 
 - If the patient is already in some of the specified cohorts, those will be skipped (no error thrown)
 - Only successfully added cohorts are returned in the response
-- Both cohort names and IDs are accepted as identifiers
