@@ -31,7 +31,7 @@ _[Plan ahead how we are going to monitor your changes. Add images of metrics. If
 
 - [ ] Alarms _[Alarms trigger pagerduty. These should only happen when there's a significant issue with the system. This is the most important metric.]_
 
-- [ ] Alerts _[Alerts go into the slack channel pagerduty. Alerts are not as important as alarms, but still let on-call know something went wrong.]_
+- [ ] Alerts _[Alerts go into the slack channel. Alerts are not as important as alarms, but still let on-call know something went wrong.]_
 
 - [ ] Posthog metrics
 _[Image(s) of Posthog metrics]_
