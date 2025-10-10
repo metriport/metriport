@@ -4,6 +4,20 @@ export function buildCoreSchemaS3Prefix({ cxId }: { cxId: string }): string {
   return `snowflake/core-schema/cx=${cxId}`;
 }
 
+export function buildCoreSchemaMetaS3Prefix({ cxId }: { cxId: string }): string {
+  return `${buildCoreSchemaS3Prefix({ cxId })}/_meta`;
+}
+
+export function buildCoreSchemaMetaTableS3Prefix({
+  cxId,
+  tableName,
+}: {
+  cxId: string;
+  tableName: string;
+}): string {
+  return `${buildCoreSchemaMetaS3Prefix({ cxId })}/${tableName}.csv`;
+}
+
 export function buildCoreTableS3Prefix({
   cxId,
   tableName,
@@ -12,4 +26,8 @@ export function buildCoreTableS3Prefix({
   tableName: string;
 }): string {
   return `${buildCoreSchemaS3Prefix({ cxId })}/${tableName}.csv`;
+}
+
+export function parseTableNameFromCoreTableS3Prefix(s3Key: string): string | undefined {
+  return s3Key.split("/").pop()?.split(".")[0];
 }

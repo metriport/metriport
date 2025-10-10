@@ -2,6 +2,10 @@ import dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { exportCoreToExternalDatawarehouses } from "@metriport/core/command/analytics-platform/core-transform/core-to-dwh";
+import {
+  SnowflakeCreds,
+  SnowflakeSettingsForAllCxs,
+} from "@metriport/core/external/snowflake/creds";
 import { dbCredsSchema, getEnvVarOrFail, sleep } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { Command } from "commander";
@@ -15,7 +19,7 @@ dayjs.extend(duration);
 /**
  * Script to export core analytics data from Postgres to external data warehouses for a customer.
  *
- * Relies on the following env vars:
+ * Set end vars as seen below, outside and inside of main()
  * - ANALYTICS_DB_CREDS
  * - ANALYTICS_BUCKET_NAME
  * - REGION
@@ -46,6 +50,25 @@ FeatureFlags.init(region, featureFlagsTableName);
 
 async function main({ cxId, schemaName }: { cxId: string; schemaName: string | undefined }) {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
+
+  const snowflakeCredsForAllCxs: SnowflakeCreds = {
+    "us-east-2": {
+      account: getEnvVarOrFail("SNOWFLAKE_ACCOUNT"),
+      apiToken: getEnvVarOrFail("SNOWFLAKE_TOKEN"),
+      warehouseName: getEnvVarOrFail("SNOWFLAKE_WH"),
+    },
+  };
+  process.env.SNOWFLAKE_CREDS_FOR_ALL_REGIONS = JSON.stringify(snowflakeCredsForAllCxs);
+
+  const snowflakeSettingsForAllCxs: SnowflakeSettingsForAllCxs = {
+    [cxId]: {
+      region: "us-east-2",
+      dbName: getEnvVarOrFail("SNOWFLAKE_DB"),
+      dbSchema: getEnvVarOrFail("SNOWFLAKE_SCHEMA"),
+    },
+  };
+  process.env.SNOWFLAKE_SETTINGS_FOR_ALL_CXS = JSON.stringify(snowflakeSettingsForAllCxs);
+
   const startedAt = Date.now();
   console.log(`############## Started at ${buildDayjs().toISOString()} ##############`);
 
@@ -57,9 +80,11 @@ async function main({ cxId, schemaName }: { cxId: string; schemaName: string | u
     schemaName,
     analyticsBucketName,
     region,
+    forceSynchronous: true,
   });
 
   console.log(`>>>>>>> Done after ${elapsedTimeAsStr(startedAt)}`);
+  process.exit(0);
 }
 
 export default program;

@@ -112,6 +112,7 @@ export type UploadParams = {
   file: Buffer;
   contentType?: string;
   metadata?: Record<string, string>;
+  log?: typeof console.log;
 };
 
 export type StoreInS3Params = {
@@ -498,6 +499,7 @@ export class S3Utils {
     file,
     contentType,
     metadata,
+    log,
   }: UploadParams): Promise<UploadFileResult> {
     const uploadParams: AWS.S3.PutObjectRequest = {
       Bucket: bucket,
@@ -509,8 +511,9 @@ export class S3Utils {
       uploadParams.ContentType = contentType;
     }
     try {
-      const resp = (await executeWithRetriesS3(() =>
-        this._s3.upload(uploadParams).promise()
+      const resp = (await executeWithRetriesS3(
+        () => this._s3.upload(uploadParams).promise(),
+        log ? { log } : {}
       )) as AWS.S3.ManagedUpload.SendData & { VersionId?: string };
 
       return {

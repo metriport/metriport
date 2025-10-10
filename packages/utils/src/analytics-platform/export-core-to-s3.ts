@@ -51,6 +51,7 @@ async function main({ cxId }: { cxId: string }) {
   await exportCoreToS3({ cxId, dbCreds: dbCredsWithSchema, analyticsBucketName, region });
 
   console.log(`>>>>>>> Done after ${elapsedTimeAsStr(startedAt)}`);
+  process.exit(0);
 }
 
 export default program;

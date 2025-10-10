@@ -10,11 +10,15 @@ import {
 } from "../../../../external/snowflake/commands";
 import { SnowflakeCreds, SnowflakeSettingsForAllCxs } from "../../../../external/snowflake/creds";
 import { out } from "../../../../util/log";
-import { buildCoreSchemaS3Prefix } from "../core-export-shared";
-import { additionalColumnDefs } from "../../csv-to-db/db-asset-defs";
-import { parseTableNameFromFhirToCsvIncrementalFileKey } from "../../fhir-to-csv/file-name";
+import {
+  buildCoreSchemaMetaTableS3Prefix,
+  buildCoreSchemaS3Prefix,
+  parseTableNameFromCoreTableS3Prefix,
+} from "../core-export-shared";
 
 dayjs.extend(duration);
+
+const fileFormatAtSnowflake = "gzip_csv_format";
 
 type SnowflakeConnectionSettings = {
   account: string;
@@ -25,7 +29,7 @@ type SnowflakeConnectionSettings = {
 };
 
 /**
- * TODO eng-1179 implement this off of 3-ingest-from-merged-csvs.ts
+ * Logic to ingest the core data from S3 into Snowflake.
  */
 export async function ingestCoreIntoSnowflake({
   cxId,
@@ -42,18 +46,11 @@ export async function ingestCoreIntoSnowflake({
 }): Promise<void> {
   const { log } = out(`ingestCoreIntoSnowflake - cx ${cxId}`);
 
-  log(`>>> Running it with cxId: ${cxId}`);
+  log(`>>> Running it with bucket ${bucketName}, region ${region}`);
   const startedAt = Date.now();
 
-  // TODO update this
-  // TODO update this
-  // TODO update this
-  // TODO update this
   const inputS3Prefix = buildCoreSchemaS3Prefix({ cxId });
-  // const inputS3Prefix =
-  // "snowflake/fhir-to-csv-incremental/cx=eae9172a-1c55-437b-bc1a-9689c64e47a1/pt=0194f5f7-c165-7c48-b7fe-cf1f4da02e17";
   const s3Utils = new S3Utils(region);
-  // const filesS3 = await s3Utils.listObjects(bucketName, inputS3Prefix);
   const files = await s3Utils.listObjectsV3(bucketName, inputS3Prefix);
   const prefixUrl = `s3://${bucketName}/${inputS3Prefix}`;
   const snowflakeConnectionSettings = getSnowflakeConnectionSettings(
@@ -62,23 +59,20 @@ export async function ingestCoreIntoSnowflake({
     snowflakeSettingsForAllCxs
   );
 
-  // const files = filesS3.flatMap(file => {
-  //   if (!file.Key) return [];
-  //   return {
-  //     key: file.Key,
-  //     lastModified: file.LastModified ?? new Date(),
-  //     eTag: file.ETag ?? "",
-  //     size: file.Size ?? 0,
-  //     storageClass: file.StorageClass ?? "",
-  //   };
-  // });
   if (files.length < 1) {
     log(`>>> No files found in ${inputS3Prefix}, bucket ${bucketName}, leaving.`);
     return;
   }
 
-  log(`Ingesting core data into Snowflake... using: ${region}, s3Prefix ${prefixUrl}`);
-  await ingestIntoSnowflake(files, prefixUrl, snowflakeConnectionSettings);
+  log(`Ingesting core data into Snowflake: ${files.length} files, s3Prefix ${prefixUrl}`);
+  await ingestIntoSnowflake({
+    cxId,
+    files,
+    bucketName,
+    region,
+    prefixUrl,
+    snowflakeConnectionSettings,
+  });
 
   log(`>>>>>>> Done after ${Date.now() - startedAt}ms`);
 }
@@ -109,11 +103,21 @@ function getSnowflakeConnectionSettings(
   };
 }
 
-async function ingestIntoSnowflake(
-  files: S3Object[],
-  prefixUrl: string,
-  snowflakeConnectionSettings: SnowflakeConnectionSettings
-): Promise<void> {
+async function ingestIntoSnowflake({
+  cxId,
+  files,
+  bucketName,
+  region,
+  prefixUrl,
+  snowflakeConnectionSettings,
+}: {
+  cxId: string;
+  files: S3Object[];
+  bucketName: string;
+  region: string;
+  prefixUrl: string;
+  snowflakeConnectionSettings: SnowflakeConnectionSettings;
+}): Promise<void> {
   const connection = snowflake.createConnection({
     ...snowflakeConnectionSettings,
     authenticator: "PROGRAMMATIC_ACCESS_TOKEN",
@@ -130,19 +134,15 @@ async function ingestIntoSnowflake(
     // await executeAsync(`USE SCHEMA ${schema}`);
 
     console.log("Ingesting data...");
-    // for (const [resourceType, tableName] of Object.entries(tableNames)) {
     for (const file of files) {
-      await processFile({
-        // resourceType,
-        // tableName,
-        // columnDefs,
-        file,
-        executeAsync,
-        prefixUrl,
-      });
+      await processFile({ cxId, file, bucketName, region, executeAsync, prefixUrl });
     }
 
-    // return { tableNames };
+    // TODO ENG-1179 insert the row for the job that will be used by the view to return the latest data
+    // TODO ENG-1179 insert the row for the job that will be used by the view to return the latest data
+    // TODO ENG-1179 insert the row for the job that will be used by the view to return the latest data
+    // TODO ENG-1179 insert the row for the job that will be used by the view to return the latest data
+    // TODO ENG-1179 insert the row for the job that will be used by the view to return the latest data
   } finally {
     try {
       const destroyAsync = promisifyDestroy(connection);
@@ -154,105 +154,83 @@ async function ingestIntoSnowflake(
 }
 
 async function processFile({
+  cxId,
   file,
+  bucketName,
+  region,
   executeAsync,
   prefixUrl,
 }: {
+  cxId: string;
   file: S3Object;
+  bucketName: string;
+  region: string;
   executeAsync: (sqlText: string) => Promise<{
     statement: snowflake.RowStatement;
     rows: any[] | undefined; // eslint-disable-line @typescript-eslint/no-explicit-any
   }>;
   prefixUrl: string;
 }) {
-  // TODO use some function here
-  // TODO use some function here
-  // TODO use some function here
-  // e.g. of file.key: core-schema/cx=eae9172a-1c55-437b-bc1a-9689c64e47a1/allergyintolerance.csv
-  const tableLowercase = file.key.split("/").pop()?.split(".")[0];
-  // const resourceType = parseTableNameFromFhirToCsvIncrementalFileKey(file.key);
-  if (!tableLowercase) {
+  // e.g. of file.key: snowflake/core-schema/cx=eae9172a-1c55-437b-bc1a-9689c64e47a1/condition.csv
+  const tableFilename = parseTableNameFromCoreTableS3Prefix(file.key);
+  if (!tableFilename) {
     throw new Error(`No resource type found for file: ${file.key}`);
   }
-  const tableUppercase = createTableName(tableLowercase);
 
-  // Need the trailing slash to avoid more than one folder from shared prefixes (e.g., condition and condition_code_coding)
+  const metaS3Key = buildCoreSchemaMetaTableS3Prefix({ cxId, tableName: tableFilename });
+  const metadata = await new S3Utils(region).getFileContentsAsString(bucketName, metaS3Key);
+  const columns = metadata.split(",");
+  const columnsForSelect = columns
+    .map((column, idx) => `$${idx + 1}::varchar as "${column}"`)
+    .join(", ");
+
+  const tableName = createTableName(tableFilename);
+
+  // Check if table exists
+  const existsQuery = `
+    SELECT COUNT(*) AS amount FROM information_schema.tables 
+    WHERE table_schema = CURRENT_SCHEMA() 
+    AND table_name = '${tableName}'
+  `;
+  // console.log(`Exists query: ${existsQuery}`);
+  const existsResult = await executeAsync(existsQuery);
+  const tableExists = parseInt(existsResult.rows?.[0]?.AMOUNT ?? "0") > 0;
+  if (!tableExists) {
+    const createSQL = `CREATE TABLE ${tableName} (
+      ${columns.map(col => `"${col}" VARCHAR`).join(",  ")}
+    );`;
+    await executeAsync(createSQL);
+    console.log(`Created table ${tableName} with ${columns.length} columns.`);
+  } else {
+    console.log(`Table ${tableName} already exists - HEADS UP: no schema evolution in place yet!`);
+  }
+
+  const stageName = `${tableName}_stage`;
   const createStageCmd =
-    `CREATE OR REPLACE TEMP STAGE ${tableUppercase} STORAGE_INTEGRATION = ANALYTICS_BUCKET ` +
-    `URL = '${prefixUrl}/${tableLowercase}.csv'`;
+    `CREATE OR REPLACE TEMP STAGE ${stageName} STORAGE_INTEGRATION = ANALYTICS_BUCKET ` +
+    `URL = '${prefixUrl}/${tableFilename}.csv.gz'`;
   // console.log(`Create stage cmd: ${createStageCmd}`);
   await executeAsync(createStageCmd);
 
-  // File format:
-  // CREATE FILE FORMAT csv_format
-  //   TYPE = CSV FIELD_DELIMITER = ',',
-  //   PARSE_HEADER = true,
-  //   ESCAPE = '\\\\', FIELD_OPTIONALLY_ENCLOSED_BY = '\"';
-
-  // Do not use IF NOT EXISTS here, we want to make sure we're not duplicating data
-  // TODO reconsider importing additionalColumnDefs from csv-to-db/db-asset-defs.ts
-  // TODO reconsider importing additionalColumnDefs from csv-to-db/db-asset-defs.ts
-  // TODO reconsider importing additionalColumnDefs from csv-to-db/db-asset-defs.ts
-  // TODO reconsider importing additionalColumnDefs from csv-to-db/db-asset-defs.ts
-  // const createTableCmd = `CREATE TABLE IF NOT EXISTS ${tableName} (${additionalColumnDefs}) ENABLE_SCHEMA_EVOLUTION = TRUE`;
-  // const createTableCmd = `
-  // CREATE OR REPLACE TABLE ${tableUppercase}
-  // USING TEMPLATE (
-  //   SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))
-  //     FROM TABLE(
-  //       INFER_SCHEMA(
-  //         LOCATION=>'@${tableUppercase}/${tableLowercase}.csv',
-  //         FILE_FORMAT=>'csv_format'
-  //       )
-  //     ))`;
-  const createTableCmd = `
-      CREATE OR REPLACE TABLE ${tableUppercase}
-      ENABLE_SCHEMA_EVOLUTION = TRUE
-      USING TEMPLATE (
-        SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))
-        FROM TABLE(
-          INFER_SCHEMA(
-            LOCATION => '@${tableUppercase}',
-            FILE_FORMAT => 'csv_format'
-          )
-        )
-      )`;
-  // IGNORE_CASE => TRUE
-  console.log(`Create table cmd: ${createTableCmd}`);
-  await executeAsync(createTableCmd);
-
-  // const alterTableCmd = `ALTER TABLE ${tableUppercase} SET
-  //   ENABLE_SCHEMA_EVOLUTION = TRUE,
-  //   ERROR_ON_COLUMN_COUNT_MISMATCH = FALSE`;
-  // await executeAsync(alterTableCmd);
-
-  console.log(`>>> Copying ${tableLowercase}...`);
+  console.log(`>>> Copying ${tableFilename}...`);
   const startedAt = Date.now();
-  // const copyCmd = `COPY INTO ${tableUppercase} FROM @${tableUppercase}
-  //   FILE_FORMAT = (FORMAT_NAME = 'csv_format' PARSE_HEADER = TRUE)
-  //   MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE
-  //   ON_ERROR = ABORT_STATEMENT`;
-  const copyCmd = `COPY INTO ${tableUppercase}
-    FROM @${tableUppercase}
+  const copyCmd = `COPY INTO ${tableName} FROM (
+      SELECT
+        ${columnsForSelect}
+      FROM @${stageName}
+    )
     FILE_FORMAT = (
-      FORMAT_NAME = 'csv_format'
-      PARSE_HEADER = TRUE
+      FORMAT_NAME = '${fileFormatAtSnowflake}'
+      SKIP_HEADER = 1
       ERROR_ON_COLUMN_COUNT_MISMATCH = FALSE
     )
-    MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE
-    ON_ERROR = 'ABORT_STATEMENT'`; // Grok suggested CONTINUE
-  console.log(`Copy cmd: ${copyCmd}`);
-  // TODO Chek where it came from to confirm we can't use it
-  // TODO Chek where it came from to confirm we can't use it
-  // TODO Chek where it came from to confirm we can't use it
-  // TODO Chek where it came from to confirm we can't use it
-  // ERROR_ON_COLUMN_COUNT_MISMATCH = FALSE
-  // PARSE_HEADER = TRUE
+    ON_ERROR = 'ABORT_STATEMENT'`;
+  // console.log(`Copy cmd: ${copyCmd}`);
 
   await executeAsync(copyCmd);
-  console.log(`... Copied into ${tableLowercase} in ${elapsedTimeAsStr(startedAt)}`);
+  console.log(`... Copied into ${tableFilename} in ${elapsedTimeAsStr(startedAt)}`);
 
-  const dropStageCmd = `DROP STAGE ${tableUppercase};`;
+  const dropStageCmd = `DROP STAGE ${stageName};`;
   await executeAsync(dropStageCmd);
 }
 

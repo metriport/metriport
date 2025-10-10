@@ -93,7 +93,7 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 100,
+      maxConcurrency: 200,
     },
     waitTime: Duration.seconds(0),
   };
@@ -164,9 +164,9 @@ function settings(envType: EnvType): AnalyticsPlatformsSettings {
     scheduleExpression: `0/${coreTransformScheduledLambdaInterval.toMinutes()} * * * ? *`,
   };
   const coreToDwhLambda: CoreToDwhLambdaSettings = {
-    name: "CoreToS3",
+    name: "CoreToDwh",
     lambda: {
-      memory: 1024,
+      memory: 10240,
       entry: "analytics-platform/core-to-dwh-lambda",
       timeout: coreTransformConnectorLambdaTimeout,
       runtime: lambda.Runtime.NODEJS_20_X,
@@ -801,6 +801,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       layers: [lambdaLayers.shared, lambdaLayers.langchain, lambdaLayers.analyticsPlatform],
       vpc,
       alarmSnsAction: alarmAction,
+      isEnableInsights: true,
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
@@ -863,6 +864,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       layers: [lambdaLayers.shared],
       vpc,
       alarmSnsAction: alarmAction,
+      isEnableInsights: true,
     });
 
     mergeCsvsLambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
@@ -1072,6 +1074,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       layers: [lambdaLayers.shared, lambdaLayers.langchain, lambdaLayers.analyticsPlatform],
       vpc,
       alarmSnsAction: alarmAction,
+      isEnableInsights: true,
     });
 
     lambda.addEventSource(
@@ -1166,6 +1169,7 @@ export class AnalyticsPlatformsNestedStack extends NestedStack {
       layers: [lambdaLayers.shared, lambdaLayers.langchain, lambdaLayers.analyticsPlatform],
       vpc,
       alarmSnsAction: alarmAction,
+      isEnableInsights: true,
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSource));

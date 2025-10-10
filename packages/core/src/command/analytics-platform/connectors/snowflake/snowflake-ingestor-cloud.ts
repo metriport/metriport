@@ -1,4 +1,4 @@
-import { executeWithNetworkRetries } from "@metriport/shared";
+import { BadRequestError, executeWithNetworkRetries } from "@metriport/shared";
 import { SQSClient } from "../../../../external/aws/sqs";
 import { Config } from "../../../../util/config";
 import { SnowflakeIngestor, SnowflakeIngestorRequest } from "./snowflake-ingestor";
@@ -14,9 +14,11 @@ export class SnowflakeIngestorCloud extends SnowflakeIngestor {
   }
 
   async ingestCoreIntoSnowflake(params: SnowflakeIngestorRequest): Promise<void> {
-    const { cxId } = params;
+    const { cxId, forceSynchronous: forceSync } = params;
     const payload: SnowflakeIngestorRequest = { cxId };
     const payloadString = JSON.stringify(payload);
+
+    if (forceSync) throw new BadRequestError(`Force sync is not supported for cloud ingestion`);
 
     await executeWithNetworkRetries(async () => {
       await this.sqsClient.sendMessageToQueue(this.snowflakeConnectorQueueUrl, payloadString, {

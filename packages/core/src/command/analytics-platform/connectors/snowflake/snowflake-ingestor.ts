@@ -1,5 +1,6 @@
 export type SnowflakeIngestorRequest = {
   cxId: string;
+  forceSynchronous?: boolean;
 };
 
 export abstract class SnowflakeIngestor {

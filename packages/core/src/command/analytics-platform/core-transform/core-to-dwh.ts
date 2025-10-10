@@ -16,12 +16,14 @@ export async function exportCoreToExternalDatawarehouses({
   schemaName = coreSchemaName,
   analyticsBucketName,
   region,
+  forceSynchronous = false,
 }: {
   cxId: string;
   dbCreds: DbCreds;
   schemaName?: string | undefined;
   analyticsBucketName: string;
   region: string;
+  forceSynchronous?: boolean;
 }): Promise<void> {
   const { log } = out(`exportCoreToExternalDatawarehouses - cx ${cxId}`);
 
@@ -54,6 +56,6 @@ export async function exportCoreToExternalDatawarehouses({
 
   if (isSnowflakeEnabled) {
     const ingestor = buildSnowflakeIngestor();
-    await ingestor.ingestCoreIntoSnowflake({ cxId });
+    await ingestor.ingestCoreIntoSnowflake({ cxId, forceSynchronous });
   }
 }
