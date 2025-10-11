@@ -561,11 +561,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
         });
       }
       const data = binary.data;
-      if (data === "") {
-        outputStream.end();
-        return { contentType, size: 0 };
-      }
-      if (data == undefined) {
+      if (!data) {
         throw new CommonwellError(errorMessage, undefined, {
           reason: "Missing data",
           contentType,
@@ -579,10 +575,11 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
       }
       const dataBuffer = base64ToBuffer(data);
       outputStream.write(dataBuffer);
-      outputStream.end();
       return { contentType, size: dataBuffer.byteLength };
     } catch (error) {
       throw this.getDescriptiveError(error, "Failed to download document");
+    } finally {
+      outputStream.end();
     }
   }
 
