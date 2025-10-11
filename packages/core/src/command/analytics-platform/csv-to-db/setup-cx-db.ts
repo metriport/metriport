@@ -65,7 +65,6 @@ export async function setupCustomerAnalyticsDb({
     password: dbCreds.password,
   });
   try {
-    const cxDbName = getCxDbName(cxId, dbCreds.dbname);
     await dbClient.connect();
     log(`Connected to database`);
     await createCustomerAnalyticsDb({ dbClient, cxDbName, log });
