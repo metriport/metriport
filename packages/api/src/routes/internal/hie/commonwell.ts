@@ -16,7 +16,10 @@ import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { cwOrgActiveSchema } from "../../../external/commonwell-v1/shared";
 import { getAndUpdateCWOrgAndMetriportOrgV2 } from "../../../external/commonwell-v2/command/organization/create-or-update-cw-organization";
 import { getParsedOrgOrFailV2 } from "../../../external/commonwell-v2/command/organization/organization";
+import { getCwDirectoryEntry } from "../../../external/commonwell/command/cw-directory/list-cw-directory";
+import { rebuildCwDirectory } from "../../../external/commonwell/command/cw-directory/rebuild-cw-directory";
 import { runOrScheduleCwPatientDiscovery } from "../../../external/commonwell/patient/run-or-schedule-patient-discovery";
+import { Config } from "../../../shared/config";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
@@ -152,6 +155,41 @@ router.post(
     });
 
     return res.status(httpStatus.OK).json({ requestId });
+  })
+);
+
+/**
+ * GET /internal/commonwell/directory
+ *
+ * Retrieves organizations from the CommonWell Directory.
+ *
+ * @param req.query.oid Optional, the OID of the organization to fetch.
+ * @returns Returns the organizations from the CommonWell Directory.
+ */
+router.get(
+  "/directory",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
+    const oid = getFrom("query").optional("oid", req);
+    const orgs = await getCwDirectoryEntry(oid);
+    return res.status(httpStatus.OK).json({ amount: orgs.length, entries: orgs });
+  })
+);
+
+/**
+ * POST /internal/commonwell/directory/rebuild
+ *
+ * Retrieves organizations from the CommonWell Directory and uploads them into our database.
+ */
+router.post(
+  "/directory/rebuild",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
+    const failGracefully = getFromQueryAsBoolean("failGracefully", req);
+    await rebuildCwDirectory(failGracefully);
+    return res.sendStatus(httpStatus.OK);
   })
 );
 

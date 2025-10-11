@@ -13,6 +13,7 @@ export {
   getCwPatientIdFromLinks,
 } from "./common/util";
 export { validateNPI } from "./common/validate-npi";
+export { GetDirectoryParams } from "./client/commonwell-member-api";
 export * from "./models/address";
 export * from "./models/certificates";
 export * from "./models/contact";
