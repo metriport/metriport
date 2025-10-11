@@ -25,17 +25,17 @@ const BATCH_SIZE = 100;
 const parallelQueriesToGetManagingOrg = 20;
 const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
 
-const dbCreds = Config.getDBCreds();
-const sequelize = initDbPool(dbCreds, {
-  max: 10,
-  min: 1,
-  acquire: 30000,
-  idle: 10000,
-});
-
 export async function rebuildCwDirectory(failGracefully = false): Promise<void> {
   const context = "rebuildCwDirectory";
   const { log } = out(context);
+  const dbCreds = Config.getDBCreds();
+  const sequelize = initDbPool(dbCreds, {
+    max: 10,
+    min: 1,
+    acquire: 30000,
+    idle: 10000,
+  });
+
   let currentPosition = 0;
   let isDone = false;
   const startedAt = Date.now();
