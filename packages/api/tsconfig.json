@@ -8,11 +8,11 @@
 
     // When we migrate to TS 5 (#576), we can extend more than one config file, then we can remove this.
     // START - From @tsconfig/strictest
-    "allowUnusedLabels": true,
+    "allowUnusedLabels": false,
     "allowUnreachableCode": false,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
-    "noUnusedLocals": false,
+    "noUnusedLocals": true,
     // #340 - Left this ones out bc it was causing too many changes
     // "exactOptionalPropertyTypes": true,
     // "noImplicitReturns": true,
