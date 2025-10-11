@@ -566,13 +566,33 @@ export class S3Utils {
       Bucket: bucket,
       Delete: {
         Objects: keys.map(key => ({ Key: key })),
-        Quiet: true,
+        Quiet: false, // Set to false to surface partial failures
       },
     });
     try {
-      await executeWithRetriesS3(async () => {
-        await this.s3Client.send(deleteParams);
+      const result = await executeWithRetriesS3(async () => {
+        return await this.s3Client.send(deleteParams);
       });
+      if (result.Errors && result.Errors.length > 0) {
+        const { log } = out("deleteFiles");
+        const failedKeys = result.Errors.map(
+          error => `${error.Key}: ${error.Code} - ${error.Message}`
+        ).join(", ");
+        log(`Partial failure during files deletion. Failed keys: ${failedKeys}`);
+        throw new MetriportError(`Partial failure during S3 multi-object delete`, result.Errors, {
+          bucket,
+          totalKeys: keys.length,
+          failedKeys: result.Errors.length,
+          successfulKeys: result.Deleted?.length ?? 0,
+          errorDetails: JSON.stringify(
+            result.Errors.map(error => ({
+              key: error.Key,
+              code: error.Code,
+              message: error.Message,
+            }))
+          ),
+        });
+      }
     } catch (error) {
       const { log } = out("deleteFiles");
       log(`Error during files deletion: ${errorToString(error)}`);
