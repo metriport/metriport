@@ -1,0 +1,59 @@
+---
+title: "List Cohorts"
+description: "Lists all cohorts defined by your organization. Click for additional information on [Cohorts](/medical-api/handling-data/cohorts)"
+api: "GET /medical/v1/cohort"
+---
+
+## Response
+
+<ResponseField name="cohorts" type="Cohort[]">
+  Array of cohorts with count of patients assigned to them.
+  <Expandable title="Cohort properties">
+    <Snippet file="cohort-response.mdx" />
+  </Expandable>
+</ResponseField>
+
+<ResponseExample>
+  ```javascript Metriport SDK
+  import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+  const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+  // List all cohorts
+  const allCohorts = await metriport.listCohorts();
+```
+</ResponseExample>
+
+```json
+{
+  "cohorts": [
+    {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "eTag": "1",
+      "name": "High Risk",
+      "description": "Patients that need frequent and robust monitoring.",
+      "color": "red",
+      "settings": {
+        "monitoring": {
+          "hie": "weekly",
+          "adt": true,
+          "pharmacy": true,
+          "laboratory": true
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "eTag": "1",
+      "name": "Cardiac Care Cohort",
+      "description": "Patients receiving cardiac care and monitoring",
+      "settings": {
+        "monitoring": {
+          "hie": "weekly",
+          "adt": true
+        }
+      }
+    }
+  ]
+}
+```

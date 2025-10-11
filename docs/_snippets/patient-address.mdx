@@ -23,4 +23,9 @@
       If specified, must be "USA"; otherwise will default to "USA".
     </ParamField>
 
+    <ParamField body="isPrimary" type="boolean">
+      If specified, marks this address as the primary address for the patient. Only one address can be marked as primary. Default will be the first address in the array.
+      The primary address is used when external systems (like state HIEs) request the patient's location and need a single address.
+    </ParamField>
+
   </Expandable>

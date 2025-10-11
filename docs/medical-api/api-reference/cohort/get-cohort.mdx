@@ -1,0 +1,29 @@
+---
+title: "Get Cohort"
+description: "Returns cohort with additional details including the count of patients assigned to it. Click for additional information on [Cohorts](/medical-api/handling-data/cohorts)"
+api: "GET /medical/v1/cohort/{id}"
+---
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the cohort to get.
+</ParamField>
+
+## Response
+
+<Snippet file="cohort-with-details-response.mdx" />
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const cohortDetails = await metriport.getCohort("00000000-0000-0000-0000-000000000000");
+```
+
+</ResponseExample>
+
+<Snippet file="cohort-with-details-response-json.mdx" />

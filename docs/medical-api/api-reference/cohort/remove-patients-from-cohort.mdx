@@ -1,0 +1,39 @@
+---
+title: "Remove Patients from Cohort"
+description: "Bulk remove patients from a cohort. Click for additional information on [Cohorts](/medical-api/handling-data/cohorts)"
+api: "DELETE /medical/v1/cohort/{id}/patient"
+---
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the cohort to remove patients from.
+</ParamField>
+
+## Body
+
+<ParamField body="patientIds" type="string[]" required>
+  Array of patient IDs to remove from the cohort.
+</ParamField>
+
+## Response
+
+<Snippet file="cohort-with-details-response-with-message.mdx" />
+
+<ResponseExample>
+    ```javascript Metriport SDK
+    import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+    const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+    const result = await metriport.removePatientsFromCohort({
+    cohortId: "00000000-0000-0000-0000-000000000000",
+    patientIds: [
+        "00000000-0000-0000-0000-000000000000",
+        "00000000-0000-0000-0000-000000000000",
+    ],
+    });
+    ```
+</ResponseExample>
+
+<Snippet file="cohort-with-details-response-json-with-message.mdx" />

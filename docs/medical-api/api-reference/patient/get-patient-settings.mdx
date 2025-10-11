@@ -1,0 +1,108 @@
+---
+title: "Get Patient Settings"
+description: "Returns aggregated monitoring settings for a patient based on all cohorts they belong to. When a patient belongs to multiple cohorts with conflicting settings, the more restrictive option is applied (logical AND). For cadence settings, the longest interval is applied. Click for additional information on [Cohorts](/medical-api/handling-data/cohorts)"
+api: "GET /medical/v1/patient/{id}/settings"
+---
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the patient whose settings are to be returned.
+</ParamField>
+
+## Response
+
+<ResponseField name="settings" type="object" required>
+  The aggregated monitoring settings for the patient based on their cohort memberships.
+  <Expandable title="Settings properties">
+    <ResponseField name="monitoring" type="object" optional>
+      <ResponseField name="hie" type="string" optional>
+        HIE-based document monitoring cadence. Values: `never`, `monthly`, `biweekly`, `weekly`.
+      </ResponseField>
+      <ResponseField name="adt" type="boolean|array" optional>
+        ADT (Admission, Discharge, Transfer) monitoring. Can be `true`, `false`, or an array of specific HIE names.
+      </ResponseField>
+      <ResponseField name="pharmacy" type="boolean" optional>
+        Pharmacy / medication history monitoring.
+      </ResponseField>
+      <ResponseField name="laboratory" type="boolean" optional>
+        Laboratory notifications monitoring.
+      </ResponseField>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const patientSettings = await metriport.getPatientSettings("018a80c4-292a-7486-a1234-76yuhe23yu14");
+```
+
+</ResponseExample>
+
+```json
+{
+  "settings": {
+    "monitoring": {
+      "hie": "monthly",
+      "adt": true,
+      "pharmacy": false,
+      "laboratory": true
+    }
+  }
+}
+```
+
+## Settings Aggregation Logic
+
+When a patient belongs to multiple cohorts, their settings are aggregated from all cohorts they belong to. If there are conflicting settings between cohorts, the more restrictive option is applied (logical AND).
+
+### Examples
+
+**Patient in one cohort with ADT monitoring enabled:**
+```json
+{
+  "settings": {
+    "monitoring": {
+      "adt": true
+    }
+  }
+}
+```
+
+**Patient in multiple cohorts, all with ADT monitoring enabled:**
+```json
+{
+  "settings": {
+    "monitoring": {
+      "adt": true
+    }
+  }
+}
+```
+
+**Patient in multiple cohorts, one with ADT enabled, one disabled:**
+```json
+{
+  "settings": {
+    "monitoring": {
+      "adt": false
+    }
+  }
+}
+```
+
+**Patient in multiple cohorts, one with weekly HIE, one with monthly HIE:**
+```json
+{
+  "settings": {
+    "monitoring": {
+      "hie": "monthly"
+    }
+  }
+}
+```

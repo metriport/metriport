@@ -1,0 +1,53 @@
+<ResponseField name="id" type="string" required>
+  The unique identifier for the cohort (UUID format, e.g., `00000000-0000-0000-0000-000000000000`).
+</ResponseField>
+
+<ResponseField name="eTag" type="string" required>
+  The entity tag for optimistic concurrency control.
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  The unique name of the cohort within your organization.
+</ResponseField>
+
+<ResponseField name="description" type="string" required>
+  The description of the cohort.
+</ResponseField>
+
+<ResponseField name="color" type="string" required>
+  The color associated with the cohort.
+</ResponseField>
+
+<ResponseField name="settings" type="object" required>
+  Configuration settings for the cohort.
+  <Expandable title="Settings properties">
+     <ResponseField name="monitoring" type="object" optional>
+      <ResponseField name="hie" type="string" optional>
+        HIE-based document monitoring - subscribes patients to HIE-based document monitoring (non-ADT) / medical record refresh based on the cadence.
+        - `never` - Disables HIE monitoring
+        - `monthly` - Monthly medical record refresh (default)
+        - `biweekly` - Biweekly medical record refresh
+        - `weekly` - Weekly medical record refresh
+        <Warning>
+          **HIE monitoring is coming soon!** While this feature is not yet live, you can configure your HIE monitoring settings now. These settings will automatically take effect when the feature launches.
+        </Warning>
+      </ResponseField>
+      <ResponseField name="adt" type="boolean|array" optional>
+        ADT (Admission, Discharge, Transfer) monitoring - subscribes patients to ADT notifications based on their **[primary address state](/medical-api/api-reference/patient/create-patient#param-is-primary)**.  
+        - `true` - Uses the patient's [primary address](/medical-api/api-reference/patient/create-patient#param-is-primary) to determine which state HIE to subscribe to
+        - `false` - Disables ADT monitoring (default)
+        - `["HieName", "HieName", ...]` - Force-enables for specific state HIE(s) ([click here for the list of supported hies](/medical-api/handling-data/cohorts#list-of-state-hies)) instead of using [primary address](/medical-api/api-reference/patient/create-patient#param-is-primary)
+      </ResponseField>
+      <ResponseField name="pharmacy" type="boolean" optional>
+        Pharmacy / medication history monitoring - enables retail fill data monitoring where available.  
+        - `true` - Enables pharmacy monitoring
+        - `false` - Disables pharmacy monitoring (default)
+      </ResponseField>
+      <ResponseField name="laboratory" type="boolean" optional>
+        Laboratory notifications - subscribes patients for ongoing notifications of new lab results.  
+        - `true` - Enables laboratory monitoring
+        - `false` - Disables laboratory monitoring (default)
+      </ResponseField>
+    </ResponseField>
+  </Expandable>
+</ResponseField>

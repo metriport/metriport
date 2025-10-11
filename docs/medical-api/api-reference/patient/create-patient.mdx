@@ -46,6 +46,7 @@ const patient = await metriport.createPatient(
         state: USState.CA,
         country: "USA",
         addressLine1: "Guadalajara Street",
+        "isPrimary": true
       },
     ],
     contact: [
@@ -55,6 +56,7 @@ const patient = await metriport.createPatient(
       },
     ],
     externalId: "123456789",
+    cohorts: ["High Risk"]
   },
   facilityId
 );
