@@ -44,7 +44,7 @@ program
   .name("db-setup")
   .description("CLI to setup the analytics database for a customer.")
   .option("-c, --cxId <cxId>", "The customer ID (optional, defaults to env var CX_ID)")
-  .option("-f2c, --fhr-to-csv-username <username>", "The username for the lambda user")
+  .option("-f2c, --fhir-to-csv-username <username>", "The username for the lambda user")
   .option("-r2c, --raw-to-core-username <username>", "The username for the lambda user")
   .option("--users", "Create users", true)
   .option("--no-users", "Do not create users", false)
@@ -75,7 +75,7 @@ async function main({
 
   if (createUsers && (fhirToCsvUsername == undefined || rawToCoreUsername == undefined)) {
     console.log(
-      "Error: either --no-users or --fhr-to-csv-username and --raw-to-core-username are required"
+      "Error: either --no-users or --fhir-to-csv-username and --raw-to-core-username are required"
     );
     process.exit(1);
   }
@@ -88,9 +88,9 @@ async function main({
 
   let dbUsersToCreateAndGrantAccess: UsersToCreateAndGrantAccess | undefined = undefined;
   if (createUsers) {
-    const f2cPwd = (await getPassword("fhr-to-csv")).trim();
+    const f2cPwd = (await getPassword("fhir-to-csv")).trim();
     if (!f2cPwd) {
-      console.log("Error: fhr-to-csv password is required");
+      console.log("Error: fhir-to-csv password is required");
       process.exit(1);
     }
     const r2cPwd = (await getPassword("raw-to-core")).trim();
