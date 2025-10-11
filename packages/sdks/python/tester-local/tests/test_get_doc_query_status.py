@@ -1,4 +1,5 @@
 import os
+import time
 
 from generated.client import Metriport
 from generated import commons
@@ -17,12 +18,8 @@ base_url = os.environ.get("BASE_URL")
 
 def test_start_doc_query() -> None:
     metriport = Metriport(api_key=api_key, base_url=base_url)
-    metadata = {
-        "metadata": {
-            "docId": "12345",
-            "docType": "type",
-        }
-    }
-    response = metriport.medical.document.start_bulk_get_document_url(patient_id=patient_id, request=metadata)
-    print(f"Response: {response}")
+    response = metriport.medical.document.start_query(patient_id=patient_id, facility_id=facility_id)
+    print(f"Start Query Response: {response}")
 
+    response = metriport.medical.document.get_query_status(patient_id=patient_id)
+    print(f"Query Status Response: {response}")
