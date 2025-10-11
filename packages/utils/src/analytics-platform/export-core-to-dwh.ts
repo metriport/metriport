@@ -33,6 +33,8 @@ const analyticsBucketName = getEnvVarOrFail("ANALYTICS_BUCKET_NAME");
 const region = getEnvVarOrFail("AWS_REGION");
 const featureFlagsTableName = getEnvVarOrFail("FEATURE_FLAGS_TABLE_NAME");
 
+FeatureFlags.init(region, featureFlagsTableName);
+
 const program = new Command();
 program
   .name("export-core-to-dwh")
@@ -45,8 +47,6 @@ program
   .showHelpAfterError()
   .action(main);
 program.parse();
-
-FeatureFlags.init(region, featureFlagsTableName);
 
 async function main({ cxId, schemaName }: { cxId: string; schemaName: string | undefined }) {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's

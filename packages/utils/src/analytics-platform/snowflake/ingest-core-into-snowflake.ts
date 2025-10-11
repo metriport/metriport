@@ -38,6 +38,8 @@ const snowflakeToken = getEnvVarOrFail("SNOWFLAKE_TOKEN");
 const snowflakeWarehouse = getEnvVarOrFail("SNOWFLAKE_WH");
 const snowflakeDatabase = getEnvVarOrFail("SNOWFLAKE_DB");
 
+FeatureFlags.init(region, featureFlagsTableName);
+
 const program = new Command();
 program
   .name("ingest-core-into-snowflake")
@@ -46,8 +48,6 @@ program
   .showHelpAfterError()
   .action(main);
 program.parse();
-
-FeatureFlags.init(region, featureFlagsTableName);
 
 async function main({ cxId }: { cxId: string }) {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
