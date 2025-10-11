@@ -561,7 +561,11 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
         });
       }
       const data = binary.data;
-      if (!data)
+      if (data === "") {
+        outputStream.end();
+        return { contentType, size: 0 };
+      }
+      if (data == undefined) {
         throw new CommonwellError(errorMessage, undefined, {
           reason: "Missing data",
           contentType,
@@ -572,6 +576,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
               : "not-an-object",
           inputUrl,
         });
+      }
       const dataBuffer = base64ToBuffer(data);
       outputStream.write(dataBuffer);
       outputStream.end();
