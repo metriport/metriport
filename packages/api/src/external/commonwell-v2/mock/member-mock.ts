@@ -3,6 +3,7 @@ import {
   CertificateParam,
   CertificateResp,
   CommonWellMemberAPI,
+  GetDirectoryParams,
   Organization,
   OrganizationList,
 } from "@metriport/commonwell-sdk";
@@ -22,6 +23,17 @@ export class CommonWellMemberMock implements CommonWellMemberAPI {
     return undefined;
   }
 
+  async listOrganizations(
+    params?: GetDirectoryParams,
+    options?: BaseOptions
+  ): Promise<OrganizationList> {
+    return {
+      count: 0,
+      from: 0,
+      to: 0,
+      organizations: [],
+    };
+  }
   async createOrg(organization: Organization, options?: BaseOptions): Promise<Organization> {
     return organization;
   }

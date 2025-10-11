@@ -1,6 +1,6 @@
 import { errorToString } from "@metriport/shared";
-import { out } from "../../../../util/log";
-import { capture } from "../../../../util/notifications";
+import { out } from "../../util/log";
+import { capture } from "../../util/notifications";
 import { getPrincipalAndDelegatesMap } from "./principal-and-delegates";
 
 /**
@@ -24,21 +24,21 @@ class LambdaOnlyDelegateCache {
    *
    * Since this is only used in Lambda, we don't need to worry about multiple calls issueing separate requests to S3.
    */
-  async getMap(): Promise<Map<string, string[]>> {
+  async getMap(source: "cq" | "cw"): Promise<Map<string, string[]>> {
     if (this.cache) {
       return this.cache;
     }
 
-    this.cache = await this.loadMapFromS3();
+    this.cache = await this.loadMapFromS3(source);
     return this.cache;
   }
 
-  private async loadMapFromS3(): Promise<Map<string, string[]>> {
+  private async loadMapFromS3(source: "cq" | "cw"): Promise<Map<string, string[]>> {
     const { log } = out(`PrincipalAndDelegatesCache.loadMapFromS3`);
     log("Loading principal and delegates map from S3");
 
     try {
-      const map = await getPrincipalAndDelegatesMap();
+      const map = await getPrincipalAndDelegatesMap(source);
       log(`Successfully loaded principal and delegates map with ${map.size} entries`);
       return map;
     } catch (error) {
@@ -55,6 +55,8 @@ class LambdaOnlyDelegateCache {
  * This function should be used instead of calling getPrincipalAndDelegatesMap directly
  * in Lambda functions to benefit from caching.
  */
-export async function getCachedPrincipalAndDelegatesMap(): Promise<Map<string, string[]>> {
-  return LambdaOnlyDelegateCache.getInstance().getMap();
+export async function getCachedPrincipalAndDelegatesMap(
+  source: "cq" | "cw"
+): Promise<Map<string, string[]>> {
+  return LambdaOnlyDelegateCache.getInstance().getMap(source);
 }
