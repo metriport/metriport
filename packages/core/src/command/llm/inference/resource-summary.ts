@@ -41,13 +41,13 @@ export async function summarizeContext({
 }: ResourceInference): Promise<SummaryResult> {
   const { log } = out(`summarizeContext`);
 
-  const modelVersion = "claude-sonnet-3.7";
-  const { chunks } = chunkTextForModel({ text: context, modelVersion });
+  const chunks = chunkTextForModel({ text: context, modelVersion: "claude-sonnet-3.7" });
   log(
     `Source context length: ${context.length} characters, or about ${estimateTokenCount(
       context
-    )} tokens\nSummarizing ${chunks.length} chunks`
+    )} tokens`
   );
+  log(`Summarizing ${chunks.length} chunks`);
 
   // Track tokens across all calls
   let totalInputTokens = 0;

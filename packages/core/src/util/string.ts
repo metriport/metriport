@@ -30,7 +30,15 @@ export function safeStringify(
  * chunkWithOverlap("abcdefghij", 4, 2)
  * // Returns: ["abcd", "cdef", "efgh", "ghij"]
  */
-export function chunkWithOverlap(str: string, chunkSize: number, overlapSize: number): string[] {
+export function chunkWithOverlap({
+  str,
+  chunkSize,
+  overlapSize,
+}: {
+  str: string;
+  chunkSize: number;
+  overlapSize: number;
+}): string[] {
   if (chunkSize <= 0) {
     throw new Error("chunkSize must be greater than 0");
   }
