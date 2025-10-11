@@ -27,7 +27,7 @@ path and the alternative ones. Be specific.]_
 
 ### Metrics
 
-_[Plan ahead how we are going to monitor your changes. Add images of metrics. If a metric is not applicable, explain why.]_
+_[Plan ahead how we are going to monitor your changes. If a metric is not applicable, explain why.]_
 
 - [ ] Alarms _[Alarms trigger PagerDuty. These should only happen when there's a significant issue with the platform - they require immediate action. This is the most important metric, but also let's be careful if it's really immediate action or just asap (alert).]_
 
