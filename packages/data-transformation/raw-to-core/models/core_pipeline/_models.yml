@@ -1,0 +1,199 @@
+version: 2
+
+models:
+  - name: core__condition_encounter
+    schema: core_v2
+    enabled: false
+    alias: condition_encounter
+    materialized: table
+    columns:
+      - name: condition_id
+        tests:
+          - relationships:
+              to: ref('core__condition')
+              field: condition_id
+              config:
+                severity: warn
+      - name: encounter_id
+        tests:
+          - relationships:
+              to: ref('core__encounter')
+              field: encounter_id
+              config:
+                severity: warn
+  - name: core__condition
+    schema: core_v2
+    enabled: false
+    alias: condition
+    materialized: table
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+  - name: core__encounter
+    schema: core_v2
+    enabled: false
+    alias: encounter
+    materialized: table
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+  - name: core__immunization
+    schema: core_v2
+    enabled: false
+    alias: immunization
+    materialized: table
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+  - name: core__lab_result
+    schema: core_v2
+    enabled: false
+    alias: lab_result
+    materialized: table
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+  - name: core__location
+    schema: core_v2
+    enabled: false
+    alias: location
+    materialized: table
+  - name: core__medication
+    schema: core_v2
+    enabled: false
+    alias: medication
+    materialized: table
+  - name: core__medication_administration
+    schema: core_v2
+    enabled: false
+    alias: medication_administration
+    materialized: table
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+      - name: medication_id
+        tests:
+          - relationships:
+              to: ref('core__medication')
+              field: medication_id
+              config:
+                severity: error
+  - name: core__medication_dispense
+    schema: core_v2
+    enabled: false
+    alias: medication_dispense
+    materialized: table
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+      - name: medication_id
+        tests:
+          - relationships:
+              to: ref('core__medication')
+              field: medication_id
+              config:
+                severity: error
+  - name: core__medication_request
+    schema: core_v2
+    enabled: false
+    alias: medication_request
+    materialized: table
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+      - name: medication_id
+        tests:
+          - relationships:
+              to: ref('core__medication')
+              field: medication_id
+              config:
+                severity: error
+  - name: core__medication_statement
+    schema: core_v2
+    enabled: false
+    alias: medication_statement
+    materialized: table
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+      - name: medication_id
+        tests:
+          - relationships:
+              to: ref('core__medication')
+              field: medication_id
+              config:
+                severity: error
+  - name: core__observation
+    schema: core_v2
+    enabled: false
+    alias: observation
+    materialized: table
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+  - name: core__patient
+    schema: core_v2
+    alias: patient
+    materialized: table
+  - name: core__practitioner
+    schema: core_v2
+    enabled: false
+    alias: practitioner
+    materialized: table
+  - name: core__procedure
+    schema: core_v2
+    alias: procedure
+    materialized: table
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
