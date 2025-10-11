@@ -61,9 +61,8 @@ export class CommonWellBase {
           : CommonWellBase.integrationUrl,
       httpsAgent: this.httpsAgent,
     });
-    if (options.preRequestHook) {
-      this.api.interceptors.request.use(this.axiosPreRequest(this, options.preRequestHook));
-    }
+
+    this.api.interceptors.request.use(this.axiosPreRequest(this, options.preRequestHook));
     this.api.interceptors.response.use(
       this.axiosSuccessfulResponse(this, options.postRequestHook),
       this.axiosErrorResponse(this, options.postRequestHook)
@@ -77,11 +76,16 @@ export class CommonWellBase {
     return this._lastTransactionId;
   }
 
+  resetLastTransactionId(): void {
+    this._lastTransactionId = undefined;
+  }
+
   private axiosPreRequest(
     _this: CommonWellBase,
     preRequestHook: CommonWellOptions["preRequestHook"]
   ) {
     return (reqConfig: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
+      _this.resetLastTransactionId();
       preRequestHook?.(reqConfig);
       return reqConfig;
     };
