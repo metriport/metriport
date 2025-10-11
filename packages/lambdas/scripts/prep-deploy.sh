@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 main() {
    # Clean so we don't have test files on the node_modules that will be copied to the layer
    npm run deepclean
@@ -28,7 +30,7 @@ main() {
    popd
 
    pushd layers/analytics-platform
-   ./scripts/prep-deploy.sh
+   npm run prep-deploy
    popd
 }
 

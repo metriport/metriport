@@ -1,23 +1,39 @@
-import { DbCreds, errorToString, MetriportError } from "@metriport/shared";
+import {
+  DbCredsWithSchema,
+  elapsedTimeAsStr,
+  errorToString,
+  MetriportError,
+} from "@metriport/shared";
+import { pipeline } from "node:stream/promises";
 import { Client } from "pg";
+import { to as copyTo } from "pg-copy-streams";
+import { createGzip } from "zlib";
+import { S3Utils, UploadFileResult } from "../../../external/aws/s3";
 import { capture, executeAsynchronously, out } from "../../../util";
-import { getCxDbName, tableJobName } from "../csv-to-db/db-asset-defs";
-import { buildCoreTableS3Prefix } from "../fhir-to-csv/file-name";
+import {
+  buildCoreSchemaMetaTableS3Prefix,
+  buildCoreTableS3Prefix,
+} from "../connectors/core-export-shared";
+import { getCxDbName, getListTableNames, tableJobName } from "../csv-to-db/db-asset-defs";
+import { buildCoreExportJobId } from "./shared";
 
-const schemaName = "core";
-const numberOfParallelExportTablesIntoS3 = 10;
+const numberOfParallelExportTablesIntoS3 = 5;
+
+const coreExportJobIdColumnName = "core_export_job_id";
 
 /**
  * Exports the core data from Postgres to S3.
  */
 export async function exportCoreToS3({
   cxId,
+  coreExportJobId = buildCoreExportJobId(),
   dbCreds,
   analyticsBucketName,
   region,
 }: {
   cxId: string;
-  dbCreds: DbCreds;
+  coreExportJobId?: string;
+  dbCreds: DbCredsWithSchema;
   analyticsBucketName: string;
   region: string;
 }): Promise<void> {
@@ -30,67 +46,99 @@ export async function exportCoreToS3({
       port: dbCreds.port,
       dbname: dbCreds.dbname,
       username: dbCreds.username,
+      numberOfParallelExports: numberOfParallelExportTablesIntoS3,
     })}`
   );
+  const startTime = Date.now();
 
   const cxDbName = getCxDbName(cxId, dbCreds.dbname);
-  const dbClient = new Client({
-    host: dbCreds.host,
-    port: dbCreds.port,
-    database: cxDbName,
-    user: dbCreds.username,
-    password: dbCreds.password,
-  });
-  try {
-    await dbClient.connect();
-    log(`Connected to database`);
-
-    const tableNames = await getTableNamesFromDb({ dbClient });
-
-    await runExport({ dbClient, cxId, bucketName: analyticsBucketName, region, log, tableNames });
-
-    log(`Successfully created analytics database`);
-  } finally {
-    await dbClient.end();
-    log(`Disconnected from database`);
+  function getDbClient() {
+    return new Client({
+      host: dbCreds.host,
+      port: dbCreds.port,
+      database: cxDbName,
+      user: dbCreds.username,
+      password: dbCreds.password,
+    });
   }
+  const tableNames = await getTableNamesFromDb({ getDbClient, schemaName: dbCreds.schemaName });
+
+  await runExport({
+    getDbClient,
+    cxId,
+    coreExportJobId,
+    schemaName: dbCreds.schemaName,
+    bucketName: analyticsBucketName,
+    region,
+    log,
+    tableNames,
+  });
+
+  log(
+    `Successfully exported analytics database (${tableNames.length} tables) in ${elapsedTimeAsStr(
+      startTime
+    )}`
+  );
 }
 
-async function getTableNamesFromDb({ dbClient }: { dbClient: Client }): Promise<string[]> {
-  const cmd = `SELECT n.nspname AS "schema", c.relname as name
-    FROM pg_class c
-      join pg_namespace n ON n.oid = c.relnamespace
-    WHERE c.relkind IN ('r','p')
-      AND NOT c.relispartition
-      AND n.nspname !~ ALL ('{^pg_,^information_schema$}')
-      AND n.nspname = '${schemaName}'
-      order by 2`;
-  const res = await dbClient.query(cmd);
-  return res.rows.map(row => row.name).filter(name => name !== tableJobName);
+async function getTableNamesFromDb({
+  getDbClient,
+  schemaName,
+}: {
+  getDbClient: () => Client;
+  schemaName: string;
+}): Promise<string[]> {
+  const dbClient = getDbClient();
+  await dbClient.connect();
+  try {
+    const cmd = getListTableNames(schemaName);
+    const res = await dbClient.query(cmd);
+    return res.rows.map(row => row.name).filter(name => name !== tableJobName);
+  } finally {
+    await dbClient.end();
+  }
 }
 
 async function runExport({
   bucketName,
-  dbClient,
+  getDbClient,
+  schemaName,
   cxId,
+  coreExportJobId,
   tableNames,
   region,
   log,
 }: {
   bucketName: string;
-  dbClient: Client;
+  getDbClient: () => Client;
+  schemaName: string;
   cxId: string;
+  coreExportJobId: string;
   tableNames: string[];
   region: string;
   log: typeof console.log;
 }): Promise<void> {
+  if (tableNames.length < 1) {
+    log(`No tables to export`);
+    return;
+  }
   const errors: { tableName: string; error: string }[] = [];
+  const uploadPromises: Promise<UploadFileResult>[] = [];
   await executeAsynchronously(
     tableNames,
     async tableName => {
       try {
         log(`Exporting table ${tableName}...`);
-        await exportSingleTable({ dbClient, cxId, tableName, bucketName, region });
+        const { uploadPromises } = await exportSingleTableCompressed({
+          getDbClient,
+          cxId,
+          coreExportJobId,
+          tableName,
+          bucketName,
+          region,
+          schemaName,
+        });
+        uploadPromises.push(...uploadPromises);
       } catch (error) {
         log(`Error exporting table ${tableName}: ${errorToString(error)}`);
         errors.push({ tableName, error: errorToString(error) });
@@ -98,6 +146,8 @@ async function runExport({
     },
     { numberOfParallelExecutions: numberOfParallelExportTablesIntoS3 }
   );
+  log(`Finish uploading files to S3...`);
+  await Promise.all(uploadPromises);
   if (errors.length > 0) {
     log(`Errors exporting tables: ${errors.map(e => `${e.tableName}: ${e.error}`).join(", ")}`);
     throw new MetriportError(`Errors exporting tables to S3`, errors, {
@@ -106,24 +156,99 @@ async function runExport({
   }
 }
 
-async function exportSingleTable({
+async function exportSingleTableCompressed({
   bucketName,
   cxId,
-  dbClient,
+  coreExportJobId,
+  getDbClient,
+  schemaName,
   tableName,
   region,
 }: {
   bucketName: string;
   cxId: string;
-  dbClient: Client;
+  coreExportJobId: string;
+  getDbClient: () => Client;
+  schemaName: string;
   tableName: string;
   region: string;
-}): Promise<void> {
-  const s3Key = buildCoreTableS3Prefix({ cxId, tableName });
-  const cmd = `SELECT * from aws_s3.query_export_to_s3(
-    'SELECT * FROM ${schemaName}.${tableName}', 
-    aws_commons.create_s3_uri('${bucketName}', '${s3Key}', '${region}'),
-    options :='format csv, header false'
-  )`;
-  await dbClient.query(cmd);
+}): Promise<{ uploadPromises: Promise<UploadFileResult>[] }> {
+  const { log } = out(`exportSingleTableCompressed - cx ${cxId}, table ${tableName}`);
+  const uploadPromises: Promise<UploadFileResult>[] = [];
+
+  const s3Utils = new S3Utils(region);
+  const s3Key = buildCoreTableS3Prefix({ cxId, tableName }) + ".gz";
+
+  const dbClient = getDbClient();
+  await dbClient.connect();
+  try {
+    const columnNames = await dbClient.query(
+      `select column_name from information_schema.columns 
+         where table_schema = '${schemaName}' 
+           and table_name = '${tableName}' 
+         order by ordinal_position`
+    );
+    const columnNamesAsCsv = [
+      ...columnNames.rows.map(row => row.column_name),
+      coreExportJobIdColumnName,
+    ].join(",");
+    uploadPromises.push(
+      s3Utils.uploadFile({
+        bucket: bucketName,
+        key: buildCoreSchemaMetaTableS3Prefix({ cxId, tableName }),
+        file: Buffer.from(columnNamesAsCsv),
+        contentType: "text/csv",
+        log,
+      })
+    );
+
+    const gzip = createGzip();
+    let compressedChunks: Buffer[] = [];
+
+    gzip.on("data", (chunk: Buffer) => compressedChunks.push(chunk));
+
+    const countRaw = await dbClient.query(`select count(*) from ${schemaName}.${tableName}`);
+    const count = countRaw.rows[0].count as number;
+    log(`Loading and compressing ${count} rows...`);
+
+    const startedAt = Date.now();
+    const copyCmd = `COPY (SELECT *, '${coreExportJobId}' as ${coreExportJobIdColumnName}  FROM ${schemaName}.${tableName}) TO STDOUT WITH CSV HEADER`;
+    // log(`Copy cmd: ${copyCmd}`);
+    const stream = dbClient.query(
+      // copyTo(`COPY ${schemaName}.${tableName} TO STDOUT WITH CSV HEADER`)
+      copyTo(copyCmd)
+    );
+    await pipeline(stream, gzip);
+
+    // End the gzip stream and wait for completion
+    gzip.end();
+    // Wait for gzip to finish processing all data
+    await new Promise<void>((resolve, reject) => {
+      gzip.on("end", () => resolve());
+      gzip.on("error", reject);
+    });
+
+    const gzippedContent = Buffer.concat(compressedChunks);
+    const totalSize = gzippedContent.length;
+    compressedChunks = [];
+    log(
+      `Loading/compressing done in ${elapsedTimeAsStr(
+        startedAt
+      )}, uploading ${totalSize} bytes to ${s3Key}...`
+    );
+
+    uploadPromises.push(
+      s3Utils.uploadFile({
+        bucket: bucketName,
+        key: s3Key,
+        file: gzippedContent,
+        contentType: "application/gzip",
+        log,
+      })
+    );
+    log(`Done in ${elapsedTimeAsStr(startedAt)}`);
+    return { uploadPromises };
+  } finally {
+    await dbClient.end();
+  }
 }

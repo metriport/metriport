@@ -1,8 +1,15 @@
+import { MetriportError } from "@metriport/shared";
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
+import { DbCreds, dbCredsSchema } from "@metriport/shared/domain/db";
 import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
 import { SftpConfig } from "../external/sftp/types";
+import {
+  SnowflakeCreds,
+  snowflakeCredsSchema,
+  SnowflakeSettingsForAllCxs,
+  snowflakeSettingsForAllCxsSchema,
+} from "../external/snowflake/creds";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
-import { dbCredsSchema, DbCreds } from "@metriport/shared/domain/db";
 
 /**
  * Shared configs, still defining how to work with this. For now:
@@ -399,11 +406,15 @@ export class Config {
     return getEnvVarOrFail("FHIR_CONVERTER_BUCKET_NAME");
   }
 
-  static getAnalyticsBucketName(): string | undefined {
-    return getEnvVar("ANALYTICS_BUCKET_NAME");
+  static getAnalyticsBucketName(): string {
+    return getEnvVarOrFail("ANALYTICS_BUCKET_NAME");
   }
   static getAnalyticsDbCreds(): DbCreds {
-    return dbCredsSchema.parse(getEnvVarOrFail("ANALYTICS_DB_CREDS"));
+    try {
+      return dbCredsSchema.parse(JSON.parse(getEnvVarOrFail("ANALYTICS_DB_CREDS")));
+    } catch (error) {
+      throw new MetriportError("Error parsing analytics db creds", error);
+    }
   }
 
   // ENG-536 remove this once we automatically find the discharge summary
@@ -433,6 +444,27 @@ export class Config {
   }
   static getCoreTransformBatchJobDefinitionArn(): string {
     return getEnvVarOrFail("CORE_TRANSFORM_BATCH_JOB_DEFINITION_ARN");
+  }
+  static getSnowflakeConnectorQueueUrl(): string {
+    return getEnvVarOrFail("SNOWFLAKE_CONNECTOR_QUEUE_URL");
+  }
+  static getSnowflakeCredsForAllRegions(): SnowflakeCreds {
+    try {
+      return snowflakeCredsSchema.parse(
+        JSON.parse(getEnvVarOrFail("SNOWFLAKE_CREDS_FOR_ALL_REGIONS"))
+      );
+    } catch (error) {
+      throw new MetriportError("Error parsing snowflake creds", error);
+    }
+  }
+  static getSnowflakeSettingsForAllCustomers(): SnowflakeSettingsForAllCxs {
+    try {
+      return snowflakeSettingsForAllCxsSchema.parse(
+        JSON.parse(getEnvVarOrFail("SNOWFLAKE_SETTINGS_FOR_ALL_CXS"))
+      );
+    } catch (error) {
+      throw new MetriportError("Error parsing snowflake settings for all customers", error);
+    }
   }
 
   static getRosterUploadSftpPasswordArn(): string {
