@@ -579,7 +579,7 @@ export class S3Utils {
           error => `${error.Key}: ${error.Code} - ${error.Message}`
         ).join(", ");
         log(`Partial failure during files deletion. Failed keys: ${failedKeys}`);
-        throw new MetriportError(`Partial failure during S3 multi-object delete`, result.Errors, {
+        throw new MetriportError(`Partial failure during S3 multi-object delete`, undefined, {
           bucket,
           totalKeys: keys.length,
           failedKeys: result.Errors.length,
