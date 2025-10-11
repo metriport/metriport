@@ -69,7 +69,7 @@ async function main({
 
   const cxId = cxIdParam ?? cxIdFromEnvVars;
   if (!cxId) {
-    console.log("Error: either --cxId or env varCX_ID is required");
+    console.log("Error: either --cxId or env var CX_ID is required");
     process.exit(1);
   }
 

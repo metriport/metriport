@@ -19,10 +19,16 @@ dayjs.extend(duration);
 /**
  * Script to export core analytics data from Postgres to external data warehouses for a customer.
  *
- * Set end vars as seen below, outside and inside of main()
+ * Required environment variables:
  * - ANALYTICS_DB_CREDS
  * - ANALYTICS_BUCKET_NAME
- * - REGION
+ * - AWS_REGION
+ * - FEATURE_FLAGS_TABLE_NAME
+ * - SNOWFLAKE_ACCOUNT
+ * - SNOWFLAKE_TOKEN
+ * - SNOWFLAKE_WH
+ * - SNOWFLAKE_DB
+ * - SNOWFLAKE_SCHEMA
  *
  * Usage:
  *   ts-node src/analytics-platform/export-core-to-dwh.ts --cxId <customer-id>
@@ -32,6 +38,17 @@ const dbCredsRaw = getEnvVarOrFail("ANALYTICS_DB_CREDS");
 const analyticsBucketName = getEnvVarOrFail("ANALYTICS_BUCKET_NAME");
 const region = getEnvVarOrFail("AWS_REGION");
 const featureFlagsTableName = getEnvVarOrFail("FEATURE_FLAGS_TABLE_NAME");
+
+const snowflakeRegion = "us-east-2";
+const dbName = getEnvVarOrFail("SNOWFLAKE_DB");
+const dbSchema = getEnvVarOrFail("SNOWFLAKE_SCHEMA");
+const snowflakeCredsForAllCxs: SnowflakeCreds = {
+  [snowflakeRegion]: {
+    account: getEnvVarOrFail("SNOWFLAKE_ACCOUNT"),
+    apiToken: getEnvVarOrFail("SNOWFLAKE_TOKEN"),
+    warehouseName: getEnvVarOrFail("SNOWFLAKE_WH"),
+  },
+};
 
 FeatureFlags.init(region, featureFlagsTableName);
 
@@ -51,22 +68,15 @@ program.parse();
 async function main({ cxId, schemaName }: { cxId: string; schemaName: string | undefined }) {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
 
-  const snowflakeCredsForAllCxs: SnowflakeCreds = {
-    "us-east-2": {
-      account: getEnvVarOrFail("SNOWFLAKE_ACCOUNT"),
-      apiToken: getEnvVarOrFail("SNOWFLAKE_TOKEN"),
-      warehouseName: getEnvVarOrFail("SNOWFLAKE_WH"),
-    },
-  };
-  process.env.SNOWFLAKE_CREDS_FOR_ALL_REGIONS = JSON.stringify(snowflakeCredsForAllCxs);
-
   const snowflakeSettingsForAllCxs: SnowflakeSettingsForAllCxs = {
     [cxId]: {
-      region: "us-east-2",
-      dbName: getEnvVarOrFail("SNOWFLAKE_DB"),
-      dbSchema: getEnvVarOrFail("SNOWFLAKE_SCHEMA"),
+      region: snowflakeRegion,
+      dbName: dbName,
+      dbSchema: dbSchema,
     },
   };
+
+  process.env.SNOWFLAKE_CREDS_FOR_ALL_REGIONS = JSON.stringify(snowflakeCredsForAllCxs);
   process.env.SNOWFLAKE_SETTINGS_FOR_ALL_CXS = JSON.stringify(snowflakeSettingsForAllCxs);
 
   const startedAt = Date.now();
