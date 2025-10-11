@@ -22,14 +22,20 @@ select
         coalesce(
           address_0_text,
           address_1_text,
-          address_2_ttext
+          address_2_text
         ) as {{ dbt.type_string() }} 
       )                                                                             as address
     , cast(
         coalesce(
-          ws_concat(address_0_line_0, address_0_line_1, address_0_line_2),
-          ws_concat(address_1_line_0, address_1_line_1, address_1_line_2),
-          ws_concat(address_2_line_0, address_2_line_1, address_2_line_2),
+          address_0_line_0 
+            || coalesce(' ' || address_0_line_1, '') 
+            || coalesce(' ' || address_0_line_2, ''),
+          address_1_line_0 
+            || coalesce(' ' || address_1_line_1, '') 
+            || coalesce(' ' || address_1_line_2, ''),
+          address_2_line_0 
+            || coalesce(' ' || address_2_line_1, '') 
+            || coalesce(' ' || address_2_line_2, '')
         ) as {{ dbt.type_string() }} 
       )                                                                             as address_line
     , cast(

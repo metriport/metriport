@@ -29,7 +29,7 @@ terminology_files = [
 
 def handler(event: dict, context: dict):
     profile = os.getenv("PROFILE") or "postgres"
-    env_param_prefix = "DBT_SNOWFLAKE_" if profile == "snowflake" else "DBT_PG_"
+    env_param_prefix = "DBT_SNOWFLAKE" if profile == "snowflake" else "DBT_PG"
 
     host_suffix = "ACCOUNT" if profile == "snowflake" else "HOST"
     host_env_param = f"{env_param_prefix}_{host_suffix}"
@@ -141,7 +141,7 @@ def handler(event: dict, context: dict):
 
     print(f"Running DBT build with database: {database}, schema: {schema}")
     dbt_runner = dbtRunner()
-    cli_args = ["build", "--profile", profile, "--vars", f'{{"input_database": "{database}", "input_schema": "{schema}"}}']
+    cli_args = ["build", "--target", profile, "--vars", f'{{"input_database": "{database}", "input_schema": "{schema}"}}']
     result = dbt_runner.invoke(cli_args)
     if result.success:
         print("DBT build completed successfully")

@@ -20,7 +20,11 @@ select
     ,   cast(interpretation_code_type as {{ dbt.type_string() }} )                          as interpretation_code_type
     ,   cast(interpretation_code as {{ dbt.type_string() }} )                               as interpretation_code
     ,   cast(interpretation_description as {{ dbt.type_string() }} )                        as interpretation_description
+    ,   cast(bodysite_code_type as {{ dbt.type_string() }} )                                as bodysite_code_type
+    ,   cast(bodysite_code as {{ dbt.type_string() }} )                                     as bodysite_code
+    ,   cast(bodysite_description as {{ dbt.type_string() }} )                              as bodysite_description
+    ,   cast(note as {{ dbt.type_string() }} )                                              as note
     ,   cast(practitioner_id as {{ dbt.type_string() }} )                                   as practitioner_id
     ,   cast(data_source as {{ dbt.type_string() }} )                                       as data_source
 from {{ref('intermediate__all_observations')}}
-where category = 'laboratory'
+where category_code = 'laboratory'

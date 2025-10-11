@@ -4,7 +4,7 @@ with target_coding as (
             get_condition_codings,
             'stage__condition', 
             'condition_id', 
-            7, 
+            8, 
             none, 
             condition_code_system
         ) 
@@ -15,9 +15,9 @@ target_category_coding as (
         get_target_coding(
             get_condition_category_codings, 
             'stage__condition', 
-            'procedure_id', 
-            1, 
+            'condition_id', 
             2, 
+            1, 
             condition_category_code_system
         ) }}
 ),
@@ -26,10 +26,22 @@ target_clinical_status_coding as (
         get_target_coding(
             get_condition_clinical_status_codings, 
             'stage__condition', 
-            'procedure_id', 
-            9, 
-            0,
+            'condition_id', 
+            1, 
+            none,
             condition_clinical_status_code_system
+        ) 
+    }}
+),
+target_bodysite_coding as (
+    {{ 
+        get_target_coding(
+            get_condition_bodysite_codings, 
+            'stage__condition', 
+            'condition_id', 
+            1, 
+            1,
+            condition_bodysite_code_system
         ) 
     }}
 )
@@ -45,9 +57,9 @@ select
     ,   {{ try_to_cast_date('c.onsetperiod_end') }}                                                         as resolved_date
     ,   cast(
             case 
-                when ts_cat.code in ('75326-9', '55607006') then 'problem'
-                when ts_cat.code in ('29308-4', '282291009') then 'diagnosis'
-                when ts_cat.code = '64572001' then 'disease'
+                when tc_cat.code in ('75326-9', '55607006') then 'problem'
+                when tc_cat.code in ('29308-4', '282291009') then 'diagnosis'
+                when tc_cat.code = '64572001' then 'disease'
                 else null
             end as {{ dbt.type_string() }} 
         )                                                                                                   as category
@@ -85,6 +97,17 @@ select
     ,   cast(tc_cat.system as {{ dbt.type_string() }} )                                                     as category_code_type
     ,   cast(tc_cat.code as {{ dbt.type_string() }} )                                                       as category_code
     ,   cast(tc_cat.display as {{ dbt.type_string() }} )                                                    as category_description
+    ,   cast(tc_bs.system as {{ dbt.type_string() }} )                                                      as bodysite_code_type
+    ,   cast(tc_bs.code as {{ dbt.type_string() }} )                                                        as bodysite_code
+    ,   cast(tc_bs.display as {{ dbt.type_string() }} )                                                     as bodysite_description
+    ,   cast(
+            coalesce(
+                c.note_0_text,
+                c.note_1_text,
+                c.note_2_text
+            ) as {{ dbt.type_string() }} 
+        )                                                                                                   as note
+    ,   cast(right(c.recorder_reference, 36) as {{ dbt.type_string() }} )                                   as practitioner_id
     ,   cast(c.meta_source as {{ dbt.type_string() }} )                                                     as data_source
 from {{ref('stage__condition')}} c
 left join {{ref('stage__patient')}} p
@@ -95,6 +118,8 @@ left join target_category_coding tc_cat
     on c.id = tc_cat.condition_id
 left join target_clinical_status_coding tc_cs
     on c.id = tc_cs.condition_id
+left join target_bodysite_coding tc_bs
+    on c.id = tc_bs.condition_id
 left join {{ref('terminology__icd_10_cm')}} icd10
     on tc.system  = 'icd-10-cm' and tc.code = icd10.icd_10_cm
 left join {{ref('terminology__snomed_ct')}} snomed

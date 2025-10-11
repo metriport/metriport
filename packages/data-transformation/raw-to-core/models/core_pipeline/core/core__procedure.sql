@@ -18,7 +18,7 @@ target_bodysite_coding as (
             'procedure_id', 
             1, 
             2, 
-            procedure_code_system
+            procedure_bodysite_code_system
         ) }}
 ),
 target_reason_coding as (
@@ -29,7 +29,7 @@ target_reason_coding as (
             'procedure_id', 
             9, 
             0,
-            procedure_code_system
+            procedure_reason_code_system
         ) 
     }}
 )
@@ -69,14 +69,14 @@ select
         )                                                                                                           as normalized_description
     ,   cast(
             coalesce(
-                note_0_text,
-                note_1_text,
-                note_2_text,
-                note_3_text,
-                note_4_text,
-                note_5_text,
-                note_6_text,
-                note_7_text
+                pro.note_0_text,
+                pro.note_1_text,
+                pro.note_2_text,
+                pro.note_3_text,
+                pro.note_4_text,
+                pro.note_5_text,
+                pro.note_6_text,
+                pro.note_7_text
             ) as {{ dbt.type_string() }} 
         )                                                                                                           as note
     ,   cast(tc_bs.system as {{ dbt.type_string() }} )                                                              as body_site_code_type

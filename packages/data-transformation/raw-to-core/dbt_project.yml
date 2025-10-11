@@ -2,7 +2,7 @@ name: "core_transform"
 version: "1.0.0"
 config-version: 2
 
-profile: "postgres"
+profile: "core_transform"
 
 model-paths: ["models"]
 analysis-paths: ["analyses"]

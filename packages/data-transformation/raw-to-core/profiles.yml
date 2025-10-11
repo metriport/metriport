@@ -1,4 +1,4 @@
-profiles:
+core_transform:
   outputs:
     postgres:
       type: postgres

@@ -3,9 +3,9 @@ with target_type_coding as (
         get_target_coding(
             get_encounter_type_codings,
             'stage__encounter', 
-            'procedure_id', 
+            'encounter_id', 
             7, 
-            none, 
+            1, 
             encounter_type_code_system
         ) 
     }}
@@ -15,9 +15,9 @@ target_discharge_disposition_coding as (
         get_target_coding(
             get_encounter_discharge_disposition_codings, 
             'stage__encounter', 
-            'procedure_id', 
+            'encounter_id', 
             1, 
-            2, 
+            none, 
             encounter_discharge_disposition_code_system
         ) }}
 ),
@@ -27,8 +27,8 @@ target_priority_coding as (
             get_encounter_priority_codings, 
             'stage__encounter', 
             'encounter_id', 
-            9, 
-            0,
+            1, 
+            none,
             encounter_priority_code_system
         ) 
     }}
@@ -51,7 +51,6 @@ select
     ,   cast(enc.class_system as {{ dbt.type_string() }} )                                      as class_code_type
     ,   cast(enc.class_code as {{ dbt.type_string() }} )                                        as class_code
     ,   cast(enc.class_display as {{ dbt.type_string() }} )                                     as class_description
-
     ,   cast(tc_dd.system as {{ dbt.type_string() }} )                                          as discharge_disposition_code_type
     ,   cast(tc_dd.code as {{ dbt.type_string() }} )                                            as discharge_disposition_code
     ,   cast(tc_dd.display as {{ dbt.type_string() }} )                                         as discharge_disposition_description
@@ -62,7 +61,7 @@ select
     ,   cast(right(enc.location_0_location_reference, 36) as {{ dbt.type_string() }} )          as facility_id
     ,   cast(right(enc.serviceprovider_reference, 36) as {{ dbt.type_string() }} )              as organization_id
     ,   cast(enc.meta_source as {{ dbt.type_string() }} )                                       as data_source
-from {{ ref('stage__encounter') }} as enc
+from {{ref('stage__encounter')}} as enc
 left join {{ref('stage__patient') }} p
     on right(enc.subject_reference, 36) = p.id
 left join target_type_coding tc_type

@@ -67,7 +67,7 @@
     {% endfor %}
 {% endmacro %}
 
-{% macro procedure_bodysite_code_system() %}
+{% macro procedure_reason_code_system() %}
     case 
         when system = 'cpt' then 0
         when system = 'loinc' then 1

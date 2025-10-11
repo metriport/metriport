@@ -5,7 +5,7 @@ with target_category_coding as (
             'stage__medicationrequest', 
             'medication_request_id', 
             1, 
-            2, 
+            1, 
             medication_request_category_code_system
         ) }}
 )
@@ -13,55 +13,71 @@ select
         cast(mr.id as {{ dbt.type_string() }} )                                                     as medication_request_id
     ,   cast(p.id as {{ dbt.type_string() }} )                                                      as patient_id
     ,   cast(m.id as {{ dbt.type_string() }} )                                                      as medication_id
-    ,   cast(status as {{ dbt.type_string() }} )                                                    as status
-    ,   {{ try_to_cast_date('authoredon') }}                                                        as request_date
+    ,   cast(mr.status as {{ dbt.type_string() }} )                                                 as status
+    ,   {{ try_to_cast_date('mr.authoredon') }}                                                     as request_date
     ,   cast(tc_cat.system as {{ dbt.type_string() }} )                                             as category_code_type
     ,   cast(tc_cat.code as {{ dbt.type_string() }} )                                               as category_code
     ,   cast(tc_cat.display as {{ dbt.type_string() }} )                                            as category_description
+    -- TODO ENG-1029
+    --,   cast(tc_reason.system as {{ dbt.type_string() }} )                                          as reason_code_type
+    --,   cast(tc_reason.code as {{ dbt.type_string() }} )                                            as reason_code
+    --,   cast(tc_reason.display as {{ dbt.type_string() }} )                                         as reason_description
     ,   cast(
             coalesce(
-                dosageinstruction_0_method_coding_0_display,
-                dosageinstruction_0_method_coding_1_display,
-                dosageinstruction_0_method_text,
-                dosageinstruction_1_method_coding_0_display,
-                dosageinstruction_1_method_coding_1_display,
-                dosageinstruction_1_method_text
+                mr.dosageinstruction_0_doseandrate_0_dosequantity_unit,
+                mr.dosageinstruction_1_doseandrate_0_dosequantity_unit
+            ) as {{ dbt.type_string() }} 
+        )                                                                                           as dose_unit
+    ,   cast(
+            coalesce(
+                mr.dosageinstruction_0_doseandrate_0_dosequantity_value,
+                mr.dosageinstruction_1_doseandrate_0_dosequantity_value
+            ) as {{ dbt.type_string() }} 
+        )                                                                                           as dose_amount
+    ,   cast(
+            coalesce(
+                mr.dosageinstruction_0_method_coding_0_display,
+                mr.dosageinstruction_0_method_coding_1_display,
+                mr.dosageinstruction_0_method_text,
+                mr.dosageinstruction_1_method_coding_0_display,
+                mr.dosageinstruction_1_method_coding_1_display,
+                mr.dosageinstruction_1_method_text
             ) as {{ dbt.type_string() }}
         )                                                                                           as dosage_method
     ,   cast(
             coalesce(
-                dosageinstruction_0_route_coding_0_display,
-                dosageinstruction_0_route_coding_1_display,
-                dosageinstruction_0_route_text,
-                dosageinstruction_1_route_coding_0_display,
-                dosageinstruction_1_route_coding_1_display,
-                dosageinstruction_1_route_text
+                mr.dosageinstruction_0_route_coding_0_display,
+                mr.dosageinstruction_0_route_coding_1_display,
+                mr.dosageinstruction_0_route_text,
+                mr.dosageinstruction_1_route_coding_0_display,
+                mr.dosageinstruction_1_route_coding_1_display,
+                mr.dosageinstruction_1_route_text
             ) as {{ dbt.type_string() }}
         )                                                                                           as dosage_route
     ,   cast(
             coalesce(
-                dosageinstruction_0_site_coding_0_display,
-                dosageinstruction_0_site_coding_1_display,
-                dosageinstruction_0_site_text,
-                dosageinstruction_1_site_coding_0_display,
-                dosageinstruction_1_site_coding_1_display,
-                dosageinstruction_1_site_text
+                mr.dosageinstruction_0_site_coding_0_display,
+                mr.dosageinstruction_0_site_coding_1_display,
+                mr.dosageinstruction_0_site_text,
+                mr.dosageinstruction_1_site_coding_0_display,
+                mr.dosageinstruction_1_site_coding_1_display,
+                mr.dosageinstruction_1_site_text
             ) as {{ dbt.type_string() }}
-        )                                                                                           as dosage_site    ,   cast(null as {{ dbt.type_int() }} )                                                         as days_supply
+        )                                                                                           as dosage_site
     ,   cast(
             coalesce(
-                note_0_text,
-                note_1_text,
-                note_2_text,
-                note_3_text,
-                note_4_text
+                mr.note_0_text,
+                mr.note_1_text,
+                mr.note_2_text,
+                mr.note_3_text,
+                mr.note_4_text
             ) as {{ dbt.type_string() }}
         )                                                                                           as note_text
-    ,   cast(right(requester_reference, 36) as {{ dbt.type_string() }} )                            as practitioner_id
-    ,   cast(meta_source as {{ dbt.type_string() }} )                                               as data_source
+    ,   cast(right(mr.requester_reference, 36) as {{ dbt.type_string() }} )                         as practitioner_id
+    ,   cast(mr.meta_source as {{ dbt.type_string() }} )                                            as data_source
 from {{ref('stage__medicationrequest')}} as mr
 inner join {{ref('stage__medication')}} as m
-    on right(medicationreference_reference, 36) = m.id
+    on right(mr.medicationreference_reference, 36) = m.id
 left join {{ref('stage__patient')}} p
     on right(mr.subject_reference, 36) = p.id
 left join target_category_coding tc_cat

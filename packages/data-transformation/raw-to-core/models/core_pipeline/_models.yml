@@ -83,12 +83,84 @@ models:
     enabled: false
     alias: medication
     materialized: table
+  - name: core__medication_administration
+    schema: core_v2
+    enabled: false
+    alias: medication_administration
+    materialized: table
     columns:
       - name: patient_id
         tests:
           - relationships:
               to: ref('core__patient')
               field: patient_id
+              config:
+                severity: error
+      - name: medication_id
+        tests:
+          - relationships:
+              to: ref('core__medication')
+              field: medication_id
+              config:
+                severity: error
+  - name: core__medication_dispense
+    schema: core_v2
+    enabled: false
+    alias: medication_dispense
+    materialized: table
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+      - name: medication_id
+        tests:
+          - relationships:
+              to: ref('core__medication')
+              field: medication_id
+              config:
+                severity: error
+  - name: core__medication_request
+    schema: core_v2
+    enabled: false
+    alias: medication_request
+    materialized: table
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+      - name: medication_id
+        tests:
+          - relationships:
+              to: ref('core__medication')
+              field: medication_id
+              config:
+                severity: error
+  - name: core__medication_statement
+    schema: core_v2
+    enabled: false
+    alias: medication_statement
+    materialized: table
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+      - name: medication_id
+        tests:
+          - relationships:
+              to: ref('core__medication')
+              field: medication_id
               config:
                 severity: error
   - name: core__observation

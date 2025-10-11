@@ -4,7 +4,7 @@ with target_vaccine_coding as (
             get_immunization_vaccine_codings,
             'stage__immunization', 
             'immunization_id', 
-            7, 
+            2, 
             none, 
             immunization_vaccine_code_system
         ) 
@@ -45,10 +45,22 @@ select
     ,   cast(
             coalesce(
                 i.site_coding_0_display,
-                site_text
+                i.site_text
             ) as {{ dbt.type_string() }} 
         )                                                                                                   as site
-    ,   cast(i.route_coding_0_display as {{ dbt.type_string() }} )                                          as route
+    ,   cast(
+            coalesce(
+                i.route_coding_0_display,
+                i.route_text
+            ) as {{ dbt.type_string() }} 
+        )                                                                                                   as route
+    ,   cast(
+            coalesce(
+                i.note_0_text,
+                i.note_1_text,
+                i.note_2_text
+            ) as {{ dbt.type_string() }} 
+        )                                                                                                   as note
     ,   cast(right(i.performer_0_actor_reference, 36) as {{ dbt.type_string() }} )                          as practitioner_id
     ,   cast(i.meta_source as {{ dbt.type_string() }} )                                                     as data_source
 from {{ref('stage__immunization')}} i

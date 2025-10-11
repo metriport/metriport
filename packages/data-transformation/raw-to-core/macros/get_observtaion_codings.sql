@@ -38,22 +38,25 @@
     end
 {% endmacro %}
 
-{% macro get_observation_category_codings(stage_table, max_index) %}
+{% macro get_observation_category_codings(stage_table, max_index, secondary_max_index) %}
     {% for i in range(max_index + 1) %}
+    {% for j in range(secondary_max_index + 1) %}
     select
             id as observation_id
-        ,   category_{{i}}_coding_0_code as code
+        ,   category_{{i}}_coding_{{j}}_code as code
         ,   case 
-                when category_{{i}}_coding_0_system = 'http://terminology.hl7.org/CodeSystem/observation-category' then 'observation-category'
-                else category_{{i}}_coding_0_system 
+                when category_{{i}}_coding_{{j}}_system = 'http://terminology.hl7.org/CodeSystem/observation-category' then 'observation-category'
+                else category_{{i}}_coding_{{j}}_system 
             end as system
-        ,   category_{{i}}_coding_0_display as display
+        ,   category_{{i}}_coding_{{j}}_display as display
         ,   coalesce(
-                category_{{i}}_coding_0_display,
+                category_{{i}}_coding_{{j}}_display,
                 category_{{i}}_text
             ) as description
     from {{ref(stage_table)}}
-    where  category_{{i}}_coding_0_code != ''
+    where  category_{{i}}_coding_{{j}}_code != ''
+    {% if not loop.last %}union all{% endif %}
+    {% endfor %}
     {% if not loop.last %}union all{% endif %}
     {% endfor %}
 {% endmacro %}
@@ -86,6 +89,37 @@
     where  interpretation_{{i}}_coding_{{j}}_code != ''
     {% if not loop.last %}union all{% endif %}
     {% endfor %}
+    {% if not loop.last %}union all{% endif %}
+    {% endfor %}
+{% endmacro %}
+
+{% macro observation_bodysite_code_system() %}
+    case 
+        when system = 'snomed-ct' then 0
+        when system = 'icd-10-cm' then 1
+        when system = 'loinc' then 2
+        else 3
+    end
+{% endmacro %}
+
+{% macro get_observation_bodysite_codings(stage_table, max_index) %}
+    {% for i in range(max_index + 1) %}
+    select
+            id as observation_id
+        ,   bodysite_coding_{{i}}_code as code
+        ,   case 
+                when bodysite_coding_{{i}}_system ilike '%snomed%' then 'snomed-ct'
+                when bodysite_coding_{{i}}_system ilike '%icd-10%' then 'icd-10-cm'
+                when bodysite_coding_{{i}}_system ilike '%loinc%' then 'loinc'
+                else bodysite_coding_{{i}}_system 
+            end as system
+        ,   bodysite_coding_{{i}}_display as display
+        ,   coalesce(
+                bodysite_coding_{{i}}_display,
+                bodysite_text
+            ) as description
+    from {{ref(stage_table)}}
+    where  bodysite_coding_{{i}}_code != ''
     {% if not loop.last %}union all{% endif %}
     {% endfor %}
 {% endmacro %}
