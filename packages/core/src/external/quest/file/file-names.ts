@@ -1,14 +1,17 @@
 import { BadRequestError, MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { QuestRosterType } from "../types";
 
 const RESPONSE_FILE_PREFIX = "Metriport_";
 const RESPONSE_FILE_EXTENSION = ".txt";
 const DATE_ID_REGEX = /^\d{12}$/;
 const SOURCE_DOCUMENT_KEY_REGEX = /\/externalId=([\w\d-]+)\/dateId=(\d+)\//;
 
-export function buildRosterFileName() {
+export function buildRosterFileName({
+  rosterType = "backfill",
+}: { rosterType?: QuestRosterType } = {}) {
   const dateId = buildDayjs().format("YYYYMMDD");
-  return `Metriport_roster_${dateId}.txt`;
+  return `Metriport_${rosterType}_${dateId}.txt`;
 }
 
 /**

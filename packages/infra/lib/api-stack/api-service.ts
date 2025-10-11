@@ -34,7 +34,12 @@ import { DnsZones } from "../shared/dns";
 import { createHieConfigDictionary } from "../shared/hie-config-dictionary";
 import { getMaxPostgresConnections } from "../shared/rds";
 import { buildLbAccessLogPrefix } from "../shared/s3";
-import { buildSecrets, Secrets, secretsToECS } from "../shared/secrets";
+import {
+  buildSecrets,
+  collectHiePasswordSecretNames,
+  Secrets,
+  secretsToECS,
+} from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
@@ -257,7 +262,7 @@ export function createAPIService({
         secrets: {
           DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
           SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
-          ...secretsToECS(secrets),
+          ...secretsToECS(removeUnusedSecretsForApiService(secrets, props.config)),
           ...secretsToECS(buildSecrets(stack, props.config.propelAuth.secrets)),
         },
         environment: {
@@ -742,4 +747,26 @@ function getDbPoolSettings(config: EnvConfig): EnvConfig["apiDatabase"]["poolSet
     );
   }
   return dbPoolSettings;
+}
+
+function removeUnusedSecretsForApiService(secrets: Secrets, config: EnvConfig): Secrets {
+  const secretsWithoutRosterUpload = removeRosterUploadSecrets(secrets, config);
+
+  return secretsWithoutRosterUpload;
+}
+
+function removeRosterUploadSecrets(secrets: Secrets, config: EnvConfig): Secrets {
+  const hl7Notification = config.hl7Notification;
+  if (!hl7Notification) {
+    return secrets;
+  }
+  const hieConfigs = hl7Notification.hieConfigs;
+  if (!hieConfigs) {
+    return secrets;
+  }
+  const hiePasswordSecretNames = collectHiePasswordSecretNames(hieConfigs);
+
+  return Object.fromEntries(
+    Object.entries(secrets).filter(([key]) => !Object.keys(hiePasswordSecretNames).includes(key))
+  );
 }

@@ -52,7 +52,7 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
   return secrets;
 }
 
-function collectHiePasswordSecretNames(
+export function collectHiePasswordSecretNames(
   hies: Record<string, HieConfig | VpnlessHieConfig>
 ): Record<string, string> {
   const out: Record<string, string> = {};

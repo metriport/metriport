@@ -1,7 +1,7 @@
 import { Attachment, CodeableConcept, DiagnosticReport } from "@medplum/fhirtypes";
 import { DIAGNOSTIC_SERVICE_SECTIONS_URL } from "@metriport/shared/medical";
 import { cleanUpNote } from "../../../domain/ai-brief/modify-resources";
-import { base64ToString } from "../../../util/base64";
+import { base64ToString } from "@metriport/shared/util/base64";
 import { removeHtmlTags } from "../../html/remove-tags";
 
 export function presentedFormsToText(report: DiagnosticReport): string[] {
