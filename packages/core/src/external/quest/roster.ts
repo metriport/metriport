@@ -42,6 +42,9 @@ async function getAllEnrolledPatients({
     const rosterPage = questRosterResponseSchema.parse(response.data);
     enrolledPatients.push(...rosterPage.patients);
     currentUrl = rosterPage.meta.nextPage;
+    if (currentUrl) {
+      currentUrl = currentUrl.replace("/:rosterType?", `/${rosterType}?`);
+    }
   }
   return enrolledPatients;
 }

@@ -137,7 +137,7 @@ export async function findFirstPatientMappingForSource({
 > {
   const mappings = await PatientMappingModel.findOne({
     where: { patientId, source },
-    order: [["createdAt", "ASC"]],
+    order: [["createdAt", "DESC"]],
     limit: 1,
   });
   return mappings?.dataValues;
