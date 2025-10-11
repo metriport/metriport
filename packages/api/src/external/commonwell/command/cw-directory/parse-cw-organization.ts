@@ -63,7 +63,7 @@ export function parseCWOrganization(org: Organization): CwDirectoryEntryData {
     zipCode: normalizeZipCodeNewSafe(zipCode) ?? undefined,
     country,
     data: org,
-    active: org.isActive,
+    active,
     npi,
     delegateOids,
   };
