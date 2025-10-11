@@ -57,8 +57,8 @@ dayjs.extend(duration);
  * - fhirBaseUrl: the URL of the FHIR server;
  *
  * Run it with:
- *   - npx ts-node src/fhir/fhir-converter/integration-test.ts from the utils folder or
- *   - npm run integration-test-and-compare-total-resource-counts from the metriport root folder.
+ *   - npm run integration-test-and-compare-total-resource-counts from the packages/utils folder.
+ * NOTE: it has to run through the .sh script called by npm run integration-test-and-compare-total-resource-counts.
  *
  * Monitor:
  *   - FhirConverter Server logs to see the progress of the conversion.
