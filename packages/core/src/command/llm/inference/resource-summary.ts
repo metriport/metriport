@@ -8,7 +8,7 @@ import {
   getResourceSummaryPrompt,
   systemPrompt,
 } from "./prompts";
-import { chunkTextForModel, estimateTokenCount } from "./model-chunking";
+import { chunkTextForModel, estimateTokenCount } from "./chunking";
 
 export type ResourceInference = {
   resourceType: string;
