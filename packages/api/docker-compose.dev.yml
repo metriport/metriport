@@ -85,6 +85,8 @@ services:
       - "5432:5432"
     networks:
       - metriportNetwork
+    volumes:
+      - ~/postgres_data/oss:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
       interval: 2s
