@@ -31,11 +31,11 @@ _[Plan ahead how we are going to monitor your changes. If a metric is not applic
 
 - [ ] Alarms _[Alarms trigger PagerDuty. These should only happen when there's a significant issue with the platform - they require immediate action. This is the most important metric, but also let's be careful if it's really immediate action or just asap (alert).]_
 
-- [ ] Alerts _[Alerts just go into a slack channel - not as urgent as alarms, but still let on-call know something needs attention.]_
+- [ ] Alerts _[Alerts just go into a Slack channel - not as urgent as alarms, but still let on-call know something needs attention.]_
 
 - [ ] Cloudwatch metrics _[Engineering geared metrics, things that need lower latency and smaller granularity, that software engineers will use for monitoring, diagnosing issues, making decisions about the platform]_
 
-- [ ] Posthog metrics _[Product-related ones metrics, geared towards Ops and Customer success teams; e.g., number of patients created, lead time to get data from the platform, etc.]_
+- [ ] Posthog metrics _[Product-related metrics, geared towards Ops and Customer success teams; e.g., number of patients created, lead time to get data from the platform, etc.]_
 
 ### Release Plan
 
