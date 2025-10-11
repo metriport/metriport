@@ -1,3 +1,5 @@
+export const metaFolderName = "_meta";
+
 export function buildCoreSchemaS3Prefix({ cxId }: { cxId: string }): string {
   // TODO we'll prob need to rename the first level to core-schema-export or something, since all external DWH connectors will need the files there.
   // Unless we're willing to copy the output core schema files to many folders, which seems inneficient.
@@ -5,7 +7,7 @@ export function buildCoreSchemaS3Prefix({ cxId }: { cxId: string }): string {
 }
 
 export function buildCoreSchemaMetaS3Prefix({ cxId }: { cxId: string }): string {
-  return `${buildCoreSchemaS3Prefix({ cxId })}/_meta`;
+  return `${buildCoreSchemaS3Prefix({ cxId })}/${metaFolderName}`;
 }
 
 export function buildCoreSchemaMetaTableS3Prefix({

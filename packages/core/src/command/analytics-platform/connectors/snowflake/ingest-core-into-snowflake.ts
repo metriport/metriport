@@ -13,6 +13,7 @@ import { out } from "../../../../util/log";
 import {
   buildCoreSchemaMetaTableS3Prefix,
   buildCoreSchemaS3Prefix,
+  metaFolderName,
   parseTableNameFromCoreTableS3Prefix,
 } from "../core-export-shared";
 
@@ -52,6 +53,9 @@ export async function ingestCoreIntoSnowflake({
   const inputS3Prefix = buildCoreSchemaS3Prefix({ cxId });
   const s3Utils = new S3Utils(region);
   const files = await s3Utils.listObjectsV3(bucketName, inputS3Prefix);
+  const dataFiles = files.filter(
+    file => file.key.endsWith(".csv.gz") && !file.key.includes(metaFolderName)
+  );
   const prefixUrl = `s3://${bucketName}/${inputS3Prefix}`;
   const snowflakeConnectionSettings = getSnowflakeConnectionSettings(
     cxId,
@@ -59,15 +63,15 @@ export async function ingestCoreIntoSnowflake({
     snowflakeSettingsForAllCxs
   );
 
-  if (files.length < 1) {
+  if (dataFiles.length < 1) {
     log(`>>> No files found in ${inputS3Prefix}, bucket ${bucketName}, leaving.`);
     return;
   }
 
-  log(`Ingesting core data into Snowflake: ${files.length} files, s3Prefix ${prefixUrl}`);
+  log(`Ingesting core data into Snowflake: ${dataFiles.length} files, s3Prefix ${prefixUrl}`);
   await ingestIntoSnowflake({
     cxId,
-    files,
+    files: dataFiles,
     bucketName,
     region,
     prefixUrl,
