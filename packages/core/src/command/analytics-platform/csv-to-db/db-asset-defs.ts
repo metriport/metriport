@@ -36,8 +36,8 @@ export function getCreatePartitionedTableCommand(
     `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_02 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20251031') TO ('20251130');` +
     `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_03 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20251130') TO ('20251231');` +
     `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_04 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20251231') TO ('20260131');` +
-    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_05 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260131') TO ('20260229');` +
-    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_06 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260229') TO ('20260331');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_05 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260131') TO ('20260228');` +
+    `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_06 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260228') TO ('20260331');` +
     `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_07 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260331') TO ('20260430');` +
     `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_08 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260430') TO ('20260531');` +
     `CREATE TABLE IF NOT EXISTS ${schemaName}.${tableName}_09 PARTITION OF ${schemaName}.${tableName} FOR VALUES FROM ('20260531') TO ('20260630');` +
