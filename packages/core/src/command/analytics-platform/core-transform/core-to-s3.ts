@@ -123,7 +123,7 @@ async function runExport({
     return;
   }
   const errors: { tableName: string; error: string }[] = [];
-  const uploadPromises: { uploadPromises: () => Promise<UploadFileResult>[] }[] = [];
+  const uploadPromises: Promise<UploadFileResult>[] = [];
   await executeAsynchronously(
     tableNames,
     async tableName => {
@@ -147,7 +147,7 @@ async function runExport({
     { numberOfParallelExecutions: numberOfParallelExportTablesIntoS3 }
   );
   log(`Finish uploading files to S3...`);
-  await Promise.all(uploadPromises.map(p => p.uploadPromises()));
+  await Promise.all(uploadPromises);
   if (errors.length > 0) {
     log(`Errors exporting tables: ${errors.map(e => `${e.tableName}: ${e.error}`).join(", ")}`);
     throw new MetriportError(`Errors exporting tables to S3`, errors, {
