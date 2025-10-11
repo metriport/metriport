@@ -11,7 +11,8 @@ export function cleanUpPayload(payloadRaw: string): string {
   const payloadNoAmpersand = replaceAmpersand(payloadNoCdUnk);
   const payloadNoInvalidTagChars = replaceXmlTagChars(payloadNoAmpersand);
   const payloadNoNullFlavor = replaceNullFlavor(payloadNoInvalidTagChars);
-  const payloadCleanedCode = cleanUpTranslationCode(payloadNoNullFlavor);
+  const payloadNoXlink = removeXlinkHrefNamespace(payloadNoNullFlavor);
+  const payloadCleanedCode = cleanUpTranslationCode(payloadNoXlink);
   return payloadCleanedCode;
 }
 
@@ -65,4 +66,8 @@ export function cleanUpTranslationCode(payloadRaw: string): string {
     const cleanedCode = code.split("\\")[0].trim();
     return `${prefix}${cleanedCode}${suffix}`;
   });
+}
+
+export function removeXlinkHrefNamespace(contents: string): string {
+  return contents.replace(/xlink:href/g, "href");
 }
