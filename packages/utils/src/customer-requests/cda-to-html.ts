@@ -2,17 +2,17 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-
-import { Command } from "commander";
+import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 import { sleep } from "@metriport/shared";
+import { Command } from "commander";
 import fs from "fs";
 import path from "path";
 import SaxonJS from "saxon-js";
 import { elapsedTimeAsStr } from "../shared/duration";
-import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 
 /**
- * IMPORTANT: Run `npm run build` before running this script.
+ * IMPORTANT: to run this script, uncomment the "ts-node" section of the packages/utils/tsconfig.json file.
+ * Don't commit the change - it makes ts-node slower/heavier (but cda-to-html works).
  *
  * This script converts a CDA document to HTML. Pass an absolute or relative path to the CDA/XML file
  * as an argument - if it is a relative path, it must be relative to the utils directory.
@@ -32,7 +32,7 @@ program.action(convertCdaToHtml);
 
 const styleSheetText = require(path.join(
   __dirname,
-  "../../../../../lambdas/src/cda-to-visualization/stylesheet.js"
+  "../../../lambdas/src/cda-to-visualization/stylesheet.js"
 ));
 
 let cda10: unknown;
