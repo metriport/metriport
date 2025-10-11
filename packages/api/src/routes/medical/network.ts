@@ -18,8 +18,6 @@ const router = Router();
  *
  * Returns the network query status for the specified patient.
  *
- * USED WITHIN EHR INTEGRATION.
- *
  * @param req.query.patientId Patient ID for which to retrieve document query status.
  * @return The status of document querying across HIEs.
  */
