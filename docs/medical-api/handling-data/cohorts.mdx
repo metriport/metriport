@@ -6,7 +6,10 @@ description: "Group and enable settings for your patients."
 
 # Overview
 
-Cohorts allow you to configure shared patient settings. For example, you could create one cohort to monitor a group of chronically-ill individuals with all features enabled (e.g., ADTs, pharmacies, laboratory, HIE), and another cohort that monitors a less critical group of individuals with just HIE data enabled.
+Cohorts allow you to configure shared patient settings. 
+For example, you could create one cohort to monitor a group of 
+chronically-ill individuals with all features enabled (e.g., ADTs, pharmacies, laboratory, HIE), and another cohort 
+that monitors a less critical group of individuals with just HIE data enabled.
 
 ### Getting started
 
@@ -48,20 +51,6 @@ or retrieve the members of that cohort via API.
 }
 ```
 See [Here](/medical-api/handling-data/cohorts#available-settings) for a detailed explanation of the available settings.
-
-### Adding patients to cohorts
-
-Patients can be added to cohorts on creation, or added to and removed from different cohorts as needed.
-
-During creation:
-
-- In [Bulk Patient Create](/medical-api/api-reference/patient/bulk-create-patient) there are `cohort1` and `cohort2` column headers for specifying the starting cohorts for a patient. See [here](/medical-api/api-reference/patient/bulk-create-patient#param-cohort1).
-- In [Create Patient](/medical-api/api-reference/patient/create-patient) there is a `cohorts` array parameter to set any number of cohorts on a patient. See [here](/medical-api/api-reference/patient/create-patient#param-cohorts).
-
-As needed:
-
-- [Add Patients To Cohort](/medical-api/api-reference/cohort/add-patients-to-cohort)
-- [Remove Patients From Cohort](/medical-api/api-reference/cohort/remove-patients-from-cohort)
 
 ### Monitoring patients with Cohorts
 
@@ -130,6 +119,21 @@ const patient = await metriportApi.createPatient(
 
 // The patient is now automatically subscribed to the monitoring settings of the 2 cohorts
 ```
+
+### Adding patients to cohorts
+
+Patients can be added to cohorts on creation, or added to and removed from different cohorts as needed.
+
+During creation:
+
+- In [Bulk Patient Create](/medical-api/api-reference/patient/bulk-create-patient) there are `cohort1` and `cohort2` column headers for specifying the starting cohorts for a patient. See [here](/medical-api/api-reference/patient/bulk-create-patient#param-cohort1).
+- In [Create Patient](/medical-api/api-reference/patient/create-patient) there is a `cohorts` array parameter to set any number of cohorts on a patient. See [here](/medical-api/api-reference/patient/create-patient#param-cohorts).
+
+As needed:
+
+- [Add Patients To Cohort](/medical-api/api-reference/cohort/add-patients-to-cohort)
+- [Remove Patients From Cohort](/medical-api/api-reference/cohort/remove-patients-from-cohort)
+
 
 
 ### Available settings

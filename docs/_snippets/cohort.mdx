@@ -2,8 +2,8 @@
   The name of the cohort. The name must be unique within your organization. The name will also be trimmed of leading/trailing whitespace.
 </ParamField>
 
-<ParamField body="color" type="string" required>
-  The color associated with the cohort. Must be one of: **`red`**, **`green`**, **`blue`**, **`yellow`**, **`purple`**, **`orange`**, **`pink`**, **`brown`**, **`gray`**, **`black`**, **`white`**.
+<ParamField body="color" type="string">
+  The color associated with the cohort. Must be one of: **`red`**, **`green`**, **`blue`**, **`yellow`**, **`purple`**, **`orange`**, **`pink`**, **`brown`**, **`gray`**, **`black`**, **`white`**. Defaults to **`white`** on creation if no color is given.
 </ParamField>
 
 <ParamField body="description" type="string" optional>
@@ -27,7 +27,7 @@
       ADT (Admission, Discharge, Transfer) monitoring - subscribes patients to ADT notifications based on their [primary address](/medical-api/api-reference/patient/create-patient#param-is-primary).  
       - `true` - Uses the patient's [primary address](/medical-api/api-reference/patient/create-patient#param-is-primary) to determine which state HIE to subscribe to
       - `false` - Disables ADT monitoring (default)
-      - `["HieName", "HieName", ...]` - Force-enables for specific state HIE(s) ([click here for the list of supported hies](/medical-api/handling-data/cohorts#list-of-state-hies)) instead of using [primary address](/medical-api/api-reference/patient/create-patient#param-is-primary)
+      - `["HieName", "HieName", ...]` - Force-enables for specific state HIE(s) instead of using [primary address](/medical-api/api-reference/patient/create-patient#param-is-primary). [Click here for the list of supported hies](/medical-api/handling-data/cohorts#list-of-state-hies)
     </ParamField>
     <ParamField body="pharmacy" type="boolean" optional>
       Pharmacy / medication history monitoring - enables retail fill data monitoring where available.  
