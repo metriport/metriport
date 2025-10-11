@@ -68,6 +68,12 @@ services:
     networks:
       - metriportNetwork
     command: "-jar DynamoDBLocal.jar -sharedDb"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
   # This is the configuration for our PostgreSQL database container
   # Note the `postgres` name is important, in our Node app when we refer
   # to  `host: "postgres"` that value is mapped on the network to the
@@ -89,8 +95,6 @@ services:
       - "5432:5432"
     networks:
       - metriportNetwork
-    volumes:
-      - ~/postgres_data/oss:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
       interval: 2s
@@ -118,8 +122,8 @@ services:
     networks:
       - metriportNetwork
     volumes:
-      - ~/postgres_data/analytics:/var/lib/postgresql/data
-      - ~/postgres_data/analytics_output_from_pg:/tmp/pg/output
+      - $HOME/postgres_data/analytics:/var/lib/postgresql/data
+      - $HOME/postgres_data/analytics_output_from_pg:/tmp/pg/output
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
       interval: 2s
