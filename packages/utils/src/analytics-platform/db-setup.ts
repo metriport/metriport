@@ -1,8 +1,12 @@
 import dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { setupCustomerAnalyticsDb } from "@metriport/core/command/analytics-platform/csv-to-db/setup-cx-db";
-import { dbCredsSchema, getEnvVarOrFail, sleep } from "@metriport/shared";
+import { rawDbSchema } from "@metriport/core/command/analytics-platform/csv-to-db/db-asset-defs";
+import {
+  setupCustomerAnalyticsDb,
+  UsersToCreateAndGrantAccess,
+} from "@metriport/core/command/analytics-platform/csv-to-db/setup-cx-db";
+import { dbCredsSchema, DbCredsWithSchema, getEnvVarOrFail, sleep } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { Command } from "commander";
 import dayjs from "dayjs";
@@ -32,46 +36,60 @@ const program = new Command();
 program
   .name("db-setup")
   .description("CLI to setup the analytics database for a customer.")
-  .requiredOption("-u, --username <username>", "The username for the lambda user")
-  .option("-p, --password <password>", "The password for the lambda user")
+  .requiredOption("-f2c, --fhr-to-csv-username <username>", "The username for the lambda user")
+  .requiredOption("-r2c, --raw-to-core-username <username>", "The username for the lambda user")
   .showHelpAfterError()
   .action(main);
 program.parse();
 
 async function main({
-  username,
-  password: passwordOption,
+  fhirToCsvUsername,
+  rawToCoreUsername,
 }: {
-  username: string;
-  password?: string;
+  fhirToCsvUsername: string;
+  rawToCoreUsername: string;
 }) {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
   const startedAt = Date.now();
   console.log(`############## Started at ${buildDayjs().toISOString()} ##############`);
 
-  let password = passwordOption?.trim();
-  if (!password) {
-    password = (await getPassword()).trim();
+  const f2cPwd = (await getPassword("fhr-to-csv")).trim();
+  if (!f2cPwd) {
+    console.log("Error: fhr-to-csv password is required");
+    process.exit(1);
   }
-  if (!password) {
-    console.log("Error: password is required");
+  const r2cPwd = (await getPassword("raw-to-core")).trim();
+  if (!r2cPwd) {
+    console.log("Error: raw-to-core password is required");
     process.exit(1);
   }
 
   const dbCreds = dbCredsSchema.parse(JSON.parse(dbCredsRaw));
-  const lambdaUsers = [{ username, password }];
+  const dbCredsWithSchema: DbCredsWithSchema = {
+    ...dbCreds,
+    schemaName: rawDbSchema,
+  };
 
-  await setupCustomerAnalyticsDb({ cxId, dbCreds, lambdaUsers });
+  const dbUsersToCreateAndGrantAccess: UsersToCreateAndGrantAccess = {
+    f2c: { username: fhirToCsvUsername, password: f2cPwd },
+    r2c: { username: rawToCoreUsername, password: r2cPwd },
+  };
+
+  await setupCustomerAnalyticsDb({
+    cxId,
+    dbCreds: dbCredsWithSchema,
+    dbUsersToCreateAndGrantAccess,
+  });
 
   console.log(`>>>>>>> Done after ${elapsedTimeAsStr(startedAt)}`);
 }
 
-async function getPassword() {
+async function getPassword(username: string) {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
   });
-  const answer = await rl.question("Type the password for the lambda user: ");
+  const answer = await rl.question(`Type the password for the ${username} user: `);
   rl.close();
   return answer;
 }

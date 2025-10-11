@@ -2,6 +2,7 @@ import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
 import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
 import { SftpConfig } from "../external/sftp/types";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
+import { dbCredsSchema, DbCreds } from "@metriport/shared/domain/db";
 
 /**
  * Shared configs, still defining how to work with this. For now:
@@ -401,9 +402,8 @@ export class Config {
   static getAnalyticsBucketName(): string | undefined {
     return getEnvVar("ANALYTICS_BUCKET_NAME");
   }
-  /** For development only - cloud should call a lambda that has it setup differently */
-  static getAnalyticsDbCreds(): string {
-    return getEnvVarOrFail("ANALYTICS_DB_CREDS");
+  static getAnalyticsDbCreds(): DbCreds {
+    return dbCredsSchema.parse(getEnvVarOrFail("ANALYTICS_DB_CREDS"));
   }
 
   // ENG-536 remove this once we automatically find the discharge summary
@@ -422,6 +422,10 @@ export class Config {
   }
   static getFhirToCsvTransformHttpEndpoint(): string {
     return getEnvVar("FHIR_TO_CSV_TRANSFORM_HTTP_ENDPOINT") ?? "http://localhost:8001";
+  }
+  // TOOD ENG-954 remove this
+  static getCoreTransformQueueUrl(): string {
+    return getEnvVarOrFail("CORE_TRANSFORM_QUEUE_URL");
   }
 
   static getCoreTransformBatchJobQueueArn(): string {
