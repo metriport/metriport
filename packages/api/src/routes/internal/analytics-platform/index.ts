@@ -11,7 +11,7 @@ import { asyncHandler, getFromQuery, getFromQueryOrFail } from "../../util";
 const router = Router();
 
 /**
- * POST /internal/analytics-platform/ingestion/incremental
+ * POST /internal/analytics-platform/ingestion/manual-incremental
  *
  * Runs the incremental ingestion into the analytics platform, for a single patient.
  *
@@ -20,7 +20,7 @@ const router = Router();
  * @returns 200 OK
  */
 router.post(
-  "/ingestion/incremental",
+  "/ingestion/manual-incremental",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFromQueryOrFail("cxId", req);
@@ -31,7 +31,7 @@ router.post(
 
     const jobId = await ingestPatientIntoAnalyticsPlatform({ cxId, patientId });
 
-    const message = jobId ? "Ingestion initiated" : "Ingestion not initiated";
+    const message = jobId ? "Ingestion initiated" : "Ingestion not initiated - not enabled for cx?";
     return res.status(httpStatus.OK).json({ message, jobId });
   })
 );
@@ -39,7 +39,7 @@ router.post(
 /**
  * @deprecated Remove this once we validate the flow, this should be triggered through POST /internal/analytics-platform/ingestion/core/rebuild
  *
- * POST /internal/analytics-platform/core-transform
+ * POST /internal/analytics-platform/manual-core-transform
  *
  * Runs the core transform into the analytics platform, for a single patient.
  *
@@ -48,7 +48,7 @@ router.post(
  * @param req.query.schema - The schema.
  */
 router.post(
-  "/core-transform",
+  "/manual-core-transform",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFromQueryOrFail("cxId", req);

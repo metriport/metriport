@@ -2,7 +2,8 @@ import dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { exportCoreToS3 } from "@metriport/core/command/analytics-platform/core-transform/core-to-s3";
-import { dbCredsSchema, getEnvVarOrFail, sleep } from "@metriport/shared";
+import { coreSchemaName } from "@metriport/core/domain/analytics/core-schema";
+import { dbCredsSchema, DbCredsWithSchema, getEnvVarOrFail, sleep } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { Command } from "commander";
 import dayjs from "dayjs";
@@ -42,10 +43,15 @@ async function main({ cxId }: { cxId: string }) {
   console.log(`############## Started at ${buildDayjs().toISOString()} ##############`);
 
   const dbCreds = dbCredsSchema.parse(JSON.parse(dbCredsRaw));
+  const dbCredsWithSchema: DbCredsWithSchema = {
+    ...dbCreds,
+    schemaName: coreSchemaName,
+  };
 
-  await exportCoreToS3({ cxId, dbCreds, analyticsBucketName, region });
+  await exportCoreToS3({ cxId, dbCreds: dbCredsWithSchema, analyticsBucketName, region });
 
   console.log(`>>>>>>> Done after ${elapsedTimeAsStr(startedAt)}`);
+  process.exit(0);
 }
 
 export default program;

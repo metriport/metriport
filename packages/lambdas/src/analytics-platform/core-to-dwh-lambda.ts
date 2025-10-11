@@ -1,6 +1,6 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { coreTransformJobPrefix } from "@metriport/core/command/analytics-platform/core-transfom/command/core-transform";
-import { exportCoreToS3 } from "@metriport/core/command/analytics-platform/core-transform/core-to-s3";
+import { exportCoreToExternalDatawarehouses } from "@metriport/core/command/analytics-platform/core-transform/core-to-dwh";
 import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { dbCredsSchema, errorToString, getEnvVarOrFail, MetriportError } from "@metriport/shared";
 import { Context, SNSEvent } from "aws-lambda";
@@ -13,7 +13,7 @@ import { parseBody } from "../shared/parse-body";
 capture.init();
 
 /**
- * Lambda to export the core data to S3.
+ * Lambda to export the core data to S3 and trigger external connectors (i.e., Snowflake).
  *
  * It's triggered by the core transform job completion topic, through a SNS event.
  */
@@ -64,17 +64,15 @@ export const handler = capture.wrapHandler(async (event: SNSEvent, context: Cont
 
     const remainingLambdaExecutionTime = Math.max(0, context.getRemainingTimeInMillis() - 200);
 
-    log(`Invoking exportCoreToS3... it has ${remainingLambdaExecutionTime}ms to run`);
+    log(`Invoking exportCoreToDwh... it has ${remainingLambdaExecutionTime}ms to run`);
     const startedAt = Date.now();
 
-    await exportCoreToS3({
+    await exportCoreToExternalDatawarehouses({
       cxId,
       analyticsBucketName,
       region,
       dbCreds,
     });
-
-    // TODO ENG-954 Call Snowflake Lambda (or put on SNS if time allows)
 
     log(`Done in ${Date.now() - startedAt}ms`);
   } catch (error) {
@@ -83,7 +81,11 @@ export const handler = capture.wrapHandler(async (event: SNSEvent, context: Cont
   }
 });
 
-// See setupCoreTransformJobCompletion on analytics-platform-stack.ts
+/**
+ * Schema for the SNS message we get from the batch job that runs the core transform.
+ *
+ * @see `setupCoreTransformJobCompletion()` on `analytics-platform-stack.ts` for more details.
+ */
 const coreToS3Schema = z.object({
   cxId: z.string(),
   jobId: z.string(),

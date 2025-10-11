@@ -7,10 +7,13 @@ import * as stream from "stream";
 import { S3Utils } from "../../../external/aws/s3";
 import { capture, out } from "../../../util";
 import { parseTableNameFromFhirToCsvIncrementalFileKey } from "../fhir-to-csv/file-name";
+import { ColumnRowValue } from "../sql";
 import {
   additionalColumnDefs,
+  columnJobIdName,
+  columnPatientIdName,
   getCreateIndexCommand,
-  getCreateTableCommand,
+  getCreatePartitionedTableCommand,
   getCreateTableJobCommand,
   getCreateViewJobCommand,
   getCxDbName,
@@ -250,14 +253,18 @@ async function processResourceType({
   debug(`View ${viewName} created or already exists`);
 
   const columnNamesOnCsv = getColumnNamesFromColumnsDef(columnsDef);
-  const additionalColumnNames = getColumnNamesFromColumnsDef(additionalColumnDefs);
+
+  const batchAdditionalColumnNames = [
+    { name: columnPatientIdName, value: patientId },
+    { name: columnJobIdName, value: jobId },
+  ];
 
   const rowCount = await streamCsvToDatabase({
     patientId,
     jobId,
     tableName,
     columnNamesOnCsv,
-    additionalColumnNames,
+    batchAdditionalColumnNames,
     csvS3Key,
     analyticsBucketName,
     dbClient,
@@ -282,9 +289,9 @@ async function createTableIfNotExists(
   log: (msg: string) => void
 ): Promise<void> {
   try {
-    const createTableCmd = getCreateTableCommand(tableName, columnsDef);
+    const createTableCmd = getCreatePartitionedTableCommand(rawDbSchema, tableName, columnsDef);
     await client.query(createTableCmd);
-    const createIndexCmd = getCreateIndexCommand(tableName);
+    const createIndexCmd = getCreateIndexCommand(rawDbSchema, tableName);
     await client.query(createIndexCmd);
   } catch (error) {
     log(`Error creating table ${tableName}: ${error}`);
@@ -298,7 +305,7 @@ async function createViewIfNotExists(
   log: (msg: string) => void
 ): Promise<string> {
   try {
-    const { cmd, viewName } = getCreateViewJobCommand(tableName);
+    const { cmd, viewName } = getCreateViewJobCommand(rawDbSchema, tableName);
     await client.query(cmd);
     return viewName;
   } catch (error) {
@@ -309,13 +316,16 @@ async function createViewIfNotExists(
 
 /**
  * Streams CSV data from S3 and inserts it into the database using proper CSV parsing and batch inserts.
+ *
+ * Not using PG's s3_import extension because we need to insert additional column(s) to support the
+ * append-only mode.
  */
 async function streamCsvToDatabase({
   patientId,
   jobId,
   tableName,
   columnNamesOnCsv,
-  additionalColumnNames,
+  batchAdditionalColumnNames,
   csvS3Key,
   analyticsBucketName,
   dbClient,
@@ -326,7 +336,7 @@ async function streamCsvToDatabase({
   jobId: string;
   tableName: string;
   columnNamesOnCsv: string[];
-  additionalColumnNames: string[];
+  batchAdditionalColumnNames: ColumnRowValue[];
   csvS3Key: string;
   analyticsBucketName: string;
   dbClient: Client;
@@ -368,11 +378,9 @@ async function streamCsvToDatabase({
             const localBatch = batch;
             batch = [];
             await insertBatchIntoDatabase({
-              patientId,
-              jobId,
               tableName,
               columnNames: columnNamesOnCsv,
-              additionalColumnNames,
+              batchAdditionalColumnNames,
               batch: localBatch,
               dbClient,
             });
@@ -386,11 +394,9 @@ async function streamCsvToDatabase({
           // Process remaining rows in the batch
           if (batch.length > 0) {
             await insertBatchIntoDatabase({
-              patientId,
-              jobId,
               tableName,
               columnNames: columnNamesOnCsv,
-              additionalColumnNames,
+              batchAdditionalColumnNames,
               batch,
               dbClient,
             });
@@ -416,28 +422,27 @@ async function streamCsvToDatabase({
  * Inserts a batch of rows into the database using a single query for better performance.
  */
 async function insertBatchIntoDatabase({
-  patientId,
-  jobId,
   tableName,
   columnNames,
-  additionalColumnNames,
+  batchAdditionalColumnNames,
   batch,
   dbClient,
 }: {
-  patientId: string;
-  jobId: string;
   tableName: string;
   columnNames: string[];
-  additionalColumnNames: string[];
+  batchAdditionalColumnNames: ColumnRowValue[];
   batch: string[][];
   dbClient: Client;
 }): Promise<void> {
   if (batch.length < 1) return;
 
+  const additionalColumnNames = batchAdditionalColumnNames.map(c => c.name);
+  const additionalColumnValues = batchAdditionalColumnNames.map(c => c.value);
+
   // Create VALUES clause with placeholders for batch insert
   const valuesClauses = batch.map((_, batchIndex) => {
     const rowPlaceholders = [];
-    const amountOfPlaceholdersPerRow = columnNames.length + additionalColumnNames.length;
+    const amountOfPlaceholdersPerRow = columnNames.length + batchAdditionalColumnNames.length;
     for (let colIndex = 0; colIndex < amountOfPlaceholdersPerRow; colIndex++) {
       const paramIndex = batchIndex * amountOfPlaceholdersPerRow + colIndex + 1;
       rowPlaceholders.push(`$${paramIndex}`);
@@ -453,7 +458,7 @@ async function insertBatchIntoDatabase({
   // Flatten all values and add the additional columns for each row
   const allValues: string[] = [];
   batch.forEach(rowValues => {
-    allValues.push(...rowValues, patientId, jobId);
+    allValues.push(...rowValues, ...additionalColumnValues);
   });
 
   await dbClient.query(insertQuery, allValues);
