@@ -12,7 +12,8 @@ export function cleanUpPayload(payloadRaw: string): string {
   const payloadNoInvalidTagChars = replaceXmlTagChars(payloadNoAmpersand);
   const payloadNoNullFlavor = replaceNullFlavor(payloadNoInvalidTagChars);
   const payloadNoXlink = removeXlinkHrefNamespace(payloadNoNullFlavor);
-  const payloadCleanedCode = cleanUpTranslationCode(payloadNoXlink);
+  const payloadNormalizedHtmlTags = normalizeHtmlTags(payloadNoXlink);
+  const payloadCleanedCode = cleanUpTranslationCode(payloadNormalizedHtmlTags);
   return payloadCleanedCode;
 }
 
@@ -70,4 +71,18 @@ export function cleanUpTranslationCode(payloadRaw: string): string {
 
 export function removeXlinkHrefNamespace(contents: string): string {
   return contents.replace(/xlink:href/g, "href");
+}
+
+export function normalizeHtmlTags(contents: string): string {
+  return contents
+    .replace(/<TD/g, "<td")
+    .replace(/<\/TD>/g, "</td>")
+    .replace(/<TR/g, "<tr")
+    .replace(/<\/TR>/g, "</tr>")
+    .replace(/<TH/g, "<th")
+    .replace(/<\/TH>/g, "</th>")
+    .replace(/<TABLE/g, "<table")
+    .replace(/<\/TABLE>/g, "</table>")
+    .replace(/<BR/g, "<br")
+    .replace(/<\/BR>/g, "</br>");
 }
