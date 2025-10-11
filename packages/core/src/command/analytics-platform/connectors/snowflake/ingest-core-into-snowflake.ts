@@ -122,22 +122,24 @@ async function ingestIntoSnowflake({
   prefixUrl: string;
   snowflakeConnectionSettings: SnowflakeConnectionSettings;
 }): Promise<void> {
+  const { log } = out(`ingestIntoSnowflake - cx ${cxId}`);
+
   const connection = snowflake.createConnection({
     ...snowflakeConnectionSettings,
     authenticator: "PROGRAMMATIC_ACCESS_TOKEN",
     clientSessionKeepAlive: true,
   });
   try {
-    console.log(">>> Connecting to Snowflake...");
+    log(">>> Connecting to Snowflake...");
     const connectAsync = promisifyConnect(connection);
     await connectAsync();
-    console.log("Connected to Snowflake.");
+    log("Connected to Snowflake.");
 
     const executeAsync = promisifyExecute(connection);
     // await executeAsync(`USE DATABASE ${database}`);
     // await executeAsync(`USE SCHEMA ${schema}`);
 
-    console.log("Ingesting data...");
+    log("Ingesting data...");
     for (const file of files) {
       await processFile({ cxId, file, bucketName, region, executeAsync, prefixUrl });
     }
@@ -152,7 +154,7 @@ async function ingestIntoSnowflake({
       const destroyAsync = promisifyDestroy(connection);
       await destroyAsync();
     } catch (error) {
-      console.error("Error destroying connection: ", errorToString(error));
+      log("Error destroying connection: ", errorToString(error));
     }
   }
 }
@@ -175,6 +177,8 @@ async function processFile({
   }>;
   prefixUrl: string;
 }) {
+  const { log } = out(`processFile - cx ${cxId}`);
+
   // e.g. of file.key: snowflake/core-schema/cx=eae9172a-1c55-437b-bc1a-9689c64e47a1/condition.csv
   const tableFilename = parseTableNameFromCoreTableS3Prefix(file.key);
   if (!tableFilename) {
@@ -196,7 +200,7 @@ async function processFile({
     WHERE table_schema = CURRENT_SCHEMA() 
     AND table_name = '${tableName}'
   `;
-  // console.log(`Exists query: ${existsQuery}`);
+  // log(`Exists query: ${existsQuery}`);
   const existsResult = await executeAsync(existsQuery);
   const tableExists = parseInt(existsResult.rows?.[0]?.AMOUNT ?? "0") > 0;
   if (!tableExists) {
@@ -204,19 +208,19 @@ async function processFile({
       ${columns.map(col => `"${col}" VARCHAR`).join(",  ")}
     );`;
     await executeAsync(createSQL);
-    console.log(`Created table ${tableName} with ${columns.length} columns.`);
+    log(`Created table ${tableName} with ${columns.length} columns.`);
   } else {
-    console.log(`Table ${tableName} already exists - HEADS UP: no schema evolution in place yet!`);
+    log(`Table ${tableName} already exists - HEADS UP: no schema evolution in place yet!`);
   }
 
   const stageName = `${tableName}_stage`;
   const createStageCmd =
     `CREATE OR REPLACE TEMP STAGE ${stageName} STORAGE_INTEGRATION = ANALYTICS_BUCKET ` +
     `URL = '${prefixUrl}/${tableFilename}.csv.gz'`;
-  // console.log(`Create stage cmd: ${createStageCmd}`);
+  // log(`Create stage cmd: ${createStageCmd}`);
   await executeAsync(createStageCmd);
 
-  console.log(`>>> Copying ${tableFilename}...`);
+  log(`>>> Copying ${tableFilename}...`);
   const startedAt = Date.now();
   const copyCmd = `COPY INTO ${tableName} FROM (
       SELECT
@@ -229,10 +233,10 @@ async function processFile({
       ERROR_ON_COLUMN_COUNT_MISMATCH = FALSE
     )
     ON_ERROR = 'ABORT_STATEMENT'`;
-  // console.log(`Copy cmd: ${copyCmd}`);
+  // log(`Copy cmd: ${copyCmd}`);
 
   await executeAsync(copyCmd);
-  console.log(`... Copied into ${tableFilename} in ${elapsedTimeAsStr(startedAt)}`);
+  log(`... Copied into ${tableFilename} in ${elapsedTimeAsStr(startedAt)}`);
 
   const dropStageCmd = `DROP STAGE ${stageName};`;
   await executeAsync(dropStageCmd);
