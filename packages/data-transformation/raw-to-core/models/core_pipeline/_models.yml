@@ -40,6 +40,7 @@ models:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
+                where: practitioner_id != ''
                 severity: warn
   - name: core__encounter
     schema: core_v2
@@ -60,6 +61,7 @@ models:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
+                where: practitioner_id != ''
                 severity: warn
       - name: facility_id
         tests:
@@ -67,6 +69,7 @@ models:
               to: ref('core__location')
               field: location_id
               config:
+                where: facility_id != ''
                 severity: warn
   - name: core__immunization
     schema: core_v2
@@ -87,6 +90,7 @@ models:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
+                where: practitioner_id != ''
                 severity: warn
   - name: core__lab_result
     schema: core_v2
@@ -107,6 +111,7 @@ models:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
+                where: practitioner_id != ''
                 severity: warn
   - name: core__location
     schema: core_v2
@@ -144,6 +149,7 @@ models:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
+                where: practitioner_id != ''
                 severity: warn
   - name: core__medication_dispense
     schema: core_v2
@@ -171,6 +177,7 @@ models:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
+                where: practitioner_id != ''
                 severity: warn
       - name: facility_id
         tests:
@@ -178,6 +185,7 @@ models:
               to: ref('core__location')
               field: location_id
               config:
+                where: facility_id != ''
                 severity: warn
   - name: core__medication_request
     schema: core_v2
@@ -205,6 +213,7 @@ models:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
+                where: practitioner_id != ''
                 severity: warn
   - name: core__medication_statement
     schema: core_v2
@@ -245,6 +254,7 @@ models:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
+                where: practitioner_id != ''
                 severity: warn
   - name: core__patient
     schema: core_v2
@@ -273,4 +283,5 @@ models:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
+                where: practitioner_id != ''
                 severity: warn
