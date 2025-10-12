@@ -28,14 +28,10 @@ select
             end as {{ dbt.type_string() }} 
         )                                                                                                   as normalized_vaccine_code_type
     ,   cast(
-            coalesce(
-                cvx.cvx
-            ) as {{ dbt.type_string() }} 
+            cvx.cvx as {{ dbt.type_string() }} 
         )                                                                                                   as normalized_vaccine_code
     ,   cast(
-            coalesce(
-                cvx.long_description
-            ) as {{ dbt.type_string() }} 
+            cvx.long_description as {{ dbt.type_string() }} 
         )                                                                                                   as normalized_vaccine_description
     ,   cast(i.dosequantity_value as {{ dbt.type_string() }} )                                              as dose_amount
     ,   cast(i.dosequantity_unit as {{ dbt.type_string() }} )                                               as dose_unit

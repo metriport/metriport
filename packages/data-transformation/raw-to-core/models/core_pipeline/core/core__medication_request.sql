@@ -62,5 +62,3 @@ inner join {{ref('stage__medication')}} as m
     on right(mr.medicationreference_reference, 36) = m.id
 left join {{ref('stage__patient')}} p
     on right(mr.subject_reference, 36) = p.id
-left join target_category_coding tc_cat
-    on tc_cat.medication_request_id = mr.id
