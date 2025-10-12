@@ -1,8 +1,7 @@
 {% macro immunization_vaccine_code_system() %}
     case 
         when system = 'cvx' then 0
-        when system = 'snomed-ct' then 1
-        else 2
+        else 1
     end
 {% endmacro %}
 
@@ -13,7 +12,6 @@
         ,   vaccinecode_coding_{{i}}_code as code
         ,   case 
                 when vaccinecode_coding_{{i}}_system ilike '%cvx%' then 'cvx'
-                when vaccinecode_coding_{{i}}_system ilike '%snomed%' then 'snomed-ct'
                 else vaccinecode_coding_{{i}}_system 
             end as system
         ,   vaccinecode_coding_{{i}}_display as display

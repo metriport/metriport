@@ -19,6 +19,7 @@
             ,   code
             ,   system
             ,   display
+            ,   description
             ,   {{ ranked_code_system_macro_name() }} as static_rank
         from codings
     ),
@@ -28,6 +29,7 @@
             ,   code
             ,   system
             ,   display
+            ,   description
             ,   row_number() over(partition by {{ codings_macro_id_field }} order by static_rank) as relative_rank
         from codings_with_static_rank
     )

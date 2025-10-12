@@ -1,25 +1,3 @@
-with target_category_coding as (
-    {{ 
-        get_target_coding(
-            get_medication_dispense_category_codings, 
-            'stage__medicationdispense', 
-            'medication_dispense_id', 
-            1, 
-            none, 
-            medication_dispense_category_code_system
-        ) }}
-),
-target_type_coding as (
-    {{ 
-        get_target_coding(
-            get_medication_dispense_type_codings, 
-            'stage__medicationdispense', 
-            'medication_dispense_id', 
-            1, 
-            none, 
-            medication_dispense_type_code_system
-        ) }}
-)
 select
         cast(md.id as {{ dbt.type_string() }} )                                                     as medication_dispense_id
     ,   cast(p.id as {{ dbt.type_string() }} )                                                      as patient_id
@@ -27,12 +5,6 @@ select
     ,   cast(md.status as {{ dbt.type_string() }} )                                                 as status
     ,   {{ try_to_cast_date('md.whenhandedover') }}                                                 as dispense_date
     ,   {{ try_to_cast_date('md.whenprepared') }}                                                   as prepared_date
-    ,   cast(tc_cat.system as {{ dbt.type_string() }} )                                             as category_code_type
-    ,   cast(tc_cat.code as {{ dbt.type_string() }} )                                               as category_code
-    ,   cast(tc_cat.description as {{ dbt.type_string() }} )                                        as category_description
-    ,   cast(tc_type.system as {{ dbt.type_string() }} )                                            as type_code_type
-    ,   cast(tc_type.code as {{ dbt.type_string() }} )                                              as type_code
-    ,   cast(tc_type.description as {{ dbt.type_string() }} )                                       as type_description
     ,   cast(
             coalesce(
                 md.quantity_unit,
@@ -96,7 +68,3 @@ inner join {{ref('stage__medication')}} as m
     on right(md.medicationreference_reference, 36) = m.id
 left join {{ref('stage__patient')}} p
     on right(md.subject_reference, 36) = p.id
-left join target_category_coding tc_cat
-    on tc_cat.medication_dispense_id = md.id
-left join target_type_coding tc_type
-    on tc_type.medication_dispense_id = md.id

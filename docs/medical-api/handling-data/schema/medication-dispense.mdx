@@ -6,9 +6,6 @@ group: "Schema"
 
 A medication dispense record represents the dispensing of a medication to a patient. This includes details about when the medication was prepared, dispensed, and the quantity provided.
 
-**Normalization Note:**
-This table does not include normalized coding fields as medication dispense data uses different coding systems that are not normalized in the current implementation.
-
 **Primary Keys:**
 * medication_dispense_id
 
@@ -26,12 +23,6 @@ This table does not include normalized coding fields as medication dispense data
 | status | string | Status of the medication dispense | active, completed, entered-in-error, intended, stopped, on-hold, unknown, not-taken |
 | dispense_date | date | Date when the medication was dispensed | - |
 | prepared_date | date | Date when the medication was prepared | - |
-| category_code_type | string | Type of coding system for category | - |
-| category_code | string | Category code for the dispense | - |
-| category_description | string | Human-readable description of the category | - |
-| type_code_type | string | Type of coding system for type | - |
-| type_code | string | Type code for the dispense | - |
-| type_description | string | Human-readable description of the type | - |
 | dose_unit | string | Unit of measurement for the dose | - |
 | dose_amount | string | Amount of medication dispensed | - |
 | days_supply | string | Number of days the medication will last | - |

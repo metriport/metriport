@@ -87,15 +87,13 @@
     {% endfor %}
 {% endmacro %}
 
+-- TODO Eng-1029 - TOTALLY UNUSED
 {% macro condition_bodysite_code_system() %}
     case 
-        when system = 'snomed-ct' then 0
-        when system = 'icd-10-cm' then 1
-        when system = 'loinc' then 2
-        else 3
+        when 1 = 1 then 0
     end
 {% endmacro %}
-
+-- TODO Eng-1029 - TOTALLY UNUSED
 {% macro get_condition_bodysite_codings(stage_table, max_index, secondary_max_index) %}
     {% for i in range(max_index + 1) %}
     {% for j in range(secondary_max_index + 1) %}
@@ -103,10 +101,7 @@
             id as condition_id
         ,   bodysite_{{i}}_coding_{{j}}_code as code
         ,   case 
-                when bodysite_{{i}}_coding_{{j}}_system ilike '%snomed%' then 'snomed-ct'
-                when bodysite_{{i}}_coding_{{j}}_system ilike '%icd-10%' then 'icd-10-cm'
-                when bodysite_{{i}}_coding_{{j}}_system ilike '%loinc%' then 'loinc'
-                else bodysite_{{i}}_coding_{{j}}_system 
+                when 1 = 1 then bodysite_{{i}}_coding_{{j}}_system 
             end as system
         ,   bodysite_{{i}}_coding_{{j}}_display as display
         ,   coalesce(

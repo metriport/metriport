@@ -32,18 +32,6 @@ target_clinical_status_coding as (
             condition_clinical_status_code_system
         ) 
     }}
-),
-target_bodysite_coding as (
-    {{ 
-        get_target_coding(
-            get_condition_bodysite_codings, 
-            'stage__condition', 
-            'condition_id', 
-            1, 
-            1,
-            condition_bodysite_code_system
-        ) 
-    }}
 )
 select
         cast(c.id as {{ dbt.type_string() }} )                                                              as condition_id
@@ -97,9 +85,6 @@ select
     ,   cast(tc_cat.system as {{ dbt.type_string() }} )                                                     as category_code_type
     ,   cast(tc_cat.code as {{ dbt.type_string() }} )                                                       as category_code
     ,   cast(tc_cat.description as {{ dbt.type_string() }} )                                                as category_description
-    ,   cast(tc_bs.system as {{ dbt.type_string() }} )                                                      as bodysite_code_type
-    ,   cast(tc_bs.code as {{ dbt.type_string() }} )                                                        as bodysite_code
-    ,   cast(tc_bs.description as {{ dbt.type_string() }} )                                                 as bodysite_description
     ,   cast(
             coalesce(
                 c.note_0_text,
@@ -118,8 +103,6 @@ left join target_category_coding tc_cat
     on c.id = tc_cat.condition_id
 left join target_clinical_status_coding tc_cs
     on c.id = tc_cs.condition_id
-left join target_bodysite_coding tc_bs
-    on c.id = tc_bs.condition_id
 left join {{ref('terminology__icd_10_cm')}} icd10
     on tc.system  = 'icd-10-cm' and tc.code = icd10.icd_10_cm
 left join {{ref('terminology__snomed_ct')}} snomed

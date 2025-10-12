@@ -7,7 +7,7 @@ group: "Schema"
 The procedure table contains information on procedures performed on patients, including procedure codes, descriptions, and performance dates.
 
 **Normalization Note:**
-Normalization of coding systems only occurs when the source coding system is one of: CPT, HCPCS, LOINC, or SNOMED CT. Other coding systems will not have normalized codes.
+Normalization of coding systems only occurs when the source coding system is one of: CPT, LOINC, SNOMED CT, or HCPCS. Other coding systems will not have normalized codes.
 
 **Primary Keys:**
 * procedure_id
@@ -25,15 +25,15 @@ Normalization of coding systems only occurs when the source coding system is one
 | source_code_type | string | Type of coding system for source code | - |
 | source_code | string | Original code from the source system | - |
 | source_description | string | Human-readable description from source | - |
-| normalized_code_type | string | Type of normalized coding system | cpt, hcpcs, loinc, snomed-ct |
-| normalized_code | string | Standardized/normalized code | CPT, HCPCS, LOINC, SNOMED CT |
-| normalized_description | string | Human-readable description of normalized code | - |
-| note | string | Additional notes about the procedure | - |
+| normalized_code_type | string | Type of normalized coding system | CPT, LOINC, SNOMED CT, or HCPCS |
+| normalized_code | string | Standardized/normalized code | CPT, LOINC, SNOMED CT, or HCPCS |
+| normalized_description | string | Human-readable description of normalized code | CPT, LOINC, SNOMED CT, or HCPCS |
 | body_site_code_type | string | Type of coding system for body site | - |
 | body_site_code | string | Body site code | - |
 | body_site_description | string | Human-readable description of body site | - |
 | reason_code_type | string | Type of coding system for reason | - |
 | reason_code | string | Reason code | - |
 | reason_description | string | Human-readable description of reason | - |
+| note | string | Additional notes about the procedure | - |
 | practitioner_id | string | Unique identifier for the practitioner | - |
 | data_source | string | Source of the procedure data | - |

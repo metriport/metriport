@@ -33,11 +33,8 @@
 
 {% macro procedure_bodysite_code_system() %}
     case 
-        when system = 'cpt' then 0
-        when system = 'loinc' then 1
-        when system = 'snomed-ct' then 2
-        when system = 'hcpcs' then 3
-        else 4
+        when system = 'snomed-ct' then 0
+        else 1
     end
 {% endmacro %}
 
@@ -48,10 +45,7 @@
             id as procedure_id
         ,   bodysite_{{i}}_coding_{{j}}_code as code
         ,   case 
-                when code_coding_{{i}}_system ilike '%cpt%' then 'cpt'
-                when code_coding_{{i}}_system ilike '%loinc%' then 'loinc'
                 when code_coding_{{i}}_system ilike '%snomed%' then 'snomed-ct'
-                when code_coding_{{i}}_system ilike '%hcpcs%' then 'hcpcs'
                 else bodysite_{{i}}_coding_{{j}}_system 
             end as system
         ,   bodysite_{{i}}_coding_{{j}}_display as display
@@ -69,11 +63,10 @@
 
 {% macro procedure_reason_code_system() %}
     case 
-        when system = 'cpt' then 0
-        when system = 'loinc' then 1
-        when system = 'snomed-ct' then 2
-        when system = 'hcpcs' then 3
-        else 4
+        when system = 'snomed-ct' then 0
+        when system = 'icd-10-cm' then 1
+        when system = 'icd-9-cm' then 2
+        else 3
     end
 {% endmacro %}
 
@@ -84,10 +77,9 @@
             id as procedure_id
         ,   reasoncode_{{i}}_coding_{{j}}_code as code
         ,   case 
-                when reasoncode_{{i}}_coding_{{j}}_system ilike '%cpt%' then 'cpt'
-                when reasoncode_{{i}}_coding_{{j}}_system ilike '%loinc%' then 'loinc'
                 when reasoncode_{{i}}_coding_{{j}}_system ilike '%snomed%' then 'snomed-ct'
-                when reasoncode_{{i}}_coding_{{j}}_system ilike '%hcpcs%' then 'hcpcs'
+                when reasoncode_{{i}}_coding_{{j}}_system ilike '%icd-10%' then 'icd-10-cm'
+                when reasoncode_{{i}}_coding_{{j}}_system ilike '%icd-9%' then 'icd-9-cm'
                 else reasoncode_{{i}}_coding_{{j}}_system 
             end as system
         ,   reasoncode_{{i}}_coding_{{j}}_display as display

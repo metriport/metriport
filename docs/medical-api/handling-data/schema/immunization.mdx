@@ -7,7 +7,7 @@ group: "Schema"
 The immunization table contains information on immunizations administered to patients, including the vaccine code, description, and administration date.
 
 **Normalization Note:**
-Normalization of coding systems only occurs when the source coding system is one of: CVX or SNOMED CT. Other coding systems will not have normalized codes.
+Normalization of coding systems only occurs when the source coding system is CVX. Other coding systems will not have normalized codes.
 
 **Primary Key:**
 * immunization_id
@@ -25,9 +25,9 @@ Normalization of coding systems only occurs when the source coding system is one
 | source_vaccine_code_type | string | Type of coding system for source vaccine code | - |
 | source_vaccine_code | string | Original vaccine code from the source system | - |
 | source_vaccine_description | string | Human-readable description from source | - |
-| normalized_vaccine_code_type | string | Type of normalized coding system | cvx, snomed-ct |
-| normalized_vaccine_code | string | Standardized/normalized vaccine code | CVX, SNOMED CT |
-| normalized_vaccine_description | string | Human-readable description of normalized code | - |
+| normalized_vaccine_code_type | string | Type of normalized coding system | CVX |
+| normalized_vaccine_code | string | Standardized/normalized vaccine code | CVX |
+| normalized_vaccine_description | string | Human-readable description of normalized code | CVX |
 | dose_amount | string | Quantity of the dose administered | - |
 | dose_unit | string | Unit of measurement for the dose | - |
 | site | string | Anatomical site of administration | - |

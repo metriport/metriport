@@ -2,9 +2,7 @@
     case 
         when system = 'loinc' then 0
         when system = 'snomed-ct' then 1
-        when system = 'cpt' then 2
-        when system = 'actcode' then  3
-        else 4
+        else 3
     end
 {% endmacro %}
 
@@ -16,8 +14,6 @@
         ,   case 
                 when code_coding_{{i}}_system ilike '%loinc%' then 'loinc'
                 when code_coding_{{i}}_system ilike '%snomed%' then 'snomed-ct'
-                when code_coding_{{i}}_system ilike '%cpt%' then 'cpt'
-                when code_coding_{{i}}_system ilike '%actcode%' then 'actcode'
                 else code_coding_{{i}}_system 
             end as system
         ,   code_coding_{{i}}_display as display
@@ -96,9 +92,7 @@
 {% macro observation_bodysite_code_system() %}
     case 
         when system = 'snomed-ct' then 0
-        when system = 'icd-10-cm' then 1
-        when system = 'loinc' then 2
-        else 3
+        else 1
     end
 {% endmacro %}
 
@@ -109,8 +103,6 @@
         ,   bodysite_coding_{{i}}_code as code
         ,   case 
                 when bodysite_coding_{{i}}_system ilike '%snomed%' then 'snomed-ct'
-                when bodysite_coding_{{i}}_system ilike '%icd-10%' then 'icd-10-cm'
-                when bodysite_coding_{{i}}_system ilike '%loinc%' then 'loinc'
                 else bodysite_coding_{{i}}_system 
             end as system
         ,   bodysite_coding_{{i}}_display as display

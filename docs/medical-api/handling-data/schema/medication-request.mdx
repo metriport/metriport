@@ -6,9 +6,6 @@ group: "Schema"
 
 A medication request record represents a request for a medication to be prescribed or administered to a patient. This includes details about the medication requested, dosage instructions, and the practitioner making the request.
 
-**Normalization Note:**
-This table does not include normalized coding fields as medication request data uses different coding systems that are not normalized in the current implementation.
-
 **Primary Keys:**
 * medication_request_id
 
@@ -24,9 +21,6 @@ This table does not include normalized coding fields as medication request data 
 | medication_id | string | Unique identifier for the medication | - |
 | status | string | Status of the medication request | active, completed, entered-in-error, intended, stopped, on-hold, unknown, not-taken |
 | request_date | date | Date when the medication was requested | - |
-| category_code_type | string | Type of coding system for category | - |
-| category_code | string | Category code for the request | - |
-| category_description | string | Human-readable description of the category | - |
 | dose_unit | string | Unit of measurement for the dose | - |
 | dose_amount | string | Amount of medication requested | - |
 | dosage_method | string | Method of administration | - |

@@ -29,15 +29,13 @@
     {% if not loop.last %}union all{% endif %}
     {% endfor %}
 {% endmacro %}
-
+-- TODO Eng-1029 -- ONLY DESCRIPTION IS USED
 {% macro encounter_discharge_disposition_code_system() %}
     case 
-        when system = 'act' then 0
-        when system = 'cpt' then 1
-        else 2
+        when 1 = 1 then 0
     end
 {% endmacro %}
-
+-- TODO Eng-1029 -- ONLY DESCRIPTION IS USED
 {% macro get_encounter_discharge_disposition_codings(stage_table, max_index) %}
     {% for i in range(max_index + 1) %}
     select 
@@ -58,15 +56,13 @@
     {% if not loop.last %}union all{% endif %}
     {% endfor %}
 {% endmacro %}
-
+-- TODO Eng-1029 -- ONLY DESCRIPTION IS USED
 {% macro encounter_priority_code_system() %}
     case 
-        when system = 'act' then 0
-        when system = 'cpt' then 1
-        else 2
+        when 1 = 1 then 0
     end
 {% endmacro %}
-
+-- TODO Eng-1029 -- ONLY DESCRIPTION IS USED
 {% macro get_encounter_priority_codings(stage_table, max_index) %}
     {% for i in range(max_index + 1) %}
     select 

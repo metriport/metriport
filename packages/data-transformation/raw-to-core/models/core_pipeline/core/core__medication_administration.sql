@@ -1,26 +1,3 @@
-with target_category_coding as (
-    {{ 
-        get_target_coding(
-            get_medication_administration_category_codings, 
-            'stage__medicationadministration', 
-            'medication_administration_id', 
-            1, 
-            none, 
-            medication_administration_category_code_system
-        ) }}
-),
-target_reason_coding as (
-    {{ 
-        get_target_coding(
-            get_medication_administration_reason_codings, 
-            'stage__medicationadministration', 
-            'medication_administration_id', 
-            1, 
-            1,
-            medication_administration_reason_code_system
-        ) 
-    }}
-)
 select
         cast(ma.id as {{ dbt.type_string() }} )                                                     as medication_administration_id
     ,   cast(p.id as {{ dbt.type_string() }} )                                                      as patient_id
@@ -30,12 +7,6 @@ select
             {{ try_to_cast_date('ma.effectivedatetime') }},
             {{ try_to_cast_date('ma.effectiveperiod_start') }}
         )                                                                                           as administration_date
-    ,   cast(tc_cat.system as {{ dbt.type_string() }} )                                             as category_code_type
-    ,   cast(tc_cat.code as {{ dbt.type_string() }} )                                               as category_code
-    ,   cast(tc_cat.description as {{ dbt.type_string() }} )                                        as category_description
-    ,   cast(tc_reason.system as {{ dbt.type_string() }} )                                          as reason_code_type
-    ,   cast(tc_reason.code as {{ dbt.type_string() }} )                                            as reason_code
-    ,   cast(tc_reason.description as {{ dbt.type_string() }} )                                     as reason_description
     ,   cast(ma.dosage_dose_unit as {{ dbt.type_string() }} )                                       as dose_unit
     ,   cast(ma.dosage_dose_value as {{ dbt.type_string() }} )                                      as dose_amount
     ,   cast(
@@ -75,7 +46,3 @@ inner join {{ref('stage__medication')}} as m
     on right(ma.medicationreference_reference, 36) = m.id
 left join {{ref('stage__patient')}} p
     on right(ma.subject_reference, 36) = p.id
-left join target_category_coding tc_cat
-    on tc_cat.medication_administration_id = ma.id
-left join target_reason_coding tc_reason
-    on tc_reason.medication_administration_id = ma.id

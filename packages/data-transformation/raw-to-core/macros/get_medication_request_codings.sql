@@ -1,11 +1,10 @@
+-- TODO Eng-1029 -- TOTALLY UNSED
 {% macro medication_request_category_code_system() %}
     case 
-        when system = 'medication-category' then 0
-        when system = 'snomed-ct' then 1
-        else 2
+        1 = 1 then 0
     end
 {% endmacro %}
-
+-- TODO Eng-1029 -- TOTALLY UNSED
 {% macro get_medication_request_category_codings(stage_table, max_index, secondary_max_index) %}
     {% for i in range(max_index + 1) %}
     {% for j in range(secondary_max_index + 1) %}
@@ -13,9 +12,7 @@
             id as medication_request_id
         ,   category_{{i}}_coding_{{j}}_code as code
         ,   case 
-                when category_{{i}}_coding_{{j}}_system = 'http://terminology.hl7.org/CodeSystem/medication-category' then 'medication-category'
-                when category_{{i}}_coding_{{j}}_system ilike '%snomed%' then 'snomed-ct'
-                else category_{{i}}_coding_{{j}}_system 
+                when 1 = 1 then category_{{i}}_coding_{{j}}_system 
             end as system
         ,   category_{{i}}_coding_{{j}}_display as display
         ,   coalesce(

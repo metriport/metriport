@@ -51,11 +51,7 @@ select
     ,   cast(enc.class_system as {{ dbt.type_string() }} )                                      as class_code_type
     ,   cast(enc.class_code as {{ dbt.type_string() }} )                                        as class_code
     ,   cast(enc.class_display as {{ dbt.type_string() }} )                                     as class_description
-    ,   cast(tc_dd.system as {{ dbt.type_string() }} )                                          as discharge_disposition_code_type
-    ,   cast(tc_dd.code as {{ dbt.type_string() }} )                                            as discharge_disposition_code
     ,   cast(tc_dd.description as {{ dbt.type_string() }} )                                     as discharge_disposition_description
-    ,   cast(tc_pr.system as {{ dbt.type_string() }} )                                          as priority_code_type
-    ,   cast(tc_pr.code as {{ dbt.type_string() }} )                                            as priority_code
     ,   cast(tc_pr.description as {{ dbt.type_string() }} )                                     as priority_description
     ,   cast(right(enc.participant_0_individual_reference, 36) as {{ dbt.type_string() }} )     as practitioner_id
     ,   cast(right(enc.location_0_location_reference, 36) as {{ dbt.type_string() }} )          as facility_id

@@ -24,20 +24,17 @@ select
     ,   cast(
             case
                 when cvx.cvx is not null then 'cvx'
-                when snomed.snomed_ct is not null then 'snomed-ct'
                 else null
             end as {{ dbt.type_string() }} 
         )                                                                                                   as normalized_vaccine_code_type
     ,   cast(
             coalesce(
-                cvx.cvx, 
-                snomed.snomed_ct
+                cvx.cvx
             ) as {{ dbt.type_string() }} 
         )                                                                                                   as normalized_vaccine_code
     ,   cast(
             coalesce(
-                cvx.long_description, 
-                snomed.description
+                cvx.long_description
             ) as {{ dbt.type_string() }} 
         )                                                                                                   as normalized_vaccine_description
     ,   cast(i.dosequantity_value as {{ dbt.type_string() }} )                                              as dose_amount
@@ -70,5 +67,3 @@ left join target_vaccine_coding tc
     on i.id = tc.immunization_id
 left join {{ref('terminology__cvx')}} cvx
     on tc.system = 'cvx' and tc.code = cvx.cvx
-left join {{ref('terminology__snomed_ct')}} snomed
-    on tc.system = 'snomed-ct' and tc.code = snomed.snomed_ct
