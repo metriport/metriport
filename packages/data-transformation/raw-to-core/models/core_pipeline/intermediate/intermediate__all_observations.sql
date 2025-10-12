@@ -131,7 +131,18 @@ select
                 obvs.note_2_text
             ) as {{ dbt.type_string() }} 
         )                                                                                                   as note
-    ,   cast(right(obvs.performer_0_reference, 36) as {{ dbt.type_string() }} )                             as practitioner_id
+    ,   cast(
+            case 
+                when obvs.performer_0_reference ilike '%practitioner%' then right(obvs.performer_0_reference, 36)
+                else null
+            end as {{ dbt.type_string() }}
+        )                                                                                                   as practitioner_id
+    ,   cast(
+            case 
+                when obvs.performer_0_reference ilike '%organization%' then right(obvs.performer_0_reference, 36)
+                else null
+            end as {{ dbt.type_string() }}
+        )                                                                                                   as organization_id
     ,   cast(obvs.meta_source as {{ dbt.type_string() }} )                                                  as data_source
 from {{ref('stage__observation')}} obvs
 left join {{ref('stage__patient')}} p

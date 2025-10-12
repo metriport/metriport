@@ -85,7 +85,18 @@ select
     ,   cast(tc_rc.system as {{ dbt.type_string() }} )                                                              as reason_code_type
     ,   cast(tc_rc.code as {{ dbt.type_string() }} )                                                                as reason_code
     ,   cast(tc_rc.description as {{ dbt.type_string() }} )                                                         as reason_description
-    ,   cast(right(pro.performer_0_actor_reference, 36) as {{ dbt.type_string() }} )                                as practitioner_id
+    ,   cast(
+            case 
+                when pro.performer_0_actor_reference ilike '%practitioner%' then right(pro.performer_0_actor_reference, 36)
+                else null
+            end as {{ dbt.type_string() }}
+        )                                                                                                           as practitioner_id
+    ,   cast(
+            case 
+                when pro.performer_0_actor_reference ilike '%organization%' then right(pro.performer_0_actor_reference, 36)
+                else null
+            end as {{ dbt.type_string() }}
+        )                                                                                                           as organization_id
     ,   cast(pro.meta_source as {{ dbt.type_string() }} )                                                           as data_source
 from {{ref('stage__procedure' )}} pro
 left join {{ref('stage__patient')}} pat

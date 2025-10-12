@@ -25,6 +25,7 @@ select
     ,   cast(bodysite_description as {{ dbt.type_string() }} )                              as bodysite_description
     ,   cast(note as {{ dbt.type_string() }} )                                              as note
     ,   cast(practitioner_id as {{ dbt.type_string() }} )                                   as practitioner_id
+    ,   cast(organization_id as {{ dbt.type_string() }} )                                   as organization_id
     ,   cast(data_source as {{ dbt.type_string() }} )                                       as data_source
 from {{ref('intermediate__all_observations')}}
 where category_code = 'laboratory'

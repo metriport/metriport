@@ -55,7 +55,18 @@ select
                 mr.note_4_text
             ) as {{ dbt.type_string() }}
         )                                                                                           as note_text
-    ,   cast(right(mr.requester_reference, 36) as {{ dbt.type_string() }} )                         as practitioner_id
+    ,   cast(
+            case 
+                when mr.requester_reference ilike '%practitioner%' then right(mr.requester_reference, 36)
+                else null
+            end as {{ dbt.type_string() }}
+        )                                                                                           as practitioner_id
+    ,   cast(
+            case 
+                when mr.requester_reference ilike '%organization%' then right(mr.requester_reference, 36)
+                else null
+            end as {{ dbt.type_string() }}
+        )                                                                                           as organization_id
     ,   cast(mr.meta_source as {{ dbt.type_string() }} )                                            as data_source
 from {{ref('stage__medicationrequest')}} as mr
 inner join {{ref('stage__medication')}} as m

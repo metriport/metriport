@@ -54,7 +54,18 @@ select
                 i.note_2_text
             ) as {{ dbt.type_string() }} 
         )                                                                                                   as note
-    ,   cast(right(i.performer_0_actor_reference, 36) as {{ dbt.type_string() }} )                          as practitioner_id
+    ,   cast(
+            case 
+                when i.performer_0_actor_reference ilike '%practitioner%' then right(i.performer_0_actor_reference, 36)
+                else null
+            end as {{ dbt.type_string() }}
+        )                                                                                                   as practitioner_id
+    ,   cast(
+            case 
+                when i.performer_0_actor_reference ilike '%organization%' then right(i.performer_0_actor_reference, 36)
+                else null
+            end as {{ dbt.type_string() }}
+        )                                                                                                   as organization_id
     ,   cast(i.meta_source as {{ dbt.type_string() }} )                                                     as data_source
 from {{ref('stage__immunization')}} i
 left join {{ref('stage__patient')}} p
