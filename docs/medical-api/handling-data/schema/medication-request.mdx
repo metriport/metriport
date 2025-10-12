@@ -1,0 +1,37 @@
+---
+title: "Medication Request"
+description: "Schema documentation for the Medication Request table in the Metriport data model"
+group: "Schema"
+---
+
+A medication request record represents a request for a medication to be prescribed or administered to a patient. This includes details about the medication requested, dosage instructions, and the practitioner making the request.
+
+**Normalization Note:**
+This table does not include normalized coding fields as medication request data uses different coding systems that are not normalized in the current implementation.
+
+**Primary Keys:**
+* medication_request_id
+
+**Foreign Keys:**
+* patient_id
+* medication_id
+* practitioner_id
+
+| Column | Data Type | Description | Terminology |
+| ------ | --------- | ----------- | ----------- |
+| medication_request_id | string | Unique identifier for the medication request | - |
+| patient_id | string | Unique identifier for the patient | - |
+| medication_id | string | Unique identifier for the medication | - |
+| status | string | Status of the medication request | active, completed, entered-in-error, intended, stopped, on-hold, unknown, not-taken |
+| request_date | date | Date when the medication was requested | - |
+| category_code_type | string | Type of coding system for category | - |
+| category_code | string | Category code for the request | - |
+| category_description | string | Human-readable description of the category | - |
+| dose_unit | string | Unit of measurement for the dose | - |
+| dose_amount | string | Amount of medication requested | - |
+| dosage_method | string | Method of administration | - |
+| dosage_route | string | Route of administration | oral, intravenous, intramuscular, subcutaneous, topical |
+| dosage_site | string | Anatomical site of administration | - |
+| note_text | string | Additional notes about the request | - |
+| practitioner_id | string | Unique identifier for the practitioner who requested | - |
+| data_source | string | Source of the medication request data | - |

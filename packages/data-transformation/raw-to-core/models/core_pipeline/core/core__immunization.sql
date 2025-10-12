@@ -20,7 +20,7 @@ select
         )                                                                                                   as occurrence_date
     ,   cast(tc.system as {{ dbt.type_string() }} )                                                         as source_vaccine_code_type
     ,   cast(tc.code as {{ dbt.type_string() }} )                                                           as source_vaccine_code
-    ,   cast(tc.display as {{ dbt.type_string() }} )                                                        as source_vaccine_description
+    ,   cast(tc.description as {{ dbt.type_string() }} )                                                    as source_vaccine_description
     ,   cast(
             case
                 when cvx.cvx is not null then 'cvx'

@@ -1,0 +1,45 @@
+---
+title: "Medication Dispense"
+description: "Schema documentation for the Medication Dispense table in the Metriport data model"
+group: "Schema"
+---
+
+A medication dispense record represents the dispensing of a medication to a patient. This includes details about when the medication was prepared, dispensed, and the quantity provided.
+
+**Normalization Note:**
+This table does not include normalized coding fields as medication dispense data uses different coding systems that are not normalized in the current implementation.
+
+**Primary Keys:**
+* medication_dispense_id
+
+**Foreign Keys:**
+* patient_id
+* medication_id
+* practitioner_id
+* facility_id
+
+| Column | Data Type | Description | Terminology |
+| ------ | --------- | ----------- | ----------- |
+| medication_dispense_id | string | Unique identifier for the medication dispense | - |
+| patient_id | string | Unique identifier for the patient | - |
+| medication_id | string | Unique identifier for the medication | - |
+| status | string | Status of the medication dispense | active, completed, entered-in-error, intended, stopped, on-hold, unknown, not-taken |
+| dispense_date | date | Date when the medication was dispensed | - |
+| prepared_date | date | Date when the medication was prepared | - |
+| category_code_type | string | Type of coding system for category | - |
+| category_code | string | Category code for the dispense | - |
+| category_description | string | Human-readable description of the category | - |
+| type_code_type | string | Type of coding system for type | - |
+| type_code | string | Type code for the dispense | - |
+| type_description | string | Human-readable description of the type | - |
+| dose_unit | string | Unit of measurement for the dose | - |
+| dose_amount | string | Amount of medication dispensed | - |
+| days_supply | string | Number of days the medication will last | - |
+| days_supply_unit | string | Unit for days supply (typically "d") | - |
+| dosage_method | string | Method of administration | - |
+| dosage_route | string | Route of administration | oral, intravenous, intramuscular, subcutaneous, topical |
+| dosage_site | string | Anatomical site of administration | - |
+| note_text | string | Additional notes about the dispense | - |
+| practitioner_id | string | Unique identifier for the practitioner who dispensed | - |
+| facility_id | string | Unique identifier for the facility where dispensed | - |
+| data_source | string | Source of the medication dispense data | - |

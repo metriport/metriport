@@ -6,6 +6,9 @@ group: "Schema"
 
 The lab result table contains information about lab test results, including the LOINC code and description, units, reference range, and result.
 
+**Normalization Note:**
+Normalization of coding systems only occurs when the source coding system is one of: LOINC or SNOMED CT. Other coding systems will not have normalized codes.
+
 **Primary Keys:**
 * lab_result_id
 

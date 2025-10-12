@@ -29,10 +29,10 @@ select
     ,   {{ try_to_cast_date('md.whenprepared') }}                                                   as prepared_date
     ,   cast(tc_cat.system as {{ dbt.type_string() }} )                                             as category_code_type
     ,   cast(tc_cat.code as {{ dbt.type_string() }} )                                               as category_code
-    ,   cast(tc_cat.display as {{ dbt.type_string() }} )                                            as category_description
+    ,   cast(tc_cat.description as {{ dbt.type_string() }} )                                        as category_description
     ,   cast(tc_type.system as {{ dbt.type_string() }} )                                            as type_code_type
     ,   cast(tc_type.code as {{ dbt.type_string() }} )                                              as type_code
-    ,   cast(tc_type.display as {{ dbt.type_string() }} )                                           as type_description
+    ,   cast(tc_type.description as {{ dbt.type_string() }} )                                       as type_description
     ,   cast(
             coalesce(
                 md.quantity_unit,

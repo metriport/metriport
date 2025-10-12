@@ -17,11 +17,11 @@ select
     ,   {{ try_to_cast_date('mr.authoredon') }}                                                     as request_date
     ,   cast(tc_cat.system as {{ dbt.type_string() }} )                                             as category_code_type
     ,   cast(tc_cat.code as {{ dbt.type_string() }} )                                               as category_code
-    ,   cast(tc_cat.display as {{ dbt.type_string() }} )                                            as category_description
+    ,   cast(tc_cat.description as {{ dbt.type_string() }} )                                        as category_description
     -- TODO ENG-1029
     --,   cast(tc_reason.system as {{ dbt.type_string() }} )                                          as reason_code_type
     --,   cast(tc_reason.code as {{ dbt.type_string() }} )                                            as reason_code
-    --,   cast(tc_reason.display as {{ dbt.type_string() }} )                                         as reason_description
+    --,   cast(tc_reason.description as {{ dbt.type_string() }} )                                     as reason_description
     ,   cast(
             coalesce(
                 mr.dosageinstruction_0_doseandrate_0_dosequantity_unit,

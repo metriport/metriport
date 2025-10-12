@@ -43,7 +43,7 @@ select
         )                                                                                                           as procedure_date
     ,   cast(tc.system as {{ dbt.type_string() }} )                                                                 as source_code_type
     ,   cast(tc.code as {{ dbt.type_string() }} )                                                                   as source_code
-    ,   cast(tc.display as {{ dbt.type_string() }} )                                                                as source_description
+    ,   cast(tc.description as {{ dbt.type_string() }} )                                                            as source_description
     ,   cast(
             case
                 when tc.system = 'cpt' and hcpcs.hcpcs is not null then 'cpt'
@@ -81,10 +81,10 @@ select
         )                                                                                                           as note
     ,   cast(tc_bs.system as {{ dbt.type_string() }} )                                                              as body_site_code_type
     ,   cast(tc_bs.code as {{ dbt.type_string() }} )                                                                as body_site_code
-    ,   cast(tc_bs.display as {{ dbt.type_string() }} )                                                             as body_site_description
+    ,   cast(tc_bs.description as {{ dbt.type_string() }} )                                                         as body_site_description
     ,   cast(tc_rc.system as {{ dbt.type_string() }} )                                                              as reason_code_type
     ,   cast(tc_rc.code as {{ dbt.type_string() }} )                                                                as reason_code
-    ,   cast(tc_rc.display as {{ dbt.type_string() }} )                                                             as reason_description
+    ,   cast(tc_rc.description as {{ dbt.type_string() }} )                                                         as reason_description
     ,   cast(right(pro.performer_0_actor_reference, 36) as {{ dbt.type_string() }} )                                as practitioner_id
     ,   cast(pro.meta_source as {{ dbt.type_string() }} )                                                           as data_source
 from {{ref('stage__procedure' )}} pro

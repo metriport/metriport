@@ -32,10 +32,10 @@ select
         )                                                                                           as administration_date
     ,   cast(tc_cat.system as {{ dbt.type_string() }} )                                             as category_code_type
     ,   cast(tc_cat.code as {{ dbt.type_string() }} )                                               as category_code
-    ,   cast(tc_cat.display as {{ dbt.type_string() }} )                                            as category_description
+    ,   cast(tc_cat.description as {{ dbt.type_string() }} )                                        as category_description
     ,   cast(tc_reason.system as {{ dbt.type_string() }} )                                          as reason_code_type
     ,   cast(tc_reason.code as {{ dbt.type_string() }} )                                            as reason_code
-    ,   cast(tc_reason.display as {{ dbt.type_string() }} )                                         as reason_description
+    ,   cast(tc_reason.description as {{ dbt.type_string() }} )                                     as reason_description
     ,   cast(ma.dosage_dose_unit as {{ dbt.type_string() }} )                                       as dose_unit
     ,   cast(ma.dosage_dose_value as {{ dbt.type_string() }} )                                      as dose_amount
     ,   cast(

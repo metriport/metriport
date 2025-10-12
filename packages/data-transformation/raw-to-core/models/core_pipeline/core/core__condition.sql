@@ -65,7 +65,7 @@ select
         )                                                                                                   as category
     ,   cast(tc.system as {{ dbt.type_string() }} )                                                         as source_code_type
     ,   cast(tc.code as {{ dbt.type_string() }} )                                                           as source_code
-    ,   cast(tc.display as {{ dbt.type_string() }} )                                                        as source_description
+    ,   cast(tc.description as {{ dbt.type_string() }} )                                                    as source_description
     ,   cast(
             case
                 when icd10.icd_10_cm is not null then 'icd-10-cm'
@@ -93,13 +93,13 @@ select
         )                                                                                                   as normalized_description
     ,   cast(tc_cs.system as {{ dbt.type_string() }} )                                                      as status_code_type
     ,   cast(tc_cs.code as {{ dbt.type_string() }} )                                                        as status_code
-    ,   cast(tc_cs.display as {{ dbt.type_string() }} )                                                     as status_description
+    ,   cast(tc_cs.description as {{ dbt.type_string() }} )                                                 as status_description
     ,   cast(tc_cat.system as {{ dbt.type_string() }} )                                                     as category_code_type
     ,   cast(tc_cat.code as {{ dbt.type_string() }} )                                                       as category_code
-    ,   cast(tc_cat.display as {{ dbt.type_string() }} )                                                    as category_description
+    ,   cast(tc_cat.description as {{ dbt.type_string() }} )                                                as category_description
     ,   cast(tc_bs.system as {{ dbt.type_string() }} )                                                      as bodysite_code_type
     ,   cast(tc_bs.code as {{ dbt.type_string() }} )                                                        as bodysite_code
-    ,   cast(tc_bs.display as {{ dbt.type_string() }} )                                                     as bodysite_description
+    ,   cast(tc_bs.description as {{ dbt.type_string() }} )                                                 as bodysite_description
     ,   cast(
             coalesce(
                 c.note_0_text,

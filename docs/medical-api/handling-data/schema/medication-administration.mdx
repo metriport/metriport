@@ -1,0 +1,40 @@
+---
+title: "Medication Administration"
+description: "Schema documentation for the Medication Administration table in the Metriport data model"
+group: "Schema"
+---
+
+A medication administration record represents the actual administration of a medication to a patient. This includes details about when, how, and by whom the medication was administered.
+
+**Normalization Note:**
+This table does not include normalized coding fields as medication administration data uses different coding systems that are not normalized in the current implementation.
+
+**Primary Keys:**
+* medication_administration_id
+
+**Foreign Keys:**
+* patient_id
+* medication_id
+* practitioner_id
+
+| Column | Data Type | Description | Terminology |
+| ------ | --------- | ----------- | ----------- |
+| medication_administration_id | string | Unique identifier for the medication administration | - |
+| patient_id | string | Unique identifier for the patient | - |
+| medication_id | string | Unique identifier for the medication | - |
+| status | string | Status of the medication administration | active, completed, entered-in-error, intended, stopped, on-hold, unknown, not-taken |
+| administration_date | date | Date and time when the medication was administered | - |
+| category_code_type | string | Type of coding system for category | - |
+| category_code | string | Category code for the administration | - |
+| category_description | string | Human-readable description of the category | - |
+| reason_code_type | string | Type of coding system for reason | - |
+| reason_code | string | Reason code for the administration | - |
+| reason_description | string | Human-readable description of the reason | - |
+| dose_unit | string | Unit of measurement for the dose | - |
+| dose_amount | string | Amount of medication administered | - |
+| dosage_method | string | Method of administration | - |
+| dosage_route | string | Route of administration | oral, intravenous, intramuscular, subcutaneous, topical |
+| dosage_site | string | Anatomical site of administration | - |
+| note_text | string | Additional notes about the administration | - |
+| practitioner_id | string | Unique identifier for the practitioner who administered | - |
+| data_source | string | Source of the medication administration data | - |

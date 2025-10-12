@@ -1,0 +1,38 @@
+---
+title: "Medication Statement"
+description: "Schema documentation for the Medication Statement table in the Metriport data model"
+group: "Schema"
+---
+
+A medication statement record represents a record of a medication that is being consumed by a patient. This includes details about the medication, its current status, and any relevant clinical information.
+
+**Normalization Note:**
+This table does not include normalized coding fields as medication statement data uses different coding systems that are not normalized in the current implementation.
+
+**Primary Keys:**
+* medication_statement_id
+
+**Foreign Keys:**
+* patient_id
+* medication_id
+
+| Column | Data Type | Description | Terminology |
+| ------ | --------- | ----------- | ----------- |
+| medication_statement_id | string | Unique identifier for the medication statement | - |
+| patient_id | string | Unique identifier for the patient | - |
+| medication_id | string | Unique identifier for the medication | - |
+| status | string | Status of the medication statement | active, completed, entered-in-error, intended, stopped, on-hold, unknown, not-taken |
+| statement_date | date | Date of the medication statement | - |
+| category_code_type | string | Type of coding system for category | - |
+| category_code | string | Category code for the statement | - |
+| category_description | string | Human-readable description of the category | - |
+| reason_code_type | string | Type of coding system for reason | - |
+| reason_code | string | Reason code for the statement | - |
+| reason_description | string | Human-readable description of the reason | - |
+| dose_unit | string | Unit of measurement for the dose | - |
+| dose_amount | string | Amount of medication | - |
+| dosage_method | string | Method of administration | - |
+| dosage_route | string | Route of administration | oral, intravenous, intramuscular, subcutaneous, topical |
+| dosage_site | string | Anatomical site of administration | - |
+| note_text | string | Additional notes about the statement | - |
+| data_source | string | Source of the medication statement data | - |
