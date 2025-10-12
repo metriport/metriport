@@ -13,35 +13,33 @@ Normalization of coding systems only occurs when the source coding system is one
 * observation_id
 
 **Foreign Keys:**
-* person_id
 * patient_id
-* encounter_id
+* practitioner_id
 
 | Column | Data Type | Description | Terminology |
 | ------ | --------- | ----------- | ----------- |
 | observation_id | string | Unique identifier for the observation | - |
-| person_id | string | Unique identifier for the person | - |
-| member_id | string | Unique identifier for the member | - |
 | patient_id | string | Unique identifier for the patient | - |
-| encounter_id | string | Unique identifier for the encounter | - |
-| practitioner_id | string | Unique identifier for the practitioner | - |
-| observation_code | string | Standardized observation code | LOINC, SNOMED CT |
-| observation_code_type | string | Type of coding system used | loinc, snomed-ct |
-| observation_code_system | string | Coding system identifier | - |
-| observation_code_version | string | Version of the coding system | - |
-| observation_code_display | string | Human-readable description of the observation | - |
 | observation_date | date | Date when the observation was made | - |
-| observation_value | string | Value of the observation | - |
-| observation_value_type | string | Data type of the observation value | quantity, codeable-concept, string |
-| observation_unit | string | Unit of measurement for the observation | - |
-| observation_status | string | Status of the observation | final, preliminary, amended |
-| observation_category | string | Category of the observation | vital-signs, survey, imaging |
-| body_site | string | Anatomical location of the observation | - |
-| laterality | string | Side of the body for the observation | left, right, bilateral |
-| data_source | string | Source of the observation data | claims, clinical, ehr |
+| source_code_type | string | Type of coding system for source code | - |
 | source_code | string | Original code from the source system | - |
-| normalized_code | string | Standardized/normalized code | - |
-| source_system | string | System that provided the observation data | - |
-| source_table | string | Table in the source system | - |
-| source_id | string | Identifier from the source system | - |
-| ingestion_date | timestamp | Date when the data was ingested | - |
+| source_description | string | Human-readable description from source | - |
+| normalized_code_type | string | Type of normalized coding system | loinc, snomed |
+| normalized_code | string | Standardized/normalized code | LOINC, SNOMED CT |
+| normalized_description | string | Human-readable description of normalized code | - |
+| result | string | Value of the observation | - |
+| source_units | string | Unit of measurement from source | - |
+| source_reference_range_low | string | Lower bound of the reference range from source | - |
+| source_reference_range_high | string | Upper bound of the reference range from source | - |
+| category_code_type | string | Type of coding system for category | - |
+| category_code | string | Category code | - |
+| category_description | string | Human-readable description of category | - |
+| interpretation_code_type | string | Type of coding system for interpretation | - |
+| interpretation_code | string | Interpretation code | - |
+| interpretation_description | string | Human-readable description of interpretation | - |
+| bodysite_code_type | string | Type of coding system for body site | - |
+| bodysite_code | string | Body site code | - |
+| bodysite_description | string | Human-readable description of body site | - |
+| note | string | Additional notes about the observation | - |
+| practitioner_id | string | Unique identifier for the practitioner | - |
+| data_source | string | Source of the observation data | - |

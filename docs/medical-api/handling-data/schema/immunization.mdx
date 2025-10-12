@@ -7,48 +7,31 @@ group: "Schema"
 The immunization table contains information on immunizations administered to patients, including the vaccine code, description, and administration date.
 
 **Normalization Note:**
-This table does not include normalized coding fields as immunizations use different coding systems that are not normalized in the current implementation.
+Normalization of coding systems only occurs when the source coding system is one of: CVX or SNOMED CT. Other coding systems will not have normalized codes.
 
 **Primary Key:**
 * immunization_id
 
 **Foreign Keys:**
 * patient_id
-* person_id
-* encounter_id
-* location_id
 * practitioner_id
 
 | Column | Data Type | Description | Terminology |
 | ------ | --------- | ----------- | ----------- |
 | immunization_id | string | Unique identifier for the immunization | - |
-| person_id | string | Unique identifier for the person | - |
-| member_id | string | Unique identifier for the member | - |
 | patient_id | string | Unique identifier for the patient | - |
-| encounter_id | string | Unique identifier for the encounter | - |
-| location_id | string | Unique identifier for the location | - |
+| status | string | Status of the immunization | completed, entered-in-error, not-done |
+| occurrence_date | date | Date when the immunization was administered | - |
+| source_vaccine_code_type | string | Type of coding system for source vaccine code | - |
+| source_vaccine_code | string | Original vaccine code from the source system | - |
+| source_vaccine_description | string | Human-readable description from source | - |
+| normalized_vaccine_code_type | string | Type of normalized coding system | cvx, snomed-ct |
+| normalized_vaccine_code | string | Standardized/normalized vaccine code | CVX, SNOMED CT |
+| normalized_vaccine_description | string | Human-readable description of normalized code | - |
+| dose_amount | string | Quantity of the dose administered | - |
+| dose_unit | string | Unit of measurement for the dose | - |
+| site | string | Anatomical site of administration | - |
+| route | string | Route of administration | intramuscular, subcutaneous, oral, nasal |
+| note | string | Additional notes about the immunization | - |
 | practitioner_id | string | Unique identifier for the practitioner | - |
-| immunization_code | string | Standardized immunization code | CVX, SNOMED CT |
-| immunization_code_type | string | Type of coding system used | cvx, snomed-ct |
-| immunization_code_system | string | Coding system identifier | - |
-| immunization_code_version | string | Version of the coding system | - |
-| immunization_code_display | string | Human-readable description of the immunization | - |
-| immunization_name | string | Name of the immunization | - |
-| immunization_date | date | Date when the immunization was administered | - |
-| immunization_status | string | Status of the immunization | completed, entered-in-error, not-done |
-| immunization_lot_number | string | Lot number of the vaccine | - |
-| immunization_expiration_date | date | Expiration date of the vaccine | - |
-| immunization_manufacturer | string | Manufacturer of the vaccine | - |
-| immunization_site | string | Anatomical site of administration | left_arm, right_arm, left_thigh, right_thigh |
-| immunization_route | string | Route of administration | intramuscular, subcutaneous, oral, nasal |
-| immunization_dose_quantity | string | Quantity of the dose administered | - |
-| immunization_dose_unit | string | Unit of measurement for the dose | - |
-| immunization_series | string | Series information for multi-dose vaccines | - |
-| immunization_reason | string | Reason for the immunization | routine, travel, outbreak |
-| data_source | string | Source of the immunization data | claims, clinical, ehr |
-| source_code | string | Original code from the source system | - |
-| normalized_code | string | Standardized/normalized code | - |
-| source_system | string | System that provided the immunization data | - |
-| source_table | string | Table in the source system | - |
-| source_id | string | Identifier from the source system | - |
-| ingestion_date | timestamp | Date when the data was ingested | - |
+| data_source | string | Source of the immunization data | - |
