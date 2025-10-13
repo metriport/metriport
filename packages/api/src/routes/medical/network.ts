@@ -12,7 +12,11 @@ import {
   getSourceQueryStatus,
 } from "../../command/medical/network/source-query";
 import { getPatientPrimaryFacilityIdOrFail } from "../../command/medical/patient/get-patient-facilities";
-import { networkSources, SourceQueryProgress } from "@metriport/core/domain/network-query";
+import {
+  NetworkQueryParams,
+  networkSources,
+  SourceQueryProgress,
+} from "@metriport/core/domain/network-query";
 
 const router = Router();
 
@@ -66,7 +70,7 @@ router.post(
       facilityId ?? (await getPatientPrimaryFacilityIdOrFail({ cxId, patientId }));
 
     const networkQuery = networkQuerySchema.parse(req.body);
-    const networkQueryIdentifier = {
+    const networkQueryParams: NetworkQueryParams = {
       cxId,
       patientId,
       facilityId: patientFacilityId,
@@ -76,7 +80,7 @@ router.post(
       queryProgressPromises.push(
         queryDocumentsAcrossSource({
           ...networkQuery,
-          ...networkQueryIdentifier,
+          ...networkQueryParams,
           source,
         })
       );
