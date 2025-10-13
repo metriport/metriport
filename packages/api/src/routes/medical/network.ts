@@ -1,15 +1,15 @@
-import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import { OK } from "http-status";
-import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
-import { queryDocumentsAcrossPharmacies } from "../../command/medical/network/pharmacy-query";
+import _ from "lodash";
 import { requestLogger } from "../helpers/request-logger";
 import { getPatientInfoOrFail, patientAuthorization } from "../middlewares/patient-authorization";
 import { checkRateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getFrom } from "../util";
-import { cxRequestMetadataSchema } from "./schemas/request-metadata";
+import { networkQuerySchema } from "./schemas/network";
+import { queryDocumentsAcrossSource } from "../../command/medical/network/source-query";
 import { getPatientPrimaryFacilityIdOrFail } from "../../command/medical/patient/get-patient-facilities";
+import { SourceQueryProgress } from "@metriport/core/domain/network-query";
 
 const router = Router();
 
@@ -54,33 +54,25 @@ router.post(
     const patientFacilityId =
       facilityId ?? (await getPatientPrimaryFacilityIdOrFail({ cxId, patientId }));
 
-    const override = stringToBoolean(getFrom("query").optional("override", req));
-    const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
-    const queryPharmacies = stringToBoolean(getFrom("query").optional("pharmacies", req));
-    const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
-    const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
+    const networkQuery = networkQuerySchema.parse(req.body);
+    const networkQueryIdentifier = {
+      cxId,
+      patientId,
+      facilityId: patientFacilityId,
+    };
+    const queryProgressPromises: Array<Promise<SourceQueryProgress[]>> = [];
+    for (const source of networkQuery.sources) {
+      queryProgressPromises.push(
+        queryDocumentsAcrossSource({
+          ...networkQuery,
+          ...networkQueryIdentifier,
+          source,
+        })
+      );
+    }
 
-    const [docQueryProgress] = await Promise.all([
-      queryDocumentsAcrossHIEs({
-        cxId,
-        patientId,
-        facilityId: patientFacilityId,
-        forceDownload: override,
-        cxDocumentRequestMetadata: cxDocumentRequestMetadata?.metadata,
-        forceCommonwell,
-        forceCarequality,
-      }),
-      queryPharmacies
-        ? queryDocumentsAcrossPharmacies({
-            cxId,
-            patientId,
-            facilityId: patientFacilityId,
-          }).catch(() => {
-            return undefined;
-          })
-        : Promise.resolve(undefined),
-    ]);
-
-    return res.status(OK).json(docQueryProgress);
+    const queryProgress = await Promise.all(queryProgressPromises);
+    const networkQueryProgress = _.flatten(queryProgress);
+    return res.status(OK).json(networkQueryProgress);
   })
 );

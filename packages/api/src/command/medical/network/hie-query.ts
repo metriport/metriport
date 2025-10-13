@@ -7,7 +7,7 @@ export async function queryDocumentsAcrossHIEs({
   patientId,
   facilityId,
   metadata,
-  forceDownload,
+  override,
   forceCommonwell,
   forceCarequality,
 }: {
@@ -15,19 +15,20 @@ export async function queryDocumentsAcrossHIEs({
   patientId: string;
   facilityId: string;
   metadata?: Record<string, string> | undefined;
-  forceDownload?: boolean;
+  override?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
-}): Promise<SourceQueryProgress | undefined> {
+}): Promise<SourceQueryProgress[]> {
   const progress = await _queryDocumentsAcrossHIEs({
     cxId,
     patientId,
     facilityId,
-    forceDownload,
+    forceDownload: override,
     cxDocumentRequestMetadata: metadata,
     forceCommonwell,
     forceCarequality,
   });
 
-  return documentQueryProgressToDTO(progress);
+  const sourceQueryProgress = documentQueryProgressToDTO(progress);
+  return sourceQueryProgress ? [sourceQueryProgress] : [];
 }
