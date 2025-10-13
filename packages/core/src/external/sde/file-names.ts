@@ -1,3 +1,13 @@
+export function getCdaToFhirConversionPrefix({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}): string {
+  return `${cxId}/${patientId}/${cxId}_${patientId}_`;
+}
+
 export function getDataExtractionFileName({
   cxId,
   patientId,

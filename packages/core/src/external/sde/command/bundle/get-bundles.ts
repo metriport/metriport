@@ -4,7 +4,10 @@ import { Config } from "../../../../util/config";
 import { Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { DataExtractionFile } from "../../types";
 import { getDataExtractionFilePrefix } from "../../file-names";
+import { executeAsynchronously } from "../../../../util/concurrency";
 import { out } from "../../../../util/log";
+
+const numberOfParallelExecutions = 10;
 
 export async function getBundles({
   cxId,
@@ -26,11 +29,20 @@ export async function getBundles({
   const keys = _(files.map(file => file.Key))
     .compact()
     .value();
-  const bundleContents = await Promise.all(
-    keys.map(key => s3Utils.downloadFile({ bucket: bucketName, key }))
+
+  const bundleBuffers: Buffer[] = [];
+  await executeAsynchronously(
+    keys,
+    async key => {
+      const buffer = await s3Utils.downloadFile({ bucket: bucketName, key });
+      bundleBuffers.push(buffer);
+    },
+    {
+      numberOfParallelExecutions,
+    }
   );
-  const dataExtractionFiles: DataExtractionFile[] = bundleContents.map(
-    bundle => JSON.parse(bundle.toString()) as DataExtractionFile
+  const dataExtractionFiles: DataExtractionFile[] = bundleBuffers.map(
+    buffer => JSON.parse(buffer.toString()) as DataExtractionFile
   );
   const bundles = dataExtractionFiles.map(file => file.bundle);
   return bundles;
