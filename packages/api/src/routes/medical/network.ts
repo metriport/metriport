@@ -51,9 +51,8 @@ router.get(
  *
  * @param req.query.patientId Patient ID for which to retrieve network metadata.
  * @param req.query.facilityId The facility providing NPI for the network query.
- * @param req.query.override Whether to override files already downloaded (optional, defaults to false).
- * @param req.body Optional metadata to be sent through Webhook.
- * @return The status of network querying.
+ * @param req.body The body of the network query, which contains the sources to query along with any additional metadata.
+ * @return The status of the network query.
  */
 router.post(
   "/query",
