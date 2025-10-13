@@ -1,5 +1,5 @@
 import { DocumentQueryStatus, DocumentQueryProgress } from "@metriport/core/domain/document-query";
-import { SourceQueryProgress } from "@metriport/core/domain/network-query";
+import { SourceQueryProgress, hieSource } from "@metriport/core/domain/network-query";
 
 export type NetworkSourceStatusDTO = {
   type: "hie" | "pharmacy" | "laboratory";
@@ -18,14 +18,14 @@ export function documentQueryProgressToDTO(
   // Combined document metrics
   const downloaded = progress.download?.successful ?? 0;
   const total = progress.download?.total ?? 0;
-  const downloadInProgress = total - downloaded;
+  const failedDownload = progress.download?.errors ?? 0;
+  const downloadInProgress = total - downloaded - failedDownload;
   const converted = progress.convert?.successful ?? 0;
   const failedConversion = progress.convert?.errors ?? 0;
-  const failedDownload = progress.download?.errors ?? 0;
   const failed = failedConversion + failedDownload;
 
   return {
-    type: "hie",
+    type: hieSource,
     status,
     startedAt: progress.startedAt,
     requestId: progress.requestId,

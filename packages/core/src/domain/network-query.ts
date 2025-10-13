@@ -10,7 +10,10 @@ export type NetworkQueryProgress = {
   networks: SourceQueryProgress[];
 };
 
-export const networkSources = ["hie", "pharmacy", "laboratory"] as const;
+export const hieSource = "hie";
+export const pharmacySource = "pharmacy";
+export const laboratorySource = "laboratory";
+export const networkSources = [hieSource, pharmacySource, laboratorySource] as const;
 export type NetworkSource = (typeof networkSources)[number];
 
 export type SourceQueryProgress = {

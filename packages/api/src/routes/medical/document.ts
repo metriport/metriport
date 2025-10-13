@@ -26,7 +26,7 @@ import { getPatientPrimaryFacilityIdOrFail } from "../../command/medical/patient
 
 const router = Router();
 
-export const getDocSchema = z.object({
+const getDocSchema = z.object({
   dateFrom: optionalDateSchema,
   dateTo: optionalDateSchema,
   content: z.string().min(3).nullish(),
