@@ -435,8 +435,8 @@ export class Config {
     return getEnvVarOrFail("CORE_TRANSFORM_BATCH_JOB_DEFINITION_ARN");
   }
 
-  static getRosterUploadSftpPasswordArn(): string {
-    return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_ARN`);
+  static getRosterUploadSftpPasswordName(): string {
+    return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_NAME`);
   }
 
   static getLahieIngestionLambdaName(): string {
@@ -509,5 +509,9 @@ export class Config {
 
   static getAlohrIngestionTimezone(): string {
     return getEnvVarOrFail("ALOHR_INGESTION_TIMEZONE");
+  }
+
+  static getAiBriefBucketName(): string {
+    return getEnvVarOrFail("AI_BRIEF_BUCKET_NAME");
   }
 }

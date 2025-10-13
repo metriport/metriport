@@ -93,12 +93,12 @@ export async function get(
   }
 }
 
-export const findCurrentLink = async (
+export async function findCurrentLink(
   patient: Pick<Patient, "id" | "cxId">,
   patientCWData: PatientDataCommonwell | undefined,
   commonWell: CommonWellAPI,
   queryMeta: RequestMetadata
-): Promise<Person | undefined> => {
+): Promise<Person | undefined> {
   const { log } = out("cw.findCurrentLink");
   if (!patientCWData) {
     log(`No CW data for patient`, patient.id);
@@ -135,7 +135,6 @@ export const findCurrentLink = async (
         patient,
         commonwellPatientId: patientCWId,
         commonwellPersonId: undefined,
-        cqLinkStatus: undefined,
       });
       await updatePatientDiscoveryStatus({ patient, status: "failed" });
       return;
@@ -148,7 +147,6 @@ export const findCurrentLink = async (
         patient,
         commonwellPatientId: patientCWId,
         commonwellPersonId: undefined,
-        cqLinkStatus: undefined,
       });
       await updatePatientDiscoveryStatus({ patient, status: "failed" });
 
@@ -181,13 +179,13 @@ export const findCurrentLink = async (
     capture.error(msg, { extra: { ...captureExtra, error } });
     throw new Error(msg, { cause: error });
   }
-};
+}
 
-export const findAllPotentialLinks = async (
+export async function findAllPotentialLinks(
   patient: Patient,
   commonWell: CommonWellAPI,
   queryMeta: RequestMetadata
-): Promise<Person[]> => {
+): Promise<Person[]> {
   const personResultsStrongId = await findAllPersonsStrongId(patient, commonWell, queryMeta);
   const personResultsByDemo = await findAllPersons(patient, commonWell, queryMeta);
 
@@ -197,13 +195,13 @@ export const findAllPotentialLinks = async (
   );
 
   return uniqueResults;
-};
+}
 
-const findAllPersons = async (
+async function findAllPersons(
   patient: Patient,
   commonWell: CommonWellAPI,
   queryMeta: RequestMetadata
-): Promise<Person[]> => {
+): Promise<Person[]> {
   const { log } = out("cw.findAllPersons");
   try {
     if (!patient.data.externalData?.COMMONWELL) {
@@ -230,13 +228,13 @@ const findAllPersons = async (
     log(`${msg} - patient id:`, patient.id);
     throw new Error(msg, { cause: error });
   }
-};
+}
 
-const findAllPersonsStrongId = async (
+async function findAllPersonsStrongId(
   patient: Patient,
   commonWell: CommonWellAPI,
   queryMeta: RequestMetadata
-): Promise<Person[]> => {
+): Promise<Person[]> {
   const { log } = out("cw.findAllPersonsStrongId");
   const strongIds = getCwStrongIdsFromPatient(patient);
   if (!strongIds.length) {
@@ -260,9 +258,9 @@ const findAllPersonsStrongId = async (
     log(`${msg} - patient:`, patient.id);
     throw new Error(msg, { cause: error });
   }
-};
+}
 
-async function findNetworkLinks(
+export async function findNetworkLinks(
   patientCWData: PatientDataCommonwell | undefined,
   commonWell: CommonWellAPI,
   queryMeta: RequestMetadata
@@ -274,9 +272,9 @@ async function findNetworkLinks(
   const allLinks = respLinks._embedded.networkLink
     ? respLinks._embedded.networkLink.flatMap(filterTruthy)
     : [];
-  const toPatient = (l: NetworkLink): PatientNetworkLink | undefined => {
+  function toPatient(l: NetworkLink): PatientNetworkLink | undefined {
     return l?.patient ?? undefined;
-  };
+  }
   const lola1 = allLinks.filter(isLOLA1).map(toPatient).flatMap(filterTruthy);
   const lola2 = allLinks.filter(isLOLA2).map(toPatient).flatMap(filterTruthy);
   const lola3 = allLinks.filter(isLOLA3).map(toPatient).flatMap(filterTruthy);

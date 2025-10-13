@@ -1,9 +1,12 @@
 import { QuestFhirConversionRequest } from "../../types";
 import { QuestFhirConverterCommand } from "./fhir-converter";
-
+import { convertSourceDocumentToFhirBundle } from "../../fhir-converter";
+import { saveBundle } from "../bundle/save-bundle";
+import { buildConsolidatedLabBundle } from "../bundle/build-consolidated";
 export class QuestFhirConverterCommandDirect implements QuestFhirConverterCommand {
   async convertSourceDocumentToFhirBundle(request: QuestFhirConversionRequest): Promise<void> {
-    // TODO: ENG-864 Implement this for performing a FHIR conversion of the given patient source document
-    console.log(`Converting Quest source document to FHIR bundle: ${request.sourceDocumentName}`);
+    const response = await convertSourceDocumentToFhirBundle(request);
+    await saveBundle(response);
+    await buildConsolidatedLabBundle({ cxId: response.cxId, patientId: response.patientId });
   }
 }

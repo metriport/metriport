@@ -43,6 +43,7 @@ export type GetConsolidatedParams = {
   bundle?: SearchSetBundle;
   requestId?: string;
   documentIds?: string[];
+  useCachedAiBrief?: boolean;
 } & GetConsolidatedFilters;
 
 export type GetConsolidatedSendToCxParams = GetConsolidatedParams & {
@@ -218,6 +219,7 @@ export async function getConsolidated({
   dateTo,
   requestId,
   conversionType,
+  useCachedAiBrief,
   bundle,
 }: GetConsolidatedParams): Promise<ConsolidatedData> {
   const { cxId, id: patientId } = patient;
@@ -238,6 +240,7 @@ export async function getConsolidated({
         resources,
         dateFrom,
         dateTo,
+        useCachedAiBrief,
       });
     }
     localBundle.entry = filterOutPrelimDocRefs(localBundle.entry);

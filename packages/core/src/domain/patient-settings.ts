@@ -4,14 +4,15 @@ import {
   createQueryMetaSchema,
   PatientSettingsRequest,
   patientSettingsRequestSchema,
-  QuestMonitoringRequest,
-  questMonitoringRequestSchema,
+  QuestPatientRequest,
+  questPatientRequestSchema,
 } from "@metriport/shared";
 import { z } from "zod";
 import {
   getHieConfigDictionary,
   throwOnInvalidHieName,
 } from "../external/hl7-notification/hie-config-dictionary";
+import { QuestRosterType } from "../external/quest/types";
 import { out } from "../util/log";
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
 
@@ -19,7 +20,12 @@ const { log } = out("PatientSettings");
 
 export type Subscriptions = {
   adt?: string[];
+  /**
+   * @deprecated Use questNotifications and questBackfill instead.
+   */
   quest?: boolean;
+  questNotifications?: boolean;
+  questBackfill?: boolean;
 };
 
 export type PatientSettingsData = {
@@ -43,6 +49,14 @@ export const hl7v2SubscribersQuerySchema = z
     hieName: z.string(),
   })
   .and(createQueryMetaSchema());
+
+export const questSettingsKeyForRosterType: Record<
+  QuestRosterType,
+  keyof Pick<Subscriptions, "questNotifications" | "questBackfill">
+> = {
+  backfill: "questBackfill",
+  notifications: "questNotifications",
+};
 
 export function parsePatientSettingsRequest(data: unknown): PatientSettingsRequest {
   try {
@@ -74,6 +88,6 @@ export function parseAdtSubscriptionRequest(data: unknown): AdtSubscriptionReque
   return result;
 }
 
-export function parseQuestMonitoringRequest(data: unknown): QuestMonitoringRequest {
-  return questMonitoringRequestSchema.parse(data);
+export function parseQuestPatientRequest(data: unknown): QuestPatientRequest {
+  return questPatientRequestSchema.parse(data);
 }

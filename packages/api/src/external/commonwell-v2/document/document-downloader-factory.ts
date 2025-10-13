@@ -5,11 +5,16 @@ import { Config } from "../../../shared/config";
 import { HieInitiator } from "../../hie/get-hie-initiator";
 import { makeCommonWellAPI } from "../api";
 
-export function makeDocumentDownloader({ name, oid, npi }: HieInitiator): DocumentDownloader {
+export function makeDocumentDownloader({
+  name,
+  oid,
+  npi,
+  queryGrantorOid,
+}: HieInitiator): DocumentDownloader {
   const region = Config.getAWSRegion();
   const bucketName = Config.getMedicalDocumentsBucketName();
   if (Config.isDev()) {
-    const commonWell = makeCommonWellAPI(name, oid, npi);
+    const commonWell = makeCommonWellAPI(name, oid, npi, queryGrantorOid);
     return new DocumentDownloaderLocalV2({
       region,
       bucketName,
@@ -25,5 +30,6 @@ export function makeDocumentDownloader({ name, oid, npi }: HieInitiator): Docume
     orgName: name,
     orgOid: oid,
     npi,
+    queryGrantorOid,
   });
 }

@@ -292,5 +292,6 @@ export const config: EnvConfigNonSandbox = {
       rawToCoreDbUsername: "my_db_user",
     },
   },
+  aiBriefBucketName: "your-ai-brief-bucket-name",
 };
 export default config;

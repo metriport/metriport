@@ -1,6 +1,7 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { postProcessBundle } from "@metriport/core/domain/conversion/bundle-modifications/post-process";
 import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
+import { getSanitizedContents } from "@metriport/core/external/cda/get-file-contents";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
@@ -79,8 +80,9 @@ export async function convert(
   }
 
   const payloadClean = cleanUpPayload(fileContents);
+  const sanitizedPayload = getSanitizedContents(payloadClean);
   const { documentContents: noB64FileContents, b64Attachments } =
-    removeBase64PdfEntries(payloadClean);
+    removeBase64PdfEntries(sanitizedPayload);
 
   if (b64Attachments && options?.processAttachments) {
     console.log(`Extracted ${b64Attachments.total} B64 attachments`);
