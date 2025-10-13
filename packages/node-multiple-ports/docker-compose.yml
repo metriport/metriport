@@ -1,0 +1,21 @@
+version: "3"
+services:
+  ihe-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Update this if you're trying to run it on a different platform
+        PLATFORM: "linux/arm64"
+    restart: on-failure
+    ports:
+      - "8443:8443"
+      - "8080:8080"
+      - "8081:8081"
+      - "8082:8082"
+      - "8083:8083"
+      - "8084:8084"
+      - "8085:8085"
+      - "8086:8086"
+      - "9091:9091"
+      - "9092:9092"
