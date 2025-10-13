@@ -51,16 +51,14 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id: patientId } = getPatientInfoOrFail(req);
     const facilityId = getFrom("query").optional("facilityId", req);
+    const patientFacilityId =
+      facilityId ?? (await getPatientPrimaryFacilityIdOrFail({ cxId, patientId }));
+
     const override = stringToBoolean(getFrom("query").optional("override", req));
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
     const queryPharmacies = stringToBoolean(getFrom("query").optional("pharmacies", req));
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
-
-    // TODO ENG-618: Temporary fix until we make facilityId required in the API
-    const patientFacilityId = facilityId
-      ? facilityId
-      : await getPatientPrimaryFacilityIdOrFail({ cxId, patientId });
 
     const [docQueryProgress] = await Promise.all([
       queryDocumentsAcrossHIEs({
