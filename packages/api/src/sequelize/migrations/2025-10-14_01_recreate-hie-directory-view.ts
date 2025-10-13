@@ -24,10 +24,10 @@ FROM ${cqViewName} cq
 UNION ALL
 
 SELECT
-  organization_name as name,
-  organization_id as id,
-  organization_id as oid,
-  zip_code,
+  name,
+  oid as id,
+  oid,
+  zip as zip_code,
   state,
   'CommonWell' as root_organization,
   '2.16.840.1.113883.3.3330' as managing_organization_id,
@@ -38,7 +38,7 @@ FROM ${cwViewName} cw
 WHERE NOT EXISTS (
   SELECT 1
   FROM ${cqViewName} cq
-  WHERE cq.id = cw.organization_id
+  WHERE cq.id = cw.oid
 )
 ;`;
 

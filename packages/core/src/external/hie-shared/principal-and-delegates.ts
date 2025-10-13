@@ -1,13 +1,13 @@
 import { errorToString } from "@metriport/shared";
 import { Config } from "../../util/config";
 import { out } from "../../util/log";
-import { JSON_APP_MIME_TYPE } from "../../util/mime";
+import { JSON_APP_MIME_TYPE, JSON_FILE_EXTENSION } from "../../util/mime";
 import { capture } from "../../util/notifications";
 import { S3Utils } from "../aws/s3";
 
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
-const PRINCIPAL_AND_DELEGATES_FILE_NAME = "principal-and-delegates.json";
+const PRINCIPAL_AND_DELEGATES_FILE_NAME = "principal-and-delegates";
 
 /**
  * TODO: Move to a shared location, accept source to be part of the name
@@ -55,5 +55,5 @@ export async function getPrincipalAndDelegatesMap(
 }
 
 function buildPrincipalAndDelegatesMapKey(source: "cq" | "cw"): string {
-  return `${source}-${PRINCIPAL_AND_DELEGATES_FILE_NAME}`;
+  return `${PRINCIPAL_AND_DELEGATES_FILE_NAME}-${source}.${JSON_FILE_EXTENSION}`;
 }

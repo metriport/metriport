@@ -1,15 +1,13 @@
 export type CwDirectoryEntryData = {
-  id: string; // Organization's ID
-  organizationName: string;
-  organizationId: string;
+  id: string;
+  name: string;
+  oid: string;
   orgType: string;
-  memberName: string;
-  addressLine1: string;
-  addressLine2?: string;
+  rootOrganization: string;
+  addressLine: string;
   city: string | undefined;
   state: string | undefined;
-  zipCode: string | undefined;
-  country: string | undefined;
+  zip: string | undefined;
   data: unknown;
   active: boolean;
   npi?: string;

@@ -15,13 +15,6 @@ export function parseCWOrganization(org: Organization): CwDirectoryEntryData {
     });
   }
 
-  const active = org.isActive;
-  if (active == undefined) {
-    throw new MetriportError("Missing isActive on CW Org", undefined, {
-      org: stringify(org),
-    });
-  }
-
   // Get the first location (primary address)
   const location = org.locations?.[0];
   if (!location) {
@@ -44,24 +37,19 @@ export function parseCWOrganization(org: Organization): CwDirectoryEntryData {
     });
   }
 
-  // Determine organization type based on NPI types or use the type field
-  const orgType = org.npiType1 || org.npiType2 || org.type || "Unknown";
-
-  // Determine status based on active state
+  const orgType = org.type || "Unknown";
   const delegateOids = getDelegateOids(org.networks ?? []);
 
   return {
     id: organizationId,
-    organizationName: org.name,
-    organizationId,
+    name: org.name,
+    oid: organizationId,
     orgType,
-    memberName: org.memberName,
-    addressLine1,
-    addressLine2: addressLine2 ?? undefined,
+    rootOrganization: org.memberName,
+    addressLine: `${addressLine1} ${addressLine2 ?? ""}`,
     city,
     state: normalizeUSStateForAddressSafe(state) ?? undefined,
-    zipCode: normalizeZipCodeNewSafe(zipCode) ?? undefined,
-    country,
+    zip: normalizeZipCodeNewSafe(zipCode) ?? undefined,
     data: org,
     active: org.isActive,
     npi,

@@ -9,15 +9,15 @@ export class CwDirectoryEntryViewModel
   static NAME = "cw_directory_entry_view";
 
   declare id: string; // Organization's OID
-  declare organizationName: string;
-  declare organizationId: string;
+  declare name: string;
+  declare oid: string;
   declare orgType: string;
-  declare memberName: string;
-  declare addressLine1: string;
+  declare rootOrganization: string;
+  declare addressLine: string;
   declare addressLine2?: string;
   declare city: string;
   declare state: string;
-  declare zipCode: string;
+  declare zip: string;
   declare country: string;
   declare data: unknown;
   declare active: boolean;
@@ -30,11 +30,11 @@ export class CwDirectoryEntryViewModel
           type: DataTypes.STRING,
           primaryKey: true,
         },
-        organizationName: {
+        name: {
           type: DataTypes.STRING,
           field: "organization_name",
         },
-        organizationId: {
+        oid: {
           type: DataTypes.STRING,
           field: "organization_id",
         },
@@ -42,11 +42,11 @@ export class CwDirectoryEntryViewModel
           type: DataTypes.STRING,
           field: "org_type",
         },
-        memberName: {
+        rootOrganization: {
           type: DataTypes.STRING,
           field: "member_name",
         },
-        addressLine1: {
+        addressLine: {
           type: DataTypes.STRING,
           field: "address_line1",
         },
@@ -60,7 +60,7 @@ export class CwDirectoryEntryViewModel
         state: {
           type: DataTypes.STRING,
         },
-        zipCode: {
+        zip: {
           type: DataTypes.STRING,
           field: "zip_code",
         },
