@@ -22,6 +22,7 @@ import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion"
 import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
 import { getBundleResources as getPharmacyResources } from "../../external/surescripts/command/bundle/get-bundle";
 import { getBundleResources as getLabResources } from "../../external/quest/command/bundle/get-bundle";
+import { getBundleResources as getDataExtractionResources } from "../../external/sde/command/bundle/get-bundles";
 import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { processAsyncError } from "../../util/error/shared";
@@ -77,6 +78,7 @@ export async function createConsolidatedFromConversions({
     docRefs,
     pharmacyResources,
     labResources,
+    dataExtractionResources,
     adtSourcedResources,
     isAiBriefFeatureFlagEnabled,
   ] = await Promise.all([
@@ -84,6 +86,7 @@ export async function createConsolidatedFromConversions({
     getDocumentReferences({ cxId, patientId }),
     getPharmacyResources({ cxId, patientId }),
     getLabResources({ cxId, patientId }),
+    getDataExtractionResources({ cxId, patientId }),
     getAllAdtSourcedResources({ cxId, patientId }),
     isAiBriefFeatureFlagEnabledForCx(cxId),
   ]);
@@ -96,6 +99,7 @@ export async function createConsolidatedFromConversions({
     ...docRefsWithUpdatedMeta.map(buildBundleEntry),
     ...pharmacyResources,
     ...labResources,
+    ...dataExtractionResources,
     ...adtSourcedResources,
     patientEntry,
   ];

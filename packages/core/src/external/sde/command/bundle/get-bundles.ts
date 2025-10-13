@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { S3Utils } from "../../../aws/s3";
 import { Config } from "../../../../util/config";
-import { Bundle } from "@medplum/fhirtypes";
+import { Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { DataExtractionFile } from "../../types";
 import { getDataExtractionFilePrefix } from "../../file-names";
 import { out } from "../../../../util/log";
@@ -34,4 +34,15 @@ export async function getBundles({
   );
   const bundles = dataExtractionFiles.map(file => file.bundle);
   return bundles;
+}
+
+export async function getBundleResources({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}): Promise<BundleEntry[]> {
+  const bundles = await getBundles({ cxId, patientId });
+  return bundles.flatMap(bundle => bundle.entry ?? []);
 }
