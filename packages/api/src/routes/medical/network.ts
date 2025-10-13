@@ -8,7 +8,7 @@ import { checkRateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getFrom } from "../util";
 import { networkQuerySchema } from "./schemas/network";
 import {
-  queryDocumentsAcrossSource,
+  queryDocumentsFromSource,
   getSourceQueryStatus,
 } from "../../command/medical/network/source-query";
 import { getPatientPrimaryFacilityIdOrFail } from "../../command/medical/patient/get-patient-facilities";
@@ -25,8 +25,7 @@ const router = Router();
  *
  * Returns the network query status for the specified patient.
  *
- * @param req.query.patientId Patient ID for which to retrieve document query status.
- * @return The status of document querying across HIEs.
+ * @return The status of document querying across HIEs, pharmacies, and laboratories.
  */
 router.get(
   "/query",
@@ -53,9 +52,13 @@ router.get(
  *
  * Triggers a network query for the specified patient across HIEs, Surescripts (PBMs), and other integrations.
  *
- * @param req.query.patientId Patient ID for which to retrieve network metadata.
- * @param req.query.facilityId The facility providing NPI for the network query.
+ * @param req.query.facilityId An optional facility providing NPI for the network query.
  * @param req.body The body of the network query, which contains the sources to query along with any additional metadata.
+ * @param req.body.sources Array of network sources to query (e.g., ["hie", "pharmacy", "laboratory"]).
+ * @param req.body.override Whether to override files already downloaded (optional, defaults to false).
+ * @param req.body.metadata Optional metadata to be sent through Webhook.
+ * @param req.body.commonwell Optional flag to force Commonwell queries (HIE only).
+ * @param req.body.carequality Optional flag to force Carequality queries (HIE only).
  * @return The status of the network query.
  */
 router.post(
@@ -78,7 +81,7 @@ router.post(
     const queryProgressPromises: Array<Promise<SourceQueryProgress[]>> = [];
     for (const source of networkQuery.sources) {
       queryProgressPromises.push(
-        queryDocumentsAcrossSource({
+        queryDocumentsFromSource({
           ...networkQuery,
           ...networkQueryParams,
           source,
