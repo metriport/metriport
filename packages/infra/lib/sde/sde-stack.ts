@@ -9,6 +9,7 @@ import { EnvConfig } from "../../config/env-config";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { createLambda } from "../shared/lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import { SDEAssets } from "./types";
 
 const extractDocumentLambdaTimeout = Duration.seconds(300);
 
@@ -72,6 +73,19 @@ export class SDEStack extends NestedStack {
 
   getLambdas(): Lambda[] {
     return [this.extractDocumentLambda];
+  }
+
+  getAssets(): SDEAssets {
+    return {
+      structuredDataBucket: this.structuredDataBucket,
+      extractDocumentLambda: this.extractDocumentLambda,
+      sdeLambdas: [
+        {
+          envVarName: "SDE_EXTRACT_DOCUMENT_LAMBDA_NAME",
+          lambda: this.extractDocumentLambda,
+        },
+      ],
+    };
   }
 
   private setupLambda<T extends keyof SDELambdaSettings>(
