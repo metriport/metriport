@@ -1,4 +1,5 @@
 import { Command } from "commander";
+// import { extractDocument } from "@metriport/core/external/sde/command/document/extract-document";
 
 /**
  * Extracts a document from S3
