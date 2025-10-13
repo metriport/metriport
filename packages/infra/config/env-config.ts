@@ -247,6 +247,9 @@ type EnvConfigBase = {
       QUEST_SFTP_PASSWORD: string;
     };
   };
+  sde?: {
+    comprehendRegion?: "us-east-1" | "us-east-2" | "us-west-2";
+  };
   jobs: {
     startScheduledPatientJobsScheduleExpression: string;
     startScheduledPatientJobsSchedulerUrl: string;
