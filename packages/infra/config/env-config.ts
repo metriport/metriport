@@ -77,6 +77,7 @@ type EnvConfigBase = {
   labConversionBucketName?: string;
   questReplicaBucketName?: string;
   ehrResponsesBucketName?: string;
+  structuredDataBucketName?: string;
   ehrBundleBucketName: string;
   iheResponsesBucketName: string;
   iheParsedResponsesBucketName: string;
