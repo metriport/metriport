@@ -6,7 +6,8 @@ select
     ,   coalesce(
             {{ try_to_cast_date('ma.effectivedatetime') }},
             {{ try_to_cast_date('ma.effectiveperiod_start') }}
-        )                                                                                           as administration_date
+        )                                                                                           as start_date
+    ,   {{ try_to_cast_date('ma.effectiveperiod_end') }}                                            as end_date
     ,   cast(ma.dosage_dose_unit as {{ dbt.type_string() }} )                                       as dose_unit
     ,   cast(ma.dosage_dose_value as {{ dbt.type_string() }} )                                      as dose_amount
     ,   cast(
@@ -41,13 +42,15 @@ select
         )                                                                                           as note_text
     ,   cast(
             case 
-                when ma.performer_0_actor_reference ilike '%practitioner%' then right(ma.performer_0_actor_reference, 36)
+                when ma.performer_0_actor_reference ilike '%practitioner%' 
+                    then right(ma.performer_0_actor_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
         )                                                                                           as practitioner_id
     ,   cast(
             case 
-                when ma.performer_0_actor_reference ilike '%organization%' then right(ma.performer_0_actor_reference, 36)
+                when ma.performer_0_actor_reference ilike '%organization%' 
+                    then right(ma.performer_0_actor_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
         )                                                                                           as organization_id

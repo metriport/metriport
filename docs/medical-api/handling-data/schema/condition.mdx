@@ -20,9 +20,10 @@ Normalization of coding systems only occurs when the source coding system is one
 | ------ | --------- | ----------- | ----------- |
 | condition_id | string | Unique identifier for the condition | - |
 | patient_id | string | Unique identifier for the patient | - |
+| status | string | Status of the condition | - |
 | recorded_date | date | Date when the condition was recorded | - |
-| onset_date | date | Date when the condition began | - |
-| resolved_date | date | Date when the condition resolved | - |
+| start_date | date | Date when the condition began | - |
+| end_date | date | Date when the condition ended | - |
 | category | string | Category of the condition | problem, diagnosis, disease |
 | source_code_type | string | Type of coding system for source code | - |
 | source_code | string | Original code from the source system | - |
@@ -36,7 +37,7 @@ Normalization of coding systems only occurs when the source coding system is one
 | category_code_type | string | Type of coding system for category | - |
 | category_code | string | Category code | - |
 | category_description | string | Human-readable description of category | - |
-| note | string | Additional notes about the condition | - |
+| note_text | string | Additional notes about the condition | - |
 | practitioner_id | string | Unique identifier for the practitioner who recorded | - |
 | data_source | string | Source of the condition data | - |
 

@@ -6,7 +6,8 @@ select
     ,   coalesce(
             {{ try_to_cast_date('ms.effectivedatetime') }},
             {{ try_to_cast_date('ms.effectiveperiod_start') }}
-        )                                                                                           as statement_date
+        )                                                                                           as start_date
+    ,   {{ try_to_cast_date('ms.effectiveperiod_end') }}                                            as end_date
     ,   cast(
             coalesce(
                 ms.dosage_0_doseandrate_0_dosequantity_unit,

@@ -4,7 +4,7 @@ description: "Schema documentation for the Observation table in the Metriport da
 group: "Schema"
 ---
 
-The observation table contains information on measurements other than lab tests e.g. blood pressure, height, and weight.
+The observation table contains information on observations.
 
 **Normalization Note:**
 Normalization of coding systems only occurs when the source coding system is one of: LOINC or SNOMED CT. Other coding systems will not have normalized codes.
@@ -20,7 +20,9 @@ Normalization of coding systems only occurs when the source coding system is one
 | ------ | --------- | ----------- | ----------- |
 | observation_id | string | Unique identifier for the observation | - |
 | patient_id | string | Unique identifier for the patient | - |
-| observation_date | date | Date when the observation was made | - |
+| status | string | Status of the observation | - |
+| start_date | date | Start date of the observation | - |
+| end_date | date | End date of the observation | - |
 | source_code_type | string | Type of coding system for source code | - |
 | source_code | string | Original code from the source system | - |
 | source_description | string | Human-readable description from source | - |
@@ -40,6 +42,7 @@ Normalization of coding systems only occurs when the source coding system is one
 | bodysite_code_type | string | Type of coding system for body site | - |
 | bodysite_code | string | Body site code | - |
 | bodysite_description | string | Human-readable description of body site | - |
-| note | string | Additional notes about the observation | - |
+| note_text | string | Additional notes about the observation | - |
 | practitioner_id | string | Unique identifier for the practitioner | - |
+| organization_id | string | Unique identifier for the organization | - |
 | data_source | string | Source of the observation data | - |

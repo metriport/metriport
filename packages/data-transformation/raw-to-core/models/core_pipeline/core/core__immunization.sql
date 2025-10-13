@@ -56,13 +56,15 @@ select
         )                                                                                                   as note
     ,   cast(
             case 
-                when i.performer_0_actor_reference ilike '%practitioner%' then right(i.performer_0_actor_reference, 36)
+                when i.performer_0_actor_reference ilike '%practitioner%' 
+                    then right(i.performer_0_actor_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
         )                                                                                                   as practitioner_id
     ,   cast(
             case 
-                when i.performer_0_actor_reference ilike '%organization%' then right(i.performer_0_actor_reference, 36)
+                when i.performer_0_actor_reference ilike '%organization%' 
+                    then right(i.performer_0_actor_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
         )                                                                                                   as organization_id

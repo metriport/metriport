@@ -13,7 +13,7 @@ A medication dispense record represents the dispensing of a medication to a pati
 * patient_id
 * medication_id
 * practitioner_id
-* facility_id
+* location_id
 
 | Column | Data Type | Description | Terminology |
 | ------ | --------- | ----------- | ----------- |
@@ -21,8 +21,8 @@ A medication dispense record represents the dispensing of a medication to a pati
 | patient_id | string | Unique identifier for the patient | - |
 | medication_id | string | Unique identifier for the medication | - |
 | status | string | Status of the medication dispense | active, completed, entered-in-error, intended, stopped, on-hold, unknown, not-taken |
-| dispense_date | date | Date when the medication was dispensed | - |
-| prepared_date | date | Date when the medication was prepared | - |
+| when_handed_over | date | Date when the medication was handed over | - |
+| when_prepared | date | Date when the medication was prepared | - |
 | dose_unit | string | Unit of measurement for the dose | - |
 | dose_amount | string | Amount of medication dispensed | - |
 | days_supply | string | Number of days the medication will last | - |
@@ -32,5 +32,6 @@ A medication dispense record represents the dispensing of a medication to a pati
 | dosage_site | string | Anatomical site of administration | - |
 | note_text | string | Additional notes about the dispense | - |
 | practitioner_id | string | Unique identifier for the practitioner who dispensed | - |
-| facility_id | string | Unique identifier for the facility where dispensed | - |
+| organization_id | string | Unique identifier for the organization | - |
+| location_id | string | Unique identifier for the facility where dispensed | - |
 | data_source | string | Source of the medication dispense data | - |

@@ -20,7 +20,8 @@ A medication administration record represents the actual administration of a med
 | patient_id | string | Unique identifier for the patient | - |
 | medication_id | string | Unique identifier for the medication | - |
 | status | string | Status of the medication administration | active, completed, entered-in-error, intended, stopped, on-hold, unknown, not-taken |
-| administration_date | date | Date and time when the medication was administered | - |
+| start_date | date | Start date of the medication administration | - |
+| end_date | date | End date of the medication administration | - |
 | dose_unit | string | Unit of measurement for the dose | - |
 | dose_amount | string | Amount of medication administered | - |
 | dosage_method | string | Method of administration | - |
@@ -28,4 +29,5 @@ A medication administration record represents the actual administration of a med
 | dosage_site | string | Anatomical site of administration | - |
 | note_text | string | Additional notes about the administration | - |
 | practitioner_id | string | Unique identifier for the practitioner who administered | - |
+| organization_id | string | Unique identifier for the organization | - |
 | data_source | string | Source of the medication administration data | - |

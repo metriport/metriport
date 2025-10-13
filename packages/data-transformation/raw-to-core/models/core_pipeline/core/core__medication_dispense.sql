@@ -3,8 +3,8 @@ select
     ,   cast(p.id as {{ dbt.type_string() }} )                                                      as patient_id
     ,   cast(m.id as {{ dbt.type_string() }} )                                                      as medication_id
     ,   cast(md.status as {{ dbt.type_string() }} )                                                 as status
-    ,   {{ try_to_cast_date('md.whenhandedover') }}                                                 as dispense_date
-    ,   {{ try_to_cast_date('md.whenprepared') }}                                                   as prepared_date
+    ,   {{ try_to_cast_date('md.whenhandedover') }}                                                 as when_handed_over
+    ,   {{ try_to_cast_date('md.whenprepared') }}                                                   as when_prepared
     ,   cast(
             coalesce(
                 md.quantity_unit,
@@ -62,17 +62,19 @@ select
         )                                                                                           as note_text
     ,   cast(
             case 
-                when md.performer_0_actor_reference ilike '%practitioner%' then right(md.performer_0_actor_reference, 36)
+                when md.performer_0_actor_reference ilike '%practitioner%' 
+                    then right(md.performer_0_actor_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
         )                                                                                           as practitioner_id
     ,   cast(
             case 
-                when md.performer_0_actor_reference ilike '%organization%' then right(md.performer_0_actor_reference, 36)
+                when md.performer_0_actor_reference ilike '%organization%' 
+                    then right(md.performer_0_actor_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
         )                                                                                           as organization_id
-    ,   cast(right(md.location_reference, 36) as {{ dbt.type_string() }} )                          as facility_id
+    ,   cast(right(md.location_reference, 36) as {{ dbt.type_string() }} )                          as location_id
     ,   cast(md.meta_source as {{ dbt.type_string() }} )                                            as data_source
 from {{ref('stage__medicationdispense')}} as md
 inner join {{ref('stage__medication')}} as m

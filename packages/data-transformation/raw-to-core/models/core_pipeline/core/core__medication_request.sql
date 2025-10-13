@@ -3,7 +3,7 @@ select
     ,   cast(p.id as {{ dbt.type_string() }} )                                                      as patient_id
     ,   cast(m.id as {{ dbt.type_string() }} )                                                      as medication_id
     ,   cast(mr.status as {{ dbt.type_string() }} )                                                 as status
-    ,   {{ try_to_cast_date('mr.authoredon') }}                                                     as request_date
+    ,   {{ try_to_cast_date('mr.authoredon') }}                                                     as authored_on
     ,   cast(
             coalesce(
                 mr.dosageinstruction_0_doseandrate_0_dosequantity_unit,
@@ -57,13 +57,15 @@ select
         )                                                                                           as note_text
     ,   cast(
             case 
-                when mr.requester_reference ilike '%practitioner%' then right(mr.requester_reference, 36)
+                when mr.requester_reference ilike '%practitioner%' 
+                    then right(mr.requester_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
         )                                                                                           as practitioner_id
     ,   cast(
             case 
-                when mr.requester_reference ilike '%organization%' then right(mr.requester_reference, 36)
+                when mr.requester_reference ilike '%organization%' 
+                    then right(mr.requester_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
         )                                                                                           as organization_id

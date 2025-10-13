@@ -20,7 +20,7 @@ A medication request record represents a request for a medication to be prescrib
 | patient_id | string | Unique identifier for the patient | - |
 | medication_id | string | Unique identifier for the medication | - |
 | status | string | Status of the medication request | active, completed, entered-in-error, intended, stopped, on-hold, unknown, not-taken |
-| request_date | date | Date when the medication was requested | - |
+| authored_on | date | Date when the medication request was authored | - |
 | dose_unit | string | Unit of measurement for the dose | - |
 | dose_amount | string | Amount of medication requested | - |
 | dosage_method | string | Method of administration | - |
@@ -28,4 +28,5 @@ A medication request record represents a request for a medication to be prescrib
 | dosage_site | string | Anatomical site of administration | - |
 | note_text | string | Additional notes about the request | - |
 | practitioner_id | string | Unique identifier for the practitioner who requested | - |
+| organization_id | string | Unique identifier for the organization | - |
 | data_source | string | Source of the medication request data | - |

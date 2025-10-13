@@ -40,7 +40,8 @@ select
     ,   coalesce(
             {{ try_to_cast_date('pro.performeddatetime', 'YYYY-MM-DD') }},
             {{ try_to_cast_date('pro.performedperiod_start', 'YYYY-MM-DD') }}
-        )                                                                                                           as procedure_date
+        )                                                                                                           as start_date
+    ,   {{ try_to_cast_date('pro.performedperiod_end', 'YYYY-MM-DD') }}                                             as end_date
     ,   cast(tc.system as {{ dbt.type_string() }} )                                                                 as source_code_type
     ,   cast(tc.code as {{ dbt.type_string() }} )                                                                   as source_code
     ,   cast(tc.description as {{ dbt.type_string() }} )                                                            as source_description
@@ -67,6 +68,12 @@ select
                 snomed.description
             ) as {{ dbt.type_string() }} 
         )                                                                                                           as normalized_description
+    ,   cast(tc_bs.system as {{ dbt.type_string() }} )                                                              as body_site_code_type
+    ,   cast(tc_bs.code as {{ dbt.type_string() }} )                                                                as body_site_code
+    ,   cast(tc_bs.description as {{ dbt.type_string() }} )                                                         as body_site_description
+    ,   cast(tc_rc.system as {{ dbt.type_string() }} )                                                              as reason_code_type
+    ,   cast(tc_rc.code as {{ dbt.type_string() }} )                                                                as reason_code
+    ,   cast(tc_rc.description as {{ dbt.type_string() }} )                                                         as reason_description
     ,   cast(
             coalesce(
                 pro.note_0_text,
@@ -78,22 +85,18 @@ select
                 pro.note_6_text,
                 pro.note_7_text
             ) as {{ dbt.type_string() }} 
-        )                                                                                                           as note
-    ,   cast(tc_bs.system as {{ dbt.type_string() }} )                                                              as body_site_code_type
-    ,   cast(tc_bs.code as {{ dbt.type_string() }} )                                                                as body_site_code
-    ,   cast(tc_bs.description as {{ dbt.type_string() }} )                                                         as body_site_description
-    ,   cast(tc_rc.system as {{ dbt.type_string() }} )                                                              as reason_code_type
-    ,   cast(tc_rc.code as {{ dbt.type_string() }} )                                                                as reason_code
-    ,   cast(tc_rc.description as {{ dbt.type_string() }} )                                                         as reason_description
+        )                                                                                                           as note_text
     ,   cast(
             case 
-                when pro.performer_0_actor_reference ilike '%practitioner%' then right(pro.performer_0_actor_reference, 36)
+                when pro.performer_0_actor_reference ilike '%practitioner%' 
+                    then right(pro.performer_0_actor_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
         )                                                                                                           as practitioner_id
     ,   cast(
             case 
-                when pro.performer_0_actor_reference ilike '%organization%' then right(pro.performer_0_actor_reference, 36)
+                when pro.performer_0_actor_reference ilike '%organization%' 
+                    then right(pro.performer_0_actor_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
         )                                                                                                           as organization_id

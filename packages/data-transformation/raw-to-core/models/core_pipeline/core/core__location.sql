@@ -8,7 +8,7 @@ select
           type_coding_2_display,
           type_text
         ) as {{ dbt.type_string() }} 
-      )                                                                             as facility_type
+      )                                                                             as type
     , cast(
         coalesce(
           physicaltype_coding_0_display,
@@ -16,8 +16,8 @@ select
           physicaltype_coding_2_display,
           physicaltype_text
         ) as {{ dbt.type_string() }} 
-      )                                                                             as facility_physical_type
-    , cast(right(managingorganization_reference, 36) as {{ dbt.type_string() }} )   as parent_organization
+      )                                                                             as physical_type
+    , cast(right(managingorganization_reference, 36) as {{ dbt.type_string() }} )   as managing_organization
     , cast(
         coalesce(
           address_0_text,

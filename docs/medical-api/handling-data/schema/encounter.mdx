@@ -12,15 +12,15 @@ The encounter table is intended to store information that represents a unique pa
 **Foreign Keys:**
 * patient_id
 * practitioner_id
-* facility_id
+* location_id
 
 | Column | Data Type | Description | Terminology |
 | ------ | --------- | ----------- | ----------- |
 | encounter_id | string | Unique identifier for the encounter | - |
 | patient_id | string | Unique identifier for the patient | - |
 | status | string | Status of the encounter | planned, arrived, triaged, in-progress, onleave, finished, cancelled |
-| encounter_start_date | date | Start date of the encounter | - |
-| encounter_end_date | date | End date of the encounter | - |
+| start_date | date | Start date of the encounter | - |
+| end_date | date | End date of the encounter | - |
 | length_of_stay | integer | Length of stay in days | - |
 | type_code_type | string | Type of coding system for encounter type | - |
 | type_code | string | Encounter type code | - |
@@ -31,6 +31,6 @@ The encounter table is intended to store information that represents a unique pa
 | discharge_disposition_description | string | Human-readable description of discharge disposition | - |
 | priority_description | string | Human-readable description of priority | - |
 | practitioner_id | string | Unique identifier for the practitioner | - |
-| facility_id | string | Unique identifier for the facility | - |
+| location_id | string | Unique identifier for the facility | - |
 | organization_id | string | Unique identifier for the organization | - |
 | data_source | string | Source of the encounter data | - |

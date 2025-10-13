@@ -37,13 +37,14 @@ select
         cast(enc.id as {{ dbt.type_string() }} )                                                as encounter_id      
     ,   cast(p.id as {{ dbt.type_string() }} )                                                  as patient_id
     ,   cast(enc.status as {{ dbt.type_string() }} )                                            as status
-    ,   {{ try_to_cast_date('enc.period_start', 'YYYY-MM-DD') }}                                as encounter_start_date
-    ,   {{ try_to_cast_date('enc.period_end', 'YYYY-MM-DD') }}                                  as encounter_end_date
+    ,   {{ try_to_cast_date('enc.period_start', 'YYYY-MM-DD') }}                                as start_date
+    ,   {{ try_to_cast_date('enc.period_end', 'YYYY-MM-DD') }}                                  as end_date
     ,   {{ 
             dbt.datediff(
                 try_to_cast_date('enc.period_start', 'YYYY-MM-DD'),
-                try_to_cast_date('enc.period_end', 'YYYY-MM-DD'),'day'
-            ) 
+                try_to_cast_date('enc.period_end', 'YYYY-MM-DD'),
+                'day'
+            )
         }}                                                                                      as length_of_stay
     ,   cast(tc_type.system  as {{ dbt.type_string() }} )                                       as type_code_type
     ,   cast(tc_type.code  as {{ dbt.type_string() }} )                                         as type_code
@@ -54,7 +55,7 @@ select
     ,   cast(tc_dd.description as {{ dbt.type_string() }} )                                     as discharge_disposition_description
     ,   cast(tc_pr.description as {{ dbt.type_string() }} )                                     as priority_description
     ,   cast(right(enc.participant_0_individual_reference, 36) as {{ dbt.type_string() }} )     as practitioner_id
-    ,   cast(right(enc.location_0_location_reference, 36) as {{ dbt.type_string() }} )          as facility_id
+    ,   cast(right(enc.location_0_location_reference, 36) as {{ dbt.type_string() }} )          as location_id
     ,   cast(right(enc.serviceprovider_reference, 36) as {{ dbt.type_string() }} )              as organization_id
     ,   cast(enc.meta_source as {{ dbt.type_string() }} )                                       as data_source
 from {{ref('stage__encounter')}} as enc

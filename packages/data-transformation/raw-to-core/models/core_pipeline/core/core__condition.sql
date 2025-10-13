@@ -39,10 +39,9 @@ select
     ,   {{ try_to_cast_date('c.recordeddate') }}                                                            as recorded_date
     ,   coalesce(
             {{ try_to_cast_date('c.onsetdatetime') }}, 
-            {{ try_to_cast_date('c.onsetperiod_start') }},
-            {{ try_to_cast_date('c.onsetstring') }}
-        )                                                                                                   as onset_date
-    ,   {{ try_to_cast_date('c.onsetperiod_end') }}                                                         as resolved_date
+            {{ try_to_cast_date('c.onsetperiod_start') }}
+        )                                                                                                   as start_date
+    ,   {{ try_to_cast_date('c.onsetperiod_end') }}                                                         as end_date
     ,   cast(
             case 
                 when tc_cat.code in ('75326-9', '55607006') then 'problem'
@@ -91,7 +90,7 @@ select
                 c.note_1_text,
                 c.note_2_text
             ) as {{ dbt.type_string() }} 
-        )                                                                                                   as note
+        )                                                                                                   as note_text
     ,   cast(right(c.recorder_reference, 36) as {{ dbt.type_string() }} )                                   as practitioner_id
     ,   cast(c.meta_source as {{ dbt.type_string() }} )                                                     as data_source
 from {{ref('stage__condition')}} c

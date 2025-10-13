@@ -53,15 +53,8 @@ select
     ,   coalesce(
             {{ try_to_cast_date('obvs.effectivedatetime') }}, 
             {{ try_to_cast_date('obvs.effectiveperiod_start') }} 
-        )                                                                                                   as observation_date
-    ,   coalesce(
-            {{ try_to_cast_date('obvs.effectivedatetime') }}, 
-            {{ try_to_cast_date('obvs.effectiveperiod_start') }} 
-        )                                                                                                   as collection_date
-    ,   coalesce(
-            {{ try_to_cast_date('obvs.effectivedatetime') }}, 
-            {{ try_to_cast_date('obvs.effectiveperiod_end') }} 
-        )                                                                                                   as result_date
+        )                                                                                                   as start_date
+    ,   {{ try_to_cast_date('obvs.effectiveperiod_end') }}                                                  as end_date
     ,   cast(tc.system as {{ dbt.type_string() }} )                                                         as source_code_type
     ,   cast(tc.code as {{ dbt.type_string() }} )                                                           as source_code
     ,   cast(tc.display as {{ dbt.type_string() }} )                                                        as source_description
