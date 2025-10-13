@@ -31,8 +31,6 @@ models:
     core_pipeline:
       stage:
         +materialized: ephemeral
-      intermediate:
-        +materialized: ephemeral
       core:
         +schema: core_v2
         +materialized: table

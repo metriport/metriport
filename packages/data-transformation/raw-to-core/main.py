@@ -10,20 +10,12 @@ bucket_name = 'tuva-public-resources'
 
 # Define only the enabled terminology files
 terminology_files = [
-    'act_site.csv',
     'cvx.csv',
     'hcpcs_level_2.csv',
     'icd_10_cm.csv',
-    'icd_10_pcs.csv',
     'icd_9_cm.csv',
-    'icd_9_pcs.csv',
-    'immunization_route_code.csv',
-    'immunization_status.csv',
-    'immunization_status_reason.csv',
     'loinc.csv',
     'ndc.csv',
-    'observation_type.csv',
-    'rxnorm_to_atc.csv',
     'snomed_ct.csv'
 ]
 

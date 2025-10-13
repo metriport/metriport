@@ -5,6 +5,7 @@ seeds:
     description: 'This seed contains An anatomical location on a human which can be the focus of an act.'
     config:
       schema: terminology
+      enabled: false
       alias: act_site
       tags:
         - terminology
@@ -360,6 +361,7 @@ seeds:
     description: 'Seed containing ICD-9-PCS codes and descriptions.'
     config:
       schema: terminology
+      enabled: false
       alias: icd_9_pcs
       tags:
         - terminology
@@ -408,6 +410,7 @@ seeds:
     description: 'Seed containing ICD-10-PCS codes and descriptions.'
     config:
       schema: terminology
+      enabled: false
       alias: icd_10_pcs
       tags:
         - terminology
@@ -426,6 +429,7 @@ seeds:
     description: 'This seed contains the administrative routes used during vaccination.'
     config:
       schema: terminology
+      enabled: false
       alias: immunization_route_code
       tags:
         - terminology
@@ -442,6 +446,7 @@ seeds:
     description: 'This seed describes the reason why a dose of vaccine was not administered.'
     config:
       schema: terminology
+      enabled: false
       alias: immunization_status_reason
       tags:
         - terminology
@@ -461,6 +466,7 @@ seeds:
     description: 'This seed contains the current status of the administered dose of vaccine.'
     config:
       schema: terminology
+      enabled: false
       alias: immunization_status
       tags:
         - terminology
@@ -743,6 +749,7 @@ seeds:
     description: 'Seed containing observation types used by HEDIS/FHIR US Core, with an other category. https://terminology.hl7.org/1.0.0/CodeSystem-observation-category.html'
     config:
       schema: terminology
+      enabled: false
       tags:
         - terminology
       column_types:
@@ -956,6 +963,7 @@ seeds:
     description: 'This file maps ATC classes to RxCUI. The file is maintained by [CodeRX](https://coderx.io/) in partnership with Tuva Health.'
     config:
       schema: terminology
+      enabled: false
       alias: rxnorm_to_atc
       tags:
         - terminology
