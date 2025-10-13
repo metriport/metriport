@@ -11,7 +11,7 @@ import { getPharmacyQueryStatus } from "./pharmacy-status";
 import { queryDocumentsAcrossLaboratories } from "./laboratory-query";
 import { getLaboratoryQueryStatus } from "./laboratory-status";
 
-export function queryDocumentsAcrossSource({
+export function queryDocumentsFromSource({
   cxId,
   patientId,
   facilityId,
@@ -20,12 +20,10 @@ export function queryDocumentsAcrossSource({
   commonwell,
   carequality,
   metadata,
-}: NetworkQuery & {
-  cxId: string;
-  patientId: string;
-  facilityId: string;
-  source: NetworkSource;
-}): Promise<SourceQueryProgress[]> {
+}: NetworkQuery &
+  NetworkQueryParams & {
+    source: NetworkSource;
+  }): Promise<SourceQueryProgress[]> {
   switch (source) {
     case "hie":
       return queryDocumentsAcrossHIEs({
