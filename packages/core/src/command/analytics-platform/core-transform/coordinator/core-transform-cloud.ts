@@ -7,9 +7,10 @@ export class CoreTransformCloud extends CoreTransformHandler {
   }
 
   async processCoreTransform(params: ProcessCoreTransformRequest): Promise<void> {
-    const { cxId, databaseName, schemaName } = params;
+    const { cxId, jobId, databaseName, schemaName } = params;
     await startCoreTransform({
       cxId,
+      jobId,
       database: databaseName,
       schema: schemaName,
     });

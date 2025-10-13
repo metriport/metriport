@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
@@ -6,7 +7,13 @@ import {
   setupCustomerAnalyticsDb,
   UsersToCreateAndGrantAccess,
 } from "@metriport/core/command/analytics-platform/csv-to-db/setup-cx-db";
-import { dbCredsSchema, DbCredsWithSchema, getEnvVarOrFail, sleep } from "@metriport/shared";
+import {
+  dbCredsSchema,
+  DbCredsWithSchema,
+  getEnvVar,
+  getEnvVarOrFail,
+  sleep,
+} from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { Command } from "commander";
 import dayjs from "dayjs";
@@ -29,38 +36,47 @@ dayjs.extend(duration);
  * - ts-node src/analytics-platform/db-setup.ts -u <username>
  */
 
-const cxId = getEnvVarOrFail("CX_ID");
+const cxIdFromEnvVars = getEnvVar("CX_ID");
 const dbCredsRaw = getEnvVarOrFail("ANALYTICS_DB_CREDS");
 
 const program = new Command();
 program
   .name("db-setup")
   .description("CLI to setup the analytics database for a customer.")
-  .requiredOption("-f2c, --fhr-to-csv-username <username>", "The username for the lambda user")
-  .requiredOption("-r2c, --raw-to-core-username <username>", "The username for the lambda user")
+  .option("-c, --cxId <cxId>", "The customer ID (optional, defaults to env var CX_ID)")
+  .option("-f2c, --fhir-to-csv-username <username>", "The username for the lambda user")
+  .option("-r2c, --raw-to-core-username <username>", "The username for the lambda user")
+  .option("--users", "Create users", true)
+  .option("--no-users", "Do not create users", false)
   .showHelpAfterError()
   .action(main);
 program.parse();
 
 async function main({
+  cxId: cxIdParam,
   fhirToCsvUsername,
   rawToCoreUsername,
+  users: createUsers,
 }: {
-  fhirToCsvUsername: string;
-  rawToCoreUsername: string;
+  cxId: string | undefined;
+  fhirToCsvUsername: string | undefined;
+  rawToCoreUsername: string | undefined;
+  users: boolean;
 }) {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
   const startedAt = Date.now();
   console.log(`############## Started at ${buildDayjs().toISOString()} ##############`);
 
-  const f2cPwd = (await getPassword("fhr-to-csv")).trim();
-  if (!f2cPwd) {
-    console.log("Error: fhr-to-csv password is required");
+  const cxId = cxIdParam ?? cxIdFromEnvVars;
+  if (!cxId) {
+    console.log("Error: either --cxId or env var CX_ID is required");
     process.exit(1);
   }
-  const r2cPwd = (await getPassword("raw-to-core")).trim();
-  if (!r2cPwd) {
-    console.log("Error: raw-to-core password is required");
+
+  if (createUsers && (fhirToCsvUsername == undefined || rawToCoreUsername == undefined)) {
+    console.log(
+      "Error: either --no-users or --fhir-to-csv-username and --raw-to-core-username are required"
+    );
     process.exit(1);
   }
 
@@ -70,10 +86,24 @@ async function main({
     schemaName: rawDbSchema,
   };
 
-  const dbUsersToCreateAndGrantAccess: UsersToCreateAndGrantAccess = {
-    f2c: { username: fhirToCsvUsername, password: f2cPwd },
-    r2c: { username: rawToCoreUsername, password: r2cPwd },
-  };
+  let dbUsersToCreateAndGrantAccess: UsersToCreateAndGrantAccess | undefined = undefined;
+  if (createUsers) {
+    const f2cPwd = (await getPassword("fhir-to-csv")).trim();
+    if (!f2cPwd) {
+      console.log("Error: fhir-to-csv password is required");
+      process.exit(1);
+    }
+    const r2cPwd = (await getPassword("raw-to-core")).trim();
+    if (!r2cPwd) {
+      console.log("Error: raw-to-core password is required");
+      process.exit(1);
+    }
+
+    dbUsersToCreateAndGrantAccess = {
+      f2c: { username: fhirToCsvUsername!, password: f2cPwd },
+      r2c: { username: rawToCoreUsername!, password: r2cPwd },
+    };
+  }
 
   await setupCustomerAnalyticsDb({
     cxId,

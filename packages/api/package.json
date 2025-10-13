@@ -12,7 +12,7 @@
     "start-docker-compose": "docker compose -f docker-compose.dev.yml up --build -d && npm run start-opensearch && npm run start-analytics-transform",
     "start-opensearch": "docker compose -f docker-compose-opensearch.yml -p opensearch up -d && docker cp ./opensearch-root-ca.pem opensearch-node1:/usr/share/opensearch/config/root-ca.pem",
     "start-analytics-transform": "cd ../data-transformation/fhir-to-csv/ && docker compose -f docker-compose.server.yml up --build -d && cd -",
-    "start-dependencies": "docker compose -f docker-compose.dev.yml up postgres dynamodb -d && npm run start-opensearch && npm run start-analytics-transform",
+    "start-dependencies": "docker compose -f docker-compose.dev.yml up postgres postgres-analytics dynamodb -d && npm run start-opensearch && npm run start-analytics-transform",
     "build": "tsc -p tsconfig.build.json",
     "build:cloud": "tsc -p tsconfig.cloud.json",
     "typecheck": "tsc --noEmit",

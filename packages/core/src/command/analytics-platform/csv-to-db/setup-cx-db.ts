@@ -1,6 +1,7 @@
 import { DbCredsWithSchema } from "@metriport/shared";
 import { Client } from "pg";
 import { capture, out } from "../../../util";
+import { Config } from "../../../util/config";
 import {
   getCreateCxDbCommand,
   getCreateDbUserIfNotExistsCommand,
@@ -39,7 +40,7 @@ export async function setupCustomerAnalyticsDb({
 }: {
   cxId: string;
   dbCreds: DbCredsWithSchema;
-  dbUsersToCreateAndGrantAccess: UsersToCreateAndGrantAccess;
+  dbUsersToCreateAndGrantAccess: UsersToCreateAndGrantAccess | undefined;
 }): Promise<void> {
   const { log } = out(`setupCustomerAnalyticsDb - cx ${cxId}`);
 
@@ -56,7 +57,7 @@ export async function setupCustomerAnalyticsDb({
     })}`
   );
 
-  const dbClient = new Client({
+  let dbClient = new Client({
     host: dbCreds.host,
     port: dbCreds.port,
     database: dbCreds.dbname,
@@ -64,20 +65,31 @@ export async function setupCustomerAnalyticsDb({
     password: dbCreds.password,
   });
   try {
-    const cxDbName = getCxDbName(cxId, dbCreds.dbname);
     await dbClient.connect();
     log(`Connected to database`);
+    await createCustomerAnalyticsDb({ dbClient, cxDbName, log });
+    await dbClient.end();
+    log(`Disconnected from main database, connecting to customer database...`);
 
-    await initializeDbInstanceIfNeeded({ dbClient, log });
-
-    await createCustomerAnalyticsDb({ dbClient, cxDbName, schemaName: dbCreds.schemaName, log });
-
-    await createUsersInAnalyticsDb({
-      dbClient,
-      dbName: cxDbName,
-      schemaName: dbCreds.schemaName,
-      dbUsersToCreateAndGrantAccess,
+    dbClient = new Client({
+      host: dbCreds.host,
+      port: dbCreds.port,
+      database: cxDbName,
+      user: dbCreds.username,
+      password: dbCreds.password,
     });
+    await dbClient.connect();
+    log(`Connected to database`);
+    await initializeDbInstanceIfNeeded({ dbClient, log });
+    await createShemaAnalyticsDb({ dbClient, schemaName: dbCreds.schemaName, log });
+    if (dbUsersToCreateAndGrantAccess) {
+      await createUsersInAnalyticsDb({
+        dbClient,
+        dbName: cxDbName,
+        schemaName: dbCreds.schemaName,
+        dbUsersToCreateAndGrantAccess,
+      });
+    }
     log(`Successfully created analytics database and lambdas users`);
   } finally {
     await dbClient.end();
@@ -86,6 +98,17 @@ export async function setupCustomerAnalyticsDb({
 }
 
 async function initializeDbInstanceIfNeeded({
+  dbClient,
+  log,
+}: {
+  dbClient: Client;
+  log: typeof console.log;
+}): Promise<void> {
+  if (Config.isDev()) return;
+  await installAwsS3Extension({ dbClient, log });
+}
+
+async function installAwsS3Extension({
   dbClient,
   log,
 }: {
@@ -103,12 +126,10 @@ async function initializeDbInstanceIfNeeded({
 async function createCustomerAnalyticsDb({
   dbClient,
   cxDbName,
-  schemaName,
   log,
 }: {
   dbClient: Client;
   cxDbName: string;
-  schemaName: string;
   log: typeof console.log;
 }): Promise<void> {
   const cmdDbExists = getCxDbExistsCommand({ cxDbName });
@@ -120,7 +141,17 @@ async function createCustomerAnalyticsDb({
   } else {
     log(`Database ${cxDbName} already exists`);
   }
+}
 
+async function createShemaAnalyticsDb({
+  dbClient,
+  schemaName,
+  log,
+}: {
+  dbClient: Client;
+  schemaName: string;
+  log: typeof console.log;
+}): Promise<void> {
   const cmdSchemaExists = getSchemaExistsCommand({ schemaName });
   const schemaExists = await dbClient.query(cmdSchemaExists);
   if (schemaExists.rowCount < 1) {

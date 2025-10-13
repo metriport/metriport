@@ -1,4 +1,4 @@
-import { BadRequestError } from "@metriport/shared";
+import { BadRequestError, uuidv4 } from "@metriport/shared";
 import { executeAsynchronously } from "../../../util/concurrency";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
@@ -8,6 +8,8 @@ import {
 } from "../../feature-flags/domain-ffs";
 import { getCxDbName, rawDbSchema } from "../csv-to-db/db-asset-defs";
 import { buildCoreTransformHandler } from "./coordinator/core-transform-factory";
+
+const amountOfCoreTrannsformExecutedInParallel = 5;
 
 /**
  * Rebuilds the core schemas for a given cxId.
@@ -35,16 +37,19 @@ export async function rebuildCoreSchemas({ cxId }: { cxId?: string }): Promise<s
   await executeAsynchronously(
     cxIds,
     async cxId => {
+      const jobId = uuidv4();
+      log(`Rebuilding core schema for ${cxId}, jobId: ${jobId}`);
       const cxDbName = getCxDbName(cxId, dbCreds.dbname);
       const coreTransformHandler = buildCoreTransformHandler();
       await coreTransformHandler.processCoreTransform({
         cxId,
+        jobId,
         databaseName: cxDbName,
         schemaName: rawDbSchema,
       });
     },
     {
-      numberOfParallelExecutions: 10,
+      numberOfParallelExecutions: amountOfCoreTrannsformExecutedInParallel,
     }
   );
 

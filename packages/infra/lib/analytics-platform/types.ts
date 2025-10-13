@@ -19,4 +19,7 @@ export type AnalyticsPlatformsAssets = {
   analyticsPlatformBucket: s3.Bucket;
   coreTransformJobCompletionTopic: sns.Topic;
   dbCredsSecret: Secret;
+  snowflakeConnectorLambda: Lambda;
+  snowflakeConnectorQueue: Queue;
+  coreToDwhLambda: Lambda;
 };
