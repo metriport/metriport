@@ -7,9 +7,12 @@ import { getPatientInfoOrFail, patientAuthorization } from "../middlewares/patie
 import { checkRateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getFrom } from "../util";
 import { networkQuerySchema } from "./schemas/network";
-import { queryDocumentsAcrossSource } from "../../command/medical/network/source-query";
+import {
+  queryDocumentsAcrossSource,
+  getSourceQueryStatus,
+} from "../../command/medical/network/source-query";
 import { getPatientPrimaryFacilityIdOrFail } from "../../command/medical/patient/get-patient-facilities";
-import { SourceQueryProgress } from "@metriport/core/domain/network-query";
+import { networkSources, SourceQueryProgress } from "@metriport/core/domain/network-query";
 
 const router = Router();
 
@@ -26,9 +29,18 @@ router.get(
   requestLogger,
   patientAuthorization("query"),
   asyncHandler(async (req: Request, res: Response) => {
-    const { patient } = getPatientInfoOrFail(req);
-    // TODO: convert documentQueryProgress to networkQueryProgress
-    return res.status(OK).json(patient.data.documentQueryProgress ?? {});
+    const { cxId, id: patientId, patient } = getPatientInfoOrFail(req);
+
+    const queryProgressPromises: Array<Promise<SourceQueryProgress | undefined>> = [];
+    for (const source of networkSources) {
+      queryProgressPromises.push(getSourceQueryStatus({ cxId, patientId, patient, source }));
+    }
+    const queryProgress = await Promise.all(queryProgressPromises);
+    const networkQueryProgress = _(queryProgress).compact().value();
+
+    return res.status(OK).json({
+      sources: networkQueryProgress,
+    });
   })
 );
 

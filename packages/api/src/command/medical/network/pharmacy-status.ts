@@ -6,7 +6,7 @@ import { getPatientPharmacyDocumentsStatus } from "@metriport/core/external/sure
 export async function getPharmacyQueryStatus({
   cxId,
   patientId,
-}: NetworkQueryParams): Promise<SourceQueryProgress | undefined> {
+}: Omit<NetworkQueryParams, "facilityId">): Promise<SourceQueryProgress | undefined> {
   const [surescriptsMapping, pharmacyDocumentsStatus] = await Promise.all([
     findFirstPatientMappingForSource({
       patientId,

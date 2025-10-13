@@ -1,3 +1,4 @@
+import { Patient } from "@metriport/core/domain/patient";
 import { queryDocumentsAcrossHIEs as _queryDocumentsAcrossHIEs } from "../../../command/medical/document/document-query";
 import { SourceQueryProgress } from "@metriport/core/domain/network-query";
 import { documentQueryProgressToDTO } from "../../../routes/medical/dtos/networkDTO";
@@ -31,4 +32,15 @@ export async function queryDocumentsAcrossHIEs({
 
   const sourceQueryProgress = documentQueryProgressToDTO(progress);
   return sourceQueryProgress ? [sourceQueryProgress] : [];
+}
+
+export async function getHieQueryStatus({
+  patient,
+}: {
+  patient: Patient;
+}): Promise<SourceQueryProgress | undefined> {
+  const { documentQueryProgress } = patient.data;
+  if (!documentQueryProgress) return undefined;
+  const sourceQueryProgress = documentQueryProgressToDTO(documentQueryProgress);
+  return sourceQueryProgress;
 }
