@@ -5,6 +5,7 @@ import { analyticsAsync, EventTypes } from "../../external/analytics/posthog";
 import { reportAdvancedMetrics } from "../../external/aws/cloudwatch";
 import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 import { Config } from "../../util/config";
+import { capture } from "../../util/notifications";
 
 export type TrackRosterSizePerCustomerParams = {
   rosterSize: number;
@@ -22,6 +23,20 @@ export async function trackRosterSizePerCustomer({
   orgsByCxId,
 }: TrackRosterSizePerCustomerParams): Promise<void> {
   log("Tracking roster size per customer per HIE");
+
+  if (rosterSize === 0) {
+    capture.error(
+      new Error(
+        `Roster size is 0 for ${hieName}. This may occur if we are still setting up the integration. Ask in slack if this is expected.`
+      ),
+      {
+        extra: {
+          rosterSize,
+          hieName,
+        },
+      }
+    );
+  }
 
   const posthogSecretArn = Config.getPostHogApiKey();
   if (!posthogSecretArn) {
