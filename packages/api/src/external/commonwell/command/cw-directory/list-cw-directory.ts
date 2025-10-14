@@ -5,7 +5,7 @@ import { makeCommonWellMemberAPI } from "../../../commonwell-v2/api";
 /**
  * Returns the organization with the given OID from the CommonWell Directory.
  *
- * @param oid Optional, the OID of the organization to fetch.
+ * @param oid The OID of the organization to fetch.
  * @returns a CommonWell Organization resource.
  */
 export async function getCwDirectoryEntry(oid: string): Promise<Organization> {
