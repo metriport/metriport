@@ -50,8 +50,8 @@ export const up: Migration = async ({ context: queryInterface }) => {
   }
 };
 
-export const down: Migration = async () => {
-  console.log(
-    "No down migration for 2025-02-01_00_alter-cq-directory-entry-new_recreate-search-criteria"
-  );
+export const down: Migration = async ({ context: queryInterface }) => {
+  await queryInterface.sequelize.query(dropHieViewSql, {
+    type: QueryTypes.RAW,
+  });
 };
