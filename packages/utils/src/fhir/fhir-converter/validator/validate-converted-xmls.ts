@@ -39,7 +39,7 @@ export async function main() {
     console.log(`Processing ${index + 1}/${ccdaFileNames.length}. Filename: ${fileName}`);
 
     try {
-      const bundle = await convert("", fileName, converterApi);
+      const { updatedConversionResult: bundle } = await convert("", fileName, converterApi);
 
       if (!bundle) {
         console.log("Skipping file");

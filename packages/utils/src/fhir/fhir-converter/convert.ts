@@ -34,7 +34,7 @@ export async function convertCDAsToFHIR(
   console.log(`Converting ${fileNames.length} files, ${parallelConversions} at a time...`);
   let errorCount = 0;
   let nonXMLBodyCount = 0;
-  let attachmentsProcessed = 0;
+  const attachmentsProcessedPerFile: number[] = [];
   await executeAsynchronously(
     fileNames,
     async fileName => {
@@ -43,7 +43,7 @@ export async function convertCDAsToFHIR(
           updatedConversionResult: conversionResult,
           attachmentsProcessed: attachmentsProcessedForFile,
         } = await convert(baseFolderName, fileName, api, options);
-        attachmentsProcessed += attachmentsProcessedForFile;
+        attachmentsProcessedPerFile.push(attachmentsProcessedForFile);
         const destFileName = path.join(outputFolderName, fileName.replace(".xml", fhirExtension));
         makeDirIfNeeded(destFileName);
         writeFileContents(destFileName, JSON.stringify(conversionResult));
@@ -67,6 +67,8 @@ export async function convertCDAsToFHIR(
   console.log(
     `Converted ${fileNames.length - errorCount} files in ${conversionDuration} ms.${reportFailure}`
   );
+
+  const attachmentsProcessed = attachmentsProcessedPerFile.reduce((sum, count) => sum + count, 0);
   console.log(`Attachments processed: ${attachmentsProcessed}`);
   return { errorCount, nonXMLBodyCount };
 }
