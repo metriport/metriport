@@ -8,16 +8,15 @@ export class CwDirectoryEntryViewModel
 {
   static NAME = "cw_directory_entry_view";
 
-  declare id: string; // Organization's OID
+  declare id: string;
   declare name: string;
   declare oid: string;
   declare orgType: string;
   declare rootOrganization: string;
   declare addressLine: string;
-  declare addressLine2?: string;
-  declare city: string;
-  declare state: string;
-  declare zip: string;
+  declare city: string | undefined;
+  declare state: string | undefined;
+  declare zip: string | undefined;
   declare country: string;
   declare data: unknown;
   declare active: boolean;
@@ -32,11 +31,9 @@ export class CwDirectoryEntryViewModel
         },
         name: {
           type: DataTypes.STRING,
-          field: "organization_name",
         },
         oid: {
           type: DataTypes.STRING,
-          field: "organization_id",
         },
         orgType: {
           type: DataTypes.STRING,
@@ -44,15 +41,11 @@ export class CwDirectoryEntryViewModel
         },
         rootOrganization: {
           type: DataTypes.STRING,
-          field: "member_name",
+          field: "root_organization",
         },
         addressLine: {
           type: DataTypes.STRING,
-          field: "address_line1",
-        },
-        addressLine2: {
-          type: DataTypes.STRING,
-          field: "address_line2",
+          field: "address_line",
         },
         city: {
           type: DataTypes.STRING,
@@ -62,7 +55,6 @@ export class CwDirectoryEntryViewModel
         },
         zip: {
           type: DataTypes.STRING,
-          field: "zip_code",
         },
         country: {
           type: DataTypes.STRING,
