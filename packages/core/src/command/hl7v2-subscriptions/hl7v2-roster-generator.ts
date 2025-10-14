@@ -163,6 +163,9 @@ export class Hl7v2RosterGenerator {
   }
 
   private async getOrganizations(cxIds: string[]): Promise<InternalOrganizationDTO[]> {
+    if (cxIds.length === 0) {
+      return [];
+    }
     const currentUrl = `${this.apiUrl}/${GET_ORGANIZATION_ENDPOINT}`;
     const baseParams = { cxIds: cxIds.join(",") };
 
