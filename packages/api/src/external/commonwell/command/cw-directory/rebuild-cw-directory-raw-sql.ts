@@ -31,9 +31,9 @@ export async function insertCwDirectoryEntries(
     entry.orgType,
     entry.rootOrganization,
     entry.addressLine,
-    entry.city,
-    entry.state,
-    entry.zip,
+    entry.city ?? null,
+    entry.state ?? null,
+    entry.zip ?? null,
     entry.data ? JSON.stringify(entry.data) : null,
     entry.active,
     entry.npi ?? null,
@@ -78,8 +78,9 @@ export async function getCwDirectoryIds(sequelize: Sequelize): Promise<string[]>
 export async function createTempCwDirectoryTable(sequelize: Sequelize): Promise<void> {
   await deleteTempCwDirectoryTable(sequelize);
   // The PK is added later, on `updateCwDirectoryViewDefinition`
-  const query = `CREATE TABLE IF NOT EXISTS ${cwDirectoryEntryTemp} (LIKE ${cwDirectoryEntry} 
-                 INCLUDING DEFAULTS INCLUDING STORAGE INCLUDING GENERATED EXCLUDING CONSTRAINTS)`;
+  const query = `CREATE TABLE IF NOT EXISTS ${cwDirectoryEntryTemp}
+   (LIKE ${cwDirectoryEntry}
+    INCLUDING DEFAULTS INCLUDING STORAGE INCLUDING GENERATED EXCLUDING CONSTRAINTS)`;
   await sequelize.query(query, { type: QueryTypes.RAW });
 }
 

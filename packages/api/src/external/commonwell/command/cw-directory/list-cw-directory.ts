@@ -1,27 +1,23 @@
 import { Organization } from "@metriport/commonwell-sdk";
-import { out } from "@metriport/core/util/log";
+import { MetriportError } from "@metriport/shared";
 import { makeCommonWellMemberAPI } from "../../../commonwell-v2/api";
 
-const BATCH_SIZE = 100;
-
 /**
- * Returns organizations from the CommonWell Directory.
+ * Returns the organization with the given OID from the CommonWell Directory.
  *
  * @param oid Optional, the OID of the organization to fetch.
- * @returns a list of CommonWell Organization resources.
+ * @returns a CommonWell Organization resource.
  */
-export async function getCwDirectoryEntry(oid?: string): Promise<Organization[]> {
-  const { log } = out(`getCwDirectoryEntry, oid ${oid}`);
-
+export async function getCwDirectoryEntry(oid: string): Promise<Organization> {
   const cw = makeCommonWellMemberAPI();
 
-  const batch = await cw.listOrganizations({
-    offset: 0,
-    limit: oid ? undefined : BATCH_SIZE,
-    orgId: oid,
-    sort: "_id",
-  });
+  const batch = await cw.listOrganizations({ limit: 1, orgId: oid });
+  const org = batch.organizations[0];
 
-  log(`Found ${batch.organizations.length} organizations in the CommonWell Directory`);
-  return batch.organizations;
+  if (!org) {
+    throw new MetriportError("No organization found in the CommonWell Directory", undefined, {
+      oid,
+    });
+  }
+  return org;
 }

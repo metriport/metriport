@@ -93,6 +93,10 @@ export async function rebuildCwDirectory(failGracefully = false): Promise<void> 
         currentPosition = maxPosition;
       } catch (error) {
         isDone = true;
+        const batchErrorMsg = `Error rebuilding CW directory`;
+        log(
+          `${batchErrorMsg}: batch at position ${currentPosition}. Cause: ${errorToString(error)}`
+        );
         if (!failGracefully) {
           throw error;
         }
@@ -134,6 +138,8 @@ export async function rebuildCwDirectory(failGracefully = false): Promise<void> 
       extra: { context: `updateCwDirectoryViewDefinition`, error },
     });
     throw error;
+  } finally {
+    await sequelize.close();
   }
 
   log(`CW directory successfully rebuilt! :) Took ${Date.now() - startedAt}ms`);

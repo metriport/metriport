@@ -159,21 +159,21 @@ router.post(
 );
 
 /**
- * GET /internal/commonwell/directory
+ * GET /internal/commonwell/directory/:oid
  *
- * Retrieves organizations from the CommonWell Directory.
+ * Retrieves the organization with the specified OID from the CommonWell Directory.
  *
- * @param req.query.oid Optional, the OID of the organization to fetch.
- * @returns Returns the organizations from the CommonWell Directory.
+ * @param req.params.oid The OID of the organization to fetch.
+ * @returns Returns the organization with the specified OID.
  */
 router.get(
-  "/directory",
+  "/directory/:oid",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
-    const oid = getFrom("query").optional("oid", req);
-    const orgs = await getCwDirectoryEntry(oid);
-    return res.status(httpStatus.OK).json({ amount: orgs.length, entries: orgs });
+    const oid = getFrom("params").orFail("oid", req);
+    const organization = await getCwDirectoryEntry(oid);
+    return res.status(httpStatus.OK).json({ organization });
   })
 );
 
