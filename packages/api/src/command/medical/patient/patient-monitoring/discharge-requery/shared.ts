@@ -3,10 +3,10 @@ import { Config } from "@metriport/core/util/config";
 import { capture } from "@metriport/core/util";
 
 // TODO ENG-601 - Remove this once we have tested this solution live
-export async function sendNotificationToSlack(msg: string, encounterIds: string[]) {
+export async function sendNotificationToSlack(subject: string, msg: string) {
   const message: SlackMessage = {
-    subject: msg,
-    message: JSON.stringify(encounterIds, null, 2),
+    subject,
+    message: msg,
     emoji: ":peepo_hey:",
   };
 
@@ -18,6 +18,6 @@ export async function sendNotificationToSlack(msg: string, encounterIds: string[
   try {
     await sendToSlack(message, channelUrl);
   } catch (error) {
-    capture.error(error, { extra: { msg, encounterCount: encounterIds.length } });
+    capture.error(error, { extra: { msg, subject } });
   }
 }

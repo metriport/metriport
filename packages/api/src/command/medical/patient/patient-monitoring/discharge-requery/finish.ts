@@ -26,7 +26,7 @@ import { sendNotificationToSlack } from "./shared";
 
 type DischargeAssociationBreakdown = {
   discharge: DischargeData;
-  status: "processing" | "completed" | "failed";
+  status: "processing" | "completed";
   reason?: string;
   encounterId?: string;
   dischargeSummaryFilePath?: string;
@@ -68,7 +68,7 @@ export async function finishDischargeRequery({
     status: "processing",
   });
 
-  console.log("PROCESSING JOBS", JSON.stringify(processingJobs, null, 2));
+  log(`All processing discharge requery jobs: ${JSON.stringify(processingJobs)}`);
 
   if (processingJobs.length === 0) {
     return;
@@ -79,6 +79,7 @@ export async function finishDischargeRequery({
     return runtimeData?.documentQueryRequestId === pipelineRequestId;
   });
 
+  log(`Target jobs: ${JSON.stringify(targetJobs)}`);
   if (targetJobs.length < 1) {
     const msg = `No target discharge requery job found`;
     log(`Unexpected state: ${msg} for requestId ${pipelineRequestId}`);
@@ -124,7 +125,7 @@ export async function finishDischargeRequery({
   });
   const dischargeRequeryJob = parseDischargeRequeryJob(job);
 
-  const { completed, failed, processing } = await processDischargeSummaryAssociation(
+  const { completed, processing } = await processDischargeSummaryAssociation(
     dischargeRequeryJob.paramsOps.dischargeData,
     cxId,
     patientId
@@ -153,7 +154,6 @@ export async function finishDischargeRequery({
           downloadCount,
           convertCount,
           metGoals: completed,
-          failedGoals: failed,
         },
       });
 
@@ -195,7 +195,6 @@ async function processDischargeSummaryAssociation(
 ): Promise<{
   processing: DischargeAssociationBreakdown[];
   completed: DischargeAssociationBreakdown[];
-  failed: DischargeAssociationBreakdown[];
 }> {
   const { log } = out(`checkGoals - cx ${cxId}, pt ${patientId}`);
   log(`Checking goals: ${JSON.stringify(dischargeData)}`);
@@ -212,7 +211,6 @@ async function processDischargeSummaryAssociation(
         status: "processing" as const,
         reason: "No consolidated file found",
       })),
-      failed: [],
       completed: [],
     };
   }
@@ -220,26 +218,65 @@ async function processDischargeSummaryAssociation(
   const encounters = findEncounterResources(consolidated.bundle);
   const matchingResults = await Promise.all(
     dischargeData.map(async discharge => {
-      const matchingEncounters = getPotentiallyMatchingEncounters(encounters, discharge);
-      const matchingResult = await findMatchingEncounterOrNotifyOfFailure(matchingEncounters, cxId);
+      const matchingEncounter = getMatchingEncounters(encounters, discharge);
 
-      return {
-        ...matchingResult,
-        discharge,
-      };
+      let result: DischargeAssociationBreakdown;
+      if (matchingEncounter.length < 1) {
+        result = {
+          discharge,
+          status: "processing",
+          reason: "No matching encounters found",
+        };
+      } else if (matchingEncounter.length === 1) {
+        result = {
+          discharge,
+          status: "completed",
+          reason: "Found a discharge encounter",
+          encounterId: matchingEncounter[0].id,
+          dischargeSummaryFilePath: getDischargeSummaryFilePath(matchingEncounter[0]),
+        };
+      } else {
+        const targetEncounter =
+          matchingEncounter.find(e => e.hospitalization?.dischargeDisposition) ??
+          matchingEncounter[0];
+
+        const msg = "Multiple discharge encounter matches found";
+        await sendNotificationToSlack(
+          msg,
+          JSON.stringify(
+            { patientId, cxId, discharge, numberOfMatches: matchingEncounter.length },
+            null,
+            2
+          )
+        );
+        result = {
+          discharge,
+          status: "completed",
+          reason: msg,
+          encounterId: targetEncounter.id,
+          dischargeSummaryFilePath: getDischargeSummaryFilePath(targetEncounter),
+        };
+      }
+
+      analytics({
+        event: EventTypes.dischargeDataProcessed,
+        distinctId: cxId,
+        properties: { status: result.status, reason: result.reason },
+      });
+
+      return result;
     })
   );
 
   const groupedByStatus = _.groupBy(matchingResults, "status");
 
   return {
-    processing: groupedByStatus.processing ?? [],
-    failed: groupedByStatus.failed ?? [],
-    completed: groupedByStatus.completed ?? [],
+    processing: groupedByStatus.processing,
+    completed: groupedByStatus.completed,
   };
 }
 
-function getPotentiallyMatchingEncounters(encounters: Encounter[], discharge: DischargeData) {
+function getMatchingEncounters(encounters: Encounter[], discharge: DischargeData) {
   return encounters.filter(
     e =>
       e.period?.end === discharge.encounterEndDate &&
@@ -249,98 +286,10 @@ function getPotentiallyMatchingEncounters(encounters: Encounter[], discharge: Di
   );
 }
 
-export async function findMatchingEncounterOrNotifyOfFailure(
-  encounters: Encounter[],
-  cxId: string
-): Promise<Omit<DischargeAssociationBreakdown, "discharge">> {
-  const { status, reason, encounter, sendNotification } =
-    getDischargeSummaryStatusAndFilePath(encounters);
-
-  if (sendNotification) {
-    const encounterIds = encounters.flatMap(e => e.id ?? []);
-    await sendNotificationToSlack(reason, encounterIds);
-  }
-
-  analytics({
-    event: EventTypes.dischargeDataProcessed,
-    distinctId: cxId,
-    properties: { status, reason },
-  });
-
-  if (encounter) {
-    const filePath =
-      encounter.meta?.source ?? encounter.extension?.find(isDocIdExtension)?.valueString;
-
-    return {
-      status,
-      reason,
-      dischargeSummaryFilePath: filePath,
-      encounterId: encounter.id,
-    };
-  }
-
-  return {
-    status,
-    reason,
-  };
-}
-
-function getDischargeSummaryStatusAndFilePath(encounters: Encounter[]): {
-  status: "processing" | "completed" | "failed";
-  reason: string;
-  encounter: Encounter | undefined;
-  sendNotification: boolean;
-} {
-  if (encounters.length === 0) {
-    return {
-      status: "processing",
-      reason: "No matching encounters found",
-      encounter: undefined,
-      sendNotification: false,
-    };
-  }
-
-  const encountersWithDischargeDisposition = encounters.filter(
-    e => e.hospitalization?.dischargeDisposition
-  );
-
-  if (encountersWithDischargeDisposition.length > 1) {
-    return {
-      status: "completed",
-      reason: "Multiple discharge encounters found for the same date",
-      encounter: encountersWithDischargeDisposition[0],
-      sendNotification: true,
-    };
-  }
-
-  if (encountersWithDischargeDisposition.length > 0) {
-    return {
-      status: "completed",
-      reason: "Found a discharge disposition encounter",
-      encounter: encountersWithDischargeDisposition[0],
-      sendNotification: false,
-    };
-  }
-
-  const encountersWithoutDischargeDisposition = encounters.filter(
-    e => !e.hospitalization?.dischargeDisposition
-  );
-
-  if (encountersWithoutDischargeDisposition.length > 1) {
-    return {
-      status: "failed",
-      reason: "Multiple encounters found for the same date",
-      encounter: undefined,
-      sendNotification: true,
-    };
-  }
-
-  return {
-    status: "completed",
-    reason: "Matching encounter datetime",
-    encounter: encountersWithoutDischargeDisposition[0],
-    sendNotification: false,
-  };
+function getDischargeSummaryFilePath(encounter: Encounter) {
+  return encounter.extension
+    ?.filter(isDocIdExtension)
+    ?.find(e => e.valueString?.includes(`.${XML_FILE_EXTENSION}`))?.valueString;
 }
 
 /**
@@ -355,7 +304,7 @@ async function updateTcmEncountersWithDischargeSummaryPaths(
 ): Promise<void> {
   const { log } = out(`updateTcmEncountersWithDischargeSummaryPaths - cx ${cxId}, pt ${patientId}`);
 
-  if (completedAssociations.length === 0) {
+  if (completedAssociations.length < 1) {
     log("No completed associations to update");
     return;
   }
