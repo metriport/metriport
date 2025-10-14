@@ -55,6 +55,7 @@ export async function rebuildCwDirectory(failGracefully = false): Promise<void> 
         const response = await cw.listOrganizations({
           offset: currentPosition,
           limit: BATCH_SIZE,
+          sort: "organizationId",
         });
 
         log(`Loaded ${response.organizations.length} entries in ${Date.now() - loadStartedAt}ms`);
