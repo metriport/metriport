@@ -16,7 +16,7 @@ import _ from "lodash";
 import { stripInvalidCharactersFromPatientData } from "../../domain/character-sanitizer";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
-import { capture, out } from "../../util";
+import { out } from "../../util";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
 import { METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER } from "./constants";
@@ -25,6 +25,7 @@ import {
   TrackRosterSizePerCustomerParams,
 } from "./hl7v2-roster-analytics";
 import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
+import { toBambooId } from "./hl7v2-to-fhir-conversion/shared";
 import {
   HieConfig,
   HiePatientRosterMapping,
@@ -34,7 +35,6 @@ import {
   VpnlessHieConfig,
 } from "./types";
 import { createScrambledId } from "./utils";
-import { toBambooId } from "./hl7v2-to-fhir-conversion/shared";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
@@ -72,22 +72,6 @@ export class Hl7v2RosterGenerator {
     log(`Found ${rawPatients.length} total patients`);
 
     const patients = rawPatients.map(stripInvalidCharactersFromPatientData);
-
-    if (patients.length === 0) {
-      capture.error(
-        new Error(
-          `Roster size is 0 for ${hieName}. This may occur if we are still setting up the integration. Ask in slack if this is expected.`
-        ),
-        {
-          extra: {
-            rosterSize: patients.length,
-            hieName,
-            loggingDetails,
-          },
-        }
-      );
-      return;
-    }
 
     const cxIds = new Set(patients.map(p => p.cxId));
 
