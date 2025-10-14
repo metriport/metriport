@@ -22,7 +22,7 @@ export function buildRosterFile(patients: Patient[], rosterType: QuestRosterType
 }
 
 function buildRosterHeader(rosterType: QuestRosterType): Buffer {
-  const generalMnemonic = rosterType === "notifications" ? "METRIP" : "IVMETRI";
+  const generalMnemonic = rosterType === "notifications" ? "METRIP" : "IVMETR";
   return buildQuestRequestRow(
     { recordType: "H", generalMnemonic, fileCreationDate: new Date() },
     requestHeaderSchema,
