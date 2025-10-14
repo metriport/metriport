@@ -274,28 +274,3 @@ function constructExternalUrl(
       return undefined;
   }
 }
-
-export async function getTcmEncountersForPatient({
-  cxId,
-  patientId,
-  latestEvent,
-}: {
-  cxId: string;
-  patientId: string;
-  latestEvent?: TcmEncounterEventType;
-}): Promise<TcmEncounterModel[]> {
-  const where: {
-    cxId: string;
-    patientId: string;
-    latestEvent?: TcmEncounterEventType;
-  } = {
-    cxId,
-    patientId,
-  };
-
-  if (latestEvent) {
-    where.latestEvent = latestEvent;
-  }
-
-  return await TcmEncounterModel.findAll({ where });
-}

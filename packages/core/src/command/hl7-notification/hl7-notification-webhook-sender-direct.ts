@@ -224,7 +224,14 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       }),
     ]);
 
-    await this.createDischargeRequeryJob(cxId, patientId, encounterPeriod, triggerEvent, log);
+    await this.createDischargeRequeryJob(
+      cxId,
+      patientId,
+      encounterPeriod,
+      triggerEvent,
+      encounterId,
+      log
+    );
 
     const bundlePresignedUrl = await this.s3Utils.getSignedUrl({
       bucketName: result.bucket,
@@ -312,12 +319,19 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     patientId: string,
     encounterPeriod: Period | undefined,
     triggerEvent: SupportedTriggerEvent,
+    encounterId: string,
     log: typeof console.log
   ): Promise<void> {
     if (triggerEvent !== dischargeEventCode) return;
 
     const dischargeData: DischargeData[] = encounterPeriod?.end
-      ? [{ type: "findDischargeSummary", encounterEndDate: encounterPeriod.end }]
+      ? [
+          {
+            type: "findDischargeSummary",
+            encounterEndDate: encounterPeriod.end,
+            tcmEncounterId: encounterId,
+          },
+        ]
       : [];
 
     log(`Sending Discharge Requery kickoff...`);

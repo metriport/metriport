@@ -5,6 +5,7 @@ import { defaultRemainingAttempts } from "./utils";
 export const remainingAttemptsSchema = z.number().max(defaultRemainingAttempts);
 export const dischargeDataSchema = z.object({
   encounterEndDate: z.string(),
+  tcmEncounterId: z.string(),
   type: z.enum(["findDischargeSummary"]),
 });
 export type DischargeData = z.infer<typeof dischargeDataSchema>;

@@ -13,12 +13,10 @@ import {
   parseDischargeRequeryJob,
 } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import _ from "lodash";
-import { TcmEncounterModel } from "../../../../../models/medical/tcm-encounter";
 import { getPatientJobs } from "../../../../job/patient/get";
 import { completePatientJob } from "../../../../job/patient/status/complete";
 import { failPatientJob } from "../../../../job/patient/status/fail";
 import { updatePatientJobRuntimeData } from "../../../../job/patient/update/update-runtime-data";
-import { getTcmEncountersForPatient } from "../../../tcm-encounter/get-tcm-encounters";
 import { updateTcmEncounter } from "../../../tcm-encounter/update-tcm-encounter";
 import { getPatientOrFail } from "../../get-patient";
 import { createDischargeRequeryJob, dischargeRequeryJobType } from "./create";
@@ -29,6 +27,7 @@ type DischargeAssociationBreakdown = {
   status: "processing" | "completed";
   reason?: string;
   encounterId?: string;
+  tcmEncounterId?: string;
   dischargeSummaryFilePath?: string;
 };
 
@@ -124,14 +123,12 @@ export async function finishDischargeRequery({
     cxId,
   });
   const dischargeRequeryJob = parseDischargeRequeryJob(job);
-
-  const { completed, processing } = await processDischargeSummaryAssociation(
-    dischargeRequeryJob.paramsOps.dischargeData,
+  const { completed, processing } = await processDischargeSummaryAssociation({
+    dischargeData: dischargeRequeryJob.paramsOps.dischargeData,
     cxId,
-    patientId
-  );
+    patientId,
+  });
 
-  // Update TCM encounters with discharge summary file paths for completed associations
   await updateTcmEncountersWithDischargeSummaryPaths(completed, cxId, patientId);
 
   const remainingAttempts =
@@ -183,16 +180,20 @@ export async function finishDischargeRequery({
 
   log(
     `Discharge requery is complete - ${
-      remainingAttempts < 1 ? "reached max attempts" : "all goals met"
+      remainingAttempts < 1 ? "reached max attempts" : "all goals processed"
     }`
   );
 }
 
-async function processDischargeSummaryAssociation(
-  dischargeData: DischargeData[],
-  cxId: string,
-  patientId: string
-): Promise<{
+async function processDischargeSummaryAssociation({
+  dischargeData,
+  cxId,
+  patientId,
+}: {
+  dischargeData: DischargeData[];
+  cxId: string;
+  patientId: string;
+}): Promise<{
   processing: DischargeAssociationBreakdown[];
   completed: DischargeAssociationBreakdown[];
 }> {
@@ -218,43 +219,38 @@ async function processDischargeSummaryAssociation(
   const encounters = findEncounterResources(consolidated.bundle);
   const matchingResults = await Promise.all(
     dischargeData.map(async discharge => {
-      const matchingEncounter = getMatchingEncounters(encounters, discharge);
+      const targetEncounter = getMatchingEncounters(encounters, discharge);
 
       let result: DischargeAssociationBreakdown;
-      if (matchingEncounter.length < 1) {
+      if (targetEncounter.length < 1) {
         result = {
           discharge,
           status: "processing",
           reason: "No matching encounters found",
         };
-      } else if (matchingEncounter.length === 1) {
+      } else if (targetEncounter.length === 1) {
         result = {
           discharge,
           status: "completed",
           reason: "Found a discharge encounter",
-          encounterId: matchingEncounter[0].id,
-          dischargeSummaryFilePath: getDischargeSummaryFilePath(matchingEncounter[0]),
+          encounterId: targetEncounter[0].id,
+          dischargeSummaryFilePath: getDischargeSummaryFilePath(targetEncounter[0]),
         };
       } else {
-        const targetEncounter =
-          matchingEncounter.find(e => e.hospitalization?.dischargeDisposition) ??
-          matchingEncounter[0];
+        const encounter =
+          targetEncounter.find(e => e.hospitalization?.dischargeDisposition) ?? targetEncounter[0];
 
         const msg = "Multiple discharge encounter matches found";
         await sendNotificationToSlack(
           msg,
-          JSON.stringify(
-            { patientId, cxId, discharge, numberOfMatches: matchingEncounter.length },
-            null,
-            2
-          )
+          JSON.stringify({ patientId, cxId, discharge, numberOfMatches: encounter.length }, null, 2)
         );
         result = {
           discharge,
           status: "completed",
           reason: msg,
-          encounterId: targetEncounter.id,
-          dischargeSummaryFilePath: getDischargeSummaryFilePath(targetEncounter),
+          encounterId: encounter.id,
+          dischargeSummaryFilePath: getDischargeSummaryFilePath(encounter),
         };
       }
 
@@ -294,8 +290,6 @@ function getDischargeSummaryFilePath(encounter: Encounter) {
 
 /**
  * Updates TCM encounters with discharge summary file paths for completed associations.
- * This function matches completed discharge associations with TCM encounters and updates
- * the discharge_summary_path field.
  */
 async function updateTcmEncountersWithDischargeSummaryPaths(
   completedAssociations: DischargeAssociationBreakdown[],
@@ -309,92 +303,36 @@ async function updateTcmEncountersWithDischargeSummaryPaths(
     return;
   }
 
-  // Get all TCM encounters for this patient
-  const tcmEncounters = await getTcmEncountersForPatient({
-    cxId,
-    patientId,
-    latestEvent: "Discharged",
-  });
-
-  if (tcmEncounters.length === 0) {
-    log("No TCM encounters found for patient");
-    return;
-  }
-
   // Update TCM encounters with discharge summary file paths
   const updatePromises = completedAssociations
     .filter(association => association.dischargeSummaryFilePath && association.encounterId)
     .map(async association => {
-      // Find the TCM encounter that matches the encounter ID or discharge time
-      const matchingTcmEncounter = findMatchingTcmEncounter(
-        tcmEncounters,
-        association.discharge,
-        association.encounterId
-      );
-
-      if (!matchingTcmEncounter) {
-        log(
-          `No matching TCM encounter found for association with encounter ID: ${association.encounterId}`
-        );
-        return;
-      }
-
+      const tcmEncounterId = association.discharge.tcmEncounterId;
       log(
-        `Updating TCM encounter ${matchingTcmEncounter.id} with discharge summary path: ${association.dischargeSummaryFilePath}`
+        `Updating TCM encounter ${tcmEncounterId} with discharge summary path: ${association.dischargeSummaryFilePath}`
       );
 
       try {
         await updateTcmEncounter({
-          id: matchingTcmEncounter.id,
+          id: tcmEncounterId,
           cxId,
           dischargeSummaryPath: association.dischargeSummaryFilePath,
         });
-        log(`Successfully updated TCM encounter ${matchingTcmEncounter.id}`);
+        log(`Successfully updated TCM encounter ${tcmEncounterId}`);
       } catch (error) {
-        log(`Failed to update TCM encounter ${matchingTcmEncounter.id}: ${error}`);
+        log(`Failed to update TCM encounter ${tcmEncounterId}: ${error}`);
         capture.message("Failed to update TCM encounter with discharge summary path", {
           extra: {
-            tcmEncounterId: matchingTcmEncounter.id,
-            dischargeSummaryFilePath: association.dischargeSummaryFilePath,
-            error: String(error),
+            tcmEncounterId: tcmEncounterId,
+            cxId,
+            patientId,
+            encounterId: association.encounterId,
+            dischargeSummaryPath: association.dischargeSummaryFilePath,
           },
+          level: "error",
         });
       }
     });
 
   await Promise.all(updatePromises);
-}
-
-/**
- * Finds a TCM encounter that matches the discharge data and encounter ID.
- * This function attempts to match by encounter ID first, then by discharge time.
- */
-function findMatchingTcmEncounter(
-  tcmEncounters: TcmEncounterModel[],
-  discharge: DischargeData,
-  encounterId?: string
-): TcmEncounterModel | undefined {
-  // First try to match by encounter ID if available
-  if (encounterId) {
-    const byEncounterId = tcmEncounters.find(encounter => encounter.id === encounterId);
-    if (byEncounterId) {
-      return byEncounterId;
-    }
-  }
-
-  // If no direct match by encounter ID, try to match by discharge time
-  const dischargeTime = discharge.encounterEndDate;
-  if (dischargeTime) {
-    return tcmEncounters.find(encounter => {
-      if (!encounter.dischargeTime) return false;
-
-      // Compare dates (ignoring time) to handle potential timezone differences
-      const encounterDischargeDate = new Date(encounter.dischargeTime).toDateString();
-      const targetDischargeDate = new Date(dischargeTime).toDateString();
-
-      return encounterDischargeDate === targetDischargeDate;
-    });
-  }
-
-  return undefined;
 }
