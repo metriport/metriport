@@ -1,5 +1,6 @@
 {
   "total": 692812,
+  "totalAttachments": 108,
   "countPerType": {
     "AllergyIntolerance": 1549,
     "Composition": 8038,
