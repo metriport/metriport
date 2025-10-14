@@ -34,11 +34,16 @@ export async function convertCDAsToFHIR(
   console.log(`Converting ${fileNames.length} files, ${parallelConversions} at a time...`);
   let errorCount = 0;
   let nonXMLBodyCount = 0;
+  let attachmentsProcessed = 0;
   await executeAsynchronously(
     fileNames,
     async fileName => {
       try {
-        const conversionResult = await convert(baseFolderName, fileName, api, options);
+        const {
+          updatedConversionResult: conversionResult,
+          attachmentsProcessed: attachmentsProcessedForFile,
+        } = await convert(baseFolderName, fileName, api, options);
+        attachmentsProcessed += attachmentsProcessedForFile;
         const destFileName = path.join(outputFolderName, fileName.replace(".xml", fhirExtension));
         makeDirIfNeeded(destFileName);
         writeFileContents(destFileName, JSON.stringify(conversionResult));
@@ -62,6 +67,7 @@ export async function convertCDAsToFHIR(
   console.log(
     `Converted ${fileNames.length - errorCount} files in ${conversionDuration} ms.${reportFailure}`
   );
+  console.log(`Attachments processed: ${attachmentsProcessed}`);
   return { errorCount, nonXMLBodyCount };
 }
 
@@ -70,7 +76,7 @@ export async function convert(
   fileName: string,
   api: AxiosInstance,
   options?: ProcessingOptions
-): Promise<Bundle<Resource>> {
+): Promise<{ updatedConversionResult: Bundle<Resource>; attachmentsProcessed: number }> {
   const cxId = uuidv7();
   const patientId = getPatientIdFromFileName(fileName);
 
@@ -146,5 +152,5 @@ export async function convert(
   const documentExtension = buildDocIdFhirExtension(fileName.split("-").pop() ?? ".json");
   const updatedConversionResult = postProcessBundle(combinedBundle, patientId, documentExtension);
 
-  return updatedConversionResult;
+  return { updatedConversionResult, attachmentsProcessed: b64Attachments?.total ?? 0 };
 }
