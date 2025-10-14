@@ -104,7 +104,7 @@ export async function updateCwDirectoryViewDefinition(sequelize: Sequelize): Pro
       `CREATE INDEX ${addTimestampSuffix(
         indexNamePrefix,
         timestamp
-      )} ON ${cwDirectoryEntryTemp} (organization_id);`
+      )} ON ${cwDirectoryEntryTemp} (oid);`
     );
     await runSql(
       `CREATE OR REPLACE VIEW ${cwDirectoryEntryView} AS SELECT * FROM ${cwDirectoryEntryTemp};`
