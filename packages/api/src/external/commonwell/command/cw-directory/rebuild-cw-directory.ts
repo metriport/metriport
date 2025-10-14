@@ -1,5 +1,5 @@
 import { safelyUploadPrincipalAndDelegatesToS3 } from "@metriport/core/external/hie-shared/principal-and-delegates";
-import { capture, executeAsynchronously } from "@metriport/core/util";
+import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { initDbPool } from "@metriport/core/util/sequelize";
 import { errorToString, sleep } from "@metriport/shared";
@@ -22,7 +22,6 @@ dayjs.extend(duration);
 // CW Directory API is limited to 100 organizations per request
 const BATCH_SIZE = 100;
 
-const parallelQueriesToGetManagingOrg = 20;
 const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
 
 export async function rebuildCwDirectory(failGracefully = false): Promise<void> {
@@ -53,33 +52,25 @@ export async function rebuildCwDirectory(failGracefully = false): Promise<void> 
         log(`Loading active CW directory entries, from ${currentPosition} up to ${maxPosition}`);
         const loadStartedAt = Date.now();
 
-        const orgs = await cw.listOrganizations({
+        const response = await cw.listOrganizations({
           offset: currentPosition,
           limit: BATCH_SIZE,
         });
 
-        log(`Loaded ${orgs.organizations.length} entries in ${Date.now() - loadStartedAt}ms`);
-        if (orgs.organizations.length < BATCH_SIZE) isDone = true;
+        log(`Loaded ${response.organizations.length} entries in ${Date.now() - loadStartedAt}ms`);
+        if (response.organizations.length < BATCH_SIZE) isDone = true;
 
         const parsedOrgs: CwDirectoryEntryData[] = [];
-        const [alreadyInsertedIds] = await Promise.all([
-          getCwDirectoryIds(sequelize),
-          executeAsynchronously(
-            orgs.organizations,
-            async org => {
-              try {
-                const parsed = parseCWOrganization(org);
-                if (parsed.active) parsedOrgs.push(parsed);
-                if (parsed.delegateOids && parsed.delegateOids.length > 0) {
-                  principalAndDelegatesMap.set(parsed.id, parsed.delegateOids);
-                }
-              } catch (error) {
-                parsingErrors.push(error as Error);
-              }
-            },
-            { numberOfParallelExecutions: parallelQueriesToGetManagingOrg }
-          ),
-        ]);
+        const alreadyInsertedIds = await getCwDirectoryIds(sequelize);
+
+        for (const org of response.organizations) {
+          try {
+            const parsed = parseCWOrganization(org);
+            if (parsed.active) parsedOrgs.push(parsed); // we don't want to store inactive organizations
+          } catch (error) {
+            parsingErrors.push(error as Error);
+          }
+        }
 
         parsedOrgsCount += parsedOrgs.length;
         log(`Successfully parsed ${parsedOrgs.length} entries`);
@@ -87,6 +78,11 @@ export async function rebuildCwDirectory(failGracefully = false): Promise<void> 
         const orgsToInsert = parsedOrgs.filter(
           org => !alreadyInsertedIds.some(id => id === org.id)
         );
+        orgsToInsert.forEach(org => {
+          if (org.delegateOids && org.delegateOids.length > 0) {
+            principalAndDelegatesMap.set(org.id, org.delegateOids);
+          }
+        });
 
         log(`Adding ${orgsToInsert.length} entries in the DB...`);
         const insertStartedAt = Date.now();

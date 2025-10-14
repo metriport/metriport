@@ -1,7 +1,7 @@
 import { QueryTypes, Sequelize } from "sequelize";
 import { executeOnDBTx } from "../../../../models/transaction-wrapper";
-import { CwDirectoryEntryData } from "../../cw-directory";
 import { CwDirectoryEntryViewModel } from "../../../commonwell/models/cw-directory-view";
+import { CwDirectoryEntryData } from "../../cw-directory";
 
 export const cwDirectoryEntry = `cw_directory_entry_new`;
 export const cwDirectoryEntryView = `cw_directory_entry_view`;
@@ -26,16 +26,14 @@ export async function insertCwDirectoryEntries(
     .join(", ");
 
   const flattenedData = orgDataArray.flatMap(entry => [
-    entry.organizationName,
-    entry.organizationId,
+    entry.name,
+    entry.oid,
     entry.orgType,
-    entry.memberName,
-    entry.addressLine1,
-    entry.addressLine2 ?? null,
+    entry.rootOrganization,
+    entry.addressLine,
     entry.city,
     entry.state,
-    entry.zipCode,
-    entry.country,
+    entry.zip,
     entry.data ? JSON.stringify(entry.data) : null,
     entry.active,
     entry.npi ?? null,
@@ -55,16 +53,14 @@ function createKeys(): string {
     keyof Omit<CwDirectoryEntryData, "id" | "createdAt" | "updatedAt" | "delegateOids">,
     string
   > = {
-    organizationName: "organization_name",
-    organizationId: "organization_id",
+    name: "name",
+    oid: "oid",
     orgType: "org_type",
-    memberName: "member_name",
-    addressLine1: "address_line1",
-    addressLine2: "address_line2",
+    rootOrganization: "root_organization",
+    addressLine: "address_line",
     city: "city",
     state: "state",
-    zipCode: "zip_code",
-    country: "country",
+    zip: "zip",
     data: "data",
     active: "active",
     npi: "npi",
@@ -74,9 +70,9 @@ function createKeys(): string {
 }
 
 export async function getCwDirectoryIds(sequelize: Sequelize): Promise<string[]> {
-  const query = `SELECT id FROM ${cwDirectoryEntryTemp};`;
-  const result = await sequelize.query<{ id: string }>(query, { type: QueryTypes.SELECT });
-  return result.map(row => row.id);
+  const query = `SELECT oid FROM ${cwDirectoryEntryTemp};`;
+  const result = await sequelize.query<{ oid: string }>(query, { type: QueryTypes.SELECT });
+  return result.map(row => row.oid);
 }
 
 export async function createTempCwDirectoryTable(sequelize: Sequelize): Promise<void> {

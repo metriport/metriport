@@ -13,13 +13,13 @@ const cwTableColumns = {
     primaryKey: true,
     allowNull: false,
   },
-  organizationName: {
-    field: "organization_name",
+  name: {
+    field: "name",
     type: DataTypes.STRING,
     allowNull: false,
   },
-  organizationId: {
-    field: "organization_id",
+  oid: {
+    field: "oid",
     type: DataTypes.STRING,
     allowNull: false,
   },
@@ -37,37 +37,25 @@ const cwTableColumns = {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  memberName: {
-    field: "member_name",
+  rootOrganization: {
+    field: "root_organization",
     type: DataTypes.STRING,
     allowNull: false,
   },
-  addressLine1: {
-    field: "address_line1",
+  addressLine: {
+    field: "address_line",
     type: DataTypes.STRING,
     allowNull: false,
-  },
-  addressLine2: {
-    field: "address_line2",
-    type: DataTypes.STRING,
-    allowNull: true,
   },
   city: {
     type: DataTypes.STRING,
-    allowNull: false,
   },
   state: {
     type: DataTypes.STRING,
-    allowNull: false,
   },
-  zipCode: {
-    field: "zip_code",
+  zip: {
+    field: "zip",
     type: DataTypes.STRING,
-    allowNull: false,
-  },
-  country: {
-    type: DataTypes.STRING,
-    allowNull: false,
   },
   data: {
     type: DataTypes.JSONB,
@@ -79,13 +67,13 @@ const alterSearchCriteriaColumnSql = `
 ALTER TABLE ${tableName}
 ADD COLUMN ${columnName} tsvector
 GENERATED ALWAYS AS (
-  to_tsvector('english', coalesce(organization_id, '')) || ' ' ||
-  to_tsvector('english', coalesce(organization_name, '')) || ' ' ||
-  to_tsvector('english', coalesce(member_name, '')) || ' ' ||
-  to_tsvector('english', coalesce(address_line1, '')) || ' ' ||
+  to_tsvector('english', coalesce(oid, '')) || ' ' ||
+  to_tsvector('english', coalesce(name, '')) || ' ' ||
+  to_tsvector('english', coalesce(root_organization, '')) || ' ' ||
+  to_tsvector('english', coalesce(address_line, '')) || ' ' ||
   to_tsvector('english', coalesce(city, '')) || ' ' ||
   to_tsvector('english', coalesce(state, '')) || ' ' ||
-  to_tsvector('english', coalesce(zip_code, ''))
+  to_tsvector('english', coalesce(zip, ''))
 ) STORED;
 `;
 

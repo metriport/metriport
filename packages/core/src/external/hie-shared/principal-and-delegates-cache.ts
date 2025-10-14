@@ -9,14 +9,20 @@ import { getPrincipalAndDelegatesMap } from "./principal-and-delegates";
  * at the Lambda level and reuse across invocations.
  */
 class LambdaOnlyDelegateCache {
-  private static instance: LambdaOnlyDelegateCache;
+  private static instances: Map<string, LambdaOnlyDelegateCache> = new Map();
   private cache: Map<string, string[]> | undefined;
+  private source: "cq" | "cw";
 
-  static getInstance(): LambdaOnlyDelegateCache {
-    if (!LambdaOnlyDelegateCache.instance) {
-      LambdaOnlyDelegateCache.instance = new LambdaOnlyDelegateCache();
+  private constructor(source: "cq" | "cw") {
+    this.source = source;
+  }
+
+  static getInstance(source: "cq" | "cw"): LambdaOnlyDelegateCache {
+    if (!LambdaOnlyDelegateCache.instances.has(source)) {
+      LambdaOnlyDelegateCache.instances.set(source, new LambdaOnlyDelegateCache(source));
     }
-    return LambdaOnlyDelegateCache.instance;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return LambdaOnlyDelegateCache.instances.get(source)!;
   }
 
   /**
@@ -24,21 +30,21 @@ class LambdaOnlyDelegateCache {
    *
    * Since this is only used in Lambda, we don't need to worry about multiple calls issueing separate requests to S3.
    */
-  async getMap(source: "cq" | "cw"): Promise<Map<string, string[]>> {
+  async getMap(): Promise<Map<string, string[]>> {
     if (this.cache) {
       return this.cache;
     }
 
-    this.cache = await this.loadMapFromS3(source);
+    this.cache = await this.loadMapFromS3();
     return this.cache;
   }
 
-  private async loadMapFromS3(source: "cq" | "cw"): Promise<Map<string, string[]>> {
+  private async loadMapFromS3(): Promise<Map<string, string[]>> {
     const { log } = out(`PrincipalAndDelegatesCache.loadMapFromS3`);
     log("Loading principal and delegates map from S3");
 
     try {
-      const map = await getPrincipalAndDelegatesMap(source);
+      const map = await getPrincipalAndDelegatesMap(this.source);
       log(`Successfully loaded principal and delegates map with ${map.size} entries`);
       return map;
     } catch (error) {
@@ -58,5 +64,5 @@ class LambdaOnlyDelegateCache {
 export async function getCachedPrincipalAndDelegatesMap(
   source: "cq" | "cw"
 ): Promise<Map<string, string[]>> {
-  return LambdaOnlyDelegateCache.getInstance().getMap(source);
+  return LambdaOnlyDelegateCache.getInstance(source).getMap();
 }
