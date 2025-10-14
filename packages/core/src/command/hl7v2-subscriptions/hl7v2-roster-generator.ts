@@ -74,10 +74,18 @@ export class Hl7v2RosterGenerator {
     const patients = rawPatients.map(stripInvalidCharactersFromPatientData);
 
     if (patients.length === 0) {
-      capture.message(`No patients found for ${hieName}, skipping roster generation`, {
-        extra: loggingDetails,
-        level: "warning",
-      });
+      capture.error(
+        new Error(
+          `Roster size is 0 for ${hieName}. This may occur if we are still setting up the integration. Ask in slack if this is expected.`
+        ),
+        {
+          extra: {
+            rosterSize: patients.length,
+            hieName,
+            loggingDetails,
+          },
+        }
+      );
       return;
     }
 
