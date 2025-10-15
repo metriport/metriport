@@ -26,7 +26,7 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-const patientCohorts = await metriport.getPatientCohorts("018a80c4-292a-7486-a1234-76yuhe23yu14");
+const patientCohorts = await metriport.getPatientCohorts("00000000-0000-0000-0000-000000000001");
 ```
 
 </ResponseExample>
@@ -35,7 +35,7 @@ const patientCohorts = await metriport.getPatientCohorts("018a80c4-292a-7486-a12
 {
   "cohorts": [
     {
-      "id": "018a80c4-292a-7486-a1234-9uiu76yhe234",
+      "id": "00000000-0000-0000-0000-000000000002",
       "eTag": "1",
       "name": "High Risk",
       "description": "Patients that are a part of our newest pilot program.",
@@ -55,7 +55,7 @@ const patientCohorts = await metriport.getPatientCohorts("018a80c4-292a-7486-a12
       }
     },
     {
-      "id": "018a80c4-292a-7486-a1234-6hyt345tyu23",
+      "id": "00000000-0000-0000-0000-000000000003",
       "eTag": "1",
       "name": "Cardiac Care Cohort",
       "description": "Patients receiving cardiac care and monitoring",

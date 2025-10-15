@@ -14,33 +14,35 @@
   Configuration settings for the cohort.
   <Expandable title="Settings properties">
     <ParamField body="hie" type="string" optional>
-      HIE-based document monitoring - subscribes patients to HIE-based document monitoring (non-ADT) / medical record refresh based on the cadence.
-      - `never` | `monthly` | `biweekly` | `weekly` - Enable HIE data pulls at scheduled dates
-      
-      _Default: `monthly`_
+      HIE-based document monitoring - subscribes patients to HIE-based document monitoring (non-ADT) / medical record refresh based on the cadence. Can be one of `never`, `monthly`, `biweekly`, `weekly`.
       <Info>
         **HIE monitoring is coming soon!** While this feature is not yet live, you can configure your HIE monitoring settings now. These settings will automatically take effect when the feature launches.
       </Info>
     </ParamField>
     <ParamField body="adt" type="boolean" optional>
-      ADT (Admission, Discharge, Transfer) monitoring - subscribes patients to ADT notifications based on their [primary address](/medical-api/api-reference/patient/create-patient#param-is-primary).  
-      - `true` | `false` - Enable ADT monitoring notifications
-      
-      _Default: `false`_
+      ADT (Admission, Discharge, Transfer) monitoring - subscribes patients to ADT notifications based on their [primary address](/medical-api/api-reference/patient/create-patient#param-is-primary).
     </ParamField>
     <ParamField body="pharmacy" type="object" optional>
       Pharmacy / medication history monitoring - enables retail fill data monitoring where available.  
-      - `notifications` (`boolean`) - Enable/disable pharmacy monitoring notifications
-      - `schedule` (`never` | `monthly` | `biweekly` | `weekly`) - Enable pharmacy data pulls at scheduled dates
-      
-      _Default: `{ notifications: false, schedule: never }`_
+      <Expandable title="pharmacy object properties">
+        <ParamField body="notifications" type="boolean" optional>
+          Enable/disable pharmacy monitoring notifications.
+        </ParamField>
+        <ParamField body="schedule" type="string" optional>
+          Enable pharmacy data pulls at scheduled dates. Can be one of `never`, `monthly`, `biweekly`, `weekly`.
+        </ParamField>
+      </Expandable>
     </ParamField>
     <ParamField body="laboratory" type="object" optional>
       Laboratory notifications - subscribes patients for ongoing notifications of new lab results.  
-      - `notifications` (`boolean`) - Enable/disable laboratory monitoring notifications  
-      - `schedule` (`never` | `monthly` | `biweekly` | `weekly`) - Enable laboratory data pulls at scheduled dates
-      
-      _Default: `{ notifications: false, schedule: never }`_
+      <Expandable title="laboratory object properties">
+        <ParamField body="notifications" type="boolean" optional>
+          Enable/disable laboratory monitoring notifications.
+        </ParamField>
+        <ParamField body="schedule" type="string" optional>
+          Enable laboratory data pulls at scheduled dates. Can be one of `never`, `monthly`, `biweekly`, `weekly`.
+        </ParamField>
+      </Expandable>
     </ParamField>
     <Info>
       For **pharmacy** and **laboratory** monitoring, choose either `notifications` OR `schedule`, but not both. If `notifications` is `true`, `schedule` value is ignored.
