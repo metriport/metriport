@@ -1,4 +1,5 @@
-import { sleep } from "@metriport/shared";
+import { errorToString, sleep } from "@metriport/shared";
+import { out } from "../../../../../util";
 import { buildFhirToCsvTransformHandler } from "../transform/fhir-to-csv-transform-factory";
 import { FhirToCsvBulkHandler, ProcessFhirToCsvBulkRequest } from "./fhir-to-csv-bulk";
 
@@ -7,17 +8,33 @@ export class FhirToCsvBulkDirect implements FhirToCsvBulkHandler {
 
   async processFhirToCsvBulk({
     cxId,
-    patientId,
+    patientIds,
     outputPrefix,
     timeoutInMillis,
-  }: ProcessFhirToCsvBulkRequest): Promise<void> {
+  }: ProcessFhirToCsvBulkRequest): Promise<string[]> {
+    const { log } = out(`FhirToCsvBulkDirect.processFhirToCsvBulk - cx ${cxId}`);
+
     const handler = buildFhirToCsvTransformHandler();
-    await handler.startFhirToCsvTransform({
-      cxId,
-      patientId,
-      outputPrefix,
-      timeoutInMillis,
-    });
-    if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
+    const failedPatientIds: string[] = [];
+    log(`Sending ${patientIds.length} patients to queue...`);
+    for (const patientId of patientIds) {
+      try {
+        await handler.startFhirToCsvTransform({
+          cxId,
+          patientId,
+          outputPrefix,
+          timeoutInMillis,
+        });
+        if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
+      } catch (error) {
+        log(
+          `Failed to put message on queue for patient ${patientId} - reason: ${errorToString(
+            error
+          )}`
+        );
+        failedPatientIds.push(patientId);
+      }
+    }
+    return failedPatientIds;
   }
 }

@@ -46,8 +46,6 @@ dayjs.extend(duration);
 // Leave empty to run for all patients of the customer
 const patientIds: string[] = [];
 
-const numberOfParallelExecutions = 30;
-
 const fhirToCsvJobId = "F2C_" + buildDayjs().toISOString().slice(0, 19).replace(/[:.]/g, "-");
 
 const cxId = getEnvVarOrFail("CX_ID");
@@ -144,50 +142,21 @@ async function main({
     `>>> Running it... ${filtererdPatientIds.length} patients, fhirToCsvJobId: ${fhirToCsvJobId}`
   );
 
-  let amountOfPatientsProcessed = 0;
-
   const fhirToCsvHandler = new FhirToCsvBulkCloud();
 
-  const failedPatientIds: string[] = [];
-  await executeAsynchronously(
-    filtererdPatientIds,
-    async patientId => {
-      try {
-        await fhirToCsvHandler.processFhirToCsvBulk({
-          cxId,
-          patientId,
-          outputPrefix: buildFhirToCsvBulkJobPrefix({ cxId, jobId: fhirToCsvJobId }),
-        });
-        amountOfPatientsProcessed++;
-        if (amountOfPatientsProcessed % 100 === 0) {
-          log(
-            `>>> Sent ${amountOfPatientsProcessed}/${filtererdPatientIds.length} patients to queue`
-          );
-        }
-      } catch (error) {
-        log(
-          `Failed to put message on queue for patient ${patientId} - reason: ${errorToString(
-            error
-          )}`
-        );
-        failedPatientIds.push(patientId);
-      }
-    },
-    { numberOfParallelExecutions, minJitterMillis: 10, maxJitterMillis: 100 }
-  );
-
+  const failedPatientIds = await fhirToCsvHandler.processFhirToCsvBulk({
+    cxId,
+    patientIds: filtererdPatientIds,
+    outputPrefix: buildFhirToCsvBulkJobPrefix({ cxId, jobId: fhirToCsvJobId }),
+  });
   log(``);
   if (failedPatientIds.length > 0) {
     const outputFile = "1-fhir-to-csv_failed-patient-ids_" + fhirToCsvJobId + ".txt";
     log(`>>> FAILED to send messages for ${failedPatientIds.length} patients - see ${outputFile}`);
     fs.writeFileSync(outputFile, failedPatientIds.join("\n"));
   }
-
-  log(
-    `>>> ALL sent to queue (${amountOfPatientsProcessed} patients) in ${elapsedTimeAsStr(
-      startedAt
-    )}`
-  );
+  const amountOfPatientsProcessed = filtererdPatientIds.length - failedPatientIds.length;
+  log(`>>> Sent ${amountOfPatientsProcessed} patients to queue in ${elapsedTimeAsStr(startedAt)}`);
   log(`- fhirToCsvJobId: ${fhirToCsvJobId}`);
 }
 
@@ -211,7 +180,7 @@ async function getPatientsWithConsolidatedData({ patientIds }: { patientIds: str
         );
       }
     },
-    { numberOfParallelExecutions: 100, minJitterMillis: 10, maxJitterMillis: 50 }
+    { numberOfParallelExecutions: 200, minJitterMillis: 10, maxJitterMillis: 100 }
   );
   return ptsWithConsolidatedData;
 }
