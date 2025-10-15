@@ -1,8 +1,15 @@
 import { faker } from "@faker-js/faker";
-import { Condition } from "@medplum/fhirtypes";
+import { Condition, Encounter } from "@medplum/fhirtypes";
 import { ICD_10_URL, SNOMED_URL } from "@metriport/shared/medical";
-import * as termServer from "../../../term-server";
-import { dangerouslyHydrateCondition } from "../hydrate-fhir";
+import * as termServer from "../../../../term-server";
+import {
+  CONDITION_CATEGORY_SYSTEM_URL,
+  dangerouslyHydrateCondition,
+  ENCOUNTER_DIAGNOSIS_CATEGORY_CODE,
+  PROBLEM_LIST_CATEGORY_CODE,
+} from "../condition";
+import { makeEncounter } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
+import { makeCondition } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
 
 let mockCrosswalkCode: jest.SpyInstance;
 
@@ -37,7 +44,7 @@ describe("dangerouslyHydrateCondition", () => {
       code: icd10Code,
     });
 
-    await dangerouslyHydrateCondition(condition);
+    await dangerouslyHydrateCondition(condition, []);
 
     expect(mockCrosswalkCode).toHaveBeenCalledWith({
       sourceCode: snomedCode,
@@ -68,7 +75,7 @@ describe("dangerouslyHydrateCondition", () => {
       },
     };
 
-    await dangerouslyHydrateCondition(condition);
+    await dangerouslyHydrateCondition(condition, []);
 
     expect(mockCrosswalkCode).not.toHaveBeenCalled();
     expect(condition.code?.coding).toBeDefined();
@@ -97,7 +104,7 @@ describe("dangerouslyHydrateCondition", () => {
       },
     };
 
-    await dangerouslyHydrateCondition(condition);
+    await dangerouslyHydrateCondition(condition, []);
 
     expect(mockCrosswalkCode).not.toHaveBeenCalled();
     expect(condition.code?.coding).toBeDefined();
@@ -122,7 +129,7 @@ describe("dangerouslyHydrateCondition", () => {
 
     mockCrosswalkCode.mockResolvedValue(undefined);
 
-    await dangerouslyHydrateCondition(condition);
+    await dangerouslyHydrateCondition(condition, []);
 
     expect(mockCrosswalkCode).toHaveBeenCalledWith({
       sourceCode: snomedCode,
@@ -140,7 +147,7 @@ describe("dangerouslyHydrateCondition", () => {
       id: faker.string.uuid(),
     };
 
-    await dangerouslyHydrateCondition(condition);
+    await dangerouslyHydrateCondition(condition, []);
 
     expect(mockCrosswalkCode).not.toHaveBeenCalled();
     expect(condition.code).toBeUndefined();
@@ -153,9 +160,68 @@ describe("dangerouslyHydrateCondition", () => {
       code: {},
     };
 
-    await dangerouslyHydrateCondition(condition);
+    await dangerouslyHydrateCondition(condition, []);
 
     expect(mockCrosswalkCode).not.toHaveBeenCalled();
     expect(condition.code?.coding).toBeUndefined();
+  });
+
+  describe("buildUpdatedCategory", () => {
+    it("should update the category to problem-list-item by default", async () => {
+      const condition = makeCondition();
+
+      await dangerouslyHydrateCondition(condition, []);
+
+      expect(condition.category).toBeDefined();
+      expect(condition.category).toHaveLength(1);
+      expect(condition.category?.[0]?.coding).toHaveLength(1);
+      expect(condition.category?.[0]?.coding?.[0]?.system).toBeDefined();
+      expect(condition.category?.[0]?.coding?.[0]?.system).toBe(CONDITION_CATEGORY_SYSTEM_URL);
+      expect(condition.category?.[0]?.coding?.[0]?.code).toBeDefined();
+      expect(condition.category?.[0]?.coding?.[0]?.code).toBe(PROBLEM_LIST_CATEGORY_CODE);
+    });
+
+    it("should update the category to encounter-diagnosis if the condition is an encounter diagnosis", async () => {
+      const condition = makeCondition();
+
+      const encounters: Encounter[] = [
+        makeEncounter({
+          diagnosis: [{ condition: { reference: `Condition/${condition.id}` } }],
+        }),
+      ];
+
+      await dangerouslyHydrateCondition(condition, encounters);
+
+      expect(condition.category).toBeDefined();
+      expect(condition.category).toHaveLength(1);
+      expect(condition.category?.[0]?.coding).toHaveLength(1);
+      expect(condition.category?.[0]?.coding?.[0]?.system).toBeDefined();
+      expect(condition.category?.[0]?.coding?.[0]?.system).toBe(CONDITION_CATEGORY_SYSTEM_URL);
+      expect(condition.category?.[0]?.coding?.[0]?.code).toBeDefined();
+      expect(condition.category?.[0]?.coding?.[0]?.code).toBe(ENCOUNTER_DIAGNOSIS_CATEGORY_CODE);
+    });
+
+    it("should update the category to problem-list-item based on ICD-10 code, even if it's an encounter diagnosis", async () => {
+      const condition = makeCondition({
+        code: {
+          coding: [{ system: ICD_10_URL, code: "Z82.61", display: "Family history of arthritis" }],
+        },
+      });
+      const encounters: Encounter[] = [
+        makeEncounter({
+          diagnosis: [{ condition: { reference: `Condition/${condition.id}` } }],
+        }),
+      ];
+
+      await dangerouslyHydrateCondition(condition, encounters);
+
+      expect(condition.category).toBeDefined();
+      expect(condition.category).toHaveLength(1);
+      expect(condition.category?.[0]?.coding).toHaveLength(1);
+      expect(condition.category?.[0]?.coding?.[0]?.system).toBeDefined();
+      expect(condition.category?.[0]?.coding?.[0]?.system).toBe(CONDITION_CATEGORY_SYSTEM_URL);
+      expect(condition.category?.[0]?.coding?.[0]?.code).toBeDefined();
+      expect(condition.category?.[0]?.coding?.[0]?.code).toBe(PROBLEM_LIST_CATEGORY_CODE);
+    });
   });
 });
