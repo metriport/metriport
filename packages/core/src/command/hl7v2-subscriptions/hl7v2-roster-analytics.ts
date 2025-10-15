@@ -25,17 +25,14 @@ export async function trackRosterSizePerCustomer({
   log("Tracking roster size per customer per HIE");
 
   if (rosterSize === 0) {
-    capture.error(
-      new Error(
-        `Roster size is 0 for ${hieName}. This may occur if we are still setting up the integration. Ask in slack if this is expected.`
-      ),
-      {
-        extra: {
-          rosterSize,
-          hieName,
-        },
-      }
-    );
+    const errorMessage = `Roster size is 0 for ${hieName}. This may occur if we are still setting up the integration. Ask in slack if this is expected.`;
+    log(errorMessage);
+    capture.error(errorMessage, {
+      extra: {
+        rosterSize,
+        hieName,
+      },
+    });
   }
 
   const posthogSecretArn = Config.getPostHogApiKey();
