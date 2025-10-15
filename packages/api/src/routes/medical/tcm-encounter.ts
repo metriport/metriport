@@ -4,6 +4,7 @@ import httpStatus from "http-status";
 import {
   getTcmEncounters,
   getTcmEncountersCount,
+  TcmEncounterResult,
 } from "../../command/medical/tcm-encounter/get-tcm-encounters";
 import { updateTcmEncounter } from "../../command/medical/tcm-encounter/update-tcm-encounter";
 import { requestLogger } from "../helpers/request-logger";
@@ -73,7 +74,7 @@ router.get(
     console.log("receiving fromItem cursor: ", query.fromItem);
     console.log("receiving toItem cursor: ", query.toItem);
 
-    const result = await paginatedV2({
+    const result = await paginatedV2<TcmEncounterResult>({
       request: req,
       additionalQueryParams,
       getItems: async pagination => {
@@ -92,9 +93,11 @@ router.get(
         });
       },
       allowedSortColumns: {
-        id: "tcm_encounter",
-        admitTime: "tcm_encounter",
-        dischargeTime: "tcm_encounter",
+        id: { type: "regular", table: "tcm_encounter", column: "id" },
+        admitTime: { type: "regular", table: "tcm_encounter", column: "admitTime" },
+        dischargeTime: { type: "regular", table: "tcm_encounter", column: "dischargeTime" },
+        patientFirstName: { type: "jsonb", table: "patient", sqlPath: "data->>'firstName'" },
+        patientLastName: { type: "jsonb", table: "patient", sqlPath: "data->>'lastName'" },
       },
       maxItemsPerPage: tcmEncounterMaxPageSize,
     });
