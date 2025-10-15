@@ -93,7 +93,16 @@ const tcmEncounterQuerySchema = z
         // CSV string: "emergency,inpatient encounter"
         z
           .string()
-          .transform(s => s.split(",").map(v => v.trim()))
+          .transform(s =>
+            Array.from(
+              new Set(
+                s
+                  .split(",")
+                  .map(v => v.trim())
+                  .filter(Boolean)
+              )
+            )
+          )
           .pipe(z.array(z.enum(encounterClassOptions))),
       ])
       .optional()
