@@ -2,6 +2,8 @@ import { TcmEncounterResult } from "../../../command/medical/tcm-encounter/get-t
 
 export type TcmEncounterDTO = Omit<TcmEncounterResult, "patientData"> & {
   patientName: string;
+  patientFirstName: string;
+  patientLastName: string;
   patientDateOfBirth: string;
   patientPhoneNumbers: string[];
   patientStates: string[];
@@ -14,6 +16,8 @@ export function dtoFromTcmEncounter(queryResult: TcmEncounterResult): TcmEncount
   return {
     ...encounterData,
     patientName: patientData.firstName + " " + patientData.lastName,
+    patientFirstName: patientData.firstName,
+    patientLastName: patientData.lastName,
     patientDateOfBirth: patientData.dob,
     patientPhoneNumbers:
       patientData.contact?.flatMap(contact => (contact.phone ? [contact.phone] : [])) ?? [],
