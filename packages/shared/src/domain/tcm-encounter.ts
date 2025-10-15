@@ -86,11 +86,8 @@ const tcmEncounterQuerySchema = z
     search: z.string().optional(),
     encounterClass: z
       .union([
-        // Single enum
         z.enum(encounterClassOptions),
-        // Array of enums
         z.array(z.enum(encounterClassOptions)),
-        // CSV string: "emergency,inpatient encounter"
         z
           .string()
           .transform(s =>
