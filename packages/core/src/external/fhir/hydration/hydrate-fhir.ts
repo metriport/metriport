@@ -44,6 +44,9 @@ export async function hydrateFhir(
     const encounters = hydratedBundle.entry
       .filter(entry => isEncounter(entry.resource))
       .map(entry => entry.resource as Encounter);
+    const patientResource = findPatientResource(hydratedBundle);
+    const patientId = patientResource?.id;
+
     await executeAsynchronously(
       hydratedBundle.entry,
       async entry => {
@@ -53,7 +56,7 @@ export async function hydrateFhir(
         // TODO: ENG-1149 - Refactor to use batch crosswalk
         try {
           if (isCondition(res)) {
-            await dangerouslyHydrateCondition(res, encounters);
+            await dangerouslyHydrateCondition(res, encounters, patientId);
           } else if (isMedication(res)) {
             await dangerouslyHydrateMedication(res);
           }

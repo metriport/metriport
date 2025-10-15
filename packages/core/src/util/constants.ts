@@ -120,18 +120,3 @@ export const EPIC_PARTIAL_URN = "1.2.840.114350.1.13";
  * @deprecated - use @metriport/shared/medical instead
  */
 export const HL7_PARTIAL_URN = "2.16.840.1.113883";
-
-/**
- * @deprecated - use @metriport/shared/medical instead
- */
-export const knownSystemUrls = [
-  RXNORM_URL,
-  NDC_URL,
-  CPT_URL,
-  CVX_URL,
-  ICD_10_URL,
-  ICD_9_URL,
-  LOINC_URL,
-  SNOMED_URL,
-  HL7_ACT_URL,
-];

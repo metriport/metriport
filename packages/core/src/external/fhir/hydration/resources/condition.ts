@@ -1,12 +1,36 @@
 import { CodeableConcept, Coding, Condition, Encounter } from "@medplum/fhirtypes";
-import { ICD_10_URL, SNOMED_URL } from "@metriport/shared/medical";
+import { toTitleCase } from "@metriport/shared/common/title-case";
+import {
+  CONDITION_CATEGORY_SYSTEM_URL,
+  CONDITION_CLINICAL_STATUS_URL,
+  ICD_10_URL,
+  SNOMED_URL,
+} from "@metriport/shared/medical";
 import { isUnknownCoding } from "../../../../fhir-deduplication/shared";
+import { capture } from "../../../../util/notifications";
 import { crosswalkCode } from "../../../term-server";
 
-export const CONDITION_CATEGORY_SYSTEM_URL =
-  "http://terminology.hl7.org/CodeSystem/condition-category";
 export const PROBLEM_LIST_CATEGORY_CODE = "problem-list-item";
 export const ENCOUNTER_DIAGNOSIS_CATEGORY_CODE = "encounter-diagnosis";
+
+/**
+ * Map of clinical status found in the wild to HL7 codes.
+ *
+ * @see https://www.hl7.org/fhir/R4/valueset-condition-clinical.html
+ */
+const clinicalStatusCodeToHl7CodeMap: Record<string, string> = {
+  "55561003": "active",
+  active: "active",
+  "73425007": "inactive",
+  inactive: "inactive",
+  "246455001": "recurrence",
+  "255227004": "recurrence",
+  "277022003": "remission",
+  "413322009": "resolved",
+  resolved: "resolved",
+};
+
+const knownBlacklistedClinicalStatuses = ["w"];
 
 /**
  * This function hydrates the condition by crosswalking the SNOMED code to the ICD-10 code
@@ -14,12 +38,17 @@ export const ENCOUNTER_DIAGNOSIS_CATEGORY_CODE = "encounter-diagnosis";
  */
 export async function dangerouslyHydrateCondition(
   condition: Condition,
-  encounters: Encounter[]
+  encounters: Encounter[],
+  patientId?: string | undefined
 ): Promise<void> {
   await dangerouslyHydrateCode(condition);
 
-  const categories = buildUpdatedCategory(condition, encounters);
-  condition.category = categories;
+  checkClinicalStatusCodes(condition.clinicalStatus, patientId);
+  const updatedClinicalStatus = buildUpdatedClinicalStatus(condition.clinicalStatus);
+  if (updatedClinicalStatus) condition.clinicalStatus = updatedClinicalStatus;
+
+  const updatedCategory = buildUpdatedCategory(condition, encounters);
+  condition.category = updatedCategory;
 }
 
 async function dangerouslyHydrateCode(condition: Condition): Promise<void> {
@@ -40,6 +69,84 @@ async function dangerouslyHydrateCode(condition: Condition): Promise<void> {
   return;
 }
 
+function checkClinicalStatusCodes(
+  clinicalStatus: CodeableConcept | undefined,
+  patientId: string | undefined
+): void {
+  for (const coding of clinicalStatus?.coding ?? []) {
+    const code = coding.code?.toLowerCase()?.trim();
+    if (
+      code &&
+      !clinicalStatusCodeToHl7CodeMap[code] &&
+      !knownBlacklistedClinicalStatuses.includes(code)
+    ) {
+      capture.message("Unknown Condition.clinicalStatus code", {
+        level: "warning",
+        extra: {
+          unknownCode: code,
+          system: coding.system,
+          display: coding.display,
+          patientId,
+        },
+      });
+    }
+  }
+}
+
+export function buildUpdatedClinicalStatus(
+  existingStatus: CodeableConcept | undefined
+): CodeableConcept | undefined {
+  if (!existingStatus) return undefined;
+
+  const validStatusCodings = existingStatus.coding?.filter(coding => {
+    const code = coding.code?.toLowerCase()?.trim();
+    if (!code) return false;
+    return clinicalStatusCodeToHl7CodeMap[code] || knownBlacklistedClinicalStatuses.includes(code);
+  });
+
+  if (!validStatusCodings || validStatusCodings.length < 1) return undefined;
+
+  const validExistingStatus = {
+    ...existingStatus,
+    coding: validStatusCodings,
+  };
+
+  if (
+    validExistingStatus.coding?.some(
+      coding => coding.system === CONDITION_CLINICAL_STATUS_URL && coding.code
+    )
+  ) {
+    return validExistingStatus;
+  }
+
+  const hl7ClinicalStatusCoding = buildHl7ClinicalStatusCoding(validStatusCodings);
+  if (!hl7ClinicalStatusCoding) return validExistingStatus;
+
+  return {
+    ...validExistingStatus,
+    // Add the HL7 code to the top of the coding array
+    coding: [hl7ClinicalStatusCoding, ...(validExistingStatus.coding ?? [])],
+  };
+}
+
+function buildHl7ClinicalStatusCoding(codings: Coding[]): Coding | undefined {
+  for (const coding of codings) {
+    const code = coding.code?.toLowerCase()?.trim();
+    if (!code) continue;
+
+    const hl7Code = clinicalStatusCodeToHl7CodeMap[code];
+    if (hl7Code) {
+      return {
+        system: CONDITION_CLINICAL_STATUS_URL,
+        code: hl7Code,
+        display: toTitleCase(hl7Code),
+      };
+    }
+  }
+
+  return undefined;
+}
+
 function buildUpdatedCategory(condition: Condition, encounters: Encounter[]): CodeableConcept[] {
   if (
     condition.category?.find(c =>
@@ -49,14 +156,11 @@ function buildUpdatedCategory(condition: Condition, encounters: Encounter[]): Co
     return condition.category;
   }
 
-  const newCategory = buildConditionCategoryBasedOnHeuristics(condition, encounters);
-  const [firstCategory, ...restCategories] = condition.category ?? [];
-  const combinedCategory = {
-    ...firstCategory,
-    coding: [newCategory, ...(firstCategory?.coding ?? [])],
-  };
+  const hl7Category = buildHl7CategoryBasedOnHeuristics(condition, encounters);
 
-  return [combinedCategory, ...restCategories];
+  // We specifically put the Hl7 category into a separate element of the category
+  // array because its semantic meaning is likely different from other systems' categories.
+  return [{ coding: [hl7Category] }, ...(condition.category ?? [])];
 }
 
 /**
@@ -67,10 +171,7 @@ function buildUpdatedCategory(condition: Condition, encounters: Encounter[]): Co
  * 3. If Encounter.diagnosis references the Condition, it's an encounter-diagnosis.
  * 4. Default to problem-list-item.
  */
-function buildConditionCategoryBasedOnHeuristics(
-  condition: Condition,
-  encounters: Encounter[]
-): Coding {
+function buildHl7CategoryBasedOnHeuristics(condition: Condition, encounters: Encounter[]): Coding {
   if (
     isHistoryDisplay(condition.code?.text) ||
     condition.code?.coding?.some(

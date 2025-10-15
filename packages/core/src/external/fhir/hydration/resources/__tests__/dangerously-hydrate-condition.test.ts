@@ -1,15 +1,20 @@
 import { faker } from "@faker-js/faker";
 import { Condition, Encounter } from "@medplum/fhirtypes";
-import { ICD_10_URL, SNOMED_URL } from "@metriport/shared/medical";
-import * as termServer from "../../../../term-server";
 import {
   CONDITION_CATEGORY_SYSTEM_URL,
+  CONDITION_CLINICAL_STATUS_URL,
+  ICD_10_URL,
+  SNOMED_URL,
+} from "@metriport/shared/medical";
+import { makeCondition } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
+import { makeEncounter } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
+import * as termServer from "../../../../term-server";
+import {
+  buildUpdatedClinicalStatus,
   dangerouslyHydrateCondition,
   ENCOUNTER_DIAGNOSIS_CATEGORY_CODE,
   PROBLEM_LIST_CATEGORY_CODE,
 } from "../condition";
-import { makeEncounter } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-encounter";
-import { makeCondition } from "../../../../../fhir-to-cda/cda-templates/components/__tests__/make-condition";
 
 let mockCrosswalkCode: jest.SpyInstance;
 
@@ -222,6 +227,23 @@ describe("dangerouslyHydrateCondition", () => {
       expect(condition.category?.[0]?.coding?.[0]?.system).toBe(CONDITION_CATEGORY_SYSTEM_URL);
       expect(condition.category?.[0]?.coding?.[0]?.code).toBeDefined();
       expect(condition.category?.[0]?.coding?.[0]?.code).toBe(PROBLEM_LIST_CATEGORY_CODE);
+    });
+  });
+
+  describe("buildUpdatedClinicalStatus", () => {
+    it("should update the clinical status to active when the clinical status is active", async () => {
+      const clinicalStatus = {
+        coding: [{ system: SNOMED_URL, code: "55561003" }],
+      };
+
+      const result = buildUpdatedClinicalStatus(clinicalStatus);
+
+      expect(result).toBeDefined();
+      expect(result?.coding).toHaveLength(2);
+      expect(result?.coding?.[0]?.system).toBe(CONDITION_CLINICAL_STATUS_URL);
+      expect(result?.coding?.[0]?.code).toBe("active");
+      expect(result?.coding?.[1]?.system).toBe(SNOMED_URL);
+      expect(result?.coding?.[1]?.code).toBe("55561003");
     });
   });
 });
