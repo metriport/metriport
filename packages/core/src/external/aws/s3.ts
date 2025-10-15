@@ -16,6 +16,7 @@ import {
   MetriportError,
   NotFoundError,
 } from "@metriport/shared";
+import { NodeHttpHandler } from "@smithy/node-http-handler";
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -151,7 +152,7 @@ export function makeS3Client(region: string): AWS.S3 {
   return new AWS.S3({
     signatureVersion: "v4",
     region,
-    httpOptions: { agent: new https.Agent({ maxSockets }) },
+    httpOptions: { agent: new https.Agent({ keepAlive: true, maxSockets }) },
   });
 }
 
@@ -186,9 +187,12 @@ export class S3Utils {
     this._s3 = makeS3Client(region);
     this._s3Client = new S3Client({
       region,
-      requestHandler: {
-        httpsAgent: { maxSockets },
-      },
+      requestHandler: new NodeHttpHandler({
+        httpsAgent: new https.Agent({
+          keepAlive: true,
+          maxSockets,
+        }),
+      }),
     });
   }
 
