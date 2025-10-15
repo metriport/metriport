@@ -1,6 +1,8 @@
 ---
 title: "Get Patient Settings"
-description: "Returns aggregated monitoring settings for a patient based on all cohorts they belong to. When a patient belongs to multiple cohorts with conflicting settings, the more restrictive option is applied (logical AND). For cadence settings, the longest interval is applied. For more information, see the [guide about Cohorts](/medical-api/handling-data/cohorts)"
+description: "Returns aggregated monitoring settings for a patient based on all cohorts they belong to. 
+When a patient belongs to multiple cohorts with conflicting settings, the least restrictive option is applied (logical OR). 
+For cadence settings, the shortest interval is applied. For more information, see the [guide about Cohorts](/medical-api/handling-data/cohorts)"
 api: "GET /medical/v1/patient/{id}/settings"
 ---
 
@@ -19,14 +21,22 @@ api: "GET /medical/v1/patient/{id}/settings"
       <ResponseField name="hie" type="string" optional>
         HIE-based document monitoring cadence. Values: `never`, `monthly`, `biweekly`, `weekly`.
       </ResponseField>
-      <ResponseField name="adt" type="boolean|array" optional>
-        ADT (Admission, Discharge, Transfer) monitoring. Can be `true`, `false`, or an array of specific HIE names.
+      <ResponseField name="adt" type="boolean" optional>
+        ADT (Admission, Discharge, Transfer) monitoring.
       </ResponseField>
-      <ResponseField name="pharmacy" type="boolean" optional>
-        Pharmacy / medication history monitoring.
+      <ResponseField name="pharmacy" type="object" optional>
+        Pharmacy / medication history monitoring configuration.
+        
+        Properties:
+        - `notifications` (`boolean`) - Enable/disable pharmacy monitoring notifications
+        - `cadence` (`string`) - Data refresh frequency: `never` | `monthly` | `biweekly` | `weekly`
       </ResponseField>
-      <ResponseField name="laboratory" type="boolean" optional>
-        Laboratory notifications monitoring.
+      <ResponseField name="laboratory" type="object" optional>
+        Laboratory notifications monitoring configuration.
+        
+        Properties:
+        - `notifications` (`boolean`) - Enable/disable laboratory monitoring notifications  
+        - `cadence` (`string`) - Data refresh frequency: `never` | `monthly` | `biweekly` | `weekly`
       </ResponseField>
     </ResponseField>
   </Expandable>
@@ -50,8 +60,14 @@ const patientSettings = await metriport.getPatientSettings("018a80c4-292a-7486-a
     "monitoring": {
       "hie": "monthly",
       "adt": true,
-      "pharmacy": false,
-      "laboratory": true
+      "pharmacy": {
+        "notifications": false,
+        "cadence": "monthly"
+      },
+      "laboratory": {
+        "notifications": true,
+        "cadence": "weekly"
+      }
     }
   }
 }
@@ -59,7 +75,7 @@ const patientSettings = await metriport.getPatientSettings("018a80c4-292a-7486-a
 
 ## Settings Aggregation Logic
 
-When a patient belongs to multiple cohorts, their settings are aggregated from all cohorts they belong to. If there are conflicting settings between cohorts, the more restrictive option is applied (logical AND).
+When a patient belongs to multiple cohorts, their settings are aggregated from all cohorts they belong to. If there are conflicting settings between cohorts, the least restrictive option is applied (logical OR).
 
 ### Examples
 
@@ -90,7 +106,7 @@ When a patient belongs to multiple cohorts, their settings are aggregated from a
 {
   "settings": {
     "monitoring": {
-      "adt": false
+      "adt": true
     }
   }
 }
@@ -101,7 +117,7 @@ When a patient belongs to multiple cohorts, their settings are aggregated from a
 {
   "settings": {
     "monitoring": {
-      "hie": "monthly"
+      "hie": "weekly"
     }
   }
 }

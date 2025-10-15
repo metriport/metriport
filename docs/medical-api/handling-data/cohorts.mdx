@@ -148,7 +148,7 @@ Use settings to enable monitoring for certain data sources.
 #### Enabled by default
 
 - **`monitoring.hie`**  
-  _allowed values: `never` | `monthly` | `biweekly` | `weekly`, default: monthly_  
+  _Allowed values: `never` | `monthly` | `biweekly` | `weekly`. Default: monthly_  
   Subscribes the patient(s) to HIE-based document monitoring (non-ADT), which will refresh the patient's medical record from national HIEs based on the specified cadence.
 <Info>
   **HIE monitoring is coming soon!** While this feature is not yet live, you can configure your HIE monitoring settings now. These settings will automatically take effect when the feature launches.
@@ -157,34 +157,19 @@ Use settings to enable monitoring for certain data sources.
 #### Disabled by default
 
 - **`monitoring.adt`**  
-  _allowed values: `true` | `false` | `["HieName", ...]`, default: false_  
+  _Allowed values: `true` | `false`. Default: false_  
   Subscribes the patient(s) to ADT notifications based on the patient's [primary address state](/medical-api/api-reference/patient/create-patient#param-is-primary).  
-  To force-enable for a specific state HIE (see list of supported state HIEs [here](/medical-api/handling-data/cohorts#list-of-state-hies)) instead of using the [primary address state](/medical-api/api-reference/patient/create-patient#param-is-primary), simply input the name of the HIE(s) in an array.
 
 - **`monitoring.pharmacy`**  
-  _allowed values: `true` | `false`, default: false_  
+  _Allowed values: `true` | `false`, default: false_  
   Subscribes patient(s) for ongoing notifications of new pharmacy / medication data.
 
 - **`monitoring.laboratory`**  
-  _allowed values: `true` | `false`, default: false_  
+  _Allowed values: `true` | `false`, default: false_  
   Subscribes patient(s) for ongoing notifications of new laboratory data.
 
 #### How are settings combined across multiple cohorts?
 
 When a patient belongs to multiple cohorts, their settings are aggregated from all cohorts they belong to. 
-If there are conflicting settings between cohorts, the more restrictive option is applied (logical AND). 
+If there are conflicting settings between cohorts, the least restrictive option is applied (logical OR). 
 See [get patient settings](/medical-api/api-reference/patient/get-patient-settings) for details.
-
-
-#### List of state HIEs
-
-| HIE Name | State(s) |
-|----------|----------|
-| **Hixny** | New York |
-| **HealthConnectTexas** | Texas |
-| **HieTexasPcc** | Texas |
-| **Bamboo** | Multi-state |
-| **Alohr** | Alabama |
-| **LaHIE** | Louisiana |
-| **Konza** | Kansas |
-| **flHIE** | Florida |
