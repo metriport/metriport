@@ -12,9 +12,21 @@ import { getAnthropicModelId } from "../../external/bedrock/model/anthropic/vers
 import { BedrockChat } from "../../external/langchain/bedrock";
 import { out } from "../../util";
 import {
-  isPcpVisitAiSummaryFeatureFlagEnabledForCx,
   isRecentVisitAiSummaryEnabledForCx,
+  isCardiacCareAiSummaryEnabledForCx,
+  isNitratesAndConditionsAiSummaryEnabledForCx,
+  isPcpVisitAiSummaryFeatureFlagEnabledForCx,
 } from "../feature-flags/domain-ffs";
+import {
+  documentVariableName as cardiacCareDocumentVariableName,
+  mainSummaryPrompt as cardiacCareMainSummaryPrompt,
+  refinedSummaryPrompt as cardiacCareRefinedSummaryPrompt,
+} from "./cardiac-care-prompt";
+import {
+  documentVariableName as nitratesAndConditionsDocumentVariableName,
+  mainSummaryPrompt as nitratesAndConditionsMainSummaryPrompt,
+  refinedSummaryPrompt as nitratesAndConditionsRefinedSummaryPrompt,
+} from "./nitrates-and-conditions-prompt";
 import {
   documentVariableName as pcpVisitDocumentVariableName,
   mainSummaryPrompt as pcpVisitMainSummaryPrompt,
@@ -155,8 +167,27 @@ async function getInputsForAiBriefGeneration(cxId: string): Promise<{
   refinedPrompt: string;
   documentVariable: string;
 }> {
+  const isNitratesAndConditions = await isNitratesAndConditionsAiSummaryEnabledForCx(cxId);
+  const isCardiacCare = await isCardiacCareAiSummaryEnabledForCx(cxId);
   const isRecentVisit = await isRecentVisitAiSummaryEnabledForCx(cxId);
   const isPcpVisit = await isPcpVisitAiSummaryFeatureFlagEnabledForCx(cxId);
+
+  // Order matters! Most specific prompts should be checked first
+  if (isNitratesAndConditions) {
+    return {
+      mainPrompt: nitratesAndConditionsMainSummaryPrompt,
+      refinedPrompt: nitratesAndConditionsRefinedSummaryPrompt,
+      documentVariable: nitratesAndConditionsDocumentVariableName,
+    };
+  }
+
+  if (isCardiacCare) {
+    return {
+      mainPrompt: cardiacCareMainSummaryPrompt,
+      refinedPrompt: cardiacCareRefinedSummaryPrompt,
+      documentVariable: cardiacCareDocumentVariableName,
+    };
+  }
 
   if (isRecentVisit) {
     return {
@@ -174,6 +205,7 @@ async function getInputsForAiBriefGeneration(cxId: string): Promise<{
     };
   }
 
+  // Default fallback
   return {
     mainPrompt: mainSummaryPrompt,
     refinedPrompt: refinedSummaryPrompt,
