@@ -4,3 +4,46 @@ export interface DataExtractionFile {
   originalText: string;
   bundle: Bundle;
 }
+
+export interface PatientReference {
+  cxId: string;
+  patientId: string;
+}
+
+export interface DocumentReference {
+  bucket: string;
+  key: string;
+}
+
+export interface PatientWithDocuments extends PatientReference {
+  documents: DocumentReference[];
+}
+
+export interface ListPatientsByCxIdInput {
+  cxId: string;
+  bucketName?: string;
+}
+
+export interface ListDocumentsPerPatientInput {
+  cxId: string;
+  patientId: string;
+  bucketName?: string;
+}
+
+export interface DownloadPatientDocumentInput {
+  cxId: string;
+  patientId: string;
+  documentId: string;
+  bucketName?: string;
+}
+
+export interface ParseUnstructuredDataFromBundleInput {
+  documentId: string;
+  bundle: Bundle;
+}
+
+export interface UnstructuredDataItem {
+  documentId: string;
+  resourceId: string;
+  unstructuredData: string;
+}

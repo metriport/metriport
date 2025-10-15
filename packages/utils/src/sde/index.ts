@@ -4,7 +4,12 @@ dotenv.config();
 
 import { Command } from "commander";
 import extractDocument from "./extract-document";
-// import listDocuments from "./list-documents";
+import listPatients from "./list-patients";
+import listDocumentsPerPatient from "./list-documents-per-patient";
+import downloadPatientDocument from "./download-patient-document";
+import parseUnstructuredData from "./parse-unstructured-data";
+import test from "./test";
+// import getDocument from "./get-document";
 // import getDocument from "./get-document";
 
 /**
@@ -13,8 +18,14 @@ import extractDocument from "./extract-document";
  */
 const program = new Command();
 
-// program.addCommand(listDocuments);
-// program.addCommand(getDocument);
+program.addCommand(listPatients);
 program.addCommand(extractDocument);
+program.addCommand(listDocumentsPerPatient);
+program.addCommand(downloadPatientDocument);
+program.addCommand(parseUnstructuredData);
+program.addCommand(test);
 
+// program.addCommand(getDocument);
+// program.addCommand(getDocument);
+// program.addCommand(extractDocument);
 program.parse(process.argv);
