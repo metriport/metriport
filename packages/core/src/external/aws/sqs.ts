@@ -1,3 +1,4 @@
+import { MetriportError } from "@metriport/shared";
 import { SQS } from "aws-sdk";
 import { MessageBodyAttributeMap } from "aws-sdk/clients/sqs";
 
@@ -22,6 +23,11 @@ export type SQSParameters =
       delaySeconds?: number;
     };
 
+export type SQSBatchMessage = {
+  id: string;
+  body: string;
+} & SQSParameters;
+
 export class SQSClient {
   private _sqs: SQS;
 
@@ -45,32 +51,68 @@ export class SQSClient {
     messageBody: string,
     sqsParams: SQSParameters = {}
   ): Promise<void> {
-    const {
-      messageGroupId,
-      messageAttributes,
-      messageAttributesRaw,
-      messageDeduplicationId,
-      delaySeconds,
-    } = sqsParams;
     const messageParams: SQS.Types.SendMessageRequest = {
-      MessageBody: messageBody,
+      ...buildSQSMessage({
+        ...sqsParams,
+        body: messageBody,
+      }),
       QueueUrl: queueUrl,
-      ...(delaySeconds ? { DelaySeconds: delaySeconds } : {}),
-      ...(messageDeduplicationId ? { MessageDeduplicationId: messageDeduplicationId } : {}),
-      ...(messageGroupId ? { MessageGroupId: messageGroupId } : {}),
-      MessageAttributes: {
-        ...(messageAttributes
-          ? Object.entries(messageAttributes).reduce((acc, [key, value]) => {
-              acc[key] = {
-                DataType: "String",
-                StringValue: value,
-              };
-              return acc;
-            }, {} as MessageBodyAttributeMap)
-          : {}),
-        ...(messageAttributesRaw ? messageAttributesRaw : {}),
-      },
     };
     await this.sqs.sendMessage(messageParams).promise();
   }
+
+  async sendBatchMessagesToQueue(queueUrl: string, messages: SQSBatchMessage[]): Promise<void> {
+    if (messages.length < 1) return;
+    if (messages.length > 10) {
+      throw new MetriportError("SQS batch sendMessage limit is 10 messages per call", undefined, {
+        messageCount: messages.length,
+      });
+    }
+
+    const entries = messages.map(message => {
+      const entry: SQS.SendMessageBatchRequestEntry = {
+        Id: message.id,
+        ...buildSQSMessage(message),
+      };
+      return entry;
+    });
+
+    const batchParams: SQS.Types.SendMessageBatchRequest = {
+      QueueUrl: queueUrl,
+      Entries: entries,
+    };
+
+    await this.sqs.sendMessageBatch(batchParams).promise();
+  }
+}
+
+function buildSQSMessage(
+  message: Omit<SQSBatchMessage, "id">
+): Omit<SQS.Types.SendMessageRequest, "QueueUrl"> {
+  const {
+    messageGroupId,
+    body,
+    messageAttributes,
+    messageAttributesRaw,
+    messageDeduplicationId,
+    delaySeconds,
+  } = message;
+  return {
+    MessageBody: body,
+    ...(delaySeconds ? { DelaySeconds: delaySeconds } : {}),
+    ...(messageDeduplicationId ? { MessageDeduplicationId: messageDeduplicationId } : {}),
+    ...(messageGroupId ? { MessageGroupId: messageGroupId } : {}),
+    MessageAttributes: {
+      ...(messageAttributes
+        ? Object.entries(messageAttributes).reduce((acc, [key, value]) => {
+            acc[key] = {
+              DataType: "String",
+              StringValue: value,
+            };
+            return acc;
+          }, {} as MessageBodyAttributeMap)
+        : {}),
+      ...(messageAttributesRaw ? messageAttributesRaw : {}),
+    },
+  };
 }

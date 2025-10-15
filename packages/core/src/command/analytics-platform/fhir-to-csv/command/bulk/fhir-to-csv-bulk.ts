@@ -1,10 +1,10 @@
 export type ProcessFhirToCsvBulkRequest = {
   cxId: string;
-  patientId: string;
+  patientIds: string[];
   outputPrefix: string;
   timeoutInMillis?: number | undefined;
 };
 
 export interface FhirToCsvBulkHandler {
-  processFhirToCsvBulk(request: ProcessFhirToCsvBulkRequest): Promise<void>;
+  processFhirToCsvBulk(request: ProcessFhirToCsvBulkRequest): Promise<string[]>;
 }
