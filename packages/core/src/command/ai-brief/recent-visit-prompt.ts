@@ -9,6 +9,20 @@ export const documentVariableName = "text";
 const instructions = `
 Instructions:
 
+Create a two section summary:
+
+** Core Summary **
+Write a summary of the patient's most recent medical history, considering the following goals:
+1. Specify whether a DNR or POLST form has been completed.
+2. Include a summary of the patient's most recent hospitalization, including the location of the hospitalization, the date of the hospitalization, the reason for the hospitalization, and the results of the hospitalization.
+3. Include a summary of the patient's current chronic conditions, allergies, and any previous surgeries.
+4. Include a summary of the patient's current medications, including dosages and frequency - do not include instructions on how to take the medications. Include any history of medication allergies or adverse reactions.
+5. Include any other relevant information about the patient's health.
+
+If any of the above information is not present, do not include it in the summary.
+Don't tell me that you are writing a summary, just write the summary. Also, don't tell me about any limitations of the information provided.
+
+** PCP Visits **
 Review the patient medical records and format the output EXACTLY as follows, including the bullet points and indentation:
     PCP Visits (up to last 24 months)
     - [PCP Name], [PCP Specialty]
@@ -71,6 +85,6 @@ Here are the previous summaries written by you of sections of the patient's medi
 {${documentVariableName}}
 --------
 
-Combine these summaries into a single, comprehensive summary.
+Combine these summaries into a comprehensive summary, but retain the structure of the underlying summary.
 Use these ${instructions}.
 `;
