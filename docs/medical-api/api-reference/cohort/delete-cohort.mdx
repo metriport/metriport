@@ -1,12 +1,13 @@
 ---
 title: "Delete Cohort"
-description: "Deletes a cohort and removes all patient associations. For more information, see the [guide about Cohorts](/medical-api/handling-data/cohorts)"
+description: "Deletes a cohort if the cohort is empty. For more information, see the [guide about Cohorts](/medical-api/handling-data/cohorts)"
 api: "DELETE /medical/v1/cohort/{id}"
 ---
 
 <Warning>
-  Deleting a cohort will remove the settings applied to all the patients within the cohort.
-  This could potentially lead to turning off monitoring for a whole patient population.
+  **Prerequisites:** You must remove all patients from a cohort before deleting it. If there are still patients in the cohort, the API will return a 400 error.
+  
+  Use the [remove patients from cohort endpoint](/medical-api/api-reference/cohort/remove-patients-from-cohort) to clear all patients first.
 </Warning>
 ## Path Params
 <ParamField path="id" type="string" required>

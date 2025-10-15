@@ -6,12 +6,18 @@
   "description": "Patients that need frequent and robust monitoring.",
   "color": "red",
   "settings": {
-    "monitoring": {
-      "hie": "weekly",
-      "adt": true,
-      "pharmacy": true,
-      "laboratory": true
-    }
+        "monitoring": {
+          "hie": "weekly",
+          "adt": true,
+          "pharmacy": {
+            "notifications": true,
+            "schedule": "never"
+          },
+          "laboratory": {
+            "notifications": true,
+            "schedule": "never"
+          }
+        }
   }
 }
 ```

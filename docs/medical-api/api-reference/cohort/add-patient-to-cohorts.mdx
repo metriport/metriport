@@ -52,8 +52,14 @@ const result = await metriport.addPatientToCohorts("00000000-0000-0000-0000-0000
         "monitoring": {
           "hie": "weekly",
           "adt": true,
-          "pharmacy": true,
-          "laboratory": true
+          "pharmacy": {
+            "notifications": true,
+            "schedule": "never"
+          },
+          "laboratory": {
+            "notifications": true,
+            "schedule": "never"
+          }
         }
       }
     },
@@ -67,8 +73,14 @@ const result = await metriport.addPatientToCohorts("00000000-0000-0000-0000-0000
         "monitoring": {
           "hie": "monthly",
           "adt": false,
-          "pharmacy": false,
-          "laboratory": false
+          "pharmacy": {
+            "notifications": false,
+            "schedule": "never"
+          },
+          "laboratory": {
+            "notifications": false,
+            "schedule": "never"
+          }
         }
       }
     },
@@ -82,8 +94,14 @@ const result = await metriport.addPatientToCohorts("00000000-0000-0000-0000-0000
         "monitoring": {
           "hie": "monthly",
           "adt": false,
-          "pharmacy": true,
-          "laboratory": false
+          "pharmacy": {
+            "notifications": true,
+            "schedule": "never"
+          },
+          "laboratory": {
+            "notifications": false,
+            "schedule": "never"
+          }
         }
       }
     }
