@@ -22,7 +22,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
   if (!message) return;
 
   const parsedBody = parseBody(fhirToCsvSchema, message.body);
-  const { cxId, patientId } = parsedBody;
+  const { cxId, patientId, outputPrefix } = parsedBody;
 
   const log = prefixedLog(`cxId ${cxId}, patientId ${patientId}`);
   log(`Parsed: ${JSON.stringify(parsedBody)}`);
@@ -36,11 +36,13 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
 
   const timeoutForCsvTransform = Math.max(0, context.getRemainingTimeInMillis() - 200);
 
-  log(`Invoking lambda ${lambdaName}... it has ${timeoutForCsvTransform}ms to run`);
+  log(`Invoking downstream lambda... it has ${timeoutForCsvTransform}ms to run`);
   const startedAt = Date.now();
   const fhirToCsvHandler = new FhirToCsvBulkDirect();
   await fhirToCsvHandler.processFhirToCsvBulk({
-    ...parsedBody,
+    cxId,
+    patientIds: [patientId],
+    outputPrefix,
     timeoutInMillis: timeoutForCsvTransform,
   });
   log(`Done in ${Date.now() - startedAt}ms`);
