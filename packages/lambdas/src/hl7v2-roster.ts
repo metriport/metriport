@@ -7,6 +7,9 @@ import { out } from "@metriport/core/util/log";
 import { Config } from "@metriport/core/util/config";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 
+// Initialize Sentry
+capture.init();
+
 const apiUrl = getEnvOrFail("API_URL");
 const bucketName = getEnvOrFail("HL7V2_ROSTER_BUCKET_NAME");
 
