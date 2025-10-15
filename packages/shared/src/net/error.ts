@@ -2,7 +2,13 @@ import axios, { AxiosError } from "axios";
 import { errorToString } from "../error/shared";
 
 // https://nodejs.org/docs/latest-v18.x/api/errors.html#common-system-errors
-export const nodeConnRefusedErrorCodes = ["ECONNREFUSED", "ECONNRESET"] as const;
+export const nodeConnRefusedErrorCodes = [
+  "ECONNREFUSED", // Connection refused
+  "ECONNRESET", // Connection reset by peer
+  "EAI_AGAIN", // DNS lookup failed
+  "ENETUNREACH", // Network is unreachable
+  "EHOSTUNREACH", // Host is unreachable
+] as const;
 export type NodeConnRefusedNetworkError = (typeof nodeConnRefusedErrorCodes)[number];
 
 export const nodeTimeoutErrorCodes = ["ETIMEDOUT"] as const;
