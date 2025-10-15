@@ -124,6 +124,7 @@ export async function rebuildCwDirectory(failGracefully = false): Promise<void> 
     capture.error(msg, {
       extra: { context, error },
     });
+    await sequelize.close();
     throw error;
   }
 

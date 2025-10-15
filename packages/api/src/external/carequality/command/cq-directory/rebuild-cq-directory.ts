@@ -7,6 +7,7 @@ import { initDbPool } from "@metriport/core/util/sequelize";
 import { errorToString, sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { Sequelize } from "sequelize";
 import { Config } from "../../../../shared/config";
 import { makeCarequalityManagementApiOrFail } from "../../api";
 import { CQDirectoryEntryData } from "../../cq-directory";
@@ -29,17 +30,17 @@ const parallelQueriesToGetManagingOrg = 20;
 const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
 const heartbeatUrl = Config.getCqDirRebuildHeartbeatUrl();
 
-const dbCreds = Config.getDBCreds();
-const sequelize = initDbPool(dbCreds, {
-  max: 10,
-  min: 1,
-  acquire: 30000,
-  idle: 10000,
-});
-
 export async function rebuildCQDirectory(failGracefully = false): Promise<void> {
   const context = "rebuildCQDirectory";
   const { log } = out(context);
+  const dbCreds = Config.getDBCreds();
+  const sequelize = initDbPool(dbCreds, {
+    max: 10,
+    min: 1,
+    acquire: 30000,
+    idle: 10000,
+  });
+
   let currentPosition = 0;
   let isDone = false;
   const startedAt = Date.now();
@@ -102,7 +103,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
         }
       }
     }
-    await processAdditionalOrgs();
+    await processAdditionalOrgs(sequelize);
 
     if (parsingErrors.length > 0) {
       const msg = `Parsing errors while rebuilding the CQ directory`;
@@ -124,6 +125,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
     capture.error(msg, {
       extra: { context, error },
     });
+    await sequelize.close();
     throw error;
   }
   try {
@@ -138,6 +140,8 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
       extra: { context: `updateCqDirectoryViewDefinition`, error },
     });
     throw error;
+  } finally {
+    await sequelize.close();
   }
 
   log(`CQ directory successfully rebuilt! :) Took ${Date.now() - startedAt}ms`);
@@ -164,7 +168,7 @@ function normalizeExternalOrgs(parsedOrgs: CQDirectoryEntryData[]): CQDirectoryE
  * Process/include additional orgs that are not in the CQ directory.
  * Used for staging/dev envs.
  */
-async function processAdditionalOrgs(): Promise<void> {
+async function processAdditionalOrgs(sequelize: Sequelize): Promise<void> {
   const context = "processAdditionalOrgs";
   const { log } = out(context);
   try {
