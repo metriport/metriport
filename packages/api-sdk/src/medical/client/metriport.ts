@@ -1,6 +1,6 @@
 import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@medplum/fhirtypes";
 import {
-  CohortCreateRequest,
+  CohortCreateInput,
   CohortDTO,
   CohortSettings,
   CohortUpdateRequest,
@@ -716,7 +716,7 @@ export class MetriportMedicalApi {
    * @param data The properties to create the cohort with.
    * @returns The created cohort.
    */
-  async createCohort(data: CohortCreateRequest): Promise<CohortWithSizeDTO> {
+  async createCohort(data: CohortCreateInput): Promise<CohortWithSizeDTO> {
     const resp = await this.api.post(`${COHORT_URL}`, data);
     return resp.data;
   }

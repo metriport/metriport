@@ -4,20 +4,17 @@ import {
   isSurescriptsNotificationsFeatureFlagEnabledForCx,
 } from "@metriport/core/command/feature-flags/domain-ffs";
 import { BadRequestError } from "@metriport/shared";
-import { CohortMonitoringPartial } from "@metriport/shared/domain/cohort";
+import { AllOptionalMonitoringSchema } from "@metriport/shared/domain/cohort";
 import { PatientCohortModel } from "../../../models/medical/patient-cohort";
 
 export async function validateMonitoringSettingsForCx(
   cxId: string,
-  monitoring: CohortMonitoringPartial | undefined,
+  monitoring: AllOptionalMonitoringSchema | undefined,
   log: typeof console.log
 ): Promise<void> {
-  if (!monitoring) {
-    return;
-  }
   log(`Validating monitoring settings for cx: ${cxId}`);
 
-  if (monitoring.adt) {
+  if (monitoring?.adt) {
     const isAdtEnabled = true; //TODO: Check if the cx is subscribed to ADTs
     if (!isAdtEnabled) {
       throw new BadRequestError("ADT is not enabled for your account", undefined, {
@@ -26,9 +23,9 @@ export async function validateMonitoringSettingsForCx(
     }
   }
 
-  if (monitoring.pharmacy?.notifications) {
+  if (monitoring?.pharmacy?.notifications) {
     const isSurescriptsNotificationsEnabled =
-      (await isSurescriptsNotificationsFeatureFlagEnabledForCx(cxId)) || true;
+      await isSurescriptsNotificationsFeatureFlagEnabledForCx(cxId);
     if (!isSurescriptsNotificationsEnabled) {
       throw new BadRequestError(
         "Pharmacy Notifications are not enabled for your account",
@@ -39,8 +36,8 @@ export async function validateMonitoringSettingsForCx(
       );
     }
   }
-  if (monitoring.pharmacy?.schedule && monitoring.pharmacy?.schedule !== "never") {
-    const isSurescriptsEnabled = (await isSurescriptsFeatureFlagEnabledForCx(cxId)) || true;
+  if (monitoring?.pharmacy?.schedule && monitoring?.pharmacy?.schedule.enabled) {
+    const isSurescriptsEnabled = await isSurescriptsFeatureFlagEnabledForCx(cxId);
     if (!isSurescriptsEnabled) {
       throw new BadRequestError("Pharmacy Schedule is not enabled for your account", undefined, {
         monitoringSettings: JSON.stringify(monitoring),
@@ -49,10 +46,10 @@ export async function validateMonitoringSettingsForCx(
   }
 
   const isCxRequestingQuest =
-    monitoring.laboratory?.notifications ||
-    (monitoring.laboratory?.schedule && monitoring.laboratory?.schedule !== "never");
+    monitoring?.laboratory?.notifications ||
+    (monitoring?.laboratory?.schedule && monitoring?.laboratory?.schedule.enabled);
   if (isCxRequestingQuest) {
-    const isQuestEnabled = (await isQuestFeatureFlagEnabledForCx(cxId)) || true;
+    const isQuestEnabled = await isQuestFeatureFlagEnabledForCx(cxId);
     if (!isQuestEnabled) {
       throw new BadRequestError(
         "Laboratory Notifications and Schedule are not enabled for your account",

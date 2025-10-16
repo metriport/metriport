@@ -20,18 +20,18 @@ export const COHORT_COLORS = [
 // ### Default Values ###
 export const DEFAULT_COLOR = "white";
 
-const DEFAULT_FREQUENCY = "monthly";
-const DEFAULT_SCHEDULE: Schedule = {
+export const DEFAULT_FREQUENCY = "monthly";
+export const DEFAULT_SCHEDULE: Schedule = {
   enabled: false,
   frequency: DEFAULT_FREQUENCY,
 };
 
-const DEFAULT_SCHEDULE_HIE: Schedule = {
+export const DEFAULT_SCHEDULE_HIE: Schedule = {
   enabled: true, // Docs say default is enabled for HIE.
   frequency: DEFAULT_FREQUENCY,
 };
 
-const DEFAULT_NOTIFICATION_SCHEDULE: NotificationSchedule = {
+export const DEFAULT_NOTIFICATION_SCHEDULE: NotificationSchedule = {
   notifications: false,
   schedule: DEFAULT_SCHEDULE,
 };
@@ -136,7 +136,7 @@ export const cohortCreateSchema = baseCohortSchema.extend({
   settings: settingsSchemaWithDefaults.optional().default(DEFAULT_SETTINGS),
 });
 
-export type CohortCreateRequest = z.infer<typeof cohortCreateSchema>;
+export type CohortCreateInput = z.input<typeof cohortCreateSchema>;
 // > Update Schemas
 const allOptionalScheduleSchema = z.object({
   enabled: z.boolean().optional(),
@@ -174,6 +174,7 @@ export const cohortUpdateSchema = z.object({
   eTag: z.string().optional(),
 });
 
+export type AllOptionalMonitoringSchema = z.infer<typeof allOptionalMonitoringSchema>;
 export type AllOptionalCohortSettings = z.infer<typeof allOptionalCohortSettingsSchema>;
 export type CohortUpdateRequest = z.infer<typeof cohortUpdateSchema>;
 

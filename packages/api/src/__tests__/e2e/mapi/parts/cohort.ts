@@ -1,28 +1,17 @@
 import { faker } from "@faker-js/faker";
 import {
-  COHORT_COLORS,
-  CohortCreateRequest,
+  CohortCreateInput,
+  CohortDTO,
   cohortSettingsSchema,
 } from "@metriport/shared/domain/cohort";
-import { CohortDTO } from "@metriport/shared/domain/cohort";
 
-export const createCohort: CohortCreateRequest = {
+export const createCohort: CohortCreateInput = {
   name: faker.word.noun(),
-  description: faker.lorem.sentence(),
-  color: faker.helpers.arrayElement(COHORT_COLORS),
-  settings: {
-    monitoring: {
-      adt: true,
-      hie: "monthly",
-      pharmacy: { notifications: false, schedule: "never" },
-      laboratory: { notifications: false, schedule: "never" },
-    },
-  },
 };
 
 export function validateCohort(cohort: CohortDTO) {
   expect(cohort.name).toBeTruthy();
-  expect(cohort.description).toBeTruthy();
+  expect(cohort.description).toBeDefined();
   expect(cohort.settings).toBeTruthy();
   expect(() => cohortSettingsSchema.parse(cohort.settings)).not.toThrow();
 }
