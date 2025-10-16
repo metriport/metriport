@@ -60,7 +60,8 @@ export class FhirToCsvBulkCloud implements FhirToCsvBulkHandler {
     outputPrefix: string,
     timeoutInMillis?: number
   ): Promise<string[]> {
-    const messages: SQSBatchMessage<SQSParametersFifo>[] = patientIds.map(patientId => {
+    const uniquePatientIds = [...new Set(patientIds)];
+    const messages: SQSBatchMessage<SQSParametersFifo>[] = uniquePatientIds.map(patientId => {
       const payload = JSON.stringify({
         cxId,
         patientId,
