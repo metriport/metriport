@@ -9,6 +9,21 @@ const dropHieViewSql = `DROP VIEW IF EXISTS ${hieViewName};`;
 
 const createHieViewSql = `
 CREATE VIEW ${hieViewName} AS
+
+SELECT
+  name,
+  oid as id,
+  oid,
+  zip as zip_code,
+  state,
+  root_organization,
+  managing_organization_id,
+  search_criteria,
+  'COMMONWELL' as network
+FROM ${cwViewName} cw
+
+UNION ALL
+
 SELECT
   name,
   id,
@@ -21,24 +36,11 @@ SELECT
   'CAREQUALITY' as network
 FROM ${cqViewName} cq
 
-UNION ALL
-
-SELECT
-  name,
-  oid as id,
-  oid,
-  zip as zip_code,
-  state,
-  'CommonWell' as root_organization,
-  '2.16.840.1.113883.3.3330' as managing_organization_id,
-  search_criteria,
-  'COMMONWELL' as network
-FROM ${cwViewName} cw
 -- No duplicates! Exclude orgs that already exist in the Carequality view
 WHERE NOT EXISTS (
   SELECT 1
-  FROM ${cqViewName} cq
-  WHERE cq.id = cw.oid
+  FROM ${cwViewName} cw
+  WHERE cw.oid = cq.id
 )
 ;`;
 
