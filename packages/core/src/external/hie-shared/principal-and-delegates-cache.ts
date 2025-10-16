@@ -1,6 +1,6 @@
 import { errorToString } from "@metriport/shared";
-import { out } from "../../../../util/log";
-import { capture } from "../../../../util/notifications";
+import { out } from "../../util/log";
+import { capture } from "../../util/notifications";
 import { getPrincipalAndDelegatesMap } from "./principal-and-delegates";
 
 /**
@@ -9,14 +9,20 @@ import { getPrincipalAndDelegatesMap } from "./principal-and-delegates";
  * at the Lambda level and reuse across invocations.
  */
 class LambdaOnlyDelegateCache {
-  private static instance: LambdaOnlyDelegateCache;
+  private static instances: Map<string, LambdaOnlyDelegateCache> = new Map();
   private cache: Map<string, string[]> | undefined;
+  private source: "cq" | "cw";
 
-  static getInstance(): LambdaOnlyDelegateCache {
-    if (!LambdaOnlyDelegateCache.instance) {
-      LambdaOnlyDelegateCache.instance = new LambdaOnlyDelegateCache();
+  private constructor(source: "cq" | "cw") {
+    this.source = source;
+  }
+
+  static getInstance(source: "cq" | "cw"): LambdaOnlyDelegateCache {
+    if (!LambdaOnlyDelegateCache.instances.has(source)) {
+      LambdaOnlyDelegateCache.instances.set(source, new LambdaOnlyDelegateCache(source));
     }
-    return LambdaOnlyDelegateCache.instance;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return LambdaOnlyDelegateCache.instances.get(source)!;
   }
 
   /**
@@ -38,7 +44,7 @@ class LambdaOnlyDelegateCache {
     log("Loading principal and delegates map from S3");
 
     try {
-      const map = await getPrincipalAndDelegatesMap();
+      const map = await getPrincipalAndDelegatesMap(this.source);
       log(`Successfully loaded principal and delegates map with ${map.size} entries`);
       return map;
     } catch (error) {
@@ -55,6 +61,8 @@ class LambdaOnlyDelegateCache {
  * This function should be used instead of calling getPrincipalAndDelegatesMap directly
  * in Lambda functions to benefit from caching.
  */
-export async function getCachedPrincipalAndDelegatesMap(): Promise<Map<string, string[]>> {
-  return LambdaOnlyDelegateCache.getInstance().getMap();
+export async function getCachedPrincipalAndDelegatesMap(
+  source: "cq" | "cw"
+): Promise<Map<string, string[]>> {
+  return LambdaOnlyDelegateCache.getInstance(source).getMap();
 }

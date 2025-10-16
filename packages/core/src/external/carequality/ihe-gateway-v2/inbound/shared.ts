@@ -2,6 +2,7 @@ import { SamlAttributes } from "@metriport/ihe-gateway-sdk";
 import { BadRequestError, toArray } from "@metriport/shared";
 import dayjs from "dayjs";
 import { stripUrnPrefix } from "../../../../util/urn";
+import { getCachedPrincipalAndDelegatesMap } from "../../../hie-shared/principal-and-delegates-cache";
 import { expiresIn, namespaces } from "../constants";
 import {
   AttributeValue,
@@ -11,7 +12,6 @@ import {
   treatmentPurposeOfUse,
 } from "../schema";
 import { extractText } from "../utils";
-import { getCachedPrincipalAndDelegatesMap } from "./principal-and-delegates-cache";
 
 export const successStatus = "urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success";
 export const failureStatus = "urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Failure";
@@ -151,7 +151,7 @@ function removeOrganizationPrefix(referenceValue: string): string {
 }
 
 export async function validateDelegatedRequest(principal: string, delegate: string) {
-  const principalAndDelegatesMap = await getCachedPrincipalAndDelegatesMap();
+  const principalAndDelegatesMap = await getCachedPrincipalAndDelegatesMap("cq");
   const delegates = principalAndDelegatesMap.get(principal);
   if (!delegates) {
     throw new BadRequestError(
