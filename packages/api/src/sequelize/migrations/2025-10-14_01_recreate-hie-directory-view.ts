@@ -44,11 +44,14 @@ WHERE NOT EXISTS (
 ;`;
 
 export const up: Migration = async ({ context: queryInterface }) => {
-  for (const sql of [dropHieViewSql, createHieViewSql]) {
-    await queryInterface.sequelize.query(sql, {
-      type: QueryTypes.RAW,
-    });
-  }
+  await queryInterface.sequelize.transaction(async transaction => {
+    for (const sql of [dropHieViewSql, createHieViewSql]) {
+      await queryInterface.sequelize.query(sql, {
+        type: QueryTypes.RAW,
+        transaction,
+      });
+    }
+  });
 };
 
 export const down: Migration = async ({ context: queryInterface }) => {
