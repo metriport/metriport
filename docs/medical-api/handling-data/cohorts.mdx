@@ -77,7 +77,7 @@ The settings of the cohort are now applied to the patient (what monitoring is se
 
 ```typescript
 // 1. Create a cohort
-const { cohort } = await metriportApi.createCohort({
+const cohort = await metriportApi.createCohort({
   name: "My Custom Cohort",
   description: "This is my first cohort",
   color: "purple",

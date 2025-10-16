@@ -14,10 +14,10 @@ For more information, see the [guide about Cohorts](/medical-api/handling-data/c
 
 ## Body
 
-You must provide either `patientIds` or `all`, but not both.
+You must provide either `patientIds` or `allPatients`, but not both.
 
 <ParamField body="patientIds" type="string[]" optional>
-  Array of patient IDs to assign to the cohort. Mutually exclusive with the `all` property.
+  Array of patient IDs to assign to the cohort. Mutually exclusive with the `allPatients` property.
 </ParamField>
 
 <ParamField body="allPatients" type="boolean" optional>
@@ -48,7 +48,7 @@ const cohortWithPatients = await metriport.addPatientsToCohort({
 // Add all patients to cohort
 const cohortWithAllPatients = await metriport.addPatientsToCohort({
   cohortId: "00000000-0000-0000-0000-000000000000",
-  all: true
+  allPatients: true
 });
 ```
 
