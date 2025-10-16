@@ -1,4 +1,3 @@
-import { executeWithNetworkRetries } from "@metriport/shared";
 import { SQSClient } from "../../../../external/aws/sqs";
 import { executeAsynchronously } from "../../../../util/concurrency";
 import { Config } from "../../../../util/config";
@@ -43,8 +42,7 @@ export class IngestConsolidatedSqs implements IngestConsolidated {
     if ("patientIds" in params) {
       await executeAsynchronously(
         params.patientIds,
-        patientId =>
-          executeWithNetworkRetries(() => this.ingestSingle({ cxId: params.cxId, patientId })),
+        patientId => this.ingestSingle({ cxId: params.cxId, patientId }),
         {
           numberOfParallelExecutions: SQS_MESSAGE_BATCH_SIZE_STANDARD,
           delay: SQS_MESSAGE_BATCH_MILLIS_TO_SLEEP,
