@@ -1,11 +1,38 @@
+import { normalizeStateSafe } from "@metriport/shared";
 import { z } from "zod";
-import { normalizeStatePreprocess } from "./address";
+import { normalizeStatePreprocessSafe } from "./address";
+
+// Safe location schema that filters out invalid states
+const locationSchemaSafe = z.object({
+  address1: z.string(),
+  address2: z.string().nullish(),
+  city: z.string(),
+  state: z.preprocess(normalizeStatePreprocessSafe, z.string().nullish()),
+  postalCode: z.string(),
+  country: z.string(),
+  phone: z.string().nullish(),
+  fax: z.string().nullish(),
+  email: z.string().nullish(),
+});
+
+/**
+ * Validates if a location has a valid state
+ */
+function isValidLocationState(location: z.infer<typeof locationSchemaSafe>): boolean {
+  if (!location.state) return false;
+  return normalizeStateSafe(location.state) !== undefined;
+}
+
+// Safe location array schema that filters out locations with invalid states
+const locationArraySchemaSafe = z.array(locationSchemaSafe).transform(locations => {
+  return locations.filter(location => isValidLocationState(location));
+});
 
 const organizationBaseSchema = z.object({
   organizationId: z.string(),
   homeCommunityId: z.string(),
   name: z.string(),
-  displayName: z.string(),
+  displayName: z.string().nullish(),
   memberName: z.string(),
   type: z.string(),
   npiType1: z.string().nullish(), // Physicians
@@ -26,19 +53,7 @@ const organizationBaseSchema = z.object({
     })
     .nullish(),
   isActive: z.boolean(),
-  locations: z.array(
-    z.object({
-      address1: z.string(),
-      address2: z.string().nullish(),
-      city: z.string(),
-      state: z.preprocess(normalizeStatePreprocess, z.string()),
-      postalCode: z.string(),
-      country: z.string(),
-      phone: z.string().nullish(),
-      fax: z.string().nullish(),
-      email: z.string().nullish(),
-    })
-  ),
+  locations: locationArraySchemaSafe,
   /** Gateway search radius in miles. One of: 50, 100, 150 */
   searchRadius: z
     .number()
