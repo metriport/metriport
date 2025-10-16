@@ -35,15 +35,24 @@ api: "GET /medical/v1/cohort"
       "color": "red",
       "settings": {
         "monitoring": {
-          "hie": "weekly",
+          "hie": {
+            "enabled": true,
+            "frequency": "weekly"
+          },
           "adt": true,
           "pharmacy": {
             "notifications": true,
-            "schedule": "never"
+            "schedule": {
+              "enabled": false,
+              "frequency": "monthly"
+            }
           },
           "laboratory": {
             "notifications": true,
-            "schedule": "never"
+            "schedule": {
+              "enabled": false,
+              "frequency": "monthly"
+            }
           }
         }
       }
@@ -55,15 +64,24 @@ api: "GET /medical/v1/cohort"
       "description": "Patients receiving cardiac care and monitoring",
       "settings": {
         "monitoring": {
-          "hie": "weekly",
+          "hie": {
+            "enabled": true,
+            "frequency": "weekly"
+          },
           "adt": true,
           "pharmacy": {
             "notifications": true,
-            "schedule": "never"
+            "schedule": {
+              "enabled": false,
+              "frequency": "monthly"
+            }
           },
           "laboratory": {
             "notifications": false,
-            "schedule": "never"
+            "schedule": {
+              "enabled": false,
+              "frequency": "monthly"
+            }
           }
         }
       }

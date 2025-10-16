@@ -8,15 +8,24 @@
     "description": "Patients that need frequent and robust monitoring.",
     "settings": {
         "monitoring": {
-          "hie": "weekly",
+          "hie": {
+            "enabled": true,
+            "frequency": "weekly"
+          },
           "adt": true,
           "pharmacy": {
             "notifications": true,
-            "schedule": "never"
+            "schedule": {
+              "enabled": false,
+              "frequency": "monthly"
+            }
           },
           "laboratory": {
             "notifications": true,
-            "schedule": "never"
+            "schedule": {
+              "enabled": false,
+              "frequency": "monthly"
+            }
           }
         }
     }

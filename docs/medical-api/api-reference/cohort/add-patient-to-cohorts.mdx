@@ -50,15 +50,24 @@ const result = await metriport.addPatientToCohorts("00000000-0000-0000-0000-0000
       "color": "red",
       "settings": {
         "monitoring": {
-          "hie": "weekly",
+          "hie": {
+            "enabled": true,
+            "frequency": "weekly"
+          },
           "adt": true,
           "pharmacy": {
             "notifications": true,
-            "schedule": "never"
+            "schedule": {
+              "enabled": false,
+              "frequency": "monthly"
+            }
           },
           "laboratory": {
             "notifications": true,
-            "schedule": "never"
+            "schedule": {
+              "enabled": false,
+              "frequency": "monthly"
+            }
           }
         }
       }
@@ -71,15 +80,24 @@ const result = await metriport.addPatientToCohorts("00000000-0000-0000-0000-0000
       "color": "green",
       "settings": {
         "monitoring": {
-          "hie": "monthly",
+          "hie": {
+            "enabled": true,
+            "frequency": "monthly"
+          },
           "adt": false,
           "pharmacy": {
             "notifications": false,
-            "schedule": "never"
+            "schedule": {
+              "enabled": false,
+              "frequency": "monthly"
+            }
           },
           "laboratory": {
             "notifications": false,
-            "schedule": "never"
+            "schedule": {
+              "enabled": false,
+              "frequency": "monthly"
+            }
           }
         }
       }
@@ -92,15 +110,24 @@ const result = await metriport.addPatientToCohorts("00000000-0000-0000-0000-0000
       "color": "yellow",
       "settings": {
         "monitoring": {
-          "hie": "monthly",
+          "hie": {
+            "enabled": true,
+            "frequency": "monthly"
+          },
           "adt": false,
           "pharmacy": {
             "notifications": true,
-            "schedule": "never"
+            "schedule": {
+              "enabled": false,
+              "frequency": "monthly"
+            }
           },
           "laboratory": {
             "notifications": false,
-            "schedule": "never"
+            "schedule": {
+              "enabled": false,
+              "frequency": "monthly"
+            }
           }
         }
       }

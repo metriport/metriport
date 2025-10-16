@@ -21,8 +21,21 @@
 <ResponseField name="settings" type="object" required>
   Configuration settings for the cohort.
   <Expandable title="Settings properties">
-    <ResponseField name="hie" type="string" optional>
-      HIE-based document monitoring - subscribes patients to HIE-based document monitoring (non-ADT) / medical record refresh based on the cadence. Can be one of `never`, `monthly`, `biweekly`, `weekly`.
+    <ResponseField name="hie" type="object" optional>
+      HIE-based document monitoring - subscribes patients to HIE-based document monitoring (non-ADT) / medical record refresh based on the cadence.
+      <Expandable title="hie object properties" defaultOpen={false}>
+        <ResponseField name="enabled" type="boolean" optional>
+          Enable or disable scheduled data pulls for HIE monitoring. When `false`, no scheduled pulls will occur regardless of the frequency setting.
+        </ResponseField>
+        
+        <ResponseField name="frequency" type="string" optional>
+          How often scheduled data pulls should occur, can be one of `weekly` or `biweekly` or `monthly`.
+        </ResponseField>
+        
+        <Info>
+          See [When do scheduled pulls run?](/medical-api/handling-data/cohorts#when-do-scheduled-pulls-run%3F) for timing details.
+        </Info>
+      </Expandable>
       <Info>
         **HIE monitoring is coming soon!** While this feature is not yet live, you can configure your HIE monitoring settings now. These settings will automatically take effect when the feature launches.
       </Info>
@@ -36,8 +49,21 @@
         <ResponseField name="notifications" type="boolean" optional>
           Enable/disable pharmacy monitoring notifications.
         </ResponseField>
-        <ResponseField name="schedule" type="string" optional>
-          Enable pharmacy data pulls at scheduled dates. Can be one of `never`, `monthly`, `biweekly`, `weekly`.
+        <ResponseField name="schedule" type="object" optional>
+          Enable pharmacy data pulls at scheduled dates.
+          <Expandable title="schedule object properties" defaultOpen={false}>
+            <ResponseField name="enabled" type="boolean" optional>
+              Enable or disable scheduled data pulls for pharmacy monitoring. When `false`, no scheduled pulls will occur regardless of the frequency setting.
+            </ResponseField>
+            
+            <ResponseField name="frequency" type="string" optional>
+              How often scheduled data pulls should occur, can be one of `weekly` or `biweekly` or `monthly`.
+            </ResponseField>
+            
+            <Info>
+              See [When do scheduled pulls run?](/medical-api/handling-data/cohorts#when-do-scheduled-pulls-run%3F) for timing details.
+            </Info>
+          </Expandable>
         </ResponseField>
       </Expandable>
     </ResponseField>
@@ -47,8 +73,21 @@
         <ResponseField name="notifications" type="boolean" optional>
           Enable/disable laboratory monitoring notifications.
         </ResponseField>
-        <ResponseField name="schedule" type="string" optional>
-          Enable laboratory data pulls at scheduled dates. Can be one of `never`, `monthly`, `biweekly`, `weekly`.
+        <ResponseField name="schedule" type="object" optional>
+          Enable laboratory data pulls at scheduled dates.
+          <Expandable title="schedule object properties" defaultOpen={false}>
+            <ResponseField name="enabled" type="boolean" optional>
+              Enable or disable scheduled data pulls for laboratory monitoring. When `false`, no scheduled pulls will occur regardless of the frequency setting.
+            </ResponseField>
+            
+            <ResponseField name="frequency" type="string" optional>
+              How often scheduled data pulls should occur, can be one of `weekly` or `biweekly` or `monthly`.
+            </ResponseField>
+            
+            <Info>
+              See [When do scheduled pulls run?](/medical-api/handling-data/cohorts#when-do-scheduled-pulls-run%3F) for timing details.
+            </Info>
+          </Expandable>
         </ResponseField>
       </Expandable>
     </ResponseField>

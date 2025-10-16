@@ -42,14 +42,23 @@ const patientCohorts = await metriport.getPatientCohorts("00000000-0000-0000-000
       "settings": {
         "monitoring": {
           "adt": true,
-          "hie": "never",
+          "hie": {
+            "enabled": false,
+            "frequency": "monthly"
+          },
           "pharmacy": {
             "notifications": true,
-            "schedule": "never"
+            "schedule": {
+              "enabled": false,
+              "frequency": "monthly"
+            }
           },
           "laboratory": {
             "notifications": true,
-            "schedule": "never"
+            "schedule": {
+              "enabled": false,
+              "frequency": "monthly"
+            }
           }
         }
       }
@@ -62,14 +71,23 @@ const patientCohorts = await metriport.getPatientCohorts("00000000-0000-0000-000
       "settings": {
         "monitoring": {
           "adt": true,
-          "hie": "weekly",
+          "hie": {
+            "enabled": true,
+            "frequency": "weekly"
+          },
           "pharmacy": {
             "notifications": true,
-            "schedule": "never"
+            "schedule": {
+              "enabled": false,
+              "frequency": "monthly"
+            }
           },
           "laboratory": {
             "notifications": true,
-            "schedule": "never"
+            "schedule": {
+              "enabled": false,
+              "frequency": "monthly"
+            }
           }
         }
       }
