@@ -70,7 +70,7 @@ export function chunkTextForModel({
   modelVersion: "claude-sonnet-3.7";
   safetyMargin?: number;
   overlapRatio?: number;
-}): ChunkingResult {
+}): string[] {
   const { chunkSizeChars, chunkOverlapChars } = getChunkConfig(
     modelVersion,
     safetyMargin,

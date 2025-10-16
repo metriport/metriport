@@ -6,6 +6,7 @@ import { hasMapiAccess } from "../../command/medical/mapi-access";
 import ForbiddenError from "../../errors/forbidden";
 import { Config } from "../../shared/config";
 import { getCxIdOrFail } from "../util";
+import { getCxIdFromJwt } from "./propelauth";
 
 /**
  * Process the API key and get the customer id.

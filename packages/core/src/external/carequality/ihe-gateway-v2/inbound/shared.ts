@@ -31,12 +31,12 @@ function isPurposeOfUseObject(value: AttributeValue): value is { PurposeOfUse: C
 
 export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttributes {
   const attributes = toArray(header.Security.Assertion.AttributeStatement)?.[0]?.Attribute;
-  if (!attributes) {
+  if (attributes === undefined) {
     throw new Error("Attributes are undefined");
   }
 
   function getAttributeValue(name: string): string | undefined {
-    const attribute = attributes.find(attr => attr._Name === name);
+    const attribute = attributes?.find(attr => attr._Name === name);
     if (!attribute) return undefined;
     if (typeof attribute.AttributeValue === "string") return attribute.AttributeValue;
     if (istextSchema(attribute.AttributeValue)) return extractText(attribute.AttributeValue);
@@ -44,7 +44,7 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
   }
 
   function getRoleAttributeValue(name: string): { code: string; display: string } | undefined {
-    const attribute = attributes.find(attr => attr._Name === name);
+    const attribute = attributes?.find(attr => attr._Name === name);
     if (!attribute) return undefined;
     if (isRoleObject(attribute.AttributeValue)) {
       return {
@@ -56,7 +56,7 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
   }
 
   function getPurposeOfUseAttributeValue(name: string): string | undefined {
-    const attribute = attributes.find(attr => attr._Name === name);
+    const attribute = attributes?.find(attr => attr._Name === name);
     if (!attribute) return undefined;
     if (isPurposeOfUseObject(attribute.AttributeValue)) {
       return attribute.AttributeValue.PurposeOfUse._code;
@@ -65,7 +65,7 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
   }
 
   function getPrincipalOidAttributevalue(name: string): string | undefined {
-    const attribute = attributes.find(attr => attr._Name === name);
+    const attribute = attributes?.find(attr => attr._Name === name);
     if (!attribute) return undefined;
     if (typeof attribute.AttributeValue === "string") {
       return removeOrganizationPrefix(attribute.AttributeValue);

@@ -32,6 +32,8 @@ type ChunkResult = {
   outputTokens?: number;
 };
 
+const inferenceRegion = Config.isProduction() ? "us-west-2" : "us-east-2";
+
 export async function summarizeContext({
   resourceType,
   resourceDisplays,
@@ -116,7 +118,7 @@ export async function summarizeChunk({
 }: ResourceInference): Promise<ChunkResult> {
   const agent = new AnthropicAgent({
     version: "claude-sonnet-3.7",
-    region: Config.getAWSRegion(),
+    region: inferenceRegion,
     systemPrompt,
     maxTokens: 8192,
     temperature: 0,
@@ -163,7 +165,7 @@ export async function collateSummaries({
 }): Promise<ChunkResult> {
   const agent = new AnthropicAgent({
     version: "claude-sonnet-3.7",
-    region: Config.getAWSRegion(),
+    region: inferenceRegion,
     systemPrompt,
     maxTokens: 8192,
     temperature: 0,
