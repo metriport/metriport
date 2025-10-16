@@ -5,6 +5,7 @@ const hieViewName = "hie_directory_view";
 const cqViewName = "cq_directory_entry_view";
 const cwViewName = "cw_directory_entry_view";
 
+const commonWellManagingOrganizationId = "2.16.840.1.113883.3.3330.11";
 const dropHieViewSql = `DROP VIEW IF EXISTS ${hieViewName};`;
 
 const createHieViewSql = `
@@ -17,7 +18,7 @@ SELECT
   zip as zip_code,
   state,
   root_organization,
-  '2.16.840.1.113883.3.3330' as managing_organization_id,
+  ${commonWellManagingOrganizationId} as managing_organization_id,
   search_criteria,
   'COMMONWELL' as network
 FROM ${cwViewName} cw
