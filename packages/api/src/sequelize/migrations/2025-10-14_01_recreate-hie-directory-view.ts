@@ -36,11 +36,11 @@ SELECT
   'CAREQUALITY' as network
 FROM ${cqViewName} cq
 
--- No duplicates! Exclude orgs that already exist in the Carequality view
+-- No duplicates! Exclude orgs that already exist in the CommonWell view
 WHERE NOT EXISTS (
   SELECT 1
-  FROM ${cwViewName} cw
-  WHERE cw.oid = cq.id
+  FROM ${cqViewName} cq
+  WHERE cq.id = cw.oid
 )
 ;`;
 
