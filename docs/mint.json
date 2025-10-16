@@ -93,7 +93,7 @@
           ]
         },
         {
-          "group": "Cohort (patient group)",
+          "group": "Cohort",
           "icon": "people-group",
           "pages": [
             "medical-api/api-reference/cohort/create-cohort",
