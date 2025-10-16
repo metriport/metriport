@@ -33,7 +33,6 @@ export interface DownloadPatientDocumentInput {
   cxId: string;
   patientId: string;
   documentId: string;
-  bucketName?: string;
 }
 
 export interface ParseUnstructuredDataFromBundleInput {

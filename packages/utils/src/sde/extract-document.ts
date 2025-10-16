@@ -1,6 +1,6 @@
 import { Command } from "commander";
-import { listDocumentsPerPatient } from "@metriport/core/external/sde/command/document/list-document";
-import { downloadPatientDocument } from "@metriport/core/external/sde/command/document/download-document";
+import { listDocumentIds } from "@metriport/core/external/sde/command/document/list-documents";
+import { downloadDocument } from "@metriport/core/external/sde/command/document/download";
 import { parseUnstructuredDataFromBundle } from "@metriport/core/external/sde/command/bundle/parse-bundle";
 // import { extractDocument } from "@metriport/core/external/sde/command/document/extract-document";
 
@@ -14,37 +14,22 @@ const command = new Command("extract-document");
 command.description("Extract a document from S3");
 command.requiredOption("--cx-id <cx-id>", "The CX ID");
 command.requiredOption("--patient-id <patient-id>", "The patient ID");
-command.requiredOption("--bucket-name <bucket-name>", "The bucket name");
 command.action(extractDocument);
 
-export async function extractDocument({
-  cxId,
-  patientId,
-  bucketName,
-}: {
-  cxId: string;
-  patientId: string;
-  bucketName: string;
-}) {
+export async function extractDocument({ cxId, patientId }: { cxId: string; patientId: string }) {
   console.log(`Listing documents per patient by CX ID: ${cxId} and patient ID: ${patientId}`);
-  const patientWithDocuments = await listDocumentsPerPatient({ cxId, patientId, bucketName });
+  const documentIds = await listDocumentIds({ cxId, patientId });
 
-  for (const doc of patientWithDocuments.documents) {
-    console.log(`Extracting document from S3: ${doc.key}`);
-    const bundle = await downloadPatientDocument({
-      cxId,
-      patientId,
-      documentId: doc.key,
-      bucketName,
-    });
-
+  for (const documentId of documentIds) {
+    console.log(`Extracting document from S3: ${documentId}`);
+    const bundle = await downloadDocument({ cxId, patientId, documentId });
     if (!bundle) {
-      console.log(`Document not found: ${doc.key}`);
+      console.log(`Document not found: ${documentId}`);
       continue;
     }
 
     const unstructuredData = parseUnstructuredDataFromBundle({
-      documentId: doc.key,
+      documentId,
       bundle,
     });
 

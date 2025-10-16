@@ -2,38 +2,39 @@ import _ from "lodash";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { S3Utils } from "../../../aws/s3";
-import { getCdaToFhirConversionPrefix } from "../../file-names";
-import { PatientWithDocuments, ListDocumentsPerPatientInput } from "../../types";
+import { getCdaToFhirConversionPrefix, parseCdaToFhirConversionFileName } from "../../file-names";
 
 const documentKeyFilter = ".xml.json";
 
-export async function listDocumentsPerPatient({
+export async function listDocumentIds({
   cxId,
   patientId,
-  bucketName,
-}: ListDocumentsPerPatientInput): Promise<PatientWithDocuments> {
-  const { log } = out(`sde.listDocumentsPerPatient - cx ${cxId}, pat ${patientId}`);
-  log("Listing documents...");
+}: {
+  cxId: string;
+  patientId: string;
+}): Promise<string[]> {
+  const { log } = out(`sde.listDocumentIds - cx ${cxId}, pat ${patientId}`);
 
   const s3 = new S3Utils(Config.getAWSRegion());
-  const bucketNameToUse = bucketName ?? Config.getCdaToFhirConversionBucketName();
-  log(`Bucket name: ${bucketNameToUse}`);
-  if (!bucketNameToUse) {
-    log(`No cda to fhir conversion bucket name found, skipping`);
-    return { cxId, patientId, documents: [] };
+  const bucketName = Config.getCdaToFhirConversionBucketName();
+  if (!bucketName) {
+    log(`No cda to fhir conversion bucket name found`);
+    return [];
   }
 
-  const documents = await s3.listObjects(
-    bucketNameToUse,
-    getCdaToFhirConversionPrefix({ cxId, patientId })
-  );
+  const prefix = getCdaToFhirConversionPrefix({ cxId, patientId });
+  const documents = await s3.listObjects(bucketName, prefix);
 
-  const documentList = _(documents)
+  const documentIds = _(documents)
     .map(document => document.Key)
     .compact()
     .filter(key => key.endsWith(documentKeyFilter))
-    .map(key => ({ bucket: bucketNameToUse, key }))
+    .map(key => {
+      const { documentId } = parseCdaToFhirConversionFileName({ fileName: key });
+      return documentId;
+    })
+    .compact()
     .value();
 
-  return { cxId, patientId, documents: documentList };
+  return documentIds;
 }
