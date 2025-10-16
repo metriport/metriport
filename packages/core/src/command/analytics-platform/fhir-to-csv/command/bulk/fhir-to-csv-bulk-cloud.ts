@@ -1,6 +1,6 @@
-import { errorToString, executeWithNetworkRetries, uuidv4 } from "@metriport/shared";
+import { errorToString, uuidv4 } from "@metriport/shared";
 import { chunk } from "lodash";
-import { SQSBatchMessage, SQSClient } from "../../../../../external/aws/sqs";
+import { SQSBatchMessage, SQSClient, SQSParametersFifo } from "../../../../../external/aws/sqs";
 import { executeAsynchronously } from "../../../../../util/concurrency";
 import { Config } from "../../../../../util/config";
 import { out } from "../../../../../util/log";
@@ -29,8 +29,14 @@ export class FhirToCsvBulkCloud implements FhirToCsvBulkHandler {
       chunks,
       async aChunk => {
         try {
-          await this.sendBatchToQueue(aChunk, cxId, outputPrefix, timeoutInMillis);
-          amountOfPatientsProcessed += aChunk.length;
+          const failedPatientIdsOfChunk = await this.sendBatchToQueue(
+            aChunk,
+            cxId,
+            outputPrefix,
+            timeoutInMillis
+          );
+          failedPatientIds.push(...failedPatientIdsOfChunk);
+          amountOfPatientsProcessed += aChunk.length - failedPatientIdsOfChunk.length;
           if (amountOfPatientsProcessed % 100 === 0) {
             log(`>>> Sent ${amountOfPatientsProcessed}/${patientIds.length} patients to queue`);
           }
@@ -53,8 +59,8 @@ export class FhirToCsvBulkCloud implements FhirToCsvBulkHandler {
     cxId: string,
     outputPrefix: string,
     timeoutInMillis?: number
-  ): Promise<void> {
-    const messages: SQSBatchMessage[] = patientIds.map(patientId => {
+  ): Promise<string[]> {
+    const messages: SQSBatchMessage<SQSParametersFifo>[] = patientIds.map(patientId => {
       const payload = JSON.stringify({
         cxId,
         patientId,
@@ -71,8 +77,14 @@ export class FhirToCsvBulkCloud implements FhirToCsvBulkHandler {
       };
     });
 
-    await executeWithNetworkRetries(async () => {
-      await this.sqsClient.sendBatchMessagesToQueue(this.fhirToCsvQueueUrl, messages);
-    });
+    const failedMessageIds = await this.sqsClient.sendBatchMessagesToQueue(
+      this.fhirToCsvQueueUrl,
+      messages
+    );
+    const failedMessages = failedMessageIds.flatMap(
+      failedId => messages.find(m => m.id === failedId) ?? []
+    );
+    const failedPatientIds = failedMessages.map(m => m.messageGroupId);
+    return failedPatientIds;
   }
 }
