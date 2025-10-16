@@ -84,10 +84,6 @@ export async function summarizeContext({
     };
   }
 
-  responses.forEach(response => {
-    log(`Response: ${response}`);
-  });
-
   // Collate summaries
   const collationTimer = initTimer();
   const collationResult = await collateSummaries({
