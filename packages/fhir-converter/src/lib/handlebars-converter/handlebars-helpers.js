@@ -2027,6 +2027,7 @@ module.exports.external = [
       if (!mappedData || mappedData.length === 0) return "";
       return mappedData
         .map(entry => {
+          if (!entry || typeof entry !== "object") return "";
           return Object.entries(entry)
             .map(([key, value]) => `${key}: ${value}`)
             .join("\n");
