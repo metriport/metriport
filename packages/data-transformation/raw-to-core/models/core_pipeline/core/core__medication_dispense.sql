@@ -66,14 +66,14 @@ select
                     then right(md.performer_0_actor_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
-        )                                                                                           as practitioner_id
+        )                                                                                           as performer_practitioner_id
     ,   cast(
             case 
                 when md.performer_0_actor_reference ilike '%organization%' 
                     then right(md.performer_0_actor_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
-        )                                                                                           as organization_id
+        )                                                                                           as performer_organization_id
     ,   cast(right(md.location_reference, 36) as {{ dbt.type_string() }} )                          as location_id
     ,   cast(md.meta_source as {{ dbt.type_string() }} )                                            as data_source
 from {{ref('stage__medicationdispense')}} as md

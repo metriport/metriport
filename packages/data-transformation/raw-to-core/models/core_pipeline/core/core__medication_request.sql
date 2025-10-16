@@ -61,14 +61,14 @@ select
                     then right(mr.requester_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
-        )                                                                                           as practitioner_id
+        )                                                                                           as requester_practitioner_id
     ,   cast(
             case 
                 when mr.requester_reference ilike '%organization%' 
                     then right(mr.requester_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
-        )                                                                                           as organization_id
+        )                                                                                           as requester_organization_id
     ,   cast(mr.meta_source as {{ dbt.type_string() }} )                                            as data_source
 from {{ref('stage__medicationrequest')}} as mr
 inner join {{ref('stage__medication')}} as m

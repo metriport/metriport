@@ -1,4 +1,4 @@
-with target_vaccine_coding as (
+with vaccine_code_cpx_cdoing as (
    {{   
         get_target_coding(
             get_immunization_vaccine_codings,
@@ -6,7 +6,7 @@ with target_vaccine_coding as (
             'immunization_id', 
             2, 
             none, 
-            immunization_vaccine_code_system
+            'http://hl7.org/fhir/sid/cvx'
         ) 
     }}
 )
@@ -18,21 +18,18 @@ select
             {{ try_to_cast_date('i.occurrencedatetime') }},
             {{ try_to_cast_date('i.occurrencestring') }}
         )                                                                                                   as occurrence_date
-    ,   cast(tc.system as {{ dbt.type_string() }} )                                                         as source_vaccine_code_type
-    ,   cast(tc.code as {{ dbt.type_string() }} )                                                           as source_vaccine_code
-    ,   cast(tc.description as {{ dbt.type_string() }} )                                                    as source_vaccine_description
     ,   cast(
-            case
-                when cvx.cvx is not null then 'cvx'
-                else null
-            end as {{ dbt.type_string() }} 
-        )                                                                                                   as normalized_vaccine_code_type
+            coalesce(
+                    cvx.cvx,
+                tc_cvx.code
+            ) as {{ dbt.type_string() }} 
+        )                                                                                                   as cvx_code
     ,   cast(
-            cvx.cvx as {{ dbt.type_string() }} 
-        )                                                                                                   as normalized_vaccine_code
-    ,   cast(
-            cvx.long_description as {{ dbt.type_string() }} 
-        )                                                                                                   as normalized_vaccine_description
+            coalesce(
+                cvx.long_description,
+                tc_cvx.display
+            ) as {{ dbt.type_string() }} 
+        )                                                                                                   as cvx_display
     ,   cast(i.dosequantity_value as {{ dbt.type_string() }} )                                              as dose_amount
     ,   cast(i.dosequantity_unit as {{ dbt.type_string() }} )                                               as dose_unit
     ,   cast(
@@ -40,39 +37,39 @@ select
                 i.site_coding_0_display,
                 i.site_text
             ) as {{ dbt.type_string() }} 
-        )                                                                                                   as site
+        )                                                                                                   as site_diplay
     ,   cast(
             coalesce(
                 i.route_coding_0_display,
                 i.route_text
             ) as {{ dbt.type_string() }} 
-        )                                                                                                   as route
+        )                                                                                                   as route_display
     ,   cast(
             coalesce(
                 i.note_0_text,
                 i.note_1_text,
                 i.note_2_text
             ) as {{ dbt.type_string() }} 
-        )                                                                                                   as note
+        )                                                                                                   as note_text
     ,   cast(
             case 
                 when i.performer_0_actor_reference ilike '%practitioner%' 
                     then right(i.performer_0_actor_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
-        )                                                                                                   as practitioner_id
+        )                                                                                                   as performer_practitioner_id
     ,   cast(
             case 
                 when i.performer_0_actor_reference ilike '%organization%' 
                     then right(i.performer_0_actor_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
-        )                                                                                                   as organization_id
+        )                                                                                                   as performer_organization_id
     ,   cast(i.meta_source as {{ dbt.type_string() }} )                                                     as data_source
 from {{ref('stage__immunization')}} i
 left join {{ref('stage__patient')}} p
     on right(i.patient_reference, 36) = p.id
-left join target_vaccine_coding tc
-    on i.id = tc.immunization_id
+left join vaccine_code_cpx_cdoing tc_cpx
+    on i.id = tc_cvx.immunization_id
 left join {{ref('terminology__cvx')}} cvx
-    on tc.system = 'cvx' and tc.code = cvx.cvx
+    on tc_cvx.code = cvx.cvx

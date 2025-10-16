@@ -46,14 +46,14 @@ select
                     then right(ma.performer_0_actor_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
-        )                                                                                           as practitioner_id
+        )                                                                                           as performer_practitioner_id
     ,   cast(
             case 
                 when ma.performer_0_actor_reference ilike '%organization%' 
                     then right(ma.performer_0_actor_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
-        )                                                                                           as organization_id
+        )                                                                                           as performer_organization_id
     ,   cast(ma.meta_source as {{ dbt.type_string() }} )                                            as data_source
 from {{ref('stage__medicationadministration')}} as ma
 inner join {{ref('stage__medication')}} as m

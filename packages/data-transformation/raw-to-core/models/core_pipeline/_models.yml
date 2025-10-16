@@ -1,10 +1,87 @@
 version: 2
 
 models:
-  - name: core__condition_encounter
-    schema: core_v2
+  - name: core__condition
+    schema: core_v3
+    alias: condition
+    materialized: table
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+      - name: recorder_practitioner_id
+        tests:
+          - relationships:
+              to: ref('core__practitioner')
+              field: practitioner_id
+              config:
+                where: recorder_practitioner_id != ''
+                severity: warn
+  - name: core__diagnostic_report_observation
+    schema: core_v3
     enabled: false
-    alias: condition_encounter
+    alias: diagnostic_report_observation
+    materialized: table
+    columns:
+      - name: observation_id
+        tests:
+          - relationships:
+              to: ref('core__observation')
+              field: observation_id
+              config:
+                severity: error
+      - name: diagnostic_report_id
+        tests:
+          - relationships:
+              to: ref('core__diagnostic_report')
+              field: diagnostic_report_id
+              config:
+                severity: error
+  - name: core__diagnostic_report
+    schema: core_v3
+    enabled: false
+    alias: diagnostic_report
+    materialized: table
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+      - name: encounter_id
+        tests:
+          - relationships:
+              to: ref('core__encounter')
+              field: encounter_id
+              config:
+                where: encounter_id != ''
+                severity: warn
+      - name: performer_practitioner_id
+        tests:
+          - relationships:
+              to: ref('core__practitioner')
+              field: practitioner_id
+              config:
+                where: performer_practitioner_id != ''
+                severity: warn
+      - name: performer_organization_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: performer_organization_id != ''
+                severity: warn
+  - name: core__encounter_condition
+    schema: core_v3
+    enabled: false
+    alias: encounter_condition
     materialized: table
     columns:
       - name: condition_id
@@ -21,29 +98,8 @@ models:
               field: encounter_id
               config:
                 severity: warn
-  - name: core__condition
-    schema: core_v2
-    enabled: false
-    alias: condition
-    materialized: table
-    columns:
-      - name: patient_id
-        tests:
-          - relationships:
-              to: ref('core__patient')
-              field: patient_id
-              config:
-                severity: error
-      - name: practitioner_id
-        tests:
-          - relationships:
-              to: ref('core__practitioner')
-              field: practitioner_id
-              config:
-                where: practitioner_id != ''
-                severity: warn
   - name: core__encounter
-    schema: core_v2
+    schema: core_v3
     enabled: false
     alias: encounter
     materialized: table
@@ -55,24 +111,32 @@ models:
               field: patient_id
               config:
                 severity: error
-      - name: practitioner_id
+      - name: participant_practitioner_id
         tests:
           - relationships:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
-                where: practitioner_id != ''
+                where: participant_practitioner_id != ''
                 severity: warn
-      - name: facility_id
+      - name: location_id
         tests:
           - relationships:
               to: ref('core__location')
               field: location_id
               config:
-                where: facility_id != ''
+                where: location_id != ''
+                severity: warn
+      - name: organization_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: organization_id != ''
                 severity: warn
   - name: core__immunization
-    schema: core_v2
+    schema: core_v3
     enabled: false
     alias: immunization
     materialized: table
@@ -84,26 +148,34 @@ models:
               field: patient_id
               config:
                 severity: error
-      - name: practitioner_id
+      - name: performer_practitioner_id
         tests:
           - relationships:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
-                where: practitioner_id != ''
+                where: performer_practitioner_id != ''
+                severity: warn
+      - name: performer_organization_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: performer_organization_id != ''
                 severity: warn
   - name: core__location
-    schema: core_v2
+    schema: core_v3
     enabled: false
     alias: location
     materialized: table
   - name: core__medication
-    schema: core_v2
+    schema: core_v3
     enabled: false
     alias: medication
     materialized: table
   - name: core__medication_administration
-    schema: core_v2
+    schema: core_v3
     enabled: false
     alias: medication_administration
     materialized: table
@@ -122,16 +194,24 @@ models:
               field: medication_id
               config:
                 severity: error
-      - name: practitioner_id
+      - name: performer_practitioner_id
         tests:
           - relationships:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
-                where: practitioner_id != ''
+                where: performer_practitioner_id != ''
+                severity: warn
+      - name: performer_organization_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: performer_organization_id != ''
                 severity: warn
   - name: core__medication_dispense
-    schema: core_v2
+    schema: core_v3
     enabled: false
     alias: medication_dispense
     materialized: table
@@ -150,24 +230,32 @@ models:
               field: medication_id
               config:
                 severity: error
-      - name: practitioner_id
+      - name: performer_practitioner_id
         tests:
           - relationships:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
-                where: practitioner_id != ''
+                where: performer_practitioner_id != ''
                 severity: warn
-      - name: facility_id
+      - name: performer_organization_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: performer_organization_id != ''
+                severity: warn
+      - name: location_id
         tests:
           - relationships:
               to: ref('core__location')
               field: location_id
               config:
-                where: facility_id != ''
+                where: location_id != ''
                 severity: warn
   - name: core__medication_request
-    schema: core_v2
+    schema: core_v3
     enabled: false
     alias: medication_request
     materialized: table
@@ -186,16 +274,24 @@ models:
               field: medication_id
               config:
                 severity: error
-      - name: practitioner_id
+      - name: requester_practitioner_id
         tests:
           - relationships:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
-                where: practitioner_id != ''
+                where: requester_practitioner_id != ''
+                severity: warn
+      - name: requester_organization_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: requester_organization_id != ''
                 severity: warn
   - name: core__medication_statement
-    schema: core_v2
+    schema: core_v3
     enabled: false
     alias: medication_statement
     materialized: table
@@ -215,7 +311,7 @@ models:
               config:
                 severity: error
   - name: core__observation
-    schema: core_v2
+    schema: core_v3
     enabled: false
     alias: observation
     materialized: table
@@ -227,25 +323,33 @@ models:
               field: patient_id
               config:
                 severity: error
-      - name: practitioner_id
+      - name: performer_practitioner_id
         tests:
           - relationships:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
-                where: practitioner_id != ''
+                where: performer_practitioner_id != ''
+                severity: warn
+      - name: performer_organization_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: performer_organization_id != ''
                 severity: warn
   - name: core__patient
-    schema: core_v2
+    schema: core_v3
     alias: patient
     materialized: table
   - name: core__practitioner
-    schema: core_v2
+    schema: core_v3
     enabled: false
     alias: practitioner
     materialized: table
   - name: core__procedure
-    schema: core_v2
+    schema: core_v3
     alias: procedure
     materialized: table
     columns:
@@ -256,11 +360,19 @@ models:
               field: patient_id
               config:
                 severity: error
-      - name: practitioner_id
+      - name: performer_practitioner_id
         tests:
           - relationships:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
-                where: practitioner_id != ''
+                where: performer_practitioner_id != ''
+                severity: warn
+      - name: performer_organization_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: performer_organization_id != ''
                 severity: warn

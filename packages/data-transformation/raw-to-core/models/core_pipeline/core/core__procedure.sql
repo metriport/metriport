@@ -1,4 +1,4 @@
-with target_coding as (
+with code_cpt_coding as (
    {{   
         get_target_coding(
             get_procedcure_codings,
@@ -6,11 +6,23 @@ with target_coding as (
             'procedure_id', 
             7, 
             none, 
-            procedure_code_system
+            'http://www.ama-assn.org/go/cpt'
         ) 
     }}
 ),
-target_bodysite_coding as (
+code_snomed_ct_coding as (
+   {{   
+        get_target_coding(
+            get_procedcure_codings,
+            'stage__procedure', 
+            'procedure_id', 
+            7, 
+            none, 
+            'http://snomed.info/sct'
+        ) 
+    }}
+),
+bodysite_snomed_ct_coding as (
     {{ 
         get_target_coding(
             get_procedcure_bodysite_codings, 
@@ -18,10 +30,10 @@ target_bodysite_coding as (
             'procedure_id', 
             1, 
             2, 
-            procedure_bodysite_code_system
+            'http://snomed.info/sct'
         ) }}
 ),
-target_reason_coding as (
+reason_snomed_ct_coding as (
     {{ 
         get_target_coding(
             get_procedcure_reason_codings, 
@@ -29,7 +41,7 @@ target_reason_coding as (
             'procedure_id', 
             9, 
             0,
-            procedure_reason_code_system
+            'http://snomed.info/sct'
         ) 
     }}
 )
@@ -42,38 +54,54 @@ select
             {{ try_to_cast_date('pro.performedperiod_start', 'YYYY-MM-DD') }}
         )                                                                                                           as start_date
     ,   {{ try_to_cast_date('pro.performedperiod_end', 'YYYY-MM-DD') }}                                             as end_date
-    ,   cast(tc.system as {{ dbt.type_string() }} )                                                                 as source_code_type
-    ,   cast(tc.code as {{ dbt.type_string() }} )                                                                   as source_code
-    ,   cast(tc.description as {{ dbt.type_string() }} )                                                            as source_description
-    ,   cast(
-            case
-                when tc.system = 'cpt' and hcpcs.hcpcs is not null then 'cpt'
-                when loinc.loinc is not null then 'loinc'
-                when snomed.snomed_ct is not null then 'snomed-ct'
-                when tc.system = 'hcpcs' and hcpcs.hcpcs is not null then 'hcpcs'
-                else null
-            end as {{ dbt.type_string() }} 
-        )                                                                                                           as normalized_code_type
     ,   cast(
             coalesce(
                 hcpcs.hcpcs,
-                loinc.loinc,
-                snomed.snomed_ct
+                tc_cpt.code
             ) as {{ dbt.type_string() }} 
-        )                                                                                                           as normalized_code
+        )                                                                                                           as cpt_code
     ,   cast(
             coalesce(
                 hcpcs.long_description,
-                loinc.long_common_name,
-                snomed.description
+                tc_cpt.display
             ) as {{ dbt.type_string() }} 
-        )                                                                                                           as normalized_description
-    ,   cast(tc_bs.system as {{ dbt.type_string() }} )                                                              as body_site_code_type
-    ,   cast(tc_bs.code as {{ dbt.type_string() }} )                                                                as body_site_code
-    ,   cast(tc_bs.description as {{ dbt.type_string() }} )                                                         as body_site_description
-    ,   cast(tc_rc.system as {{ dbt.type_string() }} )                                                              as reason_code_type
-    ,   cast(tc_rc.code as {{ dbt.type_string() }} )                                                                as reason_code
-    ,   cast(tc_rc.description as {{ dbt.type_string() }} )                                                         as reason_description
+        )                                                                                                           as cpt_display
+    ,   cast(
+            coalesce(
+                snomed.snomed_ct,
+                tc_snomed_ct.code
+            ) as {{ dbt.type_string() }} 
+        )                                                                                                           as snomed_code
+    ,   cast(
+            coalesce(
+                snomed.description,
+                tc_snomed_ct.display
+            ) as {{ dbt.type_string() }} 
+        )                                                                                                           as snomed_display
+    ,   cast(
+            coalesce(
+                snomed_bodysite.snomed_ct,
+                bodysite_snomed_ct.code
+            ) as {{ dbt.type_string() }} 
+        )                                                                                                           as bodysite_snomed_ode
+    ,   cast(
+            coalesce(
+                snomed_bodysite.description,
+                bodysite_snomed_ct.display
+            ) as {{ dbt.type_string() }} 
+        )                                                                                                           as bodysite_snomed_display
+    ,   cast(
+            coalesce(
+                snomed_reason.snomed_ct,
+                reason_snomed_ct.code
+            ) as {{ dbt.type_string() }} 
+        )                                                                                                           as reason_snomed_code
+    ,   cast(
+            coalesce(
+                snomed_reason.description,
+                reason_snomed_ct.display
+            ) as {{ dbt.type_string() }} 
+        )                                                                                                           as reason_snomed_display
     ,   cast(
             coalesce(
                 pro.note_0_text,
@@ -92,27 +120,31 @@ select
                     then right(pro.performer_0_actor_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
-        )                                                                                                           as practitioner_id
+        )                                                                                                           as performer_practitioner_id
     ,   cast(
             case 
                 when pro.performer_0_actor_reference ilike '%organization%' 
                     then right(pro.performer_0_actor_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
-        )                                                                                                           as organization_id
+        )                                                                                                           as performer_organization_id
     ,   cast(pro.meta_source as {{ dbt.type_string() }} )                                                           as data_source
 from {{ref('stage__procedure' )}} pro
 left join {{ref('stage__patient')}} pat
     on right(pro.subject_reference, 36) = pat.id
-left join target_coding tc
-    on pro.id = tc.procedure_id
-left join target_bodysite_coding tc_bs
-    on pro.id = tc_bs.procedure_id
-left join target_reason_coding tc_rc
-    on pro.id = tc_rc.procedure_id
+left join code_cpt_coding tc_cpt
+    on pro.id = tc_cpt.procedure_id
+left join code_snomed_ct_coding tc_snomed_ct
+    on pro.id = tc_snomed_ct.procedure_id
+left join bodysite_snomed_ct_coding bodysite_snomed_ct
+    on pro.id = bodysite_snomed_ct.procedure_id
+left join reason_snomed_ct_coding reason_snomed_ct
+    on pro.id = reason_snomed_ct.procedure_id
 left join {{ref('terminology__hcpcs_level_2')}} hcpcs
-    on tc.system in ('cpt', 'hcpcs') and tc.code = hcpcs.hcpcs
-left join {{ref('terminology__loinc')}} loinc
-    on tc.system = 'loinc' and tc.code = loinc.loinc
+    on tc_cpt.code = hcpcs.hcpcs
 left join {{ref('terminology__snomed_ct')}} snomed
-    on tc.system = 'snomed-ct' and tc.code = snomed.snomed_ct
+    on tc_snomed_ct.code = snomed.snomed_ct
+left join {{ref('terminology__snomed_ct')}} snomed_bodysite
+    on bodysite_snomed_ct.code = snomed.snomed_ct
+left join {{ref('terminology__snomed_ct')}} snomed_reason
+    on reason_snomed_ct.code = snomed.snomed_ct

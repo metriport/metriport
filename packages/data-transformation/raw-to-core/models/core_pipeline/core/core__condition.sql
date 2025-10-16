@@ -1,4 +1,4 @@
-with target_coding as (
+with code_icd_10_cm_coding as (
    {{   
         get_target_coding(
             get_condition_codings,
@@ -6,11 +6,35 @@ with target_coding as (
             'condition_id', 
             8, 
             none, 
-            condition_code_system
+            'http://hl7.org/fhir/sid/icd-10-cm'
         ) 
     }}
 ),
-target_category_coding as (
+code_snomed_ct_coding as (
+   {{   
+        get_target_coding(
+            get_condition_codings,
+            'stage__condition', 
+            'condition_id', 
+            8, 
+            none, 
+            'http://snomed.info/sct'
+        ) 
+    }}
+),
+code_icd_9_cm_coding as (
+   {{   
+        get_target_coding(
+            get_condition_codings,
+            'stage__condition', 
+            'condition_id', 
+            8, 
+            none, 
+            'http://hl7.org/fhir/sid/icd-9-cm'
+        ) 
+    }}
+),
+category_hl7_coding as (
     {{ 
         get_target_coding(
             get_condition_category_codings, 
@@ -18,10 +42,10 @@ target_category_coding as (
             'condition_id', 
             2, 
             1, 
-            condition_category_code_system
+            'http://terminology.hl7.org/CodeSystem/condition-category'
         ) }}
 ),
-target_clinical_status_coding as (
+clinical_status_hl7_coding as (
     {{ 
         get_target_coding(
             get_condition_clinical_status_codings, 
@@ -29,7 +53,7 @@ target_clinical_status_coding as (
             'condition_id', 
             1, 
             none,
-            condition_clinical_status_code_system
+            'http://terminology.hl7.org/CodeSystem/condition-clinical'
         ) 
     }}
 )
@@ -43,47 +67,45 @@ select
         )                                                                                                   as start_date
     ,   {{ try_to_cast_date('c.onsetperiod_end') }}                                                         as end_date
     ,   cast(
-            case 
-                when tc_cat.code in ('75326-9', '55607006') then 'problem'
-                when tc_cat.code in ('29308-4', '282291009') then 'diagnosis'
-                when tc_cat.code = '64572001' then 'disease'
-                else null
-            end as {{ dbt.type_string() }} 
-        )                                                                                                   as category
-    ,   cast(tc.system as {{ dbt.type_string() }} )                                                         as source_code_type
-    ,   cast(tc.code as {{ dbt.type_string() }} )                                                           as source_code
-    ,   cast(tc.description as {{ dbt.type_string() }} )                                                    as source_description
-    ,   cast(
-            case
-                when icd10.icd_10_cm is not null then 'icd-10-cm'
-                when snomed.snomed_ct is not null then 'snomed-ct'
-                when icd9.icd_9_cm is not null then 'icd-9-cm'
-                when loinc.loinc is not null then 'loinc'
-                else null
-            end as {{ dbt.type_string() }} 
-        )                                                                                                   as normalized_code_type
+            coalesce(
+                icd10.icd_10_cm,
+                tc_icd_10_cm.code
+            ) as {{ dbt.type_string() }} 
+        )                                                                                                   as icd_10_cm_code
     ,   cast(
             coalesce(
-                icd10.icd_10_cm, 
+                icd10.long_description,
+                tc_icd_10_cm.display
+            ) as {{ dbt.type_string() }} 
+        )                                                                                                   as icd_10_cm_display
+    ,   cast(
+            coalesce(
                 snomed.snomed_ct,
-                icd9.icd_9_cm, 
-                loinc.loinc
+                tc_snomed_ct.code
             ) as {{ dbt.type_string() }} 
-        )                                                                                                   as normalized_code
+        )                                                                                                   as snomed_code
     ,   cast(
             coalesce(
-                icd10.long_description, 
                 snomed.description,
-                icd9.long_description, 
-                loinc.long_common_name
+                tc_snomed_ct.display
             ) as {{ dbt.type_string() }} 
-        )                                                                                                   as normalized_description
-    ,   cast(tc_cs.system as {{ dbt.type_string() }} )                                                      as status_code_type
-    ,   cast(tc_cs.code as {{ dbt.type_string() }} )                                                        as status_code
-    ,   cast(tc_cs.description as {{ dbt.type_string() }} )                                                 as status_description
-    ,   cast(tc_cat.system as {{ dbt.type_string() }} )                                                     as category_code_type
-    ,   cast(tc_cat.code as {{ dbt.type_string() }} )                                                       as category_code
-    ,   cast(tc_cat.description as {{ dbt.type_string() }} )                                                as category_description
+        )                                                                                                   as snomed_display
+    ,   cast(
+            coalesce(
+                icd9.icd_9_cm,
+                tc_icd_9_cm.code
+            ) as {{ dbt.type_string() }} 
+        )                                                                                                   as icd_9_cm_code
+    ,   cast(
+            coalesce(
+                icd9.long_description,
+                tc_icd_9_cm.display
+            ) as {{ dbt.type_string() }} 
+        )                                                                                                   as icd_9_cm_display
+    ,   cast(category_hl7.code as {{ dbt.type_string() }} )                                                 as category_hl7_code
+    ,   cast(category_hl7.display as {{ dbt.type_string() }} )                                              as category_hl7_display
+    ,   cast(clinical_status_hl7.code as {{ dbt.type_string() }} )                                          as clinical_status_hl7_code
+    ,   cast(clinical_status_hl7.display as {{ dbt.type_string() }} )                                       as clinical_status_hl7_display
     ,   cast(
             coalesce(
                 c.note_0_text,
@@ -91,22 +113,24 @@ select
                 c.note_2_text
             ) as {{ dbt.type_string() }} 
         )                                                                                                   as note_text
-    ,   cast(right(c.recorder_reference, 36) as {{ dbt.type_string() }} )                                   as practitioner_id
+    ,   cast(right(c.recorder_reference, 36) as {{ dbt.type_string() }} )                                   as recorder_practitioner_id
     ,   cast(c.meta_source as {{ dbt.type_string() }} )                                                     as data_source
 from {{ref('stage__condition')}} c
 left join {{ref('stage__patient')}} p
     on right(c.subject_reference, 36) = p.id 
-left join target_coding tc
-    on c.id = tc.condition_id
-left join target_category_coding tc_cat
-    on c.id = tc_cat.condition_id
-left join target_clinical_status_coding tc_cs
-    on c.id = tc_cs.condition_id
+left join code_icd_10_cm_coding tc_icd_10_cm
+    on c.id = tc_icd_10_cm.condition_id
+left join code_snomed_ct_coding tc_snomed_ct
+    on c.id = tc_snomed_ct.condition_id
+left join code_icd_9_cm_coding tc_icd_9_cm
+    on c.id = tc_icd_9_cm.condition_id
+left join category_hl7_coding category_hl7
+    on c.id = category_hl7.condition_id
+left join clinical_status_hl7_coding clinical_status_hl7
+    on c.id = clinical_status_hl7.condition_id
 left join {{ref('terminology__icd_10_cm')}} icd10
-    on tc.system  = 'icd-10-cm' and tc.code = icd10.icd_10_cm
+    on tc_icd_10_cm.code = icd10.icd_10_cm
 left join {{ref('terminology__snomed_ct')}} snomed
-    on tc.system = 'snomed-ct' and tc.code = snomed.snomed_ct
+    on tc_snomed_ct.code = snomed.snomed_ct
 left join {{ref('terminology__icd_9_cm')}} icd9
-    on tc.system  = 'icd-9-cm' and tc.code = icd9.icd_9_cm
-left join {{ref('terminology__loinc')}} loinc
-    on tc.system = 'loinc' and tc.code = loinc.loinc
+    on tc_icd_9_cm.code = icd9.icd_9_cm
