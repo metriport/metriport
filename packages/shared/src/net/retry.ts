@@ -1,4 +1,6 @@
 import axios from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import {
   defaultGetTimeToWait,
   defaultOptions as defaultRetryWithBackoffOptions,
@@ -6,10 +8,9 @@ import {
   ExecuteWithRetriesOptions,
   GetTimeToWaitParams,
 } from "../common/retry";
-import { NetworkError, networkTimeoutErrors } from "./error";
 import { isMetriportError } from "../error/metriport-error";
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
+import { NetworkError, networkTimeoutErrors } from "./error";
+
 dayjs.extend(duration);
 
 export const tooManyRequestsStatus = 429;
