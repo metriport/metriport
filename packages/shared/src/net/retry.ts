@@ -1,4 +1,6 @@
-import axios, { AxiosError } from "axios";
+import axios from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import {
   defaultGetTimeToWait,
   defaultOptions as defaultRetryWithBackoffOptions,
@@ -6,10 +8,8 @@ import {
   ExecuteWithRetriesOptions,
   GetTimeToWaitParams,
 } from "../common/retry";
-import { NetworkError, networkTimeoutErrors } from "./error";
 import { isMetriportError } from "../error/metriport-error";
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
+import { NetworkError, networkTimeoutErrors } from "./error";
 dayjs.extend(duration);
 
 export const tooManyRequestsStatus = 429;
@@ -41,11 +41,7 @@ export const defaultOptionsRequestNotAccepted: ExecuteWithNetworkRetriesOptions 
 const defaultOptions: ExecuteWithNetworkRetriesOptions = {
   ...defaultRetryWithBackoffOptions,
   initialDelay: 1000,
-  httpCodesToRetry: [
-    ...defaultOptionsRequestNotAccepted.httpCodesToRetry,
-    "ECONNRESET", //  (Connection reset by peer): A connection was forcibly closed by a peer. This normally results from a loss of the connection on the remote socket due to a timeout or reboot. Commonly encountered via the http and net modules.
-    AxiosError.ERR_BAD_RESPONSE, // Response cannot be parsed properly or is in an unexpected format.
-  ],
+  httpCodesToRetry: [...defaultOptionsRequestNotAccepted.httpCodesToRetry],
   httpStatusCodesToRetry: [...defaultOptionsRequestNotAccepted.httpStatusCodesToRetry],
   retryOnTimeout: false,
 };
