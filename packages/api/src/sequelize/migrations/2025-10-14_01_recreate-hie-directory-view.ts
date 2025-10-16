@@ -17,7 +17,7 @@ SELECT
   zip as zip_code,
   state,
   root_organization,
-  managing_organization_id,
+  '2.16.840.1.113883.3.3330' as managing_organization_id,
   search_criteria,
   'COMMONWELL' as network
 FROM ${cwViewName} cw
