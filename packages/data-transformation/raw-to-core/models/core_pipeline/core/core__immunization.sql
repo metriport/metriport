@@ -1,4 +1,4 @@
-with vaccine_code_cpx_cdoing as (
+with vaccine_code_cpx_coding as (
    {{   
         get_target_coding(
             get_immunization_vaccine_codings,
@@ -69,7 +69,7 @@ select
 from {{ref('stage__immunization')}} i
 left join {{ref('stage__patient')}} p
     on right(i.patient_reference, 36) = p.id
-left join vaccine_code_cpx_cdoing tc_cpx
+left join vaccine_code_cpx_coding tc_cvx
     on i.id = tc_cvx.immunization_id
 left join {{ref('terminology__cvx')}} cvx
     on tc_cvx.code = cvx.cvx

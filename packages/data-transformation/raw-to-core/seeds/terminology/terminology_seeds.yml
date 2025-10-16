@@ -694,8 +694,8 @@ seeds:
   - name: terminology__ms_drg
     description: 'Seed containing Medicare Severity Diagnosis Related Groups (MS-DRG) codes and descriptions.'
     config:
-      enabled: false
       schema: terminology
+      enabled: false
       alias: ms_drg
       tags:
         - terminology
@@ -727,6 +727,7 @@ seeds:
     description: 'This file collects all NDCs collected by the FDA and RxNorm, and compiles them into one list. The file is maintained by [CodeRX](https://coderx.io/) in partnership with Tuva Health.'
     config:
       schema: terminology
+      enabled: false
       alias: ndc
       tags:
         - terminology

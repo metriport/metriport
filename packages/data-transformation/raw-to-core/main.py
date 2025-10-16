@@ -15,7 +15,6 @@ terminology_files = [
     'icd_10_cm.csv',
     'icd_9_cm.csv',
     'loinc.csv',
-    'ndc.csv',
     'snomed_ct.csv'
 ]
 

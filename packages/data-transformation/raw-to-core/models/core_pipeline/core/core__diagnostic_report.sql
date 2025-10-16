@@ -42,6 +42,8 @@ select
                 tc_loinc.display
             ) as {{ dbt.type_string() }} 
         )                                                                                                   as loinc_display
+    ,   cast(category_hl7.code as {{ dbt.type_string() }} )                                                 as category_hl7_code
+    ,   cast(category_hl7.display as {{ dbt.type_string() }} )                                              as category_hl7_display
     ,   cast(
             coalesce(
                 dr.presentedform_0_data,
@@ -73,24 +75,24 @@ select
                 dr.presentedform_26_data,
                 dr.presentedform_27_data,
                 dr.presentedform_28_data,
-                dr.presentedform_29_data,
+                dr.presentedform_29_data
             ) as {{ dbt.type_string() }} 
         )                                                                                                   as presented_form_text
-    ,   cast(right(dr.encounter_reference, 36) as {{ dbt.type_string() }} )                                    as encounter_id
+    ,   cast(right(dr.encounter_reference, 36) as {{ dbt.type_string() }} )                                 as encounter_id
     ,   cast(
             case 
                 when dr.performer_0_reference ilike '%practitioner%' 
                     then right(dr.performer_0_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
-        )                                                                                                   as practitioner_id
+        )                                                                                                   as performer_practitioner_id
     ,   cast(
             case 
                 when dr.performer_0_reference ilike '%organization%' 
                     then right(dr.performer_0_reference, 36)
                 else null
             end as {{ dbt.type_string() }}
-        )                                                                                                   as organization_id
+        )                                                                                                   as performer_organization_id
     ,   cast(dr.meta_source as {{ dbt.type_string() }} )                                                    as data_source
 from {{ref('stage__diagnosticreport')}} dr
 left join {{ref('stage__patient')}} p

@@ -164,6 +164,6 @@ left join bodysite_snomed_ct_coding bodysite_snomed_ct
 left join {{ref('terminology__loinc')}} loinc
     on tc_loinc.code = loinc.loinc
 left join {{ref('terminology__snomed_ct')}} snomed
-    on tc_snomed.code = snomed.snomed_ct
+    on tc_snomed_ct.code = snomed.snomed_ct
 left join {{ref('terminology__snomed_ct')}} snomed_bodysite
     on bodysite_snomed_ct.code = snomed.snomed_ct

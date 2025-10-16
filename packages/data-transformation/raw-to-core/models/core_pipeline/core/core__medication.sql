@@ -23,26 +23,14 @@ code_ndc_coding as (
     }}
 )
 select 
-        cast(mid as {{ dbt.type_string() }} )                                                               as medication_id
-    ,   cast(tc_rxnorm.code as {{ dbt.type_string() }})                                                     as rxnorm_code                                                                                             as rxnorm_system
-    ,   cast(rxnorm.display as {{ dbt.type_string() }} )                                                    as rxnorm_display
-    ,   cast(
-            coalesce(
-                ndc.code,
-                tc_ndc.code
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as ndc_code
-    ,   cast(
-            coalesce(
-                ndc.display,
-                tc_ndc.display
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as ndc_display
+        cast(m.id as {{ dbt.type_string() }} )                                                              as medication_id
+    ,   cast(tc_rxnorm.code as {{ dbt.type_string() }})                                                     as rxnorm_code
+    ,   cast(tc_rxnorm.display as {{ dbt.type_string() }} )                                                 as rxnorm_display
+    ,   cast(tc_ndc.code as {{ dbt.type_string() }} )                                                       as ndc_code
+    ,   cast(tc_ndc.display as {{ dbt.type_string() }} )                                                    as ndc_display
     ,   cast(meta_source as {{ dbt.type_string() }} )                                                       as data_source
 from {{ref('stage__medication')}} m
 left join code_rxnorm_coding tc_rxnorm
     on m.id = tc_rxnorm.medication_id
 left join code_ndc_coding tc_ndc
     on m.id = tc_ndc.medication_id
-left join {{ref('terminology__ndc')}} ndc
-    on tc_ndc.code = ndc.ndc

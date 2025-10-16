@@ -1,7 +1,7 @@
-{% macro get_procedcure_codings(stage_table, max_index) %}
+{% macro get_medication_codings(stage_table, max_index) %}
     {% for i in range(max_index + 1) %}
     select 
-            id as procedure_id
+            id as medication_id
         ,   code_coding_{{i}}_code as code
         ,   case 
                 when code_coding_{{i}}_system ilike '%rxnorm%' then 'http://www.nlm.nih.gov/research/umls/rxnorm'

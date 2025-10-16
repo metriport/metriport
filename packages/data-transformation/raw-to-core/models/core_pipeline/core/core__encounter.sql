@@ -4,8 +4,8 @@ with type_hl7_coding as (
             get_encounter_type_codings,
             'stage__encounter', 
             'encounter_id', 
+            7, 
             1, 
-            none, 
             'http://terminology.hl7.org/CodeSystem/encounter-type'
         ) 
     }}
