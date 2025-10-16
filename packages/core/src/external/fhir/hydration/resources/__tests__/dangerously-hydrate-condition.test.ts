@@ -172,21 +172,15 @@ describe("dangerouslyHydrateCondition", () => {
   });
 
   describe("buildUpdatedCategory", () => {
-    it("should update the category to problem-list-item by default", async () => {
+    it("should not create a category if it cannot be determined", async () => {
       const condition = makeCondition();
 
       await dangerouslyHydrateCondition(condition, []);
 
-      expect(condition.category).toBeDefined();
-      expect(condition.category).toHaveLength(1);
-      expect(condition.category?.[0]?.coding).toHaveLength(1);
-      expect(condition.category?.[0]?.coding?.[0]?.system).toBeDefined();
-      expect(condition.category?.[0]?.coding?.[0]?.system).toBe(CONDITION_CATEGORY_SYSTEM_URL);
-      expect(condition.category?.[0]?.coding?.[0]?.code).toBeDefined();
-      expect(condition.category?.[0]?.coding?.[0]?.code).toBe(PROBLEM_LIST_CATEGORY_CODE);
+      expect(condition.category).toBeUndefined();
     });
 
-    it("should update the category to encounter-diagnosis if the condition is an encounter diagnosis", async () => {
+    it("should create a category with the encounter-diagnosis code if the condition is an encounter diagnosis", async () => {
       const condition = makeCondition();
 
       const encounters: Encounter[] = [
@@ -206,7 +200,7 @@ describe("dangerouslyHydrateCondition", () => {
       expect(condition.category?.[0]?.coding?.[0]?.code).toBe(ENCOUNTER_DIAGNOSIS_CATEGORY_CODE);
     });
 
-    it("should update the category to problem-list-item based on ICD-10 code, even if it's an encounter diagnosis", async () => {
+    it("should update the category to problem-list-item based on ICD-10 code, even if it's referenced in an encounter", async () => {
       const condition = makeCondition({
         code: {
           coding: [{ system: ICD_10_URL, code: "Z82.61", display: "Family history of arthritis" }],
@@ -219,6 +213,22 @@ describe("dangerouslyHydrateCondition", () => {
       ];
 
       await dangerouslyHydrateCondition(condition, encounters);
+
+      expect(condition.category).toBeDefined();
+      expect(condition.category).toHaveLength(1);
+      expect(condition.category?.[0]?.coding).toHaveLength(1);
+      expect(condition.category?.[0]?.coding?.[0]?.system).toBeDefined();
+      expect(condition.category?.[0]?.coding?.[0]?.system).toBe(CONDITION_CATEGORY_SYSTEM_URL);
+      expect(condition.category?.[0]?.coding?.[0]?.code).toBeDefined();
+      expect(condition.category?.[0]?.coding?.[0]?.code).toBe(PROBLEM_LIST_CATEGORY_CODE);
+    });
+
+    it("should create a category with the problem-list-item code if the condition is a problem-list-item", async () => {
+      const condition = makeCondition({
+        code: { text: "Family history of arthritis" },
+      });
+
+      await dangerouslyHydrateCondition(condition, []);
 
       expect(condition.category).toBeDefined();
       expect(condition.category).toHaveLength(1);

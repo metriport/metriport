@@ -33,8 +33,10 @@ const clinicalStatusCodeToHl7CodeMap: Record<string, string> = {
 const knownBlacklistedClinicalStatuses = ["w"];
 
 /**
- * This function hydrates the condition by crosswalking the SNOMED code to the ICD-10 code
- * if it doesn't already have an ICD-10 code.
+ * This function hydrates the Condition resources by
+ * - crosswalking the SNOMED code to the ICD-10 code
+ * - adding the HL7 clinical status code to the Condition.clinicalStatus
+ * - adding the HL7 category to the Condition.category
  */
 export async function dangerouslyHydrateCondition(
   condition: Condition,
@@ -48,7 +50,11 @@ export async function dangerouslyHydrateCondition(
   if (updatedClinicalStatus) condition.clinicalStatus = updatedClinicalStatus;
 
   const updatedCategory = buildUpdatedCategory(condition, encounters);
-  condition.category = updatedCategory;
+  if (updatedCategory) {
+    condition.category = updatedCategory;
+  } else {
+    delete condition.category;
+  }
 }
 
 async function dangerouslyHydrateCode(condition: Condition): Promise<void> {
@@ -147,7 +153,10 @@ function buildHl7ClinicalStatusCoding(codings: Coding[]): Coding | undefined {
   return undefined;
 }
 
-function buildUpdatedCategory(condition: Condition, encounters: Encounter[]): CodeableConcept[] {
+function buildUpdatedCategory(
+  condition: Condition,
+  encounters: Encounter[]
+): CodeableConcept[] | undefined {
   if (
     condition.category?.find(c =>
       c.coding?.find(coding => coding.system === CONDITION_CATEGORY_SYSTEM_URL)
@@ -160,7 +169,12 @@ function buildUpdatedCategory(condition: Condition, encounters: Encounter[]): Co
 
   // We specifically put the Hl7 category into a separate element of the category
   // array because its semantic meaning is likely different from other systems' categories.
-  return [{ coding: [hl7Category] }, ...(condition.category ?? [])];
+  const categories = [
+    hl7Category ? { coding: [hl7Category] } : undefined,
+    ...(condition.category ?? []),
+  ].filter(Boolean) as CodeableConcept[];
+
+  return categories.length > 0 ? categories : undefined;
 }
 
 /**
@@ -169,9 +183,11 @@ function buildUpdatedCategory(condition: Condition, encounters: Encounter[]): Co
  * 1. If any Condition.code text or display contains words "history of", it's a problem-list-item.
  * 2. If there's an ICD-10 code that starts with a Z, it's a problem-list-item.
  * 3. If Encounter.diagnosis references the Condition, it's an encounter-diagnosis.
- * 4. Default to problem-list-item.
  */
-function buildHl7CategoryBasedOnHeuristics(condition: Condition, encounters: Encounter[]): Coding {
+function buildHl7CategoryBasedOnHeuristics(
+  condition: Condition,
+  encounters: Encounter[]
+): Coding | undefined {
   if (
     isHistoryDisplay(condition.code?.text) ||
     condition.code?.coding?.some(
@@ -193,7 +209,7 @@ function buildHl7CategoryBasedOnHeuristics(condition: Condition, encounters: Enc
     return buildConditionCategoryCoding(ENCOUNTER_DIAGNOSIS_CATEGORY_CODE);
   }
 
-  return buildConditionCategoryCoding(PROBLEM_LIST_CATEGORY_CODE);
+  return undefined;
 }
 
 function isHistoryDisplay(display: string | undefined): boolean {
