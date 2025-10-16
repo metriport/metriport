@@ -126,7 +126,7 @@ export function runCohortTestsPart1(e2e: E2eContext) {
     await medicalApi.addPatientsToCohort({ patientIds: [e2e.patient.id], cohortId: e2e.cohort.id });
     const { settings } = await medicalApi.getPatientSettings(e2e.patient.id);
     expect(settings).toBeTruthy();
-    expect(settings.adtMonitoring).toEqual(e2e.cohort.settings.adtMonitoring);
+    expect(settings.monitoring.adt).toEqual(e2e.cohort.settings.monitoring.adt);
     await medicalApi.removePatientsFromCohort({
       patientIds: [e2e.patient.id],
       cohortId: e2e.cohort.id,

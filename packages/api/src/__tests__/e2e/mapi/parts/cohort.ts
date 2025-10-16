@@ -11,7 +11,12 @@ export const createCohort: CohortCreateRequest = {
   description: faker.lorem.sentence(),
   color: faker.helpers.arrayElement(COHORT_COLORS),
   settings: {
-    adtMonitoring: true,
+    monitoring: {
+      adt: true,
+      hie: "monthly",
+      pharmacy: { notifications: false, schedule: "never" },
+      laboratory: { notifications: false, schedule: "never" },
+    },
   },
 };
 

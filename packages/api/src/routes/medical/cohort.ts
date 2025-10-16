@@ -12,11 +12,7 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { createCohort } from "../../command/medical/cohort/create-cohort";
 import { deleteCohort } from "../../command/medical/cohort/delete-cohort";
-import {
-  getCohortByName,
-  getCohorts,
-  getCohortWithSizeOrFail,
-} from "../../command/medical/cohort/get-cohort";
+import { getCohorts, getCohortWithSizeOrFail } from "../../command/medical/cohort/get-cohort";
 import {
   addAllPatientsToCohort,
   addPatientsToCohort,
@@ -32,7 +28,7 @@ import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
 import { paginatedV2 } from "../pagination-v2";
 import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler, getCxIdOrFail, getFromParamsOrFail, getFromQuery } from "../util";
+import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { allOrSubsetPatientIdsSchema, patientIdsSchema } from "./schemas/shared";
 
@@ -125,9 +121,8 @@ router.delete(
 /** ---------------------------------------------------------------------------
  * GET /medical/v1/cohort
  *
- * Returns all cohorts defined by the CX. If a name is provided, returns the cohort with the specified name instead.
+ * Returns all cohorts defined by the CX.
  *
- * @param req.query.name (optional) The name of the cohort to return.
  * @returns List of cohorts with count of patients assigned to them.
  */
 router.get(
@@ -135,9 +130,8 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const name = getFromQuery("name", req);
 
-    const cohorts = name ? [await getCohortByName({ cxId, name })] : await getCohorts({ cxId });
+    const cohorts = await getCohorts({ cxId });
 
     return res.status(status.OK).json({
       cohorts: cohorts.map(dtoFromCohort),

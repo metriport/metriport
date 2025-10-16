@@ -1,5 +1,5 @@
 import { BadRequestError, NotFoundError } from "@metriport/shared";
-import { Cohort, CohortWithSize } from "@metriport/shared/domain/cohort";
+import { Cohort, CohortWithSize, normalizeCohortName } from "@metriport/shared/domain/cohort";
 import { CohortModel } from "../../../models/medical/cohort";
 import { getCohortSize } from "./patient-cohort/get-cohort-size";
 
@@ -112,12 +112,12 @@ export async function getCohortByNameSafe({
   cxId: string;
   name: string;
 }): Promise<Cohort | undefined> {
-  const trimmedName = name.trim();
+  const normalizedName = normalizeCohortName(name);
 
   const cohorts = await CohortModel.findAll({
     where: {
       cxId,
-      name: trimmedName,
+      name: normalizedName,
     },
   });
 

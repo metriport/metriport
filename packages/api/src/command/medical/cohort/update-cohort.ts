@@ -1,9 +1,15 @@
 import { out } from "@metriport/core/util";
-import { CohortWithSize, CohortUpdateCmd } from "@metriport/shared/domain/cohort";
+import { NotFoundError } from "@metriport/shared";
+import { mergeSettings } from "@metriport/shared/common/merge-settings";
+import {
+  cohortSettingsSchema,
+  CohortUpdateCmd,
+  CohortWithSize,
+} from "@metriport/shared/domain/cohort";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { CohortModel } from "../../../models/medical/cohort";
-import { NotFoundError } from "@metriport/shared";
 import { getCohortSize } from "./patient-cohort/get-cohort-size";
+import { validateMonitoringSettingsForCx } from "./utils";
 
 export async function updateCohort({
   id,
@@ -13,15 +19,27 @@ export async function updateCohort({
 }: CohortUpdateCmd): Promise<CohortWithSize> {
   const { log } = out(`updateCohort - cx: ${cxId}, id: ${id}`);
 
-  const cohort = await CohortModel.findOne({
+  const oldCohort = await CohortModel.findOne({
     where: { id, cxId },
   });
 
-  if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id, cxId });
-  validateVersionForUpdate(cohort, eTag);
+  if (!oldCohort) throw new NotFoundError(`Could not find cohort`, undefined, { cohortId: id });
+  validateVersionForUpdate(oldCohort, eTag);
 
+  const monitoringSettings = data.settings?.monitoring;
+  await validateMonitoringSettingsForCx(cxId, monitoringSettings, log);
+
+  const mergedSettings = mergeSettings(oldCohort.settings, data.settings);
+
+  //Need to validate that the pharmacy and laboratory settings are valid (e.g., cannot have notifications and schedule at the same time)
+  const validSettings = cohortSettingsSchema.parse(mergedSettings);
+
+  const newData = {
+    ...data,
+    settings: validSettings,
+  };
   const [updatedCohort, size] = await Promise.all([
-    cohort.update(data),
+    oldCohort.update(newData),
     getCohortSize({ cohortId: id, cxId }),
   ]);
 
