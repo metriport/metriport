@@ -58,7 +58,7 @@ export class SQSClient {
       }),
       QueueUrl: queueUrl,
     };
-    await this.sqs.sendMessage(messageParams).promise();
+    await executeWithNetworkRetries(() => this.sqs.sendMessage(messageParams).promise());
   }
 
   async sendBatchMessagesToQueue(queueUrl: string, messages: SQSBatchMessage[]): Promise<string[]> {
@@ -86,8 +86,8 @@ export class SQSClient {
       this.sqs.sendMessageBatch(batchParams).promise()
     );
 
-    const failedIds = result.Failed.map(failed => failed.Id);
-    return failedIds;
+    const failed = result.Failed ?? [];
+    return failed.map(failedEntry => failedEntry.Id);
   }
 }
 
