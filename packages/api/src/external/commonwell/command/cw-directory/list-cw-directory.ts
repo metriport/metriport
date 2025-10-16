@@ -1,6 +1,6 @@
 import { Organization } from "@metriport/commonwell-sdk";
 import { capture } from "@metriport/core/util";
-import { BadRequestError, NotFoundError } from "@metriport/shared";
+import { MetriportError, NotFoundError } from "@metriport/shared";
 import { makeCommonWellMemberAPI } from "../../../commonwell-v2/api";
 
 /**
@@ -20,7 +20,7 @@ export async function getCwDirectoryEntry(oid: string): Promise<Organization> {
         oid,
       },
     });
-    throw new BadRequestError(msg, undefined, {
+    throw new MetriportError(msg, undefined, {
       oid,
     });
   }

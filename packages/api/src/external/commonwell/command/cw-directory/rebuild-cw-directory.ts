@@ -52,18 +52,19 @@ export async function rebuildCwDirectory(failGracefully = false): Promise<void> 
         log(`Loading active CW directory entries, from ${currentPosition} up to ${maxPosition}`);
         const loadStartedAt = Date.now();
 
-        const response = await cw.listOrganizations({
-          offset: currentPosition,
-          limit: BATCH_SIZE,
-          sort: "organizationId",
-        });
+        const [response, alreadyInsertedIds] = await Promise.all([
+          cw.listOrganizations({
+            offset: currentPosition,
+            limit: BATCH_SIZE,
+            sort: "organizationId",
+          }),
+          getCwDirectoryIds(sequelize),
+        ]);
 
         log(`Loaded ${response.organizations.length} entries in ${Date.now() - loadStartedAt}ms`);
         if (response.organizations.length < BATCH_SIZE) isDone = true;
 
         const parsedOrgs: CwDirectoryEntryData[] = [];
-        const alreadyInsertedIds = await getCwDirectoryIds(sequelize);
-
         for (const org of response.organizations) {
           try {
             const parsed = parseCWOrganization(org);
@@ -118,14 +119,18 @@ export async function rebuildCwDirectory(failGracefully = false): Promise<void> 
       });
     }
   } catch (error) {
-    await deleteTempCwDirectoryTable(sequelize);
-    const msg = `Failed to rebuild the directory`;
-    log(`${msg}, Cause: ${errorToString(error)}`);
-    capture.error(msg, {
-      extra: { context, error },
-    });
-    await sequelize.close();
-    throw error;
+    try {
+      await deleteTempCwDirectoryTable(sequelize);
+      const msg = `Failed to rebuild the directory`;
+      const errorContext = errorToString(error);
+      log(`${msg}, Cause: ${errorContext}`);
+      capture.error(msg, {
+        extra: { context, error: errorContext },
+      });
+      throw error;
+    } finally {
+      await sequelize.close();
+    }
   }
 
   try {
