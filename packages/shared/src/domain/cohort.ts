@@ -19,18 +19,32 @@ export const COHORT_COLORS = [
 
 // ### Default Values ###
 export const DEFAULT_COLOR = "white";
+
+const DEFAULT_FREQUENCY = "monthly";
+const DEFAULT_SCHEDULE: Schedule = {
+  enabled: false,
+  frequency: DEFAULT_FREQUENCY,
+};
+
+const DEFAULT_SCHEDULE_HIE: Schedule = {
+  enabled: true, // Docs say default is enabled for HIE.
+  frequency: DEFAULT_FREQUENCY,
+};
+
 const DEFAULT_NOTIFICATION_SCHEDULE: NotificationSchedule = {
   notifications: false,
-  schedule: "never",
+  schedule: DEFAULT_SCHEDULE,
 };
+
 const DEFAULT_ADT = false;
-const DEFAULT_SCHEDULE: Schedule = "monthly";
+
 const DEFAULT_MONITORING: MonitoringSettings = {
   adt: DEFAULT_ADT,
-  hie: DEFAULT_SCHEDULE,
+  hie: DEFAULT_SCHEDULE_HIE,
   pharmacy: DEFAULT_NOTIFICATION_SCHEDULE,
   laboratory: DEFAULT_NOTIFICATION_SCHEDULE,
 };
+
 export const DEFAULT_SETTINGS: CohortSettings = {
   monitoring: DEFAULT_MONITORING,
 };
@@ -41,12 +55,15 @@ export const cohortColorsSchema = z
   .transform(color => color.toLowerCase().trim())
   .pipe(z.enum(COHORT_COLORS));
 
-export const scheduleSchema = z
+export const frequencySchema = z
   .string()
-  .transform(schedule => schedule.toLowerCase().trim())
-  .pipe(z.enum(["never", "monthly", "biweekly", "weekly"]));
+  .transform(frequency => frequency.toLowerCase().trim())
+  .pipe(z.enum(["monthly", "biweekly", "weekly"]));
 
-export type Schedule = z.infer<typeof scheduleSchema>;
+export const scheduleSchema = z.object({
+  enabled: z.boolean(),
+  frequency: frequencySchema,
+});
 
 export const notificationScheduleSchema = z
   .object({
@@ -55,10 +72,10 @@ export const notificationScheduleSchema = z
   })
   .transform((data, ctx) => {
     if (data.notifications === true) {
-      if (data.schedule && data.schedule !== "never") {
+      if (data.schedule && data.schedule.enabled) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "When notifications are enabled, schedule must be set to 'never'",
+          message: "When notifications are enabled, schedule must not be enabled",
         });
         return z.NEVER;
       }
@@ -66,7 +83,6 @@ export const notificationScheduleSchema = z
     return data;
   });
 
-export type NotificationSchedule = z.infer<typeof notificationScheduleSchema>;
 export const monitoringSchema = z
   .object({
     adt: z.boolean(),
@@ -75,7 +91,6 @@ export const monitoringSchema = z
     laboratory: notificationScheduleSchema,
   })
   .strict();
-export type MonitoringSettings = z.infer<typeof monitoringSchema>;
 
 export const cohortSettingsSchema = z
   .object({
@@ -90,6 +105,10 @@ export const baseCohortSchema = z.object({
   settings: cohortSettingsSchema,
 });
 
+export type NotificationSchedule = z.infer<typeof notificationScheduleSchema>;
+export type CohortFrequency = z.infer<typeof frequencySchema>;
+export type MonitoringSettings = z.infer<typeof monitoringSchema>;
+export type Schedule = z.infer<typeof scheduleSchema>;
 export type CohortColors = z.infer<typeof cohortColorsSchema>;
 export type CohortSettings = z.infer<typeof cohortSettingsSchema>;
 export type BaseCohort = z.infer<typeof baseCohortSchema>;
@@ -99,8 +118,9 @@ export type BaseCohort = z.infer<typeof baseCohortSchema>;
 // > Request schemas for parsing request body
 
 // > Create Schemas
+// Want to use default values for create schema, but not for update schema so that we don't overwrite existing settings
 const monitoringSchemaWithDefaults = z.object({
-  adt: z.boolean().optional().default(DEFAULT_ADT),
+  adt: z.boolean().optional().default(DEFAULT_MONITORING.adt),
   hie: scheduleSchema.default(DEFAULT_MONITORING.hie),
   pharmacy: notificationScheduleSchema.default(DEFAULT_MONITORING.pharmacy),
   laboratory: notificationScheduleSchema.default(DEFAULT_MONITORING.laboratory),
@@ -116,24 +136,32 @@ export const cohortCreateSchema = baseCohortSchema.extend({
   settings: settingsSchemaWithDefaults.optional().default(DEFAULT_SETTINGS),
 });
 
+export type CohortCreateRequest = z.infer<typeof cohortCreateSchema>;
 // > Update Schemas
-const monitoringSchemaPartial = z
+const allOptionalScheduleSchema = z.object({
+  enabled: z.boolean().optional(),
+  frequency: frequencySchema.optional(),
+});
+
+const allOptionalNotificationScheduleSchema = z.object({
+  notifications: z.boolean().optional(),
+  schedule: allOptionalScheduleSchema.optional(),
+});
+
+const allOptionalMonitoringSchema = z
   .object({
     adt: z.boolean().optional(),
-    hie: scheduleSchema.optional(),
-    pharmacy: notificationScheduleSchema.optional(),
-    laboratory: notificationScheduleSchema.optional(),
+    hie: allOptionalScheduleSchema.optional(),
+    pharmacy: allOptionalNotificationScheduleSchema.optional(),
+    laboratory: allOptionalNotificationScheduleSchema.optional(),
   })
   .strict();
 
-const cohortSettingsPartialSchema = z
+const allOptionalCohortSettingsSchema = z
   .object({
-    monitoring: monitoringSchemaPartial.optional(),
+    monitoring: allOptionalMonitoringSchema.optional(),
   })
   .strict();
-
-export type CohortSettingsPartial = z.infer<typeof cohortSettingsPartialSchema>;
-export type CohortMonitoringPartial = z.infer<typeof monitoringSchemaPartial>;
 
 export const cohortUpdateSchema = z.object({
   name: z
@@ -142,11 +170,11 @@ export const cohortUpdateSchema = z.object({
     .optional(),
   color: cohortColorsSchema.optional(),
   description: z.string().optional(),
-  settings: cohortSettingsPartialSchema,
+  settings: allOptionalCohortSettingsSchema,
   eTag: z.string().optional(),
 });
 
-export type CohortCreateRequest = z.infer<typeof cohortCreateSchema>;
+export type AllOptionalCohortSettings = z.infer<typeof allOptionalCohortSettingsSchema>;
 export type CohortUpdateRequest = z.infer<typeof cohortUpdateSchema>;
 
 // > Command schemas after parsing request body
