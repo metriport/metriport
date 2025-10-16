@@ -1,32 +1,32 @@
-import { MetriportError } from "@metriport/shared";
+import { executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { SQS } from "aws-sdk";
 import { MessageBodyAttributeMap } from "aws-sdk/clients/sqs";
 
 export type SQSMessageAttributes = Record<string, string> & {
   cxId?: string;
 };
-export type SQSParameters =
-  | {
-      fifo?: never | false;
-      messageGroupId?: never;
-      messageDeduplicationId?: never;
-      messageAttributes?: SQSMessageAttributes;
-      messageAttributesRaw?: SQS.MessageBodyAttributeMap;
-      delaySeconds?: number;
-    }
-  | {
-      fifo: true;
-      messageGroupId: string;
-      messageDeduplicationId: string;
-      messageAttributes?: SQSMessageAttributes;
-      messageAttributesRaw?: SQS.MessageBodyAttributeMap;
-      delaySeconds?: number;
-    };
+export type SQSParametersNonFifo = {
+  fifo?: never | false;
+  messageGroupId?: never;
+  messageDeduplicationId?: never;
+  messageAttributes?: SQSMessageAttributes;
+  messageAttributesRaw?: SQS.MessageBodyAttributeMap;
+  delaySeconds?: number;
+};
+export type SQSParametersFifo = {
+  fifo: true;
+  messageGroupId: string;
+  messageDeduplicationId: string;
+  messageAttributes?: SQSMessageAttributes;
+  messageAttributesRaw?: SQS.MessageBodyAttributeMap;
+  delaySeconds?: number;
+};
+export type SQSParameters = SQSParametersNonFifo | SQSParametersFifo;
 
-export type SQSBatchMessage = {
+export type SQSBatchMessage<T extends SQSParameters = SQSParameters> = {
   id: string;
   body: string;
-} & SQSParameters;
+} & T;
 
 export class SQSClient {
   private _sqs: SQS;
@@ -61,8 +61,8 @@ export class SQSClient {
     await this.sqs.sendMessage(messageParams).promise();
   }
 
-  async sendBatchMessagesToQueue(queueUrl: string, messages: SQSBatchMessage[]): Promise<void> {
-    if (messages.length < 1) return;
+  async sendBatchMessagesToQueue(queueUrl: string, messages: SQSBatchMessage[]): Promise<string[]> {
+    if (messages.length < 1) return [];
     if (messages.length > 10) {
       throw new MetriportError("SQS batch sendMessage limit is 10 messages per call", undefined, {
         messageCount: messages.length,
@@ -82,7 +82,12 @@ export class SQSClient {
       Entries: entries,
     };
 
-    await this.sqs.sendMessageBatch(batchParams).promise();
+    const result = await executeWithNetworkRetries(() =>
+      this.sqs.sendMessageBatch(batchParams).promise()
+    );
+
+    const failedIds = result.Failed.map(failed => failed.Id);
+    return failedIds;
   }
 }
 
