@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { listPatientsByCxId } from "@metriport/core/external/sde/command/patients/list-by-cx-id";
+import { listPatientsByCxId } from "@metriport/core/external/sde/command/patients/list-patients-by-cx-id";
 // import { extractDocument } from "@metriport/core/external/sde/command/document/extract-document";
 
 /**

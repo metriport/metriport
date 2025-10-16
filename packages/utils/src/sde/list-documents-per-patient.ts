@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { listDocumentsPerPatient } from "@metriport/core/external/sde/command/document/list-documents-per-patient";
+import { listDocumentsPerPatient } from "@metriport/core/external/sde/command/document/list-document";
 // import { extractDocument } from "@metriport/core/external/sde/command/document/extract-document";
 
 /**

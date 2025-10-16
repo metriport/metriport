@@ -1,7 +1,7 @@
 import { Command } from "commander";
-import { listDocumentsPerPatient } from "@metriport/core/external/sde/command/document/list-documents-per-patient";
-import { downloadPatientDocument } from "@metriport/core/external/sde/command/document/download-patient-document";
-import { parseUnstructuredDataFromBundle } from "@metriport/core/external/sde/command/bundle/parse-unstructured-data-from-bundle";
+import { listDocumentsPerPatient } from "@metriport/core/external/sde/command/document/list-document";
+import { downloadPatientDocument } from "@metriport/core/external/sde/command/document/download-document";
+import { parseUnstructuredDataFromBundle } from "@metriport/core/external/sde/command/bundle/parse-bundle";
 // import { extractDocument } from "@metriport/core/external/sde/command/document/extract-document";
 
 /**

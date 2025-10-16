@@ -19,9 +19,8 @@ export interface PatientWithDocuments extends PatientReference {
   documents: DocumentReference[];
 }
 
-export interface ListPatientsByCxIdInput {
+export interface ListPatientsInput {
   cxId: string;
-  bucketName?: string;
 }
 
 export interface ListDocumentsPerPatientInput {
