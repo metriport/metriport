@@ -140,9 +140,10 @@ export async function rebuildCwDirectory(failGracefully = false): Promise<void> 
     ]);
   } catch (error) {
     const msg = `Failed the last step of CW directory rebuild`;
-    log(`${msg}. Cause: ${errorToString(error)}`);
+    const errorContext = errorToString(error);
+    log(`${msg}. Cause: ${errorContext}`);
     capture.error(msg, {
-      extra: { context: `updateCwDirectoryViewDefinition`, error },
+      extra: { context: `updateCwDirectoryViewDefinition`, error: errorContext },
     });
     throw error;
   } finally {
