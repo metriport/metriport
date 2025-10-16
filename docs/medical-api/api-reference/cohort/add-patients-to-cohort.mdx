@@ -1,6 +1,7 @@
 ---
 title: "Add Patients to Cohort"
-description: "Bulk assign multiple patients to a cohort. For more information, see the [guide about Cohorts](/medical-api/handling-data/cohorts)"
+description: "Bulk assign multiple patients to a cohort. For more information, 
+see the [guide about Cohorts](/medical-api/handling-data/cohorts)"
 api: "POST /medical/v1/cohort/{id}/patient"
 ---
 
@@ -19,7 +20,8 @@ You must provide either `patientIds` or `all`, but not both.
 </ParamField>
 
 <ParamField body="allPatients" type="boolean" optional>
-  Property to confirm you want to assign all patients in your metriport instance to the cohort. Mutually exclusive with the `patientIds` array.
+  Property to confirm you want to assign all patients in your metriport 
+  instance to the cohort. Mutually exclusive with the `patientIds` array.
 </ParamField>
 
 ## Response

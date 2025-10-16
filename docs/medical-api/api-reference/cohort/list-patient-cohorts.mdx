@@ -1,6 +1,7 @@
 ---
 title: "List Patient Cohorts"
-description: "Returns a list of all cohorts the patient is a member of. For more information, see the [guide about Cohorts](/medical-api/handling-data/cohorts)"
+description: "Returns a list of all cohorts the patient is a member of. 
+For more information, see the [guide about Cohorts](/medical-api/handling-data/cohorts)"
 api: "GET /medical/v1/patient/{id}/cohort"
 ---
 
@@ -25,8 +26,8 @@ api: "GET /medical/v1/patient/{id}/cohort"
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
-
-const patientCohorts = await metriport.getPatientCohorts("00000000-0000-0000-0000-000000000000");
+const patientId = "00000000-0000-0000-0000-000000000000";
+const patientCohorts = await metriport.getPatientCohorts(patientId);
 ```
 
 </ResponseExample>

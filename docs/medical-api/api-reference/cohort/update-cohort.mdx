@@ -1,6 +1,7 @@
 ---
 title: "Update Cohort"
-description: "Updates the settings of an existing cohort. For more information, see the [guide about Cohorts](/medical-api/handling-data/cohorts)"
+description: "Updates the settings of an existing cohort. 
+For more information, see the [guide about Cohorts](/medical-api/handling-data/cohorts)"
 api: "PUT /medical/v1/cohort/{id}"
 ---
 
@@ -48,7 +49,8 @@ All fields are optional for updates. The API performs partial updates:
   }
 }
 ```
-In this example, only `name`, `adt`, and `pharmacy` settings are updated. The `hie` and `laboratory` settings remain unchanged.
+In this example, only `name`, `adt`, and `pharmacy` settings are updated. The `hie` and `laboratory`
+ settings remain unchanged.
 
 **Clearing fields example:**
 ```json

@@ -20,8 +20,9 @@ api: "GET /medical/v1/cohort/{id}"
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+const cohortId = "00000000-0000-0000-0000-000000000000";
 
-const cohortDetails = await metriport.getCohort("00000000-0000-0000-0000-000000000000");
+const cohortDetails = await metriport.getCohort(cohortId);
 ```
 
 </ResponseExample>
