@@ -128,6 +128,8 @@ export async function summarizeChunk({
     ...(resourceRowData ? { resourceRowData } : {}),
   });
 
+  console.log("+++ prompt +++");
+  console.log(prompt);
   agent.addUserMessageText(prompt);
   const response = await agent.continueConversation();
 
