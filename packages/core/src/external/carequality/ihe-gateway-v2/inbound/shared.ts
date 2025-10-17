@@ -17,34 +17,34 @@ export const successStatus = "urn:oasis:names:tc:ebxml-regrep:ResponseStatusType
 export const failureStatus = "urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Failure";
 export const errorSeverity = "urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:Error";
 
-const istextSchema = (value: AttributeValue): value is TextOrTextObject => {
+function istextSchema(value: AttributeValue): value is TextOrTextObject {
   return typeof value === "object" && "_text" in value;
-};
+}
 
-const isRoleObject = (value: AttributeValue): value is { Role: Code } => {
+function isRoleObject(value: AttributeValue): value is { Role: Code } {
   return typeof value === "object" && "Role" in value;
-};
+}
 
-const isPurposeOfUseObject = (value: AttributeValue): value is { PurposeOfUse: Code } => {
+function isPurposeOfUseObject(value: AttributeValue): value is { PurposeOfUse: Code } {
   return typeof value === "object" && "PurposeOfUse" in value;
-};
+}
 
 export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttributes {
   const attributes = toArray(header.Security.Assertion.AttributeStatement)?.[0]?.Attribute;
-  if (!attributes) {
+  if (attributes === undefined) {
     throw new Error("Attributes are undefined");
   }
 
-  const getAttributeValue = (name: string): string | undefined => {
-    const attribute = attributes.find(attr => attr._Name === name);
+  function getAttributeValue(name: string): string | undefined {
+    const attribute = attributes?.find(attr => attr._Name === name);
     if (!attribute) return undefined;
     if (typeof attribute.AttributeValue === "string") return attribute.AttributeValue;
     if (istextSchema(attribute.AttributeValue)) return extractText(attribute.AttributeValue);
     return undefined;
-  };
+  }
 
-  const getRoleAttributeValue = (name: string): { code: string; display: string } | undefined => {
-    const attribute = attributes.find(attr => attr._Name === name);
+  function getRoleAttributeValue(name: string): { code: string; display: string } | undefined {
+    const attribute = attributes?.find(attr => attr._Name === name);
     if (!attribute) return undefined;
     if (isRoleObject(attribute.AttributeValue)) {
       return {
@@ -53,19 +53,19 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
       };
     }
     return undefined;
-  };
+  }
 
-  const getPurposeOfUseAttributeValue = (name: string): string | undefined => {
-    const attribute = attributes.find(attr => attr._Name === name);
+  function getPurposeOfUseAttributeValue(name: string): string | undefined {
+    const attribute = attributes?.find(attr => attr._Name === name);
     if (!attribute) return undefined;
     if (isPurposeOfUseObject(attribute.AttributeValue)) {
       return attribute.AttributeValue.PurposeOfUse._code;
     }
     return undefined;
-  };
+  }
 
-  const getPrincipalOidAttributevalue = (name: string): string | undefined => {
-    const attribute = attributes.find(attr => attr._Name === name);
+  function getPrincipalOidAttributevalue(name: string): string | undefined {
+    const attribute = attributes?.find(attr => attr._Name === name);
     if (!attribute) return undefined;
     if (typeof attribute.AttributeValue === "string") {
       return removeOrganizationPrefix(attribute.AttributeValue);
@@ -74,7 +74,7 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
       return removeOrganizationPrefix(extractText(attribute.AttributeValue));
     }
     return undefined;
-  };
+  }
 
   const subjectId = getAttributeValue("urn:oasis:names:tc:xspa:1.0:subject:subject-id");
   const defaultSubjectId = "unknown";
