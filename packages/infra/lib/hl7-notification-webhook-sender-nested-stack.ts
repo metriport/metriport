@@ -72,6 +72,17 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     if (!hl7Base64ScramblerSeed) {
       throw new Error("HL7 base64 scrambler seed is undefined");
     }
+    const hieConfigs = props.config.hl7Notification?.hieConfigs;
+    if (!hieConfigs) {
+      throw new Error("HIE configs are undefined");
+    }
+    const heartbeatMonitorMap = Object.fromEntries(
+      Object.values(hieConfigs)
+        .filter((hieConfig): hieConfig is HieConfig & { checklyPingUrl: string } =>
+          Boolean(hieConfig.checklyPingUrl)
+        )
+        .map(hieConfig => [hieConfig.name, hieConfig.checklyPingUrl])
+    );
 
     const setup = this.setupHl7NotificationWebhookSenderLambda({
       lambdaLayers: props.lambdaLayers,
@@ -83,8 +94,9 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       hl7ConversionBucket: props.hl7ConversionBucket,
       incomingHl7NotificationBucket: props.incomingHl7NotificationBucket,
       analyticsSecret,
-      hieConfigs: props.config.hl7Notification?.hieConfigs ?? {},
+      hieConfigs,
       hl7Base64ScramblerSeed,
+      heartbeatMonitorMap,
     });
 
     this.lambda = setup.lambda;
@@ -102,6 +114,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     analyticsSecret: ISecret;
     hl7Base64ScramblerSeed: ISecret;
     hieConfigs: Record<string, HieConfig | VpnlessHieConfig>;
+    heartbeatMonitorMap: Record<string, string>;
   }): { lambda: Lambda } {
     const {
       lambdaLayers,
@@ -115,6 +128,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       hieConfigs,
       incomingHl7NotificationBucket,
       hl7Base64ScramblerSeed,
+      heartbeatMonitorMap,
     } = ownProps;
     const {
       name,
@@ -157,6 +171,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         HIE_CONFIG_DICTIONARY: JSON.stringify(createHieConfigDictionary(hieConfigs)),
         POST_HOG_API_KEY_SECRET: analyticsSecret.secretArn,
+        HEARTBEAT_MONITOR_MAP: JSON.stringify(heartbeatMonitorMap),
       },
     });
 

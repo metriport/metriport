@@ -54,6 +54,7 @@ export type HieConfig = {
   timezone: HieIanaTimezone;
   states: USState[];
   subscriptions: Hl7v2Subscription[];
+  checklyPingUrl?: string;
   cron: string;
   sftpConfig: HieSftpConfig;
   mapping: HiePatientRosterMapping;
