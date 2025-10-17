@@ -71,7 +71,7 @@ select
                 tc_snomed_ct.display
             ) as {{ dbt.type_string() }} 
         )                                                                                                           as snomed_display
-    ,   cast(bodysite_snomed_ct.code as {{ dbt.type_string() }} )                                                   as bodysite_snomed_ode
+    ,   cast(bodysite_snomed_ct.code as {{ dbt.type_string() }} )                                                   as bodysite_snomed_code
     ,   cast(bodysite_snomed_ct.display as {{ dbt.type_string() }} )                                                as bodysite_snomed_display
     ,   cast(reason_snomed_ct.code as {{ dbt.type_string() }} )                                                     as reason_snomed_code
     ,   cast(reason_snomed_ct.display as {{ dbt.type_string() }} )                                                  as reason_snomed_display

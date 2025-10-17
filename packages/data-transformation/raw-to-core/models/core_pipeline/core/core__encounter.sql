@@ -39,13 +39,13 @@ select
         }}                                                                                      as length_of_stay
     ,   cast(
             case 
-                when enc.class_system ilike '%ActEncounterCode%' then enc.class_code
+                when enc.class_system ilike '%v3-ActCode%' then enc.class_code
                 else null
             end as {{ dbt.type_string() }}
         )                                                                                       as act_code
     ,   cast(
             case 
-                when enc.class_system ilike '%ActEncounterCode%' then enc.class_display
+                when enc.class_system ilike '%v3-ActCode%' then enc.class_display
                 else null
             end as {{ dbt.type_string() }}
         )                                                                                       as act_display
