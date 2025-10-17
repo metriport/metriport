@@ -1,4 +1,5 @@
-import { mergeCohortSettings } from "../get-settings";
+import { DEFAULT_SETTINGS } from "@metriport/shared/domain/cohort";
+import { mergeCohortsSettings } from "../get-settings";
 
 beforeEach(() => {
   jest.restoreAllMocks();
@@ -6,62 +7,63 @@ beforeEach(() => {
 
 describe("patient settings", () => {
   describe("mergeCohortSettings", () => {
-    it("retain settings when one settings object has it, but the other does not", () => {
-      const settings = mergeCohortSettings([
-        {
-          monitoring: {
-            adt: false,
-            hie: "monthly",
-            pharmacy: { notifications: false, schedule: "never" },
-            laboratory: { notifications: false, schedule: "never" },
-          },
+    const settingsWithMostRecentScheduleEnabled = {
+      monitoring: {
+        adt: true,
+        hie: { enabled: true, frequency: "weekly" as const },
+        pharmacy: {
+          notifications: false,
+          schedule: { enabled: true, frequency: "weekly" as const },
         },
-        {
-          monitoring: {
-            adt: true,
-            hie: "monthly",
-            pharmacy: { notifications: false, schedule: "never" },
-            laboratory: { notifications: false, schedule: "never" },
-          },
+        laboratory: {
+          notifications: false,
+          schedule: { enabled: true, frequency: "weekly" as const },
         },
+      },
+    };
+
+    const settingsWithNotificationsEnabled = {
+      monitoring: {
+        adt: true,
+        hie: { enabled: true, frequency: "monthly" as const },
+        pharmacy: {
+          notifications: true,
+          schedule: { enabled: false, frequency: "monthly" as const },
+        },
+        laboratory: {
+          notifications: true,
+          schedule: { enabled: false, frequency: "monthly" as const },
+        },
+      },
+    };
+    it("Should take the most recent schedule", () => {
+      const settings = mergeCohortsSettings([
+        DEFAULT_SETTINGS,
+        settingsWithMostRecentScheduleEnabled,
+      ]);
+
+      expect(settings).toEqual(settingsWithMostRecentScheduleEnabled);
+    });
+
+    it("Can't merge settings to have notifications and schedule at the same time", () => {
+      const settings = mergeCohortsSettings([
+        DEFAULT_SETTINGS,
+        settingsWithMostRecentScheduleEnabled,
+        settingsWithNotificationsEnabled,
       ]);
 
       expect(settings).toEqual({
         monitoring: {
           adt: true,
-          hie: "monthly",
-          pharmacy: { notifications: false, schedule: "never" },
-          laboratory: { notifications: false, schedule: "never" },
-        },
-      });
-    });
-
-    it("logical and fields when the same settings are defined across multiple cohorts", () => {
-      const settings = mergeCohortSettings([
-        {
-          monitoring: {
-            adt: false,
-            hie: "monthly",
-            pharmacy: { notifications: false, schedule: "never" },
-            laboratory: { notifications: false, schedule: "never" },
+          hie: { enabled: true, frequency: "weekly" as const },
+          pharmacy: {
+            notifications: true,
+            schedule: { enabled: false, frequency: "weekly" as const },
           },
-        },
-        {
-          monitoring: {
-            adt: true,
-            hie: "monthly",
-            pharmacy: { notifications: false, schedule: "never" },
-            laboratory: { notifications: false, schedule: "never" },
+          laboratory: {
+            notifications: true,
+            schedule: { enabled: false, frequency: "weekly" as const },
           },
-        },
-      ]);
-
-      expect(settings).toEqual({
-        monitoring: {
-          adt: false,
-          hie: "monthly",
-          pharmacy: { notifications: false, schedule: "never" },
-          laboratory: { notifications: false, schedule: "never" },
         },
       });
     });

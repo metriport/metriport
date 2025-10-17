@@ -1,14 +1,13 @@
 import { out } from "@metriport/core/util";
 import { NotFoundError } from "@metriport/shared";
-import { DeepPartial, mergeSettings } from "@metriport/shared/common/merge-settings";
 import {
-  CohortSettings,
   cohortSettingsSchema,
   CohortUpdateCmd,
   CohortWithSize,
 } from "@metriport/shared/domain/cohort";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { CohortModel } from "../../../models/medical/cohort";
+import { mergeOldWithNewCohortSettings } from "../patient/get-settings";
 import { getCohortSize } from "./patient-cohort/get-cohort-size";
 import { validateMonitoringSettingsForCx } from "./utils";
 
@@ -30,10 +29,7 @@ export async function updateCohort({
   const monitoringSettings = data.settings?.monitoring;
   await validateMonitoringSettingsForCx(cxId, monitoringSettings, log);
 
-  const mergedSettings = mergeSettings(
-    oldCohort.settings,
-    data.settings as DeepPartial<CohortSettings>
-  );
+  const mergedSettings = mergeOldWithNewCohortSettings(oldCohort.settings, data.settings);
 
   //Need to validate that the pharmacy and laboratory settings are valid (e.g., cannot have notifications and schedule at the same time)
   const validSettings = cohortSettingsSchema.parse(mergedSettings);

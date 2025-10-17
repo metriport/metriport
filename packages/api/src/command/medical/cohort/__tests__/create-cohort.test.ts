@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { faker } from "@faker-js/faker";
 import { BadRequestError } from "@metriport/shared";
 import { CohortCreateCmd, DEFAULT_COLOR, DEFAULT_SETTINGS } from "@metriport/shared/domain/cohort";
@@ -7,7 +6,6 @@ import { getCohortByNameSafe } from "../get-cohort";
 import * as CohortModel from "../../../../models/medical/cohort";
 import * as utils from "../utils";
 
-// Mock the database calls
 jest.mock("../get-cohort");
 const mockGetCohortByNameSafe = getCohortByNameSafe as jest.MockedFunction<
   typeof getCohortByNameSafe
@@ -150,6 +148,10 @@ describe("createCohort", () => {
             },
             laboratory: {
               notifications: false,
+              schedule: {
+                enabled: false,
+                frequency: "monthly",
+              },
             },
           },
         },

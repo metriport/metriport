@@ -15,7 +15,7 @@ export async function getCohortOrFail({ id, cxId }: GetCohortProps): Promise<Coh
     where: { id, cxId },
   });
 
-  if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id, cxId });
+  if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id });
   return cohort;
 }
 
@@ -27,7 +27,7 @@ export async function getCohortWithSizeOrFail({
     getCohortOrFail({ id, cxId }),
     getCohortSize({ cohortId: id, cxId }),
   ]);
-  if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id, cxId });
+  if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id });
 
   return { cohort: cohort.dataValues, size };
 }

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { faker } from "@faker-js/faker";
 import { NotFoundError } from "@metriport/shared";
 import { CohortUpdateCmd, DEFAULT_COLOR, DEFAULT_SETTINGS } from "@metriport/shared/domain/cohort";
@@ -9,7 +8,6 @@ import * as utils from "../utils";
 import * as defaultModel from "../../../../models/_default";
 import * as mergeSettingsModule from "@metriport/shared/common/merge-settings";
 
-// Mock the database calls
 const mockCohortModelFindOne = jest.fn();
 const mockGetCohortSize = jest.fn();
 const mockValidateMonitoringSettingsForCx = jest.fn();
@@ -95,7 +93,7 @@ describe("updateCohort", () => {
 
   describe("Error scenarios", () => {
     it("throws NotFoundError when cohort not found", async () => {
-      mockCohortModelFindOne.mockResolvedValue(null);
+      mockCohortModelFindOne.mockResolvedValue(undefined);
 
       const updateData: CohortUpdateCmd = {
         id: cohortId,

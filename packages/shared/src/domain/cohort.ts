@@ -27,7 +27,7 @@ export const DEFAULT_SCHEDULE: Schedule = {
 };
 
 export const DEFAULT_SCHEDULE_HIE: Schedule = {
-  enabled: true, // Docs say default is enabled for HIE.
+  enabled: true, // Docs say HIE is enabled by default.
   frequency: DEFAULT_FREQUENCY,
 };
 
@@ -67,8 +67,8 @@ export const scheduleSchema = z.object({
 
 export const notificationScheduleSchema = z
   .object({
-    notifications: z.boolean().optional(),
-    schedule: scheduleSchema.optional(),
+    notifications: z.boolean(),
+    schedule: scheduleSchema,
   })
   .transform((data, ctx) => {
     if (data.notifications === true) {
@@ -91,7 +91,15 @@ export const monitoringSchema = z
     laboratory: notificationScheduleSchema,
   })
   .strict();
-
+/**
+ * !!!!WARNING WARNING WARNING WARNING WARNING!!!!
+ *
+ * CHANGING OR ADDING FIELDS TO THIS SCHEMA WILL BREAK THE MERGE FUNCTION IN THE API
+ * IF YOU NEED TO ADD A NEW FIELD, DEFINE MERGING LOGIC IN THE API
+ * @see packages/api/src/command/medical/patient/get-settings.ts
+ *
+ * !!!!WARNING WARNING WARNING WARNING WARNING!!!!
+ */
 export const cohortSettingsSchema = z
   .object({
     monitoring: monitoringSchema,
@@ -112,10 +120,13 @@ export type Schedule = z.infer<typeof scheduleSchema>;
 export type CohortColors = z.infer<typeof cohortColorsSchema>;
 export type CohortSettings = z.infer<typeof cohortSettingsSchema>;
 export type BaseCohort = z.infer<typeof baseCohortSchema>;
-// #########################
 
-// ### Input Interfaces ###
-// > Request schemas for parsing request body
+// Frequency priority mapping for merging (lower number = more frequent)
+export const FREQUENCY_PRIORITY: Record<CohortFrequency, number> = {
+  weekly: 1,
+  biweekly: 2,
+  monthly: 3,
+};
 
 // > Create Schemas
 // Want to use default values for create schema, but not for update schema so that we don't overwrite existing settings
@@ -137,6 +148,7 @@ export const cohortCreateSchema = baseCohortSchema.extend({
 });
 
 export type CohortCreateInput = z.input<typeof cohortCreateSchema>;
+
 // > Update Schemas
 const allOptionalScheduleSchema = z.object({
   enabled: z.boolean().optional(),

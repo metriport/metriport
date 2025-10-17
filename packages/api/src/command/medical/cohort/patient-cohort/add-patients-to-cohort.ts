@@ -18,7 +18,7 @@ export async function addPatientsToCohort({
   const { log } = out(`addPatientsToCohort - cx ${cxId}, cohort ${cohortId}`);
 
   if (patientIds.length === 0) {
-    throw new BadRequestError("No patient IDs provided in request.", undefined, { cxId, cohortId });
+    throw new BadRequestError("No patient IDs provided in request.", undefined, { cohortId });
   }
 
   const uniquePatientIds = [...new Set(patientIds)];

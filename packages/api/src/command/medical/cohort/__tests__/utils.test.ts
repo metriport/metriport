@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { faker } from "@faker-js/faker";
+import * as featureFlags from "@metriport/core/command/feature-flags/domain-ffs";
 import { BadRequestError } from "@metriport/shared";
 import { MonitoringSettings } from "@metriport/shared/domain/cohort";
 import { validateMonitoringSettingsForCx } from "../utils";
-import * as featureFlags from "@metriport/core/command/feature-flags/domain-ffs";
 
-// Mock the feature flag functions
 const mockIsQuestFeatureFlagEnabledForCx = jest.spyOn(
   featureFlags,
   "isQuestFeatureFlagEnabledForCx"
@@ -72,6 +70,10 @@ describe("validateMonitoringSettingsForCx", () => {
       const monitoring: Partial<MonitoringSettings> = {
         pharmacy: {
           notifications: true,
+          schedule: {
+            enabled: false,
+            frequency: "weekly",
+          },
         },
       };
       await expect(
@@ -88,6 +90,7 @@ describe("validateMonitoringSettingsForCx", () => {
     it("validates successfully when pharmacy schedule is enabled", async () => {
       const monitoring: Partial<MonitoringSettings> = {
         pharmacy: {
+          notifications: false,
           schedule: {
             enabled: true,
             frequency: "weekly",
@@ -109,6 +112,10 @@ describe("validateMonitoringSettingsForCx", () => {
       const monitoring: Partial<MonitoringSettings> = {
         laboratory: {
           notifications: true,
+          schedule: {
+            enabled: false,
+            frequency: "monthly",
+          },
         },
       };
       await expect(
@@ -125,6 +132,7 @@ describe("validateMonitoringSettingsForCx", () => {
     it("validates successfully when laboratory schedule is enabled", async () => {
       const monitoring: Partial<MonitoringSettings> = {
         laboratory: {
+          notifications: false,
           schedule: {
             enabled: true,
             frequency: "monthly",
@@ -150,6 +158,10 @@ describe("validateMonitoringSettingsForCx", () => {
       const monitoring: Partial<MonitoringSettings> = {
         pharmacy: {
           notifications: true,
+          schedule: {
+            enabled: false,
+            frequency: "weekly",
+          },
         },
       };
 
@@ -167,6 +179,7 @@ describe("validateMonitoringSettingsForCx", () => {
 
       const monitoring: Partial<MonitoringSettings> = {
         pharmacy: {
+          notifications: false,
           schedule: {
             enabled: true,
             frequency: "weekly",
@@ -189,6 +202,10 @@ describe("validateMonitoringSettingsForCx", () => {
       const monitoring: Partial<MonitoringSettings> = {
         laboratory: {
           notifications: true,
+          schedule: {
+            enabled: false,
+            frequency: "monthly",
+          },
         },
       };
 
@@ -210,6 +227,7 @@ describe("validateMonitoringSettingsForCx", () => {
 
       const monitoring: Partial<MonitoringSettings> = {
         laboratory: {
+          notifications: false,
           schedule: {
             enabled: true,
             frequency: "monthly",
@@ -228,36 +246,6 @@ describe("validateMonitoringSettingsForCx", () => {
       );
 
       expect(mockIsQuestFeatureFlagEnabledForCx).toHaveBeenCalledWith(cxId);
-    });
-
-    it("validates successfully when pharmacy schedule is disabled (not enabled)", async () => {
-      const monitoring: Partial<MonitoringSettings> = {
-        pharmacy: {
-          schedule: {
-            enabled: false,
-            frequency: "weekly",
-          },
-        },
-      };
-      await expect(
-        validateMonitoringSettingsForCx(cxId, monitoring, mockLog)
-      ).resolves.not.toThrow();
-      expect(mockIsSurescriptsFeatureFlagEnabledForCx).not.toHaveBeenCalled();
-    });
-
-    it("validates successfully when laboratory schedule is disabled (not enabled)", async () => {
-      const monitoring: Partial<MonitoringSettings> = {
-        laboratory: {
-          schedule: {
-            enabled: false,
-            frequency: "monthly",
-          },
-        },
-      };
-      await expect(
-        validateMonitoringSettingsForCx(cxId, monitoring, mockLog)
-      ).resolves.not.toThrow();
-      expect(mockIsQuestFeatureFlagEnabledForCx).not.toHaveBeenCalled();
     });
   });
 });

@@ -235,7 +235,7 @@ router.post(
     const cohortId = getUUIDFrom("params", req, "id").orFail();
     const body = allOrSubsetPatientIdsSchema.parse(req.body);
 
-    if ("all" in body) {
+    if ("allPatients" in body) {
       await addAllPatientsToCohort({
         cohortId,
         cxId,

@@ -9,7 +9,7 @@ export type DeepPartial<T> = {
 
 /**
  * Generic utility to merge settings objects with proper deep merging behavior.
- * Merges new settings into old settings. If a new setting is undefined, the old value is used.
+ * Merges new settings into old settings. If a new setting is undefined, the old value is used. !!Otherwise, the new value is used!!
  * The old settings must be a full object, not a partial object.
  *
  * @param oldSettings The full old settings object
