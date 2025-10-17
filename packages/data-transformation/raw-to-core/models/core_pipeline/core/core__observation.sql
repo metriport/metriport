@@ -7,7 +7,6 @@ with target_code_codings as (
             none,
             (
                 'http://loinc.org',
-                'http://snomed.info/sct'
             )
         ) 
     }}
@@ -72,18 +71,6 @@ select
                 tc_loinc.display
             ) as {{ dbt.type_string() }} 
         )                                                                                                   as loinc_display
-    ,   cast(
-            coalesce(
-                snomed.snomed_ct,
-                tc_snomed_ct.code
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as snomed_code
-    ,   cast(
-            coalesce(
-                snomed.description,
-                tc_snomed_ct.display
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as snomed_display
     ,   cast(
             coalesce(
                 obvs.valuequantity_value, 
@@ -159,5 +146,3 @@ left join target_bodysite_codings bodysite_snomed_ct
         and bodysite_snomed_ct.system = 'http://snomed.info/sct'
 left join {{ref('terminology__loinc')}} loinc
     on tc_loinc.code = loinc.loinc
-left join {{ref('terminology__snomed_ct')}} snomed
-    on tc_snomed_ct.code = snomed.snomed_ct

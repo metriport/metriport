@@ -49,6 +49,8 @@ select
                 else null
             end as {{ dbt.type_string() }}
         )                                                                                       as act_display
+    ,   cast(enc.class_code as {{ dbt.type_string() }} )                                        as generic_class_code
+    ,   cast(enc.class_display as {{ dbt.type_string() }} )                                     as generic_class_display
     ,   cast(type_hl7.code as {{ dbt.type_string() }} )                                         as type_hl7_code
     ,   cast(type_hl7.display as {{ dbt.type_string() }} )                                      as type_hl7_display
     ,   cast(dd_hl7.code as {{ dbt.type_string() }} )                                           as discharge_disposition_hl7_code
