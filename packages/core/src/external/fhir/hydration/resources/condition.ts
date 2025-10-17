@@ -11,7 +11,9 @@ import { capture } from "../../../../util/notifications";
 import { crosswalkCode } from "../../../term-server";
 
 export const PROBLEM_LIST_CATEGORY_CODE = "problem-list-item";
+export const PROBLEM_LIST_CATEGORY_DISPLAY = "Problem List Item";
 export const ENCOUNTER_DIAGNOSIS_CATEGORY_CODE = "encounter-diagnosis";
+export const ENCOUNTER_DIAGNOSIS_CATEGORY_DISPLAY = "Encounter Diagnosis";
 
 /**
  * Map of clinical status found in the wild to HL7 codes.
@@ -188,15 +190,8 @@ function buildHl7CategoryBasedOnHeuristics(
   condition: Condition,
   encounters: Encounter[]
 ): Coding | undefined {
-  if (
-    isHistoryDisplay(condition.code?.text) ||
-    condition.code?.coding?.some(
-      coding =>
-        (coding.system === ICD_10_URL && coding.code?.startsWith("Z")) ||
-        isHistoryDisplay(coding.display)
-    )
-  ) {
-    return buildConditionCategoryCoding(PROBLEM_LIST_CATEGORY_CODE);
+  if (isHistoryDisplay(condition.code?.text) || isProblemListIcd10Code(condition.code)) {
+    return buildConditionCategoryCoding(PROBLEM_LIST_CATEGORY_CODE, PROBLEM_LIST_CATEGORY_DISPLAY);
   }
 
   const isEncounterDiagnosis = encounters.some(encounter =>
@@ -206,7 +201,10 @@ function buildHl7CategoryBasedOnHeuristics(
   );
 
   if (isEncounterDiagnosis) {
-    return buildConditionCategoryCoding(ENCOUNTER_DIAGNOSIS_CATEGORY_CODE);
+    return buildConditionCategoryCoding(
+      ENCOUNTER_DIAGNOSIS_CATEGORY_CODE,
+      ENCOUNTER_DIAGNOSIS_CATEGORY_DISPLAY
+    );
   }
 
   return undefined;
@@ -217,9 +215,18 @@ function isHistoryDisplay(display: string | undefined): boolean {
   return display.toLowerCase().includes("history of") || display.toLowerCase().includes("hx of");
 }
 
-function buildConditionCategoryCoding(code: string): Coding {
+function isProblemListIcd10Code(code: CodeableConcept | undefined): boolean {
+  if (!code) return false;
+  return (
+    code.coding?.some(coding => coding.system === ICD_10_URL && coding.code?.startsWith("Z")) ??
+    false
+  );
+}
+
+function buildConditionCategoryCoding(code: string, display: string): Coding {
   return {
     system: CONDITION_CATEGORY_SYSTEM_URL,
     code,
+    display,
   };
 }
