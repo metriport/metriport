@@ -1,18 +1,19 @@
-with vaccine_code_cpx_coding as (
+with target_vaccine_code_codings as (
    {{   
-        get_target_coding(
+        get_target_codings(
             get_immunization_vaccine_codings,
-            'stage__immunization', 
             'immunization_id', 
             2, 
             none, 
-            'http://hl7.org/fhir/sid/cvx'
+            (
+                'http://hl7.org/fhir/sid/cvx',
+            )
         ) 
     }}
 )
 select
         cast(i.id as {{ dbt.type_string() }} )                                                              as immunization_id
-    ,   cast(p.id as {{ dbt.type_string() }} )                                                              as patient_id
+    ,   cast(right(i.patient_reference, 36) as {{ dbt.type_string() }} )                                    as patient_id
     ,   cast(i.status as {{ dbt.type_string() }} )                                                          as status
     ,   coalesce(
             {{ try_to_cast_date('i.occurrencedatetime') }},
@@ -67,9 +68,8 @@ select
         )                                                                                                   as performer_organization_id
     ,   cast(i.meta_source as {{ dbt.type_string() }} )                                                     as data_source
 from {{ref('stage__immunization')}} i
-left join {{ref('stage__patient')}} p
-    on right(i.patient_reference, 36) = p.id
-left join vaccine_code_cpx_coding tc_cvx
-    on i.id = tc_cvx.immunization_id
+left join target_vaccine_code_codings tc_cvx
+    on i.id = tc_cvx.immunization_id 
+        and tc_cvx.system = 'http://hl7.org/fhir/sid/cvx'
 left join {{ref('terminology__cvx')}} cvx
     on tc_cvx.code = cvx.cvx

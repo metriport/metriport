@@ -1,29 +1,32 @@
-with code_loinc_coding as (
+with target_code_codings as (
    {{   
-        get_target_coding(
+        get_target_codings(
             get_diagnostic_report_codings,
-            'stage__diagnosticreport', 
             'diagnostic_report_id', 
             9, 
             none, 
-            'http://loinc.org'
+            (
+                'http://loinc.org',
+            )
         ) 
     }}
 ),
-category_hl7_coding as (
+target_category_codings as (
     {{ 
-        get_target_coding(
+        get_target_codings(
             get_diagnostic_report_category_codings, 
-            'stage__diagnosticreport', 
             'diagnostic_report_id', 
             2, 
             1, 
-            'http://terminology.hl7.org/CodeSystem/v2-0074'
-        ) }}
+            (
+                'http://terminology.hl7.org/CodeSystem/v2-0074',
+            )
+        ) 
+    }}
 )
 select
         cast(dr.id as {{ dbt.type_string() }} )                                                             as diagnostic_report_id
-    ,   cast(p.id as {{ dbt.type_string() }} )                                                              as patient_id
+    ,   cast(right(dr.subject_reference, 36) as {{ dbt.type_string() }} )                                   as patient_id
     ,   cast(dr.status as {{ dbt.type_string() }} )                                                         as status
     ,   coalesce(
             {{ try_to_cast_date('dr.effectivedatetime') }}, 
@@ -96,10 +99,12 @@ select
     ,   cast(dr.meta_source as {{ dbt.type_string() }} )                                                    as data_source
 from {{ref('stage__diagnosticreport')}} dr
 left join {{ref('stage__patient')}} p
-    on right(dr.subject_reference, 36) = p.id
-left join code_loinc_coding tc_loinc
-    on dr.id = tc_loinc.diagnostic_report_id
-left join category_hl7_coding category_hl7
-    on dr.id = category_hl7.diagnostic_report_id
+    on  = p.id
+left join target_code_codings tc_loinc
+    on dr.id = tc_loinc.diagnostic_report_id 
+        and tc_loinc.system = 'http://loinc.org'
+left join target_category_codings category_hl7
+    on dr.id = category_hl7.diagnostic_report_id 
+        and category_hl7.system = 'http://terminology.hl7.org/CodeSystem/v2-0074'
 left join {{ref('terminology__loinc')}} loinc
     on tc_loinc.code = loinc.loinc

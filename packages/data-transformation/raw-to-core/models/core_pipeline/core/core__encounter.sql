@@ -1,29 +1,32 @@
-with type_hl7_coding as (
+with target_type_codings as (
    {{   
-        get_target_coding(
+        get_target_codings(
             get_encounter_type_codings,
-            'stage__encounter', 
             'encounter_id', 
             7, 
             1, 
-            'http://terminology.hl7.org/CodeSystem/encounter-type'
+            (
+                'http://terminology.hl7.org/CodeSystem/encounter-type',
+            )
         ) 
     }}
 ),
-discharge_disposition_hl7_coding as (
+target_discharge_disposition_codings as (
     {{ 
-        get_target_coding(
+        get_target_codings(
             get_encounter_discharge_disposition_codings, 
-            'stage__encounter', 
             'encounter_id', 
             1, 
             none, 
-            'http://terminology.hl7.org/CodeSystem/discharge-disposition'
-        ) }}
+            (
+                'http://terminology.hl7.org/CodeSystem/discharge-disposition',
+            )
+        ) 
+    }}
 )
 select
         cast(enc.id as {{ dbt.type_string() }} )                                                as encounter_id      
-    ,   cast(p.id as {{ dbt.type_string() }} )                                                  as patient_id
+    ,   cast(right(enc.subject_reference, 36) as {{ dbt.type_string() }} )                      as patient_id
     ,   cast(enc.status as {{ dbt.type_string() }} )                                            as status
     ,   {{ try_to_cast_date('enc.period_start', 'YYYY-MM-DD') }}                                as start_date
     ,   {{ try_to_cast_date('enc.period_end', 'YYYY-MM-DD') }}                                  as end_date
@@ -55,9 +58,9 @@ select
     ,   cast(right(enc.serviceprovider_reference, 36) as {{ dbt.type_string() }} )              as organization_id
     ,   cast(enc.meta_source as {{ dbt.type_string() }} )                                       as data_source
 from {{ref('stage__encounter')}} as enc
-left join {{ref('stage__patient') }} p
-    on right(enc.subject_reference, 36) = p.id
-left join type_hl7_coding type_hl7
-    on enc.id = type_hl7.encounter_id
-left join discharge_disposition_hl7_coding dd_hl7
-    on enc.id = dd_hl7.encounter_id
+left join target_type_codings type_hl7
+    on enc.id = type_hl7.encounter_id 
+        and type_hl7.system = 'http://terminology.hl7.org/CodeSystem/encounter-type'
+left join target_discharge_disposition_codings dd_hl7
+    on enc.id = dd_hl7.encounter_id 
+        and dd_hl7.system = 'http://terminology.hl7.org/CodeSystem/discharge-disposition'

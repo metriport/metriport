@@ -1,66 +1,59 @@
-with code_loinc_coding as (
+with target_code_codings as (
    {{   
-        get_target_coding(
+        get_target_codings(
             get_observtaion_codings,
-            'stage__observation', 
             'observation_id', 
             2, 
             none,
-            'http://loinc.org'
+            (
+                'http://loinc.org',
+                'http://snomed.info/sct'
+            )
         ) 
     }}
 ),
-code_snomed_ct_coding as (
-    {{   
-        get_target_coding(
-            get_observtaion_codings,
-            'stage__observation', 
-            'observation_id', 
-            2, 
-            none,
-            'http://snomed.info/sct'
-        ) 
-    }}
-),
-category_hl7_coding as (
+target_category_codings as (
     {{ 
-        get_target_coding(
+        get_target_codings(
             get_observation_category_codings, 
-            'stage__observation', 
             'observation_id', 
             2, 
             0, 
-            'http://terminology.hl7.org/CodeSystem/observation-category'
+            (
+                'http://terminology.hl7.org/CodeSystem/observation-category',
+            )
         ) 
     }}
 ),
-interpretation_hl7_coding as (
+target_interpretation_codings as (
     {{ 
-        get_target_coding(
+        get_target_codings(
             get_observation_interpretation_codings, 
-            'stage__observation', 
             'observation_id', 
             0, 
             1,
-            'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation'
+            (
+                'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation',
+            )
         ) 
     }}
 ),
-bodysite_snomed_ct_coding as (
+target_bodysite_codings as (
     {{ 
-        get_target_coding(
+        get_target_codings(
             get_observation_bodysite_codings, 
-            'stage__observation', 
             'observation_id', 
             2, 
             none,
-            'http://snomed.info/sct'
+            [
+                'http://snomed.info/sct'
+            ]
         ) 
     }}
 )
 select
         cast(obvs.id  as {{ dbt.type_string() }} )                                                          as observation_id
-    ,   cast(p.id as {{ dbt.type_string() }} )                                                              as patient_id
+    ,   cast(right(obvs.subject_reference, 36)as {{ dbt.type_string() }} )                                  as patient_id
     ,   cast(obvs.status as {{ dbt.type_string() }} )                                                       as status
     ,   coalesce(
             {{ try_to_cast_date('obvs.effectivedatetime') }}, 
@@ -149,21 +142,22 @@ select
         )                                                                                                   as performer_organization_id
     ,   cast(obvs.meta_source as {{ dbt.type_string() }} )                                                  as data_source
 from {{ref('stage__observation')}} obvs
-left join {{ref('stage__patient')}} p
-    on right(obvs.subject_reference, 36) = p.id
-left join code_loinc_coding tc_loinc
-    on obvs.id = tc_loinc.observation_id
-left join code_snomed_ct_coding tc_snomed_ct
-    on obvs.id = tc_snomed_ct.observation_id
-left join category_hl7_coding category_hl7
-    on obvs.id = category_hl7.observation_id
-left join interpretation_hl7_coding interpretation_hl7
-    on obvs.id = interpretation_hl7.observation_id
-left join bodysite_snomed_ct_coding bodysite_snomed_ct
-    on obvs.id = bodysite_snomed_ct.observation_id
+left join target_code_codings tc_loinc
+    on obvs.id = tc_loinc.observation_id 
+        and tc_loinc.system = 'http://loinc.org'
+left join target_code_codings tc_snomed_ct
+    on obvs.id = tc_snomed_ct.observation_id 
+        and tc_snomed_ct.system = 'http://snomed.info/sct'
+left join target_category_codings category_hl7
+    on obvs.id = category_hl7.observation_id 
+        and category_hl7.system = 'http://terminology.hl7.org/CodeSystem/observation-category'
+left join target_interpretation_codings interpretation_hl7
+    on obvs.id = interpretation_hl7.observation_id 
+        and interpretation_hl7.system = 'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation'
+left join target_bodysite_codings bodysite_snomed_ct
+    on obvs.id = bodysite_snomed_ct.observation_id 
+        and bodysite_snomed_ct.system = 'http://snomed.info/sct'
 left join {{ref('terminology__loinc')}} loinc
     on tc_loinc.code = loinc.loinc
 left join {{ref('terminology__snomed_ct')}} snomed
     on tc_snomed_ct.code = snomed.snomed_ct
-left join {{ref('terminology__snomed_ct')}} snomed_bodysite
-    on bodysite_snomed_ct.code = snomed.snomed_ct

@@ -1,6 +1,6 @@
 select
         cast(ms.id as {{ dbt.type_string() }} )                                                     as medication_statement_id
-    ,   cast(p.id as {{ dbt.type_string() }} )                                                      as patient_id
+    ,   cast(right(ms.subject_reference, 36) as {{ dbt.type_string() }} )                           as patient_id
     ,   cast(m.id as {{ dbt.type_string() }} )                                                      as medication_id
     ,   cast(ms.status as {{ dbt.type_string() }} )                                                 as status
     ,   coalesce(
@@ -61,5 +61,3 @@ select
 from {{ref('stage__medicationstatement')}} as ms
 inner join {{ref('stage__medication')}} as m
     on right(ms.medicationreference_reference, 36) = m.id
-left join {{ref('stage__patient')}} p
-    on right(ms.subject_reference, 36) = p.id

@@ -169,6 +169,15 @@ models:
     enabled: false
     alias: location
     materialized: table
+    columns:
+      - name: managing_organization_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: managing_organization_id != ''
+                severity: warn
   - name: core__medication
     schema: core_v3
     enabled: false
@@ -339,6 +348,11 @@ models:
               config:
                 where: performer_organization_id != ''
                 severity: warn
+  - name: core__organization
+    schema: core_v3
+    enabled: false
+    alias: organization
+    materialized: table
   - name: core__patient
     schema: core_v3
     alias: patient

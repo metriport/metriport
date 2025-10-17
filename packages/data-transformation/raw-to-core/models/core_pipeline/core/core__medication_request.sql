@@ -1,6 +1,6 @@
 select
         cast(mr.id as {{ dbt.type_string() }} )                                                     as medication_request_id
-    ,   cast(p.id as {{ dbt.type_string() }} )                                                      as patient_id
+    ,   cast(right(mr.subject_reference, 36) as {{ dbt.type_string() }} )                           as patient_id
     ,   cast(m.id as {{ dbt.type_string() }} )                                                      as medication_id
     ,   cast(mr.status as {{ dbt.type_string() }} )                                                 as status
     ,   {{ try_to_cast_date('mr.authoredon') }}                                                     as authored_on
@@ -73,5 +73,3 @@ select
 from {{ref('stage__medicationrequest')}} as mr
 inner join {{ref('stage__medication')}} as m
     on right(mr.medicationreference_reference, 36) = m.id
-left join {{ref('stage__patient')}} p
-    on right(mr.subject_reference, 36) = p.id

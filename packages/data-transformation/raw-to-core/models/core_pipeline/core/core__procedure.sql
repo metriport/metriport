@@ -1,53 +1,46 @@
-with code_cpt_coding as (
+with target_code_codings as (
    {{   
-        get_target_coding(
+        get_target_codings(
             get_procedcure_codings,
-            'stage__procedure', 
             'procedure_id', 
             7, 
             none, 
-            'http://www.ama-assn.org/go/cpt'
+            (
+                'http://www.ama-assn.org/go/cpt',
+                'http://snomed.info/sct'
+            )
         ) 
     }}
 ),
-code_snomed_ct_coding as (
-   {{   
-        get_target_coding(
-            get_procedcure_codings,
-            'stage__procedure', 
-            'procedure_id', 
-            7, 
-            none, 
-            'http://snomed.info/sct'
-        ) 
-    }}
-),
-bodysite_snomed_ct_coding as (
+target_bodysite_codings as (
     {{ 
-        get_target_coding(
+        get_target_codings(
             get_procedcure_bodysite_codings, 
-            'stage__procedure', 
             'procedure_id', 
             1, 
             2, 
-            'http://snomed.info/sct'
-        ) }}
+            (
+                'http://snomed.info/sct',
+            )
+        ) 
+    }}
 ),
-reason_snomed_ct_coding as (
+target_reason_codings as (
     {{ 
-        get_target_coding(
+        get_target_codings(
             get_procedcure_reason_codings, 
-            'stage__procedure', 
             'procedure_id', 
             9, 
             0,
-            'http://snomed.info/sct'
+            (
+                'http://snomed.info/sct',
+            )
         ) 
     }}
 )
 select
         cast(pro.id as {{ dbt.type_string() }} )                                                                    as procedure_id
-    ,   cast(pat.id as {{ dbt.type_string() }} )                                                                    as patient_id
+    ,   cast(right(pro.subject_reference, 36) as {{ dbt.type_string() }} )                                          as patient_id
     ,   cast(pro.status as {{ dbt.type_string() }} )                                                                as status
     ,   coalesce(
             {{ try_to_cast_date('pro.performeddatetime', 'YYYY-MM-DD') }},
@@ -78,30 +71,10 @@ select
                 tc_snomed_ct.display
             ) as {{ dbt.type_string() }} 
         )                                                                                                           as snomed_display
-    ,   cast(
-            coalesce(
-                snomed_bodysite.snomed_ct,
-                bodysite_snomed_ct.code
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                           as bodysite_snomed_ode
-    ,   cast(
-            coalesce(
-                snomed_bodysite.description,
-                bodysite_snomed_ct.display
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                           as bodysite_snomed_display
-    ,   cast(
-            coalesce(
-                snomed_reason.snomed_ct,
-                reason_snomed_ct.code
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                           as reason_snomed_code
-    ,   cast(
-            coalesce(
-                snomed_reason.description,
-                reason_snomed_ct.display
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                           as reason_snomed_display
+    ,   cast(bodysite_snomed_ct.code as {{ dbt.type_string() }} )                                                   as bodysite_snomed_ode
+    ,   cast(bodysite_snomed_ct.display as {{ dbt.type_string() }} )                                                as bodysite_snomed_display
+    ,   cast(reason_snomed_ct.code as {{ dbt.type_string() }} )                                                     as reason_snomed_code
+    ,   cast(reason_snomed_ct.display as {{ dbt.type_string() }} )                                                  as reason_snomed_display
     ,   cast(
             coalesce(
                 pro.note_0_text,
@@ -130,21 +103,19 @@ select
         )                                                                                                           as performer_organization_id
     ,   cast(pro.meta_source as {{ dbt.type_string() }} )                                                           as data_source
 from {{ref('stage__procedure' )}} pro
-left join {{ref('stage__patient')}} pat
-    on right(pro.subject_reference, 36) = pat.id
-left join code_cpt_coding tc_cpt
-    on pro.id = tc_cpt.procedure_id
-left join code_snomed_ct_coding tc_snomed_ct
-    on pro.id = tc_snomed_ct.procedure_id
-left join bodysite_snomed_ct_coding bodysite_snomed_ct
-    on pro.id = bodysite_snomed_ct.procedure_id
-left join reason_snomed_ct_coding reason_snomed_ct
-    on pro.id = reason_snomed_ct.procedure_id
+left join target_code_codings tc_cpt
+    on pro.id = tc_cpt.procedure_id 
+        and tc_cpt.system = 'http://www.ama-assn.org/go/cpt'
+left join target_code_codings tc_snomed_ct
+    on pro.id = tc_snomed_ct.procedure_id 
+        and tc_snomed_ct.system = 'http://snomed.info/sct'
+left join target_bodysite_codings bodysite_snomed_ct
+    on pro.id = bodysite_snomed_ct.procedure_id 
+        and bodysite_snomed_ct.system = 'http://snomed.info/sct'
+left join target_reason_codings reason_snomed_ct
+    on pro.id = reason_snomed_ct.procedure_id 
+        and reason_snomed_ct.system = 'http://snomed.info/sct'
 left join {{ref('terminology__hcpcs_level_2')}} hcpcs
     on tc_cpt.code = hcpcs.hcpcs
 left join {{ref('terminology__snomed_ct')}} snomed
     on tc_snomed_ct.code = snomed.snomed_ct
-left join {{ref('terminology__snomed_ct')}} snomed_bodysite
-    on bodysite_snomed_ct.code = snomed.snomed_ct
-left join {{ref('terminology__snomed_ct')}} snomed_reason
-    on reason_snomed_ct.code = snomed.snomed_ct
