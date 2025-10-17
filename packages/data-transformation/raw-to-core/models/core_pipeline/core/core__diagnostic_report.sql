@@ -98,8 +98,6 @@ select
         )                                                                                                   as performer_organization_id
     ,   cast(dr.meta_source as {{ dbt.type_string() }} )                                                    as data_source
 from {{ref('stage__diagnosticreport')}} dr
-left join {{ref('stage__patient')}} p
-    on  = p.id
 left join target_code_codings tc_loinc
     on dr.id = tc_loinc.diagnostic_report_id 
         and tc_loinc.system = 'http://loinc.org'
