@@ -2,7 +2,7 @@
 title: "Get Patient Settings"
 description: "Returns aggregated monitoring settings for a patient based on all cohorts they belong to. 
 When a patient belongs to multiple cohorts with conflicting settings, the least restrictive option is applied (logical OR). 
-For cadence settings, the shortest interval is applied."
+For cadence settings, the shortest interval is applied. For notifications versus schedule settings, notifications are prioritized."
 api: "GET /medical/v1/patient/{id}/settings"
 ---
 
@@ -111,6 +111,23 @@ they belong to. If there are conflicting settings between cohorts, the least res
       "hie": {
         "enabled": true,
         "frequency": "weekly"
+      }
+    }
+  }
+}
+```
+
+**Patient in multiple cohorts, one with notifications enabled for Pharamcy, one with schedule enabled for Pharmacy:**
+```json
+{
+  "settings": {
+    "monitoring": {
+      "pharamcy": {
+        "notifications": true,
+        "schedule": {
+          "enabled": false,
+          "frequency": "weekly"
+        }
       }
     }
   }

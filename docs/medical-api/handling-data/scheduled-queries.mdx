@@ -1,0 +1,29 @@
+---
+title: "Scheduled Queries"
+icon: "calendar"
+description: "Query the networks on your schedule."
+---
+
+# Overview
+Scheduled Queries is an automated and scheduled version of [Start Document Query](/medical-api/api-reference/document/start-document-query).
+
+It allows you to specify a schedule in which document queries should be executed automatically.
+
+You can choose one of the frequencies below for each of the document query source:
+ - Weekly: runs every Saturday  
+ - Biweekly: runs every other Saturday, starting with the first Saturday of the month  
+ - Monthly: runs the last weekend of the month  
+
+The available data sources are:
+ - hie: health information networks, national networks that provide access to general medical data.  
+ - pharmacy: networks that provide medication-specific information.  
+ - laboratory: networks that provide information specific to tests/results and other laboratory-related data.  
+
+<Info>
+    **HIE monitoring** and **Pharmacy scheduled monitoring are coming soon!** While these features are not yet live, [you can configure 
+    your monitoring settings now](/medical-api/handling-data/cohorts). These settings will automatically take effect when the feature launches.
+</Info>
+
+
+To use this feature, [set it up in one or more Cohorts](/medical-api/handling-data/cohorts) and associate the patients you want to have enabled for each schedule.
+

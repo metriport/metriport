@@ -12,7 +12,7 @@ For example, you could create one cohort to monitor a group of
 chronically-ill individuals with all features enabled (e.g., ADTs, pharmacies, laboratory, HIE), and another cohort 
 that monitors a less critical group of individuals with just HIE data enabled.
 
-### Getting started
+# Getting started
 
 Every cohort has a unique name and a collection of settings which apply to all patients within that cohort.
 By default, you have 3 cohorts with the following names + behaviors:
@@ -31,7 +31,7 @@ By default, you have 3 cohorts with the following names + behaviors:
   cohort](/medical-api/api-reference/cohort/add-patients-to-cohort)).
 </Note>
 
-### The Cohort Model
+# The Cohort Model
 
 In Metriport, a cohort is simply a label that can be given to any number of patients. You can 
 use that label to apply common settings across a group of patients,
@@ -69,7 +69,7 @@ or retrieve the members of that cohort via API.
 ```
 See [Here](/medical-api/handling-data/cohorts#available-settings) for a detailed explanation of the available settings.
 
-### Monitoring patients with Cohorts
+# Monitoring patients with Cohorts
 
 Metriport allows you to monitor patients and receive notifications about them over time.
 
@@ -138,7 +138,7 @@ const patient = await metriportApi.createPatient(
 // The patient is now automatically subscribed to the monitoring settings of the 2 cohorts
 ```
 
-### Adding patients to cohorts
+## Adding patients to cohorts
 
 Patients can be added to cohorts on creation, or added to and removed from different cohorts as needed.
 
@@ -156,7 +156,7 @@ As needed:
 
 
 
-### Available settings
+## Available settings
 
 Use settings to enable monitoring for certain data sources.
 
@@ -168,16 +168,7 @@ Use settings to enable monitoring for certain data sources.
 
 <Snippet file="cohort-settings.mdx" />
 
-### When do scheduled pulls run?
-
-Scheduled data pulls follow these timing rules:
-
-- **Weekly**: Runs every Saturday
-- **Biweekly**: Runs every other Saturday (starting from the first Saturday of the month)
-- **Monthly**: Runs on the first *Weekend* of each month
-
-
-#### How are settings combined across multiple cohorts?
+### How are settings combined across multiple cohorts?
 
 When a patient belongs to multiple cohorts, their settings are aggregated from all cohorts they belong to. 
 If there are conflicting settings between cohorts, the least restrictive option is applied (logical OR). 
