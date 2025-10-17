@@ -134,7 +134,7 @@ export type ResourceTemplateHandler = (data: {
 export const templateHandlersByResourceType: Record<string, ResourceTemplateHandler> = {
   AllergyIntolerance: () => `### Questions
 
-Answer the following question(s), each in its own section:
+Answer the following question(s), each in its own bullet-pointed section:
 - What type of reaction occurred (symptoms/manifestations)?
 - How severe was the reaction, and is this life-threatening?
 - When was this allergy first identified?
@@ -142,7 +142,7 @@ Answer the following question(s), each in its own section:
 
   Condition: () => `### Questions
 
-Answer the following question(s), each in its own section:
+Answer the following question(s), each in its own bullet-pointed section:
 - How was this diagnosed?
 - How did this come to be?
 - Where, when, and by whom was this diagnosed?
@@ -151,7 +151,7 @@ Answer the following question(s), each in its own section:
 
   MedicationStatement: () => `### Questions
 
-Answer the following question(s), each in its own section:
+Answer the following question(s), each in its own bullet-pointed section:
 - What condition is this medication treating (indication)?
 - What is the dosage, frequency, and duration?
 - Is the patient currently taking this medication, or has it been discontinued?
@@ -159,7 +159,7 @@ Answer the following question(s), each in its own section:
 
   Procedure: () => `### Questions
 
-Answer the following question(s), each in its own section:
+Answer the following question(s), each in its own bullet-pointed section:
 - Why was this procedure performed (indication)?
 - When and where was it performed, and by whom?
 - Were there any complications or adverse events?
@@ -167,7 +167,7 @@ Answer the following question(s), each in its own section:
 
   Encounter: () => `### Questions
 
-Answer the following question(s), each in its own section:
+Answer the following question(s), each in its own bullet-pointed section:
 - What was the reason for this visit (chief complaint)?
 - What diagnoses were made or conditions addressed during this encounter?
 - What treatments or interventions were provided?
@@ -175,7 +175,7 @@ Answer the following question(s), each in its own section:
 
   Immunization: () => `### Questions
 
-Answer the following question(s), each in its own section:
+Answer the following question(s), each in its own bullet-pointed section:
 - What vaccine was administered and for which disease?
 - When was it given, and which dose in the series is this?
 - Were there any adverse reactions or side effects?
@@ -183,7 +183,7 @@ Answer the following question(s), each in its own section:
 
   DiagnosticReport: () => `### Questions
 
-Answer the following question(s), each in its own section:
+Answer the following question(s), each in its own bullet-pointed section:
 - If a test, why was this test ordered?
 - What were the key findings or results?
 - Are there any abnormal values that require attention?
@@ -191,7 +191,7 @@ Answer the following question(s), each in its own section:
 
   Observation: () => `### Questions
 
-Answer the following question(s), each in its own section:
+Answer the following question(s), each in its own bullet-pointed section:
 - What was measured and what is the value?
 - Is this value normal, or does it indicate an abnormality?
 - Why was this observation made (clinical context)?
@@ -199,7 +199,7 @@ Answer the following question(s), each in its own section:
 
   Suspects: () => `### Questions
 
-Answer the following question(s), each in its own section:
+Answer the following question(s), each in its own bullet-pointed section:
 - Why was this suspect created?
 - What are the related resources that are responsible for this suspect?
 - Other key observations related to this suspect?`,
@@ -208,7 +208,7 @@ Answer the following question(s), each in its own section:
 export function defaultTemplateHandler(): string {
   return `### Questions
 
-Answer the following question(s), each in its own section:
+Answer the following question(s), each in its own bullet-pointed section:
 - Why is this important?
 - Are there any related notes?
 - What is the important context surrounding this?`;
