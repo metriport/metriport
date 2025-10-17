@@ -19,7 +19,7 @@
 
    Notes
      - Uses CORE_V3.CORE__CONDITION, CORE_V3.CORE__PROCEDURE, CORE_V3.CORE__OBSERVATION.
-     - Column “BODYSITE_SNOMED_ODE” name preserved from schema.
+     - Column “BODYSITE_SNOMED_CODE” name preserved from schema.
    ============================================================ */
 
 WITH seizure_dx_exclusion AS (
@@ -48,7 +48,7 @@ raw_eeg_proc AS (
     p.CPT_DISPLAY,
     p.SNOMED_CODE,
     p.SNOMED_DISPLAY,
-    p.BODYSITE_SNOMED_ODE                      AS bodysite_snomed_code,
+    p.BODYSITE_SNOMED_CODE                      AS bodysite_snomed_code,
     p.BODYSITE_SNOMED_DISPLAY                  AS bodysite_snomed_display,
     p.REASON_SNOMED_CODE,
     p.REASON_SNOMED_DISPLAY,
@@ -86,7 +86,7 @@ raw_aed_admin AS (
     p.CPT_DISPLAY,
     p.SNOMED_CODE,
     p.SNOMED_DISPLAY,
-    p.BODYSITE_SNOMED_ODE                      AS bodysite_snomed_code,
+    p.BODYSITE_SNOMED_CODE                      AS bodysite_snomed_code,
     p.BODYSITE_SNOMED_DISPLAY                  AS bodysite_snomed_display,
     p.REASON_SNOMED_CODE,
     p.REASON_SNOMED_DISPLAY,

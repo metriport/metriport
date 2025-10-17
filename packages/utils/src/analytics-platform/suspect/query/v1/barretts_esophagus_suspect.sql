@@ -17,7 +17,7 @@
 
    Notes
      - Uses CORE_V3.CORE__CONDITION and CORE_V3.CORE__PROCEDURE.
-     - Column “BODYSITE_SNOMED_ODE” is used as provided.
+     - Column “BODYSITE_SNOMED_CODE” is used as provided.
    ============================================================ */
 
 WITH barrett_dx_exclusion AS (
@@ -46,7 +46,7 @@ raw_egd AS (
     p.CPT_DISPLAY,
     p.SNOMED_CODE,
     p.SNOMED_DISPLAY,
-    p.BODYSITE_SNOMED_ODE                      AS bodysite_snomed_code,
+    p.BODYSITE_SNOMED_CODE                      AS bodysite_snomed_code,
     p.BODYSITE_SNOMED_DISPLAY                  AS bodysite_snomed_display,
     p.REASON_SNOMED_CODE,
     p.REASON_SNOMED_DISPLAY,
@@ -80,7 +80,7 @@ raw_path AS (
     p.CPT_DISPLAY,
     p.SNOMED_CODE,
     p.SNOMED_DISPLAY,
-    p.BODYSITE_SNOMED_ODE                      AS bodysite_snomed_code,
+    p.BODYSITE_SNOMED_CODE                      AS bodysite_snomed_code,
     p.BODYSITE_SNOMED_DISPLAY                  AS bodysite_snomed_display,
     p.REASON_SNOMED_CODE,
     p.REASON_SNOMED_DISPLAY,

@@ -1,34 +1,32 @@
 /* ============================================================
-   LUNG NODULE — SUSPECT QUERY (Procedure-based, with EXCLUSION)
+   AGE-RELATED MACULAR DEGENERATION (AMD) — SUSPECT QUERY
+   (Procedure-based, with EXCLUSION)
    ------------------------------------------------------------
    Flow: RAW → NORM → CLEAN → SUSPECT → FHIR → RETURN
    Purpose
-     Flag patients with evidence of lung nodules supported by:
-       • Chest CT procedures, OR
-       • Lung nodule biopsy procedures,
-     and THEN apply nodule-context logic at the SUSPECT step.
+     Flag patients with evidence consistent with AMD supported by:
+       • Comprehensive eye exam / retinal imaging procedures,
+     and THEN apply AMD-context logic at the SUSPECT step.
 
-   Exclusion (diagnosis-based):
-     • ICD-10-CM codes stored WITHOUT dots. Exclude: R911 (R91.1), R918 (R91.8).
+   Exclusion (diagnosis-based; ICD-10-CM stored WITHOUT dots):
+     • Exclude H353*  (Age-related macular degeneration, any laterality/severity)
+
    Notes
      - Uses CORE_V3.CORE__CONDITION and CORE_V3.CORE__PROCEDURE.
-     - Column “BODYSITE_SNOMED_CODE” is used as provided.
+     - Column “BODYSITE_SNOMED_ODE” is used as provided (typo preserved from schema).
    ============================================================ */
 
-WITH pulmonary_nodule_dx_exclusion AS (
-  /* Patients already diagnosed with pulmonary nodule / abnormal lung imaging (dotless ICD-10) */
+WITH amd_dx_exclusion AS (
+  /* Patients already diagnosed with age-related macular degeneration (dotless ICD-10) */
   SELECT DISTINCT c.PATIENT_ID
   FROM CORE_V3.CORE__CONDITION c
-  WHERE UPPER(c.ICD_10_CM_CODE) IN (
-    'R911',  -- Solitary pulmonary nodule
-    'R918'   -- Other abnormal finding of lung on imaging
-  )
+  WHERE UPPER(c.ICD_10_CM_CODE) LIKE 'H353%'  -- AMD (any)
 ),
 
 /* -------------------------
-   RAW A: Chest CT (codes only)
+   RAW: Eye exam / retinal imaging (codes only)
    ------------------------- */
-raw_ct AS (
+raw_eye AS (
   SELECT
     p.PATIENT_ID,
     p.PROCEDURE_ID                             AS resource_id,
@@ -48,90 +46,46 @@ raw_ct AS (
   FROM CORE_V3.CORE__PROCEDURE p
   WHERE
     UPPER(p.CPT_CODE) IN (
-      '71250',  -- CT thorax, without contrast
-      '71260',  -- CT thorax, with contrast
-      '71270',  -- CT thorax, without & with contrast
-      '71271'   -- Low-dose CT for lung cancer screening
+      '92004', -- Comprehensive ophthalmological services (new)
+      '92014', -- Comprehensive ophthalmological services (established)
+      '92134', -- OCT, retina (posterior segment)
+      '92250', -- Fundus photography w/ interpretation & report
+      '92227', -- Remote retinal imaging (store-and-forward) – detection
+      '92228', -- Remote retinal imaging (store-and-forward) – monitoring
+      '92229', -- Retinal imaging w/ automated point-of-care AI
+      '92235'  -- Fluorescein angiography
     )
-    OR UPPER(p.SNOMED_CODE) IN (
-      '169069000',        -- Computed tomography of chest (procedure)
-      '16334891000119106' -- Low-dose CT for lung cancer screening (procedure)
-    )
-),
-
-/* -------------------------
-   RAW B: Biopsy (codes only)
-   ------------------------- */
-raw_biopsy AS (
-  SELECT
-    p.PATIENT_ID,
-    p.PROCEDURE_ID                             AS resource_id,
-    'Procedure'                                AS resource_type,
-    COALESCE(NULLIF(p.STATUS,''), 'completed') AS status,
-    COALESCE(p.START_DATE, p.END_DATE)         AS obs_date,
-    p.CPT_CODE,
-    p.CPT_DISPLAY,
-    p.SNOMED_CODE,
-    p.SNOMED_DISPLAY,
-    p.BODYSITE_SNOMED_CODE                      AS bodysite_snomed_code,
-    p.BODYSITE_SNOMED_DISPLAY                  AS bodysite_snomed_display,
-    p.REASON_SNOMED_CODE,
-    p.REASON_SNOMED_DISPLAY,
-    p.NOTE_TEXT,
-    p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
-  WHERE
-    UPPER(p.CPT_CODE) IN (
-      '32408',  -- Core needle biopsy, lung/mediastinum, percutaneous
-      '31628',  -- Bronchoscopy w/ transbronchial lung biopsy, single lobe
-      '31632',  -- Bronchoscopy add-on: each additional lobe biopsied
-      '32607',  -- Thoracoscopy w/ diagnostic biopsy of lung infiltrate(s)
-      '32608'   -- Thoracoscopy w/ diagnostic biopsy of lung nodule(s)/mass(es)
-    )
-    OR UPPER(p.SNOMED_CODE) IN (
-      '78603008', -- Biopsy of lung (procedure)
-      '9911007'   -- Core needle biopsy (procedure)
-    )
-),
-
-/* -------------------------
-   RAW: union evidence paths (no context applied yet)
-   ------------------------- */
-lung_nodule_raw AS (
-  SELECT * FROM raw_ct
-  UNION ALL
-  SELECT * FROM raw_biopsy
 ),
 
 /* -------------------------
    NORM: pass-through
    ------------------------- */
-lung_nodule_norm AS (
-  SELECT * FROM lung_nodule_raw
+amd_norm AS (
+  SELECT * FROM raw_eye
 ),
 
 /* -------------------------
    CLEAN: apply diagnosis exclusions
    ------------------------- */
-lung_nodule_clean AS (
+amd_clean AS (
   SELECT *
-  FROM lung_nodule_norm n
+  FROM amd_norm n
   WHERE NOT EXISTS (
     SELECT 1
-    FROM pulmonary_nodule_dx_exclusion x
+    FROM amd_dx_exclusion x
     WHERE x.PATIENT_ID = n.PATIENT_ID
   )
 ),
 
 /* -------------------------
-   SUSPECT: apply nodule-context logic
+   SUSPECT: apply AMD-context logic
    ------------------------- */
-lung_nodule_suspects AS (
+amd_suspects AS (
   SELECT
     c.PATIENT_ID,
-    'lung_nodule'               AS suspect_group,
-    'R911'                      AS suspect_icd10_code,
-    'Solitary pulmonary nodule' AS suspect_icd10_short_description,
+    'amd'                            AS suspect_group,
+    'H353'                           AS suspect_icd10_code,
+    'Age-related macular degeneration' AS suspect_icd10_short_description,
 
     /* carry-through for FHIR */
     c.resource_id,
@@ -148,22 +102,16 @@ lung_nodule_suspects AS (
     c.REASON_SNOMED_DISPLAY,
     c.NOTE_TEXT,
     c.DATA_SOURCE
-  FROM lung_nodule_clean c
+  FROM amd_clean c
   WHERE
-    UPPER(c.REASON_SNOMED_CODE) IN (
-      '786838002', -- Nodule of lung (Pulmonary nodule)
-      '427359005', -- Solitary nodule of lung (finding)
-      '445249002'  -- Multiple nodules of lung (finding)
-    )
-    OR UPPER(c.REASON_SNOMED_DISPLAY) LIKE '%NODULE%'
-    OR UPPER(c.SNOMED_DISPLAY)        LIKE '%NODULE%'
-    OR UPPER(c.NOTE_TEXT)             LIKE '%NODULE%'
+    UPPER (c.REASON_SNOMED_DISPLAY) LIKE '%AGE-RELATED%'
+    
 ),
 
 /* -------------------------
    FHIR: minimal Procedure per supporting hit
    ------------------------- */
-lung_nodule_with_fhir AS (
+amd_with_fhir AS (
   SELECT
     s.PATIENT_ID,
     s.suspect_group,
@@ -234,7 +182,7 @@ lung_nodule_with_fhir AS (
       ),
       'effectiveDateTime', IFF(s.obs_date IS NOT NULL, TO_CHAR(s.obs_date,'YYYY-MM-DD'), NULL)
     ) AS fhir
-  FROM lung_nodule_suspects s
+  FROM amd_suspects s
 )
 
 /* -------------------------
@@ -254,6 +202,6 @@ SELECT
     )
   ) AS responsible_resources,
   CURRENT_TIMESTAMP() AS last_run
-FROM lung_nodule_with_fhir
+FROM amd_with_fhir
 GROUP BY PATIENT_ID, suspect_group, suspect_icd10_code, suspect_icd10_short_description
 ORDER BY PATIENT_ID, suspect_group;
