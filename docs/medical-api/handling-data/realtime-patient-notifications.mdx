@@ -1,18 +1,18 @@
 ---
-title: "Realtime Patient Notifications"
+title: "Real-time Patient Notifications"
 icon: "person"
 description: "Monitor your patient's journey through health systems in real-time"
 ---
 
 # Overview
 
-Metriport's **Realtime Patient Notifications** are your way to receive realtime updates on a patient's journey through a health system. You can trigger a workflow once a patient is admitted to a health system, check their diagnosis within moments of them being discharged, and so much more.
+Metriport's **Real-time Patient Notifications** are your way to receive real-time updates on a patient's journey through a health system. You can trigger a workflow once a patient is admitted to a health system, check their diagnosis within moments of them being discharged, and so much more.
 
-## Working with Realtime Patient Notifications
+## Working with Real-time Patient Notifications
 
 ### Webhook schema [(Event Reference)](#event-reference)
 
-Each realtime notification we send via webhook has a payload that includes key information about the event, and a url field to JSON containing robust clinical data for the encounter.
+Each real-time notification we send via webhook has a payload that includes key information about the event, and a url field to JSON containing robust clinical data for the encounter.
 
 ```json
 {
@@ -43,7 +43,7 @@ If you want to access the clinical data, you need only download the json from th
 
 ### The Encounter Model
 
-For each patient you intend to receive realtime notifications for, Metriport maintains the real-time state of their journey through the health system.
+For each patient you intend to receive real-time notifications for, Metriport maintains the real-time state of their journey through the health system.
 Each of these patient journeys is represented via FHIR data - a FHIR [Encounter](https://hl7.org/fhir/R4/encounter.html).
 
 ```json
