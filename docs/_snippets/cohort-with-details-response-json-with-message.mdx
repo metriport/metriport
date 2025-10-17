@@ -7,18 +7,27 @@
     "name": "High Risk",
     "description": "Patients that need frequent and robust monitoring.",
     "settings": {
-        "monitoring": {
-          "hie": "weekly",
-          "adt": true,
-          "pharmacy": {
-            "notifications": true,
-            "schedule": "never"
-          },
-          "laboratory": {
-            "notifications": true,
-            "schedule": "never"
+      "monitoring": {
+        "hie": {
+          "enabled": false,
+          "frequency": "monthly"
+        },
+        "adt": true,
+        "pharmacy": {
+          "notifications": true,
+          "schedule": {
+            "enabled": false,
+            "frequency": "monthly"
+          }
+        },
+        "laboratory": {
+          "notifications": true,
+          "schedule": {
+            "enabled": false,
+            "frequency": "monthly"
           }
         }
+      }
     }
   },
   "size": 250
