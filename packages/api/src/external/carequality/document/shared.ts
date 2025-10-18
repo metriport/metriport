@@ -5,6 +5,7 @@ import { MetriportDataSourceExtension } from "@metriport/core/external/fhir/shar
 import {
   DocumentReference,
   DocumentReference as IHEGWDocumentReference,
+  type Coding,
 } from "@metriport/ihe-gateway-sdk";
 import { DocumentReferenceWithId, createDocReferenceContent } from "../../fhir/document";
 import { formatDate } from "../shared";
@@ -33,6 +34,7 @@ export function containsDuplicateMetriportId(
   }
 }
 
+// eslint-disable-next-line @metriport/eslint-rules/no-named-arrow-functions
 export const cqToFHIR = (
   docId: string,
   docRef: IHEGWDocumentReference,
@@ -46,6 +48,19 @@ export const cqToFHIR = (
     ...(docRef.contentType ? { contentType: docRef.contentType } : {}),
     ...(docRef.size ? { size: docRef.size } : {}),
     ...(docRef.creation ? { creation: docRef.creation } : {}),
+    ...(docRef.formatCoding ? { format: docRef.formatCoding } : {}),
+  };
+
+  const context = {
+    ...(docRef.serviceStartTime || docRef.serviceStopTime
+      ? { period: { start: docRef.serviceStartTime, end: docRef.serviceStopTime } }
+      : {}),
+    ...(docRef.healthcareFacilityTypeCoding
+      ? { facilityType: { coding: [docRef.healthcareFacilityTypeCoding] } }
+      : {}),
+    ...(docRef.practiceSettingCoding
+      ? { practiceSetting: { coding: [docRef.practiceSettingCoding] } }
+      : {}),
   };
 
   const contained: Resource[] = [];
@@ -65,29 +80,37 @@ export const cqToFHIR = (
       value: docId,
     },
     docStatus,
+    ...(docRef.typeCoding ? { type: { coding: [docRef.typeCoding] } } : {}),
+    ...(docRef.classCoding ? { category: [{ coding: [docRef.classCoding] }] } : {}),
     status: "current",
     subject: toFHIRSubject(patientId),
+    ...(docRef.confidentialityCoding
+      ? { securityLabel: [{ coding: [docRef.confidentialityCoding] }] }
+      : {}),
     content: generateCQFHIRContent(baseAttachment, contentExtension, docRef.url),
     extension: [cqExtension],
     contained: dedupeContainedResources(contained),
+    context,
     ...(docRef.creation ? { date: formatDate(docRef.creation) } : {}),
-    // TODO: #1612 (internal) Add author reference
+    // TODO(ENG-1316): Add authorPerson + authorInstitution reference
+    // we have the data but don't create the reference given we only store docrefs in the FHIR server right now.
   };
   if (docRef.title) updatedDocRef.description = docRef.title;
 
   return updatedDocRef;
 };
 
-const generateCQFHIRContent = (
+function generateCQFHIRContent(
   baseAttachment: {
     contentType?: string;
     size?: number;
     creation?: string;
     fileName?: string;
+    format?: Coding;
   },
   contentExtension: MetriportDataSourceExtension,
   location: string | null | undefined
-): DocumentReferenceContent[] => {
+): DocumentReferenceContent[] {
   if (!location) return [];
 
   const cqFHIRContent = createDocReferenceContent({
@@ -97,7 +120,7 @@ const generateCQFHIRContent = (
   });
 
   return [cqFHIRContent];
-};
+}
 
 function mapToContainedOrganization(
   authorInstitution: string | undefined

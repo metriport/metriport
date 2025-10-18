@@ -45,7 +45,7 @@ export function createDocReferenceContent({
   location: string;
   creation?: string;
   extension: Extension[];
-  format?: string | string[];
+  format?: string | string[] | Coding;
 }): DocumentReferenceContent {
   const content: DocumentReferenceContent = {
     attachment: {
@@ -62,7 +62,17 @@ export function createDocReferenceContent({
   return content;
 }
 
-function getFormat(format: string | string[] | undefined): Coding | undefined {
+function isCoding(value: unknown): value is Coding {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    ("system" in value || "display" in value || "code" in value)
+  );
+}
+
+function getFormat(format: string | string[] | Coding | undefined): Coding | undefined {
+  if (isCoding(format)) return format;
   const code = getFormatCode(format);
   if (!code) return undefined;
   return { code };
