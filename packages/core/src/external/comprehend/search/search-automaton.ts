@@ -141,7 +141,7 @@ export class SearchAutomaton {
       for (let charIndex = 0; charIndex < searchTerm.length; charIndex++) {
         const charCode = searchTerm.charCodeAt(charIndex);
         // Skip characters that are not in the searchable ASCII range
-        if (charCode < ASCII_START || charCode >= ASCII_END) {
+        if (charCode < ASCII_START || charCode > ASCII_END) {
           continue;
         }
         const char = charCode - ASCII_START;
