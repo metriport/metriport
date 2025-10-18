@@ -53,6 +53,7 @@ export {
   BaseRequest,
   baseRequestSchema,
   BaseResponse,
+  Coding,
   DocumentReference,
   isBaseErrorResponse,
   NPIString,

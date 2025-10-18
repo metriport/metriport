@@ -1,5 +1,5 @@
+import { knownSystemUrls } from "@metriport/shared/medical";
 import { isValidCoding } from "../../codeable-concept";
-import { knownSystemUrls } from "../../../../util/constants";
 
 describe("isValidCoding", () => {
   it("should return true for coding with only a valid display", () => {

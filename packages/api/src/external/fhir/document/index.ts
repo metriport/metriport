@@ -17,6 +17,7 @@ import { toFHIRSubject } from "@metriport/core/external/fhir/patient/conversion"
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import { capture } from "../../../shared/notifications";
+import { isCoding } from "@metriport/core/external/fhir/shared/index";
 
 dayjs.extend(isToday);
 
@@ -45,7 +46,7 @@ export function createDocReferenceContent({
   location: string;
   creation?: string;
   extension: Extension[];
-  format?: string | string[];
+  format?: string | string[] | Coding;
 }): DocumentReferenceContent {
   const content: DocumentReferenceContent = {
     attachment: {
@@ -62,7 +63,8 @@ export function createDocReferenceContent({
   return content;
 }
 
-function getFormat(format: string | string[] | undefined): Coding | undefined {
+function getFormat(format: string | string[] | Coding | undefined): Coding | undefined {
+  if (isCoding(format)) return format;
   const code = getFormatCode(format);
   if (!code) return undefined;
   return { code };
