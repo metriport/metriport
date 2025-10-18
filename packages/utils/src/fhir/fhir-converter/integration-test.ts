@@ -350,7 +350,7 @@ async function uploadConsolidatedIntoFhirServer(bundle: Bundle, patientId: strin
 
     const response = await fhirApi.executeBatch(transactionBundle);
 
-    const errors = getErrorsFromReponse(response);
+    const errors = getErrorsFromResponse(response);
     if (errors.length > 0) {
       console.log(`>>> Errors uploading bundle for patient ${patientId}: `, JSON.stringify(errors));
       throw new Error(`Got ${errors.length} errors from FHIR for patient ${patientId}`);
@@ -430,7 +430,7 @@ async function removeAllPartitionsFromFHIRServer(log: typeof console.log) {
   await fhirApiRaw.post(`${fhirBaseUrl}/fhir/DEFAULT/$expunge`, payload);
 }
 
-function getErrorsFromReponse(response?: Bundle<Resource>) {
+function getErrorsFromResponse(response?: Bundle<Resource>) {
   const entries = response?.entry ? response.entry : [];
   const errors = entries.filter(e => !e.response?.status?.startsWith("2"));
   return errors;
