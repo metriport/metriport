@@ -2,6 +2,7 @@ import type {
   RxNormAttributeType,
   RxNormAttribute,
   RxNormEntity,
+  RxNormConcept,
 } from "@aws-sdk/client-comprehendmedical";
 import { RxNormEntityCategory } from "@aws-sdk/client-comprehendmedical";
 
@@ -22,11 +23,25 @@ export function getAllAttributes(
 export function getRxNormCode(
   entity: RxNormEntity
 ): { code: string; display?: string } | undefined {
-  const rxNormConcept = entity.RxNormConcepts?.[0];
+  const rxNormConcept = getBestRxNormConcept(entity);
   if (!rxNormConcept || !rxNormConcept.Code) return undefined;
   const code = rxNormConcept.Code;
   const display = rxNormConcept.Description;
   return { code, ...(display ? { display } : undefined) };
+}
+
+function getBestRxNormConcept(entity: RxNormEntity): RxNormConcept | undefined {
+  const rxNormConcepts = entity.RxNormConcepts ?? [];
+  let bestScore = -1;
+  let bestConcept: RxNormConcept | undefined;
+  for (const concept of rxNormConcepts) {
+    const score = typeof concept.Score === "number" ? concept.Score : -1;
+    if (score > bestScore) {
+      bestScore = score;
+      bestConcept = concept;
+    }
+  }
+  return bestConcept;
 }
 
 // readonly DOSAGE: "DOSAGE";
