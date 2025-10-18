@@ -126,8 +126,8 @@ egd_suspects AS (
   SELECT
     e.PATIENT_ID,
     'barretts_esophagus'       AS suspect_group,
-    'K227'                     AS suspect_icd10_code,
-    'Barrett\'s esophagus'     AS suspect_icd10_short_description,
+    'K22.7'                     AS suspect_icd10_code,
+    'Barrett''s esophagus'     AS suspect_icd10_short_description,
 
     e.resource_id,
     e.resource_type,
@@ -163,7 +163,7 @@ path_suspects AS (
     p.PATIENT_ID,
     'barretts_esophagus'       AS suspect_group,
     'K227'                     AS suspect_icd10_code,
-    'Barrett\'s esophagus'     AS suspect_icd10_short_description,
+    'Barrett''s esophagus'     AS suspect_icd10_short_description,
 
     p.resource_id,
     p.resource_type,

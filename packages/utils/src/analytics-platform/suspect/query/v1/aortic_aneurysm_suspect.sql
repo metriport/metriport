@@ -214,7 +214,7 @@ aa_proc_context AS (
     c.PATIENT_ID,
     'aortic_aneurysm'                AS suspect_group,
     'I71'                            AS suspect_icd10_code,
-    'Aortic aneurysm (suspected)'    AS suspect_icd10_short_description,
+    'Aortic aneurysm'    AS suspect_icd10_short_description,
 
     c.resource_id,
     c.resource_type,
