@@ -44,14 +44,6 @@ function getBestRxNormConcept(entity: RxNormEntity): RxNormConcept | undefined {
   return bestConcept;
 }
 
-// readonly DOSAGE: "DOSAGE";
-//     readonly DURATION: "DURATION";
-//     readonly FORM: "FORM";
-//     readonly FREQUENCY: "FREQUENCY";
-//     readonly RATE: "RATE";
-//     readonly ROUTE_OR_MODE: "ROUTE_OR_MODE";
-//     readonly STRENGTH: "STRENGTH";
-
 export function isMedicationEntity(entity: RxNormEntity): boolean {
   return entity.Category === RxNormEntityCategory.MEDICATION;
 }

@@ -2,7 +2,10 @@ import { RxNormEntity } from "@aws-sdk/client-comprehendmedical";
 import { Timing } from "@medplum/fhirtypes";
 import { getAttribute } from "../shared";
 import { RxNormAttributeType } from "@aws-sdk/client-comprehendmedical";
-import { isLatinSigCode, getTimingRepeatForLatinSigCode } from "./frequency/latin-sig-code";
+import {
+  isLatinSigCode,
+  getTimingRepeatForLatinSigCode,
+} from "../../../fhir/parser/latin-sig-code";
 
 export function buildFrequency(entity: RxNormEntity): Timing | undefined {
   const frequency = getAttribute(entity, RxNormAttributeType.FREQUENCY);
