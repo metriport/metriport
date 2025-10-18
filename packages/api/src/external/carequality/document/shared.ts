@@ -54,8 +54,8 @@ export function cqToFHIR(
     ...(docRef.serviceStartTime || docRef.serviceStopTime
       ? {
           period: {
-            start: formatDate(docRef.serviceStartTime),
-            end: formatDate(docRef.serviceStopTime),
+            ...(docRef.serviceStartTime ? { start: formatDate(docRef.serviceStartTime) } : {}),
+            ...(docRef.serviceStopTime ? { end: formatDate(docRef.serviceStopTime) } : {}),
           },
         }
       : {}),
