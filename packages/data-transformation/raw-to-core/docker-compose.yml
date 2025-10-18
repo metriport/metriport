@@ -1,16 +1,24 @@
 version: "3.8"
 
-name: raw-to-core
+name: core-transform
 services:
   raw-to-core:
-    container_name: raw-to-core
+    container_name: core-transform
     build:
       dockerfile: ./Dockerfile.dev
     volumes:
       - .:/usr/app/data
+      - ~/.aws:/root/.aws
     environment:
+      PROFILE: ${PROFILE}
+      DBT_SNOWFLAKE_ACCOUNT: ${DBT_SNOWFLAKE_ACCOUNT}
+      DBT_SNOWFLAKE_USER: ${DBT_SNOWFLAKE_USER}
+      DBT_SNOWFLAKE_PASSWORD: ${DBT_SNOWFLAKE_PASSWORD}
+      DBT_SNOWFLAKE_ROLE: ${DBT_SNOWFLAKE_ROLE}
+      DBT_SNOWFLAKE_WAREHOUSE: ${DBT_SNOWFLAKE_WAREHOUSE}
+      DBT_SNOWFLAKE_DATABASE: ${DBT_SNOWFLAKE_DATABASE}
+      DBT_SNOWFLAKE_SCHEMA: ${DBT_SNOWFLAKE_SCHEMA}
       DBT_PG_HOST: ${DBT_PG_HOST}
-      DBT_PG_PORT: ${DBT_PG_PORT}
       DBT_PG_USER: ${DBT_PG_USER}
       DBT_PG_PASSWORD: ${DBT_PG_PASSWORD}
       DBT_PG_DATABASE: ${DBT_PG_DATABASE}

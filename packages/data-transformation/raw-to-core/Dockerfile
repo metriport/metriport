@@ -26,6 +26,8 @@ RUN python -m pip install --upgrade "pip==24.0" "setuptools==69.2.0" "wheel==0.4
 COPY . /usr/app/dbt/
 WORKDIR /usr/app/dbt/
 
+RUN pip install -r requirements.txt
+
 ARG commit_ref=main
 
 FROM base AS dbt-core
@@ -34,9 +36,10 @@ RUN python -m pip install --no-cache-dir "dbt-core @ git+https://github.com/dbt-
 
 ARG commit_ref=main
 
-FROM base AS dbt-postgres
+FROM base AS dbt-adapters
 
 RUN python -m pip install --no-cache-dir "dbt-adapters @ git+https://github.com/dbt-labs/dbt-adapters@${commit_ref}#subdirectory=dbt-adapters"
+RUN python -m pip install --no-cache-dir "dbt-snowflake @ git+https://github.com/dbt-labs/dbt-adapters@${commit_ref}#subdirectory=dbt-snowflake"
 RUN python -m pip install --no-cache-dir "dbt-postgres @ git+https://github.com/dbt-labs/dbt-adapters@${commit_ref}#subdirectory=dbt-postgres"
 
 RUN dbt deps
