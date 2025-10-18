@@ -14,6 +14,21 @@ import { getFileContents, makeDirIfNeeded, writeFileContents } from "../../share
 import { uuidv7 } from "../../shared/uuid-v7";
 import { getPatientIdFromFileName } from "./shared";
 import path = require("node:path");
+// Uncomment these to enable/use AJV or the FHIR Validator CLI (Java)
+// import { exec } from "child_process";
+// import { promisify } from "util";
+// import Ajv from "ajv";
+// import metaSchema from "ajv/lib/refs/json-schema-draft-06.json";
+// import schema from "../../../../api/src/external/fhir/shared/fhir.schema.json";
+
+// FHIR Validator CLI path - update this to point to your validator_cli.jar
+// const FHIR_VALIDATOR_PATH = "<path-to>/validator_cli.jar";
+// const execAsync = promisify(exec);
+
+// AJV setup for JSON schema validation
+// const ajv = new Ajv({ strict: false });
+// ajv.addMetaSchema(metaSchema);
+// const validate = ajv.compile(schema);
 
 export type ProcessingOptions = {
   hydrate: boolean;
@@ -67,11 +82,53 @@ export async function convertCDAsToFHIR(
   console.log(
     `Converted ${fileNames.length - errorCount} files in ${conversionDuration} ms.${reportFailure}`
   );
-
   const attachmentsProcessed = attachmentsProcessedPerFile.reduce((sum, count) => sum + count, 0);
   console.log(`Attachments processed: ${attachmentsProcessed}`);
   return { errorCount, nonXMLBodyCount };
 }
+
+// async function validateFhirWithCli(jsonFilePath: string): Promise<void> {
+//   try {
+//     const command = `java -jar ${FHIR_VALIDATOR_PATH} ${jsonFilePath} \
+//       -html-output ${jsonFilePath.replace(".json", "_validation.html")} \
+//       -version 4.0.1 \
+//       -hintAboutNonMustSupport \
+//       -assumeValidRestReferences \
+//       -want-invariants-in-messages \
+//       -allow-example-urls true \
+//       -level errors \
+//       -extension any`;
+
+//     console.log(`Running FHIR validation: ${command}`);
+
+//     const { stdout, stderr } = await execAsync(command);
+
+//     if (stderr && stderr.includes("ERROR")) {
+//       console.log(`❌ FHIR Validation found errors in ${jsonFilePath}:`);
+//       console.log(stderr);
+//     } else {
+//       console.log(`✅ FHIR validation passed for ${jsonFilePath}`);
+//       if (stdout) {
+//         console.log(stdout);
+//       }
+//     }
+//   } catch (error) {
+//     console.log(`⚠️  FHIR validation failed for ${jsonFilePath}:`, error);
+//     // Don't throw - we don't want validation failures to stop the conversion process
+//   }
+// }
+
+// // AJV validation function (currently commented out in main flow)
+// function validateFhirEntries(bundle: Bundle<Resource>) {
+//   const invalidEntries: string[] = [];
+//   for (const entry of bundle.entry ?? []) {
+//     const isValid = validate(entry.resource);
+//     if (!isValid) invalidEntries.push(entry.resource?.id ?? "");
+//   }
+//   if (invalidEntries.length > 0) {
+//     throw new Error(`Invalid FHIR resource(s): ${invalidEntries.join(", ")}`);
+//   }
+// }
 
 export async function convert(
   baseFolderName: string,

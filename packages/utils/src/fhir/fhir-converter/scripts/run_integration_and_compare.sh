@@ -1,8 +1,11 @@
 #!/bin/bash
 # This script runs the integration-test.ts script without inserting to FHIR, and then runs the compare_total_resource_counts.sh script using the output from integration-test.ts.
 
+# Parse command line arguments and pass them to the integration test
+ARGS=("$@")
+
 # Run the integration-test.ts script and capture its output
-OUTPUT=$(ts-node src/fhir/fhir-converter/integration-test.ts)
+OUTPUT=$(ts-node src/fhir/fhir-converter/integration-test.ts "${ARGS[@]}")
 echo "$OUTPUT"
 
 # Extract the file1 location from the output
