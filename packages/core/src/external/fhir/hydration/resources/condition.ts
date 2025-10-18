@@ -115,7 +115,7 @@ export function buildUpdatedClinicalStatus(
   const validStatusCodings = existingStatus.coding?.filter(coding => {
     const code = coding.code?.toLowerCase()?.trim();
     if (!code) return false;
-    return clinicalStatusCodeToHl7CodeMap[code] || knownBlacklistedClinicalStatuses.includes(code);
+    return clinicalStatusCodeToHl7CodeMap[code] || !knownBlacklistedClinicalStatuses.includes(code);
   });
 
   if (!validStatusCodings || validStatusCodings.length < 1) return undefined;

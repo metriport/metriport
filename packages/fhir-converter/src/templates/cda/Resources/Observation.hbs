@@ -80,7 +80,7 @@
                     "valueQuantity": {{>DataType/Quantity.hbs quantity=../observationEntry.value}},
                 {{/if}}
             {{/with}}
-        {{else if (or observationEntry.value.low.value observationEntry.value.high.value) }}
+        {{else if (and observationEntry.value.low.value observationEntry.value.high.value) }}
             {{#if (and observationEntry.value.low.value observationEntry.value.high.value) }}
                 "valueRange": {{>DataType/Range.hbs range=observationEntry.value}},
             {{else if observationEntry.value.low.value}}

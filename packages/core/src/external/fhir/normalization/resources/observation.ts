@@ -97,7 +97,7 @@ function getStandardObservationUnit(unit: string, map: Map<string, string>): str
       },
       level: "warning",
     });
-    return "unknown";
+    return unit.trim();
   }
   return standardUnit;
 }
