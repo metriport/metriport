@@ -1,4 +1,4 @@
-import { getTimingRepeatForLatinSigCode, isLatinSigCode } from "../../fhir/parser/latin-sig-code";
+import { getTimingRepeatForLatinSigCode, isLatinSigCode } from "../latin-sig-code";
 
 describe("Latin sig code test", () => {
   it("should return true for common codes", () => {
