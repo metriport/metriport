@@ -7,6 +7,7 @@ import {
   replaceXmlTagChars,
   xmlTranslationCodeRegex,
   replaceAmpersand,
+  removeXlinkHrefNamespace,
 } from "../cleanup";
 
 describe("cleanUpTranslationCode", () => {
@@ -130,6 +131,27 @@ describe("replaceXmlTagChars", () => {
 
   test("expectedly does not handle both '<' and '>' in the same text", () => {
     expect(replaceXmlTagChars(createTestCase("A < B > C"))).toBe(createTestCase(`A < B > C`));
+  });
+});
+
+describe("removeXlinkHrefNamespace", () => {
+  test("should replace xlink:href with href", () => {
+    const imageTag = `<image xlink:href="https://example.com">`;
+    expect(removeXlinkHrefNamespace(createTestCase(imageTag))).toBe(
+      createTestCase(imageTag.replace("xlink:href", "href"))
+    );
+  });
+
+  test("should replace many instances of xlink:href", () => {
+    const imageTag = `<image xlink:href="https://example.com"><br/><image xlink:href="https://example2.com">`;
+    expect(removeXlinkHrefNamespace(createTestCase(imageTag))).toBe(
+      createTestCase(imageTag.replace(/xlink:href/g, "href"))
+    );
+  });
+
+  test("should keep original if no xlink:href", () => {
+    const imageTag = `<image href="https://example.com">`;
+    expect(removeXlinkHrefNamespace(createTestCase(imageTag))).toBe(createTestCase(imageTag));
   });
 });
 
