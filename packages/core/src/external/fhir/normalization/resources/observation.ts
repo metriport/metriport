@@ -4,8 +4,16 @@ import {
   ObservationReferenceRange,
   Quantity,
 } from "@medplum/fhirtypes";
+import { isLoincCoding } from "@metriport/shared/medical";
 import convert, { Unit } from "convert-units";
 import { cloneDeep } from "lodash";
+import { capture } from "../../../../util";
+import {
+  a1cUnitNormalizationMap,
+  bmiUnitNormalizationMap,
+  gfrUnitNormalizationMap,
+  glucoseUnitNormalizationMap,
+} from "./unit-maps";
 
 type UnitWithCode = {
   unit: Unit;
@@ -19,6 +27,38 @@ type ReferenceRange = {
   text?: string | undefined;
 };
 
+const loincCodeToTargetCallbackFnMap = new Map<string, (unit: string) => string>([
+  // GFR
+  ["33914-3", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  ["62238-1", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  ["69405-9", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  ["98979-8", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  // eGFR
+  ["48642-3", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  // A1c
+  ["4548-4", (unit: string) => getStandardObservationUnit(unit, a1cUnitNormalizationMap)],
+  // BMI
+  ["39156-5", (unit: string) => getStandardObservationUnit(unit, bmiUnitNormalizationMap)],
+  // Glucose
+  ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["2339-0", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+]);
+
+function getStandardObservationUnit(unit: string, map: Map<string, string>): string {
+  const normalized = unit.trim().toLowerCase().replace(/ /g, "");
+  const standardUnit = map.get(normalized);
+  if (!standardUnit) {
+    capture.message(`Detected unmapped Observation unit`, {
+      extra: {
+        unit,
+        normalized,
+        map,
+      },
+    });
+    return "unknown";
+  }
+  return standardUnit;
+}
 /**
  * This map is used to normalize unconventional unit names to standard unit names. i.e cel -> C, etc.
  *
@@ -85,15 +125,20 @@ const abnormalInterpretations = [
 export function normalizeObservations(observations: Observation[]): Observation[] {
   return observations.map(obs => {
     const normalizedObs = cloneDeep(obs);
+    const loincCode = normalizedObs.code?.coding?.find(isLoincCoding);
 
     if (normalizedObs.valueQuantity) {
-      normalizedObs.valueQuantity = normalizeValueQuantity(normalizedObs.valueQuantity);
+      normalizedObs.valueQuantity = normalizeValueQuantity(
+        normalizedObs.valueQuantity,
+        loincCode?.code
+      );
     }
 
     if (normalizedObs.referenceRange) {
       normalizedObs.referenceRange = normalizeReferenceRanges(
         normalizedObs.referenceRange,
-        normalizedObs.valueQuantity?.unit
+        normalizedObs.valueQuantity?.unit,
+        loincCode?.code
       );
     }
     const interpretation = buildObservationInterpretation(normalizedObs);
@@ -105,7 +150,8 @@ export function normalizeObservations(observations: Observation[]): Observation[
 
 function normalizeReferenceRanges(
   ranges: ObservationReferenceRange[],
-  valueQuantityUnit?: string | undefined
+  valueQuantityUnit?: string | undefined,
+  loincCode?: string | undefined
 ): ObservationReferenceRange[] {
   return ranges.map(r => {
     const newRange = cloneDeep(r);
@@ -116,8 +162,8 @@ function normalizeReferenceRanges(
 
     return {
       ...newRange,
-      ...(newRange.low ? { low: normalizeValueQuantity(newRange.low) } : undefined),
-      ...(newRange.high ? { high: normalizeValueQuantity(newRange.high) } : undefined),
+      ...(newRange.low ? { low: normalizeValueQuantity(newRange.low, loincCode) } : undefined),
+      ...(newRange.high ? { high: normalizeValueQuantity(newRange.high, loincCode) } : undefined),
     };
   });
 }
@@ -125,13 +171,18 @@ function normalizeReferenceRanges(
 /**
  * Normalizes the units and converts the value accordingly.
  */
-function normalizeValueQuantity(quantity: Quantity): Quantity {
+function normalizeValueQuantity(quantity: Quantity, loincCode?: string): Quantity {
   const normalizedQuantity = cloneDeep(quantity);
 
   if (!normalizedQuantity.unit) return normalizedQuantity;
-  const unit = normalizeUnit(normalizedQuantity.unit);
+  const unit = normalizeUnit(normalizedQuantity.unit, loincCode);
   if (!unit) return normalizedQuantity;
-  normalizedQuantity.unit = unit;
+  if (unit.isConvertibleUnit) {
+    normalizedQuantity.unit = unit.unit as Unit;
+  } else {
+    normalizedQuantity.unit = unit.unit as string;
+    return normalizedQuantity;
+  }
 
   const convertedUnit = unitConversionAndNormalizationMap.get(normalizedQuantity.unit);
   if (!convertedUnit) return normalizedQuantity;
@@ -154,16 +205,37 @@ function normalizeValueQuantity(quantity: Quantity): Quantity {
   };
 }
 
-function normalizeUnit(unit: string): Unit | undefined {
+function getStandardUnitFromLoincCode(unit: string, loincCode?: string): string | undefined {
+  if (!loincCode) return undefined;
+  const targetUnitFn = loincCodeToTargetCallbackFnMap.get(loincCode);
+  if (!targetUnitFn) return undefined;
+
+  return targetUnitFn(unit);
+}
+
+function normalizeUnit(
+  unit: string,
+  loincCode?: string
+):
+  | { isConvertibleUnit: false; unit: string | undefined }
+  | { isConvertibleUnit: true; unit: Unit | string }
+  | undefined {
   const trimmedUnit = unit.trim();
+  const standardUnit = getStandardUnitFromLoincCode(unit, loincCode);
+  if (standardUnit) return { isConvertibleUnit: false, unit: standardUnit };
 
   return unitConversionAndNormalizationMap.has(trimmedUnit)
-    ? (trimmedUnit as Unit)
+    ? { isConvertibleUnit: true, unit: trimmedUnit as Unit }
     : unitConversionAndNormalizationMap.has(trimmedUnit.toLowerCase())
-    ? (trimmedUnit.toLowerCase() as Unit)
+    ? { isConvertibleUnit: true, unit: trimmedUnit.toLowerCase() as Unit }
     : unitConversionAndNormalizationMap.has(trimmedUnit.toUpperCase())
-    ? (trimmedUnit.toUpperCase() as Unit)
-    : nonStandardUnitNormalizationMap.get(trimmedUnit.toLowerCase());
+    ? { isConvertibleUnit: true, unit: trimmedUnit.toUpperCase() as Unit }
+    : nonStandardUnitNormalizationMap.get(trimmedUnit.toLowerCase())
+    ? {
+        isConvertibleUnit: false,
+        unit: nonStandardUnitNormalizationMap.get(trimmedUnit.toLowerCase()),
+      }
+    : undefined;
 }
 
 export function buildObservationInterpretation(obs: Observation): CodeableConcept[] | undefined {
