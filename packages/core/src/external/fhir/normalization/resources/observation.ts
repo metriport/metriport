@@ -10,6 +10,7 @@ import { cloneDeep } from "lodash";
 import { capture } from "../../../../util";
 import {
   a1cUnitNormalizationMap,
+  bmiPercentileUnitNormalizationMap,
   bmiUnitNormalizationMap,
   gfrUnitNormalizationMap,
   glucoseUnitNormalizationMap,
@@ -33,15 +34,69 @@ const loincCodeToTargetCallbackFnMap = new Map<string, (unit: string) => string>
   ["62238-1", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
   ["69405-9", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
   ["98979-8", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
-  // eGFR
+  ["33914-3", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
   ["48642-3", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  ["48643-1", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  ["50044-7", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  ["50210-4", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  ["50384-7", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  ["62238-1", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  ["69405-9", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  ["70969-1", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  ["77147-7", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  ["88293-6", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  ["88294-4", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  ["94677-2", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  ["98979-8", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  ["98980-6", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
+  ["102097-3", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
   // A1c
   ["4548-4", (unit: string) => getStandardObservationUnit(unit, a1cUnitNormalizationMap)],
+  ["4549-2", (unit: string) => getStandardObservationUnit(unit, a1cUnitNormalizationMap)],
+  ["17855-8", (unit: string) => getStandardObservationUnit(unit, a1cUnitNormalizationMap)],
+  ["17856-6", (unit: string) => getStandardObservationUnit(unit, a1cUnitNormalizationMap)],
+  ["59261-8", (unit: string) => getStandardObservationUnit(unit, a1cUnitNormalizationMap)],
+  ["62388-4", (unit: string) => getStandardObservationUnit(unit, a1cUnitNormalizationMap)],
+  ["71875-9", (unit: string) => getStandardObservationUnit(unit, a1cUnitNormalizationMap)],
   // BMI
   ["39156-5", (unit: string) => getStandardObservationUnit(unit, bmiUnitNormalizationMap)],
-  // Glucose
+  ["59574-4", (unit: string) => getStandardObservationUnit(unit, bmiUnitNormalizationMap)],
+  ["59575-1", (unit: string) => getStandardObservationUnit(unit, bmiUnitNormalizationMap)],
+  // BMI Percentile
+  [
+    "59576-9",
+    (unit: string) => getStandardObservationUnit(unit, bmiPercentileUnitNormalizationMap),
+  ],
+  // Glucose in Serum
   ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["74774-1", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["1558-6", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["74774-1", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["1558-6", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["12651-6", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["10449-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["17865-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["1504-0", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["1507-3", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["1518-0", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["1547-9", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["12646-6", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  // Glucose in Blood
   ["2339-0", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["2340-8", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  ["2341-6", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  // Glucose in Urine - Much more prevalent to have valueString, with variations of Neg/Negative/NEGATIVE, etc.
+  // ["5792-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  // ["53328-1", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  // ["2350-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
 ]);
 
 function getStandardObservationUnit(unit: string, map: Map<string, string>): string {
@@ -54,6 +109,7 @@ function getStandardObservationUnit(unit: string, map: Map<string, string>): str
         normalized,
         map,
       },
+      level: "warning",
     });
     return "unknown";
   }
