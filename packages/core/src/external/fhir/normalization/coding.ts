@@ -10,7 +10,7 @@ import {
   RXNORM_URL,
   SNOMED_URL,
 } from "@metriport/shared/medical";
-import { cloneDeep } from "lodash";
+import { cloneDeep, uniqBy } from "lodash";
 import { isCodeableConcept, isUsefulDisplay, isValidCoding } from "../codeable-concept";
 
 export const LOINC_CODE_REGEX = /^[a-zA-Z0-9]{3,8}-\d{1}$/;
@@ -49,7 +49,8 @@ export function normalizeCodeableConcept(concept: CodeableConcept): CodeableConc
   const codings = concept.coding;
   const normalizedCodings = codings.flatMap(normalizeCoding);
   const filteredCodings = ensureAtLeastOneValidCoding(normalizedCodings);
-  const sortedCodings = [...filteredCodings].sort((a, b) => rankCoding(a) - rankCoding(b));
+  const uniqueCodings = uniqBy(filteredCodings, c => `${c.system}-${c.code}`);
+  const sortedCodings = [...uniqueCodings].sort((a, b) => rankCoding(a) - rankCoding(b));
   const replacementText = sortedCodings.find(c => c.display && isUsefulDisplay(c.display))?.display;
 
   return {
