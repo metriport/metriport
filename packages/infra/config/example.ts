@@ -264,8 +264,10 @@ export const config: EnvConfigNonSandbox = {
   analyticsPlatform: {
     bucketName: "test-bucket",
     secretNames: {
-      SNOWFLAKE_CREDS: "name-of-secret",
+      SNOWFLAKE_CREDS_FOR_ALL_REGIONS: "name-of-secret",
+      SNOWFLAKE_SETTINGS_FOR_ALL_CXS: "name-of-secret",
       FHIR_TO_CSV_DB_PASSWORD: "name-of-secret",
+      RAW_TO_CORE_DB_PASSWORD: "name-of-secret",
     },
     snowflake: {
       warehouse: "test-warehouse",
@@ -288,6 +290,7 @@ export const config: EnvConfigNonSandbox = {
         volumeWriteIops: 2_000,
       },
       fhirToCsvDbUsername: "my_db_user",
+      rawToCoreDbUsername: "my_db_user",
     },
   },
   aiBriefBucketName: "your-ai-brief-bucket-name",

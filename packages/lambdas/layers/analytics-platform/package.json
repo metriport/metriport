@@ -1,0 +1,24 @@
+{
+  "name": "analytics-platform",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "clean": "rimraf dist && rimraf node_modules",
+    "prep-deploy": "./scripts/prep-deploy.sh",
+    "build": "tsc -p tsconfig.json"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "csv-parser": "^3.2.0",
+    "pg": "^8.11.3",
+    "pg-copy-streams": "^7.0.0"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0.5"
+  }
+} 

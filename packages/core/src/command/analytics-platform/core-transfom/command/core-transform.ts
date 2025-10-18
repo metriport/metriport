@@ -3,7 +3,11 @@ import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { BatchUtils } from "../../../../external/aws/batch";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
+import { executeWithNetworkRetries } from "@metriport/shared";
 
+export const coreTransformJobPrefix = "core-transform";
+
+// TODO move this to core-transfor-cloud.ts
 export async function startCoreTransform({
   cxId,
   jobId = uuidv7(),
@@ -31,14 +35,17 @@ export async function startCoreTransform({
 
   const batch = new BatchUtils(Config.getAWSRegion());
 
-  const response = await batch.startJob({
-    jobName: `core-transform-${jobId}`,
-    jobQueueArn: coreTransformBatchJobQueueArn,
-    jobDefinitionArn: coreTransformBatchJobDefinitionArn,
-    parameters: {
-      database,
-      schema,
-    },
+  const response = await executeWithNetworkRetries(async () => {
+    return await batch.startJob({
+      jobName: `${coreTransformJobPrefix}-${jobId}`,
+      jobQueueArn: coreTransformBatchJobQueueArn,
+      jobDefinitionArn: coreTransformBatchJobDefinitionArn,
+      parameters: {
+        cxId,
+        database,
+        schema,
+      },
+    });
   });
   if (!response?.jobId) {
     throw new MetriportError("Failed to start job", undefined, {
