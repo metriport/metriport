@@ -8,9 +8,17 @@
 
 <ParamField body="externalId" type="string">
   An external Patient ID to associate to a Patient in Metriport.
+  
+  <Info>
+    If `externalId` is provided, it will be returned in webhook payloads and responses
+    involving the Patient.
+  </Info>
 </ParamField>
 
-<Info>
-  If the optional `externalId` param is provided, you can expect to see it returned in the responses
-  involving the Patient. It will also be included within the webhook payloads.
-</Info>
+<ParamField body="cohorts" type="string[]">
+  The list of cohort IDs this patient should be assigned to.
+
+  <Info>
+    See [Working With Cohorts](/medical-api/handling-data/cohorts) to learn more about how to use this field.
+  </Info>
+</ParamField>

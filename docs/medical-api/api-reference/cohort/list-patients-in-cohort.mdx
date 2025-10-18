@@ -1,0 +1,131 @@
+---
+title: "List Patients in Cohort"
+description: "Returns a paginated list of all patients that are members of the specified cohort."
+api: "GET /medical/v1/cohort/{id}/patient"
+---
+
+For more information, see the [guide about Cohorts](/medical-api/handling-data/cohorts)
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the cohort whose patients are to be returned.
+</ParamField>
+
+## Query Params
+
+<ParamField path="fromItem" type="string" required={false}>
+  Optional pagination parameter to start from a specific item.
+</ParamField>
+
+<ParamField path="toItem" type="string" required={false}>
+  Optional pagination parameter to end at a specific item.
+</ParamField>
+
+<ParamField path="count" type="number" required={false}>
+  Optional number of items per page (max 100).
+</ParamField>
+
+<ParamField path="sort" type="string" required={false}>
+  Optional sort parameter (e.g., "id=asc,createdAt=desc").
+</ParamField>
+
+## Response
+
+<ResponseField name="patients" type="Patient[]" required>
+  Array of patients that are members of the cohort.
+  <Expandable title="Patient properties">
+    <Snippet file="patient-response.mdx" />
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="meta" type="ResponseMeta" required>
+  Pagination metadata for the response.
+  <Expandable title="Pagination properties">
+    <ResponseField name="itemsOnPage" type="number" required>
+      The number of items on the current page.
+    </ResponseField>
+    <ResponseField name="itemsInTotal" type="number" required={false}>
+      The total number of items across all pages (only available on the first page).
+    </ResponseField>
+    <ResponseField name="nextPage" type="string" required={false}>
+      URL to get the next page (only present if there is a next page).
+    </ResponseField>
+    <ResponseField name="prevPage" type="string" required={false}>
+      URL to get the previous page (only present if there is a previous page).
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+const cohortId = "00000000-0000-0000-0000-000000000000";
+const cohortPatients = await metriport.getCohortPatients(cohortId);
+```
+
+</ResponseExample>
+
+```json
+{
+  "patients": [
+    {
+      "id": "11111111-1111-1111-1111-111111111111",
+      "eTag": "1",
+      "firstName": "John",
+      "lastName": "Doe",
+      "dob": "1990-01-01",
+      "genderAtBirth": "M",
+      "address": [
+        {
+          "addressLine1": "123 Fake Street",
+          "city": "Fake City",
+          "state": "NY",
+          "zip": "12345",
+          "country": "USA"
+        }
+      ],
+      "personalIdentifiers": [
+        {
+          "type": "drivers_license",
+          "value": "FAKE123456789",
+          "state": "NY"
+        }
+      ],
+      "facilityIds": ["22222222-2222-2222-2222-222222222222"]
+    },
+    {        
+      "id": "33333333-3333-3333-3333-333333333333",
+      "eTag": "1",
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "dob": "1985-05-15",
+      "genderAtBirth": "F",
+      "address": [
+        {
+          "addressLine1": "456 Example Avenue",
+          "city": "Sample Town",
+          "state": "CA",
+          "zip": "54321",
+          "country": "USA"
+        }
+      ],
+      "personalIdentifiers": [
+        {
+          "type": "drivers_license",
+          "value": "FAKE987654321",
+          "state": "CA"
+        }
+      ],
+      "facilityIds": ["44444444-4444-4444-4444-444444444444"]
+    }
+  ],
+  "meta": {
+    "itemsOnPage": 2,
+    "itemsInTotal": 2
+  }
+}
+```
