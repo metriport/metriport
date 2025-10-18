@@ -44,7 +44,7 @@ target_reason_codings as (
         get_target_codings(
             get_procedcure_reason_codings, 
             'procedure_id', 
-            9, 
+            1, 
             0,
             (
                 'http://snomed.info/sct',
