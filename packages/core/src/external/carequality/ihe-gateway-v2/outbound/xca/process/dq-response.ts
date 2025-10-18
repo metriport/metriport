@@ -39,6 +39,7 @@ import {
 import { Classification, ExternalIdentifier, ExtrinsicObject, iti38Schema } from "./schema";
 import { getNameValue, getSlotValue } from "../../../utils";
 import { codingSchema } from "@metriport/ihe-gateway-sdk/models/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 
 dayjs.extend(utc);
 
@@ -61,7 +62,7 @@ function getHomeCommunityIdForDr(extrinsicObject: ExtrinsicObject): string {
 
 function getTimeSafe(timeValue: string | undefined): string | undefined {
   try {
-    return timeValue ? dayjs.utc(timeValue).toISOString() : undefined;
+    return timeValue ? buildDayjs(timeValue).toISOString() : undefined;
   } catch (error) {
     return undefined;
   }
@@ -79,7 +80,7 @@ function getCreationTime({
   const time = creationTimeValue ?? serviceStartTimeValue ?? serviceStopTimeValue;
 
   try {
-    return time ? dayjs.utc(time).toISOString() : undefined;
+    return time ? buildDayjs(time).toISOString() : undefined;
   } catch (error) {
     return undefined;
   }
