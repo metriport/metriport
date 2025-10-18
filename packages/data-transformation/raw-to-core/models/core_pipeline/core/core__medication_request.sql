@@ -24,7 +24,8 @@ select
                 mr.note_3_text,
                 mr.note_4_text
             ) as {{ dbt.type_string() }}
-        )                                                                                           as note_text
+        )                                                                                           as note_text    
+    ,   cast(intent as {{ dbt.type_string() }} )                                                    as intent
     ,   cast(mr.meta_source as {{ dbt.type_string() }} )                                            as data_source
 from {{ref('stage__medicationrequest')}} as mr
 inner join {{ref('stage__medication')}} as m

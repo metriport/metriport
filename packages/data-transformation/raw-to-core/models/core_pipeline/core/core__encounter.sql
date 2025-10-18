@@ -37,6 +37,7 @@ target_discharge_disposition_codings as (
         ) 
     }}
 )
+-- TODO Add reasonCode
 select
         cast(enc.id as {{ dbt.type_string() }} )                                                as encounter_id      
     ,   cast(right(enc.subject_reference, 36) as {{ dbt.type_string() }} )                      as patient_id
