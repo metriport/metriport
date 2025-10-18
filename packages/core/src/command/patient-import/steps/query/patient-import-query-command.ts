@@ -13,7 +13,7 @@ import { ProcessPatientQueryRequest } from "./patient-import-query";
 dayjs.extend(duration);
 
 function waitTimeBetweenPdAndDq() {
-  return dayjs.duration(randomIntBetween(80, 120), "milliseconds");
+  return dayjs.duration(randomIntBetween(1, 2), "seconds");
 }
 
 export type ProcessPatientQueryCommandRequest = ProcessPatientQueryRequest & {

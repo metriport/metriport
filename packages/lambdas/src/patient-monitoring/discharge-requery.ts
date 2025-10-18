@@ -1,4 +1,7 @@
-import { processDischargeRequeryRequestSchema } from "@metriport/core/command/patient-monitoring/discharge-requery/discharge-requery";
+import {
+  ProcessDischargeRequeryRequest,
+  processDischargeRequeryRequestSchema,
+} from "@metriport/core/command/patient-monitoring/discharge-requery/discharge-requery";
 import { DischargeRequeryDirect } from "@metriport/core/command/patient-monitoring/discharge-requery/discharge-requery-direct";
 import { SQSEvent } from "aws-lambda";
 import { capture } from "../shared/capture";
@@ -25,7 +28,10 @@ export const handler = capture.wrapHandler(async (event: SQSEvent): Promise<void
   if (!message) return;
 
   console.log(`Running with unparsed body: ${message.body}`);
-  const parsedBody = parseBody(processDischargeRequeryRequestSchema, message.body);
+  const parsedBody = parseBody<ProcessDischargeRequeryRequest>(
+    processDischargeRequeryRequestSchema,
+    message.body
+  );
   capture.setExtra({ ...parsedBody });
 
   const { cxId, jobId, patientId } = parsedBody;
