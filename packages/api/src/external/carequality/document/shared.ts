@@ -34,15 +34,14 @@ export function containsDuplicateMetriportId(
   }
 }
 
-// eslint-disable-next-line @metriport/eslint-rules/no-named-arrow-functions
-export const cqToFHIR = (
+export function cqToFHIR(
   docId: string,
   docRef: IHEGWDocumentReference,
   docStatus: "preliminary" | "final",
   patientId: string,
   contentExtension: MetriportDataSourceExtension,
   orgName?: string
-): DocumentReferenceWithId => {
+): DocumentReferenceWithId {
   const baseAttachment = {
     ...(docRef.fileName ? { fileName: docRef.fileName } : {}),
     ...(docRef.contentType ? { contentType: docRef.contentType } : {}),
@@ -103,7 +102,7 @@ export const cqToFHIR = (
   if (docRef.title) updatedDocRef.description = docRef.title;
 
   return updatedDocRef;
-};
+}
 
 function generateCQFHIRContent(
   baseAttachment: {

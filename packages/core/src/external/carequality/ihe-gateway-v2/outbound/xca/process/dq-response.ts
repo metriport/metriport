@@ -171,7 +171,7 @@ export function parseDocumentReference({
     });
 
     if (!result.success) {
-      log(`Error parsing coding for classification ${classificationScheme}`);
+      log(`Could not parse coding for classification ${classificationScheme}`);
       return undefined;
     }
 

@@ -219,6 +219,15 @@ export function isMedication(resource: Resource | undefined): resource is Medica
   return resource?.resourceType === "Medication";
 }
 
+export function isCoding(value: unknown): value is Coding {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    ("system" in value || "display" in value || "code" in value)
+  );
+}
+
 export function isMedicationAdministration(
   resource: Resource | undefined
 ): resource is MedicationAdministration {
