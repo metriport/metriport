@@ -7,7 +7,6 @@ with base_resource as (
         occurrencestring,
         dosequantity_value,
         dosequantity_unit,
-        route_text,
         note_0_text,
         note_1_text,
         note_2_text,
