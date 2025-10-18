@@ -53,7 +53,12 @@ export const cqToFHIR = (
 
   const context = {
     ...(docRef.serviceStartTime || docRef.serviceStopTime
-      ? { period: { start: docRef.serviceStartTime, end: docRef.serviceStopTime } }
+      ? {
+          period: {
+            start: formatDate(docRef.serviceStartTime),
+            end: formatDate(docRef.serviceStopTime),
+          },
+        }
       : {}),
     ...(docRef.healthcareFacilityTypeCoding
       ? { facilityType: { coding: [docRef.healthcareFacilityTypeCoding] } }
