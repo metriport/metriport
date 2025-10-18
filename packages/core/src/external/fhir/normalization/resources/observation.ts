@@ -31,10 +31,6 @@ type ReferenceRange = {
 const loincCodeToTargetCallbackFnMap = new Map<string, (unit: string) => string>([
   // GFR
   ["33914-3", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
-  ["62238-1", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
-  ["69405-9", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
-  ["98979-8", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
-  ["33914-3", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
   ["48642-3", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
   ["48643-1", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
   ["50044-7", (unit: string) => getStandardObservationUnit(unit, gfrUnitNormalizationMap)],
@@ -69,26 +65,16 @@ const loincCodeToTargetCallbackFnMap = new Map<string, (unit: string) => string>
   ],
   // Glucose in Serum
   ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
-  ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
   ["74774-1", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
   ["1558-6", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
-  ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
-  ["74774-1", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
-  ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
-  ["1558-6", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
-  ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
-  ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
-  ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
   ["12651-6", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
   ["10449-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
   ["17865-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
   ["1504-0", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
-  ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
   ["1507-3", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
   ["1518-0", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
   ["1547-9", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
   ["12646-6", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
-  ["2345-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
   // Glucose in Blood
   ["2339-0", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
   ["2340-8", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
@@ -288,8 +274,8 @@ function normalizeUnit(
     ? { isConvertibleUnit: true, unit: trimmedUnit.toUpperCase() as Unit }
     : nonStandardUnitNormalizationMap.get(trimmedUnit.toLowerCase())
     ? {
-        isConvertibleUnit: false,
-        unit: nonStandardUnitNormalizationMap.get(trimmedUnit.toLowerCase()),
+        isConvertibleUnit: true,
+        unit: nonStandardUnitNormalizationMap.get(trimmedUnit.toLowerCase()) as Unit,
       }
     : undefined;
 }
