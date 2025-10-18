@@ -57,6 +57,9 @@
 
                     {{#if procEntry.observation.value}}
                         {{>Resources/DiagnosticReport.hbs diagReport=procEntry.observation categoryCode=procSection.code ID=(generateUUID (toJsonString procEntry.observation.value))}}
+                        {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                            {{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString procEntry.observation.value)) REF=(concat 'Patient/' patientId.Id)}},
+                        {{/with}}
                         {{>References/Procedure/report.hbs ID=(generateUUID (toJsonString procEntry.observation)) REF=(concat 'DiagnosticReport/' (generateUUID (toJsonString procEntry.observation.value)))}}
                     {{/if}}
                     

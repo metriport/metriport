@@ -28,6 +28,11 @@ export function normalizeFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
   const normalizedCoverages = normalizeCoverages(resourceArrays.coverages);
   resourceArrays.coverages = normalizedCoverages;
 
+  const normalizedLaboratoryObservations = normalizeObservations(
+    resourceArrays.observationLaboratory
+  );
+  resourceArrays.observationLaboratory = normalizedLaboratoryObservations;
+
   const normalizedVitalsObservations = normalizeObservations(resourceArrays.observationVitals);
   resourceArrays.observationVitals = normalizedVitalsObservations;
 

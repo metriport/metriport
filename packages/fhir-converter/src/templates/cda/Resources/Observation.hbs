@@ -80,6 +80,14 @@
                     "valueQuantity": {{>DataType/Quantity.hbs quantity=../observationEntry.value}},
                 {{/if}}
             {{/with}}
+        {{else if (or observationEntry.value.low.value observationEntry.value.high.value) }}
+            {{#if (and observationEntry.value.low.value observationEntry.value.high.value) }}
+                "valueRange": {{>DataType/Range.hbs range=observationEntry.value}},
+            {{else if observationEntry.value.low.value}}
+                "valueQuantity": {{>DataType/Quantity.hbs quantity=observationEntry.value.low}},
+            {{else if observationEntry.value.high.value}}
+                "valueQuantity": {{>DataType/Quantity.hbs quantity=observationEntry.value.high}},
+            {{/if}}
         {{else if observationEntry.value._}}
             "valueString":"{{{parseReferenceData observationEntry.value._}}}",
         {{!-- in some cases text is here in the b64 field. Adding so no data loss but not sure if thats the way its supposed to be. also how it renders I do not know      --}}

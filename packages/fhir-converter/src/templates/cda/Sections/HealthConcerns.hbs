@@ -35,6 +35,9 @@
                 {{/with}}
             {{else if healthEntry.observation.value.value}}
                 {{>Resources/Observation.hbs observationCategory="survey" observationEntry=healthEntry.observation ID=(generateUUID (toJsonString healthEntry.observation))}},
+                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                    {{>References/Observation/subject.hbs ID=(generateUUID (toJsonString healthEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                {{/with}}
             {{/if}}
         {{/each}}
     {{/each}}
