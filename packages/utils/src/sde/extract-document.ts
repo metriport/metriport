@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { listDocumentIds } from "@metriport/core/external/sde/command/document/list-documents";
-import { downloadDocument } from "@metriport/core/external/sde/command/document/download";
+import { downloadDocumentConversion } from "@metriport/core/external/sde/command/document/download";
 import { parseUnstructuredDataFromBundle } from "@metriport/core/external/sde/command/bundle/parse-bundle";
 // import { extractDocument } from "@metriport/core/external/sde/command/document/extract-document";
 
@@ -22,7 +22,7 @@ export async function extractDocument({ cxId, patientId }: { cxId: string; patie
 
   for (const documentId of documentIds) {
     console.log(`Extracting document from S3: ${documentId}`);
-    const bundle = await downloadDocument({ cxId, patientId, documentId });
+    const bundle = await downloadDocumentConversion({ cxId, patientId, documentId });
     if (!bundle) {
       console.log(`Document not found: ${documentId}`);
       continue;
