@@ -11,7 +11,7 @@ import {
 
 export type DocumentDownloaderLambdaConfig = DocumentDownloaderConfig & {
   lambdaName: string;
-} & Pick<DocumentDownloaderLambdaRequest, "orgName" | "orgOid" | "npi">;
+} & Pick<DocumentDownloaderLambdaRequest, "orgName" | "orgOid" | "npi" | "queryGrantorOid">;
 
 // TODO ENG-923 remove the one w/ document/fileInfo and keep the one w/ sourceDocument/destinationFileInfo
 export type DocumentDownloaderLambdaRequestV1 = {
@@ -29,6 +29,7 @@ export type DocumentDownloaderLambdaRequest = {
   sourceDocument: Document;
   destinationFileInfo: FileInfo;
   cxId: string;
+  queryGrantorOid?: string | undefined;
   version?: never;
 };
 
@@ -38,6 +39,7 @@ export class DocumentDownloaderLambda extends DocumentDownloader {
   readonly orgName: string;
   readonly orgOid: string;
   readonly npi: string;
+  readonly queryGrantorOid?: string | undefined;
 
   constructor(config: DocumentDownloaderLambdaConfig) {
     super(config);
@@ -46,6 +48,7 @@ export class DocumentDownloaderLambda extends DocumentDownloader {
     this.orgName = config.orgName;
     this.orgOid = config.orgOid;
     this.npi = config.npi;
+    this.queryGrantorOid = config.queryGrantorOid;
   }
 
   async download({
@@ -66,6 +69,7 @@ export class DocumentDownloaderLambda extends DocumentDownloader {
       orgName: this.orgName,
       orgOid: this.orgOid,
       npi: this.npi,
+      queryGrantorOid: this.queryGrantorOid,
     };
 
     const lambdaResult = await this.lambdaClient

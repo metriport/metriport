@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
-  Demographics,
   DocumentQueryFullResponse,
   DocumentReference,
   GenderCodes,
@@ -20,14 +19,8 @@ import {
   RetrieveDocumentResponse,
 } from "@metriport/commonwell-sdk/client/commonwell-api";
 import { encodeCwPatientId } from "@metriport/commonwell-sdk/common/util";
-import { nanoid } from "nanoid";
 import * as stream from "stream";
-import {
-  createDocument,
-  createPatientCollectionItem,
-  createProbablePatient,
-  cwURL,
-} from "./payloads";
+import { createDocument, createPatientCollectionItem, cwURL } from "./payloads";
 
 const docRefUrl = "/v2/documentReference";
 
@@ -115,10 +108,8 @@ export class CommonWellMock implements CommonWellAPI {
     options?: BaseOptions
   ): Promise<PatientExistingLinks> {
     return {
-      Patients: [
-        createProbablePatient(this.oid, this.orgName, patientId),
-        createProbablePatient(this.oid, this.orgName, patientId),
-      ],
+      // TODO: 1223 - Return fake links to be displayed on Patient Matching tab on the dashboard
+      Patients: [],
       status: {
         message: "Success",
         code: 200,
@@ -131,10 +122,8 @@ export class CommonWellMock implements CommonWellAPI {
     options?: BaseOptions
   ): Promise<PatientProbableLinks> {
     return {
-      Patients: [
-        createProbablePatient(this.oid, this.orgName, patientId),
-        createProbablePatient(this.oid, this.orgName, patientId),
-      ],
+      // TODO: 1223 - Return fake links to be displayed on Patient Matching tab on the dashboard
+      Patients: [],
       status: {
         message: "Success",
         code: 200,
@@ -158,16 +147,9 @@ export class CommonWellMock implements CommonWellAPI {
     },
     options?: BaseOptions
   ): Promise<PatientProbableLinks> {
-    const demographics: Partial<Demographics> = {
-      name: [{ given: [firstName], family: [lastName] }],
-      birthDate: dob,
-      gender,
-      address: [{ postalCode: zip }],
-    };
-    const patient1 = createProbablePatient(this.oid, this.orgName, nanoid(), demographics);
-    const patient2 = createProbablePatient(this.oid, this.orgName, nanoid(), demographics);
     return {
-      Patients: [patient1, patient2],
+      // TODO: Return fake links to be displayed on Patient Matching tab on the dashboard
+      Patients: [],
       status: {
         message: "Success",
         code: 200,

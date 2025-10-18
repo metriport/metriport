@@ -12,6 +12,8 @@ import { Config } from "../../shared/config";
 import { CommonWellMock } from "./mock/api-mock";
 import { CommonWellMemberMock } from "./mock/member-mock";
 
+const MAX_ATTEMPTS = 5;
+const INITIAL_DELAY = 1_000;
 const apiMode = Config.isProdEnv() ? APIMode.production : APIMode.integration;
 
 /**
@@ -36,6 +38,13 @@ export function makeCommonWellMemberAPI(): CommonWellMemberAPI {
     memberName: memberName,
     memberId: memberId,
     apiMode,
+    options: {
+      onError500: {
+        retry: true,
+        maxAttempts: MAX_ATTEMPTS,
+        initialDelay: INITIAL_DELAY,
+      },
+    },
   });
 }
 
@@ -48,7 +57,12 @@ export function makeCommonWellMemberAPI(): CommonWellMemberAPI {
  * @param npi Organization NPI
  * @returns CommonWell API
  */
-export function makeCommonWellAPI(orgName: string, orgOID: string, npi: string): CommonWellAPI {
+export function makeCommonWellAPI(
+  orgName: string,
+  orgOID: string,
+  npi: string,
+  queryGrantorOid?: string | undefined
+): CommonWellAPI {
   if (Config.isSandbox()) {
     return new CommonWellMock(orgName, orgOID);
   }
@@ -61,6 +75,14 @@ export function makeCommonWellAPI(orgName: string, orgOID: string, npi: string):
     homeCommunityId: orgOID,
     npi,
     apiMode,
+    authGrantorReferenceOid: queryGrantorOid,
+    options: {
+      onError500: {
+        retry: true,
+        maxAttempts: MAX_ATTEMPTS,
+        initialDelay: INITIAL_DELAY,
+      },
+    },
   });
 }
 

@@ -15,11 +15,6 @@ export type ConnectWidgetConfig = {
   domain: string;
 };
 
-export type CWCoverageEnhancementConfig = {
-  managementUrl: string;
-  codeChallengeNotificationUrl: string;
-};
-
 type EnvConfigBase = {
   environmentType: EnvType;
   stackName: string;
@@ -117,7 +112,6 @@ type EnvConfigBase = {
     };
   };
   commonwell: {
-    coverageEnhancement?: CWCoverageEnhancementConfig;
     envVars: {
       CW_MEMBER_NAME: string;
       CW_MEMBER_OID: string;
@@ -256,6 +250,7 @@ type EnvConfigBase = {
     startScheduledPatientJobsScheduleExpression: string;
     startScheduledPatientJobsSchedulerUrl: string;
   };
+  aiBriefBucketName: string;
 };
 
 export type EnvConfigNonSandbox = EnvConfigBase & {

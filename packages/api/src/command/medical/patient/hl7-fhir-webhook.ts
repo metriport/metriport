@@ -1,7 +1,4 @@
-import {
-  isDischargeSlackNotificationFeatureFlagEnabledForCx,
-  isHl7NotificationWebhookFeatureFlagEnabledForCx,
-} from "@metriport/core/command/feature-flags/domain-ffs";
+import { isDischargeSlackNotificationFeatureFlagEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { createConsolidatedDataFileNameWithSuffix } from "@metriport/core/domain/consolidated/filename";
 import { sendToSlack, SlackMessage } from "@metriport/core/external/slack/index";
 import { capture, out } from "@metriport/core/util";
@@ -54,11 +51,7 @@ export async function processHl7FhirBundleWebhook({
       },
     };
 
-    const isHl7NotificationWhFlagEnabled = await isHl7NotificationWebhookFeatureFlagEnabledForCx(
-      cxId
-    );
-
-    if (!settings || !isHl7NotificationWhFlagEnabled) {
+    if (!settings) {
       const msg = !settings ? "Settings not found" : "WH FF disabled";
       log(`${msg}. Not sending it...`);
       await createWebhookRequest({

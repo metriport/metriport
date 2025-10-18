@@ -14,7 +14,7 @@ import { LinkStatus } from "../../patient-link";
 import { validateCWEnabled } from "../shared";
 import { UpdatePatientCmd } from "./command-types";
 import { updatePatientDiscoveryStatus } from "./patient-external-data";
-import { CQLinkStatus, PatientDataCommonwell } from "./patient-shared";
+import { PatientDataCommonwell } from "./patient-shared";
 
 export function getCWData(
   data: PatientExternalData | undefined
@@ -30,16 +30,6 @@ export function getLinkStatusCW(data: PatientExternalData | undefined): LinkStat
   const defaultStatus: LinkStatus = "processing";
   if (!data) return defaultStatus;
   return getCWData(data)?.status ?? defaultStatus;
-}
-
-/**
- * Returns the status of linking the Patient with CommonWell's CareQuality bridge. Used for
- * Enhanced Coverage.
- */
-export function getLinkStatusCQ(data: PatientExternalData | undefined): CQLinkStatus {
-  const defaultStatus: CQLinkStatus = "unlinked";
-  if (!data) return defaultStatus;
-  return getCWData(data)?.cqLinkStatus ?? defaultStatus;
 }
 
 export async function create({

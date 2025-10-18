@@ -34,7 +34,12 @@ import { DnsZones } from "../shared/dns";
 import { createHieConfigDictionary } from "../shared/hie-config-dictionary";
 import { getMaxPostgresConnections } from "../shared/rds";
 import { buildLbAccessLogPrefix } from "../shared/s3";
-import { buildSecrets, Secrets, secretsToECS } from "../shared/secrets";
+import {
+  buildSecrets,
+  collectHiePasswordSecretNames,
+  Secrets,
+  secretsToECS,
+} from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
@@ -139,7 +144,6 @@ export function createAPIService({
   consolidatedSearchLambda,
   consolidatedIngestionQueue,
   featureFlagsTable,
-  cookieStore,
   surescriptsAssets,
   questAssets,
   jobAssets,
@@ -191,7 +195,6 @@ export function createAPIService({
   consolidatedSearchLambda: ILambda;
   consolidatedIngestionQueue: IQueue;
   featureFlagsTable: dynamodb.Table;
-  cookieStore: secret.ISecret | undefined;
   surescriptsAssets: SurescriptsAssets | undefined;
   questAssets: QuestAssets | undefined;
   jobAssets: JobsAssets;
@@ -220,7 +223,6 @@ export function createAPIService({
     ? props.config.connectWidgetUrl
     : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
 
-  const coverageEnhancementConfig = props.config.commonwell.coverageEnhancement;
   const dbReadReplicaEndpointAsString = JSON.stringify({
     host: dbReadReplicaEndpoint.hostname,
     port: dbReadReplicaEndpoint.port,
@@ -260,7 +262,7 @@ export function createAPIService({
         secrets: {
           DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
           SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
-          ...secretsToECS(secrets),
+          ...secretsToECS(removeUnusedSecretsForApiService(secrets, props.config)),
           ...secretsToECS(buildSecrets(stack, props.config.propelAuth.secrets)),
           ...(analyticsPlatformAssets && {
             ANALYTICS_DB_CREDS: ecs.Secret.fromSecretsManager(
@@ -381,12 +383,6 @@ export function createAPIService({
             PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
           }),
           FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
-          ...(coverageEnhancementConfig && {
-            CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
-          }),
-          ...(cookieStore && {
-            CW_MANAGEMENT_COOKIE_SECRET_ARN: cookieStore.secretArn,
-          }),
           ...(props.config.iheGateway?.trustStoreBucketName && {
             CQ_TRUST_BUNDLE_BUCKET_NAME: props.config.iheGateway.trustStoreBucketName,
           }),
@@ -567,11 +563,6 @@ export function createAPIService({
 
   if (fhirToMedicalRecordLambda2) {
     fhirToMedicalRecordLambda2.grantInvoke(fargateService.taskDefinition.taskRole);
-  }
-
-  if (cookieStore) {
-    cookieStore.grantRead(fargateService.service.taskDefinition.taskRole);
-    cookieStore.grantWrite(fargateService.service.taskDefinition.taskRole);
   }
 
   provideAccessToQueue({
@@ -762,4 +753,26 @@ function getDbPoolSettings(config: EnvConfig): EnvConfig["apiDatabase"]["poolSet
     );
   }
   return dbPoolSettings;
+}
+
+function removeUnusedSecretsForApiService(secrets: Secrets, config: EnvConfig): Secrets {
+  const secretsWithoutRosterUpload = removeRosterUploadSecrets(secrets, config);
+
+  return secretsWithoutRosterUpload;
+}
+
+function removeRosterUploadSecrets(secrets: Secrets, config: EnvConfig): Secrets {
+  const hl7Notification = config.hl7Notification;
+  if (!hl7Notification) {
+    return secrets;
+  }
+  const hieConfigs = hl7Notification.hieConfigs;
+  if (!hieConfigs) {
+    return secrets;
+  }
+  const hiePasswordSecretNames = collectHiePasswordSecretNames(hieConfigs);
+
+  return Object.fromEntries(
+    Object.entries(secrets).filter(([key]) => !Object.keys(hiePasswordSecretNames).includes(key))
+  );
 }

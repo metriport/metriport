@@ -7,6 +7,7 @@ import {
   buildKeyForConversionFhir,
 } from "../../domain/conversion/filename";
 import { S3Utils } from "../../external/aws/s3";
+import { getSanitizedContents } from "../../external/cda/get-file-contents";
 import { partitionPayload } from "../../external/cda/partition-payload";
 import { removeBase64PdfEntries } from "../../external/cda/remove-b64";
 import { Config } from "../../util/config";
@@ -53,7 +54,9 @@ export async function getPayloadPartitions(
     stepName: "pre-conversion",
     throwError: false,
   });
-  const { documentContents, b64Attachments } = removeBase64PdfEntries(payloadRaw);
+  const { documentContents, b64Attachments } = removeBase64PdfEntries(
+    getSanitizedContents(payloadRaw)
+  );
   if (b64Attachments && b64Attachments.total > 0) {
     // TODO Eng-517: Process B64 attachments
     log(`Extracted ${b64Attachments.total} B64 attachments - not processing....`);

@@ -53,6 +53,7 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
     .optional(),
   procedure: z
     .object({
+      cptCodes: z.string().array().optional(),
       disabled: z.boolean().optional(),
     })
     .optional(),

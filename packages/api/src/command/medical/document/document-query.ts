@@ -52,7 +52,6 @@ export async function queryDocumentsAcrossHIEs({
   requestId: requestIdParam,
   forceDownload,
   cxDocumentRequestMetadata,
-  forceQuery = false,
   forcePatientDiscovery = false,
   forceCommonwell = false,
   forceCarequality = false,
@@ -65,7 +64,6 @@ export async function queryDocumentsAcrossHIEs({
   requestId?: string | undefined;
   forceDownload?: boolean;
   cxDocumentRequestMetadata?: unknown;
-  forceQuery?: boolean;
   forcePatientDiscovery?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
@@ -107,10 +105,9 @@ export async function queryDocumentsAcrossHIEs({
   }
 
   const docQueryProgress = patient.data.documentQueryProgress;
-  const requestId = requestIdParam ?? getOrGenerateRequestId(docQueryProgress, forceQuery);
+  const requestId = requestIdParam ?? getOrGenerateRequestId(docQueryProgress);
 
-  const isCheckStatus = !forceQuery;
-  if (isCheckStatus && areDocumentsProcessing(docQueryProgress)) {
+  if (areDocumentsProcessing(docQueryProgress)) {
     log(`Patient ${patientId} documentQueryStatus is already 'processing', skipping...`);
     return createQueryResponse("processing", patient);
   }
@@ -156,7 +153,6 @@ export async function queryDocumentsAcrossHIEs({
       patient: updatedPatient,
       facilityId,
       forceDownload: isForceRedownloadEnabled,
-      forceQuery,
       forcePatientDiscovery,
       requestId,
       getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
@@ -247,15 +243,11 @@ export async function updateConversionProgress({
  * Returns the existing request ID if the previous query has not been entirely completed. Otherwise, returns a newly-generated request ID.
  *
  * @param docQueryProgress Progress of the previous query
- * @param forceNew Force creating a new request ID
  * @returns uuidv7 string ID for the request
  */
 export function getOrGenerateRequestId(
-  docQueryProgress: DocumentQueryProgress | undefined,
-  forceNew = false
+  docQueryProgress: DocumentQueryProgress | undefined
 ): string {
-  if (forceNew) return generateRequestId();
-
   if (areDocumentsProcessing(docQueryProgress) && docQueryProgress?.requestId) {
     return docQueryProgress.requestId;
   }

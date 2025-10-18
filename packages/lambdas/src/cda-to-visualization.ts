@@ -1,5 +1,5 @@
 import { Input, Output } from "@metriport/core/domain/conversion/cda-to-html-pdf";
-import { sanitizeXmlProcessingInstructions } from "@metriport/core/external/cda/remove-b64";
+import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import * as Sentry from "@sentry/serverless";
 import chromium from "@sparticuz/chromium";
@@ -11,6 +11,7 @@ import * as uuid from "uuid";
 import { capture } from "./shared/capture";
 import { getEnv, getEnvOrFail } from "./shared/env";
 import { sleep } from "./shared/sleep";
+import { sanitizeXmlProcessingInstructions } from "@metriport/core/external/cda/get-file-contents";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const styleSheetText = require("./cda-to-visualization/stylesheet.js");
 
@@ -84,7 +85,10 @@ async function convert({
   bucketName: string;
   isSanitize?: boolean;
 }) {
-  const document = isSanitize ? sanitizeXmlProcessingInstructions(docContents) : docContents;
+  const sanitizedDocContents = isSanitize
+    ? sanitizeXmlProcessingInstructions(docContents)
+    : docContents;
+  const document = isSanitize ? cleanUpPayload(sanitizedDocContents) : sanitizedDocContents;
   if (conversionType === "html") {
     const url = await convertStoreAndReturnHtmlDocUrl({ fileName, document, bucketName });
     console.log("html", url);

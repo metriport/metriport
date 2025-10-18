@@ -23,10 +23,13 @@ import {
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
 import { MedicalDataSource } from "@metriport/core/external";
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
+import {
+  getFileContentsFromS3IfConvertible,
+  getSanitizedContents,
+} from "@metriport/core/external/cda/get-file-contents";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
-import { isConvertibleFromS3 } from "@metriport/core/external/cda/is-convertible";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
@@ -147,7 +150,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
       log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
       const downloadStart = Date.now();
 
-      const isConvertibleResult = await isConvertibleFromS3({
+      const isConvertibleResult = await getFileContentsFromS3IfConvertible({
         bucketName: s3BucketName,
         fileKey: s3FileName,
         s3Utils,
@@ -161,9 +164,9 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
         continue;
       }
 
-      const { documentContents: payloadNoB64, b64Attachments } = removeBase64PdfEntries(
-        isConvertibleResult.contents
-      );
+      const sanitizedPayload = getSanitizedContents(isConvertibleResult.contents);
+      const { documentContents: payloadNoB64, b64Attachments } =
+        removeBase64PdfEntries(sanitizedPayload);
 
       if (b64Attachments && b64Attachments.total > 0) {
         log(`Extracted ${b64Attachments.total} B64 attachments - will process them soon`);

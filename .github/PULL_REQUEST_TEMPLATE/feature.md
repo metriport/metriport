@@ -25,6 +25,18 @@ path and the alternative ones. Be specific.]_
   - [ ] _testing step 1_
   - [ ] _testing step 2_
 
+### Metrics
+
+_[Plan ahead how we are going to monitor your changes. If a metric is not applicable, explain why.]_
+
+- [ ] Alarms _[Alarms trigger PagerDuty. These should only happen when there's a significant issue with the platform - they require immediate action. This is the most important metric, but also let's be careful if it's really immediate action or just asap (alert).]_
+
+- [ ] Alerts _[Alerts just go into a Slack channel - not as urgent as alarms, but still let on-call know something needs attention.]_
+
+- [ ] Cloudwatch metrics _[Engineering geared metrics, things that need lower latency and smaller granularity, that software engineers will use for monitoring, diagnosing issues, making decisions about the platform]_
+
+- [ ] Posthog metrics _[Product-related metrics, geared towards Ops and Customer success teams; e.g., number of patients created, lead time to get data from the platform, etc.]_
+
 ### Release Plan
 
 _[How does the changes on this PR impact/interact with the existing environment (database, configs, secrets, FFs, api contracts, etc.)?

@@ -12,17 +12,19 @@ import {
   requestFooterRow,
 } from "../schema/request";
 import { OutgoingFileRowSchema } from "../schema/shared";
+import { QuestRosterType } from "../types";
 
-export function buildRosterFile(patients: Patient[]): Buffer {
-  const header = buildRosterHeader();
+export function buildRosterFile(patients: Patient[], rosterType: QuestRosterType): Buffer {
+  const header = buildRosterHeader(rosterType);
   const { body, requestedPatientIds } = buildRosterTable(patients);
   const footer = buildRosterFooter(requestedPatientIds);
   return Buffer.concat([header, body, footer]);
 }
 
-function buildRosterHeader(): Buffer {
+function buildRosterHeader(rosterType: QuestRosterType): Buffer {
+  const generalMnemonic = rosterType === "notifications" ? "METRIP" : "IVMETRI";
   return buildQuestRequestRow(
-    { recordType: "H", generalMnemonic: "METRIP", fileCreationDate: new Date() },
+    { recordType: "H", generalMnemonic, fileCreationDate: new Date() },
     requestHeaderSchema,
     requestHeaderRow
   );

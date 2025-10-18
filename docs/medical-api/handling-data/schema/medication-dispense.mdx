@@ -1,0 +1,29 @@
+---
+title: "Medication Dispense"
+description: "Schema documentation for the Medication Dispense table in the Metriport data model"
+group: "Schema"
+---
+
+A medication dispense record represents the dispensing of a medication to a patient. This includes details about when the medication was prepared, dispensed, and the quantity provided.
+
+**Primary Keys:**
+* medication_dispense_id
+
+**Foreign Keys:**
+* patient_id
+* medication_id
+
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| medication_dispense_id | string | Unique identifier for the medication dispense |
+| patient_id | string | Unique identifier for the patient |
+| medication_id | string | Unique identifier for the medication |
+| status | string | Status of the medication dispense. Possible values:<br/>– <code>preparation</code>: The core event has not started yet, but some staging activities have begun (for example, initial preparing and labeling of medication).<br/>– <code>in-progress</code>: The dispensed product is being prepared and packaged.<br/>– <code>cancelled</code>: The dispensing event was terminated prior to any output product being created.<br/>– <code>on-hold</code>: The dispensing event has been temporarily halted but is expected to resume.<br/>– <code>completed</code>: The dispensed product has been handed over to the patient or patient representative.<br/>– <code>entered-in-error</code>: The dispense event was created in error and should not be considered valid.<br/>– <code>stopped</code>: Actions implied by the dispense event have been permanently halted, before all of them occurred.<br/>– <code>declined</code>: The dispense was declined and not performed.<br/>– <code>unknown</code>: The authoring system does not know which of the status values applies for this dispense. |
+| when_handed_over | date | Date when the medication was handed over |
+| when_prepared | date | Date when the medication was prepared |
+| dose_unit | string | Unit of measurement for the dose |
+| dose_amount | string | Amount of medication dispensed |
+| days_supply_amount | string | Number of days the medication will last |
+| days_supply_unit | string | Unit for days supply (typically "d") |
+| note_text | string | Additional notes about the dispense |
+| data_source | string | Source of the medication dispense data |

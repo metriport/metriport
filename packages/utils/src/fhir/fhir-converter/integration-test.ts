@@ -7,7 +7,7 @@ import {
   resourcesSearchableByPatient,
   resourcesSearchableBySubject,
 } from "@metriport/api-sdk";
-import { isConvertible } from "@metriport/core/external/cda/is-convertible";
+import { isConvertible } from "@metriport/core/external/cda/get-file-contents";
 import { makeFhirAdminApi, makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { sleep } from "@metriport/shared";

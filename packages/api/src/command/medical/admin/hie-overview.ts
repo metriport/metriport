@@ -16,9 +16,9 @@ import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import { CQLink } from "../../../external/carequality/cq-patient-data";
 import { CQPatientDataModel } from "../../../external/carequality/models/cq-patient-data";
 import cwCommands from "../../../external/commonwell";
+import { CwPatientLinks } from "../../../external/commonwell-v2/link";
 import { getDB } from "../../../models/db";
 import { PatientModel } from "../../../models/medical/patient";
-import { dtoFromCW, PatientLinksDTO } from "../../../routes/medical/dtos/linkDTO";
 
 dayjs.extend(duration);
 
@@ -65,10 +65,8 @@ type HiePatientOverview = {
     success: CqPdSuccessResponse[];
     errors: CqPdErrorConsolidated[];
   };
-  commonwell: CwLinks | undefined;
+  commonwell: CwPatientLinks | undefined;
 };
-
-type CwLinks = PatientLinksDTO & { networkLinks: unknown };
 
 type DbQueryResponseRecordBase = {
   cx_id: string;
@@ -266,24 +264,15 @@ async function getCwData(
   patient: Patient,
   facilityIdParam: string | undefined,
   debugLevel: DebugLevel
-): Promise<CwLinks | undefined> {
+): Promise<CwPatientLinks | undefined> {
   if (debugLevel === "info") {
     return undefined;
   }
   const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
-
-  // TODO ENG-934 update it
-  // TODO ENG-934 update it
-  // TODO ENG-934 update it
-  const cwPersonLinks = await cwCommands.link.get(patient.id, patient.cxId, facilityId);
-  const cwConvertedLinks = dtoFromCW({
-    cwPotentialPersons: cwPersonLinks.potentialLinks,
-    cwCurrentPersons: cwPersonLinks.currentLinks,
-  });
+  const cwLinks = await cwCommands.link.getV2(patient.id, patient.cxId, facilityId);
 
   return {
-    currentLinks: cwConvertedLinks.currentLinks,
-    potentialLinks: cwConvertedLinks.potentialLinks,
-    networkLinks: cwPersonLinks.networkLinks,
+    existingLinks: cwLinks.existingLinks,
+    probableLinks: cwLinks.probableLinks,
   };
 }

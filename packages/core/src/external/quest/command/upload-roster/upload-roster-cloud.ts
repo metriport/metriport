@@ -1,6 +1,7 @@
 import { getLambdaResultPayload, makeLambdaClient } from "../../../aws/lambda";
 import { Config } from "../../../../util/config";
 import { QuestUploadRosterHandler } from "./upload-roster";
+import { QuestRosterRequest } from "../../types";
 
 export class QuestUploadRosterHandlerCloud implements QuestUploadRosterHandler {
   constructor(
@@ -8,12 +9,12 @@ export class QuestUploadRosterHandlerCloud implements QuestUploadRosterHandler {
     private readonly lambdaName: string = Config.getQuestUploadRosterLambdaName()
   ) {}
 
-  async generateAndUploadLatestQuestRoster(): Promise<void> {
+  async generateAndUploadLatestQuestRoster(rosterRequest: QuestRosterRequest): Promise<void> {
     const result = await this.lambdaClient
       .invoke({
         FunctionName: this.lambdaName,
         InvocationType: "Event",
-        Payload: JSON.stringify({}),
+        Payload: JSON.stringify(rosterRequest),
       })
       .promise();
 

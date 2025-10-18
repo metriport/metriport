@@ -5,7 +5,7 @@ import {
   usDateSchema,
 } from "@metriport/shared";
 import { z } from "zod";
-import { addressSchema } from "./address";
+import { addressArraySchemaSafe } from "./address";
 import { contactSchema } from "./contact";
 import { humanNameSchema } from "./human-name";
 import { patientIdentifierSchema } from "./identifier";
@@ -35,7 +35,7 @@ export const demographicsSchema = z.object({
   name: z.array(humanNameSchema).min(1),
   gender: genderCodesSchema.nullish(),
   birthDate: birthDateSchema,
-  address: z.array(addressSchema).min(1),
+  address: addressArraySchemaSafe,
   telecom: z.array(contactSchema).nullish(),
 });
 export type Demographics = z.infer<typeof demographicsSchema>;

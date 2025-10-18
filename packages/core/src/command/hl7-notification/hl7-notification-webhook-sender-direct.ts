@@ -1,13 +1,15 @@
 import { Hl7Message } from "@medplum/core";
 import { Bundle, CodeableConcept, Resource } from "@medplum/fhirtypes";
-import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
 import { executeWithNetworkRetries, MetriportError } from "@metriport/shared";
+import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
 import { CreateDischargeRequeryParams } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import { TcmEncounterUpsertInput } from "@metriport/shared/domain/tcm-encounter";
 import axios from "axios";
 import dayjs from "dayjs";
 import { analytics, EventTypes } from "../../external/analytics/posthog";
+import { reportAdvancedMetrics } from "../../external/aws/cloudwatch";
 import { S3Utils } from "../../external/aws/s3";
+import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 import {
   mergeBundleIntoAdtSourcedEncounter,
   saveAdtConversionBundle,
@@ -33,16 +35,16 @@ import {
   Hl7NotificationSenderParams,
   Hl7NotificationWebhookSender,
 } from "./hl7-notification-webhook-sender";
+import { getBambooTimezone, getKonzaTimezone } from "./timezone";
 import {
   asString,
+  isConsolidatedRefreshTriggerEvent,
   isSupportedTriggerEvent,
   ParsedHl7Data,
   parseHl7Message,
   persistHl7MessageError,
   SupportedTriggerEvent,
 } from "./utils";
-import { getBambooTimezone, getKonzaTimezone } from "./timezone";
-import { getSecretValueOrFail } from "../../external/aws/secret-manager";
 
 type HieConfig = { timezone: string };
 
@@ -74,6 +76,7 @@ export const dischargeEventCode = "A03";
 const INTERNAL_HL7_ENDPOINT = `notification`;
 const INTERNAL_PATIENT_ENDPOINT = "internal/patient";
 const DISCHARGE_REQUERY_ENDPOINT = "monitoring/discharge-requery";
+const USE_CACHED_AI_BRIEF = true;
 const SIGNED_URL_DURATION_SECONDS = dayjs.duration({ minutes: 10 }).asSeconds();
 
 type ClinicalInformation = {
@@ -132,6 +135,14 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       messageId: getMessageUniqueIdentifier(message),
       messageCode,
       triggerEvent,
+    });
+
+    await this.notifyAnalytics({
+      cxId,
+      patientId,
+      messageCode,
+      triggerEvent,
+      hieName: params.hieName,
     });
 
     log(`Init S3 upload to bucket ${bucketName} with key ${rawDataFileKey}`);
@@ -261,25 +272,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
         })
     );
 
-    const posthogApiKeyArn = Config.getPostHogApiKey();
-    if (!posthogApiKeyArn) {
-      throw new Error("Posthog API key not found");
-    }
-
-    const posthogApiKey = await getSecretValueOrFail(posthogApiKeyArn, Config.getAWSRegion());
-    analytics(
-      {
-        distinctId: cxId,
-        event: EventTypes.hl7NotificationReceived,
-        properties: {
-          cxId,
-          patientId,
-          messageCode,
-          triggerEvent,
-        },
-      },
-      posthogApiKey
-    );
+    log(`Calling refresh consolidated callback endpoint in API...`);
+    await this.refreshConsolidated(triggerEvent, cxId, patientId);
 
     log(`Done. API notified...`);
   }
@@ -344,5 +338,96 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     }
 
     return clinicalInformation;
+  }
+
+  private async refreshConsolidated(
+    triggerEvent: SupportedTriggerEvent,
+    cxId: string,
+    patientId: string
+  ) {
+    const { log } = out(
+      `refreshConsolidated, cx: ${cxId}, pt: ${patientId}, triggerEvent: ${triggerEvent}`
+    );
+    if (!isConsolidatedRefreshTriggerEvent(triggerEvent)) {
+      return;
+    }
+    log(`POST ${this.getConsolidatedRefreshEndpoint(patientId, cxId)}`);
+    await executeWithNetworkRetries(
+      async () => axios.post(this.getConsolidatedRefreshEndpoint(patientId, cxId)),
+      { log }
+    );
+  }
+
+  private getConsolidatedRefreshEndpoint(patientId: string, cxId: string): string {
+    const baseUrl = `${this.apiUrl}/internal/patient/${patientId}/consolidated/refresh`;
+    return `${baseUrl}?cxId=${cxId}&useCachedAiBrief=${USE_CACHED_AI_BRIEF}`;
+  }
+
+  private async notifyAnalytics({
+    cxId,
+    patientId,
+    messageCode,
+    triggerEvent,
+    hieName,
+  }: {
+    cxId: string;
+    patientId: string;
+    messageCode: string;
+    triggerEvent: string;
+    hieName: string;
+  }) {
+    try {
+      const posthogApiKeyArn = Config.getPostHogApiKey();
+      if (!posthogApiKeyArn) {
+        throw new MetriportError("No posthog API key provided in webhook sender");
+      }
+
+      await Promise.all([
+        reportAdvancedMetrics({
+          service: "Hl7NotificationWebhookSender",
+          metrics: [
+            {
+              name: "HL7.Notification.ByCustomer",
+              value: 1,
+              unit: "Count",
+              dimensions: {
+                Hie: hieName,
+                Customer: cxId,
+              },
+            },
+            {
+              name: "HL7.Notification.ByEventType",
+              value: 1,
+              unit: "Count",
+              dimensions: {
+                Hie: hieName,
+                EventType: messageCode + "_" + triggerEvent,
+              },
+            },
+          ],
+        }),
+        (async () => {
+          const posthogApiKey = await getSecretValueOrFail(posthogApiKeyArn, Config.getAWSRegion());
+          return analytics(
+            {
+              distinctId: cxId,
+              event: EventTypes.hl7NotificationReceived,
+              properties: {
+                cxId,
+                patientId,
+                messageCode,
+                triggerEvent,
+                hieName,
+              },
+            },
+            posthogApiKey
+          );
+        })(),
+      ]);
+    } catch (error) {
+      capture.error("Failed to notify analytics", {
+        extra: { cxId, patientId, messageCode, triggerEvent, hieName, error },
+      });
+    }
   }
 }

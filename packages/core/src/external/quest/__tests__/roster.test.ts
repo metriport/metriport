@@ -11,7 +11,7 @@ describe("Roster generation test", () => {
     const patients = JSON.parse(patientJson);
     expect(Array.isArray(patients)).toBe(true);
 
-    const rosterFile = buildRosterFile(patients);
+    const rosterFile = buildRosterFile(patients, "backfill");
     const expectedRosterContent = getArtifact("roster.txt");
     expect(rosterFile.toString()).toEqual(expectedRosterContent.toString());
   });

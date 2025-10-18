@@ -1,0 +1,27 @@
+---
+title: "Medication Administration"
+description: "Schema documentation for the Medication Administration table in the Metriport data model"
+group: "Schema"
+---
+
+A medication administration record represents the actual administration of a medication to a patient. This includes details about when, how, and by whom the medication was administered.
+
+**Primary Keys:**
+* medication_administration_id
+
+**Foreign Keys:**
+* patient_id
+* medication_id
+
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| medication_administration_id | string | Unique identifier for the medication administration |
+| patient_id | string | Unique identifier for the patient |
+| medication_id | string | Unique identifier for the medication |
+| status | string | Status of the medication administration. Possible values:<br/>– <code>in-progress</code>: The administration has started but has not yet completed.<br/>– <code>not-done</code>: The administration was expected to happen but did not occur.<br/>– <code>on-hold</code>: The administration was paused but may be resumed.<br/>– <code>completed</code>: The administration has finished (either completely or with a dose that was not fully given).<br/>– <code>entered-in-error</code>: This administration record should not be considered (was created in error).<br/>– <code>stopped</code>: The administration was terminated prior to completion.<br/>– <code>unknown</code>: The current status is unknown. |
+| effective_date | date | Start date of the medication administration |
+| end_date | date | End date of the medication administration |
+| dose_unit | string | Unit of measurement for the dose |
+| dose_amount | string | Amount of medication administered |
+| note_text | string | Additional notes about the administration |
+| data_source | string | Source of the medication administration data |
