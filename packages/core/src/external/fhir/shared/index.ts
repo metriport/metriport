@@ -31,6 +31,7 @@ import { isCarequalityExtension } from "../../carequality/extension";
 import { isCommonwellExtension } from "../../commonwell/extension";
 import { DOC_ID_EXTENSION_URL } from "./extensions/doc-id-extension";
 import { isMetriportExtension } from "./extensions/metriport";
+import { type Coding } from "@metriport/ihe-gateway-sdk";
 
 export const SEPARATOR_ID = "/";
 export const SEPARATOR_REF = "#";
