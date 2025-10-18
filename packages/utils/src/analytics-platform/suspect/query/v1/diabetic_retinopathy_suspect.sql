@@ -97,7 +97,7 @@ dr_suspects AS (
   SELECT
     c.PATIENT_ID,
     'diabetic_retinopathy'          AS suspect_group,
-    'H360'                          AS suspect_icd10_code,
+    'H36.0'                         AS suspect_icd10_code,
     'Diabetic retinopathy'          AS suspect_icd10_short_description,
 
     /* carry-through for FHIR */
