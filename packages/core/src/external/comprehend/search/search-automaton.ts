@@ -149,7 +149,7 @@ export class SearchAutomaton {
         // Create a new state if there is no next state already set for this character
         const stateTransition = this.nextState[currentState];
         if (!stateTransition) continue;
-        if (stateTransition[char] == NOWHERE) {
+        if (stateTransition[char] === NOWHERE) {
           stateTransition[char] = totalStates++;
         }
 
@@ -171,7 +171,7 @@ export class SearchAutomaton {
     const nextStateFromInitialState = this.nextState[INITIAL_STATE] as number[];
     for (let char = 0; char < CHARACTER_SET.length; char++) {
       const firstState = nextStateFromInitialState[char];
-      if (firstState == NOWHERE) {
+      if (firstState === NOWHERE) {
         nextStateFromInitialState[char] = INITIAL_STATE;
       }
     }
@@ -187,7 +187,7 @@ export class SearchAutomaton {
     const queue: number[] = [];
     for (let char = 0; char < CHARACTER_SET.length; char++) {
       const firstState = nextStateFromInitialState[char] as number;
-      if (firstState != INITIAL_STATE) {
+      if (firstState !== INITIAL_STATE) {
         this.setFailureState(firstState, INITIAL_STATE);
         queue.push(firstState);
       }
