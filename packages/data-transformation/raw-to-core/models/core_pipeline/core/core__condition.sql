@@ -17,7 +17,7 @@ target_code_codings as (
         get_target_codings(
             get_condition_codings,
             'condition_id', 
-            8, 
+            9, 
             none, 
             (
                 'http://hl7.org/fhir/sid/icd-10-cm',
@@ -32,7 +32,7 @@ target_category_codings as (
         get_target_codings(
             get_condition_category_codings, 
             'condition_id', 
-            2, 
+            1, 
             1, 
             (
                 'http://terminology.hl7.org/CodeSystem/condition-category',
