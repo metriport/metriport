@@ -499,8 +499,6 @@ export async function createConsolidatedFromLocal(
   patient: Patient
 ) {
   const startedAt = Date.now();
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  initPatientIdRepository(patient.id!);
   await sleep(100);
 
   console.log(`Creating consolidated bundle - started at ${new Date().toISOString()}`);
@@ -550,12 +548,6 @@ export async function createConsolidatedFromLocal(
   console.log("countResources before", initialResourceCount);
   console.log("countResources after", countResources(normalized));
   return;
-}
-
-function initPatientIdRepository(folderName: string) {
-  if (!fs.existsSync(folderName)) {
-    fs.mkdirSync(folderName, { recursive: true });
-  }
 }
 
 function countResources(bundle: Bundle): Record<string, number> {
