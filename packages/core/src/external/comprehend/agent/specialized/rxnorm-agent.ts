@@ -15,9 +15,7 @@ export class RxNormAgent extends SpecializedAgent {
   }
 
   async extractFhirResources(text: string, context: ComprehendContext): Promise<Resource[]> {
-    console.log("inferMedications", text);
     const medicationResources = await inferMedications(text, context);
-    console.log("extracted", medicationResources.length, "medication resources");
     return medicationResources;
   }
 }
