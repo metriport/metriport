@@ -33,6 +33,12 @@ models:
     intermediate:
       +schema: input_layer_stage
       +materialized: table
+    intermediate_v2:
+      +schema: input_layer_stage_v2
+      +materialized: table
+    core_v2:
+      +schema: core_v2
+      +materialized: table
 
 seeds:
   metriport_connector:

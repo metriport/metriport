@@ -67,7 +67,7 @@ select
     , cast(medstmt.dosage_0_doseandrate_0_dosequantity_unit as {{ dbt.type_string() }} )            as quantity_unit
     , cast(null as {{ dbt.type_int() }} )                                                           as days_supply
     , cast(medreq.requester_reference as {{ dbt.type_string() }} )                                  as practitioner_id
-    , cast('metriport' as {{ dbt.type_string() }} )                                                 as data_source
+    , cast(medstmt.meta_source as {{ dbt.type_string() }} )                                         as data_source
 from {{ref('stage__medicationstatement')}} medstmt
 inner join {{ref('stage__patient') }} pat
     on right(medstmt.subject_reference, 36) = pat.id
