@@ -47,6 +47,26 @@
                         {{/if}}
                     {{/each}}
                 {{/if}}
+
+                {{!-- LEVEL 2: Process first level of nested observations --}}
+                {{#each (toArray obsEntry.observation.entryRelationship) as |nestedEntry|}}
+                    {{#if nestedEntry.observation}}
+                        {{>Resources/Observation.hbs observationCategory="social-history" observationEntry=nestedEntry.observation ID=(generateUUID (toJsonString nestedEntry.observation))}},
+                        {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                            {{>References/Observation/subject.hbs ID=(generateUUID (toJsonString nestedEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                        {{/with}}
+
+                        {{!-- LEVEL 3: Process second level of nested observations --}}
+                        {{#each (toArray nestedEntry.observation.entryRelationship) as |doubleNestedEntry|}}
+                            {{#if doubleNestedEntry.observation}}
+                                {{>Resources/Observation.hbs observationCategory="social-history" observationEntry=doubleNestedEntry.observation ID=(generateUUID (toJsonString doubleNestedEntry.observation))}},
+                                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                                    {{>References/Observation/subject.hbs ID=(generateUUID (toJsonString doubleNestedEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                                {{/with}}
+                            {{/if}}
+                        {{/each}}
+                    {{/if}}
+                {{/each}}
             {{/each}}
         {{/with}}
 {{/if}}
