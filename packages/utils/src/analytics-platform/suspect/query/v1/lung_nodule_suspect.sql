@@ -130,7 +130,7 @@ lung_nodule_suspects AS (
   SELECT
     c.PATIENT_ID,
     'lung_nodule'               AS suspect_group,
-    'R911'                      AS suspect_icd10_code,
+    'R91.1'                      AS suspect_icd10_code,
     'Solitary pulmonary nodule' AS suspect_icd10_short_description,
 
     /* carry-through for FHIR */
