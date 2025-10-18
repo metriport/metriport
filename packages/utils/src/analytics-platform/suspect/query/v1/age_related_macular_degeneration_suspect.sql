@@ -84,7 +84,7 @@ amd_suspects AS (
   SELECT
     c.PATIENT_ID,
     'amd'                            AS suspect_group,
-    'H353'                           AS suspect_icd10_code,
+    'H35.3'                           AS suspect_icd10_code,
     'Age-related macular degeneration' AS suspect_icd10_short_description,
 
     /* carry-through for FHIR */
