@@ -686,6 +686,27 @@ var getSpecifiedEntryRelationship = function (entryRelationshipContainer, target
   );
 };
 
+var getSpecifiedEntryRelationshipArray = function (entryRelationshipContainer, targetTypeCode) {
+  const entryRelationshipArray = Array.isArray(entryRelationshipContainer)
+    ? entryRelationshipContainer
+    : [entryRelationshipContainer];
+
+  return entryRelationshipArray?.filter(er => er?.typeCode && er.typeCode === targetTypeCode);
+};
+
+var generateUuid = function (urlNamespace) {
+  return uuidv3("".concat(urlNamespace), uuidv3.URL);
+};
+
+var buildMedicationRequestId = function (substanceAdminEntries) {
+  const supplyEntry = getSpecifiedEntryRelationshipArray(substanceAdminEntries, "REFR").find(
+    er => er.supply
+  );
+  if (!supplyEntry) return undefined;
+  const uuid = generateUuid(JSON.stringify(supplyEntry.supply));
+  return uuid;
+};
+
 module.exports.internal = {
   getDateTime,
   getDate,
@@ -1363,7 +1384,7 @@ module.exports.external = [
     name: "generateUUID",
     description: "Generates a guid based on a URL: generateUUID url",
     func: function (urlNamespace) {
-      return uuidv3("".concat(urlNamespace), uuidv3.URL);
+      return generateUuid(urlNamespace);
     },
   },
   {
@@ -2115,6 +2136,21 @@ module.exports.external = [
     description: "Returns the specified entry relationship if it exists.",
     func: function (entryRelationships, targetTypeCode) {
       return getSpecifiedEntryRelationship(entryRelationships, targetTypeCode);
+    },
+  },
+  {
+    name: "getSpecifiedEntryRelationshipArray",
+    description: "Returns an array of specified entry relationships.",
+    func: function (entryRelationships, targetTypeCode) {
+      return getSpecifiedEntryRelationshipArray(entryRelationships, targetTypeCode);
+    },
+  },
+  {
+    name: "buildMedicationRequestId",
+    description:
+      "Builds a medication request ID from a list of entry relationships that contain a supply field.",
+    func: function (substanceAdminEntries) {
+      return buildMedicationRequestId(substanceAdminEntries);
     },
   },
 ];
