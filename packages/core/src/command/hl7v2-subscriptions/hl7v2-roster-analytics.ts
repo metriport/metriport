@@ -1,10 +1,11 @@
 import { InternalOrganizationDTO } from "@metriport/shared/domain/organization";
+import _ from "lodash";
 import { Patient } from "../../domain/patient";
 import { analyticsAsync, EventTypes } from "../../external/analytics/posthog";
-import { reportMetric } from "../../external/aws/cloudwatch";
-import { Config } from "../../util/config";
-import _ from "lodash";
+import { reportAdvancedMetrics } from "../../external/aws/cloudwatch";
 import { getSecretValueOrFail } from "../../external/aws/secret-manager";
+import { Config } from "../../util/config";
+import { capture } from "../../util/notifications";
 
 export type TrackRosterSizePerCustomerParams = {
   rosterSize: number;
@@ -12,21 +13,6 @@ export type TrackRosterSizePerCustomerParams = {
   log: typeof console.log;
   patients: Patient[];
   orgsByCxId: Record<string, InternalOrganizationDTO>;
-};
-
-type notifyPostHogPerCustomerParams = {
-  cxId: string;
-  cxName: string;
-  rosterSize: number;
-  hieName: string;
-  posthogSecret: string;
-};
-
-type notifyCloudWatchPerCustomerParams = {
-  cxId: string;
-  cxName: string;
-  rosterSize: number;
-  hieName: string;
 };
 
 export async function trackRosterSizePerCustomer({
@@ -37,6 +23,17 @@ export async function trackRosterSizePerCustomer({
   orgsByCxId,
 }: TrackRosterSizePerCustomerParams): Promise<void> {
   log("Tracking roster size per customer per HIE");
+
+  if (rosterSize === 0) {
+    const errorMessage = `Roster size is 0 for ${hieName}. This may occur if we are still setting up the integration. Ask in slack if this is expected.`;
+    log(errorMessage);
+    capture.error(errorMessage, {
+      extra: {
+        rosterSize,
+        hieName,
+      },
+    });
+  }
 
   const posthogSecretArn = Config.getPostHogApiKey();
   if (!posthogSecretArn) {
@@ -58,25 +55,36 @@ export async function trackRosterSizePerCustomer({
     totalRosterSize += customerPatients.length;
     const customerRosterSize = customerPatients.length;
 
-    const posthogParams: notifyPostHogPerCustomerParams = {
-      cxId,
-      cxName,
-      rosterSize: customerRosterSize,
-      hieName,
-      posthogSecret,
-    };
-
-    const cloudwatchParams: notifyCloudWatchPerCustomerParams = {
-      cxId,
-      cxName,
-      rosterSize: customerRosterSize,
-      hieName,
-    };
-
     try {
       await Promise.all([
-        notifyPostHogPerCustomer(posthogParams),
-        notifyCloudWatchPerCustomer(cloudwatchParams),
+        analyticsAsync(
+          {
+            event: EventTypes.rosterUploadPerCustomer,
+            distinctId: cxId,
+            properties: {
+              customerId: cxId,
+              customerName: cxName,
+              stateHie: hieName,
+              rosterSize: customerRosterSize,
+            },
+          },
+          posthogSecret
+        ),
+        reportAdvancedMetrics({
+          service: "Hl7v2RosterGenerator",
+          metrics: [
+            {
+              name: "ADT.RosterUpload.CustomerRosterSize",
+              unit: "Count",
+              value: customerRosterSize,
+              dimensions: {
+                Hie: hieName,
+                Customer: cxId,
+                CustomerName: cxName,
+              },
+            },
+          ],
+        }),
       ]);
       log(`Sent analytics for customer ${cxId}: ${customerRosterSize} patients in ${hieName}`);
     } catch (error) {
@@ -89,42 +97,4 @@ export async function trackRosterSizePerCustomer({
       `WARNING: Total roster size sent partitioned by cxs (${totalRosterSize}) does not match the actual roster size sent to the HIE (${rosterSize})!!`
     );
   }
-}
-
-async function notifyPostHogPerCustomer({
-  cxId,
-  cxName,
-  rosterSize,
-  hieName,
-  posthogSecret,
-}: notifyPostHogPerCustomerParams): Promise<void> {
-  await analyticsAsync(
-    {
-      event: EventTypes.rosterUploadPerCustomer,
-      distinctId: cxId,
-      properties: {
-        customerId: cxId,
-        customerName: cxName,
-        stateHie: hieName,
-        rosterSize: rosterSize,
-      },
-    },
-    posthogSecret
-  );
-}
-
-async function notifyCloudWatchPerCustomer({
-  cxId,
-  cxName,
-  rosterSize,
-  hieName,
-}: notifyCloudWatchPerCustomerParams): Promise<void> {
-  const additional = `Hie=${hieName},Customer=${cxId},CustomerName=${cxName}`;
-
-  await reportMetric({
-    name: "ADT.RosterUpload.CustomerRosterSize",
-    unit: "Count",
-    value: rosterSize,
-    additionalDimension: additional,
-  });
 }

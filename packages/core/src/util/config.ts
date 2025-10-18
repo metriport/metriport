@@ -190,6 +190,10 @@ export class Config {
     return getEnvVar("AI_BRIEF_MODEL_ID");
   }
 
+  static getGroqApiKey(): string {
+    return getEnvVarOrFail("GROQ_API_KEY");
+  }
+
   static getFeatureFlagsTableName(): string {
     return getEnvVarOrFail("FEATURE_FLAGS_TABLE_NAME");
   }
