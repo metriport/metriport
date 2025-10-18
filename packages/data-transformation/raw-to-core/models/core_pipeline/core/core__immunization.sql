@@ -1,4 +1,20 @@
-with target_vaccine_code_codings as (
+with base_resource as (
+    select
+        id,
+        patient_reference,
+        status,
+        occurrencedatetime,
+        occurrencestring,
+        dosequantity_value,
+        dosequantity_unit,
+        route_text,
+        note_0_text,
+        note_1_text,
+        note_2_text,
+        meta_source
+    from {{ref('stage__immunization')}}
+),
+target_vaccine_code_codings as (
    {{   
         get_target_codings(
             get_immunization_vaccine_codings,
@@ -35,39 +51,13 @@ select
     ,   cast(i.dosequantity_unit as {{ dbt.type_string() }} )                                               as dose_unit
     ,   cast(
             coalesce(
-                i.site_coding_0_display,
-                i.site_text
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as site_diplay
-    ,   cast(
-            coalesce(
-                i.route_coding_0_display,
-                i.route_text
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as route_display
-    ,   cast(
-            coalesce(
                 i.note_0_text,
                 i.note_1_text,
                 i.note_2_text
             ) as {{ dbt.type_string() }} 
         )                                                                                                   as note_text
-    ,   cast(
-            case 
-                when i.performer_0_actor_reference ilike '%practitioner%' 
-                    then right(i.performer_0_actor_reference, 36)
-                else null
-            end as {{ dbt.type_string() }}
-        )                                                                                                   as performer_practitioner_id
-    ,   cast(
-            case 
-                when i.performer_0_actor_reference ilike '%organization%' 
-                    then right(i.performer_0_actor_reference, 36)
-                else null
-            end as {{ dbt.type_string() }}
-        )                                                                                                   as performer_organization_id
     ,   cast(i.meta_source as {{ dbt.type_string() }} )                                                     as data_source
-from {{ref('stage__immunization')}} i
+from base_resource i
 left join target_vaccine_code_codings tc_cvx
     on i.id = tc_cvx.immunization_id 
         and tc_cvx.system = 'http://hl7.org/fhir/sid/cvx'

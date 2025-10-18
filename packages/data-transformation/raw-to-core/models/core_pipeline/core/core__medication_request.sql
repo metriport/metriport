@@ -18,36 +18,6 @@ select
         )                                                                                           as dose_amount
     ,   cast(
             coalesce(
-                mr.dosageinstruction_0_method_coding_0_display,
-                mr.dosageinstruction_0_method_coding_1_display,
-                mr.dosageinstruction_0_method_text,
-                mr.dosageinstruction_1_method_coding_0_display,
-                mr.dosageinstruction_1_method_coding_1_display,
-                mr.dosageinstruction_1_method_text
-            ) as {{ dbt.type_string() }}
-        )                                                                                           as dosage_method
-    ,   cast(
-            coalesce(
-                mr.dosageinstruction_0_route_coding_0_display,
-                mr.dosageinstruction_0_route_coding_1_display,
-                mr.dosageinstruction_0_route_text,
-                mr.dosageinstruction_1_route_coding_0_display,
-                mr.dosageinstruction_1_route_coding_1_display,
-                mr.dosageinstruction_1_route_text
-            ) as {{ dbt.type_string() }}
-        )                                                                                           as dosage_route
-    ,   cast(
-            coalesce(
-                mr.dosageinstruction_0_site_coding_0_display,
-                mr.dosageinstruction_0_site_coding_1_display,
-                mr.dosageinstruction_0_site_text,
-                mr.dosageinstruction_1_site_coding_0_display,
-                mr.dosageinstruction_1_site_coding_1_display,
-                mr.dosageinstruction_1_site_text
-            ) as {{ dbt.type_string() }}
-        )                                                                                           as dosage_site
-    ,   cast(
-            coalesce(
                 mr.note_0_text,
                 mr.note_1_text,
                 mr.note_2_text,
@@ -55,20 +25,6 @@ select
                 mr.note_4_text
             ) as {{ dbt.type_string() }}
         )                                                                                           as note_text
-    ,   cast(
-            case 
-                when mr.requester_reference ilike '%practitioner%' 
-                    then right(mr.requester_reference, 36)
-                else null
-            end as {{ dbt.type_string() }}
-        )                                                                                           as requester_practitioner_id
-    ,   cast(
-            case 
-                when mr.requester_reference ilike '%organization%' 
-                    then right(mr.requester_reference, 36)
-                else null
-            end as {{ dbt.type_string() }}
-        )                                                                                           as requester_organization_id
     ,   cast(mr.meta_source as {{ dbt.type_string() }} )                                            as data_source
 from {{ref('stage__medicationrequest')}} as mr
 inner join {{ref('stage__medication')}} as m

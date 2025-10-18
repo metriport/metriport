@@ -1,4 +1,18 @@
-with target_code_codings as (
+with base_resource as (
+    select
+        id,
+        subject_reference,
+        recordeddate,
+        onsetdatetime,
+        onsetperiod_start,
+        onsetperiod_end,
+        note_0_text,
+        note_1_text,
+        note_2_text,
+        meta_source
+    from {{ref('stage__condition')}}
+),
+target_code_codings as (
    {{   
         get_target_codings(
             get_condition_codings,
@@ -46,7 +60,7 @@ select
     ,   coalesce(
             {{ try_to_cast_date('c.onsetdatetime') }}, 
             {{ try_to_cast_date('c.onsetperiod_start') }}
-        )                                                                                                   as start_date
+        )                                                                                                   as onset_date
     ,   {{ try_to_cast_date('c.onsetperiod_end') }}                                                         as end_date
     ,   cast(
             coalesce(
@@ -95,9 +109,8 @@ select
                 c.note_2_text
             ) as {{ dbt.type_string() }} 
         )                                                                                                   as note_text
-    ,   cast(right(c.recorder_reference, 36) as {{ dbt.type_string() }} )                                   as recorder_practitioner_id
     ,   cast(c.meta_source as {{ dbt.type_string() }} )                                                     as data_source
-from {{ref('stage__condition')}} c
+from base_resource c
 left join target_code_codings tc_icd_10_cm
     on c.id = tc_icd_10_cm.condition_id 
         and tc_icd_10_cm.system = 'http://hl7.org/fhir/sid/icd-10-cm'

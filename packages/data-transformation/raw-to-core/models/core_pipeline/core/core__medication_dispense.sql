@@ -19,62 +19,15 @@ select
                 md.dosageinstruction_1_doseandrate_0_dosequantity_value
             ) as {{ dbt.type_string() }} 
         )                                                                                           as dose_amount
-    ,   cast(md.dayssupply_value as {{ dbt.type_string() }} )                                       as days_supply
+    ,   cast(md.dayssupply_value as {{ dbt.type_string() }} )                                       as days_supply_amount
     ,   cast(md.dayssupply_unit as {{ dbt.type_string() }} )                                        as days_supply_unit
-    ,   cast(
-            coalesce(
-                md.dosageinstruction_0_method_coding_0_display,
-                md.dosageinstruction_0_method_coding_1_display,
-                md.dosageinstruction_0_method_text,
-                md.dosageinstruction_1_method_coding_0_display,
-                md.dosageinstruction_1_method_coding_1_display,
-                md.dosageinstruction_1_method_text
-            ) as {{ dbt.type_string() }}
-        )                                                                                           as dosage_method
-    ,   cast(
-            coalesce(
-                md.dosageinstruction_0_route_coding_0_display,
-                md.dosageinstruction_0_route_coding_1_display,
-                md.dosageinstruction_0_route_text,
-                md.dosageinstruction_1_route_coding_0_display,
-                md.dosageinstruction_1_route_coding_1_display,
-                md.dosageinstruction_1_route_text
-            ) as {{ dbt.type_string() }}
-        )                                                                                           as dosage_route
-    ,   cast(
-            coalesce(
-                md.dosageinstruction_0_site_coding_0_display,
-                md.dosageinstruction_0_site_coding_1_display,
-                md.dosageinstruction_0_site_text,
-                md.dosageinstruction_1_site_coding_0_display,
-                md.dosageinstruction_1_site_coding_1_display,
-                md.dosageinstruction_1_site_text
-            ) as {{ dbt.type_string() }}
-        )                                                                                           as dosage_site
     ,   cast(
             coalesce(
                 md.note_0_text,
                 md.note_1_text,
-                md.note_2_text,
-                md.note_3_text,
-                md.note_4_text
+                md.note_2_text
             ) as {{ dbt.type_string() }}
         )                                                                                           as note_text
-    ,   cast(
-            case 
-                when md.performer_0_actor_reference ilike '%practitioner%' 
-                    then right(md.performer_0_actor_reference, 36)
-                else null
-            end as {{ dbt.type_string() }}
-        )                                                                                           as performer_practitioner_id
-    ,   cast(
-            case 
-                when md.performer_0_actor_reference ilike '%organization%' 
-                    then right(md.performer_0_actor_reference, 36)
-                else null
-            end as {{ dbt.type_string() }}
-        )                                                                                           as performer_organization_id
-    ,   cast(right(md.location_reference, 36) as {{ dbt.type_string() }} )                          as location_id
     ,   cast(md.meta_source as {{ dbt.type_string() }} )                                            as data_source
 from {{ref('stage__medicationdispense')}} as md
 inner join {{ref('stage__medication')}} as m

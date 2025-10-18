@@ -6,7 +6,7 @@ select
     ,   coalesce(
             {{ try_to_cast_date('ms.effectivedatetime') }},
             {{ try_to_cast_date('ms.effectiveperiod_start') }}
-        )                                                                                           as start_date
+        )                                                                                           as effective_date
     ,   {{ try_to_cast_date('ms.effectiveperiod_end') }}                                            as end_date
     ,   cast(
             coalesce(
@@ -20,36 +20,6 @@ select
                 ms.dosage_1_doseandrate_0_dosequantity_value
             ) as {{ dbt.type_string() }} 
         )                                                                                           as dose_amount
-    ,   cast(
-            coalesce(
-                ms.dosage_0_method_coding_0_display,
-                ms.dosage_0_method_coding_1_display,
-                ms.dosage_0_method_text,
-                ms.dosage_1_method_coding_0_display,
-                ms.dosage_1_method_coding_1_display,
-                ms.dosage_1_method_text
-            ) as {{ dbt.type_string() }}
-        )                                                                                           as dosage_method
-    ,   cast(
-            coalesce(
-                ms.dosage_0_route_coding_0_display,
-                ms.dosage_0_route_coding_1_display,
-                ms.dosage_0_route_text,
-                ms.dosage_1_route_coding_0_display,
-                ms.dosage_1_route_coding_1_display,
-                ms.dosage_1_route_text
-            ) as {{ dbt.type_string() }}
-        )                                                                                           as dosage_route
-    ,   cast(
-            coalesce(
-                ms.dosage_0_site_coding_0_display,
-                ms.dosage_0_site_coding_1_display,
-                ms.dosage_0_site_text,
-                ms.dosage_1_site_coding_0_display,
-                ms.dosage_1_site_coding_1_display,
-                ms.dosage_1_site_text
-            ) as {{ dbt.type_string() }}
-        )                                                                                           as dosage_site
     ,   cast(
             coalesce(
                 ms.note_0_text,

@@ -1,4 +1,18 @@
-with target_code_codings as (
+with base_resource as (
+    select
+        id,
+        subject_reference,
+        status,
+        performeddatetime,
+        performedperiod_start,
+        performedperiod_end,
+        note_0_text,
+        note_1_text,
+        note_2_text,
+        meta_source
+    from {{ref('stage__procedure')}}
+),
+target_code_codings as (
    {{   
         get_target_codings(
             get_procedcure_codings,
@@ -45,7 +59,7 @@ select
     ,   coalesce(
             {{ try_to_cast_date('pro.performeddatetime', 'YYYY-MM-DD') }},
             {{ try_to_cast_date('pro.performedperiod_start', 'YYYY-MM-DD') }}
-        )                                                                                                           as start_date
+        )                                                                                                           as performed_date
     ,   {{ try_to_cast_date('pro.performedperiod_end', 'YYYY-MM-DD') }}                                             as end_date
     ,   cast(
             coalesce(
@@ -79,30 +93,11 @@ select
             coalesce(
                 pro.note_0_text,
                 pro.note_1_text,
-                pro.note_2_text,
-                pro.note_3_text,
-                pro.note_4_text,
-                pro.note_5_text,
-                pro.note_6_text,
-                pro.note_7_text
+                pro.note_2_text
             ) as {{ dbt.type_string() }} 
         )                                                                                                           as note_text
-    ,   cast(
-            case 
-                when pro.performer_0_actor_reference ilike '%practitioner%' 
-                    then right(pro.performer_0_actor_reference, 36)
-                else null
-            end as {{ dbt.type_string() }}
-        )                                                                                                           as performer_practitioner_id
-    ,   cast(
-            case 
-                when pro.performer_0_actor_reference ilike '%organization%' 
-                    then right(pro.performer_0_actor_reference, 36)
-                else null
-            end as {{ dbt.type_string() }}
-        )                                                                                                           as performer_organization_id
     ,   cast(pro.meta_source as {{ dbt.type_string() }} )                                                           as data_source
-from {{ref('stage__procedure' )}} pro
+from base_resource pro
 left join target_code_codings tc_cpt
     on pro.id = tc_cpt.procedure_id 
         and tc_cpt.system = 'http://www.ama-assn.org/go/cpt'

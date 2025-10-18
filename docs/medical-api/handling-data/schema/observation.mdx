@@ -19,7 +19,7 @@ Normalization of coding systems only occurs when the source coding system is one
 | ------ | --------- | ----------- |
 | observation_id | string | Unique identifier for the observation |
 | patient_id | string | Unique identifier for the patient |
-| status | string | Status of the observation |
+| status | string | Status of the observation. Possible values:<br/>– <code>registered</code>: The existence of the observation is registered, but there is no result yet available.<br/>– <code>preliminary</code>: This is an initial or interim observation: data may be incomplete or unverified.<br/>– <code>final</code>: The observation is complete and verified by an authorized person.<br/>– <code>amended</code>: Subsequent to being final, the observation has been modified; the current version is complete and verified.<br/>– <code>corrected</code>: Subsequent to being final, the observation has been modified to correct an error in the result.<br/>– <code>cancelled</code>: The observation is unavailable because the measurement was not started or not completed.<br/>– <code>entered-in-error</code>: The observation has been withdrawn following erroneous entry.<br/>– <code>unknown</code>: The authoring/source system does not know the current status of the observation. |
 | effective_date | date | Start date of the observation |
 | end_date | date | End date of the observation |
 | loinc_code | string | LOINC code for the observation |

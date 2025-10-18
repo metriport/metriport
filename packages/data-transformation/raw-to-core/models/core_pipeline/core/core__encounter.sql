@@ -1,4 +1,17 @@
-with target_type_codings as (
+with base_resource as (
+    select
+        id,
+        subject_reference,
+        status,
+        period_start,
+        period_end,
+        class_system,
+        class_code,
+        class_display,
+        meta_source
+    from {{ref('stage__encounter')}}
+),
+target_type_codings as (
    {{   
         get_target_codings(
             get_encounter_type_codings,
@@ -49,17 +62,14 @@ select
                 else null
             end as {{ dbt.type_string() }}
         )                                                                                       as act_display
-    ,   cast(enc.class_code as {{ dbt.type_string() }} )                                        as generic_class_code
-    ,   cast(enc.class_display as {{ dbt.type_string() }} )                                     as generic_class_display
+    ,   cast(enc.class_code as {{ dbt.type_string() }} )                                        as source_class_code
+    ,   cast(enc.class_display as {{ dbt.type_string() }} )                                     as source_class_display
     ,   cast(type_hl7.code as {{ dbt.type_string() }} )                                         as type_hl7_code
     ,   cast(type_hl7.display as {{ dbt.type_string() }} )                                      as type_hl7_display
     ,   cast(dd_hl7.code as {{ dbt.type_string() }} )                                           as discharge_disposition_hl7_code
     ,   cast(dd_hl7.display as {{ dbt.type_string() }} )                                        as discharge_disposition_hl7_display
-    ,   cast(right(enc.participant_0_individual_reference, 36) as {{ dbt.type_string() }} )     as participant_practitioner_id
-    ,   cast(right(enc.location_0_location_reference, 36) as {{ dbt.type_string() }} )          as location_id
-    ,   cast(right(enc.serviceprovider_reference, 36) as {{ dbt.type_string() }} )              as organization_id
     ,   cast(enc.meta_source as {{ dbt.type_string() }} )                                       as data_source
-from {{ref('stage__encounter')}} as enc
+from base_resource as enc
 left join target_type_codings type_hl7
     on enc.id = type_hl7.encounter_id 
         and type_hl7.system = 'http://terminology.hl7.org/CodeSystem/encounter-type'

@@ -1,4 +1,33 @@
-with target_code_codings as (
+with base_resource as (
+    select
+        id,
+        subject_reference,
+        status,
+        effectivedatetime,
+        effectiveperiod_start,
+        effectiveperiod_end,
+        valuequantity_value,
+        valuestring,
+        valuecodeableconcept_text,
+        valuecodeableconcept_coding_0_display,
+        valuecodeableconcept_coding_1_display,
+        valuecodeableconcept_coding_2_display,
+        valuequantity_unit,
+        referencerange_0_high_unit,
+        referencerange_0_low_unit,
+        referencerange_1_high_unit,
+        referencerange_1_low_unit,
+        referencerange_0_low_value,
+        referencerange_1_low_value,
+        referencerange_0_high_value,
+        referencerange_1_high_value,
+        note_0_text,
+        note_1_text,
+        note_2_text,
+        meta_source
+    from {{ref('stage__observation')}}
+),
+target_code_codings as (
    {{   
         get_target_codings(
             get_observtaion_codings,
@@ -57,7 +86,7 @@ select
     ,   coalesce(
             {{ try_to_cast_date('obvs.effectivedatetime') }}, 
             {{ try_to_cast_date('obvs.effectiveperiod_start') }} 
-        )                                                                                                   as start_date
+        )                                                                                                   as effective_date
     ,   {{ try_to_cast_date('obvs.effectiveperiod_end') }}                                                  as end_date
     ,   cast(
             coalesce(
@@ -80,7 +109,7 @@ select
                 obvs.valuecodeableconcept_coding_1_display,
                 obvs.valuecodeableconcept_coding_2_display
             ) as {{ dbt.type_string() }} 
-        )                                                                                                   as result
+        )                                                                                                   as value
     ,   cast(
             coalesce(
                 obvs.valuequantity_unit, 
@@ -115,20 +144,8 @@ select
                 obvs.note_2_text
             ) as {{ dbt.type_string() }} 
         )                                                                                                   as note_text
-    ,   cast(
-            case 
-                when obvs.performer_0_reference ilike '%practitioner%' then right(obvs.performer_0_reference, 36)
-                else null
-            end as {{ dbt.type_string() }}
-        )                                                                                                   as performer_practitioner_id
-    ,   cast(
-            case 
-                when obvs.performer_0_reference ilike '%organization%' then right(obvs.performer_0_reference, 36)
-                else null
-            end as {{ dbt.type_string() }}
-        )                                                                                                   as performer_organization_id
     ,   cast(obvs.meta_source as {{ dbt.type_string() }} )                                                  as data_source
-from {{ref('stage__observation')}} obvs
+from base_resource obvs
 left join target_code_codings tc_loinc
     on obvs.id = tc_loinc.observation_id 
         and tc_loinc.system = 'http://loinc.org'

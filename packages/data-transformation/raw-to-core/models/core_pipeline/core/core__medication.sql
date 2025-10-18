@@ -1,4 +1,10 @@
-with target_code_codings as (
+with base_resource as (
+    select
+        id,
+        meta_source
+    from {{ref('stage__medication')}}
+),
+target_code_codings as (
     {{   
         get_target_codings(
             get_medication_codings,
@@ -14,12 +20,13 @@ with target_code_codings as (
 )
 select 
         cast(m.id as {{ dbt.type_string() }} )                                                              as medication_id
+    ,   cast(m.status as {{ dbt.type_string() }} )                                                          as status
     ,   cast(tc_rxnorm.code as {{ dbt.type_string() }})                                                     as rxnorm_code
     ,   cast(tc_rxnorm.display as {{ dbt.type_string() }} )                                                 as rxnorm_display
     ,   cast(tc_ndc.code as {{ dbt.type_string() }} )                                                       as ndc_code
     ,   cast(tc_ndc.display as {{ dbt.type_string() }} )                                                    as ndc_display
     ,   cast(meta_source as {{ dbt.type_string() }} )                                                       as data_source
-from {{ref('stage__medication')}} m
+from base_resource m
 left join target_code_codings tc_rxnorm
     on m.id = tc_rxnorm.medication_id 
         and tc_rxnorm.system = 'http://www.nlm.nih.gov/research/umls/rxnorm'
