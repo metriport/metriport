@@ -1,0 +1,113 @@
+{
+  "inputText": "Prednisone 40 mg tablet, take one tablet by mouth daily for 5 days, then taper by 10 mg every 3 days until discontinued.",
+  "response": {
+    "$metadata": {
+      "httpStatusCode": 200,
+      "requestId": "068ed004-0e3d-4da8-a831-63147f6a478b",
+      "attempts": 1,
+      "totalRetryDelay": 0
+    },
+    "Entities": [
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 11,
+            "EndOffset": 16,
+            "Id": 2,
+            "RelationshipScore": 0.7552722692489624,
+            "Score": 0.7613970637321472,
+            "Text": "40 mg",
+            "Traits": [],
+            "Type": "STRENGTH"
+          },
+          {
+            "BeginOffset": 17,
+            "EndOffset": 23,
+            "Id": 3,
+            "RelationshipScore": 0.8219892978668213,
+            "Score": 0.821601390838623,
+            "Text": "tablet",
+            "Traits": [],
+            "Type": "FORM"
+          },
+          {
+            "BeginOffset": 30,
+            "EndOffset": 40,
+            "Id": 4,
+            "RelationshipScore": 0.6270833611488342,
+            "Score": 0.6603351831436157,
+            "Text": "one tablet",
+            "Traits": [],
+            "Type": "DOSAGE"
+          },
+          {
+            "BeginOffset": 41,
+            "EndOffset": 49,
+            "Id": 5,
+            "RelationshipScore": 0.7552722692489624,
+            "Score": 0.7613970637321472,
+            "Text": "by mouth",
+            "Traits": [],
+            "Type": "ROUTE_OR_MODE"
+          },
+          {
+            "BeginOffset": 50,
+            "EndOffset": 55,
+            "Id": 7,
+            "RelationshipScore": 0.7814922332763672,
+            "Score": 0.7950295805931091,
+            "Text": "daily",
+            "Traits": [],
+            "Type": "FREQUENCY"
+          },
+          {
+            "BeginOffset": 60,
+            "EndOffset": 66,
+            "Id": 8,
+            "RelationshipScore": 0.7223333120346069,
+            "Score": 0.7172441482543945,
+            "Text": "5 days",
+            "Traits": [],
+            "Type": "DURATION"
+          }
+        ],
+        "BeginOffset": 0,
+        "Category": "MEDICATION",
+        "EndOffset": 10,
+        "Id": 1,
+        "RxNormConcepts": [
+          {
+            "Code": "312615",
+            "Description": "prednisone 20 mg oral tablet",
+            "Score": 0.013625063933432102
+          },
+          {
+            "Code": "198146",
+            "Description": "prednisone 2.5 mg oral tablet",
+            "Score": 0.007525224704295397
+          },
+          {
+            "Code": "198145",
+            "Description": "prednisone 10 mg oral tablet",
+            "Score": 0.007094828877598047
+          },
+          {
+            "Code": "198148",
+            "Description": "prednisone 50 mg oral tablet",
+            "Score": 0.005713817197829485
+          },
+          {
+            "Code": "198144",
+            "Description": "prednisone 1 mg oral tablet",
+            "Score": 0.005478474777191877
+          }
+        ],
+        "Score": 0.7613970637321472,
+        "Text": "Prednisone",
+        "Traits": [],
+        "Type": "GENERIC_NAME"
+      }
+    ],
+    "ModelVersion": "3.1.0.20221107"
+  }
+}

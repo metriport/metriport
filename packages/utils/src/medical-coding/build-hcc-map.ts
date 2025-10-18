@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { readHccSource, writeHccMap, HccSourceRow } from "./shared";
+import { readHccSource, writeToPackage, HccSourceRow } from "./shared";
 
 /**
  * Builds a mapping of ICD-10 codes to HCCs by reading from the HCC source file.
@@ -49,7 +49,7 @@ command.action(async ({ year = "2025" }) => {
 
   // Write the output to the TypeScript source file
   const output = generated.join("");
-  writeHccMap("core/src/external/fhir/shared/hcc-map.ts", output);
+  writeToPackage("core", "external/fhir/shared/hcc-map.ts", output);
 });
 
 function getAllValidCodes(rows: HccSourceRow[], key: keyof HccSourceRow): string[] {

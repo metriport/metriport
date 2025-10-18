@@ -1,0 +1,166 @@
+[
+  {
+    "resourceType": "Medication",
+    "id": "01995080-f8f5-739c-acf8-945f6ad55368",
+    "status": "active",
+    "code": {
+      "text": "Metformin",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "861007",
+          "display": "metformin hydrochloride 500 mg oral tablet"
+        }
+      ]
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Metformin 500 mg twice daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 28
+          },
+          "high": {
+            "value": 56
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01995080-f8f5-739c-acf8-94608b889099",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01995080-f8f5-739c-acf8-945f6ad55368"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
+    },
+    "dosage": [
+      {
+        "text": "500 mg",
+        "doseAndRate": [
+          {
+            "extension": [
+              {
+                "url": "https://metriport.com/data-extraction",
+                "valueString": "500 mg"
+              }
+            ],
+            "doseQuantity": {
+              "value": 500,
+              "unit": "mg",
+              "system": "http://unitsofmeasure.org",
+              "code": "mg"
+            }
+          }
+        ]
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Metformin 500 mg twice daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 28
+          },
+          "high": {
+            "value": 56
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "Medication",
+    "id": "01995080-f8f5-739c-acf8-9461635ca5a6",
+    "status": "active",
+    "code": {
+      "text": "Atorvastatin",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "617310",
+          "display": "atorvastatin 20 mg oral tablet"
+        }
+      ]
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Atorvastatin 20 mg at bedtime",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 61
+          },
+          "high": {
+            "value": 90
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01995080-f8f5-739c-acf8-9462da3fc3f7",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01995080-f8f5-739c-acf8-9461635ca5a6"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
+    },
+    "dosage": [
+      {
+        "text": "20 mg",
+        "doseAndRate": [
+          {
+            "extension": [
+              {
+                "url": "https://metriport.com/data-extraction",
+                "valueString": "20 mg"
+              }
+            ],
+            "doseQuantity": {
+              "value": 20,
+              "unit": "mg",
+              "system": "http://unitsofmeasure.org",
+              "code": "mg"
+            }
+          }
+        ]
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Atorvastatin 20 mg at bedtime",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 61
+          },
+          "high": {
+            "value": 90
+          }
+        }
+      }
+    ]
+  }
+]
