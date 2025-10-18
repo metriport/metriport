@@ -10,43 +10,22 @@ The encounter table is intended to store information that represents a unique pa
 * encounter_id
 
 **Foreign Keys:**
-* person_id
+* patient_id
 
-| Column | Data Type | Description | Terminology |
-| ------ | --------- | ----------- | ----------- |
-| encounter_id | string | Unique identifier for the encounter | - |
-| person_id | string | Unique identifier for the person | - |
-| member_id | string | Unique identifier for the member | - |
-| patient_id | string | Unique identifier for the patient | - |
-| encounter_type | string | Type of encounter (e.g., inpatient, outpatient, emergency) | - |
-| encounter_class | string | Classification of the encounter | inpatient, outpatient, emergency, urgent_care |
-| encounter_start_date | date | Start date/time of the encounter | - |
-| encounter_end_date | date | End date/time of the encounter | - |
-| admission_date | date | Date of admission for inpatient encounters | - |
-| discharge_date | date | Date of discharge for inpatient encounters | - |
-| facility_id | string | Identifier for the healthcare facility | - |
-| facility_name | string | Name of the healthcare facility | - |
-| facility_type | string | Type of healthcare facility | hospital, clinic, urgent_care |
-| provider_id | string | Identifier for the primary provider | - |
-| provider_name | string | Name of the primary provider | - |
-| provider_type | string | Type of provider | physician, nurse, specialist |
-| diagnosis_primary | string | Primary diagnosis code | ICD-9-CM, ICD-10-CM |
-| diagnosis_secondary | string | Secondary diagnosis codes | ICD-9-CM, ICD-10-CM |
-| procedure_primary | string | Primary procedure code | CPT, HCPCS, ICD-9-CM, ICD-10-CM |
-| procedure_secondary | string | Secondary procedure codes | CPT, HCPCS, ICD-9-CM, ICD-10-CM |
-| total_charge_amount | decimal | Total amount charged for the encounter | - |
-| total_paid_amount | decimal | Total amount paid for the encounter | - |
-| copay_amount | decimal | Copay amount for the encounter | - |
-| deductible_amount | decimal | Deductible amount for the encounter | - |
-| coinsurance_amount | decimal | Coinsurance amount for the encounter | - |
-| discharge_disposition | string | Discharge disposition | home, skilled_nursing, hospice |
-| length_of_stay | integer | Length of stay in days | - |
-| emergency_indicator | boolean | Whether this was an emergency encounter | - |
-| urgent_indicator | boolean | Whether this was an urgent encounter | - |
-| data_source | string | Source of the encounter data | claims, clinical, ehr |
-| source_code | string | Original code from the source system | - |
-| normalized_code | string | Standardized/normalized code | - |
-| source_system | string | System that provided the encounter data | - |
-| source_table | string | Table in the source system | - |
-| source_id | string | Identifier from the source system | - |
-| ingestion_date | timestamp | Date when the data was ingested | - |
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| encounter_id | string | Unique identifier for the encounter |
+| patient_id | string | Unique identifier for the patient |
+| status | string | Status of the encounter. Possible values:<br/>– <code>planned</code>: The encounter has not yet started.<br/>– <code>arrived</code>: The patient is present for the encounter, but the encounter has not yet begun.<br/>– <code>triaged</code>: The patient has been assessed for the priority of care.<br/>– <code>in-progress</code>: The encounter has begun and the patient is present.<br/>– <code>onleave</code>: The patient has temporarily left, but is expected to return.<br/>– <code>finished</code>: The encounter has ended.<br/>– <code>cancelled</code>: The encounter has been cancelled before it started.<br/>– <code>entered-in-error</code>: The encounter was entered in error and should not be considered valid.<br/>– <code>unknown</code>: The status of the encounter is unknown or cannot be determined.|
+| start_date | date | Start date of the encounter |
+| end_date | date | End date of the encounter |
+| length_of_stay | integer | Length of stay in days |
+| act_code | string | ACT code for encounter class |
+| act_display | string | Human-readable description of ACT code |
+| source_class_code | string | Source class code for encounter |
+| source_class_display | string | Human-readable description of source class |
+| type_hl7_code | string | HL7 encounter type code |
+| type_hl7_display | string | Human-readable description of HL7 encounter type |
+| discharge_disposition_hl7_code | string | HL7 discharge disposition code |
+| discharge_disposition_hl7_display | string | Human-readable description of discharge disposition |
+| data_source | string | Source of the encounter data |

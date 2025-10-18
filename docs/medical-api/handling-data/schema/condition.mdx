@@ -4,48 +4,33 @@ description: "Schema documentation for the Condition table in the Metriport data
 group: "Schema"
 ---
 
-A condition is any sort of symptom, problem, complaint, admitting diagnosis, or billing diagnosis as reported by the patient, a clinician, or as otherwise generated (e.g. by the billing process). Key ancillary data related to condition includes the date it was reported, it's rank (i.e. primary or secondary), and whether or not it was present during admission for an acute inpatient encounter.
+A condition is any sort of symptom, problem, complaint, admitting diagnosis, or billing diagnosis as reported by the patient, a clinician, or as otherwise generated (e.g. by the billing process). Key ancillary data related to condition includes the date it was reported, its clinical status, and any relevant body site information.
 
-Conditions can only be generated during encounters (i.e. every condition must have an encounter_id).
+**Normalization Note:**
+Normalization of coding systems only occurs when the source coding system is one of: ICD-10-CM, SNOMED CT, ICD-9-CM, or LOINC. Other coding systems will not have normalized codes.
 
 **Primary Keys:**
 * condition_id
 
 **Foreign Keys:**
-* person_id
-* member_id
 * patient_id
-* encounter_id
 
-| Column | Data Type | Description | Terminology |
-| ------ | --------- | ----------- | ----------- |
-| condition_id | string | Unique identifier for the condition | - |
-| person_id | string | Unique identifier for the person | - |
-| member_id | string | Unique identifier for the member | - |
-| patient_id | string | Unique identifier for the patient | - |
-| encounter_id | string | Unique identifier for the encounter | - |
-| condition_type | string | Type of condition (e.g., problem, symptom, diagnosis) | - |
-| condition_code | string | Standardized code for the condition | ICD-9-CM, ICD-10-CM, SNOMED CT |
-| condition_code_type | string | Type of coding system used | icd-9-cm, icd-10-cm, snomed-ct |
-| condition_code_system | string | Coding system identifier | - |
-| condition_code_version | string | Version of the coding system | - |
-| condition_code_display | string | Human-readable description of the condition | - |
-| condition_rank | integer | Rank/priority of the condition (1 = primary, 2 = secondary, etc.) | - |
-| recorded_date | date | Date when the condition was recorded | - |
-| onset_date | date | Date when the condition began | - |
-| abatement_date | date | Date when the condition resolved | - |
-| clinical_status | string | Clinical status of the condition | active, inactive, resolved |
-| verification_status | string | Verification status of the condition | confirmed, provisional, differential |
-| severity | string | Severity of the condition | mild, moderate, severe |
-| category | string | Category or classification of the condition | - |
-| body_site | string | Anatomical location of the condition | - |
-| laterality | string | Side of the body affected | left, right, bilateral |
-| encounter_class | string | Class of the associated encounter | inpatient, outpatient, emergency |
-| facility_type | string | Type of healthcare facility | hospital, clinic, urgent_care |
-| data_source | string | Source of the condition data | claims, clinical, ehr |
-| source_code | string | Original code from the source system | - |
-| normalized_code | string | Standardized/normalized code | - |
-| source_system | string | System that provided the condition data | - |
-| source_table | string | Table in the source system | - |
-| source_id | string | Identifier from the source system | - |
-| ingestion_date | timestamp | Date when the data was ingested | - |
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| condition_id | string | Unique identifier for the condition |
+| patient_id | string | Unique identifier for the patient |
+| recorded_date | date | Date when the condition was recorded |
+| onset_date | date | Date when the condition began |
+| end_date | date | Date when the condition ended |
+| icd_10_cm_code | string | ICD-10-CM code for the condition |
+| icd_10_cm_display | string | Human-readable description of ICD-10-CM code |
+| snomed_code | string | SNOMED CT code for the condition |
+| snomed_display | string | Human-readable description of SNOMED CT code |
+| icd_9_cm_code | string | ICD-9-CM code for the condition |
+| icd_9_cm_display | string | Human-readable description of ICD-9-CM code |
+| category_hl7_code | string | HL7 category code for the condition |
+| category_hl7_display | string | Human-readable description of HL7 category |
+| clinical_status_hl7_code | string | HL7 clinical status code |
+| clinical_status_hl7_display | string | Human-readable description of clinical status |
+| note_text | string | Additional notes about the condition |
+| data_source | string | Source of the condition data |
