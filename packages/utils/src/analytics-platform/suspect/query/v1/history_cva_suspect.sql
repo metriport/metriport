@@ -181,8 +181,8 @@ cva_suspects AS (
   SELECT
     c.PATIENT_ID,
     'cva_history'                                                               AS suspect_group,
-    'Z8673'                                                                     AS suspect_icd10_code,
-    'Personal history of TIA and cerebral infarction without residual deficits' AS suspect_icd10_short_description,
+    'Z86.73'                                                                    AS suspect_icd10_code,
+    'History of Cerebrovascular Accident (CVA)'                                 AS suspect_icd10_short_description,
 
     /* carry-through for FHIR (Procedure) */
     c.resource_id,
