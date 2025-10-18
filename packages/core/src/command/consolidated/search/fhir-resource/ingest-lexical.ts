@@ -87,12 +87,10 @@ function processErrors({
 }) {
   const errorMapToObj = Object.fromEntries(errors.entries());
   log(`Errors: `, () => JSON.stringify(errorMapToObj));
-  throw new MetriportError("Errors ingesting resources into OpenSearch", {
-    extra: {
-      cxId,
-      patientId,
-      countPerErrorType: JSON.stringify(errorMapToObj),
-    },
+  throw new MetriportError("Errors ingesting resources into OpenSearch", undefined, {
+    cxId,
+    patientId,
+    countPerErrorType: JSON.stringify(errorMapToObj),
   });
 }
 
