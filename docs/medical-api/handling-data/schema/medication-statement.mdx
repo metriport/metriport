@@ -13,18 +13,15 @@ A medication statement record represents a record of a medication that is being 
 * patient_id
 * medication_id
 
-| Column | Data Type | Description | Terminology |
-| ------ | --------- | ----------- | ----------- |
-| medication_statement_id | string | Unique identifier for the medication statement | - |
-| patient_id | string | Unique identifier for the patient | - |
-| medication_id | string | Unique identifier for the medication | - |
-| status | string | Status of the medication statement | active, completed, entered-in-error, intended, stopped, on-hold, unknown, not-taken |
-| start_date | date | Start date of the medication statement | - |
-| end_date | date | End date of the medication statement | - |
-| dose_unit | string | Unit of measurement for the dose | - |
-| dose_amount | string | Amount of medication | - |
-| dosage_method | string | Method of administration | - |
-| dosage_route | string | Route of administration | oral, intravenous, intramuscular, subcutaneous, topical |
-| dosage_site | string | Anatomical site of administration | - |
-| note_text | string | Additional notes about the statement | - |
-| data_source | string | Source of the medication statement data | - |
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| medication_statement_id | string | Unique identifier for the medication statement |
+| patient_id | string | Unique identifier for the patient |
+| medication_id | string | Unique identifier for the medication |
+| status | string | Status of the medication statement. Possible values:<br/>– <code>active</code>: The medication is still being taken.<br/>– <code>completed</code>: The medication is no longer being taken.<br/>– <code>entered-in-error</code>: The statement was entered in error.<br/>– <code>intended</code>: The medication was intended to be taken.<br/>– <code>stopped</code>: The medication has been stopped.<br/>– <code>on-hold</code>: The medication is temporarily not being taken.<br/>– <code>unknown</code>: The authoring/source system does not know the status.<br/>– <code>not-taken</code>: The medication was not taken (this element is not used in most systems).|
+| effective_date | date | Start date of the medication statement |
+| end_date | date | End date of the medication statement |
+| dose_unit | string | Unit of measurement for the dose |
+| dose_amount | string | Amount of medication |
+| note_text | string | Additional notes about the statement |
+| data_source | string | Source of the medication statement data |

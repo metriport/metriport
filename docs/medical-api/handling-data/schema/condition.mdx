@@ -14,32 +14,23 @@ Normalization of coding systems only occurs when the source coding system is one
 
 **Foreign Keys:**
 * patient_id
-* practitioner_id
 
-| Column | Data Type | Description | Terminology |
-| ------ | --------- | ----------- | ----------- |
-| condition_id | string | Unique identifier for the condition | - |
-| patient_id | string | Unique identifier for the patient | - |
-| status | string | Status of the condition | - |
-| recorded_date | date | Date when the condition was recorded | - |
-| start_date | date | Date when the condition began | - |
-| end_date | date | Date when the condition ended | - |
-| category | string | Category of the condition | problem, diagnosis, disease |
-| source_code_type | string | Type of coding system for source code | - |
-| source_code | string | Original code from the source system | - |
-| source_description | string | Human-readable description from source | - |
-| normalized_code_type | string | Type of normalized coding system | ICD-10-CM, SNOMED CT, ICD-9-CM, or LOINC |
-| normalized_code | string | Standardized/normalized code | ICD-10-CM, SNOMED CT, ICD-9-CM, or LOINC |
-| normalized_description | string | Human-readable description of normalized code | ICD-10-CM, SNOMED CT, ICD-9-CM, or LOINC |
-| status_code_type | string | Type of coding system for status | - |
-| status_code | string | Clinical status code | - |
-| status_description | string | Human-readable description of status | - |
-| category_code_type | string | Type of coding system for category | - |
-| category_code | string | Category code | - |
-| category_description | string | Human-readable description of category | - |
-| note_text | string | Additional notes about the condition | - |
-| practitioner_id | string | Unique identifier for the practitioner who recorded | - |
-| data_source | string | Source of the condition data | - |
-
-**Related Tables:**
-* [Condition Encounter](/medical-api/handling-data/schema/condition-encounter) - Links conditions to encounters
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| condition_id | string | Unique identifier for the condition |
+| patient_id | string | Unique identifier for the patient |
+| recorded_date | date | Date when the condition was recorded |
+| onset_date | date | Date when the condition began |
+| end_date | date | Date when the condition ended |
+| icd_10_cm_code | string | ICD-10-CM code for the condition |
+| icd_10_cm_display | string | Human-readable description of ICD-10-CM code |
+| snomed_code | string | SNOMED CT code for the condition |
+| snomed_display | string | Human-readable description of SNOMED CT code |
+| icd_9_cm_code | string | ICD-9-CM code for the condition |
+| icd_9_cm_display | string | Human-readable description of ICD-9-CM code |
+| category_hl7_code | string | HL7 category code for the condition |
+| category_hl7_display | string | Human-readable description of HL7 category |
+| clinical_status_hl7_code | string | HL7 clinical status code |
+| clinical_status_hl7_display | string | Human-readable description of clinical status |
+| note_text | string | Additional notes about the condition |
+| data_source | string | Source of the condition data |

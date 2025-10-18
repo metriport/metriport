@@ -14,28 +14,21 @@ Normalization of coding systems only occurs when the source coding system is one
 
 **Foreign Keys:**
 * patient_id
-* practitioner_id
 
-| Column | Data Type | Description | Terminology |
-| ------ | --------- | ----------- | ----------- |
-| procedure_id | string | Unique identifier for the procedure | - |
-| patient_id | string | Unique identifier for the patient | - |
-| status | string | Status of the procedure | completed, in-progress, cancelled |
-| start_date | date | Start date of the procedure | - |
-| end_date | date | End date of the procedure | - |
-| source_code_type | string | Type of coding system for source code | - |
-| source_code | string | Original code from the source system | - |
-| source_description | string | Human-readable description from source | - |
-| normalized_code_type | string | Type of normalized coding system | CPT, LOINC, SNOMED CT, or HCPCS |
-| normalized_code | string | Standardized/normalized code | CPT, LOINC, SNOMED CT, or HCPCS |
-| normalized_description | string | Human-readable description of normalized code | CPT, LOINC, SNOMED CT, or HCPCS |
-| body_site_code_type | string | Type of coding system for body site | - |
-| body_site_code | string | Body site code | - |
-| body_site_description | string | Human-readable description of body site | - |
-| reason_code_type | string | Type of coding system for reason | - |
-| reason_code | string | Reason code | - |
-| reason_description | string | Human-readable description of reason | - |
-| note_text | string | Additional notes about the procedure | - |
-| practitioner_id | string | Unique identifier for the practitioner | - |
-| organization_id | string | Unique identifier for the organization | - |
-| data_source | string | Source of the procedure data | - |
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| procedure_id | string | Unique identifier for the procedure |
+| patient_id | string | Unique identifier for the patient |
+| status | string | Status of the procedure |
+| performed_date | date | Start date of the procedure |
+| end_date | date | End date of the procedure |
+| cpt_code | string | CPT code for the procedure |
+| cpt_display | string | Human-readable description of CPT code |
+| snomed_code | string | SNOMED CT code for the procedure |
+| snomed_display | string | Human-readable description of SNOMED CT code |
+| bodysite_snomed_code | string | SNOMED CT body site code |
+| bodysite_snomed_display | string | Human-readable description of SNOMED CT body site |
+| reason_snomed_code | string | SNOMED CT reason code |
+| reason_snomed_display | string | Human-readable description of SNOMED CT reason |
+| note_text | string | Additional notes about the procedure |
+| data_source | string | Source of the procedure data |

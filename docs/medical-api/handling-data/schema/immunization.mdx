@@ -7,32 +7,23 @@ group: "Schema"
 The immunization table contains information on immunizations administered to patients, including the vaccine code, description, and administration date.
 
 **Normalization Note:**
-Normalization of coding systems only occurs when the source coding system is CVX. Other coding systems will not have normalized codes.
+Vaccine codes are normalized to CVX (Vaccine Administered) coding system. The cvx_code and cvx_display fields contain the standardized CVX values.
 
 **Primary Key:**
 * immunization_id
 
 **Foreign Keys:**
 * patient_id
-* practitioner_id
 
-| Column | Data Type | Description | Terminology |
-| ------ | --------- | ----------- | ----------- |
-| immunization_id | string | Unique identifier for the immunization | - |
-| patient_id | string | Unique identifier for the patient | - |
-| status | string | Status of the immunization | completed, entered-in-error, not-done |
-| occurrence_date | date | Date when the immunization was administered | - |
-| source_vaccine_code_type | string | Type of coding system for source vaccine code | - |
-| source_vaccine_code | string | Original vaccine code from the source system | - |
-| source_vaccine_description | string | Human-readable description from source | - |
-| normalized_vaccine_code_type | string | Type of normalized coding system | CVX |
-| normalized_vaccine_code | string | Standardized/normalized vaccine code | CVX |
-| normalized_vaccine_description | string | Human-readable description of normalized code | CVX |
-| dose_amount | string | Quantity of the dose administered | - |
-| dose_unit | string | Unit of measurement for the dose | - |
-| site | string | Anatomical site of administration | - |
-| route | string | Route of administration | intramuscular, subcutaneous, oral, nasal |
-| note_text | string | Additional notes about the immunization | - |
-| practitioner_id | string | Unique identifier for the practitioner | - |
-| organization_id | string | Unique identifier for the organization | - |
-| data_source | string | Source of the immunization data | - |
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| immunization_id | string | Unique identifier for the immunization |
+| patient_id | string | Unique identifier for the patient |
+| status | string | Status of the immunization record. Possible values:<br/>– <code>completed</code>: All steps required have been taken and the vaccine has been administered.<br/>– <code>entered-in-error</code>: The immunization record was created in error and should not be considered valid.<br/>– <code>not-done</code>: The immunization did not occur, as intended, but was not actually administered, for example, patient refusal. |
+| occurrence_date | date | Date when the immunization was administered |
+| cvx_code | string | CVX vaccine code |
+| cvx_display | string | Human-readable description of CVX code |
+| dose_amount | string | Quantity of the dose administered |
+| dose_unit | string | Unit of measurement for the dose |
+| note_text | string | Additional notes about the immunization |
+| data_source | string | Source of the immunization data |

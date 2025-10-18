@@ -14,35 +14,25 @@ Normalization of coding systems only occurs when the source coding system is one
 
 **Foreign Keys:**
 * patient_id
-* practitioner_id
 
-| Column | Data Type | Description | Terminology |
-| ------ | --------- | ----------- | ----------- |
-| observation_id | string | Unique identifier for the observation | - |
-| patient_id | string | Unique identifier for the patient | - |
-| status | string | Status of the observation | - |
-| start_date | date | Start date of the observation | - |
-| end_date | date | End date of the observation | - |
-| source_code_type | string | Type of coding system for source code | - |
-| source_code | string | Original code from the source system | - |
-| source_description | string | Human-readable description from source | - |
-| normalized_code_type | string | Type of normalized coding system | LOINC or SNOMED CT |
-| normalized_code | string | Standardized/normalized code | LOINC or SNOMED CT |
-| normalized_description | string | Human-readable description of normalized code | LOINC or SNOMED CT |
-| result | string | Value of the observation | - |
-| source_units | string | Unit of measurement from source | - |
-| source_reference_range_low | string | Lower bound of the reference range from source | - |
-| source_reference_range_high | string | Upper bound of the reference range from source | - |
-| category_code_type | string | Type of coding system for category | - |
-| category_code | string | Category code | - |
-| category_description | string | Human-readable description of category | - |
-| interpretation_code_type | string | Type of coding system for interpretation | - |
-| interpretation_code | string | Interpretation code | - |
-| interpretation_description | string | Human-readable description of interpretation | - |
-| bodysite_code_type | string | Type of coding system for body site | - |
-| bodysite_code | string | Body site code | - |
-| bodysite_description | string | Human-readable description of body site | - |
-| note_text | string | Additional notes about the observation | - |
-| practitioner_id | string | Unique identifier for the practitioner | - |
-| organization_id | string | Unique identifier for the organization | - |
-| data_source | string | Source of the observation data | - |
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| observation_id | string | Unique identifier for the observation |
+| patient_id | string | Unique identifier for the patient |
+| status | string | Status of the observation |
+| effective_date | date | Start date of the observation |
+| end_date | date | End date of the observation |
+| loinc_code | string | LOINC code for the observation |
+| loinc_display | string | Human-readable description of LOINC code |
+| value | string | Value of the observation |
+| units | string | Unit of measurement |
+| reference_range_low | string | Lower bound of the reference range |
+| reference_range_high | string | Upper bound of the reference range |
+| category_hl7_code | string | HL7 category code |
+| category_hl7_display | string | Human-readable description of HL7 category |
+| interpretation_hl7_code | string | HL7 interpretation code |
+| interpretation_hl7_display | string | Human-readable description of HL7 interpretation |
+| bodysite_snomed_ct_code | string | SNOMED CT body site code |
+| bodysite_snomed_ct_display | string | Human-readable description of SNOMED CT body site |
+| note_text | string | Additional notes about the observation |
+| data_source | string | Source of the observation data |

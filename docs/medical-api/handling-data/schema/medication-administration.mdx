@@ -12,22 +12,16 @@ A medication administration record represents the actual administration of a med
 **Foreign Keys:**
 * patient_id
 * medication_id
-* practitioner_id
 
-| Column | Data Type | Description | Terminology |
-| ------ | --------- | ----------- | ----------- |
-| medication_administration_id | string | Unique identifier for the medication administration | - |
-| patient_id | string | Unique identifier for the patient | - |
-| medication_id | string | Unique identifier for the medication | - |
-| status | string | Status of the medication administration | active, completed, entered-in-error, intended, stopped, on-hold, unknown, not-taken |
-| start_date | date | Start date of the medication administration | - |
-| end_date | date | End date of the medication administration | - |
-| dose_unit | string | Unit of measurement for the dose | - |
-| dose_amount | string | Amount of medication administered | - |
-| dosage_method | string | Method of administration | - |
-| dosage_route | string | Route of administration | oral, intravenous, intramuscular, subcutaneous, topical |
-| dosage_site | string | Anatomical site of administration | - |
-| note_text | string | Additional notes about the administration | - |
-| practitioner_id | string | Unique identifier for the practitioner who administered | - |
-| organization_id | string | Unique identifier for the organization | - |
-| data_source | string | Source of the medication administration data | - |
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| medication_administration_id | string | Unique identifier for the medication administration |
+| patient_id | string | Unique identifier for the patient |
+| medication_id | string | Unique identifier for the medication |
+| status | string | Status of the medication administration. Possible values:<br/>– <code>in-progress</code>: The administration has started but has not yet completed.<br/>– <code>not-done</code>: The administration was expected to happen but did not occur.<br/>– <code>on-hold</code>: The administration was paused but may be resumed.<br/>– <code>completed</code>: The administration has finished (either completely or with a dose that was not fully given).<br/>– <code>entered-in-error</code>: This administration record should not be considered (was created in error).<br/>– <code>stopped</code>: The administration was terminated prior to completion.<br/>– <code>unknown</code>: The current status is unknown. |
+| effective_date | date | Start date of the medication administration |
+| end_date | date | End date of the medication administration |
+| dose_unit | string | Unit of measurement for the dose |
+| dose_amount | string | Amount of medication administered |
+| note_text | string | Additional notes about the administration |
+| data_source | string | Source of the medication administration data |

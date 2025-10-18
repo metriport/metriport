@@ -12,21 +12,15 @@ A medication request record represents a request for a medication to be prescrib
 **Foreign Keys:**
 * patient_id
 * medication_id
-* practitioner_id
 
-| Column | Data Type | Description | Terminology |
-| ------ | --------- | ----------- | ----------- |
-| medication_request_id | string | Unique identifier for the medication request | - |
-| patient_id | string | Unique identifier for the patient | - |
-| medication_id | string | Unique identifier for the medication | - |
-| status | string | Status of the medication request | active, completed, entered-in-error, intended, stopped, on-hold, unknown, not-taken |
-| authored_on | date | Date when the medication request was authored | - |
-| dose_unit | string | Unit of measurement for the dose | - |
-| dose_amount | string | Amount of medication requested | - |
-| dosage_method | string | Method of administration | - |
-| dosage_route | string | Route of administration | oral, intravenous, intramuscular, subcutaneous, topical |
-| dosage_site | string | Anatomical site of administration | - |
-| note_text | string | Additional notes about the request | - |
-| practitioner_id | string | Unique identifier for the practitioner who requested | - |
-| organization_id | string | Unique identifier for the organization | - |
-| data_source | string | Source of the medication request data | - |
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| medication_request_id | string | Unique identifier for the medication request |
+| patient_id | string | Unique identifier for the patient |
+| medication_id | string | Unique identifier for the medication |
+| status | string | Status of the medication request. Possible values:<br/>– <code>active</code>: The prescription is 'actionable', but not all actions that are implied by it have occurred yet.<br/>– <code>on-hold</code>: Actions implied by the prescription are to be temporarily halted, but are expected to continue later.<br/>– <code>cancelled</code>: The prescription has been withdrawn by the prescriber and is no longer 'actionable'.<br/>– <code>completed</code>: All actions that are implied by the prescription have occurred.<br/>– <code>entered-in-error</code>: The prescription was entered in error and should not be considered valid.<br/>– <code>stopped</code>: Actions implied by the prescription have been permanently halted, before all of them occurred.<br/>– <code>draft</code>: The prescription is not yet 'actionable', e.g., it is a work in progress.<br/>– <code>unknown</code>: The authoring system does not know which of the status values applies for this prescription. |
+| authored_on | date | Date when the medication request was authored |
+| dose_unit | string | Unit of measurement for the dose |
+| dose_amount | string | Amount of medication requested |
+| note_text | string | Additional notes about the request |
+| data_source | string | Source of the medication request data |
