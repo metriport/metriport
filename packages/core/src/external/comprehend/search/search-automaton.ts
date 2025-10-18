@@ -10,10 +10,10 @@ import {
 export interface SearchMatch {
   // The search term that was matched
   searchTerm: string;
-  // The index *after* the first character of the match
-  start: number;
-  // The index *after* the last character of the match
-  end: number;
+  // Inclusive start index of the match
+  startIndex: number;
+  // Exclusive end index of the match
+  endIndex: number;
 }
 
 /**
@@ -81,9 +81,9 @@ export class SearchAutomaton {
           if (!searchTerm) continue;
 
           // Compute the start index for this search term and execute the callback
-          const start = index - searchTerm.length + 1;
-          const end = index + 1;
-          handler({ searchTerm, start, end });
+          const startIndex = index - searchTerm.length + 1;
+          const endIndex = index + 1;
+          handler({ searchTerm, startIndex, endIndex });
         }
       }
     }
