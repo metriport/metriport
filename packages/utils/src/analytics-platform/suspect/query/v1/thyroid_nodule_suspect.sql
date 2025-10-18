@@ -140,8 +140,8 @@ thyroid_nodule_suspects AS (
   SELECT
     c.PATIENT_ID,
     'thyroid_nodule'           AS suspect_group,
-    'E041'                     AS suspect_icd10_code,
-    'Nontoxic single thyroid nodule' AS suspect_icd10_short_description,
+    'E04.1'                     AS suspect_icd10_code,
+    'Thyroid nodule(s)' AS suspect_icd10_short_description,
 
     /* carry-through for FHIR */
     c.resource_id,

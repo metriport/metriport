@@ -131,7 +131,7 @@ lung_nodule_suspects AS (
     c.PATIENT_ID,
     'lung_nodule'               AS suspect_group,
     'R91.1'                      AS suspect_icd10_code,
-    'Solitary pulmonary nodule' AS suspect_icd10_short_description,
+    'Pulmonary nodule(s)' AS suspect_icd10_short_description,
 
     /* carry-through for FHIR */
     c.resource_id,
