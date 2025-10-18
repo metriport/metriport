@@ -17,7 +17,7 @@ import { toFHIRSubject } from "@metriport/core/external/fhir/patient/conversion"
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import { capture } from "../../../shared/notifications";
-import { isCoding } from "@metriport/core/external/fhir/shared";
+import { isCoding } from "@metriport/core/external/fhir/shared/index";
 
 dayjs.extend(isToday);
 
