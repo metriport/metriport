@@ -185,11 +185,12 @@ export function parseDocumentReference({
 
   if (!docUniqueId) {
     const msg = "Document Reference is missing docUniqueId";
-    capture.error(msg, {
+    capture.message(msg, {
       extra: {
         extrinsicObject,
         outboundRequest,
       },
+      level: "warning",
     });
     return undefined;
   }
