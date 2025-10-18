@@ -93,9 +93,9 @@ const cohort = await metriportApi.createCohort({
 const patientsInCohort = await metriportApi.addPatientsToCohort({
   cohortId: cohort.id,
   patientIds: [
-    "patient-uuid-1",
-    "patient-uuid-2",
-    "patient-uuid-3",
+    "00000000-0000-0000-0000-000000000000",
+    "11111111-1111-1111-1111-111111111111",
+    "22222222-2222-2222-2222-222222222222",
   ]
 });
 
@@ -129,7 +129,7 @@ const patient = await metriportApi.createPatient(
     // Assign cohorts during creation
     cohorts: [
       "00000000-0000-0000-0000-000000000000", 
-      "00000000-0000-0000-0000-000000000000"
+      "11111111-1111-1111-1111-111111111111"
     ], 
   },
   facilityId

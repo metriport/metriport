@@ -5,12 +5,12 @@
       document monitoring (non-ADT) / medical record refresh based on the cadence.
       <Expandable title="hie object properties" defaultOpen={false}>
           <ParamField body="enabled" type="boolean" optional>
-            Enable or disable scheduled data pulls for HIE monitoring. **Enabled by default**.
-            When `false`, no scheduled pulls will occur regardless of the frequency setting.
+            Enable or disable scheduled data pulls for HIE monitoring. **Defaults to enabled**.
+            When disabled, no scheduled pulls will occur regardless of the frequency setting.
           </ParamField>
           
           <ParamField body="frequency" type="string" optional>
-            How often scheduled data pulls should occur, can be one of `weekly` or `biweekly` or `monthly`. `monthly` by default.
+            How often scheduled data pulls should occur, can be one of `weekly` or `biweekly` or `monthly`. Defaults to `monthly`.
           </ParamField>
           
           <Info>
@@ -25,24 +25,24 @@
     </ParamField>
     <ParamField body="adt" type="boolean" optional>
       ADT (Admission, Discharge, Transfer) monitoring - subscribes patients to ADT notifications
-      based on their [primary address](/medical-api/api-reference/patient/create-patient#param-is-primary). Disabled by default.
+      based on their [primary address](/medical-api/api-reference/patient/create-patient#param-address). Defaults to disabled.
     </ParamField>
     <ParamField body="pharmacy" type="object" optional>
       Pharmacy / medication history monitoring - enables retail fill data monitoring where available.  
       <Expandable title="pharmacy object properties">
         <ParamField body="notifications" type="boolean" optional>
-          Enable/disable pharmacy monitoring notifications. Disabled by default.
+          Enable/disable pharmacy monitoring notifications. Defaults to disabled.
         </ParamField>
         <ParamField body="schedule" type="object" optional>
           Enable pharmacy data pulls at scheduled dates.
           <Expandable title="schedule object properties" defaultOpen={false}>
             <ParamField body="enabled" type="boolean" optional>
-              Enable or disable scheduled data pulls for pharmacy monitoring. When `false`, no 
-              scheduled pulls will occur regardless of the frequency setting. Disabled by default.
+              Enable or disable scheduled data pulls for pharmacy monitoring. When disabled, no 
+              scheduled pulls will occur regardless of the frequency setting. Defaults to disabled.
             </ParamField>
             
             <ParamField body="frequency" type="string" optional>
-              How often scheduled data pulls should occur, can be one of `weekly` or `biweekly` or `monthly`. `monthly` by default
+              How often scheduled data pulls should occur, can be one of `weekly` or `biweekly` or `monthly`. Defaults to `monthly`.
             </ParamField>
             
             <Info>
@@ -61,18 +61,18 @@
       Laboratory notifications - subscribes patients for ongoing notifications of new lab results.  
       <Expandable title="laboratory object properties">
         <ParamField body="notifications" type="boolean" optional>
-          Enable/disable laboratory monitoring notifications. Disabled by default.
+          Enable/disable laboratory monitoring notifications. Defaults to disabled.
         </ParamField>
         <ParamField body="schedule" type="object" optional>
           Enable laboratory data pulls at scheduled dates.
           <Expandable title="schedule object properties" defaultOpen={false}>
             <ParamField body="enabled" type="boolean" optional>
-              Enable or disable scheduled data pulls for laboratory monitoring. When `false`, no 
-              scheduled pulls will occur regardless of the frequency setting. Disabled by default.
+              Enable or disable scheduled data pulls for laboratory monitoring. When disabled, no 
+              scheduled pulls will occur regardless of the frequency setting. Defaults to disabled.
             </ParamField>
             
             <ParamField body="frequency" type="string" optional>
-              How often scheduled data pulls should occur, can be one of `weekly` or `biweekly` or `monthly`. `monthly` by default.
+              How often scheduled data pulls should occur, can be one of `weekly` or `biweekly` or `monthly`. Defaults to `monthly`.
             </ParamField>
             
             <Info>

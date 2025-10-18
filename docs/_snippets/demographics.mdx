@@ -50,6 +50,14 @@
   An array of `Address` objects, representing the Patient's current and/or previous addresses.
 
   <Snippet file="patient-address.mdx" />
+
+  <Info>
+    The **first address** in the array **determines the primary address** for the patient.
+    The primary address is used for patient monitoring, specifically for ADT events.
+    You can change which address is the primary address by simply re-ordering the address array.
+    Learn more about [patient monitoring](/medical-api/handling-data/patient-monitoring) 
+    and [cohorts](/medical-api/handling-data/cohorts).
+  </Info>
 </ParamField>
 
 <ParamField body="contact" type="Contact[]">
