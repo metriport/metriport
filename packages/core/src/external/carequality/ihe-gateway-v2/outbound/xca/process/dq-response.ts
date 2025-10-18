@@ -164,11 +164,18 @@ export function parseDocumentReference({
 
     if (!code && !display) return undefined;
 
-    return codingSchema.parse({
+    const result = codingSchema.safeParse({
       system,
       code,
       display,
     });
+
+    if (!result.success) {
+      log(`Error parsing coding for classification ${classificationScheme}`);
+      return undefined;
+    }
+
+    return result.data;
   }
 
   const sizeValue = findSlotValue("size");
