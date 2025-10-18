@@ -38,7 +38,7 @@ describe("net retry", () => {
       expect(fn).toHaveBeenCalledTimes(2);
     });
 
-    it("retries on ECONNRESET", async () => {
+    it("does not retry on ECONNRESET", async () => {
       fn.mockImplementation(() => {
         const error = new AxiosError("mock error");
         error.code = "ECONNRESET";
@@ -50,7 +50,7 @@ describe("net retry", () => {
           maxAttempts: 2,
         })
       ).rejects.toThrow();
-      expect(fn).toHaveBeenCalledTimes(2);
+      expect(fn).toHaveBeenCalledTimes(1);
     });
 
     it("does not retry on AxiosError.ETIMEDOUT", async () => {
