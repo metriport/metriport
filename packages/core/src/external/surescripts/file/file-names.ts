@@ -19,6 +19,10 @@ export function buildLatestConversionBundleFileName(cxId: string, patientId: str
   return `surescripts/cxId=${cxId}/ptId=${patientId}/latest.json`;
 }
 
+export function buildPatientPharmacyConversionPrefix(cxId: string, patientId: string): string {
+  return `surescripts/cxId=${cxId}/ptId=${patientId}/jobId=`;
+}
+
 export function buildConversionBundleFileNameForJob({
   cxId,
   patientId,
