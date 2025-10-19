@@ -54,6 +54,7 @@
     "@aws-sdk/client-cognito-identity-provider": "^3.800.0",
     "@aws-sdk/client-healthlake": "^3.800.0",
     "@aws-sdk/client-lambda": "^3.865.0",
+    "@aws-sdk/credential-providers": "^3.913.0",
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
     "@metriport/commonwell-sdk-v1": "npm:@metriport/commonwell-sdk@^5.9.11",

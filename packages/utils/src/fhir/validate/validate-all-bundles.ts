@@ -20,6 +20,8 @@ import { nanoid } from "nanoid";
 import { elapsedTimeAsStr } from "../../shared/duration";
 import { getFileContents, getFileNames, makeDir } from "../../shared/fs";
 import { processSingleOutput } from "./process-single-output";
+import { fromIni } from "@aws-sdk/credential-providers";
+import { buildDayjs } from "@metriport/shared/common/date";
 
 dayjs.extend(duration);
 
@@ -41,7 +43,11 @@ dayjs.extend(duration);
  *
  * ...and the samplesFolderPath to the folder containing the FHIR bundles.
  */
-const samplesFolderPath = "";
+
+/**
+ * Usually, the output of the `integration-test.ts` script, the `consolidated` sub-folder in the "runs" folder for that script.
+ */
+const pathToFhirTransactionBundles = "";
 
 const datastoreId = getEnvVarOrFail("HEATHLAKE_DATASTORE_ID");
 const region = getEnvVarOrFail("AWS_REGION");
@@ -50,13 +56,19 @@ const destinationBucketName = getEnvVarOrFail("HEATHLAKE_BUCKET_NAME");
 const kmsKeyId = getEnvVarOrFail("HEALTHLAKE_KMS_KEY_ID");
 const accesRoleArn = getEnvVarOrFail("HEALTHLAKE_ACCESS_ROLE_ARN");
 
-const bundleExtensionToInclude = "_deduped.json";
-const sourcePrefix = `source/` + dayjs().toISOString();
-const destinationPrefix = "import-output";
+const bundleExtensionToInclude = "transaction-bundle.json";
+const s3Prefix = buildDayjs().toISOString().replace("T", "_").replace(":", "-");
+const sourcePrefix = `${s3Prefix}/source`;
+const destinationPrefix = `${s3Prefix}/output`;
 const maxFhirImportStatusChecks = 100;
-const waitBetweenChecks = dayjs.duration({ seconds: 5 });
+const waitBetweenChecks = dayjs.duration({ seconds: 10 });
 
-const healthlake = new HealthLakeClient({ region });
+const numberOfParallelUploadsToS3 = 30;
+
+const healthlake = new HealthLakeClient({
+  region,
+  credentials: fromIni({ profile: "production" }), // Loads from ~/.aws/credentials
+});
 const s3 = new S3Utils(region);
 
 const timestamp = dayjs().toISOString();
@@ -88,7 +100,7 @@ export async function main() {
 
 async function uploadBundlesToS3() {
   const bundleFileNames = getFileNames({
-    folder: samplesFolderPath,
+    folder: pathToFhirTransactionBundles,
     recursive: true,
     extension: "json",
   });
@@ -97,10 +109,12 @@ async function uploadBundlesToS3() {
   );
   console.log(`Found ${filteredBundleNames.length} files. Uploading to S3...`);
   await executeAsynchronously(filteredBundleNames, uploadToS3, {
-    numberOfParallelExecutions: 1,
+    numberOfParallelExecutions: numberOfParallelUploadsToS3,
   });
   console.log(`Upload done.`);
 }
+
+let idx = 0;
 
 async function uploadToS3(filePath: string) {
   // convert them to NDJSON in memory
@@ -110,7 +124,7 @@ async function uploadToS3(filePath: string) {
   // upload them to S3
   const lastSlash = filePath.lastIndexOf("/");
   const fileName = filePath.slice(lastSlash + 1).replace(".json", ".ndjson");
-  const sourceKeyName = `${sourcePrefix}/${fileName}`;
+  const sourceKeyName = `${sourcePrefix}/${idx++}-${fileName}`;
   await s3.uploadFile({
     bucket: sourceBucketName,
     key: sourceKeyName,
@@ -120,13 +134,15 @@ async function uploadToS3(filePath: string) {
 
 async function startImportJob(): Promise<string> {
   const clientToken = nanoid().replace(/[^a-zA-Z]/g, "");
+  const inputUri = `s3://${sourceBucketName}/${sourcePrefix}`;
+  const outputUri = `s3://${destinationBucketName}/${destinationPrefix}`;
   const startFhirImportCmd = new StartFHIRImportJobCommand({
     InputDataConfig: {
-      S3Uri: `s3://${sourceBucketName}/${sourcePrefix}`,
+      S3Uri: inputUri,
     },
     JobOutputDataConfig: {
       S3Configuration: {
-        S3Uri: `s3://${destinationBucketName}/${destinationPrefix}`,
+        S3Uri: outputUri,
         KmsKeyId: kmsKeyId,
       },
     },
@@ -143,24 +159,25 @@ async function startImportJob(): Promise<string> {
 }
 
 async function waitForImportJobToComplete(jobId: string): Promise<void> {
+  const { log } = out(`job ${jobId}`);
   const describeFhirImportCmd = new DescribeFHIRImportJobCommand({
     DatastoreId: datastoreId,
     JobId: jobId,
   });
   let status: JobStatus = "IN_PROGRESS";
   let attempts = 0;
-  console.log(`Waiting for import job to complete...`);
+  log(`Waiting for import job to complete...`);
   while (!isStatusFinal(status)) {
     const importDesc = await healthlake.send(describeFhirImportCmd);
     status = importDesc.ImportJobProperties?.JobStatus ?? "IN_PROGRESS";
     if (isStatusFinal(status)) {
-      console.log(`Import job ${jobId} completed with status: ${status}`);
+      log(`Import job ${jobId} completed with status: ${status}`);
       break;
     }
     if (attempts++ >= maxFhirImportStatusChecks) {
       throw new Error(`Import job ${jobId} did not complete after ${attempts} checks`);
     }
-    console.log(
+    log(
       `Import job ${jobId} has status: ${status}, waiting for ${waitBetweenChecks.asSeconds()} seconds and checking again...`
     );
     await sleep(waitBetweenChecks.asMilliseconds());
