@@ -99,6 +99,7 @@ export const gfrUnitNormalizationMap = new Map<string, string>([
 ]);
 
 export const a1cUnitNormalizationMap = new Map<string, string>([
+  ["%", "%"],
   ["%(non-diabetic)", "%"],
   ["%_a1c", "%"],
   ["%_hgb", "%"],
