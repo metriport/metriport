@@ -7,7 +7,7 @@ import {
 import { isLoincCoding } from "@metriport/shared/medical";
 import convert, { Unit } from "convert-units";
 import { cloneDeep } from "lodash";
-import { capture, out } from "../../../../util";
+import { out } from "../../../../util";
 import {
   a1cUnitNormalizationMap,
   bmiPercentileUnitNormalizationMap,
@@ -97,10 +97,6 @@ function getStandardObservationUnit(unit: string, map: Map<string, string>): str
       map: Array.from(map.entries()),
     };
     log(`${msg}. Cause: ${JSON.stringify(details)}`);
-    capture.message(`Detected unmapped Observation unit`, {
-      extra: details,
-      level: "warning",
-    });
     return unit?.trim();
   }
   return standardUnit;
