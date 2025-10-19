@@ -73,7 +73,13 @@ async function dangerouslyHydrateCode(condition: Condition): Promise<void> {
   });
   if (!icd10Code) return;
 
-  condition.code?.coding?.push(icd10Code);
+  if (!condition.code) {
+    condition.code = { coding: [icd10Code] };
+  } else if (!condition.code.coding || condition.code.coding.length === 0) {
+    condition.code.coding = [icd10Code];
+  } else {
+    condition.code.coding.push(icd10Code);
+  }
   return;
 }
 
@@ -109,7 +115,7 @@ export function buildUpdatedClinicalStatus(
   const validStatusCodings = existingStatus.coding?.filter(coding => {
     const code = coding.code?.toLowerCase()?.trim();
     if (!code) return false;
-    return clinicalStatusCodeToHl7CodeMap[code] || knownBlacklistedClinicalStatuses.includes(code);
+    return clinicalStatusCodeToHl7CodeMap[code] || !knownBlacklistedClinicalStatuses.includes(code);
   });
 
   if (!validStatusCodings || validStatusCodings.length < 1) return undefined;
@@ -195,9 +201,11 @@ function buildHl7CategoryBasedOnHeuristics(
   }
 
   const isEncounterDiagnosis = encounters.some(encounter =>
-    encounter.diagnosis?.some(
-      diagnosis => condition.id && diagnosis.condition?.reference?.includes(condition.id)
-    )
+    encounter.diagnosis?.some(diagnosis => {
+      if (!condition.id) return false;
+      const ref = diagnosis.condition?.reference;
+      return ref === `Condition/${condition.id}` || ref?.endsWith(`/${condition.id}`);
+    })
   );
 
   if (isEncounterDiagnosis) {
