@@ -147,7 +147,7 @@ export const a1cUnitNormalizationMap = new Map<string, string>([
   ["0", "%"],
   ["1", "%"],
   ["genericcomposite[%^%^lb]", "UNK"],
-  ["g/dl", "g/dl"],
+  ["g/dl", "g/dL"],
   ["gm/dl", "mg/dL"],
   ["mg/dl", "mg/dL"],
   [")", "UNK"],
