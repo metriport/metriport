@@ -166,8 +166,8 @@ nihss_scored AS (
     n.*,
     /* Prefer numeric RESULT; NIHSS is unitless—UNITS may be blank */
     CASE
-      WHEN UPPER(n.LOINC_CODE) = '72089-6' THEN TRY_TO_NUMBER(n.RESULT)
-      WHEN UPPER(n.LOINC_CODE) = '70182-1' THEN TRY_TO_NUMBER(n.RESULT)  -- keep simple; panel may carry a total
+      WHEN UPPER(n.LOINC_CODE) = '72089-6' THEN TRY_TO_DOUBLE(n.RESULT)
+      WHEN UPPER(n.LOINC_CODE) = '70182-1' THEN TRY_TO_DOUBLE(n.RESULT)  -- keep simple; panel may carry a total
       ELSE NULL
     END AS nihss_score
   FROM nihss_clean n

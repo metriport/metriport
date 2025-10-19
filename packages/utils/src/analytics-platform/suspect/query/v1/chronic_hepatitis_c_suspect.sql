@@ -56,7 +56,7 @@ hcv_lab_raw AS (
 hcv_lab_norm AS (
   SELECT
     r.*,
-    TRY_TO_NUMBER(r.value_token) AS value_num
+    TRY_TO_DOUBLE(r.value_token) AS value_num
   FROM hcv_lab_raw r
 ),
 
@@ -208,7 +208,7 @@ hepc_with_fhir AS (
             OBJECT_CONSTRUCT('value', s.value_num, 'unit', s.units),
             NULL),
       'valueString',
-        IFF(TRY_TO_NUMBER(s.RESULT) IS NULL, s.RESULT, NULL)
+        IFF(TRY_TO_DOUBLE(s.RESULT) IS NULL, s.RESULT, NULL)
     ) AS fhir,
 
     s.resource_id,

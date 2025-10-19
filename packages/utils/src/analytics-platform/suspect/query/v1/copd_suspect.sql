@@ -46,7 +46,7 @@ fev1fvc_raw AS (
 fev1fvc_norm AS (
   SELECT
     r.*,
-    TRY_TO_NUMBER(r.value_token) / 100.0 AS fev1fvc_ratio,  -- percent → fraction
+    TRY_TO_DOUBLE(r.value_token) / 100.0 AS fev1fvc_ratio,  -- percent → fraction
     'ratio'                              AS units
   FROM fev1fvc_raw r
 ),
@@ -117,7 +117,7 @@ obs_with_fhir AS (
         'value', s.value_num,
         'unit',  s.units   -- 'ratio'
       ),
-      'valueString', IFF(TRY_TO_NUMBER(REPLACE(s.RESULT,'%','')) IS NULL, s.RESULT, NULL)
+      'valueString', IFF(TRY_TO_DOUBLE(REPLACE(s.RESULT,'%','')) IS NULL, s.RESULT, NULL)
     ) AS fhir,
     s.resource_id,
     s.resource_type,

@@ -79,7 +79,7 @@ height_raw AS (
 bmi_norm AS (
   SELECT
     r.*,
-    TRY_TO_NUMBER(r.value_token) AS bmi_value,
+    TRY_TO_DOUBLE(r.value_token) AS bmi_value,
     'kg/m2'                      AS units
   FROM bmi_raw r
 ),
@@ -88,9 +88,9 @@ weight_norm AS (
   SELECT
     r.*,
     CASE
-      WHEN r.units_raw ILIKE '%kg%' THEN TRY_TO_NUMBER(r.value_token)
-      WHEN r.units_raw ILIKE '%lb%' THEN TRY_TO_NUMBER(r.value_token) * 0.45359237
-      WHEN r.units_raw ILIKE '%oz%' THEN TRY_TO_NUMBER(r.value_token) * 0.028349523125
+      WHEN r.units_raw ILIKE '%kg%' THEN TRY_TO_DOUBLE(r.value_token)
+      WHEN r.units_raw ILIKE '%lb%' THEN TRY_TO_DOUBLE(r.value_token) * 0.45359237
+      WHEN r.units_raw ILIKE '%oz%' THEN TRY_TO_DOUBLE(r.value_token) * 0.028349523125
       ELSE NULL
     END AS weight_kg
   FROM weight_raw r
@@ -100,8 +100,8 @@ height_norm AS (
   SELECT
     r.*,
     CASE
-      WHEN r.units_raw ILIKE '%in%' THEN TRY_TO_NUMBER(r.value_token) * 0.0254
-      WHEN r.units_raw ILIKE '%cm%' THEN TRY_TO_NUMBER(r.value_token) / 100.0
+      WHEN r.units_raw ILIKE '%in%' THEN TRY_TO_DOUBLE(r.value_token) * 0.0254
+      WHEN r.units_raw ILIKE '%cm%' THEN TRY_TO_DOUBLE(r.value_token) / 100.0
       ELSE NULL
     END AS height_m
   FROM height_raw r
@@ -224,7 +224,7 @@ obs_with_fhir AS (
       ),
       'effectiveDateTime', TO_CHAR(s.obs_date, 'YYYY-MM-DD'),
       'valueQuantity', OBJECT_CONSTRUCT('value', s.value_num, 'unit', 'kg/m2'),
-      'valueString', IFF(TRY_TO_NUMBER(s.RESULT) IS NULL, s.RESULT, NULL)
+      'valueString', IFF(TRY_TO_DOUBLE(s.RESULT) IS NULL, s.RESULT, NULL)
     ) AS fhir,
     s.resource_id,
     s.resource_type,

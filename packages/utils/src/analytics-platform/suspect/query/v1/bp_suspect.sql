@@ -42,7 +42,7 @@ bp_raw AS (
   WHERE o.LOINC_CODE IN ('8480-6','8462-4')
     AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     AND NULLIF(o.UNITS, '') IS NOT NULL
-    AND TRY_TO_NUMBER(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')) > 0
+    AND TRY_TO_DOUBLE(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')) > 0
 ),
 
 /* -------------------------
@@ -59,7 +59,7 @@ bp_norm AS (
     END AS units_disp,
     CASE
       WHEN REGEXP_REPLACE(LOWER(r.units_raw), '[^a-z]', '') = 'mmhg'
-        THEN TRY_TO_NUMBER(r.value_token)
+        THEN TRY_TO_DOUBLE(r.value_token)
       ELSE NULL
     END AS value_mmhg
   FROM bp_raw r
@@ -140,7 +140,7 @@ obs_with_fhir AS (
         'value', s.value_num,
         'unit',  'mmHg'
       ),
-      'valueString', IFF(TRY_TO_NUMBER(s.RESULT) IS NULL, s.RESULT, NULL)
+      'valueString', IFF(TRY_TO_DOUBLE(s.RESULT) IS NULL, s.RESULT, NULL)
     ) AS fhir,
     s.resource_id,
     s.resource_type,

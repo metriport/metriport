@@ -58,9 +58,9 @@ five_hiaa_norm AS (
   SELECT
     r.*,
     CASE
-      WHEN r.units_raw ILIKE '%mg%/24%h%'  THEN TRY_TO_NUMBER(r.value_token)
-      WHEN r.units_raw ILIKE '%mg/(24.h)%' THEN TRY_TO_NUMBER(r.value_token)
-      WHEN r.units_raw ILIKE '%mg/d%'      THEN TRY_TO_NUMBER(r.value_token)
+      WHEN r.units_raw ILIKE '%mg%/24%h%'  THEN TRY_TO_DOUBLE(r.value_token)
+      WHEN r.units_raw ILIKE '%mg/(24.h)%' THEN TRY_TO_DOUBLE(r.value_token)
+      WHEN r.units_raw ILIKE '%mg/d%'      THEN TRY_TO_DOUBLE(r.value_token)
       ELSE NULL
     END AS value_mg_24h,
     'mg/24 h' AS units
@@ -164,7 +164,7 @@ obs_with_fhir AS (
       ),
       'effectiveDateTime', TO_CHAR(s.obs_date,'YYYY-MM-DD'),
       'valueQuantity', OBJECT_CONSTRUCT('value', s.value_num, 'unit', s.units),
-      'valueString', IFF(TRY_TO_NUMBER(REPLACE(s.RESULT,'%','')) IS NULL, s.RESULT, NULL)
+      'valueString', IFF(TRY_TO_DOUBLE(REPLACE(s.RESULT,'%','')) IS NULL, s.RESULT, NULL)
     ) AS fhir,
     s.resource_id, s.resource_type, s.DATA_SOURCE AS data_source
   FROM five_hiaa_suspects s

@@ -62,17 +62,17 @@ lipid_norm AS (
       WHEN r.NORMALIZED_CODE = '2571-8' /* TG */ THEN
         CASE
           WHEN REGEXP_REPLACE(LOWER(r.units_raw), '[^a-z0-9]+', '') = 'mmoll'
-            THEN TRY_TO_NUMBER(r.value_token) * 88.57
+            THEN TRY_TO_DOUBLE(r.value_token) * 88.57
           WHEN REGEXP_REPLACE(LOWER(r.units_raw), '[^a-z0-9]+', '') = 'mgdl'
-            THEN TRY_TO_NUMBER(r.value_token)
+            THEN TRY_TO_DOUBLE(r.value_token)
           ELSE NULL
         END
       WHEN r.NORMALIZED_CODE IN ('2093-3','2089-1','13457-7','18262-6','39469-2','2085-9','43396-1') THEN
         CASE
           WHEN REGEXP_REPLACE(LOWER(r.units_raw), '[^a-z0-9]+', '') = 'mmoll'
-            THEN TRY_TO_NUMBER(r.value_token) * 38.67
+            THEN TRY_TO_DOUBLE(r.value_token) * 38.67
           WHEN REGEXP_REPLACE(LOWER(r.units_raw), '[^a-z0-9]+', '') = 'mgdl'
-            THEN TRY_TO_NUMBER(r.value_token)
+            THEN TRY_TO_DOUBLE(r.value_token)
           ELSE NULL
         END
       ELSE NULL
@@ -223,7 +223,7 @@ obs_with_fhir AS (
       ),
       'effectiveDateTime', TO_CHAR(l.obs_date,'YYYY-MM-DD'),
       'valueQuantity', OBJECT_CONSTRUCT('value', s.value_primary, 'unit', 'mg/dL'),
-      'valueString', IFF(TRY_TO_NUMBER(REPLACE(l.RESULT,',','')) IS NULL, l.RESULT, NULL)
+      'valueString', IFF(TRY_TO_DOUBLE(REPLACE(l.RESULT,',','')) IS NULL, l.RESULT, NULL)
     ) AS fhir
   FROM lipid_suspects s
   JOIN lipid_clean_latest l

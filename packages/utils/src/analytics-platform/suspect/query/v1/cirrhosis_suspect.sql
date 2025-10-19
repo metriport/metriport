@@ -116,7 +116,7 @@ ast_norm AS (
   SELECT
     r.*,
     UPPER(REGEXP_REPLACE(COALESCE(r.units_raw,''), '[\\s{}\\[\\]()]', '')) AS units_key,
-    TRY_TO_NUMBER(r.value_token) AS ast_raw
+    TRY_TO_DOUBLE(r.value_token) AS ast_raw
   FROM ast_raw r
 ),
 ast_clean AS (
@@ -133,7 +133,7 @@ alt_norm AS (
   SELECT
     r.*,
     UPPER(REGEXP_REPLACE(COALESCE(r.units_raw,''), '[\\s{}\\[\\]()]', '')) AS units_key,
-    TRY_TO_NUMBER(r.value_token) AS alt_raw
+    TRY_TO_DOUBLE(r.value_token) AS alt_raw
   FROM alt_raw r
 ),
 alt_clean AS (
@@ -150,7 +150,7 @@ plt_norm AS (
   SELECT
     r.*,
     UPPER(REGEXP_REPLACE(COALESCE(r.units_raw,''), '[\\s{}\\[\\]()]', '')) AS units_key,
-    TRY_TO_NUMBER(r.value_token) AS plt_raw
+    TRY_TO_DOUBLE(r.value_token) AS plt_raw
   FROM plt_raw r
 ),
 plt_clean AS (
@@ -309,7 +309,7 @@ labs_with_fhir AS (
       ),
       'effectiveDateTime',TO_CHAR(s.obs_date,'YYYY-MM-DD'),
       'valueQuantity',OBJECT_CONSTRUCT('value',s.value_num,'unit',s.units),
-      'valueString',IFF(TRY_TO_NUMBER(s.RESULT) IS NULL, s.RESULT, NULL)
+      'valueString',IFF(TRY_TO_DOUBLE(s.RESULT) IS NULL, s.RESULT, NULL)
     ) AS fhir
   FROM fib4_supporting s
 ),

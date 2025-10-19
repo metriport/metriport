@@ -54,7 +54,7 @@ troponin_raw AS (
     /* require non-empty units */
     AND NULLIF(o.UNITS,'') IS NOT NULL
     /* numeric token must be > 0 */
-    AND TRY_TO_NUMBER(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')) > 0
+    AND TRY_TO_DOUBLE(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')) > 0
 ),
 
 /* RAW: patient sex limited to the troponin cohort */
@@ -78,10 +78,10 @@ troponin_norm AS (
     r.*,
     /* canonical numeric in ng/L */
     CASE
-      WHEN r.units_raw ILIKE '%ng/l%'  THEN TRY_TO_NUMBER(r.value_token)
-      WHEN r.units_raw ILIKE '%ng/ml%' THEN TRY_TO_NUMBER(r.value_token) * 1000.0
-      WHEN r.units_raw ILIKE '%pg/ml%' THEN TRY_TO_NUMBER(r.value_token)             -- 1 pg/mL == 1 ng/L
-      WHEN r.units_raw ILIKE '%ug/l%'  THEN TRY_TO_NUMBER(r.value_token) * 1000.0
+      WHEN r.units_raw ILIKE '%ng/l%'  THEN TRY_TO_DOUBLE(r.value_token)
+      WHEN r.units_raw ILIKE '%ng/ml%' THEN TRY_TO_DOUBLE(r.value_token) * 1000.0
+      WHEN r.units_raw ILIKE '%pg/ml%' THEN TRY_TO_DOUBLE(r.value_token)             -- 1 pg/mL == 1 ng/L
+      WHEN r.units_raw ILIKE '%ug/l%'  THEN TRY_TO_DOUBLE(r.value_token) * 1000.0
       ELSE NULL
     END AS value_ng_l,
     /* canonical units for downstream use */
@@ -169,7 +169,7 @@ obs_with_fhir AS (
       'effectiveDateTime', TO_CHAR(s.obs_date, 'YYYY-MM-DD'),
       'valueQuantity', OBJECT_CONSTRUCT('value', s.value_num, 'unit', s.units),
       /* Preserve original RESULT if needed (e.g., textual) */
-      'valueString', IFF(TRY_TO_NUMBER(REPLACE(s.RESULT,'%','')) IS NULL, s.RESULT, NULL)
+      'valueString', IFF(TRY_TO_DOUBLE(REPLACE(s.RESULT,'%','')) IS NULL, s.RESULT, NULL)
     ) AS fhir,
     s.resource_id,
     s.resource_type,

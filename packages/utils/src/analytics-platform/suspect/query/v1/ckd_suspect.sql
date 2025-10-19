@@ -92,7 +92,7 @@ egfr_norm AS (
     r.*,
     /* compact units key (e.g., 'mlmin173m2', 'mlminm2', 'mlmin') */
     REGEXP_REPLACE(LOWER(COALESCE(r.units_raw,'')), '[^a-z0-9]+', '') AS units_key,
-    TRY_TO_NUMBER(r.value_token)                                      AS value_num_raw
+    TRY_TO_DOUBLE(r.value_token)                                      AS value_num_raw
   FROM egfr_raw r
 ),
 egfr_units AS (
@@ -116,7 +116,7 @@ albumin_norm AS (
   SELECT
     r.*,
     LOWER(COALESCE(r.units_raw,'')) AS ukey,
-    TRY_TO_NUMBER(r.value_token)    AS acr_raw
+    TRY_TO_DOUBLE(r.value_token)    AS acr_raw
   FROM albumin_raw r
 ),
 albumin_units AS (
@@ -340,7 +340,7 @@ ckd_with_fhir AS (
                   ELSE 'mL/min/1.73 m2'
                 END
             ),
-          'valueString', IFF(TRY_TO_NUMBER(s.RESULT) IS NULL, s.RESULT, NULL)
+          'valueString', IFF(TRY_TO_DOUBLE(s.RESULT) IS NULL, s.RESULT, NULL)
         )
       ELSE
         OBJECT_CONSTRUCT(

@@ -360,10 +360,10 @@ aa_obs_meas_aaa AS (
   FROM (
     SELECT
       o.*,
-      IFF(TRY_TO_NUMBER(o.RESULT) IS NULL, NULL,
+      IFF(TRY_TO_DOUBLE(o.RESULT) IS NULL, NULL,
           CASE
-            WHEN UPPER(o.UNITS) IN ('CM','CM.','CENTIMETER','CENTIMETERS') THEN TRY_TO_NUMBER(o.RESULT)
-            WHEN UPPER(o.UNITS) IN ('MM','MM.','MILLIMETER','MILLIMETERS') THEN TRY_TO_NUMBER(o.RESULT) / 10.0
+            WHEN UPPER(o.UNITS) IN ('CM','CM.','CENTIMETER','CENTIMETERS') THEN TRY_TO_DOUBLE(o.RESULT)
+            WHEN UPPER(o.UNITS) IN ('MM','MM.','MILLIMETER','MILLIMETERS') THEN TRY_TO_DOUBLE(o.RESULT) / 10.0
             ELSE NULL
           END
       ) AS diameter_cm
@@ -469,8 +469,8 @@ aa_with_fhir_observation AS (
           OBJECT_CONSTRUCT('system','http://loinc.org','code',s.LOINC_CODE,'display',NULLIF(s.LOINC_DISPLAY,''))
         )
       ),
-      'valueQuantity', IFF(TRY_TO_NUMBER(s.RESULT) IS NOT NULL,
-        OBJECT_CONSTRUCT('value', TRY_TO_NUMBER(s.RESULT), 'unit', NULLIF(s.UNITS,'')),
+      'valueQuantity', IFF(TRY_TO_DOUBLE(s.RESULT) IS NOT NULL,
+        OBJECT_CONSTRUCT('value', TRY_TO_DOUBLE(s.RESULT), 'unit', NULLIF(s.UNITS,'')),
         NULL
       ),
       'effectiveDateTime', IFF(s.obs_date IS NOT NULL, TO_CHAR(s.obs_date,'YYYY-MM-DD'), NULL)

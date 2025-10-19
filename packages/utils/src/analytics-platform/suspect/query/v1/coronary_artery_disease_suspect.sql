@@ -64,10 +64,10 @@ troponin_norm AS (
     /* normalize micro sign to 'u' then strip non-alphanum into a compact key */
     REGEXP_REPLACE(LOWER(REGEXP_REPLACE(COALESCE(r.units_raw,''), '[µμ]', 'u')), '[^a-z0-9]+', '') AS unit_key,
     CASE
-      WHEN REGEXP_REPLACE(LOWER(REGEXP_REPLACE(COALESCE(r.units_raw,''), '[µμ]', 'u')), '[^a-z0-9]+', '') LIKE 'ngl%'  THEN TRY_TO_NUMBER(r.value_token)
-      WHEN REGEXP_REPLACE(LOWER(REGEXP_REPLACE(COALESCE(r.units_raw,''), '[µμ]', 'u')), '[^a-z0-9]+', '') LIKE 'ngml%' THEN TRY_TO_NUMBER(r.value_token) * 1000.0
-      WHEN REGEXP_REPLACE(LOWER(REGEXP_REPLACE(COALESCE(r.units_raw,''), '[µμ]', 'u')), '[^a-z0-9]+', '') LIKE 'pgml%' THEN TRY_TO_NUMBER(r.value_token)           -- 1 pg/mL = 1 ng/L
-      WHEN REGEXP_REPLACE(LOWER(REGEXP_REPLACE(COALESCE(r.units_raw,''), '[µμ]', 'u')), '[^a-z0-9]+', '') LIKE 'ugl%'  THEN TRY_TO_NUMBER(r.value_token) * 1000.0
+      WHEN REGEXP_REPLACE(LOWER(REGEXP_REPLACE(COALESCE(r.units_raw,''), '[µμ]', 'u')), '[^a-z0-9]+', '') LIKE 'ngl%'  THEN TRY_TO_DOUBLE(r.value_token)
+      WHEN REGEXP_REPLACE(LOWER(REGEXP_REPLACE(COALESCE(r.units_raw,''), '[µμ]', 'u')), '[^a-z0-9]+', '') LIKE 'ngml%' THEN TRY_TO_DOUBLE(r.value_token) * 1000.0
+      WHEN REGEXP_REPLACE(LOWER(REGEXP_REPLACE(COALESCE(r.units_raw,''), '[µμ]', 'u')), '[^a-z0-9]+', '') LIKE 'pgml%' THEN TRY_TO_DOUBLE(r.value_token)           -- 1 pg/mL = 1 ng/L
+      WHEN REGEXP_REPLACE(LOWER(REGEXP_REPLACE(COALESCE(r.units_raw,''), '[µμ]', 'u')), '[^a-z0-9]+', '') LIKE 'ugl%'  THEN TRY_TO_DOUBLE(r.value_token) * 1000.0
       ELSE NULL
     END AS value_ng_l,
     'ng/L' AS units
@@ -188,7 +188,7 @@ cad_with_fhir AS (
             OBJECT_CONSTRUCT('value', s.value_num, 'unit', 'ng/L'), NULL),
       'valueString',
         IFF(s.resource_type = 'Observation'
-            AND TRY_TO_NUMBER(REPLACE(s.RESULT, '%','')) IS NULL, s.RESULT, NULL)
+            AND TRY_TO_DOUBLE(REPLACE(s.RESULT, '%','')) IS NULL, s.RESULT, NULL)
     ) AS fhir,
     s.resource_id, s.resource_type, s.DATA_SOURCE AS data_source
   FROM all_cad_suspects s

@@ -56,7 +56,7 @@ tscore_raw AS (
 tscore_norm AS (
   SELECT
     r.*,
-    TRY_TO_NUMBER(
+    TRY_TO_DOUBLE(
       REGEXP_SUBSTR(REPLACE(r.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')
     ) AS tscore_value
   FROM tscore_raw r
@@ -173,7 +173,7 @@ bd_with_fhir AS (
         'value', s.value_num,
         'unit',  NULL -- T-score is unitless
       ),
-      'valueString', IFF(TRY_TO_NUMBER(s.RESULT) IS NULL, s.RESULT, NULL),
+      'valueString', IFF(TRY_TO_DOUBLE(s.RESULT) IS NULL, s.RESULT, NULL),
       'effectiveDateTime', IFF(s.obs_date IS NOT NULL, TO_CHAR(s.obs_date,'YYYY-MM-DD'), NULL)
     ) AS fhir
   FROM all_bd_suspects s

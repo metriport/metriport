@@ -55,7 +55,7 @@ lithium_raw AS (
     /* ensure units aren't null or empty */
     AND NULLIF(o.UNITS,'') IS NOT NULL
     /* ensure numeric token > 0 */
-    AND TRY_TO_NUMBER(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')) > 0
+    AND TRY_TO_DOUBLE(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')) > 0
 ),
 
 /* -------------------------
@@ -78,7 +78,7 @@ lithium_clean AS (
   SELECT *
   FROM lithium_norm n
   WHERE n.units_disp = 'mmol/L'
-    AND TRY_TO_NUMBER(n.value_token) <= 4
+    AND TRY_TO_DOUBLE(n.value_token) <= 4
     AND NOT EXISTS (SELECT 1 FROM bipolar_dx_exclusion x WHERE x.PATIENT_ID = n.PATIENT_ID)
     AND NOT EXISTS (SELECT 1 FROM substance_induced_exclusion y WHERE y.PATIENT_ID = n.PATIENT_ID)
 ),
@@ -137,10 +137,10 @@ lithium_with_fhir AS (
       ),
       'effectiveDateTime', TO_CHAR(l.obs_date, 'YYYY-MM-DD'),
       /* Show original RESULT only if not parseable numeric */
-      'valueString', IFF(TRY_TO_NUMBER(l.RESULT) IS NULL, l.RESULT, NULL),
+      'valueString', IFF(TRY_TO_DOUBLE(l.RESULT) IS NULL, l.RESULT, NULL),
       /* Use verified numeric token in valueQuantity */
-      'valueQuantity', IFF(TRY_TO_NUMBER(l.value_token) IS NOT NULL,
-        OBJECT_CONSTRUCT('value', TRY_TO_NUMBER(l.value_token), 'unit', l.units),
+      'valueQuantity', IFF(TRY_TO_DOUBLE(l.value_token) IS NOT NULL,
+        OBJECT_CONSTRUCT('value', TRY_TO_DOUBLE(l.value_token), 'unit', l.units),
         NULL
       )
     ) AS fhir

@@ -76,7 +76,7 @@ ethanol_raw AS (
     /* Require non-empty units up front */
     AND NULLIF(o.UNITS, '') IS NOT NULL
     /* ensure numeric token > 0 */
-    AND TRY_TO_NUMBER(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')) > 0
+    AND TRY_TO_DOUBLE(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')) > 0
 ),
 
 /* -------------------------
@@ -87,9 +87,9 @@ ethanol_norm AS (
     r.*,
     /* Convert to mg/dL for thresholding */
     CASE
-      WHEN r.units_raw ILIKE '%mg/dl%' THEN TRY_TO_NUMBER(r.value_token)
-      WHEN r.units_raw ILIKE '%g/dl%'  THEN TRY_TO_NUMBER(r.value_token) * 1000.0
-      WHEN r.units_raw ILIKE '%\%%'    THEN TRY_TO_NUMBER(r.value_token) * 1000.0   -- % w/v ≈ g/dL
+      WHEN r.units_raw ILIKE '%mg/dl%' THEN TRY_TO_DOUBLE(r.value_token)
+      WHEN r.units_raw ILIKE '%g/dl%'  THEN TRY_TO_DOUBLE(r.value_token) * 1000.0
+      WHEN r.units_raw ILIKE '%\%%'    THEN TRY_TO_DOUBLE(r.value_token) * 1000.0   -- % w/v ≈ g/dL
       ELSE NULL
     END AS value_mg_dl,
     /* canonical units for downstream use */
@@ -202,7 +202,7 @@ obs_with_fhir AS (
       'effectiveDateTime', TO_VARCHAR(s.obs_date, 'YYYY-MM-DD'),
       'valueQuantity', OBJECT_CONSTRUCT('value', s.value_num, 'unit', s.units),
       /* Preserve original RESULT if needed (e.g., textual) */
-      'valueString', IFF(TRY_TO_NUMBER(REPLACE(s.RESULT,'%','')) IS NULL, s.RESULT, NULL)
+      'valueString', IFF(TRY_TO_DOUBLE(REPLACE(s.RESULT,'%','')) IS NULL, s.RESULT, NULL)
     ) AS fhir,
 
     s.resource_id,

@@ -74,9 +74,9 @@ glucose_norm AS (
     REGEXP_REPLACE(LOWER(COALESCE(r.units_raw,'')), '[^a-z0-9]+', '') AS units_key,
     CASE
       WHEN REGEXP_REPLACE(LOWER(COALESCE(r.units_raw,'')), '[^a-z0-9]+', '') = 'mgdl'
-        THEN TRY_TO_NUMBER(r.value_token)
+        THEN TRY_TO_DOUBLE(r.value_token)
       WHEN REGEXP_REPLACE(LOWER(COALESCE(r.units_raw,'')), '[^a-z0-9]+', '') = 'mmoll'
-        THEN TRY_TO_NUMBER(r.value_token) * 18.0182
+        THEN TRY_TO_DOUBLE(r.value_token) * 18.0182
       ELSE NULL
     END AS value_mg_dl,
     'mg/dL' AS units
@@ -87,7 +87,7 @@ glucose_norm AS (
 hba1c_norm AS (
   SELECT
     r.*,
-    TRY_TO_NUMBER(r.value_token) AS value_pct,
+    TRY_TO_DOUBLE(r.value_token) AS value_pct,
     '%' AS units
   FROM hba1c_raw r
 ),
@@ -193,7 +193,7 @@ dm_with_fhir AS (
         'unit',  s.units
       ),
       'valueString',
-        IFF(TRY_TO_NUMBER(REPLACE(s.RESULT,'%','')) IS NULL, s.RESULT, NULL)
+        IFF(TRY_TO_DOUBLE(REPLACE(s.RESULT,'%','')) IS NULL, s.RESULT, NULL)
     ) AS fhir,
     s.resource_id,
     s.resource_type,

@@ -62,7 +62,7 @@ moca_norm AS (
   SELECT
     r.*,
     /* Coerce to integer score, clamp to plausible 0–30 range */
-    LEAST(30, GREATEST(0, TRY_TO_NUMBER(r.value_token))) AS moca_score
+    LEAST(30, GREATEST(0, TRY_TO_DOUBLE(r.value_token))) AS moca_score
   FROM moca_raw r
 ),
 
