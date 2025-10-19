@@ -31,6 +31,7 @@ import { isCarequalityExtension } from "../../carequality/extension";
 import { isCommonwellExtension } from "../../commonwell/extension";
 import { DOC_ID_EXTENSION_URL } from "./extensions/doc-id-extension";
 import { isMetriportExtension } from "./extensions/metriport";
+import { type Coding } from "@metriport/ihe-gateway-sdk";
 
 export const SEPARATOR_ID = "/";
 export const SEPARATOR_REF = "#";
@@ -217,6 +218,15 @@ export function isMedicationStatement(
 
 export function isMedication(resource: Resource | undefined): resource is Medication {
   return resource?.resourceType === "Medication";
+}
+
+export function isCoding(value: unknown): value is Coding {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    ("system" in value || "display" in value || "code" in value)
+  );
 }
 
 export function isMedicationAdministration(
