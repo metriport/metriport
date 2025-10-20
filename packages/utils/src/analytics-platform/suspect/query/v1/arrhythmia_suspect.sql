@@ -394,7 +394,8 @@ fhir_medreq AS (
     OBJECT_CONSTRUCT(
       'resourceType','MedicationRequest',
       'id', s.resource_id,
-      'status','active',  /* optionally map from mr.STATUS if desired */
+      'status','active',
+      'intent','order',
       'medicationCodeableConcept', OBJECT_CONSTRUCT(
         'coding', ARRAY_CONSTRUCT(
           OBJECT_CONSTRUCT('system','http://www.nlm.nih.gov/research/umls/rxnorm','code',s.code,'display',s.display)
@@ -412,6 +413,7 @@ fhir_medreq AS (
       'resourceType','MedicationRequest',
       'id', s.resource_id,
       'status','active',
+      'intent','order',
       'medicationCodeableConcept', OBJECT_CONSTRUCT(
         'coding', ARRAY_CONSTRUCT(
           OBJECT_CONSTRUCT('system','http://www.nlm.nih.gov/research/umls/rxnorm','code',s.code,'display',s.display)

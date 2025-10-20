@@ -228,7 +228,8 @@ dementia_with_fhir AS (
           'resourceType', 'MedicationRequest',
           'id',            s.resource_id,
           'status',        s.status,
-          'code', OBJECT_CONSTRUCT(
+          'intent',        'order',
+          'medicationCodeableConcept', OBJECT_CONSTRUCT(
             'text',   NULLIF(s.RXNORM_DISPLAY,''),
             'coding', ARRAY_CONSTRUCT(
               OBJECT_CONSTRUCT(
@@ -238,9 +239,7 @@ dementia_with_fhir AS (
               )
             )
           ),
-          /* Keep same date key used by UI; also include authoredOn when available */
-          'effectiveDateTime', IFF(s.obs_date IS NOT NULL, TO_CHAR(s.obs_date,'YYYY-MM-DD'), NULL),
-          'authoredOn',        IFF(s.obs_date IS NOT NULL, TO_CHAR(s.obs_date,'YYYY-MM-DD'), NULL)
+          'authoredOn', IFF(s.obs_date IS NOT NULL, TO_CHAR(s.obs_date,'YYYY-MM-DD'), NULL)
         )
     END AS fhir
   FROM dementia_suspects s

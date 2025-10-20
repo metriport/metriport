@@ -238,6 +238,7 @@ med_with_fhir AS (
       'resourceType',  'MedicationRequest',
       'id',            s.resource_id,
       'status',        'active',
+      'intent',        'order',
       'medicationCodeableConcept', OBJECT_CONSTRUCT(
         'coding', ARRAY_CONSTRUCT(
           OBJECT_CONSTRUCT('system','http://www.nlm.nih.gov/research/umls/rxnorm','code',s.NORMALIZED_CODE,'display',s.NORMALIZED_DESCRIPTION)

@@ -178,38 +178,45 @@ hepc_with_fhir AS (
     s.suspect_icd10_code,
     s.suspect_icd10_short_description,
 
-    OBJECT_CONSTRUCT(
-      'resourceType',  s.resource_type,
-      'id',            s.resource_id,
-      'status',        CASE
-                         WHEN s.resource_type = 'Observation'       THEN 'final'
-                         WHEN s.resource_type = 'MedicationRequest' THEN COALESCE(s.mr_status,'active')
-                         ELSE 'unknown'
-                       END,
-      'code', OBJECT_CONSTRUCT(
-        'text',   NULLIF(s.NORMALIZED_DESCRIPTION,''),
-        'coding', ARRAY_CONSTRUCT(
-          OBJECT_CONSTRUCT(
-            'system',  CASE
-                         WHEN s.resource_type = 'Observation'       THEN 'http://loinc.org'
-                         WHEN s.resource_type = 'MedicationRequest' THEN 'http://www.nlm.nih.gov/research/umls/rxnorm'
-                         ELSE NULL
-                       END,
-            'code',     s.NORMALIZED_CODE,
-            'display',  s.NORMALIZED_DESCRIPTION
-          )
+    CASE
+      WHEN s.resource_type = 'Observation' THEN
+        OBJECT_CONSTRUCT(
+          'resourceType', 'Observation',
+          'id',           s.resource_id,
+          'status',       'final',
+          'code', OBJECT_CONSTRUCT(
+            'text',   NULLIF(s.NORMALIZED_DESCRIPTION,''),
+            'coding', ARRAY_CONSTRUCT(
+              OBJECT_CONSTRUCT(
+                'system',  'http://loinc.org',
+                'code',     s.NORMALIZED_CODE,
+                'display',  s.NORMALIZED_DESCRIPTION
+              )
+            )
+          ),
+          'effectiveDateTime', TO_CHAR(s.obs_date, 'YYYY-MM-DD'),
+          'valueQuantity', OBJECT_CONSTRUCT('value', s.value_num, 'unit', s.units),
+          'valueString', IFF(TRY_TO_DOUBLE(s.RESULT) IS NULL, s.RESULT, NULL)
         )
-      ),
-      /* Observation → effectiveDateTime ; MedicationRequest → authoredOn */
-      IFF(s.resource_type = 'MedicationRequest', 'authoredOn', 'effectiveDateTime'),
-      TO_CHAR(s.obs_date, 'YYYY-MM-DD'),
-      'valueQuantity',
-        IFF(s.resource_type = 'Observation',
-            OBJECT_CONSTRUCT('value', s.value_num, 'unit', s.units),
-            NULL),
-      'valueString',
-        IFF(TRY_TO_DOUBLE(s.RESULT) IS NULL, s.RESULT, NULL)
-    ) AS fhir,
+      ELSE
+        OBJECT_CONSTRUCT(
+          'resourceType', 'MedicationRequest',
+          'id',           s.resource_id,
+          'status',       COALESCE(s.mr_status,'active'),
+          'intent',       'order',
+          'medicationCodeableConcept', OBJECT_CONSTRUCT(
+            'text',   NULLIF(s.NORMALIZED_DESCRIPTION,''),
+            'coding', ARRAY_CONSTRUCT(
+              OBJECT_CONSTRUCT(
+                'system',  'http://www.nlm.nih.gov/research/umls/rxnorm',
+                'code',     s.NORMALIZED_CODE,
+                'display',  s.NORMALIZED_DESCRIPTION
+              )
+            )
+          ),
+          'authoredOn', TO_CHAR(s.obs_date, 'YYYY-MM-DD')
+        )
+    END AS fhir,
 
     s.resource_id,
     s.resource_type,
