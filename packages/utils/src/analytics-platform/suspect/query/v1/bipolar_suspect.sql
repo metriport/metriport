@@ -19,7 +19,7 @@
 WITH bipolar_dx_exclusion AS (
   /* Patients already diagnosed with Bipolar Disorder */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE__CONDITION c
+  FROM CORE_V3.CORE__CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'F31%'
 ),
 
@@ -27,7 +27,7 @@ substance_induced_exclusion AS (
   /* Patients with substance/medication-induced mood disorder
      (handle both dotted and undotted representations) */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE__CONDITION c
+  FROM CORE_V3.CORE__CONDITION c
   WHERE c.ICD_10_CM_CODE IN ('F1014','F1524','F1914')
 
 ),
@@ -48,7 +48,7 @@ lithium_raw AS (
     REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
     CAST(o.START_DATE AS DATE)                                       AS obs_date,
     o.DATA_SOURCE
-  FROM CORE__OBSERVATION o
+  FROM CORE_V3.CORE__OBSERVATION o
   WHERE o.LOINC_CODE = '14334-7'  -- Lithium [Moles/volume] in Serum or Plasma
     /* ensure numeric token exists */
     AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL

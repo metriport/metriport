@@ -14,7 +14,7 @@
 
 WITH cad_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE__CONDITION c
+  FROM CORE_V3.CORE__CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'I25%'
 ),
 
@@ -49,7 +49,7 @@ troponin_raw AS (
     ) AS value_token,
     CAST(o.START_DATE AS DATE) AS obs_date,
     o.DATA_SOURCE
-  FROM CORE__OBSERVATION o
+  FROM CORE_V3.CORE__OBSERVATION o
   WHERE o.LOINC_CODE IN ('10839-9','6598-7')
     AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''),
         '[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?') IS NOT NULL
@@ -96,7 +96,7 @@ revasc_raw AS (
     p.CPT_DISPLAY  AS NORMALIZED_DESCRIPTION,
     CAST(p.START_DATE AS DATE) AS obs_date,
     p.DATA_SOURCE
-  FROM CORE__PROCEDURE p
+  FROM CORE_V3.CORE__PROCEDURE p
   WHERE p.CPT_CODE IN ('92928','92929','33511','33512')
 ),
 revasc_clean AS (

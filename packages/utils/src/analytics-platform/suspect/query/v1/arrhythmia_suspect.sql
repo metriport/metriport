@@ -47,7 +47,7 @@ WITH
 arrhythmia_dx_exclusion AS (
   /* Existing arrhythmia diagnosis → exclude (I47.*, I48.*, I49.*) */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE__CONDITION c
+  FROM CORE_V3.CORE__CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'I47%'
      OR c.ICD_10_CM_CODE LIKE 'I48%'
      OR c.ICD_10_CM_CODE LIKE 'I49%'
@@ -65,7 +65,7 @@ proc_definitive_raw AS (
     p.CPT_DISPLAY                               AS display,
     CAST(p.START_DATE AS DATE)                  AS ev_date,
     p.DATA_SOURCE
-  FROM CORE__PROCEDURE p
+  FROM CORE_V3.CORE__PROCEDURE p
   WHERE p.CPT_CODE IN (
     '92960',  -- External electrical cardioversion
     '92961',  -- Internal electrical cardioversion
@@ -96,7 +96,7 @@ ekg_obs_raw AS (
     o.RESULT,
     o.NOTE_TEXT,
     o.DATA_SOURCE
-  FROM CORE__OBSERVATION o
+  FROM CORE_V3.CORE__OBSERVATION o
   WHERE
     (
       UPPER(o.LOINC_DISPLAY) LIKE '%ELECTROCARDIOGRAM%'
@@ -156,7 +156,7 @@ ecg_proc_reason_raw AS (
     p.REASON_SNOMED_CODE,
     p.REASON_SNOMED_DISPLAY,
     p.DATA_SOURCE
-  FROM CORE__PROCEDURE p
+  FROM CORE_V3.CORE__PROCEDURE p
   WHERE p.CPT_CODE IN (
     '93000',  -- Electrocardiogram, complete
     '93005',  -- Electrocardiogram, tracing only

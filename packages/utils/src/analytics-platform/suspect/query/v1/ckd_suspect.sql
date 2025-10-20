@@ -19,7 +19,7 @@
 
 WITH ckd_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE__CONDITION c
+  FROM CORE_V3.CORE__CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'N18%'
 ),
 
@@ -39,7 +39,7 @@ egfr_raw AS (
     REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
     CAST(o.START_DATE AS DATE)                                     AS obs_date,
     o.DATA_SOURCE
-  FROM CORE__OBSERVATION o
+  FROM CORE_V3.CORE__OBSERVATION o
   WHERE o.LOINC_CODE IN ('33914-3','62238-1','69405-9','98979-8')
     AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     AND NULLIF(o.UNITS,'') IS NOT NULL
@@ -61,7 +61,7 @@ albumin_raw AS (
     REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
     CAST(o.START_DATE AS DATE)                                     AS obs_date,
     o.DATA_SOURCE
-  FROM CORE__OBSERVATION o
+  FROM CORE_V3.CORE__OBSERVATION o
   WHERE o.LOINC_CODE = '9318-7'
     AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     AND NULLIF(o.UNITS,'') IS NOT NULL
@@ -80,7 +80,7 @@ dialysis_raw AS (
     p.CPT_DISPLAY                                AS NORMALIZED_DESCRIPTION,
     CAST(p.START_DATE AS DATE)                  AS obs_date,
     p.DATA_SOURCE
-  FROM CORE__PROCEDURE p
+  FROM CORE_V3.CORE__PROCEDURE p
   WHERE p.CPT_CODE IN ('90935','90937')
 ),
 

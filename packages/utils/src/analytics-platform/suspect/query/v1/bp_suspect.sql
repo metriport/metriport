@@ -19,7 +19,7 @@
 
 WITH htn_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE__CONDITION c
+  FROM CORE_V3.CORE__CONDITION c
   WHERE LEFT(c.ICD_10_CM_CODE, 3) IN ('I10','I11','I12','I13','I15')
 ),
 
@@ -38,7 +38,7 @@ bp_raw AS (
     REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
     CAST(o.START_DATE AS DATE)                                         AS obs_date,
     o.DATA_SOURCE
-  FROM CORE__OBSERVATION o
+  FROM CORE_V3.CORE__OBSERVATION o
   WHERE o.LOINC_CODE IN ('8480-6','8462-4')
     AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     AND NULLIF(o.UNITS, '') IS NOT NULL

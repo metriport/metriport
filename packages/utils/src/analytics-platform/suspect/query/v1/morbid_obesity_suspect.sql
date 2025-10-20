@@ -15,7 +15,7 @@
 
 WITH obesity_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE__CONDITION c
+  FROM CORE_V3.CORE__CONDITION c
   WHERE LEFT(c.ICD_10_CM_CODE, 3) = 'E66'  -- E66.01, E66.2, E66.813 (no dots)
 ),
 
@@ -34,7 +34,7 @@ bmi_raw AS (
     REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
     CAST(o.START_DATE AS DATE)                                         AS obs_date,
     o.DATA_SOURCE
-  FROM CORE__OBSERVATION o
+  FROM CORE_V3.CORE__OBSERVATION o
   WHERE o.LOINC_CODE = '39156-5'  -- BMI
     AND NULLIF(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+'), '') IS NOT NULL
 ),
@@ -51,7 +51,7 @@ weight_raw AS (
     REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
     CAST(o.START_DATE AS DATE)                                         AS obs_date,
     o.DATA_SOURCE
-  FROM CORE__OBSERVATION o
+  FROM CORE_V3.CORE__OBSERVATION o
   WHERE o.LOINC_CODE = '29463-7'  -- Body weight
     AND NULLIF(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+'), '') IS NOT NULL
 ),
@@ -68,7 +68,7 @@ height_raw AS (
     REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
     CAST(o.START_DATE AS DATE)                                         AS obs_date,
     o.DATA_SOURCE
-  FROM CORE__OBSERVATION o
+  FROM CORE_V3.CORE__OBSERVATION o
   WHERE o.LOINC_CODE = '8302-2'   -- Body height
     AND NULLIF(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+'), '') IS NOT NULL
 ),

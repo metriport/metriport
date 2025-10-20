@@ -26,7 +26,7 @@
 
 WITH hepc_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE__CONDITION c
+  FROM CORE_V3.CORE__CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'B18.2%'
 ),
 
@@ -45,7 +45,7 @@ hcv_lab_raw AS (
     REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
     CAST(o.START_DATE AS DATE)                                         AS obs_date,
     o.DATA_SOURCE
-  FROM CORE__OBSERVATION o
+  FROM CORE_V3.CORE__OBSERVATION o
   WHERE o.LOINC_CODE IN ('13955-0','16128-1','11011-4','38180-6','32286-7','48159-8')
     AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
 ),

@@ -235,7 +235,7 @@ levothyroxine_request_raw AS (
     lc.NDC_DISPLAY,
     mr.AUTHORED_ON           AS obs_date,
     mr.DATA_SOURCE
-  FROM CORE__MEDICATION_REQUEST mr
+  FROM CORE_V3.CORE__MEDICATION_REQUEST mr
   JOIN levothyroxine_catalog lc
     ON lc.MEDICATION_ID = mr.MEDICATION_ID
   WHERE NOT EXISTS (SELECT 1 FROM hypo_dx_exclusion x WHERE x.PATIENT_ID = mr.PATIENT_ID)

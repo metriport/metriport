@@ -34,7 +34,7 @@
 WITH amputation_dx_exclusion AS (
   /* Exclude patients already carrying an amputation/absence status diagnosis (ICD-10 Z89.*) */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE__CONDITION c
+  FROM CORE_V3.CORE__CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'Z89%'
 ),
 
@@ -50,7 +50,7 @@ amputation_raw AS (
     p.CPT_DISPLAY,
     CAST(p.START_DATE AS DATE)              AS proc_date,
     p.DATA_SOURCE
-  FROM CORE__PROCEDURE p
+  FROM CORE_V3.CORE__PROCEDURE p
   WHERE UPPER(p.CPT_CODE) IN (
     '27590',  -- Above-knee amputation (through femur)
     '27880',  -- Below-knee amputation (through tibia/fibula)

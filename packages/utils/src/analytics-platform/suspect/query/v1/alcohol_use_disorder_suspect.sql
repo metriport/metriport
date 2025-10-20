@@ -50,7 +50,7 @@
 WITH aud_dx_exclusion AS (
   /* Patients already diagnosed with alcohol-related disorders (exclude) */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE__CONDITION c
+  FROM CORE_V3.CORE__CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'F10%'
 ),
 
@@ -70,7 +70,7 @@ ethanol_raw AS (
     REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
     CAST(o.START_DATE AS DATE)                                     AS obs_date,
     o.DATA_SOURCE
-  FROM CORE__OBSERVATION o
+  FROM CORE_V3.CORE__OBSERVATION o
   WHERE o.LOINC_CODE = '5643-2'  -- Ethanol [Mass/volume] in Serum or Plasma
     AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     /* Require non-empty units up front */
@@ -159,7 +159,7 @@ sbirt_suspects AS (
     p.CPT_DISPLAY,
     CAST(p.START_DATE AS DATE) AS proc_date,
     p.DATA_SOURCE
-  FROM CORE__PROCEDURE p
+  FROM CORE_V3.CORE__PROCEDURE p
   WHERE UPPER(p.CPT_CODE) IN (
       '99408',  -- Alcohol and/or substance (other than tobacco) abuse structured screening & brief intervention; 15–30 minutes
       '99409',  -- Alcohol and/or substance (other than tobacco) abuse structured screening & brief intervention; >30 minutes

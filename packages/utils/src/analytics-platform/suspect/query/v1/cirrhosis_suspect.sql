@@ -19,7 +19,7 @@
 
 WITH cirrhosis_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE__CONDITION c
+  FROM CORE_V3.CORE__CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'K74%'
 ),
 
@@ -35,7 +35,7 @@ biopsy_raw AS (
     p.CPT_DISPLAY         AS NORMALIZED_DESCRIPTION,
     CAST(p.START_DATE AS DATE) AS obs_date,
     p.DATA_SOURCE
-  FROM CORE__PROCEDURE p
+  FROM CORE_V3.CORE__PROCEDURE p
   WHERE p.CPT_CODE IN ('47000','47001','47002','47379','47003')
 ),
 biopsy_clean AS (
@@ -71,7 +71,7 @@ ast_raw AS (
     REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')  AS value_token,
     CAST(o.START_DATE AS DATE) AS obs_date,
     o.DATA_SOURCE
-  FROM CORE__OBSERVATION o
+  FROM CORE_V3.CORE__OBSERVATION o
   WHERE o.LOINC_CODE = '1920-8'  -- AST
     AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     AND NULLIF(o.UNITS,'') IS NOT NULL
@@ -88,7 +88,7 @@ alt_raw AS (
     REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')  AS value_token,
     CAST(o.START_DATE AS DATE) AS obs_date,
     o.DATA_SOURCE
-  FROM CORE__OBSERVATION o
+  FROM CORE_V3.CORE__OBSERVATION o
   WHERE o.LOINC_CODE = '1742-6'  -- ALT
     AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     AND NULLIF(o.UNITS,'') IS NOT NULL
@@ -105,7 +105,7 @@ plt_raw AS (
     REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')  AS value_token,
     CAST(o.START_DATE AS DATE) AS obs_date,
     o.DATA_SOURCE
-  FROM CORE__OBSERVATION o
+  FROM CORE_V3.CORE__OBSERVATION o
   WHERE o.LOINC_CODE IN ('777-3','26515-7')  -- Platelets
     AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     AND NULLIF(o.UNITS,'') IS NOT NULL
@@ -199,7 +199,7 @@ plt_clean_ex AS (
 /* Age at lab date */
 patient_birth AS (
   SELECT PATIENT_ID, CAST(BIRTH_DATE AS DATE) AS birth_date
-  FROM CORE__PATIENT
+  FROM CORE_V3.CORE__PATIENT
   WHERE BIRTH_DATE IS NOT NULL
 ),
 

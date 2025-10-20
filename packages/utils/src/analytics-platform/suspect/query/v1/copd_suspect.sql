@@ -15,7 +15,7 @@
 
 WITH copd_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE__CONDITION c 
+  FROM CORE_V3.CORE__CONDITION c 
   WHERE c.ICD_10_CM_CODE LIKE 'J44%'
 ),
 
@@ -34,7 +34,7 @@ fev1fvc_raw AS (
     REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
     CAST(o.START_DATE AS DATE)                                     AS obs_date,
     o.DATA_SOURCE
-  FROM CORE__OBSERVATION o
+  FROM CORE_V3.CORE__OBSERVATION o
   WHERE o.LOINC_CODE = '19926-5'   -- FEV1/FVC ratio
     AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     AND NULLIF(o.UNITS, '') IS NOT NULL
