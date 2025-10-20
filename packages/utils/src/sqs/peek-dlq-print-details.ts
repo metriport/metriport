@@ -159,7 +159,10 @@ async function main({
 
   // Store unique patient IDs to file
   const patientIdsArray = Array.from(uniqueCxIdPatientIds).sort();
-  fs.writeFileSync(`${dirName}/patient_ids.csv`, ["cxId,patientId", ...patientIdsArray].join("\n"));
+  fs.writeFileSync(
+    `${dirName}/patient_ids.csv`,
+    ["cx_id,patient_id", ...patientIdsArray].join("\n")
+  );
   console.log(`>>> Saved ${patientIdsArray.length} unique patient IDs to patient_ids.txt`);
 
   if (downloadFiles) {

@@ -10,8 +10,10 @@ import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { JSONParser, ParsedElementInfo } from "@streamparser/json";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import fs from "fs";
+import * as fs from "fs";
 import { groupBy, isEmpty } from "lodash";
+import readline from "readline/promises";
+import { readCsv } from "../shared/csv";
 
 dayjs.extend(duration);
 
@@ -23,12 +25,12 @@ dayjs.extend(duration);
  *
  * The input file is generated using the following SQL command:
  * ```
- * SELECT patient_id, cx_id
+ * SELECT cx_id, patient_id
  * FROM docref_mapping
  * WHERE created_at BETWEEN <dateFrom> AND <dateTo>;
  * ```
- * Once the query is executed, export the results to a JSON file. Then, remove the SQL query from the object, and
- * only leave the array of objects. Indicate the path to the file in the `fileName` variable.
+ * Once the query is executed, export the results to a CSV file with headers: cx_id,patient_id
+ * Indicate the path to the file in the `fileName` variable and set `isCsvFile` to true.
  *
  * To run the script, execute:
  * - ts-node src/document/reconversion-kickoff-loader.ts
@@ -58,7 +60,8 @@ const SQS_BATCH_SIZE = 2000;
 const MIN_JITTER_BETWEEN_BATCHES = dayjs.duration(1, "seconds");
 
 const fileName = "";
-const dateFrom = "2025-06-01"; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-10 12:00
+const isCsvFile = true; // Set to true if the file is CSV format, false for JSON format
+const dateFrom = "2022-01-01"; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-10 12:00
 const dateTo = ""; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-11 12:00
 
 async function main() {
@@ -72,10 +75,14 @@ async function main() {
   const patients: Array<{ patient_id: string; cx_id: string }> = [];
 
   console.log("Loading patient data from file...");
-  await loadDataFromLargeJsonFile(fileName, ({ value }) => {
-    const patient = value as { patient_id: string; cx_id: string };
-    patients.push(patient);
-  });
+  if (isCsvFile) {
+    patients.push(...(await loadDataFromCsvFile(fileName)));
+  } else {
+    await loadDataFromLargeJsonFile(fileName, ({ value }) => {
+      const patient = value as { patient_id: string; cx_id: string };
+      patients.push(patient);
+    });
+  }
 
   console.log(`Loaded ${patients.length} patients from file`);
 
@@ -101,6 +108,8 @@ async function main() {
   }
 
   console.log(`Total unique payloads to send: ${payloads.length}`);
+
+  await displayWarningAndConfirmationPrompt(payloads.length);
 
   let totalSent = 0;
   let totalErrors = 0;
@@ -169,6 +178,18 @@ async function main() {
 }
 
 /**
+ * Loads data from a CSV file
+ */
+async function loadDataFromCsvFile(path: string): Promise<{ patient_id: string; cx_id: string }[]> {
+  const records = await readCsv<{ cx_id: string; patient_id: string }>(path);
+  const patients = records.map(record => ({
+    cx_id: record.cx_id,
+    patient_id: record.patient_id,
+  }));
+  return patients;
+}
+
+/**
  * Loads data from a large JSON file using streaming to avoid memory issues
  */
 async function loadDataFromLargeJsonFile(
@@ -185,6 +206,22 @@ async function loadDataFromLargeJsonFile(
     inputStream.on("data", chunk => parser.write(chunk));
     inputStream.on("end", () => parser.end());
   });
+}
+
+async function displayWarningAndConfirmationPrompt(payloadsLength: number) {
+  const msg = `You are about to send ${payloadsLength} messages to the reconversion kickoff queue, are you sure?`;
+  console.log(msg);
+  console.log("Are you sure you want to proceed?");
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  const answer = await rl.question("Type 'yes' to proceed: ");
+  if (answer !== "yes") {
+    console.log("Aborting...");
+    process.exit(0);
+  }
+  rl.close();
 }
 
 main();
