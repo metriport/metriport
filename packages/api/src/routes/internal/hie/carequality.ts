@@ -89,6 +89,7 @@ router.get(
     return res.status(httpStatus.OK).json({ amount: orgs.length, entries: orgs });
   })
 );
+
 /**
  * POST /internal/carequality/directory/rebuild
  *

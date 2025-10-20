@@ -13,7 +13,12 @@ import {
 } from "../models/organization";
 import { APIMode, CommonWellOptions } from "./common";
 import { CommonWellBase } from "./commonwell-base";
-import { BaseOptions, CommonWellMemberAPI, MemberRequestMetadata } from "./commonwell-member-api";
+import {
+  BaseOptions,
+  CommonWellMemberAPI,
+  GetDirectoryParams,
+  MemberRequestMetadata,
+} from "./commonwell-member-api";
 
 /**
  * Implementation of the CommonWell API, v4.
@@ -68,6 +73,57 @@ export class CommonWellMember extends CommonWellBase implements CommonWellMember
 
   get memberId() {
     return this._memberId;
+  }
+
+  /**
+   * Lists organizations from the CommonWell Directory.
+   *
+   * @param params Optional parameters.
+   * @param params.orgName Optional, the name of the organization to fetch.
+   * @param params.orgId Optional, the ID of the organization to fetch.
+   * @param params.offset Optional, the offset of the organizations to fetch.
+   * @param params.limit Optional, the limit of the organizations to fetch.
+   * @param params.sort Optional, the sort of the organizations to fetch.
+   * @param options Optional parameters.
+   * @param options.meta Metadata about the request. Defaults to the data used to initialize the client.
+   * @returns
+   */
+  async listOrganizations(
+    params: GetDirectoryParams = {},
+    options?: BaseOptions
+  ): Promise<OrganizationList> {
+    const meta = options?.meta ?? buildBaseQueryMeta(this.memberName);
+    const headers = this.buildQueryHeaders(meta);
+
+    if (params.limit && params.limit > 100) {
+      throw new BadRequestError("Limit must be less than 100");
+    }
+
+    const query = new URLSearchParams();
+    if (params.orgName !== undefined) query.append("orgName", params.orgName);
+    if (params.orgId !== undefined) query.append("orgId", params.orgId);
+    if (params.offset !== undefined) query.append("offset", params.offset.toString());
+    if (params.limit !== undefined) query.append("limit", params.limit.toString());
+    if (params.sort !== undefined) query.append("sort", params.sort);
+
+    const url = `${CommonWellMember.MEMBER_ENDPOINT}/${
+      this.memberId
+    }/network/CommonWell?${query.toString()}`;
+
+    try {
+      const resp = await this.executeWithRetriesOn500IfEnabled(() => {
+        return this.api.get(url, {
+          headers,
+        });
+      });
+
+      return organizationListSchema.parse(resp.data);
+    } catch (error) {
+      if (isAxiosError(error) && error.response?.status === httpStatus.NOT_FOUND) {
+        return { count: 0, from: 0, to: 0, organizations: [] };
+      }
+      throw this.getDescriptiveError(error, "Failed to get CW directory");
+    }
   }
 
   // TODO: #322 handle errors in API calls as per

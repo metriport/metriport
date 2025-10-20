@@ -23,15 +23,52 @@ import {
   PaginationV2WithQueryClauses,
 } from "../command/pagination-v2";
 
-export type ColumnValidationConfig = Record<string, string>;
+/**
+ * Configuration for a regular database column.
+ * The column name will be automatically converted to snake_case.
+ */
+type RegularColumnConfig = {
+  table: string;
+  column: string;
+  type: "regular";
+};
+
+/**
+ * Configuration for a JSONB column access.
+ * The sqlPath should include the full JSONB access pattern (e.g., "data->>'firstName'").
+ */
+type JsonbColumnConfig = {
+  table: string;
+  sqlPath: string;
+  type: "jsonb";
+};
+
+type ColumnConfig = RegularColumnConfig | JsonbColumnConfig;
+
+export type ColumnValidationConfig = Record<string, ColumnConfig>;
 
 const ALLOWED_SORT_ORDERS = ["asc", "desc"] as const;
 
+/**
+ * Gets the SQL column expression from a column configuration.
+ * For regular columns, returns "table.snake_case_column".
+ * For JSONB columns, returns "table.sqlPath".
+ */
+function getSqlColumnExpression(config: ColumnConfig): string {
+  if (config.type === "regular") {
+    const dbCol = snakeCase(config.column);
+    return `${config.table}.${dbCol}`;
+  }
+  return `${config.table}.${config.sqlPath}`;
+}
+
+/**
+ * Validates the sort columns and orders.
+ */
 function validateSortColumns(
   paginationV2: PaginationV2,
   allowedColumns: ColumnValidationConfig
 ): PaginationV2 {
-  // Validate each sort column
   paginationV2.sort.forEach(({ col, order }) => {
     if (!(col in allowedColumns)) {
       throw new MetriportError(
@@ -68,9 +105,9 @@ export function buildOrderByClause(
   }
 
   const orderByClauses = sortItems.map(({ col, order }) => {
-    const table = allowedColumns[col]; // Use original camelCase for table lookup
-    const dbCol = snakeCase(col); // Transform camelCase to snake_case for SQL
-    return `${table}.${dbCol} ${order.toUpperCase()}`;
+    const config = allowedColumns[col];
+    const sqlColumn = getSqlColumnExpression(config);
+    return `${sqlColumn} ${order.toUpperCase()}`;
   });
 
   return `ORDER BY ${orderByClauses.join(", ")}`;
@@ -92,8 +129,8 @@ export function buildCompositeCursorWhereClause(
   // Build lexicographic comparison conditions
   for (let i = 0; i < sortItems.length; i++) {
     const { col, order } = sortItems[i];
-    const dbCol = snakeCase(col); // Transform to snake_case for SQL
-    const table = allowedColumns[col]; // Use original camelCase for table lookup
+    const config = allowedColumns[col];
+    const sqlColumn = getSqlColumnExpression(config);
     const cursorValue = cursor[col];
 
     if (cursorValue === undefined) {
@@ -102,16 +139,16 @@ export function buildCompositeCursorWhereClause(
 
     // Build equality conditions for previous columns
     const equalityConditions = sortItems.slice(0, i).map((sortItem, idx) => {
-      const prevTable = allowedColumns[sortItem.col];
-      const prevDbCol = snakeCase(sortItem.col); // Transform to snake_case for SQL
+      const prevConfig = allowedColumns[sortItem.col];
+      const prevSqlColumn = getSqlColumnExpression(prevConfig);
       const prevCursorValue = cursor[sortItem.col];
 
       if (prevCursorValue === null || prevCursorValue === undefined) {
-        return `${prevTable}.${prevDbCol} IS NULL`;
+        return `${prevSqlColumn} IS NULL`;
       } else {
         const paramKey = `cursor_${sortItem.col}_${idx}`;
         params[paramKey] = prevCursorValue;
-        return `${prevTable}.${prevDbCol} = :${paramKey}`;
+        return `${prevSqlColumn} = :${paramKey}`;
       }
     });
 
@@ -151,14 +188,14 @@ export function buildCompositeCursorWhereClause(
         // Forward: want records after NULL position
         comparisonCondition =
           order === "asc"
-            ? `${table}.${dbCol} IS NOT NULL` // NULL comes first in ASC, so get non-null records
+            ? `${sqlColumn} IS NOT NULL` // NULL comes first in ASC, so get non-null records
             : `FALSE`; // NULL comes last in DESC, so no records after
       } else {
         // Backward: want records before NULL position
         comparisonCondition =
           order === "asc"
             ? `FALSE` // NULL comes first in ASC, so no records before
-            : `${table}.${dbCol} IS NOT NULL`; // NULL comes last in DESC, so get non-null records
+            : `${sqlColumn} IS NOT NULL`; // NULL comes last in DESC, so get non-null records
       }
     } else {
       // Handle non-NULL cursor values
@@ -166,7 +203,7 @@ export function buildCompositeCursorWhereClause(
       params[paramKey] = cursorValue;
 
       // When cursor is not null, we may need to include NULL records depending on direction/order
-      const baseComparison = `${table}.${dbCol} ${operator} :${paramKey}`;
+      const baseComparison = `${sqlColumn} ${operator} :${paramKey}`;
 
       if (direction === "forward") {
         if (order === "asc") {
@@ -174,12 +211,12 @@ export function buildCompositeCursorWhereClause(
           comparisonCondition = baseComparison;
         } else {
           // Forward DESC: want records < cursor, and may need to include NULLs if they come after cursor
-          comparisonCondition = `(${baseComparison} OR ${table}.${dbCol} IS NULL)`;
+          comparisonCondition = `(${baseComparison} OR ${sqlColumn} IS NULL)`;
         }
       } else {
         if (order === "asc") {
           // Backward ASC: want records < cursor, and may need to include NULLs if they come before cursor
-          comparisonCondition = `(${baseComparison} OR ${table}.${dbCol} IS NULL)`;
+          comparisonCondition = `(${baseComparison} OR ${sqlColumn} IS NULL)`;
         } else {
           // Backward DESC: want records > cursor, but NULLs come last so they shouldn't be included
           comparisonCondition = baseComparison;
@@ -236,7 +273,7 @@ export async function paginatedV2<T extends { id: string } & Record<string, unkn
   maxItemsPerPage = 500,
 }: {
   request: Request;
-  additionalQueryParams: Record<string, string> | undefined;
+  additionalQueryParams: Record<string, string | string[]> | undefined;
   getItems: (paginationV2: PaginationV2WithQueryClauses) => Promise<T[]>;
   getTotalCount: () => Promise<number>;
   allowedSortColumns: ColumnValidationConfig;
@@ -320,7 +357,7 @@ function getNextPageUrl(
   req: Request,
   nextPageFromItem: CompositeCursor,
   requestMeta: PaginationV2,
-  additionalQueryParams: Record<string, string> | undefined,
+  additionalQueryParams: Record<string, string | string[]> | undefined,
   hostUrl: string
 ): string {
   const p: PaginationV2FromItem = { fromItem: nextPageFromItem };
@@ -331,7 +368,7 @@ function getPaginationV2Url(
   req: Request,
   item: PaginationV2Item,
   requestMeta: PaginationV2,
-  additionalQueryParams: Record<string, string> | undefined,
+  additionalQueryParams: Record<string, string | string[]> | undefined,
   hostUrl: string
 ): string {
   const encodedItem = {
@@ -354,7 +391,7 @@ function getPaginationV2Url(
   }
   if (additionalQueryParams) {
     for (const [key, value] of Object.entries(additionalQueryParams)) {
-      params.append(key, value);
+      params.append(key, Array.isArray(value) ? value.join(",") : value);
     }
   }
 

@@ -1,0 +1,73 @@
+{
+  "inputText": "Take Acetaminophen 500 mg tablet, 1-2 tablets orally every 6 hours as needed for pain, not to exceed 8 tablets per day.",
+  "response": {
+    "$metadata": {
+      "httpStatusCode": 200,
+      "requestId": "3a1036ee-3d2e-4c66-9b7d-45ef7d3aeffb",
+      "attempts": 1,
+      "totalRetryDelay": 0
+    },
+    "Entities": [
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 19,
+            "EndOffset": 25,
+            "Id": 2,
+            "RelationshipScore": 0.7552722692489624,
+            "Score": 0.7613970637321472,
+            "Text": "500 mg",
+            "Traits": [],
+            "Type": "STRENGTH"
+          },
+          {
+            "BeginOffset": 26,
+            "EndOffset": 32,
+            "Id": 3,
+            "RelationshipScore": 0.8219892978668213,
+            "Score": 0.821601390838623,
+            "Text": "tablet",
+            "Traits": [],
+            "Type": "FORM"
+          }
+        ],
+        "BeginOffset": 5,
+        "Category": "MEDICATION",
+        "EndOffset": 18,
+        "Id": 1,
+        "RxNormConcepts": [
+          {
+            "Code": "198440",
+            "Description": "acetaminophen 500 mg oral tablet",
+            "Score": 0.9062824845314026
+          },
+          {
+            "Code": "198439",
+            "Description": "acetaminophen 500 mg oral capsule",
+            "Score": 0.10811261087656021
+          },
+          {
+            "Code": "665056",
+            "Description": "acetaminophen 500 mg chewable tablet",
+            "Score": 0.09605463594198227
+          },
+          {
+            "Code": "2374360",
+            "Description": "acetaminophen 500 mg oral powder",
+            "Score": 0.07590633630752563
+          },
+          {
+            "Code": "104908",
+            "Description": "acetaminophen 500 mg / methionine 250 mg oral tablet",
+            "Score": 0.06318940967321396
+          }
+        ],
+        "Score": 0.821601390838623,
+        "Text": "Acetaminophen",
+        "Traits": [],
+        "Type": "GENERIC_NAME"
+      }
+    ],
+    "ModelVersion": "3.1.0.20221107"
+  }
+}

@@ -1,6 +1,6 @@
 {
   "name": "utils",
-  "version": "1.27.10",
+  "version": "1.27.11",
   "description": "",
   "private": true,
   "scripts": {
@@ -27,6 +27,7 @@
     "surescripts": "ts-node src/surescripts/index.ts",
     "quest": "ts-node src/quest/index.ts",
     "sde": "ts-node src/sde/index.ts",
+    "comprehend": "ts-node src/comprehend/index.ts",
     "medical-coding": "ts-node src/medical-coding/index.ts",
     "mock-ihe-gateway": "ts-node src/saml/mock-ihe-gateway",
     "integration-test-and-compare-total-resource-counts": "bash src/fhir/fhir-converter/scripts/run_integration_and_compare.sh",

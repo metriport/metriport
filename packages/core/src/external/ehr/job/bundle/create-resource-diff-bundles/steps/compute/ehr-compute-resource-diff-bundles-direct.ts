@@ -1,7 +1,7 @@
 import { Resource } from "@medplum/fhirtypes";
 import { errorToString, sleep } from "@metriport/shared";
 import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
-import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { getConsolidatedFile } from "../../../../../../../command/consolidated/consolidated-get";
 import { setJobEntryStatus } from "../../../../../../../command/job/patient/api/set-entry-status";
 import { computeResourcesXorAlongResourceType } from "../../../../../../../fhir-deduplication/compute-resources-xor";
@@ -223,8 +223,6 @@ async function shouldWriteBack({
 }): Promise<boolean> {
   if (!isSupportedWriteBackResourceType(resourceType)) return false;
   if (!isEhrSourceWithWriteBack(ehr)) return false;
-  /* TODO Remove once Elation is validated */
-  if (ehr !== EhrSources.athena) return false;
   if (!isEhrSourceWithSecondaryMappings(ehr)) return false;
   const mappingsSchema = ehrCxMappingSecondaryMappingsSchemaMap[ehr];
   if (!mappingsSchema) return false;
