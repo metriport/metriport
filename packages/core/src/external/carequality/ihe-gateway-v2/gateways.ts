@@ -1,4 +1,4 @@
-import { XCAGateway, XCPDGateway, SamlAttributes } from "@metriport/ihe-gateway-sdk";
+import { SamlAttributes, XCAGateway, XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { validate as validateUuid } from "uuid";
 import { wrapIdInUrnUuid } from "../../../util/urn";
 
@@ -25,7 +25,8 @@ export const centralOhioPrimaryCarePhysiciansOid = "1.2.840.114350.1.13.698.2.7.
 export const familyCareNetworkOid = "1.2.840.114350.1.13.699.2.7.3.688884.100";
 export const hattiesburgClinicOid = "1.2.840.114350.1.13.281.2.7.3.688884.100";
 export const healthPointOid = "1.2.840.114350.1.13.756.2.7.3.688884.100";
-export const surescriptsOid = "2.16.840.1.113883.3.2054.2.1.1";
+export const surescriptsOid = "2.16.840.1.113883.3.2054.2.1.1"; // RLS
+export const commonwellOid = "2.16.840.1.113883.3.9960.2.25.1"; // RLS
 
 export const epicOidPrefix = "1.2.840.114350.1.13";
 export const redoxOidPrefix = "2.16.840.1.113883.3.6147";
@@ -42,13 +43,8 @@ export function doesGatewayUseSha1(oid: string): boolean {
   return false;
 }
 
-/*
- * These gateways only accept a single document reference per request.
- */
-const gatewaysThatAcceptOneDocRefPerRequest = [pointClickCareOid, surescriptsOid];
-
 const prefixDocRefsPerRequest: Record<string, number> = {
-  [epicOidPrefix]: 10,
+  [epicOidPrefix]: 9,
   [redoxOidPrefix]: 1,
   [ntstPrefix]: 1,
 };
@@ -128,8 +124,4 @@ export function getHomeCommunityId(
 
 export function requiresUrnInSoapBody(gateway: XCPDGateway): boolean {
   return gateway.url != specialNamespaceRequiredUrl;
-}
-
-export function requiresOnlyOneDocRefPerRequest(gateway: XCAGateway): boolean {
-  return gatewaysThatAcceptOneDocRefPerRequest.includes(gateway.homeCommunityId);
 }

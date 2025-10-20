@@ -1,13 +1,16 @@
 import { Organization } from "@medplum/fhirtypes";
+import { safelyUploadPrincipalAndDelegatesToS3 } from "@metriport/core/external/hie-shared/principal-and-delegates";
+import { sendHeartbeatToMonitoringService } from "@metriport/core/external/monitoring/heartbeat";
 import { capture, executeAsynchronously } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { initDbPool } from "@metriport/core/util/sequelize";
 import { errorToString, sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { Sequelize } from "sequelize";
 import { Config } from "../../../../shared/config";
 import { makeCarequalityManagementApiOrFail } from "../../api";
-import { CQDirectoryEntryData2 } from "../../cq-directory";
+import { CQDirectoryEntryData } from "../../cq-directory";
 import { CachedCqOrgLoader } from "../cq-organization/get-cq-organization-cached";
 import { parseCQOrganization } from "../cq-organization/parse-cq-organization";
 import { getAdditionalOrgs } from "./additional-orgs";
@@ -25,24 +28,26 @@ dayjs.extend(duration);
 const BATCH_SIZE = 5_000;
 const parallelQueriesToGetManagingOrg = 20;
 const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
-
-const dbCreds = Config.getDBCreds();
-const sequelize = initDbPool(dbCreds, {
-  max: 10,
-  min: 1,
-  acquire: 30000,
-  idle: 10000,
-});
+const heartbeatUrl = Config.getCqDirRebuildHeartbeatUrl();
 
 export async function rebuildCQDirectory(failGracefully = false): Promise<void> {
   const context = "rebuildCQDirectory";
   const { log } = out(context);
+  const dbCreds = Config.getDBCreds();
+  const sequelize = initDbPool(dbCreds, {
+    max: 10,
+    min: 1,
+    acquire: 30000,
+    idle: 10000,
+  });
+
   let currentPosition = 0;
   let isDone = false;
   const startedAt = Date.now();
   const cq = makeCarequalityManagementApiOrFail();
   let parsedOrgsCount = 0;
   const parsingErrors: Error[] = [];
+  const principalAndDelegatesMap = new Map<string, string[]>();
   try {
     await createTempCqDirectoryTable(sequelize);
     const cache = new CachedCqOrgLoader(cq);
@@ -55,11 +60,12 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
           start: currentPosition,
           count: BATCH_SIZE,
           active: true,
+          sortKey: "_id",
         });
         log(`Loaded ${orgs.length} entries in ${Date.now() - loadStartedAt}ms`);
         if (orgs.length < BATCH_SIZE) isDone = true;
         cache.populate(orgs);
-        const parsedOrgs: CQDirectoryEntryData2[] = [];
+        const parsedOrgs: CQDirectoryEntryData[] = [];
         const [alreadyInsertedIds] = await Promise.all([
           getCqDirectoryIds(sequelize),
           executeAsynchronously(
@@ -68,6 +74,9 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
               try {
                 const parsed = await parseCQOrganization(org, cache);
                 parsedOrgs.push(parsed);
+                if (parsed.delegateOids && parsed.delegateOids.length > 0) {
+                  principalAndDelegatesMap.set(parsed.id, parsed.delegateOids);
+                }
               } catch (error) {
                 parsingErrors.push(error as Error);
               }
@@ -94,7 +103,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
         }
       }
     }
-    await processAdditionalOrgs();
+    await processAdditionalOrgs(sequelize);
 
     if (parsingErrors.length > 0) {
       const msg = `Parsing errors while rebuilding the CQ directory`;
@@ -116,11 +125,14 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
     capture.error(msg, {
       extra: { context, error },
     });
+    await sequelize.close();
     throw error;
   }
   try {
-    await updateCqDirectoryViewDefinition(sequelize);
-    log(`CQ directory successfully rebuilt! :) Took ${Date.now() - startedAt}ms`);
+    await Promise.all([
+      safelyUploadPrincipalAndDelegatesToS3(principalAndDelegatesMap, "cq"),
+      updateCqDirectoryViewDefinition(sequelize),
+    ]);
   } catch (error) {
     const msg = `Failed the last step of CQ directory rebuild`;
     log(`${msg}. Cause: ${errorToString(error)}`);
@@ -128,7 +140,13 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
       extra: { context: `updateCqDirectoryViewDefinition`, error },
     });
     throw error;
+  } finally {
+    await sequelize.close();
   }
+
+  log(`CQ directory successfully rebuilt! :) Took ${Date.now() - startedAt}ms`);
+
+  if (heartbeatUrl) await sendHeartbeatToMonitoringService(heartbeatUrl);
 }
 
 /**
@@ -136,7 +154,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
  * and very likely won't have any patient that matches our test's demographics, so we might
  * as well keep them inactive to minimize cost/scale issues on pre-prod envs.
  */
-function normalizeExternalOrgs(parsedOrgs: CQDirectoryEntryData2[]): CQDirectoryEntryData2[] {
+function normalizeExternalOrgs(parsedOrgs: CQDirectoryEntryData[]): CQDirectoryEntryData[] {
   if (Config.isStaging() || Config.isDev()) {
     return parsedOrgs.map(org => ({
       ...org,
@@ -150,7 +168,7 @@ function normalizeExternalOrgs(parsedOrgs: CQDirectoryEntryData2[]): CQDirectory
  * Process/include additional orgs that are not in the CQ directory.
  * Used for staging/dev envs.
  */
-async function processAdditionalOrgs(): Promise<void> {
+async function processAdditionalOrgs(sequelize: Sequelize): Promise<void> {
   const context = "processAdditionalOrgs";
   const { log } = out(context);
   try {

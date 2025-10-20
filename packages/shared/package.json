@@ -1,6 +1,6 @@
 {
   "name": "@metriport/shared",
-  "version": "0.19.5",
+  "version": "0.26.11",
   "description": "Common code shared across packages - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -23,7 +23,10 @@
     "./domain": "./dist/domain/index.js",
     "./domain/*": "./dist/domain/*.js",
     "./interface/*": "./dist/interface/*.js",
-    "./medical": "./dist/medical/index.js"
+    "./medical": "./dist/medical/index.js",
+    "./medical/*": "./dist/medical/*.js",
+    "./util": "./dist/util/index.js",
+    "./util/*": "./dist/util/*.js"
   },
   "typesVersions": {
     "*": {
@@ -53,6 +56,15 @@
       ],
       "medical": [
         "dist/medical/index.d.ts"
+      ],
+      "medical/*": [
+        "dist/medical/*"
+      ],
+      "util": [
+        "dist/util/index.d.ts"
+      ],
+      "util/*": [
+        "dist/util/*"
       ]
     }
   },
@@ -74,22 +86,25 @@
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
-    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "prettier-fix": "npx prettier '**/*.{js,ts,md}' --write --ignore-path ../../.prettierignore",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
     "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
   },
   "dependencies": {
     "@medplum/core": "^2.2.10",
-    "axios": "^1.4.0",
+    "axios": "^1.8.2",
     "dayjs": "^1.11.9",
     "fast-xml-parser": "^4.4.1",
     "http-status": "~1.7.0",
     "lodash": "^4.17.21",
+    "semver": ">=5.7.2",
+    "validator": "^13.15.15",
     "zod": "^3.22.1"
   },
   "devDependencies": {
     "@faker-js/faker": "^8.0.2",
     "@medplum/fhirtypes": "^2.2.10",
+    "@metriport/eslint-rules": "file:packages/eslint-rules",
     "@tsconfig/recommended": "^1.0.2",
     "@types/jest": "29.5.3",
     "@typescript-eslint/eslint-plugin": "^5.48.2",

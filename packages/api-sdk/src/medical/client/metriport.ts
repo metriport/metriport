@@ -37,6 +37,8 @@ import { Organization, OrganizationCreate, organizationSchema } from "../models/
 import {
   GetConsolidatedQueryProgressResponse,
   GetSingleConsolidatedQueryProgressResponse,
+  MedicalRecordUrlResponse,
+  medicalRecordUrlResponseSchema,
   PatientCreate,
   PatientHieOptOutResponse,
   PatientUpdate,
@@ -368,6 +370,24 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Returns a patient based on external ID.
+   *
+   * @param externalId The external ID of the patient to be returned.
+   * @param source The source of the external ID, if required.
+   * @return The patient.
+   */
+  async getPatientByExternalId(
+    externalId: string,
+    source?: string
+  ): Promise<PatientDTO | undefined> {
+    const resp = await this.api.get(`${PATIENT_URL}/external-id`, {
+      params: { externalId, source },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data as PatientDTO;
+  }
+
+  /**
    * Searches for a patient previously created at Metriport, based on demographics.
    *
    * @return The patient if found.
@@ -385,6 +405,28 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Maps a Metriport patient to a patient in an external EHR system and synchronizes their data.
+   *
+   * @param patientId The ID of the patient to map.
+   * @param source The source name that represents the external system/EHR, either healthie or elation. Optional.
+   * @return The Metriport patient ID and the mapping patient (external) ID.
+   * @throws error if the patient has no external ID to attempt mapping.
+   * @throws error if the mapping source is not supported.
+   * @throws error if no mapping is found.
+   * @throws error if patient demographics are not matching.
+   */
+  async syncPatient(
+    patientId: string,
+    source?: string
+  ): Promise<{ patientId: string; externalId: string }> {
+    const resp = await this.api.post(`${PATIENT_URL}/${patientId}/external/sync`, undefined, {
+      params: { source },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data;
+  }
+
+  /**
    * Updates a patient at Metriport and at HIEs the patient is linked to.
    *
    * @param patient The patient data to be updated.
@@ -394,7 +436,7 @@ export class MetriportMedicalApi {
    */
   async updatePatient(
     patient: PatientUpdate,
-    facilityId?: string,
+    facilityId: string,
     additionalQueryParams: Record<string, string | number | boolean> = {}
   ): Promise<PatientDTO> {
     type FieldsToOmit = "id";
@@ -426,6 +468,34 @@ export class MetriportMedicalApi {
     });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data;
+  }
+
+  /**
+   * Sets the facilities associated with a patient. This operation overrides any existing
+   * facility associations and replaces them with the provided list.
+   *
+   * @param patientId The ID of the patient to set facilities for.
+   * @param facilityIds The array of facility IDs to associate with the patient. This will replace all existing associations.
+   * @returns The updated facilities associated with the patient.
+   */
+  async setPatientFacilities(patientId: string, facilityIds: string[]): Promise<Facility[]> {
+    const resp = await this.api.post(`${PATIENT_URL}/${patientId}/facility`, {
+      facilityIds,
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data.facilities;
+  }
+
+  /**
+   * Gets all facilities associated with a patient.
+   *
+   * @param patientId The ID of the patient whose facilities are to be returned.
+   * @returns Array of facilities associated with the patient.
+   */
+  async getPatientFacilities(patientId: string): Promise<Facility[]> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/facility`);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data.facilities;
   }
 
   // TODO #870 remove this
@@ -466,9 +536,8 @@ export class MetriportMedicalApi {
    * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param conversionType Optional to indicate how the medical record should be rendered - one of:
-   *      "pdf", "html", or "json" (defaults to "json"). If "html" or "pdf", the Webhook payload
+   *      "pdf", "html", or "json" (defaults to "json"). The Webhook payload
    *      will contain a signed URL to download the file, which is active for 3 minutes.
-   *      If not provided, will send json payload in the webhook.
    * @param fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
    * @param metadata Optional metadata to be sent along the webhook request as response of this query.
    * @return The consolidated data query status.
@@ -478,7 +547,7 @@ export class MetriportMedicalApi {
     resources?: readonly ResourceTypeForConsolidation[],
     dateFrom?: string,
     dateTo?: string,
-    conversionType?: string,
+    conversionType = "json",
     fromDashboard?: boolean,
     metadata?: Record<string, string>
   ): Promise<StartConsolidatedQueryProgressResponse> {
@@ -563,6 +632,23 @@ export class MetriportMedicalApi {
       params: { resources: resources && resources.join(","), dateFrom, dateTo },
     });
     return resp.data;
+  }
+
+  /**
+   * Returns the medical record summary for a given patient.
+   *
+   * @param patientId The ID of the patient whose medical record summary is to be returned.
+   * @param conversionType The format of the medical record summary to be returned. Accepts "html" or "pdf".
+   * @return The medical record summary for the given patient.
+   */
+  async getPatientMedicalRecord(
+    patientId: string,
+    conversionType: "html" | "pdf"
+  ): Promise<MedicalRecordUrlResponse> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/medical-record`, {
+      params: { conversionType },
+    });
+    return medicalRecordUrlResponseSchema.parse(resp.data);
   }
 
   /**
@@ -753,7 +839,7 @@ export class MetriportMedicalApi {
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getDocumentUrl(
     fileName: string,
-    conversionType?: "html" | "pdf"
+    conversionType?: "html" | "pdf" | "hl7"
   ): Promise<{ url: string }> {
     const resp = await this.api.get(`${DOCUMENT_URL}/download-url`, {
       params: {
@@ -855,7 +941,7 @@ export class MetriportMedicalApi {
    * @param throwOnError Whether to throw an Error if the request body is not a valid webhook request.
    *        Optional, defaults to true.
    * @returns The webhook request - instance of WebhookRequest, or an instance of
-   *          WebhookRequestParsingError if the payload is invalid and throwOnError is 'true'.
+   *          WebhookRequestParsingError if the payload is invalid and throwOnError is 'false'.
    * @throws Error if the request body is not a valid webhook request and throwOnError is 'true'.
    *         Details can be obtained from the error object under the 'cause' property (instance
    *         of ZodError).

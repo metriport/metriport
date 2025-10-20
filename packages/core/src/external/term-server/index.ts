@@ -1,5 +1,6 @@
 import { TypedValue } from "@medplum/core";
-import { Coding, Parameters, ParametersParameter } from "@medplum/fhirtypes";
+import { Coding, ConceptMap, Parameters, ParametersParameter } from "@medplum/fhirtypes";
+import { executeWithNetworkRetries } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosInstance } from "axios";
 import { Config } from "../../util/config";
@@ -8,9 +9,11 @@ import {
   CVX_URL,
   ICD_10_URL,
   LOINC_URL,
+  NDC_URL,
   RXNORM_URL,
   SNOMED_URL,
 } from "../../util/constants";
+import { buildMappingExtension } from "../fhir/shared/extensions/mapping-extension";
 
 export type CodeSystemLookupOutput = {
   name: string;
@@ -22,8 +25,17 @@ export type CodeSystemLookupOutput = {
 
 export const termServerUrl = Config.getTermServerUrl();
 const bulkLookupUrl = "code-system/lookup/bulk";
+const crosswalkUrl = "concept-map/translate";
 
-export const supportedSystems = [ICD_10_URL, SNOMED_URL, LOINC_URL, RXNORM_URL, CPT_URL, CVX_URL];
+export const supportedSystems = [
+  ICD_10_URL,
+  SNOMED_URL,
+  LOINC_URL,
+  RXNORM_URL,
+  CPT_URL,
+  CVX_URL,
+  NDC_URL,
+];
 
 export function isSystemValid(system: string) {
   const trimmedSystem = system.trim();
@@ -50,7 +62,7 @@ export async function lookupMultipleCodes(
   { metadata: Record<string, string | number>; data: CodeSystemLookupOutput[] } | undefined
 > {
   const termServer = buildTermServerApi();
-  if (!termServer) return;
+  if (!termServer || params.length === 0) return;
 
   const startedAt = Date.now();
   const result = await termServer.post(bulkLookupUrl, params);
@@ -68,6 +80,50 @@ export async function lookupMultipleCodes(
   };
 
   return { metadata, data };
+}
+
+export async function crosswalkCode({
+  sourceCode,
+  sourceSystem,
+  targetSystem,
+}: {
+  sourceCode: string;
+  sourceSystem: string;
+  targetSystem: string;
+}): Promise<Coding | undefined> {
+  const termServer = buildTermServerApi();
+  if (!termServer) return undefined;
+
+  const params = buildFhirParametersForCrosswalkFromCoding(
+    {
+      system: sourceSystem,
+      code: sourceCode,
+    },
+    targetSystem
+  );
+  if (!params) return undefined;
+  const result = await executeWithNetworkRetries(async function () {
+    return termServer.post(crosswalkUrl, params);
+  });
+
+  const data = result.data.response as ConceptMap;
+  const group = data.group?.[0];
+  if (!group) return undefined;
+  const element = group.element?.[0];
+  if (!element) return undefined;
+  const target = element.target?.[0];
+  if (!target || !target.code) return undefined;
+
+  const mappingExtension = buildMappingExtension({
+    sourceSystem,
+  });
+
+  return {
+    system: targetSystem,
+    code: target.code,
+    ...(target.display ? { display: target.display } : undefined),
+    extension: [mappingExtension],
+  };
 }
 
 export function buildMultipleFhirParametersFromCodings(
@@ -92,6 +148,40 @@ export function buildFhirParametersFromCoding(coding: Coding): Parameters | unde
     {
       name: "code",
       valueCode: code,
+    },
+  ];
+
+  return {
+    resourceType: "Parameters",
+    parameter,
+    id: createUuidFromText(JSON.stringify(parameter)),
+  };
+}
+
+export function buildFhirParametersForCrosswalkFromCoding(
+  coding: Coding,
+  targetSystem: string
+): Parameters | undefined {
+  const code = coding.code?.trim();
+  const system = coding.system?.trim();
+  if (!code || !system) return undefined;
+
+  const isValidSystem = isSystemValid(system);
+  const isValidTargetSystem = isSystemValid(targetSystem);
+  if (!isValidSystem || !isValidTargetSystem) return undefined;
+
+  const parameter: ParametersParameter[] = [
+    {
+      name: "system",
+      valueUri: system,
+    },
+    {
+      name: "code",
+      valueCode: code,
+    },
+    {
+      name: "targetsystem",
+      valueUri: targetSystem,
     },
   ];
 

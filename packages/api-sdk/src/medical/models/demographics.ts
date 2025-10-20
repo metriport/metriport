@@ -1,11 +1,13 @@
 import {
+  defaultNameStringSchema,
   examplePhoneNumber,
   isPhoneValid,
   normalizeUsPhoneWithPlusOne,
   phoneLength,
+  validDateOfBirthStringSchema,
+  isEmailValid,
 } from "@metriport/shared";
 import { z } from "zod";
-import { defaultNameString, validDateOfBirthString } from "../../shared";
 import { addressSchema } from "./common/address";
 import { usStateSchema } from "./common/us-data";
 
@@ -55,7 +57,9 @@ export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
 
 export const genderAtBirthSchema = z.enum(["F", "M", "O", "U"]);
 
-export const emailSchema = z.string().email();
+export const emailSchema = z.string().refine(isEmailValid, {
+  message: "Invalid email address",
+});
 
 export const contactSchema = z
   .object({
@@ -73,9 +77,9 @@ export const contactSchema = z
 export type Contact = z.infer<typeof contactSchema>;
 
 export const demographicsSchema = z.object({
-  firstName: defaultNameString,
-  lastName: defaultNameString,
-  dob: validDateOfBirthString,
+  firstName: defaultNameStringSchema,
+  lastName: defaultNameStringSchema,
+  dob: validDateOfBirthStringSchema,
   genderAtBirth: genderAtBirthSchema,
   personalIdentifiers: z.array(personalIdentifierSchema).optional(),
   address: z.array(addressSchema).nonempty().or(addressSchema),

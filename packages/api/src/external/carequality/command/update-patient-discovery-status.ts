@@ -17,7 +17,7 @@ import { LinkStatus } from "../../patient-link";
  * @returns
  */
 export async function updatePatientDiscoveryStatus({
-  patient,
+  patient: { id, cxId },
   status,
   params,
 }: {
@@ -25,19 +25,15 @@ export async function updatePatientDiscoveryStatus({
   status: LinkStatus;
   params?: DiscoveryParams;
 }): Promise<Patient> {
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
-
-  return await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+  const patientFilter = { id, cxId };
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const externalData = existingPatient.data.externalData ?? {};
+    const externalData = patient.data.externalData ?? {};
 
     if (!params && !externalData.CAREQUALITY?.discoveryParams) {
       throw new Error(`Cannot update discovery status before assigning discovery params @ CQ`);
@@ -53,17 +49,14 @@ export async function updatePatientDiscoveryStatus({
     };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         externalData: updatePatientDiscoveryStatus,
       },
     };
 
-    await PatientModel.update(updatedPatient, {
-      where: patientFilter,
-      transaction,
-    });
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     return updatedPatient;
   });

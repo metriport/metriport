@@ -1,4 +1,4 @@
-import NotFoundError from "../../errors/not-found";
+import { NotFoundError } from "@metriport/shared";
 import { Settings } from "../../models/settings";
 
 export const getSettings = async ({ id }: { id: string }): Promise<Settings | null> => {

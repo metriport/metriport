@@ -3,15 +3,14 @@ import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getCQData } from "./patient";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 
 dayjs.extend(duration);
 
 const context = "cq.patient.post-response.discover";
-const resultPoller = makeOutboundResultPoller();
 const MAX_SAFE_GWS = 100000;
 
 export async function processPostRespOutboundPatientDiscoveryResps({
@@ -34,6 +33,8 @@ export async function processPostRespOutboundPatientDiscoveryResps({
       log(`Kicking off post resp patient discovery`);
       // TODO Internal #1832 (rework)
       await updatePatientDiscoveryStatus({ patient, status: "processing" });
+
+      const resultPoller = makeOutboundResultPoller();
 
       await resultPoller.pollOutboundPatientDiscoveryResults({
         requestId: requestId,

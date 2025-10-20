@@ -40,6 +40,15 @@ for more details:
   The ID of the Facility where the patient is receiving care.
 </ParamField>
 
+<ParamField query="pharmacies" type="boolean">
+  When set to `true`, the document query will also request detailed medication history nationally across pharmacies and PBMs, 
+  including advanced insights like fill data - allowing you to know whether the patient picked up their medications, for example.
+
+  <Info>
+    This will retrieve up to one year of medication history.
+  </Info>
+</ParamField>
+
 ## Body
 
 <Snippet file="webhook-request-metadata.mdx" />

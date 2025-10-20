@@ -1,5 +1,10 @@
 import { deleteConsolidated } from "@metriport/core/command/consolidated/consolidated-delete";
 import {
+  isCarequalityEnabled,
+  isCommonwellEnabled,
+  isXmlRedownloadFeatureFlagEnabledForCx,
+} from "@metriport/core/command/feature-flags/domain-ffs";
+import {
   ConvertResult,
   DocumentQueryProgress,
   DocumentQueryStatus,
@@ -12,9 +17,8 @@ import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError, emptyFunction } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
-import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
+import { isPatientAssociatedWithFacility } from "../../../domain/medical/patient-facility";
 import { processAsyncError } from "../../../errors";
-import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/app-config";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
@@ -22,7 +26,7 @@ import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-pro
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientOrFail } from "../patient/get-patient";
-import { storeQueryInit } from "../patient/query-init";
+import { storeDocumentQueryInitialState } from "./document-query-init";
 import { areDocumentsProcessing } from "./document-status";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
@@ -45,9 +49,9 @@ export async function queryDocumentsAcrossHIEs({
   cxId,
   patientId,
   facilityId,
-  override,
+  requestId: requestIdParam,
+  forceDownload,
   cxDocumentRequestMetadata,
-  forceQuery = false,
   forcePatientDiscovery = false,
   forceCommonwell = false,
   forceCarequality = false,
@@ -56,10 +60,10 @@ export async function queryDocumentsAcrossHIEs({
 }: {
   cxId: string;
   patientId: string;
-  facilityId?: string;
-  override?: boolean;
+  facilityId: string;
+  requestId?: string | undefined;
+  forceDownload?: boolean;
   cxDocumentRequestMetadata?: unknown;
-  forceQuery?: boolean;
   forcePatientDiscovery?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
@@ -68,19 +72,42 @@ export async function queryDocumentsAcrossHIEs({
 }): Promise<DocumentQueryProgress> {
   const { log } = out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
-  const patient = await getPatientOrFail({ id: patientId, cxId });
+  const [patient, commonwellEnabled, carequalityEnabled] = await Promise.all([
+    getPatientOrFail({ id: patientId, cxId }),
+    isCommonwellEnabled(),
+    isCarequalityEnabled(),
+  ]);
+
+  const isQueryCarequality = carequalityEnabled || forceCarequality;
+  /**
+   * It's likely safe to remove `cqManagingOrgName` based on the usage of this function.
+   * But because it touches a core flow and we don't have time to review/test it now, leaving as is.
+   * The expected behavior is that we never pass `cqManagingOrgName`, so it should be null/undefined every
+   * time this function is called - otherwise we can miss the opportunity to query CW for docs.
+   * @see https://metriport.slack.com/archives/C04DMKE9DME/p1745685924702559
+   */
+  const isQueryCommonwell = (commonwellEnabled || forceCommonwell) && !cqManagingOrgName;
+
+  if (!isQueryCarequality && !isQueryCommonwell) {
+    log("No HIE networks enabled, skipping DQ for Commonwell and Carequality");
+    return createQueryResponse("completed", patient);
+  }
 
   if (patient.hieOptOut) {
     throw new BadRequestError("Patient has opted out from the networks");
   }
 
-  validateOptionalFacilityId(patient, facilityId);
+  if (!isPatientAssociatedWithFacility(patient, facilityId)) {
+    throw new BadRequestError("Patient not associated with given facility", undefined, {
+      patientId: patient.id,
+      facilityId,
+    });
+  }
 
   const docQueryProgress = patient.data.documentQueryProgress;
-  const requestId = getOrGenerateRequestId(docQueryProgress, forceQuery);
+  const requestId = requestIdParam ?? getOrGenerateRequestId(docQueryProgress);
 
-  const isCheckStatus = !forceQuery;
-  if (isCheckStatus && areDocumentsProcessing(docQueryProgress)) {
+  if (areDocumentsProcessing(docQueryProgress)) {
     log(`Patient ${patientId} documentQueryStatus is already 'processing', skipping...`);
     return createQueryResponse("processing", patient);
   }
@@ -92,18 +119,19 @@ export async function queryDocumentsAcrossHIEs({
 
   const startedAt = new Date();
 
-  const updatedPatient = await storeQueryInit({
+  const updatedPatient = await storeDocumentQueryInitialState({
     id: patient.id,
     cxId: patient.cxId,
-    cmd: {
-      documentQueryProgress: {
-        requestId,
-        startedAt,
-        triggerConsolidated,
-        download: { status: "processing" },
-      },
-      cxDocumentRequestMetadata,
+    documentQueryProgress: {
+      requestId,
+      startedAt,
+      triggerConsolidated,
     },
+    cxDocumentRequestMetadata,
+    enabledHIEs: [
+      ...(isQueryCommonwell ? [MedicalDataSource.COMMONWELL] : []),
+      ...(isQueryCarequality ? [MedicalDataSource.CAREQUALITY] : []),
+    ],
   });
 
   analytics({
@@ -117,28 +145,26 @@ export async function queryDocumentsAcrossHIEs({
 
   let triggeredDocumentQuery = false;
 
-  const commonwellEnabled = await isCommonwellEnabled();
-  // Why? Please add a comment explaining why we're not running CW if there's no CQ managing org name.
-  if (!cqManagingOrgName) {
-    if (commonwellEnabled || forceCommonwell) {
-      getDocumentsFromCW({
-        patient: updatedPatient,
-        facilityId,
-        forceDownload: override,
-        forceQuery,
-        forcePatientDiscovery,
-        requestId,
-        getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
-      }).catch(emptyFunction);
-      triggeredDocumentQuery = true;
-    }
+  const isForceRedownloadEnabled =
+    forceDownload ?? (await isXmlRedownloadFeatureFlagEnabledForCx(cxId));
+
+  if (isQueryCommonwell) {
+    getDocumentsFromCW({
+      patient: updatedPatient,
+      facilityId,
+      forceDownload: isForceRedownloadEnabled,
+      forcePatientDiscovery,
+      requestId,
+      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+    }).catch(emptyFunction);
+    triggeredDocumentQuery = true;
   }
 
-  const carequalityEnabled = await isCarequalityEnabled();
-  if (carequalityEnabled || forceCarequality) {
+  if (isQueryCarequality) {
     getDocumentsFromCQ({
       patient: updatedPatient,
       facilityId,
+      forceDownload: isForceRedownloadEnabled,
       requestId,
       cqManagingOrgName,
       forcePatientDiscovery,
@@ -156,10 +182,10 @@ export async function queryDocumentsAcrossHIEs({
   return createQueryResponse("processing", updatedPatient);
 }
 
-export const createQueryResponse = (
+export function createQueryResponse(
   status: DocumentQueryStatus,
   patient?: Patient
-): DocumentQueryProgress => {
+): DocumentQueryProgress {
   return {
     download: {
       status,
@@ -167,59 +193,61 @@ export const createQueryResponse = (
     },
     ...patient?.data.documentQueryProgress,
   };
-};
+}
 
 type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
   convertResult: ConvertResult;
+  count?: number;
+  log?: typeof console.log;
 };
 
-export const updateConversionProgress = async ({
-  patient,
+export async function updateConversionProgress({
+  patient: { id, cxId },
   convertResult,
-}: UpdateResult): Promise<Patient> => {
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
+  count,
+  log = out(`updateConversionProgress - patient ${id}, cxId ${cxId}`).log,
+}: UpdateResult): Promise<Patient> {
+  const patientFilter = { id, cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
+    const docQueryProgress = patient.data.documentQueryProgress;
+    log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
+
     const documentQueryProgress = calculateConversionProgress({
-      patient: existingPatient,
+      patient,
       convertResult,
+      count,
     });
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         documentQueryProgress,
       },
     };
+
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     return updatedPatient;
   });
-};
+}
 
 /**
  * Returns the existing request ID if the previous query has not been entirely completed. Otherwise, returns a newly-generated request ID.
  *
  * @param docQueryProgress Progress of the previous query
- * @param forceNew Force creating a new request ID
  * @returns uuidv7 string ID for the request
  */
 export function getOrGenerateRequestId(
-  docQueryProgress: DocumentQueryProgress | undefined,
-  forceNew = false
+  docQueryProgress: DocumentQueryProgress | undefined
 ): string {
-  if (forceNew) return generateRequestId();
-
   if (areDocumentsProcessing(docQueryProgress) && docQueryProgress?.requestId) {
     return docQueryProgress.requestId;
   }
@@ -227,4 +255,6 @@ export function getOrGenerateRequestId(
   return generateRequestId();
 }
 
-const generateRequestId = (): string => uuidv7();
+function generateRequestId(): string {
+  return uuidv7();
+}

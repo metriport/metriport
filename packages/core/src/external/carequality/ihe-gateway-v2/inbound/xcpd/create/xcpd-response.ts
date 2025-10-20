@@ -151,6 +151,19 @@ function createSubjectAndRegistrationEvent(response: InboundPatientDiscoveryResp
           },
         },
       },
+      custodian: {
+        "@_typeCode": "CST",
+        assignedEntity: {
+          "@_classCode": "ASSIGNED",
+          id: {
+            "@_root": METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
+          },
+          code: {
+            "@_code": "NotHealthDataLocator",
+            "@_codeSystem": "1.3.6.1.4.1.19376.1.2.27.2",
+          },
+        },
+      },
     },
   };
   return subject;

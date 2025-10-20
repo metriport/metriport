@@ -26,12 +26,24 @@ import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
+import { AnalyticsPlatformsAssets } from "../analytics-platform/types";
+import { JobsAssets } from "../jobs/types";
+import { QuestAssets } from "../quest/types";
+import { defaultBedrockPolicyStatement } from "../shared/bedrock";
 import { DnsZones } from "../shared/dns";
+import { createHieConfigDictionary } from "../shared/hie-config-dictionary";
+import { getMaxPostgresConnections } from "../shared/rds";
 import { buildLbAccessLogPrefix } from "../shared/s3";
-import { buildSecrets, Secrets, secretsToECS } from "../shared/secrets";
+import {
+  buildSecrets,
+  collectHiePasswordSecretNames,
+  Secrets,
+  secretsToECS,
+} from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
+import { SurescriptsAssets } from "../surescripts/types";
 
 interface ApiProps extends StackProps {
   config: EnvConfig;
@@ -42,6 +54,8 @@ type EnvSpecificSettings = {
   desiredTaskCount: number;
   maxTaskCount: number;
   memoryLimitMiB: number;
+  maxHealthyPercent: number;
+  minHealthyPercent: number;
 };
 type Settings = EnvSpecificSettings & {
   loadBalancerIdleTimeout: Duration;
@@ -51,22 +65,28 @@ type Settings = EnvSpecificSettings & {
 function getEnvSpecificSettings(config: EnvConfig): EnvSpecificSettings {
   if (isProd(config)) {
     return {
-      desiredTaskCount: 6,
-      maxTaskCount: 40,
+      desiredTaskCount: 12,
+      maxTaskCount: 24,
       memoryLimitMiB: 4096,
+      maxHealthyPercent: 160,
+      minHealthyPercent: 70,
     };
   }
   if (isSandbox(config)) {
     return {
       desiredTaskCount: 2,
-      maxTaskCount: 10,
+      maxTaskCount: 8,
       memoryLimitMiB: 2048,
+      maxHealthyPercent: 200,
+      minHealthyPercent: 50,
     };
   }
   return {
     desiredTaskCount: 1,
     maxTaskCount: 5,
     memoryLimitMiB: 2048,
+    maxHealthyPercent: 200,
+    minHealthyPercent: 50,
   };
 }
 function getSettings(config: EnvConfig): Settings {
@@ -95,14 +115,25 @@ export function createAPIService({
   outboundPatientDiscoveryLambda,
   outboundDocumentQueryLambda,
   outboundDocumentRetrievalLambda,
-  patientImportLambda,
+  patientImportParseLambda,
+  patientImportResultLambda,
   patientImportBucket,
+  dischargeRequeryQueue,
+  ehrSyncPatientQueue,
+  elationLinkPatientQueue,
+  healthieLinkPatientQueue,
+  ehrRefreshEhrBundlesQueue,
+  ehrContributeResourceDiffBundlesQueue,
+  ehrWriteBackResourceDiffBundlesQueue,
+  ehrGetAppointmentsLambda,
+  ehrBundleBucket,
   generalBucket,
+  incomingHl7NotificationBucket,
   conversionBucket,
   medicalDocumentsUploadBucket,
   ehrResponsesBucket,
   fhirToBundleLambda,
-  fhirToMedicalRecordLambda,
+  fhirToBundleCountLambda,
   fhirToMedicalRecordLambda2,
   fhirToCdaConverterLambda,
   rateLimitTable,
@@ -110,8 +141,13 @@ export function createAPIService({
   searchEndpoint,
   searchAuth,
   searchIndexName,
-  appConfigEnvVars,
-  cookieStore,
+  consolidatedSearchLambda,
+  consolidatedIngestionQueue,
+  featureFlagsTable,
+  surescriptsAssets,
+  questAssets,
+  jobAssets,
+  analyticsPlatformAssets,
 }: {
   stack: Construct;
   props: ApiProps;
@@ -127,17 +163,28 @@ export function createAPIService({
   fhirConverterServiceUrl: string | undefined;
   cdaToVisualizationLambda: ILambda;
   documentDownloaderLambda: ILambda;
-  outboundPatientDiscoveryLambda: ILambda;
-  outboundDocumentQueryLambda: ILambda;
-  outboundDocumentRetrievalLambda: ILambda;
-  patientImportLambda: ILambda;
+  outboundPatientDiscoveryLambda: ILambda | undefined;
+  outboundDocumentQueryLambda: ILambda | undefined;
+  outboundDocumentRetrievalLambda: ILambda | undefined;
+  patientImportParseLambda: ILambda;
+  patientImportResultLambda: ILambda;
   patientImportBucket: s3.IBucket;
+  dischargeRequeryQueue: IQueue | undefined;
+  ehrSyncPatientQueue: IQueue;
+  elationLinkPatientQueue: IQueue;
+  healthieLinkPatientQueue: IQueue;
+  ehrRefreshEhrBundlesQueue: IQueue;
+  ehrContributeResourceDiffBundlesQueue: IQueue;
+  ehrWriteBackResourceDiffBundlesQueue: IQueue;
+  ehrGetAppointmentsLambda: ILambda;
+  ehrBundleBucket: s3.IBucket;
   generalBucket: s3.IBucket;
+  incomingHl7NotificationBucket: s3.IBucket | undefined;
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
   ehrResponsesBucket: s3.IBucket | undefined;
   fhirToBundleLambda: ILambda;
-  fhirToMedicalRecordLambda: ILambda | undefined;
+  fhirToBundleCountLambda: ILambda;
   fhirToMedicalRecordLambda2: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
   rateLimitTable: dynamodb.Table;
@@ -145,13 +192,13 @@ export function createAPIService({
   searchEndpoint: string;
   searchAuth: { userName: string; secret: ISecret };
   searchIndexName: string;
-  appConfigEnvVars: {
-    appId: string;
-    configId: string;
-    envId: string;
-    deploymentStrategyId: string;
-  };
-  cookieStore: secret.ISecret | undefined;
+  consolidatedSearchLambda: ILambda;
+  consolidatedIngestionQueue: IQueue;
+  featureFlagsTable: dynamodb.Table;
+  surescriptsAssets: SurescriptsAssets | undefined;
+  questAssets: QuestAssets | undefined;
+  jobAssets: JobsAssets;
+  analyticsPlatformAssets: AnalyticsPlatformsAssets | undefined;
 }): {
   cluster: ecs.Cluster;
   service: ecs_patterns.ApplicationLoadBalancedFargateService;
@@ -176,18 +223,24 @@ export function createAPIService({
     ? props.config.connectWidgetUrl
     : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
 
-  const coverageEnhancementConfig = props.config.commonwell.coverageEnhancement;
   const dbReadReplicaEndpointAsString = JSON.stringify({
     host: dbReadReplicaEndpoint.hostname,
     port: dbReadReplicaEndpoint.port,
   });
-  const dbPoolSettings = JSON.stringify(props.config.apiDatabase.poolSettings);
+  const dbPoolSettings = getDbPoolSettings(props.config);
   // Run some servers on fargate containers
   const listenerPort = 80;
   const containerPort = 8080;
   const logGroup = LogGroup.fromLogGroupArn(stack, "ApiLogGroup", props.config.logArn);
-  const { cpu, memoryLimitMiB, desiredTaskCount, maxTaskCount, loadBalancerIdleTimeout } =
-    getSettings(props.config);
+  const {
+    cpu,
+    memoryLimitMiB,
+    desiredTaskCount,
+    maxTaskCount,
+    loadBalancerIdleTimeout,
+    maxHealthyPercent,
+    minHealthyPercent,
+  } = getSettings(props.config);
   const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(
     stack,
     "APIFargateServiceAlb",
@@ -209,7 +262,7 @@ export function createAPIService({
         secrets: {
           DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
           SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
-          ...secretsToECS(secrets),
+          ...secretsToECS(removeUnusedSecretsForApiService(secrets, props.config)),
           ...secretsToECS(buildSecrets(stack, props.config.propelAuth.secrets)),
         },
         environment: {
@@ -219,7 +272,7 @@ export function createAPIService({
           AWS_REGION: props.config.region,
           LB_TIMEOUT_IN_MILLIS: loadBalancerIdleTimeout.toMilliseconds().toString(),
           DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
-          DB_POOL_SETTINGS: dbPoolSettings,
+          DB_POOL_SETTINGS: JSON.stringify(dbPoolSettings),
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
           API_LB_ADDRESS: props.config.loadBalancerDnsName,
@@ -232,8 +285,17 @@ export function createAPIService({
           ...props.config.commonwell.envVars,
           ...(props.config.slack ? props.config.slack : undefined),
           ...(props.config.sentryDSN ? { SENTRY_DSN: props.config.sentryDSN } : undefined),
+          ...(props.config.internalServerUrl && {
+            INTERNAL_SERVER_BASE_URL: props.config.internalServerUrl,
+          }),
           ...(props.config.usageReportUrl && {
             USAGE_URL: props.config.usageReportUrl,
+          }),
+          ...(props.config.cxBillingUrl && {
+            CX_BILLING_URL: props.config.cxBillingUrl,
+          }),
+          ...(incomingHl7NotificationBucket && {
+            HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
           }),
           CONVERSION_RESULT_BUCKET_NAME: conversionBucket.bucketName,
           ...(props.config.medicalDocumentsBucketName && {
@@ -253,15 +315,33 @@ export function createAPIService({
           PROPELAUTH_PUBLIC_KEY: props.config.propelAuth.publicKey,
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
-          OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
-          OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
-          OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
-          PATIENT_IMPORT_BUCKET_NAME: patientImportBucket.bucketName,
-          PATIENT_IMPORT_LAMBDA_NAME: patientImportLambda.functionName,
-          FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
-          ...(fhirToMedicalRecordLambda && {
-            FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
+          ...(outboundPatientDiscoveryLambda && {
+            OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
           }),
+          ...(outboundDocumentQueryLambda && {
+            OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
+          }),
+          ...(outboundDocumentRetrievalLambda && {
+            OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
+          }),
+          PATIENT_IMPORT_BUCKET_NAME: patientImportBucket.bucketName,
+          PATIENT_IMPORT_PARSE_LAMBDA_NAME: patientImportParseLambda.functionName,
+          PATIENT_IMPORT_RESULT_LAMBDA_NAME: patientImportResultLambda.functionName,
+          ...(dischargeRequeryQueue && {
+            DISCHARGE_REQUERY_QUEUE_URL: dischargeRequeryQueue.queueUrl,
+          }),
+          EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
+          ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
+          HEALTHIE_LINK_PATIENT_QUEUE_URL: healthieLinkPatientQueue.queueUrl,
+          EHR_REFRESH_EHR_BUNDLES_QUEUE_URL: ehrRefreshEhrBundlesQueue.queueUrl,
+          EHR_CONTRIBUTE_RESOURCE_DIFF_BUNDLES_QUEUE_URL:
+            ehrContributeResourceDiffBundlesQueue.queueUrl,
+          EHR_WRITE_BACK_RESOURCE_DIFF_BUNDLES_QUEUE_URL:
+            ehrWriteBackResourceDiffBundlesQueue.queueUrl,
+          EHR_GET_APPOINTMENTS_LAMBDA_NAME: ehrGetAppointmentsLambda.functionName,
+          EHR_BUNDLE_BUCKET_NAME: ehrBundleBucket.bucketName,
+          FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
+          FHIR_TO_BUNDLE_COUNT_LAMBDA_NAME: fhirToBundleCountLambda.functionName,
           ...(fhirToMedicalRecordLambda2 && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA2_NAME: fhirToMedicalRecordLambda2.functionName,
           }),
@@ -280,6 +360,10 @@ export function createAPIService({
           SEARCH_ENDPOINT: searchEndpoint,
           SEARCH_USERNAME: searchAuth.userName,
           SEARCH_INDEX: searchIndexName,
+          CONSOLIDATED_SEARCH_LAMBDA_NAME: consolidatedSearchLambda.functionName,
+          CONSOLIDATED_INGESTION_QUEUE_URL: consolidatedIngestionQueue.queueUrl,
+          CONSOLIDATED_INGESTION_INITIAL_DATE:
+            props.config.openSearch.consolidatedDataIngestionInitialDate,
           ...(props.config.carequality?.envVars?.CQ_ORG_URLS && {
             CQ_ORG_URLS: props.config.carequality.envVars.CQ_ORG_URLS,
           }),
@@ -293,27 +377,74 @@ export function createAPIService({
             PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
             PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
           }),
-          // app config
-          APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
-          APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
-          APPCONFIG_ENVIRONMENT_ID: appConfigEnvVars.envId,
-          APPCONFIG_DEPLOYMENT_STRATEGY_ID: appConfigEnvVars.deploymentStrategyId,
-          ...(coverageEnhancementConfig && {
-            CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
-          }),
-          ...(cookieStore && {
-            CW_MANAGEMENT_COOKIE_SECRET_ARN: cookieStore.secretArn,
-          }),
+          FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
           ...(props.config.iheGateway?.trustStoreBucketName && {
             CQ_TRUST_BUNDLE_BUCKET_NAME: props.config.iheGateway.trustStoreBucketName,
           }),
           ...(props.config.ehrIntegration && {
             EHR_ATHENA_ENVIRONMENT: props.config.ehrIntegration.athenaHealth.env,
             EHR_ELATION_ENVIRONMENT: props.config.ehrIntegration.elation.env,
+            EHR_HEALTHIE_ENVIRONMENT: props.config.ehrIntegration.healthie.env,
+            EHR_ECLINICALWORKS_ENVIRONMENT: props.config.ehrIntegration.eclinicalworks.env,
+            EHR_SALESFORCE_ENVIRONMENT: props.config.ehrIntegration.salesforce.env,
           }),
           ...(!isSandbox(props.config) && {
             DASH_URL: props.config.dashUrl,
+            EHR_DASH_URL: props.config.ehrDashUrl,
           }),
+          ...(props.config.cqDirectoryRebuilder?.heartbeatUrl && {
+            CQ_DIR_REBUILD_HEARTBEAT_URL: props.config.cqDirectoryRebuilder.heartbeatUrl,
+          }),
+          ...(surescriptsAssets && {
+            PHARMACY_CONVERSION_BUCKET_NAME: surescriptsAssets.pharmacyConversionBucket.bucketName,
+            SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsAssets.surescriptsReplicaBucket.bucketName,
+            ...Object.fromEntries(
+              surescriptsAssets.surescriptsLambdas.map(({ envVarName, lambda }) => [
+                envVarName,
+                lambda.functionName,
+              ])
+            ),
+            ...Object.fromEntries(
+              surescriptsAssets.surescriptsQueues.map(({ envVarName, queue }) => [
+                envVarName,
+                queue.queueUrl,
+              ])
+            ),
+          }),
+          ...(questAssets && {
+            LAB_CONVERSION_BUCKET_NAME: questAssets.labConversionBucket.bucketName,
+            QUEST_REPLICA_BUCKET_NAME: questAssets.questReplicaBucket.bucketName,
+            ...Object.fromEntries(
+              questAssets.questLambdas.map(({ envVarName, lambda }) => [
+                envVarName,
+                lambda.functionName,
+              ])
+            ),
+            ...Object.fromEntries(
+              questAssets.questQueues.map(({ envVarName, queue }) => [envVarName, queue.queueUrl])
+            ),
+          }),
+          RUN_PATIENT_JOB_QUEUE_URL: jobAssets.runPatientJobQueue.queueUrl,
+          ...(props.config.hl7Notification?.dischargeNotificationSlackUrl && {
+            DISCHARGE_NOTIFICATION_SLACK_URL:
+              props.config.hl7Notification.dischargeNotificationSlackUrl,
+          }),
+          ...(analyticsPlatformAssets && {
+            FHIR_TO_CSV_BULK_QUEUE_URL: analyticsPlatformAssets.fhirToCsvBulkQueue.queueUrl,
+            FHIR_TO_CSV_INCREMENTAL_QUEUE_URL:
+              analyticsPlatformAssets.fhirToCsvIncrementalQueue.queueUrl,
+            ANALYTICS_BUCKET_NAME: analyticsPlatformAssets.analyticsPlatformBucket.bucketName,
+            CORE_TRANSFORM_BATCH_JOB_QUEUE_ARN:
+              analyticsPlatformAssets.coreTransformBatchJobQueue.jobQueueArn,
+            CORE_TRANSFORM_BATCH_JOB_DEFINITION_ARN:
+              analyticsPlatformAssets.coreTransformBatchJob.jobDefinitionArn,
+          }),
+          ...(props.config.hl7Notification?.hieConfigs && {
+            HIE_CONFIG_DICTIONARY: JSON.stringify(
+              createHieConfigDictionary(props.config.hl7Notification.hieConfigs)
+            ),
+          }),
+          GENERAL_BUCKET_NAME: generalBucket.bucketName,
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),
@@ -321,6 +452,8 @@ export function createAPIService({
       listenerPort,
       publicLoadBalancer: false,
       idleTimeout: loadBalancerIdleTimeout,
+      maxHealthyPercent,
+      minHealthyPercent,
     }
   );
   // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
@@ -379,35 +512,134 @@ export function createAPIService({
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   rateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
+  featureFlagsTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  outboundPatientDiscoveryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  outboundDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  outboundDocumentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  patientImportLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  outboundPatientDiscoveryLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
+  outboundDocumentQueryLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
+  outboundDocumentRetrievalLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
+  patientImportParseLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  patientImportResultLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToCdaConverterLambda?.grantInvoke(fargateService.taskDefinition.taskRole);
   fhirToBundleLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-
+  fhirToBundleCountLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  ehrGetAppointmentsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  consolidatedSearchLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   // Access grant for buckets
   patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  generalBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  analyticsPlatformAssets?.analyticsPlatformBucket.grantRead(
+    fargateService.taskDefinition.taskRole
+  );
+
+  incomingHl7NotificationBucket?.grantRead(fargateService.taskDefinition.taskRole);
+
+  if (surescriptsAssets) {
+    surescriptsAssets.pharmacyConversionBucket.grantReadWrite(
+      fargateService.taskDefinition.taskRole
+    );
+    surescriptsAssets.surescriptsReplicaBucket.grantReadWrite(
+      fargateService.taskDefinition.taskRole
+    );
+  }
+  if (questAssets) {
+    questAssets.labConversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+    questAssets.questReplicaBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  }
+
   if (ehrResponsesBucket) {
     ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   }
 
-  if (fhirToMedicalRecordLambda) {
-    fhirToMedicalRecordLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  }
   if (fhirToMedicalRecordLambda2) {
     fhirToMedicalRecordLambda2.grantInvoke(fargateService.taskDefinition.taskRole);
   }
 
-  if (cookieStore) {
-    cookieStore.grantRead(fargateService.service.taskDefinition.taskRole);
-    cookieStore.grantWrite(fargateService.service.taskDefinition.taskRole);
+  provideAccessToQueue({
+    accessType: "send",
+    queue: ehrSyncPatientQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: elationLinkPatientQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: healthieLinkPatientQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: ehrRefreshEhrBundlesQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: ehrContributeResourceDiffBundlesQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: ehrWriteBackResourceDiffBundlesQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
+
+  if (analyticsPlatformAssets) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: analyticsPlatformAssets.fhirToCsvBulkQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+    provideAccessToQueue({
+      accessType: "send",
+      queue: analyticsPlatformAssets.fhirToCsvIncrementalQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+    analyticsPlatformAssets.coreTransformBatchJob.grantSubmitJob(
+      fargateService.taskDefinition.taskRole,
+      analyticsPlatformAssets.coreTransformBatchJobQueue
+    );
   }
+
+  if (dischargeRequeryQueue) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: dischargeRequeryQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+  }
+
+  if (surescriptsAssets) {
+    surescriptsAssets.surescriptsQueues.forEach(({ queue }) => {
+      provideAccessToQueue({
+        accessType: "send",
+        queue,
+        resource: fargateService.taskDefinition.taskRole,
+      });
+    });
+  }
+
+  if (questAssets) {
+    questAssets.questQueues.forEach(({ queue }) => {
+      provideAccessToQueue({
+        accessType: "send",
+        queue,
+        resource: fargateService.taskDefinition.taskRole,
+      });
+    });
+  }
+
+  provideAccessToQueue({
+    accessType: "send",
+    queue: jobAssets.runPatientJobQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
 
   // Allow access to search services/infra
   provideAccessToQueue({
@@ -415,21 +647,18 @@ export function createAPIService({
     queue: searchIngestionQueue,
     resource: fargateService.taskDefinition.taskRole,
   });
+  provideAccessToQueue({
+    accessType: "send",
+    queue: consolidatedIngestionQueue,
+    resource: fargateService.taskDefinition.taskRole,
+  });
   searchAuth.secret.grantRead(fargateService.taskDefinition.taskRole);
 
-  // Setting permissions for AppConfig
   fargateService.taskDefinition.taskRole.attachInlinePolicy(
-    new iam.Policy(stack, "OSSAPIPermissionsForAppConfig", {
+    new iam.Policy(stack, "OssApiSpecialPermissions", {
       statements: [
         new iam.PolicyStatement({
-          actions: [
-            "appconfig:StartConfigurationSession",
-            "appconfig:GetLatestConfiguration",
-            "appconfig:GetConfiguration",
-            "appconfig:CreateHostedConfigurationVersion",
-            "appconfig:StartDeployment",
-            "apigateway:GET",
-          ],
+          actions: ["apigateway:GET"],
           resources: ["*"],
         }),
         new iam.PolicyStatement({
@@ -437,6 +666,8 @@ export function createAPIService({
           resources: [`arn:aws:geo:*`],
           effect: iam.Effect.ALLOW,
         }),
+        // TODO: 2711 - Remove when data pipeline webhook is migrated
+        defaultBedrockPolicyStatement,
       ],
     })
   );
@@ -484,14 +715,14 @@ export function createAPIService({
     maxCapacity: maxTaskCount,
   });
   scaling.scaleOnCpuUtilization("autoscale_cpu", {
-    targetUtilizationPercent: 80,
+    targetUtilizationPercent: 15,
     scaleInCooldown: Duration.minutes(2),
-    scaleOutCooldown: Duration.seconds(30),
+    scaleOutCooldown: Duration.minutes(1),
   });
   scaling.scaleOnMemoryUtilization("autoscale_mem", {
-    targetUtilizationPercent: 80,
+    targetUtilizationPercent: 20,
     scaleInCooldown: Duration.minutes(2),
-    scaleOutCooldown: Duration.seconds(30),
+    scaleOutCooldown: Duration.minutes(1),
   });
 
   return {
@@ -501,4 +732,41 @@ export function createAPIService({
     loadBalancer: nlb,
     loadBalancerAddress: serverAddress,
   };
+}
+
+function getDbPoolSettings(config: EnvConfig): EnvConfig["apiDatabase"]["poolSettings"] {
+  const dbPoolSettings = config.apiDatabase.poolSettings;
+  const settings = getSettings(config);
+  const ecsMaxTaskCount = settings.maxTaskCount;
+  const dbPoolMaxConnectionsPerTask = dbPoolSettings.max;
+  const dbPoolMaxConnectionsGlobal = dbPoolMaxConnectionsPerTask * ecsMaxTaskCount;
+  const dbMaxConnectionsHardLimit = getMaxPostgresConnections(config.apiDatabase.maxCapacity);
+  if (dbPoolMaxConnectionsGlobal > dbMaxConnectionsHardLimit) {
+    throw new Error(
+      `Max total connections for API is too high (current: ${dbPoolMaxConnectionsGlobal}, max: ${dbMaxConnectionsHardLimit})`
+    );
+  }
+  return dbPoolSettings;
+}
+
+function removeUnusedSecretsForApiService(secrets: Secrets, config: EnvConfig): Secrets {
+  const secretsWithoutRosterUpload = removeRosterUploadSecrets(secrets, config);
+
+  return secretsWithoutRosterUpload;
+}
+
+function removeRosterUploadSecrets(secrets: Secrets, config: EnvConfig): Secrets {
+  const hl7Notification = config.hl7Notification;
+  if (!hl7Notification) {
+    return secrets;
+  }
+  const hieConfigs = hl7Notification.hieConfigs;
+  if (!hieConfigs) {
+    return secrets;
+  }
+  const hiePasswordSecretNames = collectHiePasswordSecretNames(hieConfigs);
+
+  return Object.fromEntries(
+    Object.entries(secrets).filter(([key]) => !Object.keys(hiePasswordSecretNames).includes(key))
+  );
 }

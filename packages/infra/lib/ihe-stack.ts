@@ -1,17 +1,17 @@
 import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
-import { CfnStage } from "aws-cdk-lib/aws-apigatewayv2";
-import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
-import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
+import { CfnStage } from "aws-cdk-lib/aws-apigatewayv2";
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as iam from "aws-cdk-lib/aws-iam";
+import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import * as logs from "aws-cdk-lib/aws-logs";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as sns from "aws-cdk-lib/aws-sns";
-import * as logs from "aws-cdk-lib/aws-logs";
-import * as iam from "aws-cdk-lib/aws-iam";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createLambda } from "./shared/lambda";
@@ -80,6 +80,12 @@ export class IHEStack extends Stack {
       this,
       "ImportedMedicalDocumentsBucket",
       props.config.medicalDocumentsBucketName
+    );
+
+    const generalBucket = s3.Bucket.fromBucketName(
+      this,
+      "ImportedGeneralBucket",
+      props.config.generalBucketName
     );
 
     // Create the API Gateway.
@@ -160,7 +166,7 @@ export class IHEStack extends Stack {
 
     const lambdaLayers = setupLambdasLayers(this, true);
 
-    const posthogSecretName = props.config.analyticsSecretNames?.POST_HOG_API_KEY_SECRET;
+    const posthogSecretName = props.config.analyticsSecretNames.POST_HOG_API_KEY_SECRET;
 
     const iheRequestsBucket = s3.Bucket.fromBucketName(
       this,
@@ -176,6 +182,7 @@ export class IHEStack extends Stack {
       posthogSecretName,
       alarmSnsAction,
       iheRequestsBucket,
+      generalBucket,
     });
 
     const documentQueryLambdaV2 = this.setupDocumentQueryLambda({
@@ -187,6 +194,7 @@ export class IHEStack extends Stack {
       posthogSecretName,
       alarmSnsAction,
       iheRequestsBucket,
+      generalBucket,
     });
 
     const documentRetrievalLambdaV2 = this.setupDocumentRetrievalLambda({
@@ -198,6 +206,7 @@ export class IHEStack extends Stack {
       posthogSecretName,
       alarmSnsAction,
       iheRequestsBucket,
+      generalBucket,
     });
 
     apigw2.addRoutes({
@@ -240,6 +249,7 @@ export class IHEStack extends Stack {
     posthogSecretName,
     alarmSnsAction,
     iheRequestsBucket,
+    generalBucket,
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -249,6 +259,7 @@ export class IHEStack extends Stack {
     posthogSecretName: string | undefined;
     alarmSnsAction?: SnsAction | undefined;
     iheRequestsBucket: s3.IBucket;
+    generalBucket: s3.IBucket;
   }): Lambda {
     const documentQueryLambda = createLambda({
       stack: this,
@@ -266,6 +277,7 @@ export class IHEStack extends Stack {
           : {}),
         ...(posthogSecretName ? { POST_HOG_API_KEY_SECRET: posthogSecretName } : {}),
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
+        GENERAL_BUCKET_NAME: props.config.generalBucketName,
       },
       vpc,
       alarmSnsAction,
@@ -275,6 +287,7 @@ export class IHEStack extends Stack {
     iheRequestsBucket.grantReadWrite(documentQueryLambda);
     secrets[posthogSecretKey]?.grantRead(documentQueryLambda);
     medicalDocumentsBucket.grantReadWrite(documentQueryLambda);
+    generalBucket.grantRead(documentQueryLambda);
     return documentQueryLambda;
   }
 
@@ -287,6 +300,7 @@ export class IHEStack extends Stack {
     posthogSecretName,
     alarmSnsAction,
     iheRequestsBucket,
+    generalBucket,
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -296,6 +310,7 @@ export class IHEStack extends Stack {
     posthogSecretName: string | undefined;
     alarmSnsAction?: SnsAction | undefined;
     iheRequestsBucket: s3.IBucket;
+    generalBucket: s3.IBucket;
   }): Lambda {
     const documentRetrievalLambda = createLambda({
       stack: this,
@@ -312,6 +327,7 @@ export class IHEStack extends Stack {
           : {}),
         ...(posthogSecretName ? { POST_HOG_API_KEY_SECRET: posthogSecretName } : {}),
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
+        GENERAL_BUCKET_NAME: props.config.generalBucketName,
       },
       vpc,
       alarmSnsAction,
@@ -321,6 +337,7 @@ export class IHEStack extends Stack {
     iheRequestsBucket.grantReadWrite(documentRetrievalLambda);
     secrets[posthogSecretKey]?.grantRead(documentRetrievalLambda);
     medicalDocumentsBucket.grantRead(documentRetrievalLambda);
+    generalBucket.grantRead(documentRetrievalLambda);
     return documentRetrievalLambda;
   }
 
@@ -332,6 +349,7 @@ export class IHEStack extends Stack {
     posthogSecretName,
     alarmSnsAction,
     iheRequestsBucket,
+    generalBucket,
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -340,6 +358,7 @@ export class IHEStack extends Stack {
     posthogSecretName: string | undefined;
     alarmSnsAction?: SnsAction | undefined;
     iheRequestsBucket: s3.IBucket;
+    generalBucket: s3.IBucket;
   }): Lambda {
     const patientDiscoveryLambda = createLambda({
       stack: this,
@@ -356,6 +375,7 @@ export class IHEStack extends Stack {
           : {}),
         ...(posthogSecretName ? { POST_HOG_API_KEY_SECRET: posthogSecretName } : {}),
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
+        GENERAL_BUCKET_NAME: props.config.generalBucketName,
       },
       vpc,
       alarmSnsAction,
@@ -364,6 +384,7 @@ export class IHEStack extends Stack {
 
     iheRequestsBucket.grantReadWrite(patientDiscoveryLambda);
     secrets[posthogSecretKey]?.grantRead(patientDiscoveryLambda);
+    generalBucket.grantRead(patientDiscoveryLambda);
 
     return patientDiscoveryLambda;
   }

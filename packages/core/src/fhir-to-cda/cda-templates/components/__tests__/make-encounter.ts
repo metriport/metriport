@@ -33,6 +33,7 @@ export function makeLocation(params: Partial<Location> = {}): Location {
   };
 }
 
+// TODO move this the external/fhir/__tests__/encounter.ts
 export function makeEncounter(
   params: Partial<Encounter> = {},
   ids?: { enc?: string; pract?: string; loc?: string; patient?: string }

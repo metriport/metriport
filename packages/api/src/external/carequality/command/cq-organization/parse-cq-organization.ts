@@ -1,16 +1,17 @@
-import { Endpoint, Organization } from "@medplum/fhirtypes";
+import { Endpoint, Extension, Organization } from "@medplum/fhirtypes";
+import { isDoaExtension } from "@metriport/core/external/carequality/extension";
 import { isEndpoint, isLocation } from "@metriport/core/external/fhir/shared/index";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import {
-  isValidUrl,
   MetriportError,
+  isValidUrl,
   normalizeUSStateForAddressSafe,
   normalizeZipCodeNewSafe,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import stringify from "json-stringify-safe";
-import { CQDirectoryEntryData2 } from "../../cq-directory";
+import { CQDirectoryEntryData } from "../../cq-directory";
 import { CQOrgUrls } from "../../shared";
 import { CachedCqOrgLoader } from "./get-cq-organization-cached";
 import { getParentOid } from "./get-parent-org";
@@ -26,7 +27,7 @@ type ChannelUrl = typeof XCPD_STRING | typeof XCA_DQ_STRING | typeof XCA_DR_STRI
 export async function parseCQOrganization(
   org: Organization,
   cache = new CachedCqOrgLoader()
-): Promise<CQDirectoryEntryData2> {
+): Promise<CQDirectoryEntryData> {
   const { log } = out(`parseCQOrganization`);
 
   const id = org.id ?? org.identifier?.[0]?.value;
@@ -56,6 +57,8 @@ export async function parseCQOrganization(
 
   const endpoints: Endpoint[] = org.contained?.filter(isEndpoint) ?? [];
 
+  const delegateOids = getDelegateOids(org.extension);
+
   return {
     id,
     name: org.name,
@@ -71,6 +74,7 @@ export async function parseCQOrganization(
     active,
     lastUpdatedAtCQ,
     data: org,
+    delegateOids,
     ...getUrls(endpoints),
   };
 }
@@ -156,4 +160,19 @@ function getUrlType(value: string | undefined): ChannelUrl | undefined {
     level: "warning",
   });
   return;
+}
+
+function getDelegateOids(extensions: Extension[] | undefined): string[] {
+  const delegateOids: string[] = [];
+
+  extensions?.forEach(ext => {
+    if (isDoaExtension(ext)) {
+      const reference = ext.valueReference?.reference;
+      if (!reference) return;
+      const oid = reference.split("/")[1];
+      oid && delegateOids.push(oid);
+    }
+  });
+
+  return delegateOids;
 }

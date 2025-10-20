@@ -1,38 +1,43 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { Organization as FhirOrganization } from "@medplum/fhirtypes";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { initReadonlyDbPool } from "@metriport/core/util/sequelize";
-import { Organization } from "@metriport/carequality-sdk/models/organization";
+import {
+  dbCredsSchema,
+  dbReadReplicaEndpointSchema,
+  initDbPool,
+} from "@metriport/core/util/sequelize";
 import {
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp,
 } from "@metriport/ihe-gateway-sdk";
-import { TableResults } from "./athena-shared";
-import { QueryTypes } from "sequelize";
 import { mean } from "lodash";
+import { PoolOptions, QueryTypes } from "sequelize";
+import { TableResults } from "./athena-shared";
 
 const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
 const sqlReadReplicaEndpoint = getEnvVarOrFail("DB_READ_REPLICA_ENDPOINT");
 
 export const readOnlyDBPool = initReadonlyDbPool(sqlDBCreds, sqlReadReplicaEndpoint);
 
+// TODO: Build something that errors in compile time if it mismatches the original type
+// in @metriport/api/src/external/carequality/cq-directory.ts
 export type CQDirectoryEntryData = {
   id: string;
   name?: string;
-  urlXCPD?: string;
-  urlDQ?: string;
-  urlDR?: string;
+  url_xcpd?: string;
+  url_dq?: string;
+  url_dr?: string;
   lat?: number;
   lon?: number;
   state?: string;
-  data?: Organization;
+  data?: FhirOrganization;
   point?: string;
-  rootOrganization?: string;
-  managingOrganizationId?: string;
-  gateway: boolean;
+  root_organization?: string;
+  managing_organization_id?: string;
   active: boolean;
-  lastUpdatedAtCQ: string;
+  last_updated_at_cq: string;
 };
 
 export type RequestParams = {
@@ -190,8 +195,7 @@ export function getGwId(
 
 export function associateGwToImplementer(
   xcpdGWStats: GWWithStats[],
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cqDirectory: any[]
+  cqDirectory: CQDirectoryEntryData[]
 ): ImplementerWithGwStats[] {
   const implementerStats: ImplementerWithGwStats[] = [];
 
@@ -224,8 +228,7 @@ export function associateGwToImplementer(
 function findGWImplementer(
   gateway: string,
   stats: GWStats,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cqDirectory: any[]
+  cqDirectory: CQDirectoryEntryData[]
 ): { name: string; oid: string } | undefined {
   const cqDirectoryGW = cqDirectory.find(entry => entry.id === gateway);
 
@@ -235,12 +238,13 @@ function findGWImplementer(
 
   if (cqDirectoryGW) {
     const managingOrganizationId = cqDirectoryGW.managing_organization_id;
+    const name = cqDirectoryGW.name ?? "";
     const isItself = managingOrganizationId === cqDirectoryGW.id;
 
     if (!managingOrganizationId) {
-      return { name: cqDirectoryGW.name, oid: cqDirectoryGW.id };
+      return { name, oid: cqDirectoryGW.id };
     } else if (isItself && managingOrganizationId) {
-      return { name: cqDirectoryGW.name, oid: cqDirectoryGW.id };
+      return { name, oid: cqDirectoryGW.id };
     }
 
     return findGWImplementer(managingOrganizationId, stats, cqDirectory);
@@ -345,4 +349,22 @@ export function findExistingStatByImplementer(
   monthlyImplementerStats: MonthlyImplementerStats[]
 ): MonthlyImplementerStats | undefined {
   return monthlyImplementerStats.find(stat => stat.implementerId === implementerId);
+}
+
+function initReadonlyDbPool(
+  dbCreds: string,
+  dbReadReplicaEndpoint: string,
+  poolOptions?: PoolOptions,
+  logging?: boolean
+) {
+  const dbCredsRaw = JSON.parse(dbCreds);
+  const parsedDbCreds = dbCredsSchema.parse(dbCredsRaw);
+
+  const dbReadReplicaEndpointRaw = JSON.parse(dbReadReplicaEndpoint);
+  const parsedDbReadReplicaEndpoint = dbReadReplicaEndpointSchema.parse(dbReadReplicaEndpointRaw);
+
+  parsedDbCreds.host = parsedDbReadReplicaEndpoint.host;
+  parsedDbCreds.port = parsedDbReadReplicaEndpoint.port;
+
+  return initDbPool(JSON.stringify(parsedDbCreds), poolOptions, logging);
 }

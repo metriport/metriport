@@ -14,6 +14,7 @@ const region = getEnvVarOrFail("AWS_REGION");
 const apiURL = getEnvVarOrFail("API_URL");
 const bucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(
   async (req: DocumentBulkSignerLambdaRequest) => {
     const { patientId, cxId, requestId } = req;

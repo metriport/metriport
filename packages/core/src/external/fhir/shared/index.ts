@@ -17,7 +17,6 @@ import {
   MedicationAdministration,
   MedicationRequest,
   MedicationStatement,
-  ResourceType as MedplumResourceType,
   Observation,
   OperationOutcomeIssue,
   Organization,
@@ -26,11 +25,13 @@ import {
   Procedure,
   Reference,
   Resource,
+  ResourceType as MedplumResourceType,
 } from "@medplum/fhirtypes";
 import { isCarequalityExtension } from "../../carequality/extension";
 import { isCommonwellExtension } from "../../commonwell/extension";
 import { DOC_ID_EXTENSION_URL } from "./extensions/doc-id-extension";
 import { isMetriportExtension } from "./extensions/metriport";
+import { type Coding } from "@metriport/ihe-gateway-sdk";
 
 export const SEPARATOR_ID = "/";
 export const SEPARATOR_REF = "#";
@@ -155,6 +156,9 @@ export function isLocation(resource: Resource | undefined): resource is Location
 export function isPatient(resource: Resource | undefined): resource is Patient {
   return resource?.resourceType === "Patient";
 }
+export function isNotPatient(resource: Resource | undefined): boolean {
+  return !isPatient(resource);
+}
 
 export function isPractitioner(resource: Resource | undefined): resource is Practitioner {
   return resource?.resourceType === "Practitioner";
@@ -214,6 +218,15 @@ export function isMedicationStatement(
 
 export function isMedication(resource: Resource | undefined): resource is Medication {
   return resource?.resourceType === "Medication";
+}
+
+export function isCoding(value: unknown): value is Coding {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    ("system" in value || "display" in value || "code" in value)
+  );
 }
 
 export function isMedicationAdministration(
@@ -295,12 +308,12 @@ export function findResourceInBundle(bundle: Bundle, reference: string): Resourc
     return undefined;
   }
   const entry = bundle.entry.find(entry => {
-    const entryReference = entry.resource ? buildEntryReference(entry.resource) : undefined;
+    const entryReference = entry.resource ? buildResourceReference(entry.resource) : undefined;
     return entryReference === reference;
   });
   return entry?.resource;
 }
 
-export function buildEntryReference(resource: Resource): string {
+export function buildResourceReference(resource: Resource): string {
   return `${resource.resourceType}/${resource.id}`;
 }

@@ -11,15 +11,19 @@ import {
 } from "../../outbound/__tests__/constants";
 import { signTimestamp } from "../../saml/security/sign";
 import { S3Utils } from "../../../../aws/s3";
+import { Config } from "../../../../../util/config";
 
 describe("Process Inbound Xcpd Request", () => {
   beforeEach(() => {
+    jest.spyOn(Config, "getGeneralBucketName").mockImplementation(() => "");
+
     jest.spyOn(S3Utils.prototype, "uploadFile").mockImplementation(() => {
       return Promise.resolve({
-        Location: "http://example.com/mockurl",
-        ETag: '"mockedetag"',
-        Bucket: "mockedbucket",
-        Key: "mockedkey",
+        location: "http://example.com/mockurl",
+        eTag: '"mockedetag"',
+        bucket: "mockedbucket",
+        key: "mockedkey",
+        versionId: "mockVersionId",
       });
     });
   });
@@ -61,12 +65,15 @@ describe("Process Inbound Xcpd Request", () => {
 
 describe("Process Inbound Xcpd Response", () => {
   beforeEach(() => {
+    jest.spyOn(Config, "getGeneralBucketName").mockImplementation(() => "");
+
     jest.spyOn(S3Utils.prototype, "uploadFile").mockImplementation(() => {
       return Promise.resolve({
-        Location: "http://example.com/mockurl",
-        ETag: '"mockedetag"',
-        Bucket: "mockedbucket",
-        Key: "mockedkey",
+        location: "http://example.com/mockurl",
+        eTag: '"mockedetag"',
+        bucket: "mockedbucket",
+        key: "mockedkey",
+        versionId: "mockVersionId",
       });
     });
   });

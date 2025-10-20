@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import {
   defaultGetTimeToWait,
   defaultOptions as defaultRetryWithBackoffOptions,
@@ -7,9 +7,12 @@ import {
   GetTimeToWaitParams,
 } from "../common/retry";
 import { NetworkError, networkTimeoutErrors } from "./error";
-import { AxiosError } from "axios";
+import { isMetriportError } from "../error/metriport-error";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+dayjs.extend(duration);
 
-const tooManyRequestsStatus = 429;
+export const tooManyRequestsStatus = 429;
 const tooManyRequestsMultiplier = 3;
 
 export type ExecuteWithNetworkRetriesOptions = Omit<
@@ -23,17 +26,24 @@ export type ExecuteWithNetworkRetriesOptions = Omit<
   retryOnTimeout?: boolean;
 };
 
+export const defaultOptionsRequestNotAccepted: ExecuteWithNetworkRetriesOptions = {
+  httpCodesToRetry: [
+    // https://nodejs.org/docs/latest-v18.x/api/errors.html#common-system-errors
+    "ECONNREFUSED", // (Connection refused): No connection could be made because the target machine actively refused it. This usually results from trying to connect to a service that is inactive on the foreign host.
+    "ENOTFOUND", //  (DNS lookup failed): Indicates a DNS failure of either EAI_NODATA or EAI_NONAME. This is not a standard POSIX error.
+  ],
+  httpStatusCodesToRetry: [tooManyRequestsStatus],
+};
+
 const defaultOptions: ExecuteWithNetworkRetriesOptions = {
   ...defaultRetryWithBackoffOptions,
   initialDelay: 1000,
   httpCodesToRetry: [
-    // https://nodejs.org/docs/latest-v18.x/api/errors.html#common-system-errors
-    "ECONNREFUSED", // (Connection refused): No connection could be made because the target machine actively refused it. This usually results from trying to connect to a service that is inactive on the foreign host.
+    ...defaultOptionsRequestNotAccepted.httpCodesToRetry,
     "ECONNRESET", //  (Connection reset by peer): A connection was forcibly closed by a peer. This normally results from a loss of the connection on the remote socket due to a timeout or reboot. Commonly encountered via the http and net modules.
-    "ENOTFOUND", //  (DNS lookup failed): Indicates a DNS failure of either EAI_NODATA or EAI_NONAME. This is not a standard POSIX error.
     AxiosError.ERR_BAD_RESPONSE, // Response cannot be parsed properly or is in an unexpected format.
   ],
-  httpStatusCodesToRetry: [tooManyRequestsStatus],
+  httpStatusCodesToRetry: [...defaultOptionsRequestNotAccepted.httpStatusCodesToRetry],
   retryOnTimeout: false,
 };
 
@@ -41,7 +51,8 @@ const defaultOptions: ExecuteWithNetworkRetriesOptions = {
 export function getHttpStatusFromError(error: any): number | undefined {
   if (!error) return undefined;
   if (axios.isAxiosError(error)) return error.response?.status;
-  if ("cause" in error) return getHttpStatusFromError(error.cause);
+  if (error.cause) return getHttpStatusFromError(error.cause);
+  if (isMetriportError(error)) return error.status;
   return undefined;
 }
 
@@ -123,5 +134,21 @@ export async function executeWithNetworkRetries<T>(
       );
     },
     getTimeToWait: networkGetTimeToWait,
+  });
+}
+
+const DEFAULT_MAX_ATTEMPTS = 3;
+const DEFAULT_INITIAL_DELAY_DURATION = dayjs.duration({ seconds: 1 });
+
+export async function simpleExecuteWithRetries<T>(
+  functionToExecute: () => Promise<T>,
+  log: typeof console.log,
+  maxAttempts = DEFAULT_MAX_ATTEMPTS,
+  initialDelay = DEFAULT_INITIAL_DELAY_DURATION
+) {
+  return await executeWithNetworkRetries(functionToExecute, {
+    maxAttempts,
+    initialDelay: initialDelay.asMilliseconds(),
+    log,
   });
 }

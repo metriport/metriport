@@ -1,0 +1,19 @@
+// To use these, copy paste this into the file at Command+Shift+P > "Open Keyboard Shortcuts (JSON)"
+[
+  {
+      "key": "ctrl+cmd+r enter",
+      "command": "workbench.action.tasks.runTask",
+      "args": "Run JavaScript File in Package",
+      "when": "resourceExtname == .js"
+  },
+  {
+      "key": "ctrl+cmd+r enter",
+      "command": "workbench.action.tasks.runTask",
+      "args": "Run TypeScript File in Package",
+      "when": "resourceExtname == .ts"
+  },
+  {
+      "key": "ctrl+cmd+r r",
+      "command": "workbench.action.tasks.runTask"
+  }
+]

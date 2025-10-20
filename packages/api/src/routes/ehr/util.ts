@@ -1,7 +1,5 @@
-import { Request } from "express";
 import { BadRequestError } from "@metriport/shared";
-import { getPatientMappingOrFail } from "../../command/mapping/patient";
-import { EhrSources } from "../../external/ehr/shared";
+import { Request } from "express";
 
 export const idRegex = "([a-zA-Z0-9\\_\\-\\.])+";
 
@@ -14,8 +12,9 @@ export type PathDetails = {
 export function validatePath(req: Request, paths: PathDetails[]): PathDetails {
   const validPaths = paths.filter(path => path.pathRegex.test(req.path));
   if (validPaths.length === 0) throw new BadRequestError(`Invalid path ${req.path}`);
-  if (validPaths.length > 1)
+  if (validPaths.length > 1) {
     throw new BadRequestError(`More than one path matched for ${req.path}`);
+  }
   return validPaths[0];
 }
 
@@ -42,18 +41,4 @@ export function parseIdFromQueryParams(req: Request, queryParamKey: string): str
     throw new BadRequestError(`Value for query param ${queryParamKey} is incorrectly formmated`);
   }
   return queryParamValue;
-}
-
-export async function replaceIdInQueryParams(
-  req: Request,
-  source: EhrSources,
-  externalId: string
-): Promise<void> {
-  if (!req.cxId) throw new BadRequestError("Trouble processisng request");
-  const patient = await getPatientMappingOrFail({
-    cxId: req.cxId,
-    externalId,
-    source,
-  });
-  req.query["patientId"] = patient.patientId;
 }

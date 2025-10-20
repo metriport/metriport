@@ -16,6 +16,7 @@ const api = axios.create({ timeout: 10_000 });
  *
  * Update this code as needed to perform the test you want.
  */
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(async () => {
   console.log(`Running...`);
 

@@ -119,8 +119,8 @@ describe("outboundDocumentRetrievalRequest", () => {
     });
     expect(res).toBeTruthy();
     expect(res.length).toEqual(2);
-    expect(res[0].documentReference.length).toEqual(10);
-    expect(res[1].documentReference.length).toEqual(1);
+    expect(res[0].documentReference.length).toEqual(9);
+    expect(res[1].documentReference.length).toEqual(2);
   });
 
   it("returns 2 req with 1 doc refs when we have an surescripts gw", async () => {

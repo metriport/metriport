@@ -1,26 +1,4 @@
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function parseCxIdAndJob(bodyAsJson: any) {
-  const cxIdRaw = bodyAsJson.cxId;
-  if (!cxIdRaw) throw new Error(`Missing cxId`);
-  if (typeof cxIdRaw !== "string") throw new Error(`Invalid cxId`);
-
-  const jobIdRaw = bodyAsJson.jobId;
-  if (!jobIdRaw) throw new Error(`Missing jobId`);
-  if (typeof jobIdRaw !== "string") throw new Error(`Invalid jobId`);
-
-  return { cxIdRaw, jobIdRaw };
-}
-
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function parseFacilityId(bodyAsJson: any) {
-  const facilityIdRaw = bodyAsJson.facilityId;
-  if (!facilityIdRaw) throw new Error(`Missing cxId`);
-  if (typeof facilityIdRaw !== "string") throw new Error(`Invalid facilityId`);
-
-  return { facilityIdRaw };
-}
-
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function parseDryRun(bodyAsJson: any): boolean | undefined {
   const dryRunRaw = bodyAsJson.dryRun;
   if (dryRunRaw === undefined) return undefined;

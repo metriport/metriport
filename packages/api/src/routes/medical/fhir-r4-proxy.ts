@@ -1,10 +1,9 @@
 import proxy from "express-http-proxy";
 import Router from "express-promise-router";
-import NotFoundError from "../../errors/not-found";
 import { Config } from "../../shared/config";
 import { Util } from "../../shared/util";
 import { asyncHandler, getCxIdOrFail } from "../util";
-
+import { NotFoundError } from "@metriport/shared";
 const { log } = Util.out(`FHIR-R4-PROXY`);
 
 const fhirRouter = (fhirServerUrl: string) =>

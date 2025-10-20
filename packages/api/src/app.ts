@@ -10,16 +10,17 @@ import duration from "dayjs/plugin/duration";
 import express, { Application, Request, Response } from "express";
 import helmet from "helmet";
 import { initEvents } from "./event";
-import { initFeatureFlags } from "./external/aws/app-config";
+import { initFeatureFlags } from "./external/feature-flags";
 import initDB from "./models/db";
-import { initRateLimiter } from "./routes/middlewares/rate-limiting";
 import { VERSION_HEADER_NAME } from "./routes/header";
-import { errorHandler } from "./routes/helpers/default-error-handler";
+import { errorHandler, isMetriportError } from "./routes/helpers/default-error-handler";
 import { notFoundHandlers } from "./routes/helpers/not-found-handler";
 import mountRoutes from "./routes/index";
+import { initRateLimiter } from "./routes/middlewares/rate-limiting";
 import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
 import { isClientError } from "./shared/http";
+import { isAxiosError } from "axios";
 
 dayjs.extend(duration);
 
@@ -43,20 +44,34 @@ app.use((_req, res, next) => {
 mountRoutes(app);
 module.exports = app;
 
-// route used for health checks
+// health check route
 app.get("/", (req: Request, res: Response) => {
   if (req.accepts("application/json")) return res.json({ status: "OK" });
   return res.status(200).send("OK");
 });
 
+// TODO remove this and only have this logic on the default error handler
 // The Sentry error handler must be before any other error middleware and after all controllers
 if (isSentryEnabled()) {
   app.use(
     Sentry.Handlers.errorHandler({
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
       shouldHandleError: (error: any): boolean => {
-        // here we can dd logic to decide if we want to send the error to Sentry, like filtering out 404s
+        // Here we can dd logic to decide if we want to send the error to Sentry, like filtering out 404s
+        // The logic is split between here and `default-error-handler` since we need to access the request
         if (isClientError(error)) return false;
+        capture.setExtra({
+          ...(isMetriportError(error) ? error.additionalInfo : {}),
+          ...(isAxiosError(error)
+            ? {
+                stack: error.stack,
+                method: error.config?.method,
+                url: error.config?.url,
+                data: error.response?.data,
+              }
+            : {}),
+          error,
+        });
         return true;
       },
     })

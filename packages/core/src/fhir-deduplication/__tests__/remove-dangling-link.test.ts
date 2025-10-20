@@ -18,7 +18,7 @@ import {
   makeMedicationRequest,
   makeMedicationStatement,
 } from "./examples/medication-related";
-import { extractFhirTypesFromBundle } from "../../external/fhir/shared/bundle";
+import { extractFhirTypesFromBundle } from "../../external/fhir/bundle/bundle";
 
 let medicationId: string;
 let medicationId2: string;

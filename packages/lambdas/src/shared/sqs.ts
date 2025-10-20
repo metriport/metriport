@@ -71,7 +71,6 @@ export function getSingleMessageOrFail(
     const msg = "Got more than one message from SQS";
     capture.error(msg, {
       extra: {
-        event,
         context: lambdaName,
         additional: `This lambda is supposed to run w/ only 1 message per batch, got ${records.length}`,
       },

@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Biometrics, Body } from "@metriport/api-sdk";
+import { BadRequestError, MetriportError, NotFoundError } from "@metriport/shared";
 import axios from "axios";
 import dayjs from "dayjs";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
-import BadRequestError from "../errors/bad-request";
-import MetriportError from "../errors/metriport-error";
-import NotFoundError from "../errors/not-found";
 import { TenoviMeasurementData, tenoviMeasurementDataSchema } from "../mappings/tenovi";
 import { mapToBiometrics } from "../mappings/tenovi/biometrics";
 import { mapToBody } from "../mappings/tenovi/body";

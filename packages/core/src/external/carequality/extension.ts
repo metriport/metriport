@@ -1,7 +1,9 @@
-import { Extension, DocumentReferenceContent } from "@medplum/fhirtypes";
-import { MedicalDataSource } from "@metriport/api-sdk";
+import { Extension, DocumentReferenceContent, DocumentReference } from "@medplum/fhirtypes";
 import { dataSourceExtensionDefaults } from "../fhir/shared/extensions/extension";
 import { MetriportDataSourceExtension } from "../fhir/shared/extensions/metriport";
+import { MedicalDataSource } from "..";
+
+export const DOA_EXTENSION_URL = "https://sequoiaproject.org/fhir/sphd/StructureDefinition/DOA";
 
 export const cqExtension: MetriportDataSourceExtension = {
   ...dataSourceExtensionDefaults,
@@ -17,4 +19,12 @@ export function isCarequalityExtension(e: Extension): boolean {
 
 export function isCarequalityContent(content: DocumentReferenceContent): boolean {
   return content.extension?.some(isCarequalityExtension) === true;
+}
+
+export function hasCarequalityExtension(doc: DocumentReference): boolean {
+  return doc.extension?.some(isCarequalityExtension) ?? false;
+}
+
+export function isDoaExtension(e: Extension): boolean {
+  return e.url?.toLowerCase().trim() === DOA_EXTENSION_URL.toLowerCase();
 }

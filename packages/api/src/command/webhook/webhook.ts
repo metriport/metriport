@@ -1,20 +1,21 @@
+import { isWebhookPongDisabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { webhookDisableFlagName } from "@metriport/core/domain/webhook/index";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString, isTrue } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { PingWebhookRequest, WebhookMetadata } from "@metriport/shared/medical";
 import Axios from "axios";
 import crypto from "crypto";
-import dayjs from "dayjs";
 import stringify from "json-stringify-safe";
 import { nanoid } from "nanoid";
 import { v4 as uuidv4 } from "uuid";
-import { z, ZodError } from "zod";
+import { ZodError } from "zod";
 import { Product } from "../../domain/product";
 import { WebhookRequestStatus } from "../../domain/webhook";
 import WebhookError from "../../errors/webhook";
-import { isE2eCx, isWebhookPongDisabledForCx } from "../../external/aws/app-config";
+import { isE2eCx } from "../../external/feature-flags";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
 import { getHttpStatusFromAxiosError } from "../../shared/http";
@@ -43,7 +44,7 @@ async function missingWHSettings(
   const product = getProductFromWebhookRequest(webhookRequest);
   const msg = `[${product}] Missing webhook config, skipping sending it, WH req ID ${webhookRequest.id}`;
   const loggableKey = webhookKey ? "<defined>" : "<not-defined>";
-  log(msg + ` (url: ${webhookUrl}, key: ${loggableKey}`);
+  log(msg + ` (url: ${webhookUrl}, key: ${loggableKey})`);
   // mark this WH request as failed
   await updateWebhookRequest({
     id: webhookRequest.id,
@@ -68,7 +69,7 @@ export async function processRequest(
   additionalWHRequestMeta?: Record<string, string>,
   cxWHRequestMeta?: unknown
 ): Promise<boolean> {
-  const sendAnalytics = (status: string, properties?: Record<string, string>) => {
+  function sendAnalytics(status: string, properties?: Record<string, string>) {
     analytics({
       distinctId: webhookRequest.cxId,
       event: EventTypes.webhook,
@@ -79,7 +80,7 @@ export async function processRequest(
         ...(properties ? properties : {}),
       },
     });
-  };
+  }
 
   const { webhookUrl, webhookKey, webhookEnabled } = settings;
   if (!webhookUrl || !webhookKey) {
@@ -92,7 +93,8 @@ export async function processRequest(
     const payload = webhookRequest.payload;
     const meta: WebhookMetadata = {
       messageId: webhookRequest.id,
-      when: dayjs(webhookRequest.createdAt).toISOString(),
+      ...(webhookRequest.requestId ? { requestId: webhookRequest.requestId } : {}),
+      when: buildDayjs(webhookRequest.createdAt).toISOString(),
       type: webhookRequest.type,
       data: cxWHRequestMeta,
     };
@@ -230,14 +232,6 @@ async function updateWhStatusWithError(
   }
 }
 
-const webhookResponseSchema = z
-  .object({
-    pong: z.string().optional(),
-  })
-  .or(z.string());
-
-type WebhookResponse = z.infer<typeof webhookResponseSchema>;
-
 export async function sendPayload(
   payload: unknown,
   url: string,
@@ -245,7 +239,7 @@ export async function sendPayload(
   timeout = DEFAULT_TIMEOUT_SEND_PAYLOAD_MS
 ): Promise<{
   status: number;
-  webhookResponse: WebhookResponse;
+  webhookResponse: unknown;
   url: string;
   durationMillis: number;
 }> {
@@ -261,10 +255,9 @@ export async function sendPayload(
       maxRedirects: 0, // disable redirects to prevent SSRF
     });
     const duration = Date.now() - before;
-    const webhookResponse = webhookResponseSchema.parse(res.data);
     return {
       status: res.status,
-      webhookResponse,
+      webhookResponse: res.data,
       url,
       durationMillis: duration,
     };
@@ -282,7 +275,7 @@ export async function sendPayload(
 
 export async function sendTestPayload(url: string, key: string, cxId: string): Promise<boolean> {
   const ping = nanoid();
-  const when = dayjs().toISOString();
+  const when = buildDayjs().toISOString();
   const payload: PingWebhookRequest = {
     ping,
     meta: {
@@ -298,9 +291,12 @@ export async function sendTestPayload(url: string, key: string, cxId: string): P
   if (isWebhookPongDisabled) return true;
   // check for a matching pong response, unless FF is enabled to skip that check
   const whResponse = sendResponse.webhookResponse;
-  return typeof whResponse !== "string" && whResponse.pong && whResponse.pong === ping
-    ? true
-    : false;
+  return (
+    typeof whResponse === "object" &&
+    whResponse !== null &&
+    typeof (whResponse as Record<string, unknown>).pong === "string" &&
+    (whResponse as Record<string, unknown>).pong === ping
+  );
 }
 
 async function isWebhookPongDisabledForCxSafe(cxId: string): Promise<boolean> {

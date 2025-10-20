@@ -1,58 +1,101 @@
-import { faker } from "@faker-js/faker";
-import { Immunization } from "@medplum/fhirtypes";
 import { makeImmunization } from "../../fhir-to-cda/cda-templates/components/__tests__/make-immunization";
 import { groupSameImmunizations } from "../resources/immunization";
-import { cvxCodeFlu } from "./examples/immunization-examples";
-import { dateTime, dateTime2 } from "./examples/condition-examples";
-
-let immunizationId: string;
-let immunizationId2: string;
-let immunization: Immunization;
-let immunization2: Immunization;
-
-beforeEach(() => {
-  immunizationId = faker.string.uuid();
-  immunizationId2 = faker.string.uuid();
-  immunization = makeImmunization({ id: immunizationId });
-  immunization2 = makeImmunization({ id: immunizationId2 });
-});
+import { makePeriod } from "./examples/condition-examples";
+import { cvxCodeFlu, ndcCodeFlu } from "./examples/immunization-examples";
 
 describe("groupSameImmunizations", () => {
-  it("correctly groups duplicate immunizations based on cvx codes and dates", () => {
-    immunization.occurrenceDateTime = dateTime.start;
-    immunization2.occurrenceDateTime = dateTime.start;
-    immunization.vaccineCode = cvxCodeFlu;
-    immunization2.vaccineCode = cvxCodeFlu;
+  it("correctly groups immunizations based on cvx codes without dates", () => {
+    const immunization = makeImmunization({ vaccineCode: cvxCodeFlu });
+    const immunization2 = makeImmunization({ vaccineCode: cvxCodeFlu });
 
-    const { immunizationsCvxMap } = groupSameImmunizations([immunization, immunization2]);
-    expect(immunizationsCvxMap.size).toBe(1);
+    const { immunizationsMap } = groupSameImmunizations([immunization, immunization2]);
+    expect(immunizationsMap.size).toBe(1);
+  });
+
+  it("correctly groups immunizations based on cvx codes and dates", () => {
+    const period = makePeriod();
+    const immunization = makeImmunization({
+      occurrenceDateTime: period.start,
+      vaccineCode: cvxCodeFlu,
+    });
+    const immunization2 = makeImmunization({
+      occurrenceDateTime: period.start,
+      vaccineCode: cvxCodeFlu,
+    });
+
+    const { immunizationsMap } = groupSameImmunizations([immunization, immunization2]);
+    expect(immunizationsMap.size).toBe(1);
+  });
+
+  it("correctly groups immunizations with the same code, where one is missing the date", () => {
+    const period = makePeriod();
+    const immunization = makeImmunization({
+      vaccineCode: cvxCodeFlu,
+      occurrenceDateTime: period.start,
+    });
+    const immunization2 = makeImmunization({ vaccineCode: cvxCodeFlu });
+
+    const { immunizationsMap } = groupSameImmunizations([immunization, immunization2]);
+    expect(immunizationsMap.size).toBe(1);
+  });
+
+  it("correctly groups immunizations based on ndc codes", () => {
+    const immunization = makeImmunization({ vaccineCode: ndcCodeFlu });
+    const immunization2 = makeImmunization({ vaccineCode: ndcCodeFlu });
+
+    const { immunizationsMap } = groupSameImmunizations([immunization, immunization2]);
+    expect(immunizationsMap.size).toBe(1);
+  });
+
+  it("correctly groups immunizations based on codes, despite the order", () => {
+    const immunization = makeImmunization({
+      vaccineCode: {
+        ...cvxCodeFlu,
+        coding: [...ndcCodeFlu.coding, ...cvxCodeFlu.coding],
+      },
+    });
+    const immunization2 = makeImmunization({
+      vaccineCode: {
+        ...cvxCodeFlu,
+        coding: [...cvxCodeFlu.coding, ...ndcCodeFlu.coding],
+      },
+    });
+
+    const { immunizationsMap } = groupSameImmunizations([immunization, immunization2]);
+    expect(immunizationsMap.size).toBe(1);
+  });
+
+  it("correctly groups immunizations based on display", () => {
+    const codeWithOnlyDisplay = {
+      ...cvxCodeFlu,
+      coding: [{ display: "Influenza, split virus, quadrivalent, PF" }],
+    };
+    const immunization = makeImmunization({ vaccineCode: codeWithOnlyDisplay });
+    const immunization2 = makeImmunization({ vaccineCode: codeWithOnlyDisplay });
+
+    const { immunizationsMap } = groupSameImmunizations([immunization, immunization2]);
+    expect(immunizationsMap.size).toBe(1);
   });
 
   it("does not group immunizations with different dates", () => {
-    immunization.occurrenceDateTime = dateTime.start;
-    immunization2.occurrenceDateTime = dateTime2.start;
-    immunization.vaccineCode = cvxCodeFlu;
-    immunization2.vaccineCode = cvxCodeFlu;
+    const period = makePeriod();
+    const immunization = makeImmunization({
+      vaccineCode: cvxCodeFlu,
+      occurrenceDateTime: period.start,
+    });
+    const immunization2 = makeImmunization({
+      vaccineCode: cvxCodeFlu,
+      occurrenceDateTime: period.end,
+    });
 
-    const { immunizationsCvxMap } = groupSameImmunizations([immunization, immunization2]);
-    expect(immunizationsCvxMap.size).toBe(2);
+    const { immunizationsMap } = groupSameImmunizations([immunization, immunization2]);
+    expect(immunizationsMap.size).toBe(2);
   });
 
-  it("removes immunizations with undefined dates", () => {
-    immunization.vaccineCode = cvxCodeFlu;
-    immunization2.vaccineCode = cvxCodeFlu;
+  it("removes immunizations without codes", () => {
+    const immunization = makeImmunization();
 
-    const { immunizationsCvxMap } = groupSameImmunizations([immunization, immunization2]);
-    expect(immunizationsCvxMap.size).toBe(0);
-  });
-
-  it("removes immunizations with unknown date", () => {
-    immunization.occurrenceDateTime = dateTime.start;
-    immunization2.occurrenceString = "unknown";
-    immunization.vaccineCode = cvxCodeFlu;
-    immunization2.vaccineCode = cvxCodeFlu;
-
-    const { immunizationsCvxMap } = groupSameImmunizations([immunization, immunization2]);
-    expect(immunizationsCvxMap.size).toBe(1);
+    const { immunizationsMap } = groupSameImmunizations([immunization]);
+    expect(immunizationsMap.size).toBe(0);
   });
 });

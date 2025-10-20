@@ -1,4 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import {
   ResourceTypeForConsolidation,
   SearchSetBundle,
@@ -9,12 +10,14 @@ import {
   buildBundleEntry,
   getReferencesFromResources,
   ReferenceWithIdAndType,
-} from "../../external/fhir/shared/bundle";
+  replaceBundleEntries,
+} from "../../external/fhir/bundle/bundle";
 import { out } from "../../util";
 import { createConsolidatedFromConversions } from "./consolidated-create";
 import { filterBundleByDate } from "./consolidated-filter-by-date";
 import { filterBundleByResource } from "./consolidated-filter-by-resource";
-import { getConsolidated } from "./consolidated-get";
+import { getConsolidatedFile } from "./consolidated-get";
+
 const maxHydrationIterations = 5;
 
 /**
@@ -32,12 +35,17 @@ export async function getConsolidatedFromS3({
   resources?: ResourceTypeForConsolidation[] | undefined;
   dateFrom?: string | undefined;
   dateTo?: string | undefined;
+  useCachedAiBrief?: boolean | undefined;
 }): Promise<SearchSetBundle> {
   const patientId = patient.id;
   const { log } = out(`getConsolidatedFromS3 - cx ${cxId}, pat ${patientId}`);
   log(`Running with params: ${JSON.stringify(params)}`);
 
-  const consolidated = await getOrCreateConsolidatedOnS3({ cxId, patient });
+  const consolidated = await getOrCreateConsolidatedOnS3({
+    cxId,
+    patient,
+    useCachedAiBrief: params.useCachedAiBrief,
+  });
   const consolidatedSearchset = toSearchSet(consolidated);
 
   log(`Consolidated found with ${consolidatedSearchset.entry?.length} entries`);
@@ -49,13 +57,15 @@ export async function getConsolidatedFromS3({
 async function getOrCreateConsolidatedOnS3({
   cxId,
   patient,
+  useCachedAiBrief,
 }: {
   cxId: string;
   patient: Patient;
+  useCachedAiBrief?: boolean | undefined;
 }): Promise<Bundle> {
   const patientId = patient.id;
   const { log } = out(`getOrCreateConsolidatedOnS3 - cx ${cxId}, pat ${patientId}`);
-  const preGenerated = await getConsolidated({
+  const preGenerated = await getConsolidatedFile({
     cxId,
     patientId,
   });
@@ -64,7 +74,11 @@ async function getOrCreateConsolidatedOnS3({
     return preGenerated.bundle;
   }
   log(`Did not found pre-generated consolidated, creating a new one...`);
-  const newConsolidated = await createConsolidatedFromConversions({ cxId, patient });
+  const newConsolidated = await createConsolidatedFromConversions({
+    cxId,
+    patient,
+    useCachedAiBrief,
+  });
   return newConsolidated;
 }
 
@@ -92,8 +106,13 @@ export async function filterConsolidated(
     `Filtered by date (${dateFrom} - ${dateTo}) to ${filtered?.entry?.length} entries, checking missing refs...`
   );
 
+  const startedAtAddMissingRefs = new Date();
   const hydrated = addMissingReferencesFn(filtered, bundle, addMissingReferencesFn);
-  log(`Hydrated missing refs, the bundle now has ${hydrated?.entry?.length} entries, returning.`);
+  log(
+    `Hydrated missing refs, the bundle now has ${
+      hydrated?.entry?.length
+    } entries, returning... Took ${elapsedTimeFromNow(startedAtAddMissingRefs)}ms`
+  );
 
   return hydrated;
 }
@@ -106,17 +125,17 @@ export function addMissingReferences(
 ): Bundle {
   const filteredResources = (filteredBundle.entry ?? []).flatMap(e => e.resource ?? []);
 
-  const { missingReferences } = getReferencesFromResources({ resources: filteredResources });
+  const { missingReferences } = getReferencesFromResources({
+    resourcesToCheckRefs: filteredResources,
+  });
 
   const resourcesToAdd = getResourcesFromBundle(missingReferences, originalBundle);
 
-  const resultBundle = {
-    ...filteredBundle,
-    entry: [...(filteredBundle.entry ?? []), ...resourcesToAdd.map(buildBundleEntry)],
-  };
+  const newEntries = [...(filteredBundle.entry ?? []), ...resourcesToAdd.map(buildBundleEntry)];
+  const resultBundle = replaceBundleEntries(filteredBundle, newEntries);
 
   const { missingReferences: missingRefsFromAddedResources } = getReferencesFromResources({
-    resources: resourcesToAdd,
+    resourcesToCheckRefs: resourcesToAdd,
   });
 
   if (missingRefsFromAddedResources.length && iteration < maxHydrationIterations) {
@@ -134,9 +153,13 @@ function getResourcesFromBundle(
   references: ReferenceWithIdAndType[],
   originalBundle: Bundle<Resource>
 ): Resource[] {
+  const bundleResourceIndex = new Map(
+    originalBundle.entry?.map(e => [e.resource?.id, e.resource]) ?? []
+  );
+
   const resourcesToAdd: Resource[] = [];
   for (const missingRef of references) {
-    const resource = originalBundle.entry?.find(e => e.resource?.id === missingRef.id)?.resource;
+    const resource = bundleResourceIndex.get(missingRef.id);
     if (resource) resourcesToAdd.push(resource);
   }
   return resourcesToAdd;

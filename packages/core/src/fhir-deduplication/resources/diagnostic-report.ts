@@ -1,15 +1,15 @@
 import { DiagnosticReport } from "@medplum/fhirtypes";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
-import { LOINC_CODE, LOINC_OID } from "../../util/constants";
 import {
   DeduplicationResult,
   combineResources,
   createKeysFromObjectArray,
   createRef,
-  fetchCodingCodeOrDisplayOrSystem,
+  dangerouslyAssignMostDescriptiveStatus,
   fillL1L2Maps,
   getDateFromResource,
-  pickMostDescriptiveStatus,
+  isUnknownCoding,
+  isUselessDisplay,
 } from "../shared";
 
 const diagnosticReportStatus = [
@@ -39,11 +39,15 @@ const statusRanking: Record<DiagnosticReportStatus, number> = {
   cancelled: 0,
 };
 
+function preprocessStatus(existing: DiagnosticReport, target: DiagnosticReport) {
+  return dangerouslyAssignMostDescriptiveStatus(statusRanking, existing, target);
+}
+
 export function deduplicateDiagReports(
-  medications: DiagnosticReport[]
+  diagReports: DiagnosticReport[]
 ): DeduplicationResult<DiagnosticReport> {
   const { diagReportsMap, refReplacementMap, danglingReferences } =
-    groupSameDiagnosticReports(medications);
+    groupSameDiagnosticReports(diagReports);
   return {
     combinedResources: combineResources({
       combinedMaps: [diagReportsMap],
@@ -56,9 +60,10 @@ export function deduplicateDiagReports(
 /**
  * Approach:
  * 1 map, where the key is made of:
- * - date
- * - code - not sure we want to be using codes as a part of the key.
- *          The thing with them is that they very often contain a bunch of different ones, almost always containing the one for "Note" - 34109-9.
+ * - references to the result or presented form
+ * - codes / display identifiers:
+ *   - if datetime is present, we use the identifier + date, or identifier + 1 date bit
+ *   - if datetime is not present, we use the identifier + 0 date bit
  */
 export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
   diagReportsMap: Map<string, DiagnosticReport>;
@@ -69,27 +74,6 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
   const l2ReportsMap = new Map<string, DiagnosticReport>();
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
-
-  function removeCodesAndAssignStatus(
-    master: DiagnosticReport,
-    existing: DiagnosticReport,
-    target: DiagnosticReport
-  ): DiagnosticReport {
-    const code = master.code;
-    const filtered = code?.coding?.filter(coding => {
-      const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
-      return system?.includes(LOINC_CODE) || system?.includes(LOINC_OID);
-    });
-    if (filtered && filtered.length) {
-      master.code = {
-        ...code,
-        coding: filtered,
-      };
-    }
-
-    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-    return master;
-  }
 
   for (const diagReport of diagReports) {
     const datetime = getDateFromResource(diagReport, "datetime");
@@ -104,26 +88,13 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
       continue;
     }
 
-    const practitionerRefsSet = new Set<string>();
-
     const getterKeys: string[] = [];
     const setterKeys: string[] = [];
 
-    diagReport.performer?.forEach(perf => {
-      const ref = perf.reference;
-      if (ref && ref.includes("Practitioner")) {
-        practitionerRefsSet.add(ref);
-        return;
-      }
-    });
-
-    const practitionerRefs = Array.from(practitionerRefsSet).map(p => ({ practitioner: p }));
-
-    if (isResultPresent) {
-      const resultUuid = createUuidFromText(JSON.stringify(diagReport.result));
-      const key = JSON.stringify({ resultUuid });
-      setterKeys.push(key);
-      getterKeys.push(key);
+    if (diagReport.id) {
+      const idKey = JSON.stringify({ id: diagReport.id });
+      setterKeys.push(idKey);
+      getterKeys.push(idKey);
     }
 
     if (isPresentedFormPresent) {
@@ -131,22 +102,39 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
       const key = JSON.stringify({ presentedFormUuid });
       setterKeys.push(key);
       getterKeys.push(key);
-    }
+    } else if (isResultPresent) {
+      const resultUuid = createUuidFromText(JSON.stringify(diagReport.result?.sort()));
+      const key = JSON.stringify({ resultUuid });
+      setterKeys.push(key);
+      getterKeys.push(key);
 
-    if (datetime) {
-      if (practitionerRefs.length > 0) {
-        const practitionerAndDateKeys = createKeysFromObjectArray({ datetime }, practitionerRefs);
-        setterKeys.push(...practitionerAndDateKeys);
-        getterKeys.push(...practitionerAndDateKeys);
-      } else {
-        const dateKey = JSON.stringify({ datetime });
-        setterKeys.push(dateKey);
-        getterKeys.push(dateKey);
+      const identifiers: { key: string }[] = [];
+      if (diagReport.code) {
+        diagReport.code.coding?.forEach(c => {
+          if (isUnknownCoding(c)) return;
+
+          const { code, display, system } = c;
+          const normalizedSystem = system?.toLowerCase().replace("urn:oid:", "").trim();
+
+          if (code && normalizedSystem) {
+            identifiers.push({ key: `${code.toLowerCase().trim()}|${normalizedSystem}` });
+          }
+
+          if (display && !isUselessDisplay(display)) {
+            identifiers.push({ key: display.toLowerCase().trim() });
+          }
+        });
+
+        const text = diagReport.code.text;
+        if (text && !isUselessDisplay(text)) {
+          identifiers.push({ key: text.toLowerCase().trim() });
+        }
       }
-    } else {
-      const idKey = JSON.stringify({ id: diagReport.id });
-      setterKeys.push(idKey);
-      getterKeys.push(idKey);
+
+      if (datetime && identifiers.length > 0) {
+        setterKeys.push(...createKeysFromObjectArray({ datetime }, identifiers));
+        getterKeys.push(...createKeysFromObjectArray({ datetime }, identifiers));
+      }
     }
 
     if (setterKeys.length > 0) {
@@ -157,7 +145,7 @@ export function groupSameDiagnosticReports(diagReports: DiagnosticReport[]): {
         setterKeys,
         targetResource: diagReport,
         refReplacementMap,
-        applySpecialModifications: removeCodesAndAssignStatus,
+        onPremerge: preprocessStatus,
       });
     } else {
       danglingReferences.add(createRef(diagReport));

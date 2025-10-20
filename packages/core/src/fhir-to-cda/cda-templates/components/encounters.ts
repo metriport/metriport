@@ -1,5 +1,6 @@
 import { Bundle, Encounter, HumanName, Location, Practitioner } from "@medplum/fhirtypes";
 import { toArray } from "@metriport/shared";
+import { encodeToHtml } from "@metriport/shared/common/html";
 import {
   findResourceInBundle,
   isEncounter,
@@ -29,10 +30,10 @@ import {
   withoutNullFlavorObject,
 } from "../commons";
 import {
-  NOT_SPECIFIED,
   extensionValue2015,
   loincCodeSystem,
   loincSystemName,
+  NOT_SPECIFIED,
   oids,
   placeholderOrgOid,
 } from "../constants";
@@ -131,6 +132,11 @@ function createTableRowFromEncounter(
   referenceId: string
 ): ObservationTableRow[] {
   const locationInfo = getLocationInformation(encounter.locations);
+  const locationDesc =
+    locationInfo && locationInfo?.length > 0
+      ? locationInfo?.map(l => `${l.name} - ${l.address}`).join("; ")
+      : undefined;
+
   return [
     {
       tr: {
@@ -144,10 +150,12 @@ function createTableRowFromEncounter(
             "#text": getDisplaysFromCodeableConcepts(encounter.resource.type) ?? NOT_SPECIFIED,
           },
           {
-            "#text": getPractitionerInformation(encounter.practitioners),
+            "#text": encodeToHtml(
+              getPractitionerInformation(encounter.practitioners) ?? NOT_SPECIFIED
+            ),
           },
           {
-            "#text": locationInfo?.map(l => `${l.name} - ${l.address}`).join("; ") ?? NOT_SPECIFIED,
+            "#text": encodeToHtml(locationDesc ?? NOT_SPECIFIED),
           },
           {
             "#text":
@@ -159,14 +167,14 @@ function createTableRowFromEncounter(
   ];
 }
 
-function getPractitionerInformation(participant: Practitioner[] | undefined): string {
-  if (!participant) return NOT_SPECIFIED;
+function getPractitionerInformation(participant: Practitioner[] | undefined): string | undefined {
+  if (!participant || participant.length === 0) return undefined;
   const practitionerInfo = participant
     .map(p => buildNameText(p.name))
     .filter(Boolean)
     .join("; ");
 
-  return practitionerInfo ?? NOT_SPECIFIED;
+  return practitionerInfo ?? undefined;
 }
 
 function getLocationInformation(location: Location[] | undefined) {

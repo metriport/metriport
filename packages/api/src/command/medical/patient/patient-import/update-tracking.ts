@@ -1,0 +1,115 @@
+import { out } from "@metriport/core/util/log";
+import { BadRequestError, emptyFunction } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
+import {
+  PatientImportJobUpdatableStatus,
+  validateNewStatus,
+} from "@metriport/shared/domain/patient/patient-import/status";
+import { PatientImportJob } from "@metriport/shared/domain/patient/patient-import/types";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+import { getPatientImportJobModelOrFail } from "./get";
+import { processPatientImportJobWebhook } from "./process-patient-import-webhook";
+
+dayjs.extend(duration);
+
+export type PatientImportUpdateStatusCmd = {
+  cxId: string;
+  jobId: string;
+  status?: PatientImportJobUpdatableStatus;
+  reason?: string | undefined;
+  total?: number | undefined;
+  /**
+   * Only to be set on dry run mode - on regular mode, the successful count is incremented
+   * individually as each patient is created.
+   */
+  successful?: number | undefined;
+  failed?: number | undefined;
+  forceStatusUpdate?: boolean | undefined;
+};
+
+/**
+ * TODO 2330 Refactor this to match PatientJob's updateTracking(). THe current version allows a
+ * caller to update the counters midway through the job, which would override successful/failed
+ * counters as well, breaking the job's integrity.
+ *
+ * Updates a bulk patient import job's status and counters.
+ * If `total` is provided, the `successful` and `failed` counters are reset.
+ *
+ * @param cxId - The customer ID.
+ * @param jobId - The bulk import job ID.
+ * @param status - The new status of the job.
+ * @param reason - The reason for the status update.
+ * @param total - The total number of patients in the job. If provided, the `successful` and
+ *                `failed` counters are reset.
+ * @param failed - The number of failed patients in the job.
+ * @param forceStatusUpdate - Whether to force the status update (only to be used by internal
+ *                            flows/endpoints).
+ * @returns the updated job.
+ * @throws BadRequestError if the status is not valid based on the current state.
+ * @throws NotFoundError if the job doesn't exist.
+ */
+export async function updatePatientImportTracking({
+  cxId,
+  jobId,
+  status,
+  total,
+  successful,
+  failed,
+  reason,
+  forceStatusUpdate = false,
+}: PatientImportUpdateStatusCmd): Promise<PatientImportJob> {
+  const { log } = out(`updatePatientImportTracking - cxId ${cxId} jobId ${jobId}`);
+  const now = buildDayjs().toDate();
+  const job = await getPatientImportJobModelOrFail({ cxId, jobId });
+  const { dryRun: dryRunCx } = job.paramsCx ?? {};
+  const { disableWebhooks, dryRun: dryRunOps } = job.paramsOps ?? {};
+
+  if (!dryRunCx && !dryRunOps && successful != undefined) {
+    throw new BadRequestError("Setting successful count is only allowed on dry-run mode");
+  }
+
+  const oldStatus = job.status;
+  const newStatus = status
+    ? forceStatusUpdate
+      ? status
+      : validateNewStatus(job.status, status)
+    : undefined;
+  const justTurnedProcessing = newStatus === "processing" && oldStatus !== "processing";
+  const justTurnedCompleted = newStatus === "completed" && oldStatus !== "completed";
+
+  const jobToUpdate: PatientImportJob = {
+    ...job.dataValues,
+    status: newStatus ?? oldStatus,
+    reason,
+  };
+  if (total != undefined) {
+    jobToUpdate.total = total;
+    jobToUpdate.successful = 0;
+    jobToUpdate.failed = 0;
+  }
+  if (successful != undefined) {
+    jobToUpdate.successful = successful;
+  }
+  if (failed != undefined) {
+    jobToUpdate.failed = failed;
+  }
+  if (justTurnedProcessing) {
+    jobToUpdate.startedAt = now;
+  }
+  if (justTurnedCompleted) {
+    jobToUpdate.finishedAt = now;
+  }
+  const updatedJobModel = await job.update(jobToUpdate, { where: { cxId, id: jobId } });
+  const updatedJob = updatedJobModel.dataValues;
+
+  const shouldSendWebhook = !disableWebhooks && (justTurnedProcessing || justTurnedCompleted);
+  if (shouldSendWebhook) {
+    log(
+      `Sending WH to cx for patient import, newStatus ${newStatus}, ` +
+        `oldStatus ${oldStatus}, disableWebhooks ${disableWebhooks}`
+    );
+    processPatientImportJobWebhook(updatedJob).catch(emptyFunction);
+  }
+  return updatedJob;
+}

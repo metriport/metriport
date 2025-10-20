@@ -1,11 +1,20 @@
+import { Config as ConfigCore } from "@metriport/core/util/config";
+import {
+  DbCreds,
+  DbCredsReadOnly,
+  dbCredsSchema,
+  dbCredsSchemaReadOnly,
+  DbPoolSettings,
+  dbPoolSettingsSchema,
+} from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import { Sequelize } from "sequelize";
-import { CQDirectoryEntryModel } from "../external/carequality/models/cq-directory";
 import { CQDirectoryEntryViewModel } from "../external/carequality/models/cq-directory-view";
 import { CQPatientDataModel } from "../external/carequality/models/cq-patient-data";
 import { OutboundDocumentQueryRespModel } from "../external/carequality/models/outbound-document-query-resp";
 import { OutboundDocumentRetrievalRespModel } from "../external/carequality/models/outbound-document-retrieval-resp";
 import { OutboundPatientDiscoveryRespModel } from "../external/carequality/models/outbound-patient-discovery-resp";
+import { CwDirectoryEntryViewModel } from "../external/commonwell/models/cw-directory-view";
 import { CwPatientDataModel } from "../external/commonwell/models/cw-patient-data";
 import { HIEDirectoryEntryViewModel } from "../external/hie/models/hie-directory-view";
 import { FacilityModel } from "../models/medical/facility";
@@ -19,15 +28,23 @@ import { initDDBDev, initLocalCxAccount } from "./db-dev";
 import { FacilityMappingModel } from "./facility-mapping";
 import { FeedbackModel } from "./feedback";
 import { FeedbackEntryModel } from "./feedback-entry";
+import { InvalidLinksModel } from "./invalid-links";
 import { JwtTokenModel } from "./jwt-token";
-import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
+import { CohortModel } from "./medical/cohort";
 import { DocRefMappingModel } from "./medical/docref-mapping";
 import { MAPIAccess } from "./medical/mapi-access";
 import { PatientModel } from "./medical/patient";
+import { PatientCohortModel } from "./medical/patient-cohort";
+import { PatientImportJobModel } from "./medical/patient-import";
+import { PatientImportMappingModel } from "./medical/patient-import-mapping";
+import { PatientModelReadOnly } from "./medical/patient-readonly";
+import { TcmEncounterModel } from "./medical/tcm-encounter";
+import { PatientJobModel } from "./patient-job";
 import { PatientMappingModel } from "./patient-mapping";
+import { PatientSettingsModel } from "./patient-settings";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
-import { InvalidLinksModel } from "./invalid-links";
+import { SuspectModel } from "./suspect";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -35,67 +52,72 @@ const models: ModelSetup[] = [
   Settings.setup,
   WebhookRequest.setup,
   OrganizationModel.setup,
-  CQDirectoryEntryModel.setup,
   CQDirectoryEntryViewModel.setup,
   CQPatientDataModel.setup,
+  CwDirectoryEntryViewModel.setup,
   CwPatientDataModel.setup,
   FacilityModel.setup,
   PatientModel.setup,
+  PatientImportJobModel.setup,
+  PatientImportMappingModel.setup,
   HIEDirectoryEntryViewModel.setup,
   MAPIAccess.setup,
   DocRefMappingModel.setup,
   OutboundPatientDiscoveryRespModel.setup,
   OutboundDocumentQueryRespModel.setup,
   OutboundDocumentRetrievalRespModel.setup,
-  CoverageEnhancementModel.setup,
   FeedbackModel.setup,
   FeedbackEntryModel.setup,
   CxMappingModel.setup,
   PatientMappingModel.setup,
+  PatientSettingsModel.setup,
   FacilityMappingModel.setup,
   JwtTokenModel.setup,
   InvalidLinksModel.setup,
+  PatientJobModel.setup,
+  CohortModel.setup,
+  PatientCohortModel.setup,
+  TcmEncounterModel.setup,
+  SuspectModel.setup,
 ];
 
-export type DbPoolProps = {
-  max: number;
-  min: number;
-  acquire: number;
-  idle: number;
-};
+const modelsReadOnly: ModelSetup[] = [PatientModelReadOnly.setup];
 
 export type MetriportDB = {
   sequelize: Sequelize;
+  sequelizeReadOnly: Sequelize;
   doc: AWS.DynamoDB.DocumentClient;
 };
 
 let db: MetriportDB | undefined;
-export const getDB = (): MetriportDB => {
+export function getDB(): MetriportDB {
   if (!db) throw new Error("DB not initialized");
   return db;
-};
+}
 
 export interface DocTableNames {
   token: string;
   rateLimit?: string;
+  featureFlags: string;
 }
 export let docTableNames: DocTableNames;
 
 async function initDB(): Promise<void> {
   // make sure we have the env vars we need
-  const sqlDBCreds = Config.getDBCreds();
   const tokenTableName = Config.getTokenTableName();
   const rateLimitTableName = Config.getRateLimitTableName();
+  const featureFlagsTableName = ConfigCore.getFeatureFlagsTableName();
   const logDBOperations = Config.isCloudEnv() ? false : true;
   const dbPoolSettings = getDbPoolSettings();
 
   docTableNames = {
     token: tokenTableName,
     rateLimit: rateLimitTableName,
+    featureFlags: featureFlagsTableName,
   };
 
   // get database creds
-  const dbCreds = JSON.parse(sqlDBCreds);
+  const dbCreds = getDbCreds();
   console.log("[server]: connecting to db...");
   const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
     host: dbCreds.host,
@@ -105,14 +127,36 @@ async function initDB(): Promise<void> {
     logging: logDBOperations,
     logQueryParameters: logDBOperations,
   });
+  const readerEndpoint = getDbReadReplicaEndpoint();
+  console.log("[server]: connecting to db read replica...");
+  const sequelizeReadOnly = Config.isCloudEnv()
+    ? new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
+        host: readerEndpoint.host,
+        port: readerEndpoint.port,
+        dialect: dbCreds.engine,
+        pool: dbPoolSettings,
+        logging: logDBOperations,
+        logQueryParameters: logDBOperations,
+      })
+    : sequelize;
   try {
-    await sequelize.authenticate();
+    await Promise.all([sequelize.authenticate(), sequelizeReadOnly.authenticate()]);
 
     // run DB migrations - update the DB to the expected state
     await updateDB(sequelize);
 
     // define all models
     for (const setup of models) setup(sequelize);
+    for (const setup of modelsReadOnly) setup(sequelizeReadOnly);
+
+    // Set up model associations
+    PatientModelReadOnly.associate({ PatientSettingsModel });
+    PatientSettingsModel.associate({ PatientModelReadOnly });
+    CohortModel.associate({ PatientCohortModel });
+    PatientCohortModel.associate({ CohortModel });
+    PatientModel.associate({ PatientCohortModel, TcmEncounterModel });
+    TcmEncounterModel.associate({ PatientModel, OrganizationModel });
+    OrganizationModel.associate({ TcmEncounterModel });
 
     let doc: AWS.DynamoDB.DocumentClient;
     // init dynamo db doc client
@@ -125,7 +169,7 @@ async function initDB(): Promise<void> {
       await initLocalCxAccount();
     }
     // set db object for external references
-    db = { sequelize, doc };
+    db = { sequelize, sequelizeReadOnly, doc };
     console.log("[server]: connecting to db success!");
   } catch (err) {
     console.log("[server]: connecting to db failed :(");
@@ -134,11 +178,11 @@ async function initDB(): Promise<void> {
   }
 }
 
-function getDbPoolSettings(): DbPoolProps {
-  function getAndParseSettings(): Partial<Record<keyof DbPoolProps, string>> {
+function getDbPoolSettings(): DbPoolSettings {
+  function getAndParseSettings(): Partial<Record<keyof DbPoolSettings, string>> {
     try {
       const rawProps = Config.getDbPoolSettings();
-      const parsedProps = rawProps ? JSON.parse(rawProps) : {};
+      const parsedProps = rawProps ? dbPoolSettingsSchema.parse(JSON.parse(rawProps)) : {};
       return parsedProps;
     } catch (error) {
       console.log("Error parsing db pool settings", error);
@@ -164,6 +208,36 @@ function getOptionalInteger(prop: string | undefined): number | undefined {
   const resp = parseInt(prop);
   if (isNaN(resp)) return undefined;
   return resp;
+}
+
+function getDbCreds(): DbCreds {
+  function getAndParseDbCreds(): DbCreds {
+    try {
+      const rawProps = Config.getDBCreds();
+      const parsedProps = dbCredsSchema.parse(JSON.parse(rawProps));
+      return parsedProps;
+    } catch (error) {
+      console.log("Error parsing db creds", error);
+      throw error;
+    }
+  }
+  const parsedProps = getAndParseDbCreds();
+  return parsedProps;
+}
+
+function getDbReadReplicaEndpoint(): DbCredsReadOnly {
+  function getAndParseReaderEndpoint(): DbCredsReadOnly {
+    try {
+      const rawProps = Config.getDbReadReplicaEndpoint();
+      const parsedProps = dbCredsSchemaReadOnly.parse(JSON.parse(rawProps));
+      return parsedProps;
+    } catch (error) {
+      console.log("Error parsing db read replica endpoint", error);
+      throw error;
+    }
+  }
+  const parsedProps = getAndParseReaderEndpoint();
+  return parsedProps;
 }
 
 export default initDB;

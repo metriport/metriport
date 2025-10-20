@@ -1,39 +1,32 @@
-import { errorToString } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { SQSClient } from "../../../../external/aws/sqs";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { capture } from "../../../../util/notifications";
-import { PatientImportCreateHandler, ProcessPatientCreateRequest } from "./patient-import-create";
+import { PatientImportCreate, ProcessPatientCreateRequest } from "./patient-import-create";
 
-const region = Config.getAWSRegion();
-const sqsClient = new SQSClient({ region });
+// All customers use the same virtual queue; i.e., their bulk imports DO NOT run in parallel
+// AKA, one bulk import at a time, across all customers
+const globalVirtualQueueId = "global-virtual-queue";
 
-export class PatientImportCreateCloud implements PatientImportCreateHandler {
-  constructor(private readonly patientCreateQueueUrl: string) {}
+export class PatientImportCreateCloud implements PatientImportCreate {
+  constructor(
+    private readonly patientCreateQueueUrl = Config.getPatientImportCreateQueueUrl(),
+    private readonly sqsClient = new SQSClient({ region: Config.getAWSRegion() })
+  ) {}
 
   async processPatientCreate(params: ProcessPatientCreateRequest): Promise<void> {
-    const { cxId, jobId } = params;
-    const { log } = out(`processPatientCreate.cloud - cxId ${cxId} jobId ${jobId}`);
-    try {
-      const payload = JSON.stringify(params);
-      await sqsClient.sendMessageToQueue(this.patientCreateQueueUrl, payload, {
-        fifo: true,
-        messageDeduplicationId: createUuidFromText(payload),
-        messageGroupId: cxId,
-      });
-    } catch (error) {
-      const msg = `Failure while processing patient create @ PatientImport`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          cxId,
-          jobId,
-          context: "patient-import-create-cloud.processPatientCreate",
-          error,
-        },
-      });
-      throw error;
-    }
+    const { cxId, jobId, rowNumber } = params;
+    const { log } = out(
+      `PatientImport processPatientCreate.cloud - cx, ${cxId}, job ${jobId}, row ${rowNumber}`
+    );
+
+    log(`Putting message on queue ${this.patientCreateQueueUrl}`);
+    const payload = JSON.stringify(params);
+
+    await this.sqsClient.sendMessageToQueue(this.patientCreateQueueUrl, payload, {
+      fifo: true,
+      messageDeduplicationId: createUuidFromText(payload),
+      messageGroupId: globalVirtualQueueId,
+    });
   }
 }

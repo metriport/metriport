@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import { calculateConversionProgress } from "../../../../domain/medical/conversion-progress";
 import { makeDocumentQueryProgress } from "../../../../domain/medical/__tests__/document-query";
 import { PatientModel } from "../../../../models/medical/patient";
+import { PatientMappingModel } from "../../../../models/patient-mapping";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { updateConversionProgress } from "../document-query";
 
@@ -21,11 +22,10 @@ describe("docQuery-conversionProgress", () => {
     beforeEach(() => {
       jest.restoreAllMocks();
       mockStartTransaction();
-      patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
-      patientModel = {
-        ...patient,
-      } as PatientModel;
+      patientModel = { dataValues: patient } as PatientModel;
       patientModel_findOne = jest.spyOn(PatientModel, "findOne").mockResolvedValue(patientModel);
+      patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
+      jest.spyOn(PatientMappingModel, "findAll").mockResolvedValue([]);
     });
 
     it("calculateAndUpdateDocQuery send a modified object to Sequelize", async () => {
@@ -40,7 +40,7 @@ describe("docQuery-conversionProgress", () => {
       expect(patientSentToSequelize).toBeTruthy();
       expect(patientSentToSequelize === patientModel).toBeFalsy();
       expect(patientSentToSequelize?.data).toBeTruthy();
-      expect(patientSentToSequelize?.data === patientModel.data).toBeFalsy();
+      expect(patientSentToSequelize?.data === patientModel.dataValues.data).toBeFalsy();
     });
 
     it("updates 13 successul to 14 when success", async () => {
@@ -53,7 +53,7 @@ describe("docQuery-conversionProgress", () => {
           errors: 0,
         },
       });
-      patientModel_findOne.mockResolvedValue(patient);
+      patientModel_findOne.mockResolvedValue({ dataValues: patient });
 
       const res = await updateConversionProgress({
         patient: { id: uuidv4(), cxId: uuidv4() },
@@ -73,12 +73,13 @@ describe("docQuery-conversionProgress", () => {
     });
   });
 
-  describe("getDocQueryProgress", () => {
+  describe("calculateConversionProgress", () => {
     const testIt = ({
       result,
       total,
       errors,
       successful,
+      count = 1,
       originalStatus,
       expectedStatus,
     }: {
@@ -86,6 +87,7 @@ describe("docQuery-conversionProgress", () => {
       total: number;
       errors?: number;
       successful?: number;
+      count?: number;
       originalStatus: DocumentQueryStatus;
       expectedStatus: DocumentQueryStatus;
     }): DocumentQueryProgress => {
@@ -96,17 +98,17 @@ describe("docQuery-conversionProgress", () => {
         }),
       });
 
-      const res = calculateConversionProgress({ patient, convertResult: result });
+      const res = calculateConversionProgress({ patient, convertResult: result, count });
 
       expect(res).toBeTruthy();
       expect(res.convert).toBeTruthy();
       expect(res.convert?.status).toEqual(expectedStatus);
       expect(res.convert?.total).toEqual(total);
       successful != null
-        ? expect(res.convert?.successful).toEqual(successful + (result === "success" ? 1 : 0))
+        ? expect(res.convert?.successful).toEqual(successful + (result === "success" ? count : 0))
         : expect(res.convert?.successful).toEqual(0);
       errors != null
-        ? expect(res.convert?.errors).toEqual(errors + (result === "failed" ? 1 : 0))
+        ? expect(res.convert?.errors).toEqual(errors + (result === "failed" ? count : 0))
         : expect(res.convert?.errors).toEqual(0);
       return res;
     };
@@ -117,17 +119,23 @@ describe("docQuery-conversionProgress", () => {
         total: 10,
         originalStatus: "processing" as const,
       };
-      it("success sets to processing when adding 1 success is lower than total", async () => {
+      it("sets to processing when adding 1 success is lower than total", async () => {
         testIt({ ...base, errors: 1, successful: 7, expectedStatus: "processing" });
       });
-      it("success sets to completed when adding 1 success matches total", async () => {
+      it("sets to completed when adding 1 success matches total", async () => {
         testIt({ ...base, errors: 1, successful: 8, expectedStatus: "completed" });
       });
-      it("success sets to completed when adding 1 success is higher than total", async () => {
+      it("sets to completed when adding 1 success is higher than total", async () => {
         testIt({ ...base, errors: 1, successful: 9, expectedStatus: "completed" });
       });
-      it("success sets to completed when no errors and adding 1 success matches total", async () => {
+      it("sets to completed when no errors and adding 1 success matches total", async () => {
         testIt({ ...base, errors: 0, successful: 9, expectedStatus: "completed" });
+      });
+      it("sets to processing when has 5 successful and no errors and adding 4 success", async () => {
+        testIt({ ...base, errors: 0, successful: 5, expectedStatus: "processing", count: 4 });
+      });
+      it("sets to completed when has 5 successful and no errors and adding 5 success", async () => {
+        testIt({ ...base, errors: 0, successful: 5, expectedStatus: "completed", count: 5 });
       });
     });
 
@@ -137,17 +145,23 @@ describe("docQuery-conversionProgress", () => {
         total: 10,
         originalStatus: "processing" as const,
       };
-      it("failed sets to processing when adding 1 success is lower than total", async () => {
+      it("sets to processing when adding 1 success is lower than total", async () => {
         testIt({ ...base, errors: 1, successful: 7, expectedStatus: "processing" });
       });
-      it("failed sets to completed when adding 1 success matches total", async () => {
+      it("sets to completed when adding 1 success matches total", async () => {
         testIt({ ...base, errors: 1, successful: 8, expectedStatus: "completed" });
       });
-      it("failed sets to completed when adding 1 success is higher than total", async () => {
+      it("sets to completed when adding 1 success is higher than total", async () => {
         testIt({ ...base, errors: 1, successful: 9, expectedStatus: "completed" });
       });
-      it("failed sets to completed when no errors and adding 1 success matches total", async () => {
+      it("sets to completed when no errors and adding 1 success matches total", async () => {
         testIt({ ...base, errors: 0, successful: 9, expectedStatus: "completed" });
+      });
+      it("sets to processing when has 5 successful and no errors and adding 4 failed", async () => {
+        testIt({ ...base, errors: 0, successful: 5, expectedStatus: "processing", count: 4 });
+      });
+      it("sets to completed when has 5 successful and no errors and adding 5 failed", async () => {
+        testIt({ ...base, errors: 0, successful: 5, expectedStatus: "completed", count: 5 });
       });
     });
 

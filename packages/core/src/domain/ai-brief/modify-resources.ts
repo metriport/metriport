@@ -6,14 +6,15 @@ import {
   DiagnosticReport,
   HumanName,
   Immunization,
+  Location,
   Medication,
   MedicationAdministration,
   MedicationRequest,
   MedicationStatement,
   Observation,
   Organization,
-  Location,
   Patient,
+  Period,
   Practitioner,
   Procedure,
   Quantity,
@@ -52,6 +53,7 @@ const REMOVE_FROM_NOTE = [
   "Minor syntax, contextual, and spelling errors may be related to the use of this software and were not intentional. If corrections are necessary, please contact provider.",
   "<content>",
   "</content>",
+  "<content/>",
   "<root>",
   "</root>",
   "&lt;",
@@ -74,9 +76,29 @@ export type SlimResource =
   | SlimOrganization
   | SlimLocation;
 
+export type Instance = {
+  performedDateTime?: string | undefined;
+  performedPeriod?: Period | undefined;
+  onsetPeriod?: Period | undefined;
+};
+
+export type SlimProcedure = Omit<
+  Procedure,
+  "name" | "status" | "bodySite" | "performedDateTime" | "performedPeriod"
+> & {
+  name?: string | undefined;
+  status?: string | undefined;
+  bodySite?: string | undefined;
+  reference?: Record<string, unknown>[];
+  instances?: Instance[];
+};
+
 /**
  * This function applies filters to the resource based on its resourceType, and overwrites and/or creates new specific attributes,
  * making them into strings most of the time.
+ *
+ * Since this function generates input for an LLM that doesn't require any specific shape, some of the types aren't super structured
+ * and pretty, i.e. reference?: Record<string, unknown>
  *
  * TODO: #2510 - Break this function up into smaller functions, specific to each resourceType.
  *
@@ -204,7 +226,7 @@ export type SlimImmunization = Omit<Immunization, "vaccineCode" | "site" | "rout
   vaccineCode?: string | undefined;
   site?: string | undefined;
   route?: string | undefined;
-  reference?: Record<string, Partial<SlimOrganization>>;
+  reference?: Record<string, unknown>;
 };
 
 function getSlimImmunization(res: Immunization): SlimImmunization | undefined {
@@ -255,30 +277,32 @@ function getSlimPractitioner(res: Practitioner): SlimPractitioner {
   };
 }
 
-export type SlimProcedure = Omit<Procedure, "name" | "status" | "bodySite"> & {
-  name?: string | undefined;
-  status?: string | undefined;
-  reference?: Record<string, string>;
-  bodySite?: string | undefined;
-};
-
 function getSlimProcedure(res: Procedure): SlimProcedure | undefined {
   const updRes = cloneDeep(res);
   const name = getUniqueDisplaysString(updRes.code);
   if (name?.includes("no data")) return undefined;
   const status = isUselessStatus(updRes.status) ? undefined : updRes.status;
-
   const bodySite = getUniqueDisplaysString(updRes.bodySite) ?? undefined;
+
+  // Create initial instance from the procedure's dates
+  const instance = {
+    performedDateTime: updRes.performedDateTime,
+    performedPeriod: updRes.performedPeriod,
+  };
+
   delete updRes.code;
   delete updRes.reasonCode; // TODO: #2510 - Introduce term server lookup here
   delete updRes.report;
   delete updRes.note;
+  delete updRes.performedDateTime;
+  delete updRes.performedPeriod;
 
   return {
     ...updRes,
     name,
     status,
     bodySite,
+    instances: [instance],
   };
 }
 
@@ -290,7 +314,8 @@ export type SlimDiagnosticReport = Omit<
   category?: string | undefined;
   presentedForm?: string[] | undefined;
   status?: string | undefined;
-  reference?: Record<string, string | object>;
+  reference?: Record<string, unknown>;
+  encounter?: string | undefined;
 };
 
 function getSlimDiagnosticReport(res: DiagnosticReport): SlimDiagnosticReport | undefined {
@@ -358,6 +383,7 @@ function getSlimDiagnosticReport(res: DiagnosticReport): SlimDiagnosticReport | 
     status,
     category,
     presentedForm: Array.from(uniqueData),
+    encounter: updRes.encounter?.reference ?? "",
   };
 }
 
@@ -410,8 +436,9 @@ function getSlimObservation(res: Observation): SlimObservation {
 }
 
 export type SlimMedication = Omit<Medication, "name"> & {
-  name?: string | undefined;
   reference?: Record<string, string>;
+  sideNote?: string;
+  names?: string[];
 };
 
 function getSlimMedication(res: Medication): SlimMedication {
@@ -421,7 +448,7 @@ function getSlimMedication(res: Medication): SlimMedication {
   delete updRes.code;
   return {
     ...updRes,
-    name,
+    names: Array.from([name].flatMap(n => n ?? [])),
   };
 }
 
@@ -441,15 +468,19 @@ function getSlimMedicationRequest(res: MedicationRequest): SlimMedicationRequest
   };
 }
 
+type Dosage = {
+  dose: string | undefined;
+  route: string | undefined;
+};
+
 export type SlimMedicationStatement = Omit<MedicationStatement, "dosage" | "status"> & {
   dosages?: Dosage[] | undefined;
   reference?: Record<string, Partial<SlimMedication>>;
   status?: string | undefined;
-};
-
-type Dosage = {
-  dose: string | undefined;
-  route: string | undefined;
+  instances?: Array<{
+    date?: Period | undefined;
+    dosages?: Dosage[] | undefined;
+  }>;
 };
 
 function getSlimMedicationStatement(res: MedicationStatement): SlimMedicationStatement {
@@ -503,7 +534,10 @@ export type SlimCondition = Omit<Condition, "name" | "category" | "clinicalStatu
   name?: string | undefined;
   category?: string | undefined;
   clinicalStatus?: string | undefined;
-  reference?: Record<string, string | Partial<SlimPractitioner>>;
+  reference?: Record<string, unknown>;
+  instances?: {
+    onsetPeriod?: Period | undefined;
+  }[];
 };
 
 function getSlimCondition(res: Condition): SlimCondition {
@@ -554,7 +588,7 @@ function getSlimLocation(res: Location): SlimLocation {
   };
 }
 
-function cleanUpNote(note: string): string {
+export function cleanUpNote(note: string): string {
   return note
     .trim()
     .replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "")

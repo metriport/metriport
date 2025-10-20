@@ -6,7 +6,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
-import { getPatientOrFail } from "./get-patient";
+import { getPatientModelOrFail, getPatientOrFail } from "./get-patient";
 
 export type SetBulkGetDocUrlProgress = {
   patient: Pick<Patient, "id" | "cxId">;
@@ -24,18 +24,15 @@ export async function appendBulkGetDocUrlProgress({
   status,
   requestId,
 }: SetBulkGetDocUrlProgress): Promise<Patient> {
-  const patientFilter = {
-    id: id,
-    cxId: cxId,
-  };
+  const patientFilter = { id, cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const bulkGetDocumentsUrlProgress: BulkGetDocumentsUrlProgress = existingPatient.data
+    const bulkGetDocumentsUrlProgress: BulkGetDocumentsUrlProgress = patient.data
       ?.bulkGetDocumentsUrlProgress || { status: "processing" };
 
     if (status) {
@@ -46,13 +43,15 @@ export async function appendBulkGetDocUrlProgress({
     }
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         bulkGetDocumentsUrlProgress,
       },
     };
+
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
+
     return updatedPatient;
   });
 }
@@ -68,13 +67,12 @@ export type BulkGetDocUrlQueryInitCmd = BaseUpdateCmdWithCustomer & {
  * @param cmd - The `cmd` argument type to initialize the `BulkGetDocumentsUrlProgress` field
  * @returns a Promise that resolves to a Patient object.
  */
-export const storeBulkGetDocumentUrlQueryInit = async (
+export async function storeBulkGetDocumentUrlQueryInit(
   cmd: BulkGetDocUrlQueryInitCmd
-): Promise<Patient> => {
+): Promise<Patient> {
   const { id, cxId } = cmd;
-
-  return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const patient = await getPatientOrFail({
+  const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
+    const patient = await getPatientModelOrFail({
       id,
       cxId,
       lock: true,
@@ -83,7 +81,7 @@ export const storeBulkGetDocumentUrlQueryInit = async (
 
     const update = {
       bulkGetDocumentsUrlProgress: {
-        ...patient.data.bulkGetDocumentsUrlProgress,
+        ...patient.dataValues.data.bulkGetDocumentsUrlProgress,
         ...cmd.bulkGetDocumentsUrlProgress,
         requestId: cmd.requestId,
       },
@@ -93,11 +91,12 @@ export const storeBulkGetDocumentUrlQueryInit = async (
     return patient.update(
       {
         data: {
-          ...patient.data,
+          ...patient.dataValues.data,
           ...update,
         },
       },
       { transaction }
     );
   });
-};
+  return patient.dataValues;
+}

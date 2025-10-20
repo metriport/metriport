@@ -35,203 +35,215 @@ To facilitate the data contribution process, we provide two primary endpoints th
 
 ## Example Resource to Contribute
 
-Customers can upload various types of FHIR R4 resources to contribute data back to the HIE networks. Here's an example of an Encounter resource:
+Customers can upload various types of FHIR R4 resources to contribute data back to the HIE networks. Here's
+an example of a Bundle providing an Encounter resource and related references:
 
 ```json
-[
-  {
-    "resourceType": "Encounter",
-    "id": "XXXXX-XXXXXX-XXXXXX-XXXXXX",
-    "status": "finished",
-    "class": {
-      "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
-      "code": "HH",
-      "display": "home health"
-    },
-    "type": [
-      {
-        "coding": [
+{
+  "id": "XXXXX-XXXXXX-XXXXXX-XXXXXX",
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "XXXXX-XXXXXX-XXXXXX-XXXXXX",
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "HH",
+          "display": "home health"
+        },
+        "type": [
           {
-            "system": "http://snomed.info/sct",
-            "code": "308335008",
-            "display": "Patient encounter procedure"
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "308335008",
+                "display": "Patient encounter procedure"
+              }
+            ],
+            "text": "Primary care visit"
           }
         ],
-        "text": "Primary care visit"
-      }
-    ],
-    "subject": {
-      "reference": "Patient/example-patient"
-    },
-    "participant": [
-      {
-        "individual": {
-          "reference": "Practitioner/example-primary-care-physician"
-        }
-      }
-    ],
-    "period": {
-      "start": "2023-06-15T09:00:00Z",
-      "end": "2023-06-15T09:30:00Z"
-    },
-    "reasonCode": [
-      {
-        "coding": [
+        "subject": {
+          "reference": "Patient/<existing-patient-id>"
+        },
+        "participant": [
           {
-            "system": "http://snomed.info/sct",
-            "code": "185345009",
-            "display": "Encounter for symptom"
-          }
-        ],
-        "text": "Annual check-up"
-      }
-    ]
-  },
-  {
-    "resourceType": "Practitioner",
-    "id": "XXXXX-XXXXXX-XXXXXX-XXXXXX",
-    "identifier": [
-      {
-        "system": "http://hl7.org/fhir/sid/us-npi",
-        "value": "9941339108"
-      }
-    ],
-    "name": [
-      {
-        "family": "Smith",
-        "given": ["John", "A."],
-        "prefix": ["Dr"]
-      }
-    ],
-    "telecom": [
-      {
-        "system": "phone",
-        "value": "+1 (555) 123-4567",
-        "use": "work"
-      },
-      {
-        "system": "email",
-        "value": "john.smith@example.com",
-        "use": "work"
-      }
-    ],
-    "address": [
-      {
-        "use": "work",
-        "type": "both",
-        "line": ["123 Medical Center Dr"],
-        "city": "Anytown",
-        "state": "CA",
-        "postalCode": "12345",
-        "country": "USA"
-      }
-    ],
-    "gender": "male",
-    "birthDate": "1970-03-15",
-    "qualification": [
-      {
-        "code": {
-          "coding": [
-            {
-              "system": "http://terminology.hl7.org/CodeSystem/v2-0360",
-              "code": "MD",
-              "display": "Doctor of Medicine"
+            "individual": {
+              "reference": "Practitioner/XXXXX-XXXXXX-XXXXXX-XXXXXX"
             }
-          ]
-        },
+          }
+        ],
         "period": {
-          "start": "1995-05-01"
+          "start": "2023-06-15T09:00:00Z",
+          "end": "2023-06-15T09:30:00Z"
         },
-        "issuer": {
-          "reference": "Organization/XXXXX-XXXXXX-XXXXXX-XXXXXX"
-        }
-      }
-    ]
-  },
-  {
-    "resourceType": "Organization",
-    "id": "XXXXX-XXXXXX-XXXXXX-XXXXXX",
-    "identifier": [
-      {
-        "system": "http://hl7.org/fhir/sid/us-npi",
-        "value": "1234567890"
-      }
-    ],
-    "active": true,
-    "type": [
-      {
-        "coding": [
+        "reasonCode": [
           {
-            "system": "http://terminology.hl7.org/CodeSystem/organization-type",
-            "code": "prov",
-            "display": "Healthcare Provider"
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "185345009",
+                "display": "Encounter for symptom"
+              }
+            ],
+            "text": "Annual check-up"
           }
         ]
       }
-    ],
-    "name": "Example Medical Center",
-    "telecom": [
-      {
-        "system": "phone",
-        "value": "+1 (555) 987-6543",
-        "use": "work"
-      },
-      {
-        "system": "email",
-        "value": "info@examplemedicalcenter.com",
-        "use": "work"
-      }
-    ],
-    "address": [
-      {
-        "use": "work",
-        "type": "both",
-        "line": ["456 Hospital Avenue"],
-        "city": "Anytown",
-        "state": "CA",
-        "postalCode": "12345",
-        "country": "USA"
-      }
-    ],
-    "contact": [
-      {
-        "purpose": {
-          "coding": [
-            {
-              "system": "http://terminology.hl7.org/CodeSystem/contactentity-type",
-              "code": "ADMIN",
-              "display": "Administrative"
-            }
-          ]
-        },
-        "name": {
-          "use": "official",
-          "family": "Johnson",
-          "given": ["Sarah"],
-          "prefix": ["Ms"]
-        },
+    },
+    {
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "XXXXX-XXXXXX-XXXXXX-XXXXXX",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "9941339108"
+          }
+        ],
+        "name": [
+          {
+            "family": "Smith",
+            "given": ["John", "A."],
+            "prefix": ["Dr"]
+          }
+        ],
         "telecom": [
           {
             "system": "phone",
-            "value": "+1 (555) 789-0123",
+            "value": "+1 (555) 123-4567",
             "use": "work"
           },
           {
             "system": "email",
-            "value": "sarah.johnson@examplemedicalcenter.com",
+            "value": "john.smith@example.com",
             "use": "work"
+          }
+        ],
+        "address": [
+          {
+            "use": "work",
+            "type": "both",
+            "line": ["123 Medical Center Dr"],
+            "city": "Anytown",
+            "state": "CA",
+            "postalCode": "12345",
+            "country": "USA"
+          }
+        ],
+        "gender": "male",
+        "birthDate": "1970-03-15",
+        "qualification": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0360",
+                  "code": "MD",
+                  "display": "Doctor of Medicine"
+                }
+              ]
+            },
+            "period": {
+              "start": "1995-05-01"
+            },
+            "issuer": {
+              "reference": "Organization/XXXXX-XXXXXX-XXXXXX-XXXXXX"
+            }
           }
         ]
       }
-    ]
-  }
-]
+    },
+    {
+      "resource": {
+        "resourceType": "Organization",
+        "id": "XXXXX-XXXXXX-XXXXXX-XXXXXX",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "1234567890"
+          }
+        ],
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "prov",
+                "display": "Healthcare Provider"
+              }
+            ]
+          }
+        ],
+        "name": "Example Medical Center",
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "+1 (555) 987-6543",
+            "use": "work"
+          },
+          {
+            "system": "email",
+            "value": "info@examplemedicalcenter.com",
+            "use": "work"
+          }
+        ],
+        "address": [
+          {
+            "use": "work",
+            "type": "both",
+            "line": ["456 Hospital Avenue"],
+            "city": "Anytown",
+            "state": "CA",
+            "postalCode": "12345",
+            "country": "USA"
+          }
+        ],
+        "contact": [
+          {
+            "purpose": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/contactentity-type",
+                  "code": "ADMIN",
+                  "display": "Administrative"
+                }
+              ]
+            },
+            "name": {
+              "use": "official",
+              "family": "Johnson",
+          "given": ["Sarah"],
+          "prefix": ["Ms"]
+            },
+            "telecom": [
+              {
+                "system": "phone",
+                "value": "+1 (555) 789-0123",
+                "use": "work"
+              },
+              {
+                "system": "email",
+                "value": "sarah.johnson@examplemedicalcenter.com",
+                "use": "work"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
 ```
 
 ## Tips when Contributing
 
 - All Patient references must point to the Metriport patient ID the data is being upload for in this example it's `subject.reference` in the Encounter resource.
-- All other references must point to a resource that's available within the same bundle or one that has been previously uploaded.
+- All other references must point to a resource that's available within the same Bundle or one that has been previously uploaded.
 - You can't upload the same resource with the same ID twice in the same Bundle, this will result in a conflict error.
 - All resources must be valid FHIR R4 resources.
 - Ultimately, anything that would be useful and is clinically relevant to another provider should be contributed.

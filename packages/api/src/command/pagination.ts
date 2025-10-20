@@ -31,7 +31,7 @@ export function getPaginationLimits(
   return count ? { limit: count } : undefined;
 }
 
-export function getPaginationSorting(pagination: Pagination | undefined): OrderItem {
+export function getPaginationSorting(pagination: Pagination | undefined): [string, OrderItem] {
   const { toItem } = pagination ?? {};
   return ["id", toItem ? "ASC" : "DESC"];
 }

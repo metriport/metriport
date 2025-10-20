@@ -1,6 +1,6 @@
 import { CodeableConcept, Coding, Resource } from "@medplum/fhirtypes";
+import { knownSystemUrls } from "@metriport/shared/medical";
 import { isUnknownCoding } from "../../fhir-deduplication/shared";
-import { knownSystemUrls } from "../../util/constants";
 
 export const unknownValues = ["unknown", "unk"];
 
@@ -37,10 +37,38 @@ export function isValidCoding(coding: Coding): boolean {
   return false;
 }
 
-export function isUsefulDisplay(text: string) {
+export function getValidCodings(codings: Coding[]): Coding[] {
+  return codings.filter(isValidCoding);
+}
+
+export function isUsefulDisplay(text: string | undefined): boolean {
+  if (!text) return false;
   const normalizedText = text.toLowerCase().trim();
   return (
     normalizedText.length > 0 &&
     !(unknownValues.includes(normalizedText) || normalizedText.includes("no data available"))
   );
+}
+
+export function findCodeableConcepts(resource: Resource): CodeableConcept[] {
+  const codeableConcepts: CodeableConcept[] = [];
+  for (const value of Object.values(resource)) {
+    if (!value) continue;
+
+    if (isCodeableConcept(value)) {
+      codeableConcepts.push(value);
+    } else if (Array.isArray(value)) {
+      value.forEach(item => {
+        if (isCodeableConcept(item)) {
+          codeableConcepts.push(item);
+        }
+      });
+    }
+  }
+
+  return codeableConcepts;
+}
+
+export function isCodeableConcept(value: unknown): value is CodeableConcept {
+  return typeof value === "object" && value !== null && "coding" in value;
 }

@@ -24,7 +24,7 @@ export const getConsolidatedFiltersSchema = z.object({
   resources: z.enum(resourceTypeForConsolidation).array().optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
-  conversionType: z.enum(consolidationConversionType).default("json").optional(),
+  conversionType: z.enum(consolidationConversionType),
   generateAiBrief: z.boolean().optional(),
   fromDashboard: z.boolean().optional(),
 });

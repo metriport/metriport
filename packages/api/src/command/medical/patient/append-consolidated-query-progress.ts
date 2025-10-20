@@ -17,14 +17,11 @@ export type SetDocQueryProgress = {
  * Keeps existing sibling properties when those are not provided.
  */
 export async function updateConsolidatedQueryProgress({
-  patient,
+  patient: { id, cxId },
   requestId,
   progress,
 }: SetDocQueryProgress): Promise<void> {
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
+  const patientFilter = { id, cxId };
   return executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientOrFail({
       ...patientFilter,
@@ -39,7 +36,7 @@ export async function updateConsolidatedQueryProgress({
     );
 
     const updatedPatient = {
-      ...patient.dataValues,
+      ...patient,
       data: {
         ...patient.data,
         consolidatedQueries,

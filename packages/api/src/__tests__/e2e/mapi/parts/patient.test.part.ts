@@ -64,6 +64,10 @@ export function runPatientTestsPart1(e2e: E2eContext) {
 }
 
 export function runPatientTestsPart2(e2e: E2eContext) {
+  it("gives some time for other processes to finish", async () => {
+    await sleep(5_000);
+  });
+
   it("deletes the patients", async () => {
     if (!e2e.patient) throw new Error("Missing patient");
     if (!e2e.facility) throw new Error("Missing facility");

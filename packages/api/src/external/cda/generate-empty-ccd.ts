@@ -1,8 +1,9 @@
 import { Address as FhirAddress, Organization } from "@medplum/fhirtypes";
-import { AddressStrict } from "@metriport/core/domain/location-address";
-import { Patient } from "@metriport/core/domain/patient";
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
+import { AddressStrict } from "@metriport/core/domain/location-address";
+import { Patient } from "@metriport/core/domain/patient";
+import { encodeToHtml } from "@metriport/shared/common/html";
 import { metriportOrganization } from "@metriport/shared/common/metriport-organization";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { OrganizationModel } from "../../models/medical/organization";
@@ -26,7 +27,7 @@ export async function generateEmptyCcd(patient: Patient): Promise<string> {
 	<typeId root="2.16.840.1.113883.1.3" extension="POCD_HD000040"/>
 	<templateId root="2.16.840.1.113883.10.20.22.1.1" extension="2015-08-01"/>
 	<templateId root="2.16.840.1.113883.10.20.22.1.2" extension="2015-08-01"/>
-	<id root="${metriportOid}" assigningAuthorityName="${metriportOrganization.name}"/>
+	<id root="${metriportOid}" assigningAuthorityName="${encodeToHtml(metriportOrganization.name)}"/>
   <code code="34133-9" codeSystem="2.16.840.1.113883.6.1" displayName="Summarization of episode note" codeSystemName="LOINC"/>
 	<title>Continuity of Care Document</title>
 	<effectiveTime value="${currentTime}"/>
@@ -40,10 +41,10 @@ export async function generateEmptyCcd(patient: Patient): Promise<string> {
 			<patient>
 				<name use="L">
 					<given>
-						${data.firstName}
+						${encodeToHtml(data.firstName)}
 					</given>
 					<family>
-						${data.lastName}
+						${encodeToHtml(data.lastName)}
 					</family>
 				</name>
 				<administrativeGenderCode code="${
@@ -76,21 +77,21 @@ function buildAddress(addr: Address | AddressStrict): string {
   let addressString = "";
   addressString += `<addr use="H">
   <streetAddressLine>
-    ${addr.addressLine1}
+    ${encodeToHtml(addr.addressLine1)}
   </streetAddressLine>`;
   if (addr.addressLine2) {
     addressString += `<streetAddressLine>
-    ${addr.addressLine2}
+    ${encodeToHtml(addr.addressLine2)}
   </streetAddressLine>`;
   }
   addressString += `<city>
-      ${addr.city}
+      ${encodeToHtml(addr.city)}
     </city>
     <state>
-      ${addr.state}
+      ${encodeToHtml(addr.state)}
     </state>
     <postalCode>
-      ${addr.zip}
+      ${encodeToHtml(addr.zip)}
     </postalCode>
   </addr>`;
 
@@ -102,7 +103,7 @@ function buildTelecom(contacts: Contact[] | undefined): string {
 
   let telecomString = ``;
   contacts.forEach(contact => {
-    telecomString += `<telecom value="tel:${contact.phone}"/>`;
+    telecomString += `<telecom value="tel:${encodeToHtml(contact.phone ?? "")}"/>`;
   });
 
   return telecomString;
@@ -111,16 +112,16 @@ function buildTelecom(contacts: Contact[] | undefined): string {
 function buildCustodianAddresses(address: FhirAddress): string {
   return `<addr>
     <streetAddressLine>
-      ${address.line?.[0]}
+      ${encodeToHtml(address.line?.[0] ?? "")}
     </streetAddressLine>
     <city>
-      ${address.city}
+      ${encodeToHtml(address.city ?? "")}
     </city>
     <state>
-      ${address.state}
+      ${encodeToHtml(address.state ?? "")}
     </state>
     <postalCode>
-      ${address.postalCode}
+      ${encodeToHtml(address.postalCode ?? "")}
     </postalCode>
     <country>
       US
@@ -141,7 +142,7 @@ function buildAuthor(org: OrganizationModel) {
         <id nullFlavor="UNK">
         </id>
         <name>
-          ${org.data.name}
+          ${encodeToHtml(org.data.name)}
         </name>
         ${address}
       </representedOrganization>
@@ -155,7 +156,7 @@ function buildCustodian(org: Organization): string {
   const address = buildCustodianAddresses(orgAddress);
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const phoneNumber = org.telecom![0]!.value;
+  const phoneNumber = encodeToHtml(org.telecom![0]!.value ?? "");
   return `<custodian>
     <assignedCustodian>
       <representedCustodianOrganization>

@@ -1,4 +1,5 @@
-import { createFileKeyPatient, getS3UtilsInstance } from "../patient-import-shared";
+import { Config } from "../../../util/config";
+import { createFileKeyPatientRecord, getS3UtilsInstance } from "../patient-import-shared";
 
 /**
  * Check if a patient record exists in S3.
@@ -8,16 +9,16 @@ import { createFileKeyPatient, getS3UtilsInstance } from "../patient-import-shar
 export async function checkPatientRecordExists({
   cxId,
   jobId,
-  patientId,
-  s3BucketName,
+  rowNumber,
+  bucketName = Config.getPatientImportBucket(),
 }: {
   cxId: string;
   jobId: string;
-  patientId: string;
-  s3BucketName: string;
+  rowNumber: number;
+  bucketName?: string;
 }): Promise<boolean> {
   const s3Utils = getS3UtilsInstance();
-  const key = createFileKeyPatient(cxId, jobId, patientId);
-  const fileExists = await s3Utils.fileExists(s3BucketName, key);
+  const key = createFileKeyPatientRecord(cxId, jobId, rowNumber);
+  const fileExists = await s3Utils.fileExists(bucketName, key);
   return fileExists;
 }

@@ -61,6 +61,9 @@ types:
       messageId:
         type: string
         docs: The ID of the message.
+      requestId:
+        type: optional<string>
+        docs: The ID of the request that initiated the async flow for this webhook.
       when:
         type: string
         docs: The timestamp of when the webhook was triggered.

@@ -5,7 +5,7 @@ import convert from "convert-units";
 import { Sequelize } from "sequelize";
 import { Config } from "../../../../shared/config";
 import { CQDirectoryEntry } from "../../cq-directory";
-import { CQDirectoryEntryModel } from "../../models/cq-directory";
+import { CQDirectoryEntryViewModel } from "../../models/cq-directory-view";
 
 export const DEFAULT_RADIUS_IN_MILES = 50;
 const cqExcludeListLowerCased: string[] = constructGatewayExcludeList();
@@ -90,7 +90,7 @@ export async function searchCQDirectoriesByRadius({
       whereClause += ` AND url_xcpd IS NOT NULL`;
     }
 
-    const orgsForAddress = await CQDirectoryEntryModel.findAll({
+    const orgsForAddress = await CQDirectoryEntryViewModel.findAll({
       replacements,
       attributes: {
         include: [

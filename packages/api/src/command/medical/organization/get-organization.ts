@@ -1,4 +1,7 @@
-import NotFoundError from "../../../errors/not-found";
+import { Organization } from "@metriport/core/domain/organization";
+import { NotFoundError } from "@metriport/shared";
+import _ from "lodash";
+import { Op } from "sequelize";
 import { OrganizationModel } from "../../../models/medical/organization";
 
 type Filter = Pick<OrganizationModel, "cxId"> & Partial<Pick<OrganizationModel, "id">>;
@@ -11,6 +14,29 @@ export async function getOrganization({
     where: { cxId, ...(id ? { id } : undefined) },
   });
   return org ?? undefined;
+}
+
+export async function getOrganizations({ cxIds }: { cxIds: string[] }): Promise<Organization[]> {
+  const orgs = await OrganizationModel.findAll({
+    where: { cxId: { [Op.in]: cxIds } },
+  });
+  return orgs.map(o => o.dataValues);
+}
+
+export async function getOrganizationsOrFail({
+  cxIds,
+}: {
+  cxIds: string[];
+}): Promise<Organization[]> {
+  const orgs = await getOrganizations({ cxIds });
+  const foundCxIds = orgs.map(o => o.cxId);
+  const missingCxIds = _.difference(cxIds, foundCxIds);
+  if (missingCxIds.length > 0) {
+    throw new NotFoundError(`Could not find all organizations`, undefined, {
+      missingCxIds: missingCxIds.join(", "),
+    });
+  }
+  return orgs;
 }
 
 export async function getOrganizationOrFail(filter: Filter): Promise<OrganizationModel> {

@@ -1,68 +1,47 @@
-import { errorToString, sleep } from "@metriport/shared";
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
+import { errorToString } from "@metriport/shared";
+import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { capture } from "../../../../util/notifications";
-import { startDocumentQuery } from "../../api/start-document-query";
-import { startPatientQuery } from "../../api/start-patient-query";
-import { creatOrUpdatePatientRecord } from "../../record/create-or-update-patient-record";
-import { PatientImportQueryHandler, ProcessPatientQueryRequest } from "./patient-import-query";
+import { PatientImportQuery, ProcessPatientQueryRequest } from "./patient-import-query";
+import { processPatientQuery } from "./patient-import-query-command";
 
-dayjs.extend(duration);
-
-const waitTimeBetweenPdAndDq = dayjs.duration(100, "milliseconds");
-
-export class PatientImportQueryHandlerLocal implements PatientImportQueryHandler {
+export class PatientImportQueryLocal implements PatientImportQuery {
   constructor(
-    private readonly patientImportBucket: string,
-    private readonly waitTimeAtTheEndInMillis: number
+    private readonly patientImportBucket = Config.getPatientImportBucket(),
+    private readonly waitTimeAtTheEndInMillis = 0
   ) {}
 
   async processPatientQuery({
     cxId,
     jobId,
+    rowNumber,
     patientId,
+    dataPipelineRequestId,
     triggerConsolidated,
     disableWebhooks,
     rerunPdOnNewDemographics,
   }: ProcessPatientQueryRequest) {
     const { log } = out(
-      `processPatientQuery.local - cxId ${cxId} jobId ${jobId} patientId ${patientId}`
+      `PatientImport processPatientQuery.local - cxId ${cxId} jobId ${jobId} rowNumber ${rowNumber} patientId ${patientId}`
     );
     try {
-      await startPatientQuery({
-        cxId,
-        patientId,
-        rerunPdOnNewDemographics,
-      });
-      await sleep(waitTimeBetweenPdAndDq.asMilliseconds());
-      await startDocumentQuery({
-        cxId,
-        patientId,
-        triggerConsolidated,
-        disableWebhooks,
-      });
-      await creatOrUpdatePatientRecord({
+      await processPatientQuery({
         cxId,
         jobId,
+        rowNumber,
         patientId,
-        data: { status: "successful" },
-        s3BucketName: this.patientImportBucket,
+        dataPipelineRequestId,
+        triggerConsolidated,
+        disableWebhooks,
+        rerunPdOnNewDemographics,
+        patientImportBucket: this.patientImportBucket,
+        waitTimeAtTheEndInMillis: this.waitTimeAtTheEndInMillis,
       });
-      if (this.waitTimeAtTheEndInMillis > 0) await sleep(this.waitTimeAtTheEndInMillis);
     } catch (error) {
-      const msg = `Failure while processing patient query @ PatientImport`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          cxId,
-          jobId,
-          patientId,
-          context: "patient-import-query-local.processPatientQuery",
-          error,
-        },
-      });
-      throw error;
+      const msg = `Failure while calling the command`;
+      const errorMsg = errorToString(error);
+      log(`${msg}. Cause: ${errorMsg}`);
+      // intentionally swallowing the error here, we want to simulate the cloud behavior
+      // where the command is called asynchronously and the error is not propagated upstream
     }
   }
 }

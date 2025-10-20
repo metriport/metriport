@@ -1,7 +1,8 @@
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { docContributionFileParam } from "@metriport/core/external/commonwell/document/document-contribution";
+import { docContributionFileParam } from "@metriport/core/external/commonwell-v1/document/document-contribution";
+import { retrieveDocumentForCommonWellContribution } from "@metriport/core/external/commonwell/contribution/shared-document-retrieval";
+import { out } from "@metriport/core/util/log";
 import { errorToString } from "@metriport/shared";
-import * as Sentry from "@sentry/serverless";
 import * as lambda from "aws-lambda";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
@@ -14,74 +15,87 @@ const region = getEnvOrFail("AWS_REGION");
 
 const s3Utils = new S3Utils(region);
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-const SIGNED_URL_DURATION_SECONDS = 60;
 
 /**
  * This lambda is called by CommonWell as part of document retrieval - DR.
  *
- * It's called after document query - DQ - with the Document Refeference's
+ * It's called after document query - DQ - with the Document Reference's
  * attachment URL - which points to here.
  *
  * This lambda should be behind API GW's OAuth authorizer at all times.
  *
  * It will:
- * - receive the attachment URL;
- * - generate a signed URL for the file (60s expiration);
- * - returns a redirect to the signed URL.
+ * - receive the fileName query parameter;
+ * - parse the filename to extract document ID and content type;
+ * - retrieve the document content from S3;
+ * - return a FHIR Binary resource with the document data.
  */
-export const handler = Sentry.AWSLambda.wrapHandler(
+export const handler = capture.wrapHandler(
   async (event: lambda.APIGatewayRequestAuthorizerEvent) => {
+    const startedAt = Date.now();
+
+    const { log } = out("cw-doc-contribution");
     try {
-      console.log(`Received request w/ params: ${JSON.stringify(event.queryStringParameters)}`);
+      log(`Received request w/ params: ${JSON.stringify(event.queryStringParameters)}`);
 
       const fileName = event.queryStringParameters?.[docContributionFileParam] ?? "";
       if (fileName.trim().length <= 0) {
-        return sendResponse({
-          statusCode: 400,
-          body: "Missing fileName query parameter",
-        });
-      }
-      console.log(`File name: ${fileName}`);
-
-      const key = fileName.startsWith("/") ? fileName.slice(1) : fileName;
-      if (!key || key.trim().length <= 0) {
-        return sendResponse({
-          statusCode: 400,
-          body: "Invalid fileName query parameter",
-        });
+        return sendResponse(
+          {
+            statusCode: 400,
+            body: "Missing fileName query parameter",
+          },
+          log
+        );
       }
 
-      console.log(`Key: ${key}`);
-      const url = await s3Utils.getSignedUrl({
+      const fileContents = await retrieveDocumentForCommonWellContribution({
+        fileName,
+        s3Utils,
         bucketName,
-        fileName: key,
-        durationSeconds: SIGNED_URL_DURATION_SECONDS,
       });
-      return sendResponse({
-        statusCode: 301,
-        headers: {
-          Location: url,
+
+      log(`Sending file contents (${fileContents.length} bytes). Took ${Date.now() - startedAt}ms`);
+      return sendResponse(
+        {
+          statusCode: 200,
+          headers: {
+            "Content-Type": "application/octet-stream",
+          },
+          body: fileContents,
         },
-        body: "",
-      });
+        log
+      );
     } catch (error) {
       const msg = `Error processing DR from CW`;
-      console.log(`${msg}: ${errorToString(error)}`);
+      log(`${msg}: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
           queryParams: event.queryStringParameters,
           error,
         },
       });
-      return sendResponse({
-        statusCode: 500,
-        body: "Internal Server Error",
-      });
+      return sendResponse(
+        {
+          statusCode: 500,
+          body: "Internal Server Error",
+        },
+        log
+      );
     }
   }
 );
 
-function sendResponse(response: lambda.APIGatewayProxyResult) {
-  console.log(`Sending to CW: ${JSON.stringify(response)}`);
+function sendResponse(response: lambda.APIGatewayProxyResult, log: typeof console.log) {
+  const isFileContent = response.headers?.["Content-Type"] === "application/octet-stream";
+
+  if (isFileContent) {
+    const { body, ...responseWithoutBody } = response;
+    const bodySize = typeof body === "string" ? body.length : "unknown";
+    log(`Sending to CW: ${JSON.stringify({ ...responseWithoutBody, bodySize })}`);
+  } else {
+    log(`Sending to CW: ${JSON.stringify(response)}`);
+  }
+
   return response;
 }

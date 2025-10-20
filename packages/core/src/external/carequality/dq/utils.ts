@@ -1,12 +1,13 @@
+import { isValidUuid } from "../../../util/uuid-v7";
 import { XDSUnknownPatientId } from "../error";
 import { extractPatientUniqueId } from "../shared";
 
-export function decodePatientId(patientIdB64: string): { cxId: string; id: string } | undefined {
+export function decodePatientId(patientIdB64: string): { cxId: string; patientId: string } {
   const decodedString = extractPatientUniqueId(patientIdB64);
-  const [cxId, id] = decodedString.split("/");
+  const [cxId, patientId] = decodedString.split("/");
 
-  if (!cxId || !id) {
+  if (!cxId || !patientId || !isValidUuid(cxId) || !isValidUuid(patientId)) {
     throw new XDSUnknownPatientId("Patient ID is not valid");
   }
-  return { cxId, id };
+  return { cxId, patientId };
 }

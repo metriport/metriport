@@ -1,11 +1,14 @@
-import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
+import { PatientExternalData } from "@metriport/core/domain/patient";
+import { PatientWithIdentifiers } from "../../../command/medical/patient/get-patient";
+import { PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
 import { BaseDTO, toBaseDTO } from "./baseDTO";
 import { DemographicsDTO } from "./demographicsDTO";
 
 export type PatientDTO = {
   facilityIds: string[];
   externalId?: string;
+  additionalIds?: PatientSourceIdentifierMap;
   dateCreated?: Date;
 } & DemographicsDTO;
 
@@ -16,13 +19,14 @@ export type InternalPatientDTO = BaseDTO &
   };
 
 // the getDomainFromDTO function is in core in patient-loader-metriport-api.ts
-export function dtoFromModel(patient: Patient): PatientDTO {
+export function dtoFromModel(patient: PatientWithIdentifiers): PatientDTO {
   const { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact } =
     patient.data;
   return {
     ...toBaseDTO(patient),
     facilityIds: patient.facilityIds,
     externalId: patient.externalId,
+    additionalIds: patient.additionalIds,
     dateCreated: patient.createdAt,
     firstName,
     lastName,
@@ -34,7 +38,7 @@ export function dtoFromModel(patient: Patient): PatientDTO {
   };
 }
 
-export function internalDtoFromModel(patient: Patient): InternalPatientDTO {
+export function internalDtoFromModel(patient: PatientWithIdentifiers): InternalPatientDTO {
   const {
     firstName,
     lastName,
@@ -50,6 +54,7 @@ export function internalDtoFromModel(patient: Patient): InternalPatientDTO {
     ...toBaseDTO(patient),
     facilityIds: patient.facilityIds,
     externalId: patient.externalId,
+    additionalIds: patient.additionalIds,
     dateCreated: patient.createdAt,
     firstName,
     lastName,

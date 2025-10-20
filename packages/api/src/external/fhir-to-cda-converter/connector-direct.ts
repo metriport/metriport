@@ -1,8 +1,8 @@
+import { isCdaCustodianEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { splitBundleByCompositions } from "@metriport/core/fhir-to-cda/composition-splitter";
 import { convertFhirBundleToCda } from "@metriport/core/fhir-to-cda/fhir-to-cda";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { FhirToCdaConverter, FhirToCdaConverterRequest } from "./connector";
-import { isCdaCustodianEnabledForCx } from "../aws/app-config";
 
 export class FhirToCdaConverterDirect implements FhirToCdaConverter {
   async requestConvert({

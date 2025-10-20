@@ -1,0 +1,91 @@
+import { Hl7Message } from "@medplum/core";
+import { Coding, Encounter, Resource } from "@medplum/fhirtypes";
+import {
+  buildConditionReference,
+  buildPatientReference,
+} from "../../../../external/fhir/shared/references";
+import { Hl7MessageType, getHl7MessageTypeOrFail } from "../msh";
+import { getConditions, getEncounterReason } from "./condition";
+import { getLocationFromAdt } from "./location";
+import { DEFAULT_ENCOUNTER_CLASS, adtToFhirEncounterClassMap, isAdtPatientClass } from "./mappings";
+import { getParticipantsFromAdt } from "./practitioner";
+import { createEncounterId, getEncounterPeriod, getPatientClassCode } from "./utils";
+
+export function convertAdtToFhirResources(
+  adt: Hl7Message,
+  patientId: string,
+  hieName: string
+): Resource[] {
+  const msgType = getHl7MessageTypeOrFail(adt);
+  const encounterId = createEncounterId(adt, patientId, hieName);
+  const encounterReason = getEncounterReason({ adt, patientId, encounterId });
+  const status = getPatientStatus(msgType);
+  const encounterClass = getEncounterClass(adt);
+  const period = getEncounterPeriod(adt);
+  const participants = getParticipantsFromAdt(adt);
+  const conditions = getConditions({ adt, patientId, encounterId });
+  const conditionReferences = conditions.map(condition =>
+    buildConditionReference({ resource: condition })
+  );
+  const location = getLocationFromAdt(adt, hieName);
+
+  const encounter: Encounter = {
+    id: encounterId,
+    resourceType: "Encounter",
+    status,
+    class: encounterClass,
+    ...(period ? { period } : undefined),
+    ...(encounterReason ? { reasonCode: encounterReason.reasonCode } : undefined),
+    ...(conditionReferences.length > 0 ? { diagnosis: conditionReferences } : undefined),
+    subject: buildPatientReference(patientId),
+    ...(participants ? { participant: participants.references } : undefined),
+    ...(location ? { location: [location.locationReference] } : undefined),
+  };
+
+  return [
+    encounter,
+    ...conditions,
+    ...(participants?.practitioners ?? []),
+    ...(location ? [location.location] : []),
+  ];
+}
+
+/**
+ * Infers the Encounter status from the message trigger event type.
+ * i.e. A01 => in-progress
+ *
+ * TODO: See if we can get the status from the ADT message itself
+ * TODO: Handle more message types
+ *
+ * @see {@link https://hl7.org/fhir/R4/valueset-encounter-status.html}
+ */
+export function getPatientStatus(messageType: Hl7MessageType): NonNullable<Encounter["status"]> {
+  switch (messageType.triggerEvent) {
+    case "A01":
+      return "in-progress";
+    case "A03":
+      return "finished";
+    default:
+      return "unknown";
+  }
+}
+
+/**
+ * Maps an HL7 ADT Patient Class code to a FHIR R4 Encounter class code.
+ *
+ * @returns {Coding} - The corresponding FHIR Encounter class coding.
+ */
+export function getEncounterClass(adt: Hl7Message): Coding {
+  const patientClassCode = getPatientClassCode(adt);
+
+  if (!patientClassCode || !isAdtPatientClass(patientClassCode)) {
+    return DEFAULT_ENCOUNTER_CLASS;
+  }
+  const encounterClass = adtToFhirEncounterClassMap[patientClassCode];
+
+  return {
+    code: encounterClass.code,
+    display: encounterClass.display,
+    system: "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+  };
+}

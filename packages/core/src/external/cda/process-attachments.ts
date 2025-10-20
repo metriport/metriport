@@ -8,10 +8,11 @@ import {
   Identifier,
   Resource,
 } from "@medplum/fhirtypes";
-import { executeWithNetworkRetries, toArray } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, toArray } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { MedicalDataSource, isMedicalDataSource } from "..";
-import { createAttachmentUploadFilePath } from "../../domain/document/upload";
+import { createAttachmentUploadFilePath } from "../../shareback/file";
 import {
   CdaCodeCv,
   CdaInstanceIdentifier,
@@ -22,13 +23,14 @@ import {
   ObservationMedia,
   ObservationOrganizer,
 } from "../../fhir-to-cda/cda-types/shared-types";
-import { stringToBase64 } from "../../util/base64";
+import { capture } from "../../util";
+import { isValidBase64 } from "../../util/base64";
 import { executeAsynchronously } from "../../util/concurrency";
 import { Config } from "../../util/config";
 import { detectFileType } from "../../util/file-type";
 import { out } from "../../util/log";
+import { OCTET_MIME_TYPE } from "../../util/mime";
 import { sizeInBytes } from "../../util/string";
-import { uuidv4 } from "../../util/uuid-v7";
 import { S3Utils, UploadParams } from "../aws/s3";
 import { cqExtension } from "../carequality/extension";
 import { cwExtension } from "../commonwell/extension";
@@ -37,7 +39,6 @@ import { convertCollectionBundleToTransactionBundle } from "../fhir/bundle/conve
 import { buildDocIdFhirExtension } from "../fhir/shared/extensions/doc-id-extension";
 import { B64Attachments } from "./remove-b64";
 import { groupObservations } from "./shared";
-import { OCTET_MIME_TYPE } from "../../util/mime";
 
 const region = Config.getAWSRegion();
 
@@ -48,6 +49,16 @@ function getS3UtilsInstance(): S3Utils {
 type FileDetails = {
   fileB64Contents: string;
   mimeType: string | undefined;
+};
+
+type MediaTypeProvider = {
+  _mediaType?: string;
+};
+
+type SentryParams = {
+  patientId: string;
+  cxId: string;
+  filePath: string;
 };
 
 export async function processAttachments({
@@ -67,88 +78,108 @@ export async function processAttachments({
   fhirUrl: string;
   medicalDataSource?: string | undefined;
 }) {
-  const { log } = out(`processAttachments - cxId ${cxId}, patientId ${patientId}`);
-  const s3Utils = getS3UtilsInstance();
+  const { log } = out(`processAttachments - filepath ${filePath}`);
+  try {
+    const s3Utils = getS3UtilsInstance();
 
-  const extensions = [buildDocIdFhirExtension(filePath), getSourceExtension(medicalDataSource)]
-    .flat()
-    .filter(Boolean) as Extension[];
+    const extensions = [buildDocIdFhirExtension(filePath), getSourceExtension(medicalDataSource)]
+      .flat()
+      .filter(Boolean) as Extension[];
 
-  const docRefs: DocumentReference[] = [];
-  const uploadDetails: UploadParams[] = [];
+    const docRefs: DocumentReference[] = [];
+    const uploadDetails: UploadParams[] = [];
 
-  b64Attachments.acts.map(act => {
-    const fileDetails = getDetailsForAct(act.text, log);
-    if (!fileDetails) return;
-
-    const docRef = buildDocumentReferenceFromAct(patientId, extensions, act);
-    if (!docRef.id) throw new Error("Missing ID in DocRef");
-
-    const fileKey = createAttachmentUploadFilePath({
-      filePath,
-      attachmentId: docRef.id,
-      mimeType: fileDetails.mimeType,
-    });
-    const fileUrl = s3Utils.buildFileUrl(s3BucketName, fileKey);
-
-    const attachment = buildAttachment(fileDetails, fileUrl, fileKey);
-
-    if (docRef.date) attachment.creation = docRef.date;
-    docRef.content = [{ attachment }];
-    const uploadParams = buildUploadParams(fileDetails, s3BucketName, fileKey);
-
-    uploadDetails.push(uploadParams);
-    docRefs.push(docRef);
-  });
-
-  b64Attachments.organizers.map(organizerEntry => {
-    const { mediaObservations } = groupObservations(organizerEntry);
-
-    mediaObservations.map(mediaEntry => {
-      const obsMedia = mediaEntry.observationMedia;
-      const fileDetails = getDetailsForMediaObs(obsMedia.value);
+    const contextParams: SentryParams = { patientId, cxId, filePath };
+    b64Attachments.acts.map(act => {
+      const fileDetails = getDetailsForAct(act.text, log, contextParams);
       if (!fileDetails) return;
 
-      const docRef = buildDocumentReferenceFromObsMedia(
-        patientId,
-        extensions,
-        organizerEntry,
-        obsMedia
-      );
+      const docRef = buildDocumentReferenceFromAct(patientId, extensions, act);
       if (!docRef.id) throw new Error("Missing ID in DocRef");
+
       const fileKey = createAttachmentUploadFilePath({
         filePath,
         attachmentId: docRef.id,
         mimeType: fileDetails.mimeType,
       });
-
       const fileUrl = s3Utils.buildFileUrl(s3BucketName, fileKey);
 
       const attachment = buildAttachment(fileDetails, fileUrl, fileKey);
+
+      if (docRef.date) attachment.creation = docRef.date;
       docRef.content = [{ attachment }];
       const uploadParams = buildUploadParams(fileDetails, s3BucketName, fileKey);
+
       uploadDetails.push(uploadParams);
       docRefs.push(docRef);
     });
-  });
 
-  log(`Extracted ${docRefs.length} attachments`);
-  const docRefBundleEntries = docRefs.map(dr => ({ resource: dr }));
-  const collectionBundle: Bundle = {
-    resourceType: "Bundle",
-    type: "collection",
-    entry: docRefBundleEntries,
-  };
+    b64Attachments.organizers.map(organizerEntry => {
+      const { mediaObservations } = groupObservations(organizerEntry);
 
-  const transactionBundle = convertCollectionBundleToTransactionBundle({
-    fhirBundle: collectionBundle,
-  });
+      mediaObservations.map(mediaEntry => {
+        const obsMedia = mediaEntry.observationMedia;
+        const fileDetails = getDetailsForMediaObs(obsMedia.value, log, contextParams);
 
-  if (transactionBundle.entry?.length) {
-    await Promise.all([
-      handleFhirUpload(cxId, transactionBundle, fhirUrl, log),
-      handleS3Upload(uploadDetails, s3Utils, log),
-    ]);
+        if (!fileDetails) return;
+
+        const docRef = buildDocumentReferenceFromObsMedia(
+          patientId,
+          extensions,
+          organizerEntry,
+          obsMedia
+        );
+        if (!docRef.id) throw new Error("Missing ID in DocRef");
+        const fileKey = createAttachmentUploadFilePath({
+          filePath,
+          attachmentId: docRef.id,
+          mimeType: fileDetails.mimeType,
+        });
+
+        const fileUrl = s3Utils.buildFileUrl(s3BucketName, fileKey);
+
+        const attachment = buildAttachment(fileDetails, fileUrl, fileKey);
+        docRef.content = [{ attachment }];
+        const uploadParams = buildUploadParams(fileDetails, s3BucketName, fileKey);
+        uploadDetails.push(uploadParams);
+        docRefs.push(docRef);
+      });
+    });
+
+    log(`Extracted ${docRefs.length} attachments`);
+    const docRefBundleEntries = docRefs.map(dr => ({ resource: dr }));
+    const collectionBundle: Bundle = {
+      resourceType: "Bundle",
+      type: "collection",
+      entry: docRefBundleEntries,
+    };
+
+    const transactionBundle = convertCollectionBundleToTransactionBundle({
+      fhirBundle: collectionBundle,
+    });
+
+    if (transactionBundle.entry?.length) {
+      await Promise.all([
+        handleFhirUpload(cxId, transactionBundle, fhirUrl, log),
+        handleS3Upload(uploadDetails, s3Utils, log),
+      ]);
+    }
+  } catch (error) {
+    const msg = `Failed to process attachments - not interrupting main flow`;
+    log(`${msg} - ${errorToString(error)}`);
+    capture.message(msg, {
+      extra: {
+        cxId,
+        patientId,
+        filePath,
+        s3BucketName,
+        fhirUrl,
+        medicalDataSource,
+        numberOfAttachments: b64Attachments.total,
+        error,
+      },
+      level: "warning",
+    });
   }
   log(`Done...`);
 }
@@ -159,11 +190,12 @@ async function handleFhirUpload(
   fhirUrl: string,
   log: typeof console.log
 ): Promise<void> {
-  log(`Transaction bundle: ${JSON.stringify(transactionBundle)}`);
+  log(`[handleFhirUpload] Transaction bundle: ${JSON.stringify(transactionBundle)}`);
   const fhirApi = makeFhirApi(cxId, fhirUrl);
   await executeWithNetworkRetries(async () => await fhirApi.executeBatch(transactionBundle), {
     log,
   });
+  log(`[handleFhirUpload] Done`);
 }
 
 async function handleS3Upload(
@@ -198,21 +230,56 @@ function buildDocumentReferenceDraft(
 
 function getDetailsForAct(
   document: CdaOriginalText | undefined,
-  log: typeof console.log
+  log: typeof console.log,
+  contextParams: SentryParams
 ): FileDetails | undefined {
-  const fileB64Contents = document?.["#text"];
+  const actLog = (msg: string) => log(`[Act] ${msg}`);
+  return getFileDetails(document?.["#text"], document ?? {}, actLog, contextParams);
+}
+
+function getDetailsForMediaObs(
+  value: CdaValueEd | undefined,
+  log: typeof console.log,
+  contextParams: SentryParams
+): FileDetails | undefined {
+  const mediaObsLog = (msg: string) => log(`[MediaObs] ${msg}`);
+  return getFileDetails(value?.["#text"], value ?? {}, mediaObsLog, contextParams);
+}
+
+function getFileDetails(
+  fileB64Contents: string | undefined,
+  mediaTypeProvider: MediaTypeProvider,
+  log: (msg: string) => void,
+  contextParams: SentryParams
+): FileDetails | undefined {
   if (!fileB64Contents) return undefined;
 
-  let mimeType = detectFileType(stringToBase64(fileB64Contents)).mimeType;
-  log(`Detected mimetype: ${mimeType}`);
+  // Clean up the base64 string - remove any whitespace, newlines etc
+  const cleanB64 = fileB64Contents.replace(/\s/g, "");
+  const unquotedB64 = cleanB64.replace(/^["']|["']$/g, "");
 
-  if (mimeType === OCTET_MIME_TYPE && document?._mediaType) {
-    log(`Will use specified mimetype: ${document._mediaType}`);
-    mimeType = document._mediaType;
+  if (!isValidBase64(unquotedB64)) {
+    const msg = `Invalid base64 string in attachment`;
+    log(msg);
+    capture.message(msg, {
+      extra: { ...contextParams },
+      level: "info",
+    });
+
+    return undefined;
+  }
+
+  const fileBuffer = Buffer.from(unquotedB64, "base64");
+  let mimeType = detectFileType(fileBuffer).mimeType;
+  log(`[getFileDetails] Detected mimetype: ${mimeType}`);
+
+  if (mimeType === OCTET_MIME_TYPE && mediaTypeProvider._mediaType) {
+    log(`[getFileDetails] Will use specified mimetype: ${mediaTypeProvider._mediaType}`);
+    mimeType = mediaTypeProvider._mediaType;
   }
 
   return {
-    fileB64Contents,
+    fileB64Contents: unquotedB64,
     mimeType,
   };
 }
@@ -223,11 +290,13 @@ function buildDocumentReferenceFromAct(
   act: ConcernActEntryAct
 ) {
   const docRef = buildDocumentReferenceDraft(patientId, extensions);
+  const docRefId = createUuidFromText(JSON.stringify(act));
   const identifiers = getIdentifiers(act.id);
   const date = getDate(act.effectiveTime);
   const type = getType(act.code);
 
   return fillDocumentReference(docRef, {
+    docRefId,
     identifiers,
     type,
     date,
@@ -314,17 +383,6 @@ function buildUploadParams(
   };
 }
 
-function getDetailsForMediaObs(value: CdaValueEd | undefined): FileDetails | undefined {
-  const fileB64Contents = value?.reference?._value;
-  if (!fileB64Contents) return undefined;
-
-  const mimeType = value?._mediaType;
-  return {
-    fileB64Contents,
-    mimeType,
-  };
-}
-
 function buildDocumentReferenceFromObsMedia(
   patientId: string,
   extensions: Extension[],
@@ -332,10 +390,12 @@ function buildDocumentReferenceFromObsMedia(
   obsMedia: ObservationMedia
 ): DocumentReference {
   const docRef = buildDocumentReferenceDraft(patientId, extensions);
+  const docRefId = createUuidFromText(JSON.stringify(obsMedia));
   const identifiers = getIdentifiers(obsMedia.id);
   const date = getDate(organizer.effectiveTime);
   const type = getType(organizer.code);
   return fillDocumentReference(docRef, {
+    docRefId,
     identifiers,
     type,
     date,
@@ -346,12 +406,13 @@ function fillDocumentReference(
   docRef: DocumentReference,
   params: {
     identifiers: Identifier[];
+    docRefId: string;
     type?: CodeableConcept | undefined;
     date?: string | undefined;
   }
 ): DocumentReference {
-  const { identifiers, type, date } = params;
-  docRef.id = uuidv4();
+  const { identifiers, type, date, docRefId } = params;
+  docRef.id = docRefId;
 
   if (identifiers.length > 0) docRef.identifier = identifiers;
   if (type) {

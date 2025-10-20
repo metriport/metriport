@@ -13,13 +13,15 @@ export type BundleType =
 
 export function makeBundle<T extends Resource>({
   entries,
-  type,
+  type: typeParam,
 }: { entries?: T[]; type?: BundleType } = {}): Bundle<T> {
   const entry = entries ? entries.map(makeBundleEntryFor) : undefined;
+  const type = typeParam ?? "transaction";
   return {
     resourceType: "Bundle",
-    type: type ?? "transaction",
+    type,
     ...(entry ? { entry } : {}),
+    ...(type === "searchset" ? { total: entry?.length ?? 0 } : {}),
   };
 }
 

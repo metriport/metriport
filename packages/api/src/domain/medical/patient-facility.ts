@@ -1,6 +1,5 @@
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import BadRequestError from "../../errors/bad-request";
 import { Patient } from "@metriport/core/domain/patient";
+import { BadRequestError, MetriportError } from "@metriport/shared";
 
 /**
  * Checks if the patient's list of associated facility IDs contains the facility ID parameter passed by the user.
@@ -49,14 +48,4 @@ export function getFacilityIdOrFail(patient: Patient, facilityId?: string): stri
     });
   }
   return chosenFacility;
-}
-
-/**
- * Utility function to validate that a facility ID is associated with a patient or that the
- * patient only has one facility if none is provided.
- * Throws if not valid.
- */
-export function validateOptionalFacilityId(patient: Patient, facilityId?: string): true {
-  getFacilityIdOrFail(patient, facilityId);
-  return true;
 }

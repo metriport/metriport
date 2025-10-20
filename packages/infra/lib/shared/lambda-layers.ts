@@ -10,6 +10,7 @@ export const layers = [
   "puppeteer",
   "langchain",
   "saxon",
+  "analyticsPlatform",
 ] as const;
 export type LambdaLayer = (typeof layers)[number];
 
@@ -22,12 +23,14 @@ export function setupLambdasLayers(stack: Stack, prefixStackName = false): Lambd
       layerVersionName: `${prefix}LambdaNodeModules`,
       code: Code.fromAsset("../lambdas/layers/shared/shared-layer.zip"),
     }),
+    /** @deprecated use wkHtmlToPdf instead */
     chromium: new LayerVersion(stack, `${prefix}Chromium-layer`, {
       layerVersionName: `${prefix}Chromium-layer`,
       compatibleRuntimes: [Runtime.NODEJS_16_X],
       code: Code.fromAsset("../lambdas/layers/chromium"),
       description: "Adds chromium to the lambda",
     }),
+    /** @deprecated use wkHtmlToPdf instead */
     dig: new LayerVersion(stack, `${prefix}Dig-layer`, {
       layerVersionName: `${prefix}Dig-layer`,
       compatibleRuntimes: [Runtime.NODEJS_16_X],
@@ -53,6 +56,12 @@ export function setupLambdasLayers(stack: Stack, prefixStackName = false): Lambd
     saxon: new LayerVersion(stack, `${prefix}SaxonLayer`, {
       layerVersionName: `${prefix}SaxonLayer`,
       code: Code.fromAsset("../lambdas/layers/saxon/dist/saxon-layer.zip"),
+    }),
+    analyticsPlatform: new LayerVersion(stack, `${prefix}AnalyticsPlatformLayer`, {
+      layerVersionName: `${prefix}AnalyticsPlatformLayer`,
+      code: Code.fromAsset(
+        "../lambdas/layers/analytics-platform/dist/analytics-platform-layer.zip"
+      ),
     }),
   };
 }

@@ -1,16 +1,19 @@
-import { Organization, OrgType, OrganizationBizType } from "@metriport/core/domain/organization";
+import { Organization, OrganizationBizType } from "@metriport/core/domain/organization";
+import { TreatmentType } from "@metriport/shared";
 import { BaseDTO, toBaseDTO } from "./baseDTO";
 import { AddressStrictDTO } from "./location-address-dto";
 
 export type OrganizationDTO = BaseDTO & {
   oid: string;
   name: string;
-  type: OrgType;
+  shortcode: string | undefined;
+  type: TreatmentType;
   location: AddressStrictDTO;
 };
 
 export type InternalOrganizationDTO = BaseDTO &
   OrganizationDTO & {
+    cxId: string;
     businessType: OrganizationBizType;
     cqApproved: boolean;
     cqActive: boolean;
@@ -19,25 +22,22 @@ export type InternalOrganizationDTO = BaseDTO &
   };
 
 export function dtoFromModel(org: Organization): OrganizationDTO {
-  const { name, type, location } = org.data;
+  const { shortcode, name, type, location } = org.data;
   return {
     ...toBaseDTO(org),
     oid: org.oid,
     name,
+    shortcode,
     type,
     location,
   };
 }
 
 export function internalDtoFromModel(org: Organization): InternalOrganizationDTO {
-  const { name, type, location } = org.data;
   return {
-    ...toBaseDTO(org),
-    oid: org.oid,
+    ...dtoFromModel(org),
+    cxId: org.cxId,
     businessType: org.type,
-    name,
-    type,
-    location,
     cqApproved: org.cqApproved,
     cqActive: org.cqActive,
     cwApproved: org.cwApproved,

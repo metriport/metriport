@@ -1,4 +1,4 @@
-import { S3Utils } from "@metriport/core/external/aws/s3";
+import { S3Utils, UploadFileResult } from "@metriport/core/external/aws/s3";
 
 export class MockS3Utils extends S3Utils {
   override async uploadFile({
@@ -12,15 +12,16 @@ export class MockS3Utils extends S3Utils {
     key: string;
     file: Buffer;
     contentType?: string;
-  }): Promise<AWS.S3.ManagedUpload.SendData> {
+  }): Promise<UploadFileResult> {
     console.log(
       `Mock uploadFile called for ${bucket} and ${key} and with content type ${contentType}`
     );
     return {
-      Location: `https://mocks3.${this.region}.amazonaws.com/${bucket}/${key}`,
-      ETag: "mockETag",
-      Bucket: bucket,
-      Key: key,
+      location: `https://mocks3.${this.region}.amazonaws.com/${bucket}/${key}`,
+      eTag: "mockETag",
+      bucket: bucket,
+      key: key,
+      versionId: "mockVersionId",
     };
   }
 

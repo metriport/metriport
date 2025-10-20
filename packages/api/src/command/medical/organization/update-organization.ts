@@ -6,8 +6,7 @@ import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getOrganizationOrFail } from "./get-organization";
 
-export type OrganizationUpdateCmd = BaseUpdateCmdWithCustomer &
-  Partial<Omit<OrganizationCreate, "type">>;
+export type OrganizationUpdateCmd = BaseUpdateCmdWithCustomer & Partial<OrganizationCreate>;
 
 export async function updateOrganization({
   id,
@@ -18,6 +17,7 @@ export async function updateOrganization({
   cqActive,
   cwApproved,
   cwActive,
+  type,
 }: OrganizationUpdateCmd): Promise<OrganizationModel> {
   const org = await getOrganizationOrFail({ id, cxId });
   validateVersionForUpdate(org, eTag);
@@ -27,6 +27,7 @@ export async function updateOrganization({
     cwActive,
     cqApproved,
     cwApproved,
+    type,
   });
 
   const fhirOrg = toFHIR(updatedOrg);

@@ -4,17 +4,20 @@ import {
   PatientData,
   PatientDemoData,
 } from "@metriport/core/domain/patient";
+import { PatientSettingsData } from "@metriport/core/domain/patient-settings";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
-import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { out } from "@metriport/core/util";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
+import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-initial-patient-discovery";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
-import { getPatientByDemo } from "./get-patient";
+import { attachPatientIdentifiers, getPatientByDemo, PatientWithIdentifiers } from "./get-patient";
+import { createPatientSettings } from "./settings/create-patient-settings";
 import { sanitize, validate } from "./shared";
-import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-initial-patient-discovery";
-import { out } from "@metriport/core/util";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
@@ -26,13 +29,15 @@ export async function createPatient({
   rerunPdOnNewDemographics,
   forceCommonwell,
   forceCarequality,
+  settings,
 }: {
   patient: PatientCreateCmd;
   runPd?: boolean;
   rerunPdOnNewDemographics?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
-}): Promise<Patient> {
+  settings?: PatientSettingsData;
+}): Promise<PatientWithIdentifiers> {
   const { cxId, facilityId, externalId } = patient;
   const { log } = out(`createPatient.${cxId}`);
 
@@ -81,8 +86,29 @@ export async function createPatient({
 
   const newPatient = await PatientModel.create(patientCreate);
 
+  analytics({
+    distinctId: cxId,
+    event: EventTypes.patientCreate,
+    properties: {
+      patientId: newPatient.id,
+      facilityId,
+      rerunPdOnNewDemographics,
+      runPd,
+      forceCommonwell,
+      forceCarequality,
+    },
+  });
+
   const fhirPatient = toFHIR(newPatient);
-  await upsertPatientToFHIRServer(newPatient.cxId, fhirPatient);
+
+  await Promise.all([
+    createPatientSettings({
+      cxId,
+      patientId: patientCreate.id,
+      ...settings,
+    }),
+    upsertPatientToFHIRServer(newPatient.cxId, fhirPatient),
+  ]);
 
   if (runPd) {
     runInitialPatientDiscoveryAcrossHies({
@@ -93,5 +119,6 @@ export async function createPatient({
       forceCommonwell,
     }).catch(processAsyncError("runInitialPatientDiscoveryAcrossHies"));
   }
-  return newPatient;
+  const patientWithIdentifiers = await attachPatientIdentifiers(newPatient.dataValues);
+  return patientWithIdentifiers;
 }

@@ -53,8 +53,8 @@ describe("normalizeObservations", () => {
     const result = normalized[0];
     expect(result).toBeTruthy();
     if (!result) throw new Error("Expected result undefined");
-    expect(result.valueQuantity?.unit).toBe("g");
-    expect(result.valueQuantity?.value).toBe(68_000);
+    expect(result.valueQuantity?.unit).toBe("kg");
+    expect(result.valueQuantity?.value).toBe(68);
   });
 
   it("correctly handle weight lb", () => {
@@ -65,8 +65,8 @@ describe("normalizeObservations", () => {
     const result = normalized[0];
     expect(result).toBeTruthy();
     if (!result) throw new Error("Expected result undefined");
-    expect(result.valueQuantity?.unit).toBe("g");
-    expect(result.valueQuantity?.value).toBe(72_574.72);
+    expect(result.valueQuantity?.unit).toBe("kg");
+    expect(result.valueQuantity?.value).toBe(72.57);
   });
 
   it("correctly handle weight g", () => {
@@ -77,8 +77,8 @@ describe("normalizeObservations", () => {
     const result = normalized[0];
     expect(result).toBeTruthy();
     if (!result) throw new Error("Expected result undefined");
-    expect(result.valueQuantity?.unit).toBe("g");
-    expect(result.valueQuantity?.value).toBe(12_500);
+    expect(result.valueQuantity?.unit).toBe("kg");
+    expect(result.valueQuantity?.value).toBe(12.5);
   });
 
   it("correctly handle height cm", () => {

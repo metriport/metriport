@@ -1,7 +1,10 @@
 **/terminology.db
+**/terminology*.db
 dist
 node_modules
 # dotenv environment variable files
 .env*
 # include this one
 !.env.example
+
+source-data/

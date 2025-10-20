@@ -48,7 +48,7 @@ export function normalizePatient<T extends PatientData>(patient: T): T {
         const msg = `Failed to parse the address for MPI`;
         log(`${msg} - error ${errorToString(err)}`);
       }
-      return;
+      return undefined;
     }),
   };
   return normalizedPatient;
@@ -101,7 +101,7 @@ export function normalizePatientInboundMpi<T extends PatientData>(patient: T): T
  * be normalized.
  * @returns a normalized version of the input string.
  */
-function normalizeString(str: string): string {
+export function normalizeString(str: string): string {
   return str.trim().toLowerCase(); //.replace(/['-]/g, "");
 }
 

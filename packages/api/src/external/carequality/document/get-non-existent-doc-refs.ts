@@ -1,10 +1,13 @@
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
+import { DocumentReferenceWithId } from "@metriport/core/external/fhir/document/document-reference";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
+import { isMimeTypeXML } from "@metriport/core/util/mime";
 import { capture } from "@metriport/core/util/notifications";
+import { buildDayjs } from "@metriport/shared/common/date";
+import { uniqBy } from "lodash";
 import { DocumentReferenceWithMetriportId } from "../../../external/carequality/document/shared";
 import { Config } from "../../../shared/config";
 
@@ -16,12 +19,15 @@ const parallelS3Queries = 10;
 export async function getNonExistentDocRefs(
   documents: DocumentReferenceWithMetriportId[],
   patientId: string,
-  cxId: string
+  cxId: string,
+  fhirDocRefs: DocumentReferenceWithId[],
+  forceDownload: boolean | undefined
 ): Promise<DocumentReferenceWithMetriportId[]> {
-  const [{ existingDocRefs, nonExistingDocRefs }, fhirDocRefs] = await Promise.all([
-    checkDocRefsExistInS3(documents, patientId, cxId),
-    getDocuments({ cxId, patientId }),
-  ]);
+  const { existingDocRefs, nonExistingDocRefs } = await checkDocRefsExistInS3(
+    documents,
+    patientId,
+    cxId
+  );
 
   const foundOnStorageButNotOnFHIR = existingDocRefs.filter(
     f => !fhirDocRefs.find(d => d.id === f.metriportId)
@@ -29,7 +35,25 @@ export async function getNonExistentDocRefs(
 
   const docsToDownload = nonExistingDocRefs.concat(foundOnStorageButNotOnFHIR);
 
-  return docsToDownload;
+  if (!forceDownload) return docsToDownload;
+
+  const { log } = out(`CQ getNonExistentDocRefs, cx: ${cxId}, pt: ${patientId}`);
+  log(`There's currently ${docsToDownload.length} documents to download`);
+
+  const eligibleDocsForRedownload = existingDocRefs.filter(
+    d => isMimeTypeXML(d.contentType ?? "") && isEligibleForRedownload(d.creation)
+  );
+  log(`Found ${eligibleDocsForRedownload.length} XMLs that we're gonna redownload`);
+
+  const docsToDownloadWithRedownload = docsToDownload.concat(eligibleDocsForRedownload);
+  const docsToDownloadUniq = uniqBy(docsToDownloadWithRedownload, d => d.metriportId);
+  log(
+    `Including redownload, there's now ${
+      docsToDownloadUniq.length
+    } documents to download: ${docsToDownloadUniq.map(d => d.metriportId).join(", ")}`
+  );
+
+  return docsToDownloadUniq;
 }
 
 type ObservedDocRefs = {
@@ -43,7 +67,7 @@ async function checkDocRefsExistInS3(
   cxId: string
 ): Promise<ObservedDocRefs> {
   const { log } = out(`CQ checkDocRefsExistInS3 - patient ${patientId}`);
-  const successfulDocs: { docId: string; exists: boolean }[] = [];
+  const existingDocs: { docId: string; exists: boolean }[] = [];
 
   await executeAsynchronously(
     documents,
@@ -58,7 +82,7 @@ async function checkDocRefsExistInS3(
 
         const { exists } = await s3Utils.getFileInfoFromS3(fileName, s3BucketName);
 
-        successfulDocs.push({
+        existingDocs.push({
           docId: doc.metriportId,
           exists,
         });
@@ -86,7 +110,7 @@ async function checkDocRefsExistInS3(
   };
 
   for (const doc of documents) {
-    const matchingDoc = successfulDocs.find(succDoc => succDoc.docId === doc.metriportId);
+    const matchingDoc = existingDocs.find(existingDoc => existingDoc.docId === doc.metriportId);
 
     if (matchingDoc && matchingDoc.exists) {
       observedDocRefs.existingDocRefs.push(doc);
@@ -96,4 +120,17 @@ async function checkDocRefsExistInS3(
   }
 
   return observedDocRefs;
+}
+
+/**
+ * Since not all documents have a creation date, we return true if the document
+ * has no creation date or if the creation date is within the last year.
+ */
+function isEligibleForRedownload(creation: string | null | undefined): boolean {
+  if (!creation) return true;
+
+  const creationDate = buildDayjs(creation);
+  const oneYearAgo = buildDayjs().subtract(1, "year");
+
+  return creationDate.isAfter(oneYearAgo);
 }

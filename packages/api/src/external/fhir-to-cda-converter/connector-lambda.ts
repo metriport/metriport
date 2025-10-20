@@ -1,9 +1,9 @@
+import { isCdaCustodianEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { Input } from "@metriport/core/domain/conversion/fhir-to-cda";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { Config } from "../../shared/config";
 import { FhirToCdaConverter, FhirToCdaConverterRequest } from "./connector";
-import { isCdaCustodianEnabledForCx } from "../aws/app-config";
 
 const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region);

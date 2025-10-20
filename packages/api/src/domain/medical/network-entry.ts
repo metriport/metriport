@@ -8,4 +8,5 @@ export interface NetworkEntry {
   state?: USStateForAddress | undefined;
   managingOrgOid?: string;
   rootOrganization?: string;
+  network: "COMMONWELL" | "CAREQUALITY";
 }

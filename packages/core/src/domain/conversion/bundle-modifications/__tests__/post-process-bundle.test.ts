@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { Condition } from "@medplum/fhirtypes";
 import { makeBundle } from "../../../../external/fhir/__tests__/bundle";
-import * as bundleShared from "../../../../external/fhir/shared/bundle";
+import * as bundleShared from "../../../../external/fhir/bundle/bundle";
 import { buildDocIdFhirExtension } from "../../../../external/fhir/shared/extensions/doc-id-extension";
 import { snomedCodeMd } from "../../../../fhir-deduplication/__tests__/examples/condition-examples";
 import { makeCondition } from "../../../../fhir-to-cda/cda-templates/components/__tests__/make-condition";

@@ -1,51 +1,122 @@
-export const METRIPORT = "METRIPORT";
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */ export const METRIPORT = "METRIPORT";
 
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const SNOMED_CODE = "snomed";
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const SNOMED_URL = "http://snomed.info/sct";
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const SNOMED_OID = "2.16.840.1.113883.6.96";
 
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const LOINC_CODE = "loinc";
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const LOINC_URL = "http://loinc.org";
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const LOINC_OID = "2.16.840.1.113883.6.1";
 
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const ICD_10_CODE = "icd-10";
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const ICD_10_URL = "http://hl7.org/fhir/sid/icd-10-cm";
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const ICD_10_OID = "2.16.840.1.113883.6.90";
 
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const ICD_9_CODE = "icd-9";
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const ICD_9_URL = "http://terminology.hl7.org/CodeSystem/ICD-9CM-diagnosiscodes9";
 
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const RXNORM_CODE = "rxnorm";
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const RXNORM_URL = "http://www.nlm.nih.gov/research/umls/rxnorm";
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const RXNORM_OID = "2.16.840.1.113883.6.88";
 
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const NDC_CODE = "ndc";
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const NDC_URL = "http://hl7.org/fhir/sid/ndc";
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const NDC_OID = "2.16.840.1.113883.6.69";
 
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const CVX_CODE = "cvx";
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const CVX_URL = "http://hl7.org/fhir/sid/cvx";
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const CVX_OID = "2.16.840.1.113883.12.292";
 
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const CPT_CODE = "cpt";
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const CPT_URL = "http://www.ama-assn.org/go/cpt";
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const CPT_OID = "2.16.840.1.113883.6.12";
 
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const NDDF_URL = "http://terminology.hl7.org/CodeSystem/nddf";
 
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const HL7_ACT_URL = "http://terminology.hl7.org/CodeSystem/v3-ActCode";
 
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const EPIC_PARTIAL_URN = "1.2.840.114350.1.13";
+/**
+ * @deprecated - use @metriport/shared/medical instead
+ */
 export const HL7_PARTIAL_URN = "2.16.840.1.113883";
-
-export const knownSystemUrls = [
-  RXNORM_URL,
-  NDC_URL,
-  CPT_URL,
-  CVX_URL,
-  ICD_10_URL,
-  ICD_9_URL,
-  LOINC_URL,
-  SNOMED_URL,
-  HL7_ACT_URL,
-];

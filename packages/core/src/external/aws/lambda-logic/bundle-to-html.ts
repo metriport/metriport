@@ -24,6 +24,8 @@ import { sortObservationsForDisplay } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import { intersection, uniqWith } from "lodash";
 import { Brief } from "../../../command/ai-brief/brief";
+import { isChronicCondition } from "../../ehr/shared";
+import { HCC_EXTENSION_URL } from "../../fhir/shared/extensions/hcc-extension";
 import {
   buildEncounterSections,
   createBrief,
@@ -33,6 +35,7 @@ import {
   ISO_DATE,
   MISSING_DATE_KEY,
   MISSING_DATE_TEXT,
+  getDeceasedStatus,
 } from "./bundle-to-html-shared";
 
 const RX_NORM_CODE = "rxnorm";
@@ -354,7 +357,7 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief, isLogoEnabled = 
   return htmlPage;
 }
 
-// TODO: Use the version from "@metriport/core/external/fhir/shared/bundle.ts"
+// TODO: Use the version from "@metriport/core/external/fhir/bundle/bundle.ts"
 function extractFhirTypesFromBundle(bundle: Bundle): {
   diagnosticReports: DiagnosticReport[];
   patient?: Patient | undefined;
@@ -851,7 +854,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
         ${
           notes.length > 0
             ? `<p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${notes.join(
-                "<br />"
+                "<br /><hr/>"
               )}</p>`
             : ""
         }
@@ -922,7 +925,8 @@ function createMedicationSection(
   });
 
   const otherMedications = removeDuplicate.filter(
-    medicationStatement => medicationStatement.status !== ("active" || "unknown")
+    medicationStatement =>
+      medicationStatement.status !== "active" && medicationStatement.status !== "unknown"
   );
 
   const activeMedications = removeDuplicate.filter(
@@ -1010,7 +1014,7 @@ function createSectionInMedications(
           });
 
           return `
-            <tr data-id"${medicationStatement.id}">
+            <tr data-id="${medicationStatement.id}">
               <td>${medication?.code?.text ?? ""}</td>
               <td>${blacklistedInstruction ? "" : medicationStatement.dosage?.[0]?.text ?? ""}</td>
               <td>${medicationStatement.dosage?.[0]?.doseAndRate?.[0]?.doseQuantity?.value ?? ""} ${
@@ -1039,6 +1043,7 @@ type RenderCondition = {
   firstSeen: string | undefined;
   lastSeen: string | undefined;
   clinicalStatus: string;
+  isChronic: boolean;
 };
 
 function createConditionSection(conditions: Condition[], encounter: Encounter[]) {
@@ -1092,13 +1097,26 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
         onsetEndTime = conditionDateDict[condition.id]?.end;
       }
 
+      const isChronic = isChronicCondition(condition);
+
+      const hccExtensions = condition.extension?.filter(ext => ext.url === HCC_EXTENSION_URL) ?? [];
+      const hccCodes = hccExtensions
+        .map(ext => {
+          const code = ext.valueCodeableConcept?.coding?.[0]?.code;
+          const version = ext.valueCodeableConcept?.coding?.[0]?.version;
+          return version && code ? `HCC ${version}: ${code}` : "";
+        })
+        .filter(Boolean)
+        .join("; ");
+
       const newCondition: RenderCondition = {
         id: condition.id,
-        code: codeName,
+        code: (codeName ?? "") + (hccCodes ? ` (${hccCodes})` : ""),
         name,
         firstSeen: onsetStartTime && onsetStartTime.length ? onsetStartTime : onsetDateTime,
         lastSeen: onsetEndTime && onsetEndTime.length ? onsetEndTime : onsetDateTime,
         clinicalStatus,
+        isChronic,
       };
 
       const existingCondition = acc.find(
@@ -1169,11 +1187,12 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
 
     <thead>
       <tr>
-        <th style="width: 40%">Condition</th>
-        <th style="width: 15%">Code</th>
-        <th style="width: 15%">First seen</th>
-        <th style="width: 15%">Last seen</th>
-        <th style="width: 15%">Status</th>
+        <th style="width: 30%">Condition</th>
+        <th style="width: 25%">Code</th>
+        <th style="width: 10%">Chronic</th>
+        <th style="width: 12%">First seen</th>
+        <th style="width: 12%">Last seen</th>
+        <th style="width: 11%">Status</th>
       </tr>
     </thead>
     <tbody>
@@ -1183,6 +1202,7 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
             <tr>
               <td>${condition.name}</td>
               <td>${condition.code ?? ""}</td>
+              <td>${condition.isChronic ? "Yes" : "No"}</td>
               <td>${formatDateForDisplay(condition.firstSeen)}</td>
               <td>${formatDateForDisplay(condition.lastSeen)}</td>
               <td>${condition.clinicalStatus}</td>
@@ -1930,16 +1950,14 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
             SNOMED_CODE,
           ]);
 
-          const deceasedFamilyMember = familyMemberHistory.condition?.find(condition => {
-            return condition.contributedToDeath === true;
-          });
+          const deceasedStatus = getDeceasedStatus(familyMemberHistory);
 
           return `
             <tr>
               <td>${getValidCode(familyMemberHistory.relationship?.coding)[0]?.display ?? ""}</td>
               <td>${renderAdministrativeGender(familyMemberHistory) ?? ""}</td>
               <td>${renderFamilyHistoryConditions(familyMemberHistory)?.join(", ") ?? ""}</td>
-              <td>${deceasedFamilyMember ? "yes" : "no"}</td>
+              <td>${deceasedStatus}</td>
               <td>${code ?? ""}</td>
             </tr>
           `;

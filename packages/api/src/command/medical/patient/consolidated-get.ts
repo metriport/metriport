@@ -1,42 +1,40 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import {
   ConsolidatedQuery,
-  ConsolidationConversionType,
   GetConsolidatedFilters,
   resourcesSearchableByPatient,
   ResourceTypeForConsolidation,
 } from "@metriport/api-sdk";
 import {
-  ConsolidatedSnapshotRequestAsync,
-  ConsolidatedSnapshotRequestSync,
-} from "@metriport/core/command/consolidated/get-snapshot";
-import { buildConsolidatedSnapshotConnector } from "@metriport/core/command/consolidated/get-snapshot-factory";
-import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
+  getConsolidatedPatientData,
+  getConsolidatedPatientDataAsync,
+} from "@metriport/core/command/consolidated/consolidated-get";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
-import { Patient } from "@metriport/core/domain/patient";
+import { compressGzip } from "@metriport/core/util/compression";
+import { getConsolidatedQueryByRequestId, Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { emptyFunction } from "@metriport/shared";
+import { emptyFunction, errorToString } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { intersection } from "lodash";
-import { processAsyncError } from "../../../errors";
 import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getSignedURL } from "../document/document-download";
+import { storeConsolidatedQueryInitialState } from "./consolidated-init";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import {
-  buildDocRefBundleWithAttachment,
+  buildDocRefBundleWithAttachments,
   emptyMetaProp,
   handleBundleToMedicalRecord,
   uploadJsonBundleToS3,
+  uploadGzipBundleToS3,
 } from "./convert-fhir-bundle";
 import { getPatientOrFail } from "./get-patient";
-import { storeQueryInit } from "./query-init";
 
 dayjs.extend(duration);
 
@@ -45,17 +43,8 @@ export type GetConsolidatedParams = {
   bundle?: SearchSetBundle;
   requestId?: string;
   documentIds?: string[];
+  useCachedAiBrief?: boolean;
 } & GetConsolidatedFilters;
-
-type GetConsolidatedPatientData = {
-  patient: Patient;
-  resources?: ResourceTypeForConsolidation[];
-  dateFrom?: string;
-  dateTo?: string;
-  fromDashboard?: boolean;
-  // TODO 2215 Remove this when we have contributed data as part of get consolidated (from S3)
-  forceDataFromFhir?: boolean;
-};
 
 export type GetConsolidatedSendToCxParams = GetConsolidatedParams & {
   requestId: string;
@@ -97,14 +86,16 @@ export async function startConsolidatedQuery({
 
   if (currentConsolidatedProgress) {
     log(
-      `Patient ${patientId} consolidatedQuery is already 'processing' with params: ${currentConsolidatedProgress}, skipping...`
+      `Patient ${patientId} consolidatedQuery is already 'processing' with params: ${JSON.stringify(
+        currentConsolidatedProgress
+      )}, skipping...`
     );
     return currentConsolidatedProgress;
   }
 
   const startedAt = new Date();
   const requestId = uuidv7();
-  const progress: ConsolidatedQuery = {
+  const consolidatedQuery: ConsolidatedQuery = {
     requestId,
     status: "processing",
     startedAt,
@@ -123,16 +114,11 @@ export async function startConsolidatedQuery({
     },
   });
 
-  const updatedPatient = await storeQueryInit({
+  const updatedPatient = await storeConsolidatedQueryInitialState({
     id: patient.id,
     cxId: patient.cxId,
-    cmd: {
-      consolidatedQueries: appendProgressToProcessingQueries(
-        patient.data.consolidatedQueries,
-        progress
-      ),
-      cxConsolidatedRequestMetadata,
-    },
+    consolidatedQuery,
+    cxConsolidatedRequestMetadata,
   });
 
   getConsolidatedPatientDataAsync({
@@ -145,22 +131,7 @@ export async function startConsolidatedQuery({
     fromDashboard,
   }).catch(emptyFunction);
 
-  return progress;
-}
-
-function appendProgressToProcessingQueries(
-  currentConsolidatedQueries: ConsolidatedQuery[] | undefined,
-  progress: ConsolidatedQuery
-): ConsolidatedQuery[] {
-  if (currentConsolidatedQueries) {
-    const queriesInProgress = currentConsolidatedQueries.filter(
-      query => query.status === "processing"
-    );
-
-    return [...queriesInProgress, progress];
-  }
-
-  return [progress];
+  return consolidatedQuery;
 }
 
 export function getCurrentConsolidatedProgress(
@@ -248,84 +219,70 @@ export async function getConsolidated({
   dateTo,
   requestId,
   conversionType,
+  useCachedAiBrief,
   bundle,
 }: GetConsolidatedParams): Promise<ConsolidatedData> {
-  const { log } = out(`API getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
+  const { cxId, id: patientId } = patient;
+  const { log } = out(`API getConsolidated - cxId ${cxId}, patientId ${patientId}`);
   const filters = {
     resources: resources ? resources.join(", ") : undefined,
     dateFrom,
     dateTo,
     conversionType,
   };
+  let localBundle = bundle;
+
   try {
-    if (!bundle) {
-      bundle = await getConsolidatedPatientData({
+    if (!localBundle) {
+      localBundle = await getConsolidatedPatientData({
         patient,
+        requestId,
         resources,
         dateFrom,
         dateTo,
+        useCachedAiBrief,
       });
     }
-    bundle.entry = filterOutPrelimDocRefs(bundle.entry);
-    bundle.total = bundle.entry?.length ?? 0;
-    const hasResources = bundle.entry && bundle.entry.length > 0;
-    const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
-    const currentConsolidatedProgress = patient.data.consolidatedQueries?.find(
-      q => q.requestId === requestId
-    );
+    localBundle.entry = filterOutPrelimDocRefs(localBundle.entry);
+    localBundle.total = localBundle.entry?.length ?? 0;
+    const hasResources = localBundle.entry && localBundle.entry.length > 0;
+    const shouldCreateMedicalRecord = conversionType != "json" && hasResources;
 
-    const defaultAnalyticsProps = {
-      distinctId: patient.cxId,
-      event: EventTypes.consolidatedQuery,
-      properties: {
-        patientId: patient.id,
-        conversionType: "bundle",
-        duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
-        resourceCount: bundle.entry?.length,
-      },
-    };
-
-    analytics(defaultAnalyticsProps);
+    sendAnalytics(patient, requestId, "bundle", localBundle.entry?.length);
 
     if (shouldCreateMedicalRecord) {
       // If we need to convert to medical record, we also have to update the resulting
       // FHIR bundle to represent that.
-      bundle = await handleBundleToMedicalRecord({
-        bundle,
+      localBundle = await handleBundleToMedicalRecord({
+        bundle: localBundle,
         patient,
+        requestId,
         resources,
         dateFrom,
         dateTo,
         conversionType,
       });
-
-      analytics({
-        ...defaultAnalyticsProps,
-        properties: {
-          ...defaultAnalyticsProps.properties,
-          duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
-          conversionType,
-        },
-      });
+      sendAnalytics(patient, requestId, conversionType, localBundle.entry?.length);
     }
 
     if (conversionType === "json" && hasResources) {
-      return await uploadConsolidatedJsonAndReturnUrl({
+      return await uploadConsolidatedJsonAndGzipAndReturnUrls({
         patient,
-        bundle,
+        bundle: localBundle,
         filters: filtersToString(filters),
       });
     }
-    return { bundle, filters };
+    return { bundle: localBundle, filters };
   } catch (error) {
-    const msg = "Failed to get FHIR resources";
-    log(`${msg}: ${JSON.stringify(filters)}`);
+    const msg = "Failed to get consolidated data";
+    const errorStr = errorToString(error);
+    log(`${msg} - filters: ${JSON.stringify(filters)}; error: ${errorStr}`);
     capture.error(msg, {
       extra: {
-        error,
         context: `getConsolidated`,
         patientId: patient.id,
         filters,
+        errorStr,
       },
     });
     throw error;
@@ -357,7 +314,7 @@ export function filterOutPrelimDocRefs(
   });
 }
 
-async function uploadConsolidatedJsonAndReturnUrl({
+async function uploadConsolidatedJsonAndGzipAndReturnUrls({
   patient,
   bundle,
   filters,
@@ -369,92 +326,62 @@ async function uploadConsolidatedJsonAndReturnUrl({
   bundle: SearchSetBundle<Resource>;
   filters: Record<string, string | undefined>;
 }> {
-  {
-    const fileName = createMRSummaryFileName(patient.cxId, patient.id, "json");
-    await uploadJsonBundleToS3({
-      bundle,
-      fileName,
-      metadata: {
-        patientId: patient.id,
-        cxId: patient.cxId,
-        resources: filters.resources?.toString() ?? emptyMetaProp,
-        dateFrom: filters.dateFrom ?? emptyMetaProp,
-        dateTo: filters.dateTo ?? emptyMetaProp,
-        conversionType: filters.conversionType ?? emptyMetaProp,
-      },
-    });
+  const fileName = createMRSummaryFileName(patient.cxId, patient.id, "json");
+  const gzipFileName = fileName + ".gz";
+  const medicalDocumentsBucket = Config.getMedicalDocumentsBucketName();
+  const compressedBundle = await compressBundle(bundle);
+  const metadata = {
+    patientId: patient.id,
+    cxId: patient.cxId,
+    resources: filters.resources?.toString() ?? emptyMetaProp,
+    dateFrom: filters.dateFrom ?? emptyMetaProp,
+    dateTo: filters.dateTo ?? emptyMetaProp,
+    conversionType: filters.conversionType ?? emptyMetaProp,
+  };
 
-    // TODO This should use the same function as the one used in handleBundleToMedicalRecord(),
-    // `S3Utils.getSignedUrl()` - prob with the same expiration time for simplicity?
-    const signedUrl = await getSignedURL({
-      bucketName: Config.getMedicalDocumentsBucketName(),
-      fileName,
-    });
-    const newBundle = buildDocRefBundleWithAttachment(patient.id, signedUrl, "json");
-    return { bundle: newBundle, filters };
-  }
+  await Promise.all([
+    uploadJsonBundleToS3({ bundle, fileName, metadata }),
+    uploadGzipBundleToS3({ compressedData: compressedBundle, fileName: gzipFileName, metadata }),
+  ]);
+
+  const [signedUrl, gzipSignedUrl] = await Promise.all([
+    getSignedURL({ bucketName: medicalDocumentsBucket, fileName }),
+    getSignedURL({ bucketName: medicalDocumentsBucket, fileName: gzipFileName }),
+  ]);
+
+  const attachments = [
+    { url: signedUrl, mimeType: "json" as const },
+    { url: gzipSignedUrl, mimeType: "gzip" as const },
+  ];
+
+  const newBundle = buildDocRefBundleWithAttachments(patient.id, attachments);
+  return { bundle: newBundle, filters };
+}
+
+function sendAnalytics(
+  patient: Patient,
+  requestId: string | undefined,
+  conversionTypeForAnalytics: string,
+  resourceCount: number | undefined
+) {
+  const currentConsolidatedProgress = getConsolidatedQueryByRequestId(patient, requestId);
+  analytics({
+    distinctId: patient.cxId,
+    event: EventTypes.consolidatedQuery,
+    properties: {
+      patientId: patient.id,
+      duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
+      conversionType: conversionTypeForAnalytics,
+      resourceCount,
+    },
+  });
 }
 
 /**
- * Get consolidated patient data from FHIR server.
- * Uses ConsolidatedDataConnector, which uses an environment-specific strategy/implementation
- * to load data from the FHIR server:
- * - dev/local: loads data from the FHIR server directly;
- * - cloud envs, calls a lambda to execute the loadingn of data from the FHIR server.
- *
- * @param documentIds (Optional) List of document reference IDs to filter by. If provided, only
- *            resources derived from these document references will be returned.
- * @param resources (Optional) List of resources to filter by. If provided, only
- *            those resources will be included.
- * @returns FHIR bundle of resources matching the filters.
+ * Compresses a FHIR Bundle for S3 storage
  */
-export async function getConsolidatedPatientData({
-  patient,
-  resources,
-  dateFrom,
-  dateTo,
-  fromDashboard = false,
-  forceDataFromFhir = false,
-}: GetConsolidatedPatientData): Promise<SearchSetBundle> {
-  const payload: ConsolidatedSnapshotRequestSync = {
-    patient,
-    resources,
-    dateFrom,
-    dateTo,
-    isAsync: false,
-    fromDashboard,
-    forceDataFromFhir,
-  };
-  const connector = buildConsolidatedSnapshotConnector();
-  const { bundleLocation, bundleFilename } = await connector.execute(payload);
-  const bundle = await getConsolidatedSnapshotFromS3({ bundleLocation, bundleFilename });
-  return bundle;
-}
-
-export async function getConsolidatedPatientDataAsync({
-  patient,
-  resources,
-  dateFrom,
-  dateTo,
-  requestId,
-  conversionType,
-  fromDashboard,
-}: GetConsolidatedPatientData & {
-  requestId: string;
-  conversionType?: ConsolidationConversionType;
-}): Promise<void> {
-  const payload: ConsolidatedSnapshotRequestAsync = {
-    patient,
-    requestId,
-    conversionType,
-    resources,
-    dateFrom,
-    dateTo,
-    isAsync: true,
-    fromDashboard,
-  };
-  const connector = buildConsolidatedSnapshotConnector();
-  connector
-    .execute(payload)
-    .catch(processAsyncError("Failed to get consolidated patient data async", true));
+export async function compressBundle(bundle: Bundle): Promise<Buffer> {
+  const jsonString = JSON.stringify(bundle);
+  const jsonBuffer = Buffer.from(jsonString, "utf8");
+  return compressGzip(jsonBuffer);
 }

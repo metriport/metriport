@@ -53,6 +53,8 @@ export type FunctionType<T> = (
 const emptyString = "";
 
 /**
+ * TODO #ENG-170 Set default `numberOfParallelExecutions` to 5-10 max.
+ *
  * Process an array or items asynchronously. It doesn't throw if one of the promises fails
  * (error handling should be done within the promise/function).
  *

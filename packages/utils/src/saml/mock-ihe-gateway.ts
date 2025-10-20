@@ -21,7 +21,7 @@ const mpi = new InboundMpiMetriportApi(apiUrl);
 
 const app: Application = express();
 
-app.use(express.raw({ type: "application/soap+xml", limit: "2mb" }));
+app.use(express.raw({ type: ["application/soap+xml", "application/xml", "text/xml"] }));
 
 app.post("/v1/patient-discovery", async (req: Request, res: Response) => {
   try {

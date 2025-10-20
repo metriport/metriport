@@ -135,6 +135,7 @@ These are messages you can expect to receive in the following scenarios:
 {
   "meta": {
     "messageId": "<message-id>",
+    "requestId": "<request-id>",
     "when": "<date-time-in-utc>",
     "type": "medical.document-download"
     "data": {
@@ -144,8 +145,11 @@ These are messages you can expect to receive in the following scenarios:
   },
   "patients": [
     {
-      "patientId": "<patient-id-1>",
-      "externalId": "<external-id-1>",
+      "patientId": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
+      "externalId": "1234567890",
+      "additionalIds": {
+        "athenahealth": ["99992"]
+      },
       "type": "document-download",
       "status": "completed",
       "documents": [
@@ -256,8 +260,10 @@ Patients can have a large amount of data, so in order to have access to a Patien
 1. Your app can check the status by calling [get consolidated query status](/medical-api/api-reference/fhir/consolidated-data-query-get) (optional);
 1. When the result is ready, we'll send a webhook message with the results (below).
 
-Note that inside the `Bundle` you'll find a `DocumentReference` resource with the first item in the `content` array containing
-an attachment with a `url` which can be used to download the data.
+Note that inside the `Bundle` you'll find a `DocumentReference` resource with attachments in the `content` array:
+
+- The first item contains an attachment with a `url` which can be used to download the data.
+- If requested `conversionType` is `json`, an additional attachment with `contentType: "application/gzip"` provides a gzip-compressed copy for faster downloads.
 
 <Info>
   If there was no data available for the Patient, the
@@ -271,6 +277,7 @@ Example payload:
 {
   "meta": {
     "messageId": "1e82424a-1220-473d-a0d1-6e5fde15159e",
+    "requestId": "00000000-0000-0000-0000-000000000000",
     "when": "2023-08-23T22:09:11.373Z",
     "type": "medical.consolidated-data"
   },
@@ -278,6 +285,9 @@ Example payload:
     {
       "patientId": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
       "externalId": "1234567890",
+      "additionalIds": {
+        "athenahealth": ["99992"]
+      },
       "status": "completed",
       "filters": {
         "resources": "Encounter,Observation"
@@ -298,6 +308,12 @@ Example payload:
                   "attachment": {
                     "contentType": "application/json",
                     "url": "https://documents.s3.amazonaws.com/abc123-Amz-SignedHeaders=host"
+                  }
+                },
+                {
+                  "attachment": {
+                    "contentType": "application/gzip",
+                    "url": "https://documents.s3.amazonaws.com/abc123.gz-Amz-SignedHeaders=host"
                   }
                 }
               ]
@@ -361,8 +377,13 @@ The format follows:
     </ResponseField>
 
     <ResponseField name="bundle" type="Bundle">
-      A FHIR [Bundle](/medical-api/fhir/resources/bundle) containing a `DocumentReference` resource with the first item in the `content` array containing
-      an attachment with a `url` which can be used to download the FHIR JSON payload - the `url` is valid for 3 minutes.
+      A FHIR [Bundle](/medical-api/fhir/resources/bundle) containing a `DocumentReference` resource with attachments in the `content` array.
+      For JSON requests, two attachments are provided:
+      <ul>
+        <li>Main attachment with the requested format (JSON, HTML, or PDF)</li>
+        <li>Gzip-compressed attachment (JSON only) with `contentType: "application/gzip"` for faster downloads</li>
+      </ul>
+      Each attachment has a `url` which is valid for 3 minutes.
     </ResponseField>
 
   </Expandable>
@@ -377,17 +398,23 @@ update and provide relevant information.
 You can expect to get two messages of this type for each Bulk Patient Create, with the status
 being the main difference between each:
 
-- `waiting`: initial state, waiting for the CSV file;
-- `processing`: the CSV file has been uploaded and is being processed;
-- `completed`: the bulk create is completed;
-- `failed`: the bulk create failed (likely due to an uploaded file with invalid format).
+- First message:
+  - `processing`: the CSV file has been uploaded and is being processed;
+- Second message - one of:
+  - `completed`: the bulk create is completed - includes the [result CSV file](#result-csv-file);
+  - `failed`: the bulk create failed (likely due to the uploaded file being invalid).
 
-Here is an example payload:
+<Info>
+  The URL will only be valid for 180 seconds (3 minutes).
+</Info>
+
+Example payload:
 
 ```json
 {
   "meta": {
-    "messageId": "00000000-00000000-00000000-00000000",
+    "messageId": "1e82424a-1220-473d-a0d1-6e5fde15159e",
+    "requestId": "00000000-0000-0000-0000-000000000000",
     "when": "2024-12-30T05:05:12.215Z",
     "type": "medical.bulk-patient-create"
   },
@@ -433,7 +460,8 @@ The format follows:
 
     <ResponseField name="result" type="string">
       The URL to download the CSV file containing the result of
-      the Bulk Patient Create. It's valid for 5 minutes.
+      the Bulk Patient Create. It's valid for 3 minutes. Only present if the
+      status is `completed`.
     </ResponseField>
 
   </Expandable>
@@ -443,6 +471,10 @@ The format follows:
 
 The message `medical.bulk-patient-create` with status `completed` includes a URL in the `result`
 field, which you can use to download the result of the Bulk Patient Create.
+
+<Info>
+  The URL will only be valid for 180 seconds (3 minutes).
+</Info>
 
 The file is based on the same format as the
 [input CSV](/medical-api/api-reference/patient/bulk-create-patient#input-csv-file-format), with the
@@ -471,20 +503,28 @@ An example of a result file can be accessed
 If you want to download all of a patient's documents, especially when they have a large volume of documents, you can start a [Bulk Get Document URL query](/medical-api/api-reference/document/download-url-bulk). We’ll send a webhook message with all the downloadable URLs for all the patient's documents.
 You can use the value of the `url` property in the returned `documents` objects to download the files.
 
+<Info>
+  The URLs will only be valid for 600 seconds (10 minutes).
+</Info>
+
 Here is an example payload:
 
 ```json
 {
 "meta": {
     "messageId": "bd4184dd-3b35-4c60-8130-447d1d528fea",
+    "requestId": "00000000-0000-0000-0000-000000000000",
     "when": "2023-11-30T05:05:12.215Z",
     "type": "medical.document-bulk-download-urls"
   },
   "patients": [
     {
       "status": "completed",
-      "patientId": "<patient-id-1>",
-      "externalId": "<external-id-1>",
+      "patientId": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
+      "externalId": "1234567890",
+      "additionalIds": {
+        "athenahealth": ["99992"]
+      },
       "documents": [
         {
           "id": "018c1b94-57dc-7950-b564-f74ab9b56cc4",

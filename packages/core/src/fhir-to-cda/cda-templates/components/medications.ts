@@ -1,5 +1,6 @@
 import { Bundle, Dosage, DosageDoseAndRate, MedicationStatement } from "@medplum/fhirtypes";
 import { BadRequestError } from "@metriport/shared";
+import { encodeToHtml } from "@metriport/shared/common/html";
 import {
   findResourceInBundle,
   isMedication,
@@ -26,13 +27,13 @@ import {
   withoutNullFlavorObject,
 } from "../commons";
 import {
-  NOT_SPECIFIED,
-  _xsiTypeAttribute,
   extensionValue2014,
   loincCodeSystem,
   loincSystemName,
+  NOT_SPECIFIED,
   oids,
   placeholderOrgOid,
+  _xsiTypeAttribute,
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { initiateSectionTable } from "../table";
@@ -112,7 +113,7 @@ function createTableRowsFromMedicationStatement(
         _ID: referenceId,
         ["td"]: [
           {
-            "#text": medicationName ?? NOT_SPECIFIED,
+            "#text": encodeToHtml(medicationName ?? NOT_SPECIFIED),
           },
           {
             "#text": code?._code ?? NOT_SPECIFIED,

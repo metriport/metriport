@@ -34,7 +34,7 @@ export type QueueProps = (StandardQueueProps | FifoQueueProps) & {
   alarmMaxAgeOfOldestMessage?: Duration;
   createDLQ?: boolean | undefined;
   createRetryLambda?: boolean | undefined;
-  lambdaLayers: ILayerVersion[];
+  lambdaLayers?: ILayerVersion[];
   envType: EnvType;
   alarmMaxAgeOfOldestMessageDlq?: Duration;
 };

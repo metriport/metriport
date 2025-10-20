@@ -14,6 +14,7 @@ import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import { chunk } from "lodash";
 import { getPatientIds } from "./patient/get-ids";
+import { getDelayTime } from "./shared/duration";
 import { initFile } from "./shared/file";
 import { buildGetDirPathInside, initRunsFolder } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
@@ -29,6 +30,9 @@ dayjs.extend(duration);
  * Make sure to update the `patientIds` with the list of Patient IDs you
  * want to trigger document queries for, otherwise it will do it for all
  * Patients of the respective customer.
+ *
+ * This supports updating the delay time in-flight, by editing the respective file.
+ * @see shared/duration.ts for more details
  *
  * Execute this with:
  * $ npm run bulk-query -- --dryrun
@@ -47,10 +51,12 @@ const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const metriportAPI = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
+  timeout: 120_000,
 });
 
 // query stuff
-const delayTime = dayjs.duration(10, "seconds");
+const minimumDelayTime = dayjs.duration(3, "seconds");
+const defaultDelayTime = dayjs.duration(10, "seconds");
 const patientChunkSize = parseInt(getEnvVar("PATIENT_CHUNK_SIZE") ?? "10");
 const detailedConfig: DetailedConfig = {
   patientChunkDelayJitterMs: parseInt(getEnvVar("PATIENT_CHUNK_DELAY_JITTER_MS") ?? "1000"),
@@ -100,18 +106,26 @@ async function queryDocsForPatient(
       resources: {},
       total: 0,
     };
+    const getPatientPromise = async () => metriportAPI.getPatient(patientId);
+    const patient = await getPatientPromise();
+
+    if (!patient.facilityIds || patient.facilityIds.length === 0) {
+      log(`Patient ${patientId} has no facilities, skipping...`);
+      return;
+    }
+    const facilityId = patient.facilityIds[0]; // Use the first facility
+
     const docQueryPromise = async () =>
       triggerAndQueryDocRefs.queryDocsForPatient({
         cxId,
         patientId,
+        facilityId,
         triggerWHNotificationsToCx,
         config: detailedConfig,
         log,
       });
-    const getPatientPromise = async () => metriportAPI.getPatient(patientId);
 
     if (dryRun) {
-      const patient = await getPatientPromise();
       log(
         `Would be triggering the DQ for patient ${patient.id} ` +
           `${patient.firstName} ${patient.lastName}...`
@@ -119,7 +133,7 @@ async function queryDocsForPatient(
       return;
     }
 
-    const [patient, docQueryResult] = await Promise.all([getPatientPromise(), docQueryPromise()]);
+    const docQueryResult = await docQueryPromise();
     const { queryComplete, docQueryAttempts } = docQueryResult;
 
     if (queryComplete) {
@@ -150,6 +164,7 @@ async function queryDocsForPatient(
     const msg = `ERROR processing patient ${patientId}: `;
     log(msg, error.message);
     patientsWithErrors.push(patientId);
+    fs.appendFileSync(outputFileName + "_error_ids.txt", `${patientId}\n`);
     logErrorToFile(errorFileName, msg, error);
   }
 }
@@ -164,6 +179,9 @@ program
   .option(`--dryrun`, "Just simulate DQ without actually triggering it.")
   .showHelpAfterError();
 
+/*****************************************************************************
+ *                                MAIN
+ *****************************************************************************/
 async function main() {
   initRunsFolder();
   program.parse();
@@ -196,7 +214,7 @@ async function main() {
     initFile(errorFileName);
   }
 
-  log(`>>> Running it...`);
+  log(`>>> Running it... (delay time is ${localGetDelay(log)} ms)`);
 
   let count = 0;
   const chunks = chunk(patientIdsToQuery, patientChunkSize);
@@ -212,8 +230,9 @@ async function main() {
     log(`>>> Progress: ${count}/${patientIdsToQuery.length} patient doc queries complete`);
 
     if (parseInt(i) < chunks.length - 1) {
-      log(`>>> Sleeping for ${delayTime.asMilliseconds()} ms before the next chunk...`);
-      await sleep(delayTime.asMilliseconds());
+      const delayTime = localGetDelay(log);
+      log(`>>> Sleeping for ${delayTime} ms before the next chunk...`);
+      await sleep(delayTime);
     }
   }
 
@@ -227,6 +246,10 @@ async function main() {
   }
   log(`>>> Done querying docs for all patients in ${Date.now() - startedAt} ms`);
   process.exit(0);
+}
+
+function localGetDelay(log: typeof console.log) {
+  return getDelayTime({ log, minimumDelayTime, defaultDelayTime });
 }
 
 main();

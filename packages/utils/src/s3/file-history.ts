@@ -5,11 +5,11 @@ import { HeadObjectCommand, ListObjectVersionsCommand } from "@aws-sdk/client-s3
 import { createFilePath } from "@metriport/core/domain/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { sleep } from "@metriport/shared";
-import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
+import { getEnvVarOrFail, sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import fs from "fs";
 import { groupBy } from "lodash";
+import { elapsedTimeAsStr } from "../shared/duration";
 import { makeDir } from "../shared/fs";
 
 /**
@@ -20,7 +20,7 @@ import { makeDir } from "../shared/fs";
  * Usage:
  * - Set the environment variables in the .env file
  * - Set `cxAndPatient` array with the CX IDs, CX Names, and Patient IDs
- * - Run: `ts-node src/s3-file-history.ts`
+ * - Run: `ts-node src/s3/file-history.ts`
  */
 
 // [ [cxId, cxName, patientId], [cxId, cxName, patientId], , ... ]
@@ -29,6 +29,7 @@ const suffix = `CONSOLIDATED_DATA.json`;
 
 const bucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const region = getEnvVarOrFail("AWS_REGION");
+const PARALLEL_CALLS_TO_S3 = 50;
 
 const timestamp = dayjs().toISOString();
 const outputFolderName = `runs/s3-file-history/${timestamp}`;
@@ -48,9 +49,10 @@ type Result = {
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
   console.log(`############ Starting... ############`);
+  const startedAt = Date.now();
 
   const cxIds = groupBy(cxAndPatient, v => v[0]);
-  console.log(`${Object.keys(cxIds).length} CX IDs`);
+  console.log(`${Object.keys(cxIds).length} cxs, ${cxAndPatient.length} patients`);
 
   const patientsWithConsolidated: Result[] = [];
 
@@ -64,8 +66,9 @@ async function main() {
         const res = await getFileInfo(cxId, patientId);
         patientsWithConsolidated.push({ cxId, cxName, patientId, ...res });
       },
-      { numberOfParallelExecutions: 10 }
+      { numberOfParallelExecutions: PARALLEL_CALLS_TO_S3 }
     );
+    console.log(`...done cx ${cxId} - ${patientIds.length} patients`);
   }
 
   const outputHeader = `cxId${sep}cxName${sep}patientId${sep}previous${sep}current\n`;
@@ -76,7 +79,7 @@ async function main() {
   fs.appendFileSync(outputFilePath, outputHeader);
   fs.appendFileSync(outputFilePath, outputContents);
 
-  console.log(`Done - ${Object.keys(cxIds).length} CX IDs`);
+  console.log(`Done in ${elapsedTimeAsStr(startedAt)}ms - ${Object.keys(cxIds).length} CX IDs`);
 }
 
 async function getFileInfo(

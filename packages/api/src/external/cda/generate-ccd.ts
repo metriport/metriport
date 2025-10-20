@@ -1,25 +1,26 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
+import { getConsolidatedPatientData } from "@metriport/core/command/consolidated/consolidated-get";
 import {
   CCD_SUFFIX,
   createUploadFilePath,
   FHIR_BUNDLE_SUFFIX,
-} from "@metriport/core/domain/document/upload";
+} from "@metriport/core/shareback/file";
 import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { dangerouslyDeduplicate } from "@metriport/core/external/fhir/consolidated/deduplicate";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { out } from "@metriport/core/util/log";
 import { JSON_APP_MIME_TYPE } from "@metriport/core/util/mime";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared";
-import { getConsolidatedPatientData } from "../../command/medical/patient/consolidated-get";
 import { convertFhirToCda } from "../../command/medical/patient/convert-fhir-to-cda";
+import { normalizeBundle } from "../../command/medical/patient/data-contribution/shared";
 import { bundleSchema } from "../../routes/medical/schemas/fhir";
 import { Config } from "../../shared/config";
 import { validateFhirEntries } from "../fhir/shared/json-validator";
 import { generateEmptyCcd } from "./generate-empty-ccd";
-import { normalizeBundle } from "../../command/medical/patient/data-contribution/shared";
 
 const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();
@@ -48,6 +49,11 @@ export async function generateCcd(
     type: "collection",
     entry: [...metriportGenerated, { resource: fhirOrganization }],
   };
+  dangerouslyDeduplicate({
+    cxId: patient.cxId,
+    patientId: patient.id,
+    bundle,
+  });
   const normalizedBundle = normalizeBundle(bundle);
   const parsedBundle = bundleSchema.parse(normalizedBundle);
   await uploadCcdFhirDataToS3(patient, parsedBundle, requestId);

@@ -2,11 +2,24 @@ import { USState } from "@metriport/shared";
 import { Address } from "../../domain/address";
 import { Contact } from "../../domain/contact";
 import { GenderAtBirth } from "../../domain/patient";
-import { normalizePatient } from "../normalize-patient";
+import { normalizePatient, splitName } from "../normalize-patient";
 import { PatientMPI } from "../shared";
 
 describe("normalizePatient", () => {
   describe("normalizePatient email normalization", () => {
+    it("does not update the original object", () => {
+      const originalFirstName = "John Lennon";
+      const patientOriginal = makePatientMPI({
+        firstName: originalFirstName,
+      });
+      const result = normalizePatient(patientOriginal);
+      expect(result.firstName).not.toEqual(patientOriginal.firstName);
+      expect(patientOriginal.firstName).toEqual(originalFirstName);
+      console.log(
+        `result.firstName: ${result.firstName}, patientOriginal.firstName: ${patientOriginal.firstName}`
+      );
+    });
+
     it("should normalize email addresses to lowercase and remove leading/trailing whitespaces", () => {
       const patientMPI = makePatientMPI({
         contact: [{ email: "  JOHN.DOE@example.com  " }],
@@ -127,6 +140,29 @@ describe("normalizePatient", () => {
 
       const result = normalizePatient(patientMPI);
       expect(result).toEqual(expected);
+    });
+  });
+
+  describe("splitName", () => {
+    it("separates names by spaces", () => {
+      const originalName = "John Lennon";
+      const expectedName = ["John", "Lennon"];
+      const result = splitName(originalName);
+      expect(result).toEqual(expectedName);
+    });
+
+    it("separates names by comma", () => {
+      const originalName = "John,Lennon";
+      const expectedName = ["John", "Lennon"];
+      const result = splitName(originalName);
+      expect(result).toEqual(expectedName);
+    });
+
+    it("separates names by comma and spaces at the same time", () => {
+      const originalName = "John Lennon, Smith";
+      const expectedName = ["John", "Lennon", "Smith"];
+      const result = splitName(originalName);
+      expect(result).toEqual(expectedName);
     });
   });
 });

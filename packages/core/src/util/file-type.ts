@@ -1,26 +1,26 @@
 import {
-  JSON_APP_MIME_TYPE,
-  JSON_TXT_MIME_TYPE,
-  XML_APP_MIME_TYPE,
-  XML_TXT_MIME_TYPE,
-  PDF_MIME_TYPE,
-  TIFF_MIME_TYPE,
-  TIF_MIME_TYPE,
-  PNG_MIME_TYPE,
+  BMP_FILE_EXTENSION,
+  BMP_MIME_TYPE,
+  HTML_MIME_TYPE,
+  JPEG_FILE_EXTENSION,
   JPEG_MIME_TYPE,
   JPG_MIME_TYPE,
-  BMP_MIME_TYPE,
-  TXT_MIME_TYPE,
-  OCTET_MIME_TYPE,
-  HTML_MIME_TYPE,
-  XML_FILE_EXTENSION,
-  PDF_FILE_EXTENSION,
-  TIFF_FILE_EXTENSION,
-  PNG_FILE_EXTENSION,
-  JPEG_FILE_EXTENSION,
-  BMP_FILE_EXTENSION,
-  TXT_FILE_EXTENSION,
+  JSON_APP_MIME_TYPE,
+  JSON_TXT_MIME_TYPE,
   OCTET_FILE_EXTENSION,
+  OCTET_MIME_TYPE,
+  PDF_FILE_EXTENSION,
+  PDF_MIME_TYPE,
+  PNG_FILE_EXTENSION,
+  PNG_MIME_TYPE,
+  TIFF_FILE_EXTENSION,
+  TIFF_MIME_TYPE,
+  TIF_MIME_TYPE,
+  TXT_FILE_EXTENSION,
+  TXT_MIME_TYPE,
+  XML_APP_MIME_TYPE,
+  XML_FILE_EXTENSION,
+  XML_TXT_MIME_TYPE,
 } from "./mime";
 
 const TIFF_MAGIC_NUMBER_1 = 0x49;
@@ -49,6 +49,8 @@ const XML_MAGIC_NUMBER_9 = 0x6c;
 const XML_MAGIC_NUMBER_10 = 0x69;
 const XML_MAGIC_NUMBER_11 = 0x6e;
 const XML_MAGIC_NUMBER_12 = 0x69;
+const XML_MAGIC_NUMBER_13 = 0x21;
+const XML_MAGIC_NUMBER_14 = 0x2d;
 const PNG_MAGIC_NUMBER_1 = 0x89;
 const PNG_MAGIC_NUMBER_2 = 0x50;
 const PNG_MAGIC_NUMBER_3 = 0x4e;
@@ -148,7 +150,7 @@ export function detectFileType(param: Buffer | string): DetectedFileType {
       bytesBuffer[2] === TIFF_MAGIC_NUMBER_7 &&
       bytesBuffer[3] === TIFF_MAGIC_NUMBER_8)
   ) {
-    return { mimeType: TIFF_MIME_TYPE, fileExtension: TIFF_FILE_EXTENSION };
+    return { mimeType: TIFF_MIME_TYPE, fileExtension: "." + TIFF_FILE_EXTENSION };
   } else if (
     bytesBuffer[0] === PDF_MAGIC_NUMBER_1 &&
     bytesBuffer[1] === PDF_MAGIC_NUMBER_2 &&
@@ -156,42 +158,41 @@ export function detectFileType(param: Buffer | string): DetectedFileType {
     bytesBuffer[3] === PDF_MAGIC_NUMBER_4 &&
     bytesBuffer[4] === PDF_MAGIC_NUMBER_5
   ) {
-    return { mimeType: PDF_MIME_TYPE, fileExtension: PDF_FILE_EXTENSION };
+    return { mimeType: PDF_MIME_TYPE, fileExtension: "." + PDF_FILE_EXTENSION };
   } else if (isXMLContentType(bytesBuffer)) {
-    return { mimeType: XML_APP_MIME_TYPE, fileExtension: XML_FILE_EXTENSION };
+    return { mimeType: XML_APP_MIME_TYPE, fileExtension: "." + XML_FILE_EXTENSION };
   } else if (
     bytesBuffer[0] === PNG_MAGIC_NUMBER_1 &&
     bytesBuffer[1] === PNG_MAGIC_NUMBER_2 &&
     bytesBuffer[2] === PNG_MAGIC_NUMBER_3 &&
     bytesBuffer[3] === PNG_MAGIC_NUMBER_4
   ) {
-    return { mimeType: PNG_MIME_TYPE, fileExtension: PNG_FILE_EXTENSION };
+    return { mimeType: PNG_MIME_TYPE, fileExtension: "." + PNG_FILE_EXTENSION };
   } else if (
     bytesBuffer[0] === JPEG_MAGIC_NUMBER_1 &&
     bytesBuffer[1] === JPEG_MAGIC_NUMBER_2 &&
     bytesBuffer[2] === JPEG_MAGIC_NUMBER_1
   ) {
-    return { mimeType: JPEG_MIME_TYPE, fileExtension: JPEG_FILE_EXTENSION };
+    return { mimeType: JPEG_MIME_TYPE, fileExtension: "." + JPEG_FILE_EXTENSION };
   } else if (bytesBuffer[0] === BMP_MAGIC_NUMBER_1 && bytesBuffer[1] === BMP_MAGIC_NUMBER_2) {
-    return { mimeType: BMP_MIME_TYPE, fileExtension: BMP_FILE_EXTENSION };
+    return { mimeType: BMP_MIME_TYPE, fileExtension: "." + BMP_FILE_EXTENSION };
   } else if (isLikelyTextFile(bytesBuffer)) {
-    return { mimeType: TXT_MIME_TYPE, fileExtension: TXT_FILE_EXTENSION };
+    return { mimeType: TXT_MIME_TYPE, fileExtension: "." + TXT_FILE_EXTENSION };
   } else {
-    return { mimeType: OCTET_MIME_TYPE, fileExtension: OCTET_FILE_EXTENSION };
+    return { mimeType: OCTET_MIME_TYPE, fileExtension: "." + OCTET_FILE_EXTENSION };
   }
 }
+
 /**
  * The function checks if the MIME type of a document is accepted based on a predefined list of
  * accepted content types. Returns true if accepted
  * @param document - A document object that contains the MIME type of the document.
  * @returns The function isContentTypeAccepted is returning a boolean value.
  */
-
 export function isContentTypeAccepted(mimeType: string | undefined): boolean {
   const acceptedContentTypes = [
     JSON_APP_MIME_TYPE,
     JSON_TXT_MIME_TYPE,
-    XML_APP_MIME_TYPE,
     XML_TXT_MIME_TYPE,
     PDF_MIME_TYPE,
     TIFF_MIME_TYPE,
@@ -200,7 +201,6 @@ export function isContentTypeAccepted(mimeType: string | undefined): boolean {
     JPEG_MIME_TYPE,
     JPG_MIME_TYPE,
     BMP_MIME_TYPE,
-    TXT_MIME_TYPE,
     HTML_MIME_TYPE,
   ];
 
@@ -226,6 +226,10 @@ export function isXMLContentType(bytesBuffer: Buffer): boolean {
       bytesBuffer[2] === XML_MAGIC_NUMBER_9 &&
       bytesBuffer[3] === XML_MAGIC_NUMBER_10 &&
       bytesBuffer[4] === XML_MAGIC_NUMBER_11 &&
-      bytesBuffer[5] === XML_MAGIC_NUMBER_12)
+      bytesBuffer[5] === XML_MAGIC_NUMBER_12) ||
+    (bytesBuffer[0] === XML_MAGIC_NUMBER_1 && //Checking for [<!--] (XML style comment)
+      bytesBuffer[1] === XML_MAGIC_NUMBER_13 &&
+      bytesBuffer[2] === XML_MAGIC_NUMBER_14 &&
+      bytesBuffer[3] === XML_MAGIC_NUMBER_14)
   );
 }

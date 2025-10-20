@@ -1,14 +1,41 @@
 import { Bundle } from "@medplum/fhirtypes";
+import { BadRequestError } from "@metriport/shared";
 import Ajv from "ajv";
 import metaSchema from "ajv/lib/refs/json-schema-draft-06.json";
-import BadRequestError from "../../../errors/bad-request";
-import { Bundle as ValidBundle } from "../../../routes/medical/schemas/fhir";
 import schema from "./fhir.schema.json";
+import { z } from "zod";
 
 type LocalError = {
   resourceType: string;
   resourceId: string;
 };
+
+const typeSchema = z.enum(["collection", "searchset"]);
+
+const bundleEntrySchema = z.array(
+  z.object({
+    resource: z.any().refine(value => value !== undefined, { message: "Resource is required" }),
+  })
+);
+
+/**
+ * @deprecated Use @metriport/core/external/fhir/validation/json-validator.ts instead
+ */
+export const bundleSchema = z.object({
+  resourceType: z.enum(["Bundle"]),
+  type: typeSchema,
+  entry: bundleEntrySchema,
+});
+
+/**
+ * @deprecated Use @metriport/core/external/fhir/validation/json-validator.ts instead
+ */
+export type BundleEntry = z.infer<typeof bundleEntrySchema>;
+
+/**
+ * @deprecated Use @metriport/core/external/fhir/validation/json-validator.ts instead
+ */
+export type ValidBundle = z.infer<typeof bundleSchema>;
 
 /**
  * Make sure not to modify these as they are reused across different requests
@@ -17,6 +44,9 @@ const ajv = new Ajv({ strict: false });
 ajv.addMetaSchema(metaSchema);
 const validate = ajv.compile(schema);
 
+/**
+ * @deprecated Use @metriport/core/external/fhir/validation/json-validator.ts instead
+ */
 export function validateFhirEntries(bundle: Bundle): ValidBundle {
   if (bundle.type !== "collection") throw new BadRequestError("Bundle must be a collection");
   if (!bundle.entry) throw new BadRequestError("Bundle must have entries");

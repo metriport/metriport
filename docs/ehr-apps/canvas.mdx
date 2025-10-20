@@ -2,4 +2,29 @@
 title: "Canvas"
 ---
 
-Metriport's Canvas app is currently in development. Contact us at support@metriport.com to learn more about our upcoming app capabilities and timeline.
+Metriport's Canvas app enables seamless access to patient health data directly within the Canvas EHR workflow through an modal application in the patient's Chart. The modal app provides access to all health data available via Metriport's dashboard and API, including the ability to initiate new Document Queries.
+
+<iframe
+  src="https://www.loom.com/embed/22ab46cd49e644698ac5ea9717b06dc2?sid=5431da1d-f505-429f-9e79-88c0307ed326"
+  width="100%"
+  height="450px"
+></iframe>
+
+## Getting Started
+
+To enable the Metriport Canvas embedded app in your instance, follow these steps:
+
+1. Reach out to [Canvas customer success](mailto:customersuccess@canvasmedical.com) and request authorization for partner access to your production instance.
+2. Reach out to [Metriport support](mailto:support@metriport.com) to get a Modal Token and Webhook Token if not already provided.
+
+## How it Works
+
+Patients can be created in Metriport through two automated workflows:
+
+1. **Manual Creation**: When an Canvas user opens the Metriport modal app on a patient's Chart for the first time, it triggers a one-time creation flow if the patient doesn't already exist in Metriport.
+
+2. **Appointment-Based Creation**: When an appointment is scheduled for a Canvas patient, Metriport will be sent a webhook that automatically creates the patient in the background.
+
+In both cases, a Document Query is automatically triggered after patient creation to begin gathering available health data.
+
+Once a patient is created, you can access their comprehensive medical history by clicking the "Apps" button and selecting the Metriport app. This opens an iframe displaying the patient's complete Metriport record, including all available health data.

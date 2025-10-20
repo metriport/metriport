@@ -1,0 +1,176 @@
+name: Deploy VPN tunnel for HL7 Notification CDK
+
+# This workflow checks out both the OSS and Internal repos.
+# Because of that, the each step has to indicate the folder in which it should run at - different
+# from regular workflows that only checkout the repo once and run all steps in the same folder.
+
+on:
+  workflow_call:
+    inputs:
+      deploy_env:
+        description: "The environment we're deploying to, either 'staging' or 'production', this deploy does not run in sandbox"
+        required: true
+        type: string
+      partner_name:
+        description: "The partner we're deploying the tunnel for, e.g. 'MyTestHIE'"
+        required: true
+        type: string
+      secrets_cdk_stack:
+        description: "The name of the CDK stack to deploy the secrets to"
+        required: true
+        type: string
+      AWS_REGION:
+        required: true
+        type: string
+    secrets:
+      SERVICE_PAT:
+        required: true
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      SENTRY_AUTH_TOKEN:
+        required: false
+      SENTRY_ORG:
+        required: false
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
+
+jobs:
+  deploy:
+    # prevents 2+ devs/workflows trying to deploy to AWS at the same time
+    # https://serverlessfirst.com/emails/how-to-prevent-concurrent-deployments-of-serverless-stacks-in-github-actions/
+    # TODO Consider the solution here: https://github.com/tj-actions/aws-cdk/blob/main/action.yml
+    concurrency:
+      group: ${{ format('{0}-{1}', inputs.partner_name, inputs.deploy_env) }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.deploy_env }}
+    steps:
+      - name: Log Environment
+        run: |
+          env
+        shell: bash
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18.14"
+
+      # checkout the actual repo
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          path: metriport
+
+      # checkout the internal repo to get configs - default branches
+      - name: Checkout internal default branch
+        uses: actions/checkout@v3
+        with:
+          repository: metriport/metriport-internal
+          ref: ${{ ((inputs.deploy_env == 'production') && 'master') || 'develop' }}
+          token: ${{ secrets.SERVICE_PAT }} # secret token from user 'metriport-service'
+          path: metriport-internal
+          sparse-checkout: |
+            config-oss/api-infra
+
+      # checkout the internal repo to get configs - feature branch when "branching to staging"
+      - name: Determine which internal branch to checkout
+        env:
+          GITHUB_TOKEN: ${{ secrets.SERVICE_PAT }}
+        run: |
+          set +e # don't stop on failure
+          gh api /repos/metriport/metriport-internal/branches/${{ github.ref_name }} --silent
+          RESULT=$?
+          if [ $RESULT -eq 0 ]; then
+            INTERNAL_BRANCH=${{ github.ref }}
+          else
+            INTERNAL_BRANCH=develop
+          fi
+          echo "Internal branch for checkout: $INTERNAL_BRANCH"
+          echo "INTERNAL_BRANCH=$INTERNAL_BRANCH" >> $GITHUB_ENV
+
+      - name: Checkout internal feature branch
+        uses: actions/checkout@v3
+        with:
+          repository: metriport/metriport-internal
+          ref: ${{ env.INTERNAL_BRANCH }}
+          token: ${{ secrets.SERVICE_PAT }} # secret token from user 'metriport-service'
+          path: metriport-internal
+          sparse-checkout: |
+            config-oss/api-infra
+
+
+      - name: Log Git Ref
+        run: |
+          echo "Git ref: $(git rev-parse HEAD)"
+        working-directory: metriport
+        shell: bash
+
+      - name: Install dependencies for relevant packages
+        run: |
+          npm ci --ignore-scripts --no-fund
+        working-directory: "metriport/"
+
+      # TODO: This shouldn't be needed as a dependency, but it is.
+      - name: Build fhir converter dependencies
+        run: npm run prep-deploy
+        working-directory: "metriport/packages/fhir-converter"
+
+      - name: Lambdas build shared layer
+        run: npm run prep-deploy
+        working-directory: "metriport/packages/lambdas/"
+        
+      - name: Build relevant packages
+        run: |
+          npm run build:cloud 
+        working-directory: "metriport/"
+
+      - name: Infra test
+        run: npm run test
+        working-directory: "metriport/packages/infra"
+      # Secrets Stack
+      - name: Diff Secrets CDK Stack
+        uses: metriport/deploy-with-cdk@master
+        with:
+          cdk_action: "diff"
+          cdk_version: "2.122.0"
+          cdk_stack: "${{ inputs.secrets_cdk_stack }}"
+          cdk_env: "${{ inputs.deploy_env }}"
+        env:
+          INPUT_PATH: "metriport/packages/infra"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
+      - name: Deploy Secrets CDK Stack
+        uses: metriport/deploy-with-cdk@master
+        with:
+          cdk_action: "deploy --verbose --require-approval never"
+          cdk_version: "2.122.0"
+          cdk_stack: "${{ inputs.secrets_cdk_stack }}"
+          cdk_env: "${{ inputs.deploy_env }}"
+        env:
+          INPUT_PATH: "metriport/packages/infra"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
+          METRIPORT_VERSION: ${{ github.sha }}
+
+      - name: Deploy VPN Tunnel Stack CDK
+        uses: metriport/deploy-with-cdk@master
+        with:
+          cdk_action: "deploy --verbose --require-approval never"
+          cdk_version: "2.122.0"
+          cdk_stack: "VpnStack-${{ inputs.partner_name }}"
+          cdk_env: "${{ inputs.deploy_env }}"
+        env:
+          INPUT_PATH: "metriport/packages/infra"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
+          METRIPORT_VERSION: ${{ github.sha }}

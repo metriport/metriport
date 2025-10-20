@@ -99,6 +99,30 @@ export function joinName(name: string[]): string {
   return name.join(" ");
 }
 
+/**
+ * Attempts to find a middle name in a first name.
+ * Currently this only checks for middle name initials.
+ * @param firstName - The first name to get the middle name from.
+ * @returns The middle name or undefined if there is no middle name.
+ */
+export function getFirstNameAndMiddleInitial(combinedFirstName: string): {
+  firstName: string;
+  middleInitial: string | undefined;
+} {
+  const cleanFirstName = combinedFirstName.replace(/[^a-zA-Z ]/g, "");
+  const lastTwoChars = cleanFirstName.substring(cleanFirstName.length - 2);
+  const hasMiddleInitial = lastTwoChars[0] === " ";
+
+  if (hasMiddleInitial) {
+    return {
+      firstName: cleanFirstName.substring(0, cleanFirstName.length - 2),
+      middleInitial: lastTwoChars[1],
+    };
+  }
+
+  return { firstName: combinedFirstName, middleInitial: undefined };
+}
+
 export interface Patient extends BaseDomain, PatientCreate {}
 
 export function getStatesFromAddresses(patient: Patient): USStateForAddress[] {
@@ -116,11 +140,18 @@ export function createSsnPersonalIdentifier(value: string): PersonalIdentifier {
 export function createDriversLicensePersonalIdentifier(
   value: string,
   state: USStateForAddress
-): PersonalIdentifier {
-  const personalIdentifier: PersonalIdentifier = {
+): DriversLicense {
+  const personalIdentifier: DriversLicense = {
     type: "driversLicense",
     value: value,
     state: state,
   };
   return personalIdentifier;
+}
+
+export function getConsolidatedQueryByRequestId(
+  patient: Pick<Patient, "data">,
+  requestId: string | undefined
+): ConsolidatedQuery | undefined {
+  return patient.data.consolidatedQueries?.find(q => q.requestId === requestId);
 }

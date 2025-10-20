@@ -69,7 +69,7 @@ function extractEncounterTimePeriod(srcData) {
 function getEncompassingEncounterId(srcData) {
   const jsonObj = parser.parse(srcData);
   const encompassingEncounter = jsonObj.ClinicalDocument?.componentOf?.encompassingEncounter;
-  if (encompassingEncounter) {
+  if (encompassingEncounter && encompassingEncounter.id) {
     const extIdRef = encompassingEncounter.id;
     const externalId = {
       ...(extIdRef.root && { root: extIdRef?.root }),

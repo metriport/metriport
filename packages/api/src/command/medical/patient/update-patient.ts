@@ -3,15 +3,19 @@ import { toFHIR } from "@metriport/core/external/fhir/patient/conversion";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { patientEvents } from "../../../event/medical/patient-event";
 import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
+import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
+import { validateVersionForUpdate } from "../../../models/_default";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
-import { getPatientOrFail } from "./get-patient";
+import {
+  PatientWithIdentifiers,
+  attachPatientIdentifiers,
+  getPatientModelOrFail,
+} from "./get-patient";
 import { sanitize, validate } from "./shared";
-import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
 
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
@@ -34,7 +38,7 @@ export async function updatePatient({
   forceCarequality?: boolean;
   // END TODO #1572 - remove
   emit?: boolean;
-}): Promise<Patient> {
+}): Promise<PatientWithIdentifiers> {
   const { cxId, facilityId } = patientUpdate;
 
   // validate facility exists and cx has access to it
@@ -53,7 +57,8 @@ export async function updatePatient({
     forceCarequality,
   }).catch(processAsyncError("runOrSchedulePatientDiscoveryAcrossHies"));
 
-  return patient;
+  const patientWithIdentifiers = await attachPatientIdentifiers(patient);
+  return patientWithIdentifiers;
 }
 
 export async function updatePatientWithoutHIEs(
@@ -72,8 +77,8 @@ export async function updatePatientWithoutHIEs(
   });
   if (addressWithCoordinates) patientUpdate.address = addressWithCoordinates;
 
-  const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const patient = await getPatientOrFail({
+  const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
+    const patient = await getPatientModelOrFail({
       id,
       cxId,
       lock: true,
@@ -99,8 +104,6 @@ export async function updatePatientWithoutHIEs(
       { transaction }
     );
   });
-
-  if (emit) patientEvents().emitUpdated(result);
-
-  return result;
+  if (emit) patientEvents().emitUpdated(patient);
+  return patient.dataValues;
 }

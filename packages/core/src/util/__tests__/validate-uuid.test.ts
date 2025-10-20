@@ -1,4 +1,4 @@
-import { isValidUuid, uuidv7 } from "../uuid-v7";
+import { isValidUuid, uuidv4, uuidv7 } from "../uuid-v7";
 
 const validUuid = "01902d03-8560-78ef-9566-f0b133de4a65";
 const allNumberValidUuid = "01902203-8560-7821-9566-202133224111";
@@ -20,10 +20,21 @@ describe("isValidUuid", () => {
     expect(isValidUuid(idWithUnexpectedCharacters)).toBe(false);
   });
 
-  it("should validate uuids created with uuidv7()", () => {
-    for (let i = 0; i < 100; i++) {
+  describe("uuidv7", () => {
+    for (let i = 0; i < 10; i++) {
       const id = uuidv7();
-      expect(isValidUuid(id)).toBe(true);
+      it("should validate uuidv7 " + id, () => {
+        expect(isValidUuid(id)).toBe(true);
+      });
+    }
+  });
+
+  describe("uuidv4", () => {
+    for (let i = 0; i < 10; i++) {
+      const id = uuidv4();
+      it("should validate uuidv4 " + id, () => {
+        expect(isValidUuid(id)).toBe(true);
+      });
     }
   });
 });

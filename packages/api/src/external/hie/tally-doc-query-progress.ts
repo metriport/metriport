@@ -9,8 +9,9 @@ import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
 import { aggregateAndSetHIEProgresses } from "./set-doc-query-progress";
+import { out } from "@metriport/core/util/log";
 
-type DynamicProgress = Pick<Progress, "successful" | "errors">;
+export type DynamicProgress = Pick<Progress, "successful" | "errors">;
 
 export type TallyDocQueryProgress = {
   source: MedicalDataSource;
@@ -18,6 +19,7 @@ export type TallyDocQueryProgress = {
   type: ProgressType;
   progress: DynamicProgress;
   requestId: string;
+  log?: typeof console.log;
 };
 
 /**
@@ -28,28 +30,27 @@ export type TallyDocQueryProgress = {
  * @returns
  */
 export async function tallyDocQueryProgress({
-  patient,
+  patient: { id, cxId },
   requestId,
   progress,
   type,
   source,
+  log = out(`tallyDocQueryProgress - patient ${id}, cxId ${cxId}`).log,
 }: TallyDocQueryProgress): Promise<Patient> {
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
-
-  const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+  const patientFilter = { id, cxId };
+  const patient = await executeOnDBTx(PatientModel.prototype, async transaction => {
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
+    const docQueryProgress = patient.data.documentQueryProgress;
+    log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
 
     // Set the doc query progress for the chosen hie
-    const externalData = setHIETallyCount(existingPatient, progress, type, source);
+    const externalData = setHIETallyCount(patient, progress, type, source);
 
-    const existingPatientDocProgress = existingPatient.data.documentQueryProgress ?? {};
+    const existingPatientDocProgress = patient.data.documentQueryProgress ?? {};
 
     const aggregatedDocProgresses = aggregateAndSetHIEProgresses(
       existingPatientDocProgress,
@@ -57,35 +58,32 @@ export async function tallyDocQueryProgress({
     );
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         requestId,
         externalData,
         documentQueryProgress: aggregatedDocProgresses,
       },
     };
 
-    await PatientModel.update(updatedPatient, {
-      where: patientFilter,
-      transaction,
-    });
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
     return updatedPatient;
   });
 
   await processDocQueryProgressWebhook({
-    patient: result,
-    documentQueryProgress: result.data.documentQueryProgress,
+    patient,
+    documentQueryProgress: patient.data.documentQueryProgress,
     requestId,
     progressType: type,
   });
 
-  return result;
+  return patient;
 }
 
 export function setHIETallyCount(
-  patient: PatientModel,
+  patient: Patient,
   progress: DynamicProgress,
   type: ProgressType,
   source: MedicalDataSource
@@ -109,6 +107,7 @@ export function setHIETallyCount(
       ...sourceProgress[type],
       successful: sourceSuccessful + tallySuccessful,
       errors: sourceErrors + tallyErrors,
+      total: sourceTotal,
       status: getStatusFromProgress({
         successful: totalSuccessful,
         errors: totalErrors,

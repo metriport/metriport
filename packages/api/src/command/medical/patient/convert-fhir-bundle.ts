@@ -1,4 +1,4 @@
-import { Bundle, Resource } from "@medplum/fhirtypes";
+import { Bundle, DocumentReference, Resource } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import {
   ConsolidationConversionType,
@@ -10,11 +10,16 @@ import {
   createMRSummaryFileName,
   createSandboxMRSummaryFileName,
 } from "@metriport/core/domain/medical-record-summary";
-import { Patient } from "@metriport/core/domain/patient";
-import { isWkhtmltopdfEnabledForCx } from "@metriport/core/external/aws/app-config";
+import { getConsolidatedQueryByRequestId, Patient } from "@metriport/core/domain/patient";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { makeS3Client, S3Utils } from "@metriport/core/external/aws/s3";
+import {
+  buildBundleEntry,
+  buildSearchSetBundle,
+} from "@metriport/core/external/fhir/bundle/bundle";
 import { out } from "@metriport/core/util";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { SearchSetBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -37,9 +42,16 @@ const lambdaClient = makeLambdaClient(region, TIMEOUT_CALLING_CONVERTER_LAMBDA.a
 const s3 = makeS3Client(Config.getAWSRegion());
 export const emptyMetaProp = "na";
 
+const REQUESTED_MIME_TYPE: Record<ConsolidationConversionType, string> = {
+  json: "application/json",
+  pdf: "application/pdf",
+  html: "text/html",
+};
+
 export async function handleBundleToMedicalRecord({
   bundle,
   patient,
+  requestId,
   resources,
   dateFrom,
   dateTo,
@@ -47,6 +59,7 @@ export async function handleBundleToMedicalRecord({
 }: {
   bundle: Bundle<Resource>;
   patient: Pick<Patient, "id" | "cxId" | "data">;
+  requestId?: string;
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
@@ -61,9 +74,9 @@ export async function handleBundleToMedicalRecord({
     const url = await s3Utils.getSignedUrl({
       bucketName,
       fileName,
-      durationSeconds: 60,
     });
-    return buildDocRefBundleWithAttachment(patient.id, url, conversionType);
+    const attachments = [{ url, mimeType: conversionType }];
+    return buildDocRefBundleWithAttachments(patient.id, attachments);
   }
 
   const { url, hasContents } = await convertFHIRBundleToMedicalRecord({
@@ -75,43 +88,55 @@ export async function handleBundleToMedicalRecord({
     conversionType,
   });
 
-  const newBundle = buildDocRefBundleWithAttachment(patient.id, url, conversionType);
+  const attachments = [{ url, mimeType: conversionType }];
+  const newBundle = buildDocRefBundleWithAttachments(patient.id, attachments);
   if (!hasContents) {
     log(`No contents in the consolidated data for patient ${patient.id}`);
     newBundle.entry = [];
     newBundle.total = 0;
   }
+
+  const currentConsolidatedProgress = getConsolidatedQueryByRequestId(patient, requestId);
+  analytics({
+    distinctId: patient.cxId,
+    event: EventTypes.consolidatedQuery,
+    properties: {
+      patientId: patient.id,
+      conversionType,
+      duration: elapsedTimeFromNow(currentConsolidatedProgress?.startedAt),
+      resourceCount: newBundle.entry?.length,
+    },
+  });
   return newBundle;
 }
 
-export function buildDocRefBundleWithAttachment(
+type LocalAttachment = {
+  url: string;
+  mimeType: ConsolidationConversionType | "gzip";
+};
+
+export function buildDocRefBundleWithAttachments(
   patientId: string,
-  attachmentUrl: string,
-  mimeType: ConsolidationConversionType
+  attachments: LocalAttachment[]
 ): SearchSetBundle<Resource> {
-  return {
-    resourceType: "Bundle",
-    total: 1,
-    type: "searchset",
-    entry: [
-      {
-        resource: {
-          resourceType: "DocumentReference",
-          subject: {
-            reference: `Patient/${patientId}`,
-          },
-          content: [
-            {
-              attachment: {
-                contentType: `application/${mimeType}`,
-                url: attachmentUrl,
-              },
-            },
-          ],
+  const docRef: DocumentReference = {
+    resourceType: "DocumentReference",
+    subject: {
+      reference: `Patient/${patientId}`,
+    },
+    content: attachments.map(attachment => {
+      const isGzip = attachment.mimeType === "gzip";
+      return {
+        attachment: {
+          contentType: isGzip
+            ? "application/gzip"
+            : REQUESTED_MIME_TYPE[attachment.mimeType as ConsolidationConversionType],
+          url: attachment.url,
         },
-      },
-    ],
+      };
+    }),
   };
+  return buildSearchSetBundle([buildBundleEntry(docRef)]);
 }
 
 async function convertFHIRBundleToMedicalRecord({
@@ -130,16 +155,10 @@ async function convertFHIRBundleToMedicalRecord({
   conversionType: MedicalRecordFormat;
 }): Promise<ConversionOutput> {
   const { log } = out(`convertFHIRBundleToMedicalRecord - cx ${patient.cxId} pt ${patient.id}`);
-  const lambdaNameOld = Config.getFHIRToMedicalRecordLambdaName();
-  const lambdaNameNew = Config.getFHIRToMedicalRecordLambda2Name();
-  const isWkhtmltopdfEnabled = await isWkhtmltopdfEnabledForCx(patient.cxId);
+  const lambdaName = Config.getFHIRToMedicalRecordLambda2Name();
 
-  const [activeLambdaName, inactiveLambdaName, inactiveSuffix] = isWkhtmltopdfEnabled
-    ? [lambdaNameNew, lambdaNameOld, "_puppeteer"]
-    : [lambdaNameOld, lambdaNameNew, "_wkhtmltopdf"];
-
-  if (!activeLambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
-  log(`Using lambda name: ${activeLambdaName} - isWkhtmltopdfEnabled: ${isWkhtmltopdfEnabled}`);
+  if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
+  log(`Using lambda name: ${lambdaName}`);
 
   // Store the bundle on S3
   const fileName = createMRSummaryFileName(patient.cxId, patient.id, "json");
@@ -167,29 +186,17 @@ async function convertFHIRBundleToMedicalRecord({
     dateTo,
     conversionType,
   };
-  const inactiveLambdaPayload: ConversionInput = {
-    ...activeLambdaPayload,
-    resultFileNameSuffix: inactiveSuffix,
-  };
 
   const [result] = await Promise.all([
     lambdaClient
       .invoke({
-        FunctionName: activeLambdaName,
+        FunctionName: lambdaName,
         InvocationType: "RequestResponse",
         Payload: JSON.stringify(activeLambdaPayload),
       })
       .promise(),
-    inactiveLambdaName &&
-      lambdaClient
-        .invoke({
-          FunctionName: inactiveLambdaName,
-          InvocationType: "RequestResponse",
-          Payload: JSON.stringify(inactiveLambdaPayload),
-        })
-        .promise(),
   ]);
-  const resultPayload = getLambdaResultPayload({ result, lambdaName: activeLambdaName });
+  const resultPayload = getLambdaResultPayload({ result, lambdaName });
   return JSON.parse(resultPayload) as ConversionOutput;
 }
 
@@ -208,6 +215,27 @@ export async function uploadJsonBundleToS3({
       Key: fileName,
       Body: JSON.stringify(bundle),
       ContentType: "application/json",
+      Metadata: metadata,
+    })
+    .promise();
+}
+
+export async function uploadGzipBundleToS3({
+  compressedData,
+  fileName,
+  metadata,
+}: {
+  compressedData: Buffer;
+  fileName: string;
+  metadata: Record<string, string>;
+}) {
+  await s3
+    .putObject({
+      Bucket: Config.getMedicalDocumentsBucketName(),
+      Key: fileName,
+      Body: compressedData,
+      ContentType: "application/gzip",
+      ContentEncoding: "gzip",
       Metadata: metadata,
     })
     .promise();

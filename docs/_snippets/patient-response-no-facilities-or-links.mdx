@@ -4,7 +4,31 @@
 </ResponseField>
 
 <ResponseField name="externalId" type="string">
-  An external Patient ID to associate to a Patient in Metriport.
+  The ID of the Patient on your internal system to associate to a Patient in Metriport.
+</ResponseField>
+
+<ResponseField name="additionalIds" type="AdditionalIdentifiers" optional>
+  A map containing additional external identifiers. If the patient is created or mapped in Metriport through one of 
+  our [EHR apps](/ehr-apps/overview) - this property will be populated with the ID from the EHR, and included 
+  within the webhook payloads.
+
+  <Expandable title="AdditionalIdentifiers properties">
+    <ResponseField name="athenahealth" type="string[]">
+      Athena patient ID. If more than one patient in Athena maps to a Metriport patient, they 
+      will all be included.
+    </ResponseField>
+
+    <ResponseField name="canvas" type="string[]">
+      Canvas patient ID. If more than one patient in Canvas maps to a Metriport patient, they 
+      will all be included.
+    </ResponseField>
+
+    <ResponseField name="elation" type="string[]">
+      Elation Patient ID. If more than one patient in Elation maps to a Metriport patient, they 
+      will all be included.
+    </ResponseField>
+
+  </Expandable>
 </ResponseField>
 
 <ResponseField name="firstName" type="string[]" required>

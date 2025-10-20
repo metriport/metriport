@@ -1,27 +1,52 @@
-- Try to use immutable code and avoid sharing state across different functions, objects, and systems
-- Prefer functional programming style functions: small, deterministic, 1 input, 1 output
-- Try to build code that's idempotent whenever possible
 - Use the Onion Pattern to organize a package's code in layers
-- Don’t use null inside the app, only on code interacting with external interfaces/services, like DB and HTTP; convert to undefined before sending inwards into the code
-- Use types whenever possible
-- Use `const` whenever possible
-- Use `async/await` instead of `.then()`
+- Try to use immutable code and avoid sharing state across different functions, objects, and systems
+- Try to build code that's idempotent whenever possible
+- Prefer functional programming style functions: small, deterministic, 1 input, 1 output
+- Minimize coupling / dependencies
+- Avoid modifying objects received as parameter
 - Only add comments to code to explain why something was done, not how it works
-- Naming:
+- Naming
   - classes, enums: `PascalCase`
   - constants, variables, functions: `camelCase`
-  - file names: `kebab-case`Ø
+  - file names: `kebab-case`
   - table and column names: `snake_case`
   - Use meaningful names, so whoever is reading the code understands what it means
   - Don’t use negative names, like `notEnabled`, prefer `isDisabled`
-- If possible, use decomposing objects for function parameters
-- Prefer Nullish Coalesce (??) than the OR operator (||) when you want to provide a default value
+  - For numeric values, if the type doesn’t convey the unit, add the unit to the name
+- Typescript
+  - Use types
+  - Prefer `const` instead of `let`
+  - Avoid `any` and casting from `any` to other types
+  - Type predicates: only applicable to narrow down the type, not to force a complete type conversion
+  - Prefer deconstructing parameters for functions instead of multiple parameters that might be of
+    the same type
+  - Don’t use `null` inside the app, only on code interacting with external interfaces/services,
+    like DB and HTTP; convert to `undefined` before sending inwards into the code
+  - Use `async/await` instead of `.then()`
+  - Use the strict equality operator `===`, don’t use abstract equality operator `==`
+  - When calling a Promise-returning function asynchronously (i.e., not awaiting), use `.catch()` to
+    handle errors (see `processAsyncError` and `emptyFunction` depending on the case)
+  - Date and Time
+    - Always use `buildDayjs()` to create `dayjs` instances
+    - Prefer `dayjs.duration(...)` to create duration consts and keep them as `duration`
+- Prefer Nullish Coalesce (??) than the OR operator (||) to provide a default value
 - Avoid creating arrow functions
 - Use truthy syntax instead of `in` - i.e., `if (data.link)` not `if ('link' in data)`
-- While handling errors, keep the stack trace around: if you create a new Error (e.g., MetriportError), make sure to pass the original error as the new one’s cause so the stack trace is available upstream.
+- Error handling
+  - Pass the original error as the new one’s `cause` so the stack trace is persisted
+  - Error messages should have a static message - add dynamic data to MetriportError's `additionalInfo`
+    prop and make sure the error object is the last parameter
+  - Avoid sending multiple events to Sentry for a single error
+- Global constants and variables
+  - Move literals to constants declared after imports when possible (avoid magic numbers)
+  - Avoid shared, global objects
+- Avoid using `console.log` and `console.error` in packages other than utils, infra and shared,
+  and try to use `out().log` instead
+- Avoid multi-line logs
+  - don't send objects as a second parameter to `console.log()` or `out().log()`
+  - don't create multi-line strings when using `JSON.stringify()`
 - Use `eslint` to enforce code style
 - Use `prettier` to format code
 - max column length is 100 chars
 - multi-line comments use `/** */`
-- top-level comments go after the import (save pre-import to basic file header, like license)
-- move literals to constants declared after imports when possible
+- scripts: top-level comments go after the import

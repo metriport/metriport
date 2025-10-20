@@ -1,4 +1,4 @@
-import { Rule, Schedule } from "aws-cdk-lib/aws-events";
+import { Rule, RuleTargetInput, Schedule } from "aws-cdk-lib/aws-events";
 import { LambdaFunction } from "aws-cdk-lib/aws-events-targets";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { createLambda, LambdaProps } from "./lambda";
@@ -8,10 +8,12 @@ export type ScheduledLambdaProps = Omit<LambdaProps, "entry"> & {
 } & (
     | {
         entry: string;
+        eventInput?: Record<string, unknown>;
       }
     | {
         entry?: never;
         url: string;
+        eventInput?: never;
       }
   );
 
@@ -20,7 +22,8 @@ export type ScheduledLambdaProps = Omit<LambdaProps, "entry"> & {
  *
  * @param props.scheduleExpression: "Minutes Hours Day-of-month Month Day-of-week Year", see more
  *    here: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
- * @param props.url The url to call when the lambda is triggered -
+ * @param props.url The url to call when the lambda is triggered
+ * @param props.eventInput Optional event input to pass to the lambda when triggered
  */
 export function createScheduledLambda(props: ScheduledLambdaProps): Lambda {
   const lambdaFn = createLambda({
@@ -46,7 +49,11 @@ export function createScheduledLambda(props: ScheduledLambdaProps): Lambda {
   schedules.forEach((schedule, i) => {
     new Rule(props.stack, `${props.name}Rule_${i}`, {
       schedule: Schedule.expression("cron(" + schedule + ")"),
-      targets: [new LambdaFunction(lambdaFn)],
+      targets: [
+        new LambdaFunction(lambdaFn, {
+          ...(props.eventInput && { event: RuleTargetInput.fromObject(props.eventInput) }),
+        }),
+      ],
     });
   });
 

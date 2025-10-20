@@ -8,6 +8,7 @@ import { DocumentBulkSignerRequest } from "@metriport/core/external/aws/document
 import { out } from "@metriport/core/util";
 import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { BadRequestError } from "@metriport/shared";
 import { makeDocumentBulkSigner } from "../../../external/aws/document-bulk-signer-factory";
 import {
   appendBulkGetDocUrlProgress,
@@ -20,23 +21,38 @@ import { getPatientOrFail } from "../patient/get-patient";
  * returns the progress of the bulk signing.
  * @param cxId - cxId
  * @param patientId - patientId
+ * @param continueProcessingRequest - if true, continue an existing processing request
  * @returns a Promise that resolves to a BulkGetDocumentsUrlProgress object.
  */
-export const startBulkGetDocumentUrls = async (
-  cxId: string,
-  patientId: string,
-  cxDownloadRequestMetadata: unknown
-): Promise<BulkGetDocumentsUrlProgress> => {
+export async function startBulkGetDocumentUrls({
+  cxId,
+  patientId,
+  cxDownloadRequestMetadata,
+  continueProcessingRequest = false,
+}: {
+  cxId: string;
+  patientId: string;
+  cxDownloadRequestMetadata: unknown;
+  continueProcessingRequest?: boolean;
+}): Promise<BulkGetDocumentsUrlProgress> {
   const { log } = out(`startBulkGetDocumentUrls - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
   const bulkGetDocUrlProgress = patient.data.bulkGetDocumentsUrlProgress;
 
-  if (isBulkGetDocUrlProcessing(bulkGetDocUrlProgress?.status)) {
+  if (!continueProcessingRequest && isBulkGetDocUrlProcessing(bulkGetDocUrlProgress?.status)) {
     log(
       `Patient ${patientId}, Request ${bulkGetDocUrlProgress?.requestId}, bulkGetDocUrlProgress is already 'processing', skipping...`
     );
     return createBulkGetDocumentUrlQueryResponse("processing", patient);
+  } else if (
+    continueProcessingRequest &&
+    !isBulkGetDocUrlProcessing(bulkGetDocUrlProgress?.status)
+  ) {
+    throw new BadRequestError(`No processing request found for patient ${patientId}`, undefined, {
+      patientId,
+      cxId,
+    });
   }
 
   const requestId = getOrGenerateRequestId(bulkGetDocUrlProgress);
@@ -72,7 +88,7 @@ export const startBulkGetDocumentUrls = async (
   }
 
   return createBulkGetDocumentUrlQueryResponse("processing", updatedPatient);
-};
+}
 
 /**
  * The function `getOrGenerateRequestId` returns the request ID from `bulkGetDocumentsUrlProgress` if it
@@ -102,12 +118,12 @@ const generateRequestId = (): string => uuidv7();
  * @param patient - The patient for whom the `BulkGetDocumentsUrlProgress` is being created.
  * @returns a BulkGetDocumentsUrlProgress object.
  */
-export const createBulkGetDocumentUrlQueryResponse = (
+export function createBulkGetDocumentUrlQueryResponse(
   status: BulkGetDocUrlStatus,
   patient?: Patient
-): BulkGetDocumentsUrlProgress => {
+): BulkGetDocumentsUrlProgress {
   return {
     status,
     requestId: patient?.data.bulkGetDocumentsUrlProgress?.requestId,
   };
-};
+}

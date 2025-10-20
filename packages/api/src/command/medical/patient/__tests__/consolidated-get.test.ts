@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
+import { faker } from "@faker-js/faker";
 import { BundleEntry, Resource } from "@medplum/fhirtypes";
 import { resourcesSearchableByPatient } from "@metriport/api-sdk";
 import { ISO_DATE } from "@metriport/shared/common/date";
@@ -9,10 +10,10 @@ import {
   getCurrentConsolidatedProgress,
   getIsSameResources,
 } from "../consolidated-get";
-import { makeConsolidatedQueryProgress, requestId } from "./store-query-cmd";
+import { makeConsolidatedQueryProgress } from "./consolidated-query";
 
 const defaultConsolidatedProgress = makeConsolidatedQueryProgress({
-  requestId: requestId,
+  requestId: faker.string.uuid(),
   status: "processing",
   startedAt: new Date(),
   resources: [],
@@ -30,7 +31,9 @@ beforeEach(() => {
 describe("consolidated-get", () => {
   describe("getCurrentConsolidatedProgress", () => {
     it("return undefined when there is no consolidated progress", () => {
-      const resp = getCurrentConsolidatedProgress(undefined, {});
+      const resp = getCurrentConsolidatedProgress(undefined, {
+        conversionType: "json",
+      });
 
       expect(resp).toBeUndefined();
     });
@@ -67,7 +70,9 @@ describe("consolidated-get", () => {
       });
       const resp = getCurrentConsolidatedProgress(
         [consolidatedQueryProgress, secondConsolidatedQueryProgress],
-        {}
+        {
+          conversionType: "json",
+        }
       );
 
       expect(resp).toBeUndefined();

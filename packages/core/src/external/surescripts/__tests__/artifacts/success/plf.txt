@@ -1,0 +1,11 @@
+HDR|3.0|T00000000022906|KYD1V0WI1G|S00000000000003|-OPs04BOxs|20250516|02143475|PMA||20250516|T|924ef443b6ae48be8be8daa276472001||12|||
+PNM|1|1.3.44444.666.3.2.1|1|Abingdon|Perseus||||98 Bayview Ave||New Rochelle|NY|10805|20120901|M|1234567893|||
+PNM|2|1.3.44444.666.3.2.1|2|Dallesandro|Baxter||||315 Filmore Ave|Unit 13C|Pocatello|ID|83201|20100721|M|1234567893|||
+PNM|3|1.3.44444.666.3.2.1|3|Devereaux|Margaret Adelia|Beryl|||27-B Heald St||Pepperell|MA|01463|19971101|F|1234567893|||
+PNM|4|1.3.44444.666.3.2.1|4|Acacianna|Rowena|Baylie|||2798 Parsifal St NE||Albuquerque|NM|87112|19680329|F|1234567893|||
+PNM|5|1.3.44444.666.3.2.1|5|Montevideo|Ricardo|P.|||125 Blue Jay Ln||Pittsville|VA|24139|19980129|M|1234567893|||
+PNM|6|1.3.44444.666.3.2.1|6|Addington|Winston|Barnaby||3rd|178 Paradise Crescent||Royal Palm Beach|FL|33411|19400314|M|1234567893|||
+PNM|7|1.3.44444.666.3.2.1|7|Mapleford|Penelope|Jane|||2617 Kendall Ave||Madison|WI|53705|19800225|F|1234567893|||
+PNM|8|1.3.44444.666.3.2.1|8|Bergamel|Soloman||||1948 Bainbridge St||Philadelphia|PA|19146|19700321|M|1234567893|||
+PNM|9|1.3.44444.666.3.2.1|9|Usumacintacoatzacoalcosniltepecvera|Juancarlosguadalupepaploapan|Franciscolisandroculiacan||Junior|27732 West Alameda Potholeladen Street|Apt 425-B|Rancho Cucamonga|CA|917011515|20040621|M|1234567893|||
+TRL|9

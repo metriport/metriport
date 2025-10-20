@@ -76,30 +76,42 @@ export function groupSameMedications(medications: Medication[]): {
     const { rxnormCode, ndcCode, snomedCode } = extractCodes(medication.code);
 
     if (rxnormCode) {
-      deduplicateWithinMap(
-        rxnormMap,
-        rxnormCode,
-        medication,
+      deduplicateWithinMap({
+        dedupedResourcesMap: rxnormMap,
+        dedupKey: rxnormCode,
+        candidateResource: medication,
         refReplacementMap,
-        false,
-        removeOtherCodes
-      );
+        keepExtensions: false,
+        onPostmerge: removeOtherCodes,
+      });
     } else if (ndcCode) {
-      deduplicateWithinMap(ndcMap, ndcCode, medication, refReplacementMap, false, removeOtherCodes);
-    } else if (snomedCode) {
-      deduplicateWithinMap(
-        snomedMap,
-        snomedCode,
-        medication,
+      deduplicateWithinMap({
+        dedupedResourcesMap: ndcMap,
+        dedupKey: ndcCode,
+        candidateResource: medication,
         refReplacementMap,
-        false,
-        removeOtherCodes
-      );
+        keepExtensions: false,
+        onPostmerge: removeOtherCodes,
+      });
+    } else if (snomedCode) {
+      deduplicateWithinMap({
+        dedupedResourcesMap: snomedMap,
+        dedupKey: snomedCode,
+        candidateResource: medication,
+        refReplacementMap,
+        keepExtensions: false,
+        onPostmerge: removeOtherCodes,
+      });
     } else {
       const display = extractDisplayFromConcept(medication.code);
       if (display) {
         const compKey = JSON.stringify({ display });
-        deduplicateWithinMap(displayMap, compKey, medication, refReplacementMap, undefined);
+        deduplicateWithinMap({
+          dedupedResourcesMap: displayMap,
+          dedupKey: compKey,
+          candidateResource: medication,
+          refReplacementMap,
+        });
       } else {
         danglingReferences.add(createRef(medication));
       }

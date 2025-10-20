@@ -1,12 +1,11 @@
 import { v4 as uuidv4 } from "uuid";
-import {
-  makeConsolidatedQueryProgress,
-  makeConsolidatedWebhook,
-} from "../__tests__/store-query-cmd";
+import { makeConsolidatedQueryProgress } from "./consolidated-query";
+import { makeConsolidatedWebhook } from "./consolidated-webhook";
 import { getConsolidatedWebhook } from "../get-consolidated-webhook";
 import { WebhookRequest } from "../../../../models/webhook-request";
 
 const webhookUrl = "http://example.com";
+const gzipWebhookUrl = "http://example.com.gz";
 
 const successConsolidatedWebhook = {
   patients: [
@@ -19,6 +18,13 @@ const successConsolidatedWebhook = {
                 {
                   attachment: {
                     url: webhookUrl,
+                    contentType: "application/json",
+                  },
+                },
+                {
+                  attachment: {
+                    url: gzipWebhookUrl,
+                    contentType: "application/gzip",
                   },
                 },
               ],
@@ -68,6 +74,7 @@ describe("getConsolidatedWebhook", () => {
     expect(result).toEqual({
       conversionType: "pdf",
       fileUrl: webhookUrl,
+      gzipUrl: gzipWebhookUrl,
       status: "completed",
       requestId,
     });
@@ -105,27 +112,6 @@ describe("getConsolidatedWebhook", () => {
       requestId,
       status: "processing",
       message: "Consolidated webhook query is not completed",
-    });
-  });
-
-  it("it return failed message when conversion type is invalid", async () => {
-    const consolidatedQuery = makeConsolidatedQueryProgress({
-      requestId: requestId,
-      status: "completed",
-      startedAt: new Date(),
-      conversionType: undefined,
-    });
-
-    const result = await getConsolidatedWebhook({
-      cxId,
-      requestId,
-      consolidatedQueries: [consolidatedQuery],
-    });
-
-    expect(result).toEqual({
-      requestId,
-      conversionType: undefined,
-      message: "No URL to return for this conversion type",
     });
   });
 

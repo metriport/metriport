@@ -1,7 +1,8 @@
 import { Organization } from "@medplum/fhirtypes";
 
 // TODO move this to the shared/domain package
-export const metriportOrganization: Organization = {
+export const metriportOrganization: Omit<Organization, "name" | "address" | "telecom"> &
+  Required<Pick<Organization, "name" | "address" | "telecom">> = {
   resourceType: "Organization",
   name: "Metriport",
   address: [

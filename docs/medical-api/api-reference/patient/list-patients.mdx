@@ -15,7 +15,8 @@ This is a paginated endpoint. For more information see [pagination](/medical-api
 
 <ParamField query="filters" type="string" Optional>
   How to filter patients. It uses Metriport's [filter/search criteria](/medical-api/handling-data/filters)
-  based on the main properties of a Patient: first name, last name, date of birth, ID, and external ID.
+  based on the main properties of a Patient: first name, last name, date of birth, ID, external ID, 
+  facility ID, facility name, and additional identifiers.
 
 One can combine fields as needed, for example:
 
@@ -57,61 +58,4 @@ const { patients } = await metriport.listPatients(facilityId, filters);
 
 </ResponseExample>
 
-```json
-{
-  "meta": {
-    "itemsOnPage": 2
-  },
-  "patients": [
-    {
-      "id": "018a80c4-292a-7486-a1234-76yuhe23yu14",
-      "facilityIds": ["018a80c4-292a-7486-a1234-9uiu76yhe234"],
-      "firstName": "Jose",
-      "lastName": "Juarez",
-      "dob": "1951-05-05",
-      "genderAtBirth": "M",
-      "personalIdentifiers": [
-        {
-          "type": "driversLicense",
-          "state": "CA",
-          "value": "51227265"
-        }
-      ],
-      "address": [
-        {
-          "zip": "12345",
-          "city": "San Diego",
-          "state": "CA",
-          "country": "USA",
-          "addressLine1": "Guadalajara St"
-        }
-      ],
-      "contact": [
-        {
-          "phone": "1234567899",
-          "email": "jose@domain.com"
-        }
-      ],
-      "externalId": "123456789"
-    },
-    {
-      "id": "018a80c4-292a-7486-a1234-5ert32uij123",
-      "externalId": "123456789",
-      "facilityIds": ["018a80c4-292a-7486-a1234-9uiu76yhe234"],
-      "firstName": "Josita",
-      "lastName": "Juarez,Diaz",
-      "dob": "1949-06-09",
-      "genderAtBirth": "F",
-      "address": [
-        {
-          "zip": "12345",
-          "city": "San Diego",
-          "state": "CA",
-          "country": "USA",
-          "addressLine1": "Guadalajara St"
-        }
-      ]
-    }
-  ]
-}
-```
+<Snippet file="patient-response-list-json.mdx" />

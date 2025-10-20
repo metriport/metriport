@@ -65,8 +65,7 @@ export {
   OrganizationCreate,
   organizationCreateSchema,
   organizationSchema,
-  OrgType,
-  orgTypeSchema,
+  treatmentTypeSchema,
 } from "./medical/models/organization";
 export {
   Patient,
@@ -79,3 +78,4 @@ export {
 } from "./medical/models/patient";
 export { PatientDTO } from "./medical/models/patientDTO";
 export { NetworkEntry } from "./medical/models/network-entry";
+export { patientSettingsSchema, TreatmentType } from "@metriport/shared";

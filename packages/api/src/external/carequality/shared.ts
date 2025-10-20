@@ -1,17 +1,26 @@
+import {
+  isCarequalityEnabled,
+  isCQDirectEnabledForCx,
+} from "@metriport/core/command/feature-flags/domain-ffs";
 import { Coordinates } from "@metriport/core/domain/address";
-import { AddressStrict } from "@metriport/core/domain/location-address";
-import { Patient, PatientData, GenderAtBirth } from "@metriport/core/domain/patient";
 import { Contact } from "@metriport/core/domain/contact";
+import { AddressStrict } from "@metriport/core/domain/location-address";
+import { GenderAtBirth, Patient, PatientData } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { capture } from "@metriport/core/util/notifications";
-import { isEmailValid, isPhoneValid, PurposeOfUse, USStateForAddress } from "@metriport/shared";
+import {
+  PurposeOfUse,
+  USStateForAddress,
+  normalizePhoneNumberSafe,
+  normalizeEmailNewSafe,
+} from "@metriport/shared";
+import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
+import { isCqDoaEnabled } from "@metriport/core/command/feature-flags/domain-ffs";
 import { errorToString } from "@metriport/shared/common/error";
 import z from "zod";
 import { getAddressWithCoordinates } from "../../domain/medical/address";
 import { Config } from "../../shared/config";
-import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/app-config";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
-import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
 import { CQLink } from "./cq-patient-data";
 // TODO: adjust when we support multiple POUs
 export function createPurposeOfUse() {
@@ -124,11 +133,35 @@ export function formatDate(dateString: string | undefined): string | undefined {
   return undefined;
 }
 
+export function formatDatetime(dateString: string | undefined): string | undefined {
+  if (!dateString) return undefined;
+  const preprocessedDate = dateString.replace(/[-:TZ]/g, "");
+  const year = preprocessedDate.slice(0, 4);
+  const month = preprocessedDate.slice(4, 6);
+  const day = preprocessedDate.slice(6, 8);
+  const hour = preprocessedDate.slice(8, 10) || "00";
+  const minute = preprocessedDate.slice(10, 12) || "00";
+  const second = preprocessedDate.slice(12, 14) || "00";
+  const formattedDate = `${year}-${month}-${day}T${hour}:${minute}:${second}.000Z`;
+
+  try {
+    const date = new Date(formattedDate);
+    return date.toISOString();
+  } catch (error) {
+    const msg = "Error creating date object for document reference";
+    console.log(`${msg}: ${error}`);
+  }
+
+  return undefined;
+}
+
 export async function getCqInitiator(
   patient: Pick<Patient, "id" | "cxId">,
   facilityId?: string
 ): Promise<HieInitiator> {
-  return getHieInitiator(patient, facilityId);
+  // TODO: ENG-1089 - Remove this once we fully migrate to the new DOA flow on CQ.
+  const isCqDoaFeatureFlagEnabled = await isCqDoaEnabled();
+  return getHieInitiator(patient, facilityId, isCqDoaFeatureFlagEnabled);
 }
 
 export async function isFacilityEnabledToQueryCQ(
@@ -203,10 +236,13 @@ export function cqLinkToPatientData(cqLink: CQLink): PatientData {
   if (patient?.telecom) {
     patient.telecom.forEach(tel => {
       const value = tel.value ?? "";
-      if (isPhoneValid(value)) {
-        telecom.push({ phone: value });
-      } else if (isEmailValid(value)) {
-        telecom.push({ email: value });
+
+      const normalizedPhone = normalizePhoneNumberSafe(value);
+      const normalizedEmail = normalizeEmailNewSafe(value);
+      if (normalizedPhone) {
+        telecom.push({ phone: normalizedPhone });
+      } else if (normalizedEmail) {
+        telecom.push({ email: normalizedEmail });
       }
     });
   }

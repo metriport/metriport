@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { Organization } from "@metriport/carequality-sdk/models/organization";
+import { Organization } from "@medplum/fhirtypes";
 import { makeBaseDomain } from "../../../domain/__tests__/base-domain";
 import { CQDirectoryEntry } from "../cq-directory";
 

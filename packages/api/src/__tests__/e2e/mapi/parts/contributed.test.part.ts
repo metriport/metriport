@@ -12,7 +12,7 @@ import {
   Practitioner,
 } from "@medplum/fhirtypes";
 import { makeDocumentReference } from "@metriport/core/external/fhir/document/__tests__/document-reference";
-import { buildBundleEntry } from "@metriport/core/external/fhir/shared/bundle";
+import { buildBundleEntry } from "@metriport/core/external/fhir/bundle/bundle";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { makeBinary } from "@metriport/core/external/fhir/__tests__/binary";
 import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";

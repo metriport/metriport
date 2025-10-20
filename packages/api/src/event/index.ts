@@ -1,7 +1,7 @@
-import initCWEvents from "../external/commonwell/cq-bridge/patient-event-listener";
-import initCanvasIntegrationEvents from "../external/ehr/canvas/canvas-event-listener";
-
 export function initEvents() {
-  initCWEvents();
-  initCanvasIntegrationEvents();
+  // Example - it would be placed on its own folder/file somewhere else, though.
+  // patientEvents().on(PatientEvents.UPDATED, async patient => {
+  //   const { log } = out(`patient-updated - patient ${patient.id}`);
+  //   log(`patient-updated - patient ${patient.id}`);
+  // });
 }

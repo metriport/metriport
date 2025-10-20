@@ -11,7 +11,7 @@ import { executeOnDBTx } from "../../models/transaction-wrapper";
  */
 export async function scheduleDocQuery({
   requestId,
-  patient,
+  patient: { id, cxId },
   source,
   triggerConsolidated,
 }: {
@@ -20,23 +20,19 @@ export async function scheduleDocQuery({
   source: MedicalDataSource;
   triggerConsolidated?: boolean;
 }): Promise<void> {
-  const { log } = out(`${source} DQ - requestId ${requestId}, patient ${patient.id}`);
+  const { log } = out(`${source} DQ - requestId ${requestId}, patient ${id}`);
 
   log(`Scheduling document query to be executed`);
 
-  const patientFilter = {
-    id: patient.id,
-    cxId: patient.cxId,
-  };
-
-  await executeOnDBTx(PatientModel.prototype, async transaction => {
-    const existingPatient = await getPatientOrFail({
+  const patientFilter = { id, cxId };
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
+    const patient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const externalData = existingPatient.data.externalData ?? {};
+    const externalData = patient.data.externalData ?? {};
 
     const updatedExternalData = {
       ...externalData,
@@ -50,16 +46,13 @@ export async function scheduleDocQuery({
     };
 
     const updatedPatient = {
-      ...existingPatient.dataValues,
+      ...patient,
       data: {
-        ...existingPatient.data,
+        ...patient.data,
         externalData: updatedExternalData,
       },
     };
 
-    await PatientModel.update(updatedPatient, {
-      where: patientFilter,
-      transaction,
-    });
+    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
   });
 }

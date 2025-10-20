@@ -21,6 +21,7 @@ import {
 dayjs.extend(duration);
 
 const MAX_TIME_TO_PROCESS = dayjs.duration({ minutes: 30 });
+const BUFFER_TIME = dayjs.duration({ minutes: 16 });
 const MAX_CONCURRENT_UDPATES = 10;
 
 /**
@@ -83,6 +84,10 @@ export async function checkDocumentQueries(patientIds: string[]): Promise<void> 
       const extra = { amount, patientsToUpdate: updatedPatientIds.join(", ") };
       capture.message(msg, { extra, level: "warning" });
       log(msg, stringify(extra));
+    } else {
+      if (patientsWithInvalidStatusOrCount.length > 0) {
+        log("Got patients with invalid status from the DB, but no patients to update");
+      }
     }
 
     sendWHNotifications(patientsToUpdate);
@@ -105,7 +110,7 @@ function calculateTotal(prop: Progress) {
   return (prop.errors ?? 0) + (prop.successful ?? 0);
 }
 
-export async function updateDocQueryStatus(patients: PatientsWithValidationResult): Promise<void> {
+async function updateDocQueryStatus(patients: PatientsWithValidationResult): Promise<void> {
   const uniquePatients = Object.entries(patients);
   await executeAsynchronously(
     uniquePatients,
@@ -117,21 +122,21 @@ export async function updateDocQueryStatus(patients: PatientsWithValidationResul
 async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: [
   string,
   GroupedValidationResult
-]) {
-  async function updatePatient() {
+]): Promise<void> {
+  const { log } = out(`updatePatientsInSequence cx ${cxId} patient ${patientId}`);
+  async function updatePatient(): Promise<Patient | undefined> {
+    const patientFilter = { id: patientId, cxId };
     return executeOnDBTx(PatientModel.prototype, async transaction => {
-      const patientFilter = {
-        id: patientId,
-        cxId: cxId,
-      };
       const patient = await getPatientOrFail({
         ...patientFilter,
+        lock: true,
         transaction,
       });
+
       const docProgress = patient.data.documentQueryProgress;
       if (!docProgress) {
-        console.log(`Patient without doc query progress @ update, skipping it: ${patient.id} `);
-        return;
+        log(`Patient without doc query progress @ update, skipping it`);
+        return undefined;
       }
       if (whatToUpdate.convert) {
         const convert = docProgress.convert;
@@ -153,17 +158,17 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
             }
           : undefined;
       }
+
       const updatedPatient = {
-        ...patient.dataValues,
+        ...patient,
         data: {
           ...patient.data,
           documentQueryProgress: docProgress,
         },
       };
-      await PatientModel.update(updatedPatient, {
-        where: patientFilter,
-        transaction,
-      });
+
+      await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
+
       return updatedPatient;
     });
   }
@@ -224,9 +229,13 @@ function getQuery(patientIds: string[] = []): string {
   const convert = property("convert");
   const download = property("download");
 
+  const from = MAX_TIME_TO_PROCESS.add(BUFFER_TIME).asMinutes();
+  const to = MAX_TIME_TO_PROCESS.asMinutes();
+
   const baseQuery =
     `select * from patient ` +
-    `where updated_at < now() - interval '${MAX_TIME_TO_PROCESS.asMinutes()}' minute ` +
+    `where updated_at > now() - interval '${from}' minute ` +
+    `  and updated_at < now() - interval '${to}' minute ` +
     `  and ((${convert}->'${total}')::int <> (${convert}->'${successful}')::int + (${convert}->'${errors}')::int ` +
     `        or ` +
     `        ${convert}->>'${status}' = '${processing}' ` +

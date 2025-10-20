@@ -1,6 +1,6 @@
 {
   "name": "@metriport/commonwell-sdk",
-  "version": "5.5.5",
+  "version": "8.4.0",
   "description": "SDK to simplify CommonWell API integration - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -53,15 +53,15 @@
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
-    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "prettier-fix": "npx prettier '**/*.{js,ts,md}' --write --ignore-path ../../.prettierignore",
     "test": "echo \"No test specified yet\""
   },
   "bugs": {
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/shared": "^0.19.5",
-    "axios": "^1.4.0",
+    "@metriport/shared": "^0.26.11",
+    "axios": "^1.8.2",
     "http-status": "~1.7.0",
     "jsonwebtoken": "^9.0.0",
     "zod": "^3.22.1"
@@ -77,5 +77,6 @@
     "eslint-config-prettier": "^8.6.0",
     "prettier": "^2.8.3",
     "typescript": "^4.9.5"
-  }
+  },
+  "gitHead": "4f3fb73b06bc7ad9452c63fb3a63b5bcffa6c14a"
 }

@@ -6,13 +6,16 @@ import {
   XCA_DR_STRING,
   XCPD_STRING,
 } from "@metriport/carequality-sdk/common/util";
+import { normalizeState } from "@metriport/shared/domain/address/state";
 import { CQOrgDetailsWithUrls } from "../../shared";
 import { metriportOid } from "./constants";
 
 export const transactionUrl =
   "https://sequoiaproject.org/fhir/sphd/StructureDefinition/Transaction";
 
-export function getOrganizationFhirTemplate(orgDetails: CQOrgDetailsWithUrls): OrganizationWithId {
+export async function getOrganizationFhirTemplate(
+  orgDetails: CQOrgDetailsWithUrls
+): Promise<OrganizationWithId> {
   const { oid, role, urlXCPD, urlDQ, urlDR } = orgDetails;
   const urnOid = "urn:oid:" + oid;
   const endpoints: Endpoint[] = [];
@@ -24,15 +27,15 @@ export function getOrganizationFhirTemplate(orgDetails: CQOrgDetailsWithUrls): O
     if (!urlDR) throw new Error("DR URL is required for Implementer role");
     endpoints.push(getFhirEndpoint(urnOid, XCA_DR_STRING, urlDR));
   }
-  const org = getFhirOrganization(urnOid, orgDetails, endpoints);
+  const org = await getFhirOrganization(urnOid, orgDetails, endpoints);
   return org;
 }
 
-function getFhirOrganization(
+async function getFhirOrganization(
   urnOid: string,
   orgDetails: CQOrgDetailsWithUrls,
   endpoints: Endpoint[]
-): OrganizationWithId {
+): Promise<OrganizationWithId> {
   const {
     oid,
     active,
@@ -43,14 +46,15 @@ function getFhirOrganization(
     email,
     addressLine1,
     city,
-    state,
+    state: stateRaw,
     postalCode,
     lat,
     lon,
     parentOrgOid,
-    oboOid,
     oboName,
   } = orgDetails;
+
+  const state = normalizeState(stateRaw);
   const addressText = `${addressLine1} ${city} ${state} ${postalCode} US`;
   const org: OrganizationWithId = {
     resourceType: "Organization",
@@ -108,6 +112,7 @@ function getFhirOrganization(
           type: "both",
           line: [addressLine1],
           city,
+          state,
           postalCode,
           country: "US",
         },
@@ -121,16 +126,6 @@ function getFhirOrganization(
           code: "CQ",
         },
       },
-      ...(oboOid
-        ? [
-            {
-              url: "https://sequoiaproject.org/fhir/sphd/StructureDefinition/DOA",
-              valueReference: {
-                reference: `Organization/${oboOid}`,
-              },
-            },
-          ]
-        : []),
       {
         url: "https://sequoiaproject.org/fhir/sphd/StructureDefinition/org-managing-org",
         valueReference: {

@@ -1,4 +1,5 @@
 import { CodeableConcept, Organization } from "@medplum/fhirtypes";
+import { encodeToHtml } from "@metriport/shared/common/html";
 import {
   DEFAULT_TITLE,
   METRIPORT_HOME_COMMUNITY_ID,
@@ -54,6 +55,7 @@ export function createExtrinsicObjectXml({
   title?: string | undefined;
   mimeType: string;
 }) {
+  const shortDocumentId = buildShortDocId(documentUniqueId);
   const documentUUID = uuidv7();
   const classCodeNode = classCode?.coding?.[0]?.code || DEFAULT_CLASS_CODE_NODE;
   const practiceSettingCodeNode =
@@ -70,6 +72,7 @@ export function createExtrinsicObjectXml({
     organization?.identifier?.find(identifier =>
       identifier.value?.startsWith(METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX)
     )?.value || METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX;
+  const htmlSafeTitle = title ? encodeToHtml(title) : DEFAULT_CLASS_CODE_DISPLAY;
 
   const stableDocumentId = "urn:uuid:7edca82f-054d-47f2-a032-9b2a5b5186c1";
 
@@ -112,18 +115,18 @@ export function createExtrinsicObjectXml({
     </Slot>
     
     <Name>
-      <LocalizedString charset="UTF-8" value="${title ? title : DEFAULT_TITLE}"/>
+      <LocalizedString charset="UTF-8" value="${title ? encodeToHtml(title) : DEFAULT_TITLE}"/>
     </Name>
 
     <Classification classificationScheme="${XDSDocumentEntryAuthor}" classifiedObject="urn:uuid:00000000-0000-d6ba-5161-4e497785491d" id="urn:uuid:953e825d-3907-497c-8a95-bc3761e2a642" nodeRepresentation="" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
       <Slot name="authorPerson">
         <ValueList>
-          <Value>${organizationName}^^^^^^^&amp;${organizationId}&amp;ISO</Value>
+          <Value>${encodeToHtml(organizationName)}^^^^^^^&amp;${organizationId}&amp;ISO</Value>
         </ValueList>
       </Slot>
       <Slot name="authorInstitution">
         <ValueList>
-          <Value>${organizationName}^^^^^^^^^${organizationId}</Value>
+          <Value>${encodeToHtml(organizationName)}^^^^^^^^^${organizationId}</Value>
         </ValueList>
       </Slot>
     </Classification>
@@ -135,7 +138,7 @@ export function createExtrinsicObjectXml({
         </ValueList>
       </Slot>
       <Name>
-        <LocalizedString charset="UTF-8" value="${DEFAULT_CLASS_CODE_DISPLAY}"/>
+        <LocalizedString charset="UTF-8" value="${htmlSafeTitle}"/>
       </Name>
     </Classification>
     
@@ -157,7 +160,7 @@ export function createExtrinsicObjectXml({
         </ValueList>
       </Slot>
       <Name>
-        <LocalizedString charset="UTF-8" value="${DEFAULT_CLASS_CODE_DISPLAY}"/>
+        <LocalizedString charset="UTF-8" value="${htmlSafeTitle}"/>
       </Name>
     </Classification>
     
@@ -190,7 +193,7 @@ export function createExtrinsicObjectXml({
         </ValueList>
       </Slot>
       <Name>
-        <LocalizedString charset="UTF-8" value="${DEFAULT_CLASS_CODE_DISPLAY}"/>
+        <LocalizedString charset="UTF-8" value="${htmlSafeTitle}"/>
       </Name>
     </Classification>
     
@@ -201,7 +204,7 @@ export function createExtrinsicObjectXml({
     </ExternalIdentifier>
     
     <ExternalIdentifier id="${uuidv7()}" identificationScheme="${XDSDocumentEntryUniqueId}" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="${documentUUID}" value="${createDocumentUniqueId(
-    documentUniqueId
+    shortDocumentId
   )}">
       <Name>
         <LocalizedString charset="UTF-8" value="XDSDocumentEntry.uniqueId"/>
@@ -209,4 +212,8 @@ export function createExtrinsicObjectXml({
     </ExternalIdentifier>
   </ExtrinsicObject>`;
   return metadataXml;
+}
+
+function buildShortDocId(documentUniqueId: string): string {
+  return documentUniqueId.split("/").pop() ?? documentUniqueId;
 }

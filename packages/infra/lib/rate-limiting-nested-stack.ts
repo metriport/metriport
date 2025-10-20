@@ -137,8 +137,8 @@ export class RateLimitingNestedStack extends NestedStack {
       this,
       `${dynamoConstructName}ConsumedReadCapacityUnitsAlarm`,
       {
-        threshold: consumedWriteCapacityUnitsAlarmThreshold, // units per second
-        evaluationPeriods: consumedWriteCapacityUnitsAlarmPeriod,
+        threshold: consumedReadCapacityUnitsAlarmThreshold, // units per second
+        evaluationPeriods: consumedReadCapacityUnitsAlarmPeriod,
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       }
     );
@@ -150,8 +150,8 @@ export class RateLimitingNestedStack extends NestedStack {
       this,
       `${dynamoConstructName}ConsumedWriteCapacityUnitsAlarm`,
       {
-        threshold: consumedReadCapacityUnitsAlarmThreshold, // units per second
-        evaluationPeriods: consumedReadCapacityUnitsAlarmPeriod,
+        threshold: consumedWriteCapacityUnitsAlarmThreshold, // units per second
+        evaluationPeriods: consumedWriteCapacityUnitsAlarmPeriod,
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       }
     );

@@ -1,23 +1,26 @@
 import { Resource } from "@medplum/fhirtypes";
 import { Patient } from "@metriport/core/domain/patient";
+import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
+import { errorToString } from "@metriport/shared";
 import { ConsolidatedWebhookRequest, SearchSetBundle } from "@metriport/shared/medical";
-import { errorToString } from "../../../shared/log";
-import { capture } from "../../../shared/notifications";
-import { Util } from "../../../shared/util";
+import { PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
 import { getPatientOrFail } from "./get-patient";
 
-const log = Util.log(`Consolidated Webhook`);
+const log = out(`Consolidated Webhook`).log;
 
 const consolidatedWebhookStatus = ["completed", "failed"] as const;
 export type ConsolidatedWebhookStatus = (typeof consolidatedWebhookStatus)[number];
 
 type Filters = Record<string, string | boolean | undefined>;
 
-type PayloadWithoutMeta = Omit<ConsolidatedWebhookRequest, "meta">;
+type PayloadWithoutMeta = Omit<ConsolidatedWebhookRequest, "meta"> & {
+  additionalIds?: PatientSourceIdentifierMap;
+};
 
 /**
  * Sends a FHIR bundle with a Patient's consolidated data to the customer's
@@ -42,7 +45,7 @@ export async function processConsolidatedDataWebhook({
   filters?: Filters;
   isDisabled?: boolean;
 }): Promise<void> {
-  const { id: patientId, cxId, externalId } = patient;
+  const { id: patientId, cxId } = patient;
   try {
     const [settings, currentPatient] = await Promise.all([
       getSettingsOrFail({ id: cxId }),
@@ -53,7 +56,8 @@ export async function processConsolidatedDataWebhook({
       patients: [
         {
           patientId,
-          ...(externalId ? { externalId } : {}),
+          ...(currentPatient.externalId ? { externalId: currentPatient.externalId } : {}),
+          ...(currentPatient.additionalIds ? { additionalIds: currentPatient.additionalIds } : {}),
           status,
           bundle,
           filters,
@@ -95,7 +99,7 @@ export async function processConsolidatedDataWebhook({
       });
     }
     await updateConsolidatedQueryProgress({
-      patient,
+      patient: currentPatient,
       requestId,
       progress: { status },
     });

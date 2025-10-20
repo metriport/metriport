@@ -1,20 +1,22 @@
+import { Config } from "@metriport/core/util/config";
+import { BadRequestError } from "@metriport/shared";
+import dayjs from "dayjs";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { z } from "zod";
-import dayjs from "dayjs";
-import { ISO_DATE } from "../shared/date";
+import { hasMapiAccess } from "../command/medical/mapi-access";
 import { createSettings } from "../command/settings/createSettings";
 import { getSettings, getSettingsOrFail } from "../command/settings/getSettings";
 import { updateSettings } from "../command/settings/updateSettings";
 import { countFailedAndProcessingRequests } from "../command/webhook/count-failed";
 import { retryFailedRequests } from "../command/webhook/retry-failed";
+import { sendPayload } from "../command/webhook/webhook";
 import { maxWebhookUrlLength, MrFilters } from "../domain/settings";
-import BadRequestError from "../errors/bad-request";
 import { Settings } from "../models/settings";
+import { ISO_DATE } from "../shared/date";
 import { requestLogger } from "./helpers/request-logger";
 import { asyncHandler, getCxIdOrFail } from "./util";
-import { hasMapiAccess } from "../command/medical/mapi-access";
 
 const mrSectionsKeys = [
   "reports",
@@ -238,6 +240,35 @@ router.post(
     const cxId = getCxIdOrFail(req);
     await retryFailedRequests(cxId);
     res.sendStatus(status.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /settings/webhook/sample-payload
+ *
+ * Sends a sample payload to the configured webhook URL using the configured webhook key.
+ *
+ * @param payload - The payload to send.
+ * @return {200} indicating sample payload being processed.
+ */
+router.post(
+  "/webhook/sample-payload",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const id = getCxIdOrFail(req);
+    if (Config.isProduction()) {
+      throw new BadRequestError("Webhook sample payload is not available in production");
+    }
+    const { webhookUrl, webhookKey } = await getSettingsOrFail({ id });
+    if (!webhookUrl || !webhookKey) {
+      throw new BadRequestError("Webhook URL and key must be configured");
+    }
+
+    // Accept any object; require presence of meta.type
+    const payloadSchema = z.object({ meta: z.object({ type: z.string() }) }).passthrough();
+    const payload = payloadSchema.parse(req.body);
+    const response = await sendPayload(payload, webhookUrl, webhookKey);
+    res.status(status.OK).json(response);
   })
 );
 

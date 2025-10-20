@@ -1,28 +1,96 @@
+import { normalizeState, normalizeStateSafe } from "@metriport/shared";
 import { z } from "zod";
+import { trimAndEmptyToUndefinedSchema } from "../common/zod";
 import { periodSchema } from "./period";
 
-// The use of an address. This value set defines its own terms in the
-// system http://hl7.org/fhir/address-use.
-// See: https://specification.commonwellalliance.org/appendix/terminology-bindings#c1-address-use-codes
+const MIN_LINE_LENGTH = 3;
+const MIN_CITY_LENGTH = 3;
+
+/**
+ * The use of an address.
+ * @see: https://hl7.org/fhir/R4/valueset-address-use.html
+ */
 export enum AddressUseCodes {
   home = "home",
   work = "work",
   temp = "temp",
   old = "old",
-  unspecified = "unspecified",
+  billing = "billing",
 }
-export const addressUseCodesSchema = z.enum(Object.keys(AddressUseCodes) as [string, ...string[]]);
 
-// A postal address.
+export enum AddressTypeCodes {
+  postal = "postal",
+  physical = "physical",
+  both = "both",
+}
+
 // See: https://specification.commonwellalliance.org/services/rest-api-reference (8.4.3 Address)
-export const addressSchema = z.object({
-  use: addressUseCodesSchema.optional().nullable(),
-  line: z.array(z.string()).optional().nullable(),
-  city: z.string().optional().nullable(),
-  state: z.string().optional().nullable(),
-  zip: z.string(),
-  country: z.string().optional().nullable(),
-  period: periodSchema.optional().nullable(),
+// Base address schema with all common fields
+const addressSchemaBase = z.object({
+  line: z.array(z.string().transform(s => s.trim())).nullish(),
+  city: trimAndEmptyToUndefinedSchema,
+  country: trimAndEmptyToUndefinedSchema,
+  postalCode: trimAndEmptyToUndefinedSchema.pipe(z.string().nullish()),
+  use: trimAndEmptyToUndefinedSchema.pipe(z.string().nullish()),
+  type: trimAndEmptyToUndefinedSchema.pipe(z.string().nullish()),
+  period: periodSchema.nullish(),
 });
 
+export const addressSchema = addressSchemaBase.extend({
+  state: z.preprocess(normalizeStatePreprocess, z.string().nullish()),
+});
 export type Address = z.infer<typeof addressSchema>;
+
+export function normalizeStatePreprocess(arg: unknown): unknown {
+  if (typeof arg === "string" && ["", "undefined", "null"].includes(arg.trim())) return undefined;
+  if (typeof arg === "string") return normalizeState(arg);
+  return undefined; // Convert non-string values to undefined
+}
+
+// Safe address schema that filters out invalid addresses instead of throwing errors
+export const addressSchemaSafe = addressSchemaBase.extend({
+  state: z.preprocess(normalizeStatePreprocessSafe, trimAndEmptyToUndefinedSchema),
+});
+
+export function normalizeStatePreprocessSafe(arg: unknown): unknown {
+  if (typeof arg === "string") return normalizeStateSafe(arg);
+  return undefined; // Convert non-string values to undefined so they get filtered out
+}
+
+// Safe address array schema that filters out invalid addresses
+export const addressArraySchemaSafe = z.array(addressSchemaSafe).transform(addresses => {
+  return addresses.filter(address => isValidAddress(address));
+});
+
+/**
+ * Validates if an address meets all minimum requirements
+ */
+function isValidAddress(address: Address): boolean {
+  return (
+    isValidAddressLine(address.line) && isValidCity(address.city) && isValidState(address.state)
+  );
+}
+
+/**
+ * Validates if an address line has sufficient content
+ */
+function isValidAddressLine(line: string[] | null | undefined): boolean {
+  if (!line || line.length < 1) return false;
+  return line.some(lineItem => lineItem.trim().length >= MIN_LINE_LENGTH);
+}
+
+/**
+ * Validates if a city has sufficient content
+ */
+function isValidCity(city: string | null | undefined): boolean {
+  if (!city) return false;
+  return city.trim().length >= MIN_CITY_LENGTH;
+}
+
+/**
+ * Validates if a state is a legitimate US state
+ */
+function isValidState(state: string | null | undefined): boolean {
+  if (!state) return false;
+  return normalizeStateSafe(state) !== undefined;
+}

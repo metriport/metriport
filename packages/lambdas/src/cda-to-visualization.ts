@@ -11,6 +11,7 @@ import * as uuid from "uuid";
 import { capture } from "./shared/capture";
 import { getEnv, getEnvOrFail } from "./shared/env";
 import { sleep } from "./shared/sleep";
+import { sanitizeXmlProcessingInstructions } from "@metriport/core/external/cda/get-file-contents";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const styleSheetText = require("./cda-to-visualization/stylesheet.js");
 
@@ -32,6 +33,7 @@ const s3client = new AWS.S3({
   signatureVersion: "v4",
 });
 
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(
   async ({ fileName, conversionType, bucketName }: Input): Promise<Output> => {
     console.log(`Running with conversionType: ${conversionType}, fileName: ${fileName}`);
@@ -43,26 +45,60 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       });
     }
 
-    const document = cleanUpPayload(originalDocument);
-
-    if (conversionType === "html") {
-      const url = await convertStoreAndReturnHtmlDocUrl({ fileName, document, bucketName });
-      console.log("html", url);
-      return { url };
+    if (conversionType !== "html" && conversionType !== "pdf") {
+      throw new MetriportError(`Unsupported conversion type`, undefined, {
+        fileName,
+        conversionType,
+      });
     }
 
-    if (conversionType === "pdf") {
-      const url = await convertStoreAndReturnPdfDocUrl({ fileName, document, bucketName });
-      console.log("pdf", url);
-      return { url };
+    try {
+      return await convert({
+        docContents: originalDocument,
+        conversionType,
+        fileName,
+        bucketName,
+      });
+    } catch (error) {
+      console.log(`Error while converting. Will retry with sanitization. Error: ${error}`);
+      return await convert({
+        docContents: originalDocument,
+        conversionType,
+        fileName,
+        bucketName,
+        isSanitize: true,
+      });
     }
-
-    throw new MetriportError(`Unsupported conversion type`, undefined, {
-      fileName,
-      conversionType,
-    });
   }
 );
+
+async function convert({
+  docContents,
+  conversionType,
+  fileName,
+  bucketName,
+  isSanitize = false,
+}: {
+  docContents: string;
+  conversionType: "html" | "pdf";
+  fileName: string;
+  bucketName: string;
+  isSanitize?: boolean;
+}) {
+  const sanitizedDocContents = isSanitize
+    ? sanitizeXmlProcessingInstructions(docContents)
+    : docContents;
+  const document = isSanitize ? cleanUpPayload(sanitizedDocContents) : sanitizedDocContents;
+  if (conversionType === "html") {
+    const url = await convertStoreAndReturnHtmlDocUrl({ fileName, document, bucketName });
+    console.log("html", url);
+    return { url };
+  }
+
+  const url = await convertStoreAndReturnPdfDocUrl({ fileName, document, bucketName });
+  console.log("pdf", url);
+  return { url };
+}
 
 const downloadDocumentFromS3 = async ({
   fileName,

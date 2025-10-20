@@ -1,111 +1,151 @@
-import { Demographics } from "../models/demographics";
-import { StrongId } from "../models/identifier";
-import { Organization } from "../models/organization";
-import { Patient } from "../models/patient";
-import { Person, PersonSearchResp } from "../models/person";
 import { PurposeOfUse } from "@metriport/shared";
-import { RequestMetadata } from "../client/commonwell";
+import { BaseRequestMetadata } from "../client/common";
+import { PatientLinks } from "../models/patient";
+
+export type EncodePatientIdForDocumentExchangeParams = {
+  patientId: string;
+  assignAuthority: string;
+};
 
 /**
- * Returns the ID of a person.
- * @deprecated Use {@link getPersonId} instead.
+ * Regex pattern to extract code, system, and optional assignAuthType from CommonWell patient ID
+ * Matches: code^^^&system&assignAuthType
+ * Where assignAuthType is optional
  */
-export function getId(object: Person | undefined): string | undefined {
-  return getPersonId(object);
-}
+export const CW_PATIENT_ID_REGEX_V2 = /^([^^]+)\^\^\^&([^&]+)(?:&([^&]+))?$/i;
 
 /**
- * Returns the ID of a person.
- */
-export function getPersonId(object: Person | undefined): string | undefined {
-  if (!object) return undefined;
-  const url = object._links?.self?.href;
-  return getPersonIdFromUrl(url);
-}
-
-/**
- * Returns the ID of a person from its URL.
+ * Get the local Patient ID from the Patient Response Item's Links Self link.
+ * This ID is in the HL7 CX data type format, so it includes the system/assigninig authority's system.
  *
- * @param personUrl - The person's URL as returned from `Person._links.self.href`
+ * @param links - The Patient Links.
+ * @returns The Patient ID.
+ * @see Section "8.3.2 Get Patient" of the spec.
  */
-export function getPersonIdFromUrl(personUrl: string | undefined | null): string | undefined {
-  if (!personUrl) return undefined;
-  return personUrl.substring(personUrl.lastIndexOf("/") + 1);
-}
-
-export function getPersonIdFromSearchByPatientDemo(object: PersonSearchResp): string | undefined {
-  if (!object._embedded || !object._embedded.person) return undefined;
-  const embeddedPersons = object._embedded.person.filter(p => p.enrolled);
-  if (embeddedPersons.length < 1) return undefined;
-  if (embeddedPersons.length > 1) {
-    console.log(`Found more than one person, using the first one: `, object);
-  }
-  const person = embeddedPersons[0];
-  return person && getId(person);
-}
-
-export function getIdTrailingSlash(object: Patient | Organization): string | undefined {
-  const url = object._links?.self?.href;
-  if (!url) return undefined;
-  const removeTrailingSlash = url.substring(0, url.length - 1);
+export function getCwPatientIdFromLinks(links: PatientLinks): string {
+  const url = links.Self;
+  const isLastCharSlash = url.endsWith("/");
+  const removeTrailingSlash = isLastCharSlash ? url.substring(0, url.length - 1) : url;
   return removeTrailingSlash.substring(removeTrailingSlash.lastIndexOf("/") + 1);
 }
 
-export function getPatientStrongIds(object: Patient): StrongId[] | undefined {
-  return object.identifier ?? undefined;
+/**
+ * Decodes the patient ID in the HL7 CX data type format into its components.
+ *
+ * @param patientId - The patient's ID in the HL7 CX data type format.
+ * @returns The decoded patient ID, with the value, assignAuthority, and assignAuthorityType.
+ * @see Section "8.3.2 Get Patient" of the spec.
+ */
+export function decodeCwPatientIdV2(patientId: string): {
+  value: string | undefined;
+  assignAuthority: string | undefined;
+  assignAuthorityType: string | undefined;
+} {
+  const decoded = decodeURIComponent(decodeURI(patientId));
+  const match = decoded.match(CW_PATIENT_ID_REGEX_V2) ?? undefined;
+  const value = match && match[1];
+  const assignAuthority = match && match[2];
+  const assignAuthorityType = match && match[3];
+  return { value, assignAuthority, assignAuthorityType };
+}
+
+/**
+ * Encodes the patient ID into the HL7 CX data type format.
+ *
+ * @param patientId - The patient's ID.
+ * @param assignAuthority - The assign authority of the patient.
+ * @param assignAuthorityType - The assign authority type of the patient.
+ * @returns The patient ID in the HL7 CX data type format.
+ * @see Section "8.3.2 Get Patient" of the spec.
+ */
+export function encodeCwPatientId({
+  patientId,
+  assignAuthority,
+  assignAuthorityType,
+}: {
+  patientId: string;
+  assignAuthority: string;
+  assignAuthorityType?: string | undefined;
+}): string {
+  return `${patientId}^^^&${assignAuthority}&${assignAuthorityType ?? "ISO"}`;
+}
+
+/**
+ * Converts the patient ID into subject ID, to be used during document query.
+ *
+ * @param cwPatientId - The patient's ID in the HL7 CX data type format.
+ * @returns The subject ID as defined by the specification: [system]|[code] where 'system'
+ * is the OID of the organization and 'code' is the first part of the patient ID.
+ * @see Sectin "10.2.1 Document Query" of the spec.
+ */
+export function encodePatientIdForDocumentExchange(cwPatientId: string): string | undefined;
+
+/**
+ * Converts the patient ID into subject ID, to be used during document query.
+ *
+ * @param patientId - The patient's ID from the Edge System, unencoded.
+ * @param assignAuthority - The assign authority of the patient.
+ * @returns The subject ID as defined by the specification: [system]|[code] where 'system'
+ * is the OID of the organization and 'code' is the first part of the patient ID.
+ * @see Sectin "10.2.1 Document Query" of the spec.
+ */
+export function encodePatientIdForDocumentExchange({
+  patientId,
+  assignAuthority,
+}: EncodePatientIdForDocumentExchangeParams): string;
+
+export function encodePatientIdForDocumentExchange(
+  params: EncodePatientIdForDocumentExchangeParams | string
+): string | undefined {
+  if (typeof params === "string") {
+    const { value, assignAuthority } = decodeCwPatientIdV2(params);
+    if (value && assignAuthority) {
+      return encodePatientIdForDocumentExchange({
+        patientId: value,
+        assignAuthority,
+      });
+    }
+    return convertPatientIdToSubjectIdV1(params);
+  }
+  const { patientId, assignAuthority } = params;
+  return `${assignAuthority}|${patientId}`;
+}
+
+/**
+ * V1 only
+ * Matches: patientId^^^urn:oid:orgOid
+ */
+function convertPatientIdToSubjectIdV1(patientId: string): string | undefined {
+  const { value, assignAuthority } = decodeCwPatientIdV1(patientId);
+  return value && assignAuthority ? buildPatiendIdToDocQuery(value, assignAuthority) : undefined;
+}
+
+/**
+ * Decodes the patient ID into its components.
+ *
+ * @param patientId - The patient's ID in the HL7 CX data type format.
+ * @returns The decoded patient ID, with the value and assignAuthority.
+ */
+export function decodeCwPatientIdV1(patientId: string): {
+  value: string | undefined;
+  assignAuthority: string | undefined;
+} {
+  const decoded = decodeURIComponent(decodeURI(patientId));
+  const regex = /(.+)\^\^\^(.+)/i;
+  const match = decoded.match(regex) ?? undefined;
+  const value = match && match[1];
+  const assignAuthority = match && match[2];
+  return { value, assignAuthority };
 }
 
 function buildPatiendIdToDocQuery(code: string, system: string): string {
   return `${system}|${code}`;
 }
 
-/**
- * Converts the patient ID into subject ID, to be used during document query.
- *
- * @param {string} patientId - The patient's ID
- * @returns {string} - The subject ID as defined by the specification: [system]|[code] where 'system'
- * is the OID of the organization and 'code' is the first (numeric) part of the patient ID.
- *
- * @see {@link https://specification.commonwellalliance.org/services/data-broker/protocol-operations-data-broker#8781-find-documents|API spec}
- */
-export function convertPatientIdToSubjectId(patientId: string): string | undefined {
-  const value = decodeURIComponent(decodeURI(patientId));
-  const regex = /(.+)\^\^\^(.+)/i;
-  const match = value.match(regex);
-  const code = match && match[1];
-  const system = match && match[2];
-  return code && system ? buildPatiendIdToDocQuery(code, system) : undefined;
-}
-
-/**
- * Return the demographics for the results of a person search or a list of persons.
- *
- * @param personRelated structure containing person data, either an array of Person or a PersonSearchResp
- */
-export function getDemographics(personRelated: Person[] | PersonSearchResp): Demographics[] {
-  if (personRelated instanceof Array) {
-    return personRelated.map(p => p.details);
-  }
-  return personRelated._embedded.person.map(p => p.details);
-}
-
-export function organizationQueryMeta(
-  orgName: string,
-  meta: Omit<RequestMetadata, "npi" | "role" | "purposeOfUse" | "subjectId"> &
-    Required<Pick<RequestMetadata, "npi">> &
-    Partial<Pick<RequestMetadata, "role" | "purposeOfUse">>
-): RequestMetadata {
-  const base = baseQueryMeta(orgName);
+export function buildBaseQueryMeta(orgName: string): BaseRequestMetadata {
   return {
-    subjectId: base.subjectId,
-    role: meta.role ?? base.role,
-    purposeOfUse: meta.purposeOfUse ?? base.purposeOfUse,
-    npi: meta.npi,
+    purposeOfUse: PurposeOfUse.TREATMENT,
+    role: "ict",
+    subjectId: `${orgName} System User`,
   };
 }
-
-export const baseQueryMeta = (orgName: string) => ({
-  purposeOfUse: PurposeOfUse.TREATMENT,
-  role: "ict",
-  subjectId: `${orgName} System User`,
-});

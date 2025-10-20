@@ -2,12 +2,8 @@ import jaroWinkler from "jaro-winkler";
 import { intersectionWith } from "lodash";
 import { Contact } from "../domain/contact";
 import { PatientData, PersonalIdentifier } from "../domain/patient";
-import { normalizePatient, normalizePatientInboundMpi } from "./normalize-patient";
+import { normalizePatient, normalizePatientInboundMpi, splitName } from "./normalize-patient";
 import { PatientMPI } from "./shared";
-import { out } from "../util/log";
-import { splitName } from "./normalize-patient";
-
-const { log } = out(`Patient Matching`);
 
 // Define a type for the similarity function
 type SimilarityFunction = (
@@ -287,24 +283,10 @@ export function epicMatchingAlgorithm(
   if (ssn1?.length && ssn2?.length) {
     const newThreshold = threshold + 1;
     const match = totalScore >= newThreshold;
-    if (match) {
-      log(
-        `Match: ${match}, Score: ${totalScore}, Threshold: ${newThreshold}, Total Scores: ${JSON.stringify(
-          scores
-        )}, Patient1: ${JSON.stringify(patient1)}, Patient2: ${JSON.stringify(patient2)}`
-      );
-    }
     return match;
   }
 
   const match = totalScore >= threshold;
-  if (match) {
-    log(
-      `Match: ${match}, Score: ${totalScore}, Threshold: ${threshold}, Total Scores: ${JSON.stringify(
-        scores
-      )}, Patient1: ${JSON.stringify(patient1)}, Patient2: ${JSON.stringify(patient2)}`
-    );
-  }
   return match;
 }
 

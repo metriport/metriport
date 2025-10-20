@@ -1,9 +1,11 @@
+import { CqDirectorySimplifiedOrg } from "@metriport/shared/interface/external/carequality/directory/simplified-org";
 import { EnvType } from "../lib/env-type";
-import { RDSAlarmThresholds } from "./aws/rds";
+import { AnalyticsPlatformConfig } from "./analytics-platform-config";
+import { RDSConfig } from "./aws/rds";
+import { Hl7NotificationConfig } from "./hl7-notification-config";
 import { IHEGatewayProps } from "./ihe-gateway-config";
 import { OpenSearchConnectorConfig } from "./open-search-config";
 import { PatientImportProps } from "./patient-import";
-import { CqDirectorySimplifiedOrg } from "@metriport/shared/interface/external/carequality/directory/simplified-org";
 
 export type ConnectWidgetConfig = {
   stackName: string;
@@ -11,11 +13,6 @@ export type ConnectWidgetConfig = {
   subdomain: string;
   host: string;
   domain: string;
-};
-
-export type CWCoverageEnhancementConfig = {
-  managementUrl: string;
-  codeChallengeNotificationUrl: string;
 };
 
 type EnvConfigBase = {
@@ -28,55 +25,7 @@ type EnvConfigBase = {
   domain: string; // Base domain
   subdomain: string; // API subdomain
   authSubdomain: string; // Authentication subdomain
-  apiDatabase: {
-    /**
-     * The name of the database.
-     */
-    name: string;
-    /**
-     * The API username to connect to the database.
-     */
-    username: string;
-    /**
-     * From CDK: A preferred maintenance window day/time range. Should be specified as a range ddd:hh24:mi-ddd:hh24:mi (24H Clock UTC).
-     *
-     * Example: 'Sun:23:45-Mon:00:15'.
-     *
-     * Must be at least 30 minutes long.
-     *
-     * @see: https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/USER_UpgradeDBInstance.Maintenance.html#Concepts.DBMaintenance
-     */
-    maintenanceWindow: string;
-    /**
-     * From CDK: The minimum number of Aurora capacity units (ACUs) for a DB instance in an Aurora Serverless v2 cluster.
-     *
-     * You can specify ACU values in half-step increments, such as 8, 8.5, 9, and so on. The smallest value that you can use is 0.5.
-     *
-     * @see — http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-dbcluster-serverlessv2scalingconfiguration.html#cfn-rds-dbcluster-serverlessv2scalingconfiguration-mincapacity
-     */
-    minCapacity: number;
-    /**
-     * From CDK: The maximum number of Aurora capacity units (ACUs) for a DB instance in an Aurora Serverless v2 cluster.
-     *
-     * You can specify ACU values in half-step increments, such as 40, 40.5, 41, and so on. The largest value that you can use is 128.
-     *
-     * The maximum capacity must be higher than 0.5 ACUs. For more information, see Choosing the maximum Aurora Serverless v2 capacity setting for a cluster in the Amazon Aurora User Guide.
-     *
-     * @see — http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-rds-dbcluster-serverlessv2scalingconfiguration.html#cfn-rds-dbcluster-serverlessv2scalingconfiguration-maxcapacity
-     */
-    maxCapacity: number;
-    /**
-     * The minimum duration in milliseconds for a slow log to be recorded.
-     *
-     * If not present, slow logs will not be recorded.
-     *
-     * @see: https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraPostgreSQL.Reference.ParameterGroups.html#AuroraPostgreSQL.Reference.Parameters.Cluster
-     */
-    minSlowLogDurationInMs?: number;
-    /**
-     * The thresholds for the RDS alarms.
-     */
-    alarmThresholds: RDSAlarmThresholds;
+  apiDatabase: RDSConfig & {
     /**
      * Sequelize DB pool settings.
      */
@@ -112,7 +61,9 @@ type EnvConfigBase = {
       PROPELAUTH_API_KEY: string;
     };
   };
+  internalServerUrl?: string;
   usageReportUrl?: string;
+  cxBillingUrl?: string;
   fhirServerUrl: string;
   termServerUrl?: string;
   fhirServerQueueUrl?: string;
@@ -121,12 +72,17 @@ type EnvConfigBase = {
   generalBucketName: string;
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;
+  pharmacyConversionBucketName: string;
+  surescriptsReplicaBucketName: string;
+  labConversionBucketName?: string;
+  questReplicaBucketName?: string;
   ehrResponsesBucketName?: string;
+  ehrBundleBucketName: string;
   iheResponsesBucketName: string;
   iheParsedResponsesBucketName: string;
   iheRequestsBucketName: string;
   fhirConverterBucketName?: string;
-  analyticsSecretNames?: {
+  analyticsSecretNames: {
     POST_HOG_API_KEY_SECRET: string;
   };
   locationService?: {
@@ -141,6 +97,7 @@ type EnvConfigBase = {
   };
   openSearch: OpenSearchConnectorConfig;
   carequality?: {
+    roUsername: string;
     secretNames: {
       CQ_MANAGEMENT_API_KEY: string;
       CQ_ORG_PRIVATE_KEY: string;
@@ -155,10 +112,10 @@ type EnvConfigBase = {
     };
   };
   commonwell: {
-    coverageEnhancement?: CWCoverageEnhancementConfig;
     envVars: {
       CW_MEMBER_NAME: string;
       CW_MEMBER_OID: string;
+      CW_MEMBER_ID: string;
       CW_GATEWAY_ENDPOINT: string;
       CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT: string;
       CW_TECHNICAL_CONTACT_NAME: string;
@@ -209,12 +166,21 @@ type EnvConfigBase = {
   };
   sentryDSN?: string; // API's Sentry DSN
   lambdasSentryDSN?: string;
-  slack?: {
-    SLACK_ALERT_URL?: string;
-    SLACK_NOTIFICATION_URL?: string;
+  slack: {
+    SLACK_ALERT_URL: string;
+    SLACK_NOTIFICATION_URL: string;
     SLACK_SENSITIVE_DATA_URL?: string;
     workspaceId: string;
     alertsChannelId: string;
+  };
+  acmCertMonitor: {
+    /**
+     * UTC-based: "Minutes Hours Day-of-month Month Day-of-week Year"
+     * @see: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
+     * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
+     */
+    scheduleExpressions: string | string[];
+    heartbeatUrl: string;
   };
   docQueryChecker?: {
     /**
@@ -226,6 +192,7 @@ type EnvConfigBase = {
   };
   cqDirectoryRebuilder?: {
     scheduleExpressions: string | string[];
+    heartbeatUrl?: string;
   };
   ehrIntegration?: {
     athenaHealth: {
@@ -246,18 +213,59 @@ type EnvConfigBase = {
         EHR_CANVAS_CLIENT_KEY_AND_SECRET_MAP: string;
       };
     };
+    healthie: {
+      env: string;
+      secrets: {
+        EHR_HEALTHIE_API_KEY_MAP: string;
+      };
+    };
+    eclinicalworks: {
+      env: string;
+    };
+    salesforce: {
+      env: string;
+    };
   };
+  surescripts?: {
+    surescriptsSenderId: string;
+    surescriptsReceiverId: string;
+    surescriptsHost: string;
+    secrets: {
+      SURESCRIPTS_SFTP_SENDER_PASSWORD: string;
+      SURESCRIPTS_SFTP_PUBLIC_KEY: string;
+      SURESCRIPTS_SFTP_PRIVATE_KEY: string;
+    };
+  };
+  quest?: {
+    questHostname: string;
+    questPort: number;
+    questUsername: string;
+    questOutgoingDirectoryPath: string;
+    questIncomingDirectoryPath: string;
+    secrets: {
+      QUEST_SFTP_PASSWORD: string;
+    };
+  };
+  jobs: {
+    startScheduledPatientJobsScheduleExpression: string;
+    startScheduledPatientJobsSchedulerUrl: string;
+  };
+  aiBriefBucketName: string;
 };
 
 export type EnvConfigNonSandbox = EnvConfigBase & {
   environmentType: EnvType.staging | EnvType.production;
   dashUrl: string;
+  ehrDashUrl: string;
   // TODO 1672 remove this when we remove the old lambda that relies on Puppeteer
   fhirToMedicalLambda: {
     nodeRuntimeArn: string;
   };
   connectWidget: ConnectWidgetConfig;
   engineeringCxId: string;
+  hl7Notification: Hl7NotificationConfig;
+  fhirConversionBucketName: string;
+  analyticsPlatform: AnalyticsPlatformConfig;
 };
 
 export type EnvConfigSandbox = EnvConfigBase & {
@@ -265,6 +273,7 @@ export type EnvConfigSandbox = EnvConfigBase & {
   connectWidgetUrl: string;
   sandboxSeedDataBucketName: string;
   engineeringCxId?: never;
+  hl7Notification?: never;
 };
 
 export type EnvConfig = EnvConfigSandbox | EnvConfigNonSandbox;

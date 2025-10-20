@@ -3,7 +3,11 @@ dotenv.config();
 // keep that ^ on top
 import { faker } from "@faker-js/faker";
 import { validateAndParsePatientImportCsv } from "@metriport/core/command/patient-import/csv/validate-and-parse-import";
-import { PatientPayload } from "@metriport/core/command/patient-import/patient-import";
+import {
+  isParsedPatientError,
+  isParsedPatientSuccess,
+  PatientPayload,
+} from "@metriport/core/command/patient-import/patient-import";
 import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
 import { DriversLicense, PersonalIdentifier } from "@metriport/core/domain/patient";
@@ -14,24 +18,34 @@ import {
   makePersonalIdentifierSsn,
 } from "@metriport/core/domain/__tests__/patient";
 import { sleep } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { filterTruthy } from "@metriport/shared/common/filter-map";
-import dayjs from "dayjs";
 import fs from "fs";
 import { elapsedTimeAsStr } from "../shared/duration";
 import { makeDir } from "../shared/fs";
-import { invalidToString, patientValidationToString, validToString } from "./shared";
+import { invalidToString, patientCreationToString, validToString } from "./shared";
 
 /**
  * Creates a mock CSV file with patient data for bulk import.
+ *
+ * The output files will be created in the `runs/bulk-import-mock` folder, under the current
+ * timestamp.
+ *
+ * Also, a file named `current-raw.csv` will be created in the `runs/bulk-import-mock` folder,
+ * so the terminal can display a link so that we can open the file with a "cmd+click" on its name.
  *
  * Usage:
  * - update the constants below
  * - run it with `npm run generate-patient-csv`
  * - the file will be created in the `runs/bulk-import-mock` folder
+ * - optionally, pass the number of patients as an argument
+ *   - `npm run generate-patient-csv 1000`
+ *   - `npm run generate-patient-csv 10000`
+ *   - `npm run generate-patient-csv 100000`
  */
 
 // The amount of patients to generate
-const numberOfPatients = 1_000;
+const numberOfPatients = process.argv[2] ? parseInt(process.argv[2]) : 100;
 
 // The percentage of patients that will have each property:
 const percentageWithExternalId = 0.5;
@@ -46,8 +60,8 @@ function getAmountOfContacts() {
 }
 
 // The order inside each of those matters!
-const mainHeaders = "externalId,firstname,lastname,dob,gender";
-const addressHeaders = "zip,city,state,addressLine1*,addressLine2";
+const mainHeaders = "externalId,firstName,lastName,dob,gender";
+const addressHeaders = "zip,city,state,addressLine1,addressLine2";
 const contactHeaders = "phone,email";
 const additionalIdentifiersHeaders = "ssn,driversLicenceNo,driversLicenceState";
 
@@ -56,10 +70,13 @@ async function main() {
   const startedAt = Date.now();
   console.log(`############## Started at ${new Date(startedAt).toISOString()} ##############`);
 
-  const timestamp = dayjs().toISOString();
-  const outputFolderName = `runs/bulk-import-mock/${timestamp}`;
+  const timestamp = buildDayjs().toISOString();
+  const outputBaseFolder = `runs/bulk-import-mock`;
+  const outputFolderName = `${outputBaseFolder}/${timestamp}`;
   makeDir(outputFolderName);
   const outputFileName = `raw.csv`;
+  const outputFileNameFull = `./${outputFolderName}/${outputFileName}`;
+  const outputCurrentFileNameFull = `./${outputBaseFolder}/current-raw.csv`;
 
   const patients: PatientPayload[] = [];
   for (let i = 0; i < numberOfPatients; i++) {
@@ -69,23 +86,31 @@ async function main() {
   const { headers, amountOfAddresses, amountOfContacts } = buildHeaders(patients);
   const contents = patients.map(patientToCsv(amountOfAddresses, amountOfContacts)).join("\n");
   const fileContents = [headers, contents].join("\n");
-  fs.writeFileSync(`./${outputFolderName}/${outputFileName}`, fileContents);
+  fs.writeFileSync(outputFileNameFull, fileContents);
+  fs.rmSync(outputCurrentFileNameFull, { force: true });
+  fs.writeFileSync(outputCurrentFileNameFull, fileContents);
 
-  const {
-    validRows,
-    invalidRows,
-    patients: patientsFromParse,
-  } = await validateAndParsePatientImportCsv({ contents: fileContents });
+  const { patients: patientsFromValidation } = await validateAndParsePatientImportCsv({
+    contents: fileContents,
+  });
 
-  const outputValid = headers + "\n" + validRows.map(validToString).join("\n");
-  const outputInvalid = headers + ",error" + "\n" + invalidRows.map(invalidToString).join("\n");
-  const outputPatientsValidation = patientsFromParse.map(patientValidationToString).join("\n");
+  const validRows = patientsFromValidation.filter(isParsedPatientSuccess).map(validToString);
+  const invalidRows = patientsFromValidation.filter(isParsedPatientError).map(invalidToString);
+  const patientsForCreate: PatientPayload[] = patientsFromValidation
+    .filter(isParsedPatientSuccess)
+    .map(p => p.parsed);
+
+  const outputValid = headers + "\n" + validRows.join("\n");
+  const outputInvalid = headers + ",error" + "\n" + invalidRows.join("\n");
+  const outputPatientsCreation = patientsForCreate.map(patientCreationToString).join("\n");
 
   fs.writeFileSync(`./${outputFolderName}/valid.csv`, outputValid);
   fs.writeFileSync(`./${outputFolderName}/invalid.csv`, outputInvalid);
-  fs.writeFileSync(`./${outputFolderName}/patients-validation.csv`, outputPatientsValidation);
+  fs.writeFileSync(`./${outputFolderName}/creation.ndjson`, outputPatientsCreation);
 
   console.log(`>>> Done in ${elapsedTimeAsStr(startedAt)}`);
+  // Easier to cmd+click and open the file from the terminal
+  console.log(`>>> File: "${outputCurrentFileNameFull}"`);
 }
 
 function makePatient(): PatientPayload {

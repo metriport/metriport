@@ -5,7 +5,12 @@ import { isBinary } from "../../external/fhir/shared";
 import { capture, out } from "../../util";
 import { base64ToString, stringToBase64 } from "../../util/base64";
 import { uuidv7 } from "../../util/uuid-v7";
+
 const AI_BRIEF_SOURCE = "metriport:ai-generated-brief";
+
+export type AiBriefControls = {
+  cancelled: boolean;
+};
 
 export function generateAiBriefFhirResource(content: string): Binary {
   const encodedContent = stringToBase64(content);

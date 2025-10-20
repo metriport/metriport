@@ -1,11 +1,11 @@
 import { MedicationRequest } from "@medplum/fhirtypes";
 import {
   DeduplicationResult,
+  dangerouslyAssignMostDescriptiveStatus,
   combineResources,
   createRef,
   deduplicateWithinMap,
   getDateFromString,
-  pickMostDescriptiveStatus,
 } from "../shared";
 
 const medicationRequestStatus = [
@@ -31,11 +31,16 @@ const statusRanking: Record<MedicationRequestStatus, number> = {
   completed: 7,
 };
 
+function preprocessStatus(existing: MedicationRequest, target: MedicationRequest) {
+  return dangerouslyAssignMostDescriptiveStatus(statusRanking, existing, target);
+}
+
 export function deduplicateMedRequests(
   medications: MedicationRequest[]
 ): DeduplicationResult<MedicationRequest> {
   const { medRequestsMap, refReplacementMap, danglingReferences } =
     groupSameMedRequests(medications);
+
   return {
     combinedResources: combineResources({
       combinedMaps: [medRequestsMap],
@@ -60,15 +65,6 @@ export function groupSameMedRequests(medRequests: MedicationRequest[]): {
   const refReplacementMap = new Map<string, string>();
   const danglingReferences = new Set<string>();
 
-  function assignMostDescriptiveStatus(
-    master: MedicationRequest,
-    existing: MedicationRequest,
-    target: MedicationRequest
-  ): MedicationRequest {
-    master.status = pickMostDescriptiveStatus(statusRanking, existing.status, target.status);
-    return master;
-  }
-
   for (const medRequest of medRequests) {
     const medRef = medRequest.medicationReference?.reference;
     const date = medRequest.authoredOn;
@@ -77,14 +73,22 @@ export function groupSameMedRequests(medRequests: MedicationRequest[]): {
       const datetime = getDateFromString(date, "datetime");
       // TODO: Include medRequest.dosage into the key when we start mapping it on the FHIR converter
       const key = JSON.stringify({ medRef, datetime });
-      deduplicateWithinMap(
-        medRequestsMap,
-        key,
-        medRequest,
+      deduplicateWithinMap({
+        dedupedResourcesMap: medRequestsMap,
+        dedupKey: key,
+        candidateResource: medRequest,
         refReplacementMap,
-        undefined,
-        assignMostDescriptiveStatus
-      );
+        onPremerge: preprocessStatus,
+      });
+    } else if (medRef) {
+      const key = JSON.stringify({ medRef });
+      deduplicateWithinMap({
+        dedupedResourcesMap: medRequestsMap,
+        dedupKey: key,
+        candidateResource: medRequest,
+        refReplacementMap,
+        onPremerge: preprocessStatus,
+      });
     } else {
       danglingReferences.add(createRef(medRequest));
     }

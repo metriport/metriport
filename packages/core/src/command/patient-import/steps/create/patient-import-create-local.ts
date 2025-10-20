@@ -1,76 +1,45 @@
-import { errorToString, sleep } from "@metriport/shared";
+import { errorToString } from "@metriport/shared";
+import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
-import { capture } from "../../../../util/notifications";
-import { createPatient } from "../../api/create-patient";
-import { checkPatientRecordExists } from "../../record/check-patient-record-exists";
-import { creatOrUpdatePatientRecord } from "../../record/create-or-update-patient-record";
-import { ProcessPatientQueryRequest } from "../query/patient-import-query";
-import { buildPatientImportQueryHandler } from "../query/patient-import-query-factory";
-import { PatientImportCreateHandler, ProcessPatientCreateRequest } from "./patient-import-create";
+import { PatientImportCreate, ProcessPatientCreateRequest } from "./patient-import-create";
+import { processPatientCreate } from "./patient-import-create-command";
 
-export class PatientImportCreateHandlerLocal implements PatientImportCreateHandler {
+export class PatientImportCreateLocal implements PatientImportCreate {
   constructor(
-    private readonly patientImportBucket: string,
-    private readonly waitTimeInMillis: number,
-    private readonly next = buildPatientImportQueryHandler()
+    private readonly patientImportBucket: string = Config.getPatientImportBucket(),
+    private readonly waitTimeInMillis: number = 0
   ) {}
 
   async processPatientCreate({
     cxId,
     facilityId,
     jobId,
-    patientPayload,
+    rowNumber,
+    rerunPdOnNewDemographics,
     triggerConsolidated,
     disableWebhooks,
-    rerunPdOnNewDemographics,
   }: ProcessPatientCreateRequest): Promise<void> {
-    const { log } = out(`processPatientCreate.local - cxId ${cxId} jobId ${jobId}`);
+    const { log } = out(
+      `PatientImport processPatientCreate.local - cxId ${cxId} jobId ${jobId} rowNumber ${rowNumber}`
+    );
     try {
-      const patientId = await createPatient({
+      await processPatientCreate({
         cxId,
         facilityId,
-        patientPayload,
-      });
-      const recordExists = await checkPatientRecordExists({
-        cxId,
         jobId,
-        patientId,
-        s3BucketName: this.patientImportBucket,
-      });
-      if (recordExists) {
-        log(`Record exists for patientId ${patientId}, returning...`);
-        return;
-      }
-      await creatOrUpdatePatientRecord({
-        cxId,
-        jobId,
-        patientId,
-        data: { status: "processing" },
-        s3BucketName: this.patientImportBucket,
-      });
-      const processPatientQueryRequest: ProcessPatientQueryRequest = {
-        cxId,
-        jobId,
-        patientId,
+        rowNumber,
+        rerunPdOnNewDemographics,
         triggerConsolidated,
         disableWebhooks,
-        rerunPdOnNewDemographics,
-      };
-      await this.next.processPatientQuery(processPatientQueryRequest);
-
-      if (this.waitTimeInMillis > 0) await sleep(this.waitTimeInMillis);
-    } catch (error) {
-      const msg = `Failure while processing patient create @ PatientImport`;
-      log(`${msg}. Cause: ${errorToString(error)}`);
-      capture.error(msg, {
-        extra: {
-          cxId,
-          jobId,
-          context: "patient-import-create-local.processPatientCreate",
-          error,
-        },
+        patientImportBucket: this.patientImportBucket,
+        waitTimeInMillis: this.waitTimeInMillis,
       });
-      throw error;
+    } catch (error) {
+      const msg = `Failure while calling the command`;
+      const errorMsg = errorToString(error);
+      log(`${msg}. Cause: ${errorMsg}`);
+      // intentionally swallowing the error here, we want to simulate the cloud behavior
+      // where the command is called asynchronously and the error is not propagated upstream
     }
   }
 }

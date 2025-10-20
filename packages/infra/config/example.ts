@@ -1,6 +1,8 @@
+import { USState } from "@metriport/shared";
 import { Duration } from "aws-cdk-lib";
 import { EbsDeviceVolumeType } from "aws-cdk-lib/aws-ec2";
 import { EnvType } from "../lib/env-type";
+import { vCPU } from "../lib/shared/fargate";
 import { EnvConfigNonSandbox } from "./env-config";
 
 export const config: EnvConfigNonSandbox = {
@@ -42,6 +44,10 @@ export const config: EnvConfigNonSandbox = {
     },
   },
   dashUrl: "https://url-of-your-dashboard.com",
+  ehrDashUrl: "https://url-of-your-ehr-dashboard.com",
+  analyticsSecretNames: {
+    POST_HOG_API_KEY_SECRET: "your-posthog-api-key-secret",
+  },
   fhirToMedicalLambda: {
     nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",
   },
@@ -94,6 +100,7 @@ export const config: EnvConfigNonSandbox = {
     placeIndexRegion: "aws_region",
   },
   carequality: {
+    roUsername: "your-ro-username",
     secretNames: {
       CQ_MANAGEMENT_API_KEY: "CQ_MANAGEMENT_API_KEY",
       CQ_ORG_PRIVATE_KEY: "CQ_ORG_PRIVATE_KEY",
@@ -110,6 +117,7 @@ export const config: EnvConfigNonSandbox = {
   commonwell: {
     envVars: {
       CW_MEMBER_NAME: "Test Org",
+      CW_MEMBER_ID: "123",
       CW_MEMBER_OID: "1.2.3.1.4.1.11.12.29.2022.123",
       CW_GATEWAY_ENDPOINT: "https://api.myhealthapp.com/oauth/fhir",
       CW_GATEWAY_AUTHORIZATION_SERVER_ENDPOINT:
@@ -135,6 +143,7 @@ export const config: EnvConfigNonSandbox = {
       },
       encryptionAtRest: true,
       indexName: "test-index-name",
+      consolidatedIndexName: "test-lexical-index-name",
     },
     lambda: {
       memory: 512,
@@ -142,14 +151,145 @@ export const config: EnvConfigNonSandbox = {
       maxConcurrency: 5,
       timeout: Duration.minutes(2),
     },
+    consolidatedDataIngestionInitialDate: "2025-01-01",
   },
   generalBucketName: "test-bucket",
+  hl7Notification: {
+    deprecatedIncomingMessageBucketName: "test-hl7-notification-bucket-name",
+    incomingMessageBucketName: "test-incoming-message-bucket-name",
+    outgoingMessageBucketName: "test-outgoing-message-bucket-name",
+    hl7ConversionBucketName: "test-hl7-conversion-bucket-name",
+    rawIncomingMessageBucketName: "test-raw-incoming-message-bucket-name",
+    notificationWebhookSenderQueue: {
+      arn: "arn:aws:sqs:us-west-1:000000000000:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      url: "https://sqs.us-west-1.amazonaws.com/000000000000/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    },
+    secrets: {
+      HL7_BASE64_SCRAMBLER_SEED: "your-base64-scrambler-seed",
+      LAHIE_INGESTION_PASSPHRASE: "your-lahie-ingestion-passphrase",
+      LAHIE_INGESTION_PRIVATE_KEY: "your-lahie-ingestion-private-key",
+      LAHIE_INGESTION_PASSWORD: "your-lahie-ingestion-password",
+      ALOHR_INGESTION_PASSWORD: "your-alohr-ingestion-password",
+    },
+    mllpServer: {
+      sentryDSN: "your-sentry-dsn",
+      fargateCpu: 1 * vCPU,
+      fargateMemoryLimitMiB: 2048,
+      fargateTaskCountMin: 2,
+      fargateTaskCountMax: 4,
+      nlbInternalIpAddressA: "10.1.1.0",
+      nlbInternalIpAddressB: "10.1.1.1",
+    },
+    hl7v2RosterUploadLambda: {
+      bucketName: "your-roster-bucket",
+    },
+    LahieSftpIngestionLambda: {
+      sftpConfig: {
+        host: "your-sftp-host",
+        port: 22,
+        username: "your-sftp-username",
+        remotePath: "your-directory-path",
+      },
+      bucketName: "your-bucket-name",
+    },
+    AlohrSftpIngestionLambda: {
+      sftpConfig: {
+        host: "your-sftp-host",
+        port: 22,
+        username: "your-sftp-username",
+        remotePath: "your-directory-path",
+      },
+      bucketName: "your-bucket-name",
+    },
+    hieConfigs: {
+      YOUR_HIE_NAME: {
+        name: "YOUR_HIE_NAME",
+        cron: "cron(0 0 ? * SAT *)",
+        states: [USState.TX],
+        timezone: "America/Chicago",
+        gatewayPublicIp: "200.1.1.1",
+        internalCidrBlocks: ["10.10.0.0/16"],
+        subscriptions: ["adt"],
+        mapping: {
+          ID: "scrambledId",
+          "FIRST NAME": "firstName",
+          "LAST NAME": "lastName",
+          DOB: "dob",
+          GENDER: "genderAtBirth",
+          SSN: "ssn",
+          PHONE: "phone",
+          "STREET ADDRESS": "address1AddressLine1",
+          "STREET NUMBER": "address1AddressLine2",
+          CITY: "address1City",
+          STATE: "address1State",
+          ZIP: "address1Zip",
+          FACCODE: "cxShortcode",
+          ASSIGNERID: "assigningAuthorityIdentifier",
+        },
+        sftpConfig: {
+          host: "your-sftp-host",
+          port: 22,
+          username: "your-sftp-username",
+          remotePath: "your-directory-path",
+        },
+      },
+    },
+    dischargeNotificationSlackUrl: "url-to-slack-channel",
+  },
+  acmCertMonitor: {
+    scheduleExpressions: ["cw-schedule-expression"],
+    heartbeatUrl: "url-to-heartbeat-service",
+  },
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
+  pharmacyConversionBucketName: "test-pharmacy-conversion-bucket",
+  surescriptsReplicaBucketName: "test-surescripts-replica-bucket",
+  ehrBundleBucketName: "test-ehr-bundle-bucket",
   ehrResponsesBucketName: "test-ehr-responses-bucket",
   iheResponsesBucketName: "test-ihe-responses-bucket",
   iheParsedResponsesBucketName: "test-ihe-parsed-responses-bucket",
   iheRequestsBucketName: "test-ihe-requests-bucket",
+  fhirConversionBucketName: "test-fhir-conversion-bucket",
   engineeringCxId: "12345678-1234-1234-1234-123456789012",
+  slack: {
+    SLACK_ALERT_URL: "url-to-slack-alert",
+    SLACK_NOTIFICATION_URL: "url-to-slack-notification",
+    workspaceId: "workspace-id",
+    alertsChannelId: "alerts-channel-id",
+  },
+  jobs: {
+    startScheduledPatientJobsScheduleExpression: "0/5 * * * ? *",
+    startScheduledPatientJobsSchedulerUrl: "/internal/patient/job/scheduler/start",
+  },
+  analyticsPlatform: {
+    bucketName: "test-bucket",
+    secretNames: {
+      SNOWFLAKE_CREDS: "name-of-secret",
+      FHIR_TO_CSV_DB_PASSWORD: "name-of-secret",
+    },
+    snowflake: {
+      warehouse: "test-warehouse",
+      role: "test-role",
+      integrationName: "test-integration",
+      integrationUserArn: "arn:aws:iam::000000000000:role/SnowflakeIntegrationRole",
+      integrationExternalId: "000000000000",
+    },
+    rds: {
+      name: "my_db",
+      username: "my_db_user",
+      maintenanceWindow: "Sun:02:00-Sun:02:30",
+      minCapacity: 0.5,
+      maxCapacity: 1,
+      alarmThresholds: {
+        acuUtilizationPct: 80,
+        cpuUtilizationPct: 80,
+        freeableMemoryMb: 1_000,
+        volumeReadIops: 2_000,
+        volumeWriteIops: 2_000,
+      },
+      fhirToCsvDbUsername: "my_db_user",
+    },
+  },
+  aiBriefBucketName: "your-ai-brief-bucket-name",
 };
 export default config;

@@ -1,14 +1,16 @@
+/* eslint-disable @metriport/eslint-rules/no-named-arrow-functions */
 import { OperationOutcomeError } from "@medplum/core";
 import { getDetailFromOutcomeError } from "@metriport/core/external/fhir/shared/index";
+import { capture } from "@metriport/core/util";
 import { MetriportError as MetriportErrorFromCore } from "@metriport/core/util/error/metriport-error";
 import { out } from "@metriport/core/util/log";
 import { MetriportError as MetriportErrorFromShared } from "@metriport/shared";
+import { isAxiosError } from "axios";
 import { ErrorRequestHandler } from "express";
 import httpStatus from "http-status";
 import { ZodError } from "zod";
 import MetriportError from "../../errors/metriport-error";
 import { isClientError } from "../../shared/http";
-import { capture } from "../../shared/notifications";
 import { httpResponseBody } from "../util";
 import { isReportClientErrors } from "./report-client-errors";
 
@@ -22,7 +24,7 @@ const { log } = out(`error-handler`);
 //    - detail: details about this error occurrence; ie "Could not find organization"
 const defaultResponseBody = httpResponseBody;
 
-const metriportResponseBody = (err: MetriportError): string => {
+export function metriportResponseBody(err: MetriportError): string {
   return JSON.stringify({
     ...httpResponseBody({
       status: err.status,
@@ -30,10 +32,11 @@ const metriportResponseBody = (err: MetriportError): string => {
       detail: err.message,
       name: httpStatus[err.status],
     }),
+    ...(err.additionalInfo && { additionalInfo: err.additionalInfo }),
   });
-};
+}
 
-const zodResponseBody = (err: ZodError): string => {
+export function zodResponseBody(err: ZodError): string {
   const formatted = err.issues.map(i => `${i.message}, on [${i.path}]`);
   return JSON.stringify({
     ...httpResponseBody({
@@ -43,9 +46,12 @@ const zodResponseBody = (err: ZodError): string => {
       name: httpStatus[httpStatus.BAD_REQUEST],
     }),
   });
-};
+}
 
-function isMetriportError(err: unknown): err is MetriportErrorFromShared {
+/**
+ * Only here until we move all MetriportError to the same place
+ */
+export function isMetriportError(err: unknown): err is MetriportErrorFromShared {
   return (
     err instanceof MetriportError ||
     err instanceof MetriportErrorFromCore ||
@@ -53,16 +59,22 @@ function isMetriportError(err: unknown): err is MetriportErrorFromShared {
   );
 }
 
+/**
+ * Default error handler for the API.
+ *
+ * For Sentry/capture, see `app.ts`'s usage of `Sentry.Handlers.errorHandler`
+ */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   res.setHeader(`x-sentry-id`, (res as any).sentry || ``);
 
-  if (isReportClientErrors(req) && isClientError(err)) {
+  // TODO Bring the logic from `app.ts` to here
+  if (isClientError(err) && isReportClientErrors(req)) {
     capture.error(err, {
       extra: {
-        error: err,
         ...(isMetriportError(err) ? err.additionalInfo : {}),
+        error: err,
       },
     });
   }
@@ -96,17 +108,20 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
         );
     }
   }
-  if (err.statusCode) {
+  const status = err.statusCode || err.status;
+  if (status) {
+    const axiosPrefix = isAxiosError(err) ? `${err.request?.method} ${err.request?.path} ` : "";
+    const detail = axiosPrefix + err.message;
     return res
       .contentType("json")
-      .status(err.statusCode)
+      .status(status)
       .send({
         ...defaultResponseBody({
-          status: err.statusCode,
+          status,
           title: "MetriportError",
-          detail: err.message,
+          detail,
         }),
-        name: httpStatus[err.statusCode],
+        name: httpStatus[status],
       });
   }
   log(`Error: ${err}`);

@@ -1,29 +1,47 @@
 import {
-  ConversionType,
   Input as ConvertDocInput,
   Output as ConvertDocOutput,
+  ConversionType,
   validConversionTypes,
 } from "@metriport/core/domain/conversion/cda-to-html-pdf";
-import { getLambdaResultPayload } from "@metriport/core/external/aws/lambda";
-import dayjs from "dayjs";
-import BadRequestError from "../../../errors/bad-request";
-import NotFoundError from "../../../errors/not-found";
-import { makeLambdaClient } from "../../../external/aws/lambda";
+import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
+import { S3Utils } from "@metriport/core/external/aws/s3";
+import { Config as CoreConfig } from "@metriport/core/util/config";
+import { BadRequestError, MetriportError, NotFoundError } from "@metriport/shared";
 import { makeS3Client } from "../../../external/aws/s3";
 import { Config } from "../../../shared/config";
 
-const URL_EXPIRATION_TIME = dayjs.duration(5, "minutes");
+/** @deprecated Use S3Utils instead */
 const s3client = makeS3Client();
-const lambdaClient = makeLambdaClient();
+const s3Utils = new S3Utils(Config.getAWSRegion());
+const lambdaClient = makeLambdaClient(Config.getAWSRegion());
 const conversionLambdaName = Config.getConvertDocLambdaName();
 
-export const downloadDocument = async ({
+const hl7DocumentDownloadPrefix = "location_hl7/";
+
+export async function getDocumentDownloadUrl({
   fileName,
   conversionType,
 }: {
   fileName: string;
   conversionType?: ConversionType;
-}): Promise<string> => {
+}): Promise<string> {
+  if (fileName.startsWith(hl7DocumentDownloadPrefix)) {
+    return await getRawHl7MessageSignedUrl({
+      fileName: fileName.replace(hl7DocumentDownloadPrefix, ""),
+    });
+  }
+
+  return getMedicalDocumentsDownloadUrl({ fileName, conversionType });
+}
+
+export async function getMedicalDocumentsDownloadUrl({
+  fileName,
+  conversionType,
+}: {
+  fileName: string;
+  conversionType?: ConversionType;
+}): Promise<string> {
   const { exists, contentType, bucketName } = await doesObjExist({ fileName });
 
   if (!exists) throw new NotFoundError("File does not exist");
@@ -36,14 +54,15 @@ export const downloadDocument = async ({
   if (conversionType && validConversionTypes.includes(conversionType) && bucketName) {
     return getConversionUrl({ fileName, conversionType, bucketName });
   }
-  return getSignedURL({ fileName, bucketName });
-};
 
-const getConversionUrl = async ({
+  return getSignedURL({ fileName, bucketName });
+}
+
+async function getConversionUrl({
   fileName,
   conversionType,
   bucketName,
-}: ConvertDocInput): Promise<string> => {
+}: ConvertDocInput): Promise<string> {
   const convertedFileName = fileName.concat(`.${conversionType}`);
   const { exists, bucketName: bucketContainingObj } = await doesObjExist({
     fileName: convertedFileName,
@@ -51,9 +70,10 @@ const getConversionUrl = async ({
 
   if (exists) return getSignedURL({ fileName: convertedFileName, bucketName: bucketContainingObj });
   else return convertDoc({ fileName, conversionType, bucketName });
-};
+}
 
-export const convertDoc = async ({
+// eslint-disable-next-line @metriport/eslint-rules/no-named-arrow-functions
+const convertDoc = async ({
   fileName,
   conversionType,
   bucketName,
@@ -72,14 +92,15 @@ export const convertDoc = async ({
   return parsedResult.url;
 };
 
-const doesObjExist = async ({
+/** @deprecated Use S3Utils.getFileInfoFromS3 */
+async function doesObjExist({
   fileName,
 }: {
   fileName: string;
 }): Promise<
   | { exists: true; contentType: string; bucketName?: string }
   | { exists: false; contentType?: never; bucketName?: never }
-> => {
+> {
   if (Config.isSandbox()) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -120,16 +141,15 @@ const doesObjExist = async ({
   } catch (error) {
     return { exists: false };
   }
-};
+}
 
-export const getSignedURL = async ({
+export async function getSignedURL({
   fileName,
   bucketName,
 }: {
   fileName: string;
   bucketName?: string;
-}): Promise<string> => {
-  const urlExpirationSeconds = URL_EXPIRATION_TIME.asSeconds();
+}): Promise<string> {
   const bucket =
     bucketName ??
     (Config.isSandbox()
@@ -137,12 +157,25 @@ export const getSignedURL = async ({
         Config.getSandboxSeedBucketName()!
       : Config.getMedicalDocumentsBucketName());
 
-  const url = await s3client.getSignedUrlPromise("getObject", {
-    Bucket: bucket,
-    Key: fileName,
-    Expires: urlExpirationSeconds,
-  });
+  return s3Utils.getSignedUrl({ bucketName: bucket, fileName });
+}
 
-  // TODO try to remove this, moved here b/c this was being done upstream
-  return url.replace(/['"]+/g, "");
-};
+/**
+ * Gets the download URL for the raw hl7 message.
+ * @param fileName - the name of the file in the bucket
+ * @returns the download URL for the raw hl7 message
+ */
+export async function getRawHl7MessageSignedUrl({
+  fileName,
+}: {
+  fileName: string;
+}): Promise<string> {
+  if (Config.isSandbox()) {
+    throw new MetriportError("Viewing hl7 messages is not supported in sandbox");
+  }
+
+  return s3Utils.getSignedUrl({
+    bucketName: CoreConfig.getHl7IncomingMessageBucketName(),
+    fileName,
+  });
+}

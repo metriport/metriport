@@ -1,3 +1,5 @@
+import * as AWS from "aws-sdk";
+import { out } from "../../../util/log";
 import { getLambdaResultPayload, makeLambdaClient } from "../../aws/lambda";
 import {
   Document,
@@ -9,15 +11,26 @@ import {
 
 export type DocumentDownloaderLambdaConfig = DocumentDownloaderConfig & {
   lambdaName: string;
-} & Pick<DocumentDownloaderLambdaRequest, "orgName" | "orgOid" | "npi">;
+} & Pick<DocumentDownloaderLambdaRequest, "orgName" | "orgOid" | "npi" | "queryGrantorOid">;
 
-export type DocumentDownloaderLambdaRequest = {
+// TODO ENG-923 remove the one w/ document/fileInfo and keep the one w/ sourceDocument/destinationFileInfo
+export type DocumentDownloaderLambdaRequestV1 = {
   orgName: string;
   orgOid: string;
   npi: string;
   document: Document;
   fileInfo: FileInfo;
   cxId: string;
+};
+export type DocumentDownloaderLambdaRequest = {
+  orgName: string;
+  orgOid: string;
+  npi: string;
+  sourceDocument: Document;
+  destinationFileInfo: FileInfo;
+  cxId: string;
+  queryGrantorOid?: string | undefined;
+  version?: never;
 };
 
 export class DocumentDownloaderLambda extends DocumentDownloader {
@@ -26,6 +39,7 @@ export class DocumentDownloaderLambda extends DocumentDownloader {
   readonly orgName: string;
   readonly orgOid: string;
   readonly npi: string;
+  readonly queryGrantorOid?: string | undefined;
 
   constructor(config: DocumentDownloaderLambdaConfig) {
     super(config);
@@ -34,24 +48,28 @@ export class DocumentDownloaderLambda extends DocumentDownloader {
     this.orgName = config.orgName;
     this.orgOid = config.orgOid;
     this.npi = config.npi;
+    this.queryGrantorOid = config.queryGrantorOid;
   }
 
   async download({
-    document,
-    fileInfo,
+    sourceDocument,
+    destinationFileInfo,
     cxId,
   }: {
-    document: Document;
-    fileInfo: FileInfo;
+    sourceDocument: Document;
+    destinationFileInfo: FileInfo;
     cxId: string;
   }): Promise<DownloadResult> {
+    const { log } = out(`DocumentDownloaderLambda.download - cx ${cxId}`);
+
     const payload: DocumentDownloaderLambdaRequest = {
-      document,
-      fileInfo,
+      sourceDocument,
+      destinationFileInfo,
       cxId,
       orgName: this.orgName,
       orgOid: this.orgOid,
       npi: this.npi,
+      queryGrantorOid: this.queryGrantorOid,
     };
 
     const lambdaResult = await this.lambdaClient
@@ -67,9 +85,7 @@ export class DocumentDownloaderLambda extends DocumentDownloader {
       lambdaName: this.lambdaName,
     });
 
-    console.log(
-      `Response from the downloader lambda: ${lambdaResult.StatusCode} / ${resultPayload}`
-    );
+    log(`Response from the downloader lambda: ${lambdaResult.StatusCode} / ${resultPayload}`);
     return JSON.parse(resultPayload.toString());
   }
 }

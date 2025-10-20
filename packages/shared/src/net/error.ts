@@ -24,7 +24,11 @@ export type AxiosTimeoutError = (typeof axiosTimeoutErrorCodes)[number];
 export const axiosResponseErrorCodes = [AxiosError.ERR_BAD_RESPONSE] as const;
 export type AxiosResponseError = (typeof axiosResponseErrorCodes)[number];
 
-export const axiosNetworkErrors = [...axiosResponseErrorCodes, ...axiosTimeoutErrorCodes] as const;
+export const axiosNetworkErrors = [
+  AxiosError.ERR_NETWORK,
+  ...axiosResponseErrorCodes,
+  ...axiosTimeoutErrorCodes,
+] as const;
 export type AxiosNetworkError = (typeof axiosNetworkErrors)[number];
 
 // General Network errors

@@ -19,6 +19,7 @@ const destinationQueue = getEnvOrFail("DESTINATION_QUEUE");
 
 const sqs = new AWS.SQS({ region });
 
+// TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
   // Set it up
   console.log(

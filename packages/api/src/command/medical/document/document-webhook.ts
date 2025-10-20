@@ -2,13 +2,15 @@ import { PatientData } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util";
 import { capture } from "@metriport/core/util/notifications";
 import { WebhookMetadata } from "@metriport/shared/medical";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
 import { Product } from "../../../domain/product";
 import { MAPIWebhookType } from "../../../domain/webhook";
 import { patientEvents } from "../../../event/medical/patient-event";
 import { DocumentBulkUrlDTO } from "../../../routes/medical/dtos/document-bulk-downloadDTO";
 import { DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
 import { getSettingsOrFail } from "../../settings/getSettings";
-import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
+import { reportUsage as reportUsageCmd } from "../../internal-server/report-usage";
 import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateProgressWebhookSent } from "../patient/append-doc-query-progress";
@@ -27,6 +29,7 @@ type WebhookDocumentDataPayload = {
 type WebhookPatientPayload = {
   patientId: string;
   externalId?: string;
+  additionalIds?: PatientSourceIdentifierMap;
 } & WebhookDocumentDataPayload;
 type WebhookPatientDataPayload = {
   meta: WebhookMetadata;
@@ -42,14 +45,14 @@ type WebhookPatientDataPayloadWithoutMessageId = Omit<WebhookPatientDataPayload,
  * Callers are not notified of issues/errors while processing the request -
  * nothing is thrown. Instead, the error is logged and captured (Sentry).
  */
-export const processPatientDocumentRequest = async (
+export async function processPatientDocumentRequest(
   cxId: string,
   patientId: string,
   whType: MAPIWebhookType,
   status: MAPIWebhookStatus,
   requestId: string | undefined,
   documents?: DocumentReferenceDTO[] | DocumentBulkUrlDTO[]
-): Promise<void> => {
+): Promise<void> {
   const { log } = out(`Document Webhook - cxId: ${cxId}, patientId: ${patientId}`);
   try {
     const [settings, patient] = await Promise.all([
@@ -63,16 +66,17 @@ export const processPatientDocumentRequest = async (
         {
           patientId,
           ...(patient.externalId ? { externalId: patient.externalId } : {}),
+          ...(patient.additionalIds ? { additionalIds: patient.additionalIds } : {}),
           documents,
           status,
         },
       ],
     };
-    const metadata = getMetadata(whType, patient.data);
+    const cxMetadata = getCxMetadata(whType, patient.data);
 
     // send it to the customer and update the request status
-    if (!isWebhookDisabled(metadata)) {
-      log(`Sending WH... metadata: ${metadata}`);
+    if (!isWebhookDisabled(cxMetadata)) {
+      log(`Sending WH... cxMetadata: ${cxMetadata}`);
       const webhookRequest = await createWebhookRequest({
         cxId,
         type: whType,
@@ -84,10 +88,10 @@ export const processPatientDocumentRequest = async (
         webhookRequest,
         settings,
         requestId ? { requestId } : undefined,
-        metadata
+        cxMetadata
       );
     } else {
-      log(`WH disabled. Not sending it - metadata: ${JSON.stringify(metadata)}`);
+      log(`WH disabled. Not sending it - metadata: ${JSON.stringify(cxMetadata)}`);
       await createWebhookRequest({
         cxId,
         type: whType,
@@ -109,7 +113,7 @@ export const processPatientDocumentRequest = async (
       );
     }
 
-    patientEvents().emitCanvasIntegration({ id: patientId, cxId, metadata, whType });
+    patientEvents().emitCanvasIntegration({ id: patientId, cxId, metadata: cxMetadata, whType });
 
     const shouldReportUsage =
       status === MAPIWebhookStatus.completed &&
@@ -118,6 +122,14 @@ export const processPatientDocumentRequest = async (
       whType === "medical.document-download";
 
     if (shouldReportUsage) {
+      analytics({
+        event: EventTypes.billableQuery,
+        distinctId: patientId,
+        properties: {
+          cxId,
+          patientId,
+        },
+      });
       reportUsageCmd({ cxId, entityId: patientId, product: Product.medical, docQuery: true });
     }
   } catch (err) {
@@ -126,9 +138,9 @@ export const processPatientDocumentRequest = async (
       extra: { patientId, context: `webhook.processPatientDocumentRequest`, err },
     });
   }
-};
+}
 
-function getMetadata(whType: MAPIWebhookType, patientData: PatientData) {
+function getCxMetadata(whType: MAPIWebhookType, patientData: PatientData): unknown {
   if (whType === "medical.document-download" || whType === "medical.document-conversion") {
     return patientData.cxDocumentRequestMetadata;
   } else if (whType === "medical.consolidated-data") {

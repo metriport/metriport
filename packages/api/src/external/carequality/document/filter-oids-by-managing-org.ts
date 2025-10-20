@@ -1,12 +1,12 @@
 import { Op, fn, where, col } from "sequelize";
 import { CQLink } from "../cq-patient-data";
-import { CQDirectoryEntryModel } from "../../../external/carequality/models/cq-directory";
+import { CQDirectoryEntryViewModel } from "../../../external/carequality/models/cq-directory-view";
 
 export async function filterCqLinksByManagingOrg(
   name: string,
   cqLinks: CQLink[]
 ): Promise<CQLink[]> {
-  const managingOrg = await CQDirectoryEntryModel.findOne({
+  const managingOrg = await CQDirectoryEntryViewModel.findOne({
     where: where(fn("LOWER", col("name")), fn("LOWER", name)),
   });
 
@@ -14,7 +14,7 @@ export async function filterCqLinksByManagingOrg(
     return [];
   }
 
-  const managingOrgChildren = await CQDirectoryEntryModel.findAll({
+  const managingOrgChildren = await CQDirectoryEntryViewModel.findAll({
     where: {
       managingOrganizationId: {
         [Op.like]: managingOrg.id + "%",

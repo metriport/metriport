@@ -1,4 +1,5 @@
 import { Bundle, Immunization, Location } from "@medplum/fhirtypes";
+import { encodeToHtml } from "@metriport/shared/common/html";
 import { findResourceInBundle, isImmunization, isLocation } from "../../../external/fhir/shared";
 import { ImmunizationsSection } from "../../cda-types/sections";
 import {
@@ -21,11 +22,11 @@ import {
   withoutNullFlavorObject,
 } from "../commons";
 import {
-  NOT_SPECIFIED,
   extensionValue2015,
   hl7ActCode,
   loincCodeSystem,
   loincSystemName,
+  NOT_SPECIFIED,
   oids,
   placeholderOrgOid,
 } from "../constants";
@@ -125,7 +126,7 @@ function createTableRowFromImmunization(
             "#text": mapImmunizationStatusCode(immunization.resource.status) ?? NOT_SPECIFIED,
           },
           {
-            "#text": locationInfo ?? immunization.locationName ?? NOT_SPECIFIED,
+            "#text": encodeToHtml(locationInfo ?? immunization.locationName ?? NOT_SPECIFIED),
           },
           {
             "#text":

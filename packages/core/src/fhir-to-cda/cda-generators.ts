@@ -1,10 +1,10 @@
 import { Bundle } from "@medplum/fhirtypes";
+import { BadRequestError } from "@metriport/shared";
 import {
   findCompositionResource,
   findOrganizationResource,
   findPatientResource,
 } from "../external/fhir/shared";
-import BadRequestError from "../util/error/bad-request";
 import { buildAuthor } from "./cda-templates/clinical-document/author";
 import { buildClinicalDocumentXml } from "./cda-templates/clinical-document/clinical-document";
 import { buildCustodian } from "./cda-templates/clinical-document/custodian";

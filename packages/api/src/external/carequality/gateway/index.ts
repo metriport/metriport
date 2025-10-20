@@ -1,10 +1,10 @@
+import { isEpicEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { Patient } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util/log";
 import { XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { MetriportError } from "@metriport/shared";
-import { CQDirectoryEntry } from "../cq-directory";
 import { Config } from "../../../shared/config";
-import { isE2eCx, isEpicEnabledForCx } from "../../aws/app-config";
+import { isE2eCx } from "../../feature-flags";
 import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
 import { getOrganizationsForXCPD } from "../command/cq-directory/get-organizations-for-xcpd";
 import {
@@ -12,6 +12,7 @@ import {
   searchCQDirectoriesAroundPatientAddresses,
   toBasicOrgAttributes,
 } from "../command/cq-directory/search-cq-directory";
+import { CQDirectoryEntry } from "../cq-directory";
 import { buildXcpdGateway, cqOrgsToXCPDGateways } from "../organization-conversion";
 
 export const EPIC_ORG_NAME = "Epic";

@@ -1,4 +1,4 @@
-import BadRequestError from "@metriport/core/util/error/bad-request";
+import { BadRequestError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { FacilityCreate, FacilityType, isOboFacility } from "../../../domain/medical/facility";
 import { FacilityModel } from "../../../models/medical/facility";

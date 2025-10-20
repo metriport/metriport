@@ -1,4 +1,4 @@
-import { normalizeAddressLine } from "../address";
+import { normalizeAddressLine, parseAddress } from "../address";
 
 describe("mapCsvAddresses", () => {
   describe("normalizeAddressLine", () => {
@@ -24,7 +24,7 @@ describe("mapCsvAddresses", () => {
       expect(result).toEqual(["123 Main St", "Apt 4"]);
     });
 
-    it("handles various unit indicators when splitting", () => {
+    describe("handles various unit indicators when splitting", () => {
       const inputs = [
         "123 Main St Apartment 4",
         "123 Main St Unit 4",
@@ -34,13 +34,17 @@ describe("mapCsvAddresses", () => {
         "123 Main St No 4",
         "123 Main St Floor 4",
         "123 Main St Fl 4",
+        "123 Main St Apt 4",
+        "123 Main St Apt. 4",
       ];
-
       inputs.forEach(input => {
-        const result = normalizeAddressLine(input, "address", true);
-        expect(result).toHaveLength(2);
-        expect(result[0]).toBe("123 Main St");
-        expect(result[1]).toContain("4");
+        it(`'${input}'`, () => {
+          const result = normalizeAddressLine(input, "address", true);
+          expect(result).toHaveLength(2);
+          expect(result[0]).toBe("123 Main St");
+          expect(result[0]).not.toContain("4");
+          expect(result[1]).toContain("4");
+        });
       });
     });
 
@@ -73,11 +77,11 @@ describe("mapCsvAddresses", () => {
           },
           {
             input: `123 Main st Apt 1-1`,
-            output: [`123 Main St`, `Apt 1-1`],
+            output: [`123 Main st`, `Apt 1-1`],
           },
           {
             input: `123 S Main Hwy Apt 456, Building 7A`,
-            output: [`123 S Main Hwy`, `Apt 456 Building 7a`],
+            output: [`123 S Main Hwy`, `Apt 456 Building 7A`],
           },
           {
             input: `12345 Main Ct #9`,
@@ -89,7 +93,7 @@ describe("mapCsvAddresses", () => {
           },
           {
             input: `4567 Cloud Ave, Apt Simple CT apt B2`,
-            output: [`4567 Cloud Ave`, `Apt Simple Ct Apt B2`],
+            output: [`4567 Cloud Ave`, `Apt Simple CT apt B2`],
           },
           {
             input: `999 W 6th St, Apt 0 `,
@@ -97,7 +101,7 @@ describe("mapCsvAddresses", () => {
           },
           {
             input: `100 Joseph CT APT G`,
-            output: [`100 Joseph Ct`, `Apt G`],
+            output: [`100 Joseph CT`, `APT G`],
           },
           {
             input: `123 E. Wave Street Apartment A`,
@@ -105,7 +109,11 @@ describe("mapCsvAddresses", () => {
           },
           {
             input: `100 Monroe Ln Blg 45 Apartment 123`,
-            output: [`100 Monroe Ln Blg 45`, `Apartment 123`],
+            output: [`100 Monroe Ln`, `Blg 45 Apartment 123`],
+          },
+          {
+            input: `100 Monroe Ln Building 45 Apartment 123`,
+            output: [`100 Monroe Ln`, `Building 45 Apartment 123`],
           },
           {
             input: `1791 W 6th St, Apt 1`,
@@ -133,11 +141,11 @@ describe("mapCsvAddresses", () => {
           },
           {
             input: `Most Western Flat 4567 E Mediterranean RD RM 123`,
-            output: [`Most Western Flat 4567 E Mediterranean Rd`, `Rm 123`],
+            output: [`Most Western Flat 4567 E Mediterranean RD`, `RM 123`],
           },
           {
             input: `145 MAPLE Elm LN LOT 45`,
-            output: [`145 Maple Elm Ln`, `Lot 45`],
+            output: [`145 MAPLE Elm LN`, `LOT 45`],
           },
           {
             input: `420 W UNION RD `,
@@ -153,7 +161,7 @@ describe("mapCsvAddresses", () => {
           },
           {
             input: `12345 High Peak TRL`,
-            output: [`12345 High Peak Trl`],
+            output: [`12345 High Peak TRL`],
           },
           {
             input: `1 Limestone Ln, Apt 421 , -2178`,
@@ -167,15 +175,15 @@ describe("mapCsvAddresses", () => {
             // Intentionally with a new line
             input: `2512 Cedar Stone Dr
 Apt 1B`,
-            output: [`2512 Cedar Stone Dr`, `Apt 1b`],
+            output: [`2512 Cedar Stone Dr`, `Apt 1B`],
           },
           {
             input: `777 Alexander CT/Lane Apt. 4C`,
-            output: [`777 Alexander Ct/lane`, `Apt 4c`],
+            output: [`777 Alexander CT/Lane`, `Apt 4C`],
           },
           {
             input: `1480 W 3th st Apt A-9`,
-            output: [`1480 W 3th St`, `Apt A-9`],
+            output: [`1480 W 3th st`, `Apt A-9`],
           },
           {
             input: `505 PERSIAN RUG LN APT 123. . .`,
@@ -184,6 +192,26 @@ Apt 1B`,
           {
             input: `1508 S-6TH ST,APT T`,
             output: [`1508 S-6th St`, `Apt T`],
+          },
+          {
+            input: `123 Main Circle, Springfield `,
+            output: [`123 Main Circle Springfield`],
+          },
+          {
+            input: `456 Oak Street Apt#12 Riverside,	California`,
+            output: [`456 Oak Street`, `Apt#12 Riverside California`],
+          },
+          {
+            input: `789 Pine Street, Apt 101`,
+            output: [`789 Pine Street`, `Apt 101`],
+          },
+          {
+            input: `1 SUMMERTOWN NORTH CT Minneapolis`,
+            output: [`1 SUMMERTOWN NORTH CT Minneapolis`],
+          },
+          {
+            input: `1 SUMMERTOWN NORTH CT MINNEAPOLIS`,
+            output: [`1 Summertown North Ct Minneapolis`],
           },
         ];
 
@@ -199,7 +227,7 @@ Apt 1B`,
         const addresses: { input: string; output: string[] }[] = [
           {
             input: `1 SUMMERTOWN NORTH CT FLORIDA`,
-            output: [`1 Summertown North Ct Florida`], // Florida is the city/state
+            output: [`1 Summertown North Ct`, `Florida`], // Florida matches the "fl" unit indicator
           },
           {
             input: `8547 STORMFLATS DR 	 5`,
@@ -211,7 +239,7 @@ Apt 1B`,
           },
           {
             input: `420 CARVING LN APT I4 Sacramento`,
-            output: [`420 Carving Ln`, `Apt I4 Sacramento`], // Sacramento is the city/state
+            output: [`420 CARVING LN`, `APT I4 Sacramento`], // Sacramento is the city/state
           },
           {
             input: `101 king avenue 12345`,
@@ -223,11 +251,11 @@ Apt 1B`,
           },
           {
             input: `123 Meridian St b23`,
-            output: [`123 Meridian St B23`], // b23 is the unit
+            output: [`123 Meridian St b23`], // b23 is the unit
           },
           {
             input: `123 red knight manor dr # A`,
-            output: [`123 Red Knight Manor Dr # A`],
+            output: [`123 red knight manor dr # A`],
           },
         ];
         addresses.forEach(address => {
@@ -237,6 +265,71 @@ Apt 1B`,
           });
         });
       });
+    });
+  });
+
+  describe("parseAddress", () => {
+    it("splits the address line 1 when there's no address line 2", () => {
+      const city = "Springfield";
+      const state = "CA";
+      const zip = "90210";
+      const { address, errors } = parseAddress({
+        addressline1: "123 Main Street, Apt 456",
+        city,
+        state,
+        zip,
+      });
+      expect(address).toBeDefined();
+      expect(errors.length).toEqual(0);
+      if (!address) throw new Error("address is undefined");
+      expect(address.addressLine1).toEqual("123 Main Street");
+      expect(address.addressLine2).toEqual("Apt 456");
+      expect(address.city).toEqual(city);
+      expect(address.state).toEqual(state);
+      expect(address.zip).toEqual(zip);
+    });
+
+    it("keeps the address line 2 even then there's an apt w/ comma on address line 1", () => {
+      const addressline1 = "123 Main Street, Apt 456";
+      const addressline2 = "Ri";
+      const city = "Springfield";
+      const state = "CA";
+      const zip = "90210";
+      const { address, errors } = parseAddress({
+        addressline1,
+        addressline2,
+        city,
+        state,
+        zip,
+      });
+      expect(address).toBeDefined();
+      expect(errors.length).toEqual(0);
+      if (!address) throw new Error("address is undefined");
+      expect(address.addressLine1).toEqual(addressline1);
+      expect(address.addressLine2).toEqual(addressline2);
+      expect(address.city).toEqual(city);
+      expect(address.state).toEqual(state);
+      expect(address.zip).toEqual(zip);
+    });
+
+    it("returns the main address and unit", () => {
+      const city = "Springfield";
+      const state = "CA";
+      const zip = "90210";
+      const { address, errors } = parseAddress({
+        addressline1: "123 Main St, 2A",
+        city,
+        state,
+        zip,
+      });
+      expect(address).toBeDefined();
+      expect(errors.length).toEqual(0);
+      if (!address) throw new Error("address is undefined");
+      expect(address.addressLine1).toEqual("123 Main St 2A");
+      expect(address.addressLine2).not.toBeDefined();
+      expect(address.city).toEqual(city);
+      expect(address.state).toEqual(state);
+      expect(address.zip).toEqual(zip);
     });
   });
 });

@@ -12,7 +12,6 @@ export type Input = {
   dateFrom?: string;
   dateTo?: string;
   conversionType: MedicalRecordFormat;
-  resultFileNameSuffix?: string;
 };
 
 export type Output = {

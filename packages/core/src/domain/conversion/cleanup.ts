@@ -1,9 +1,16 @@
 export const xmlTranslationCodeRegex = /(<translation[^>]*\scode=")([^"]*?)(")/g;
 
+export const LESS_THAN = "&lt;";
+export const GREATER_THAN = "&gt;";
+const AMPERSAND = "&amp;";
+const UNESCAPED_AMPERSAND_REGEX =
+  /&(?!((?:lt|gt|amp|quot|apos|nbsp|ndash|mdash|copy|reg|trade|bullet);|#[0-9]+;|#x[0-9A-Fa-f]+;))/g;
+
 export function cleanUpPayload(payloadRaw: string): string {
   const payloadNoCdUnk = replaceCdUnkString(payloadRaw);
   const payloadNoAmpersand = replaceAmpersand(payloadNoCdUnk);
-  const payloadNoNullFlavor = replaceNullFlavor(payloadNoAmpersand);
+  const payloadNoInvalidTagChars = replaceXmlTagChars(payloadNoAmpersand);
+  const payloadNoNullFlavor = replaceNullFlavor(payloadNoInvalidTagChars);
   const payloadCleanedCode = cleanUpTranslationCode(payloadNoNullFlavor);
   return payloadCleanedCode;
 }
@@ -20,10 +27,37 @@ function replaceNullFlavor(payloadRaw: string): string {
   return payloadRaw.replace(stringToReplace, replacement);
 }
 
-function replaceAmpersand(payloadRaw: string): string {
-  const stringToReplace = /\s&\s/g;
-  const replacement = " &amp; ";
-  return payloadRaw.replace(stringToReplace, replacement);
+export function replaceAmpersand(payloadRaw: string): string {
+  return payloadRaw.replace(UNESCAPED_AMPERSAND_REGEX, AMPERSAND);
+}
+
+export function replaceXmlTagChars(doc: string): string {
+  const chars = Array.from(doc);
+
+  let stringState = true;
+  let startTagState = 0;
+  for (let i = 0; i < chars.length; i++) {
+    const c = chars[i];
+
+    if (stringState) {
+      if (c == ">") {
+        chars[i] = "&gt;";
+      } else if (c == "<") {
+        stringState = false;
+        startTagState = i;
+      }
+    }
+    // tag state
+    else {
+      if (c == ">") {
+        stringState = true;
+      } else if (c == "<") {
+        chars[startTagState] = "&lt;";
+        startTagState = i;
+      }
+    }
+  }
+  return chars.join("");
 }
 
 export function cleanUpTranslationCode(payloadRaw: string): string {

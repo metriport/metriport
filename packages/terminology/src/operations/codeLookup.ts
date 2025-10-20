@@ -8,7 +8,9 @@ import {
   Parameters,
 } from "@medplum/fhirtypes";
 import { getTermServerClient } from "../init-term-server";
+import { normalizeNdcCode } from "../util";
 import { codeLookupOperationDefinition } from "./definitions/codeLookupOperation";
+import { ndcCodeSystem } from "./definitions/codeSystem";
 import { findCodeSystemResource } from "./utils/codeSystemLookup";
 import {
   isValidParametersResource,
@@ -25,6 +27,19 @@ export type CodeSystemLookupOutput = {
   code: string;
   property?: { code: string; description: string; value: TypedValue }[];
 };
+
+/**
+ * Normalize codes prior to lookup
+ *
+ * For NDC, remove dashes
+ * For other systems, return the code as is
+ */
+function normalizeCode(code: string, system: string): string {
+  if (system === ndcCodeSystem.url) {
+    return normalizeNdcCode(code, true);
+  }
+  return code;
+}
 
 export const codeSystemLookupHandler = async (
   request: FhirRequest,
@@ -132,11 +147,15 @@ export async function lookupPartialCoding(
   codeSystem: CodeSystem,
   coding: Coding
 ): Promise<CodeSystemLookupOutput[] | FhirResponse> {
-  if (coding.system && coding.system !== codeSystem.url) {
+  const { code, system } = coding;
+  if (!code || !system) return [notFound];
+
+  if (system !== codeSystem.url) {
     return [notFound];
   }
 
   const dbClient = getTermServerClient();
+  const normalizedCode = normalizeCode(code, system);
 
   const query = `
     SELECT 
@@ -153,7 +172,7 @@ export async function lookupPartialCoding(
     WHERE cs.id = ? AND c.code LIKE ?
   `;
 
-  const params = [codeSystem.id, `${coding.code}%`];
+  const params = [codeSystem.id, `${normalizedCode}%`];
   const result = await dbClient.select(query, params);
 
   if (result.length === 0) {
@@ -199,9 +218,13 @@ export async function lookupCoding(
   codeSystem: CodeSystem,
   coding: Coding
 ): Promise<CodeSystemLookupOutput[] | FhirResponse> {
-  if (coding.system && coding.system !== codeSystem.url) {
+  const { code, system } = coding;
+  if (!code || !system) return [notFound];
+
+  if (system !== codeSystem.url) {
     return [notFound];
   }
+  const normalizedCode = normalizeCode(code, system);
 
   const dbClient = getTermServerClient();
 
@@ -219,7 +242,7 @@ export async function lookupCoding(
       WHERE cs.id = ? AND c.code = ?
     `;
 
-  const params = [codeSystem.id, coding.code];
+  const params = [codeSystem.id, normalizedCode];
   const result = await dbClient.select(query, params);
 
   if (result.length === 0) return [notFound];

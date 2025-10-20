@@ -1,6 +1,7 @@
 import { DiscoveryParams } from "@metriport/core/domain/patient-discovery";
 import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
 import { PatientModel } from "../../../models/medical/patient";
+import { PatientMappingModel } from "../../../models/patient-mapping";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { LinkStatus } from "../../patient-link";
 import { updatePatientDiscoveryStatus } from "../command/update-patient-discovery-status";
@@ -12,6 +13,7 @@ beforeEach(() => {
   mockStartTransaction();
   patientModel_findOne = jest.spyOn(PatientModel, "findOne");
   patientModel_update = jest.spyOn(PatientModel, "update").mockImplementation(async () => [1]);
+  jest.spyOn(PatientMappingModel, "findAll").mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -47,7 +49,7 @@ const checkPatientUpdateWith = (newValues: cqParams) => {
 describe("updatePatientDiscoveryStatus", () => {
   it("setting all possible values", async () => {
     const patient = makePatient();
-    patientModel_findOne.mockResolvedValue(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const discoveryStatus = "processing";
     const newParams: DiscoveryParams = {
       requestId: "test",
@@ -84,7 +86,7 @@ describe("updatePatientDiscoveryStatus", () => {
       },
     });
     const patient = makePatient({ data: patientData });
-    patientModel_findOne.mockResolvedValue(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const discoveryStatus = "completed";
     const results = await updatePatientDiscoveryStatus({
       patient,
@@ -98,7 +100,7 @@ describe("updatePatientDiscoveryStatus", () => {
   });
   it("setting only status w/ no previous values", async () => {
     const patient = makePatient();
-    patientModel_findOne.mockResolvedValue(patient);
+    patientModel_findOne.mockResolvedValueOnce({ dataValues: patient });
     const discoveryStatus = "completed";
     try {
       await updatePatientDiscoveryStatus({

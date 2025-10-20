@@ -1,7 +1,7 @@
 import { out } from "@metriport/core/util/log";
-import { errorToString, stringToBoolean } from "@metriport/shared";
+import { BadRequestError, errorToString, stringToBoolean } from "@metriport/shared";
 import { NextFunction, Request, Response } from "express";
-import BadRequestError from "../errors/bad-request";
+import ForbiddenError from "../errors/forbidden";
 import { Config } from "../shared/config";
 import { capture } from "../shared/notifications";
 
@@ -14,14 +14,25 @@ export function asyncHandler(
     next: NextFunction
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) => Promise<Response<any, Record<string, any>> | void>,
-  logErrorDetails = !Config.isCloudEnv()
+  shouldLogErrorDetails?: () => Promise<boolean>
 ) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await f(req, res, next);
     } catch (err) {
-      if (logErrorDetails) log("", err);
-      else log(removeNewLines(errorToString(err)));
+      let isLogErrorDetails = !Config.isCloudEnv();
+      if (shouldLogErrorDetails) {
+        try {
+          isLogErrorDetails = await shouldLogErrorDetails();
+        } catch (e) {
+          log(`shouldLogErrorDetails() failed: ${removeNewLines(errorToString(e))}`);
+        }
+      }
+      if (isLogErrorDetails) {
+        const errorAsString = errorToString(err, { includeStackTrace: true, detailed: true });
+        if (Config.isCloudEnv()) log(removeNewLines(errorAsString));
+        else log(errorAsString);
+      } else log(removeNewLines(errorToString(err)));
       next(err);
     }
   };
@@ -180,8 +191,8 @@ export const getDateOrFail = (req: Request): string => {
 
 export function getAuthorizationToken(req: Request): string {
   const header = req.header("Authorization");
-  if (!header) throw new Error("Missing Authorization Header");
+  if (!header) throw new ForbiddenError();
   const token = header.replace("Bearer ", "");
-  if (token === "") throw new Error("Empty Authorization Header");
+  if (token === "") throw new ForbiddenError();
   return token;
 }

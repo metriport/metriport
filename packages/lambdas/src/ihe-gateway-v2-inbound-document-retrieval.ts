@@ -1,22 +1,22 @@
-import { APIGatewayProxyEventV2 } from "aws-lambda";
+import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
+import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
+import { processInboundDr } from "@metriport/core/external/carequality/dr/process-inbound-dr";
+import { createInboundDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/create/dr-response";
+import { processInboundDrRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/process/dr-request";
+import {
+  convertSoapResponseToMtomResponse,
+  getBoundaryFromMtomResponse,
+  MtomAttachments,
+  parseMtomResponse,
+} from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/mtom/parser";
+import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { out } from "@metriport/core/util/log";
 import {
   InboundDocumentRetrievalReq,
   InboundDocumentRetrievalResp,
 } from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "@metriport/shared";
-import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
-import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { processInboundDr } from "@metriport/core/external/carequality/dr/process-inbound-dr";
-import { processInboundDrRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/process/dr-request";
-import { createInboundDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/inbound/xca/create/dr-response";
-import { analyticsAsync, EventTypes } from "@metriport/core/external/analytics/posthog";
-import {
-  getBoundaryFromMtomResponse,
-  parseMtomResponse,
-  convertSoapResponseToMtomResponse,
-  MtomAttachments,
-} from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/mtom/parser";
-import { out } from "@metriport/core/util/log";
+import { APIGatewayProxyEventV2 } from "aws-lambda";
 import { getEnvOrFail } from "./shared/env";
 
 const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
@@ -25,6 +25,7 @@ const region = getEnvVarOrFail("AWS_REGION");
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 const { log } = out(`ihe-gateway-v2-inbound-document-retrieval`);
 
+// TODO move to capture.wrapHandler()
 export async function handler(event: APIGatewayProxyEventV2) {
   try {
     if (!event.body) return buildResponse(400, { message: "The request body is empty" });
