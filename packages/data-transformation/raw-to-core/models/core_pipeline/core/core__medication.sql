@@ -10,7 +10,7 @@ target_code_codings as (
         get_target_codings(
             get_medication_codings,
             'medication_id', 
-            8, 
+            9, 
             none, 
             (
                 'http://www.nlm.nih.gov/research/umls/rxnorm',

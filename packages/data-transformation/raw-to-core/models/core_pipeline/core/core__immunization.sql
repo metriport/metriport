@@ -18,7 +18,7 @@ target_vaccine_code_codings as (
         get_target_codings(
             get_immunization_vaccine_codings,
             'immunization_id', 
-            2, 
+            4, 
             none, 
             (
                 'http://hl7.org/fhir/sid/cvx',
