@@ -6,6 +6,12 @@ with base_resource as (
         onsetdatetime,
         onsetperiod_start,
         onsetperiod_end,
+        category_0_coding_0_code,
+        category_0_coding_0_display,
+        category_0_coding_0_system,
+        clinicalstatus_coding_0_code,
+        clinicalstatus_coding_0_display,
+        clinicalstatus_coding_0_system,
         note_0_text,
         note_1_text,
         note_2_text,
@@ -100,8 +106,14 @@ select
         )                                                                                                   as icd_9_cm_display
     ,   cast(category_hl7.code as {{ dbt.type_string() }} )                                                 as category_hl7_code
     ,   cast(category_hl7.display as {{ dbt.type_string() }} )                                              as category_hl7_display
+    ,   cast(c.category_0_coding_0_code as {{ dbt.type_string() }} )                                        as source_category_code
+    ,   cast(c.category_0_coding_0_display as {{ dbt.type_string() }} )                                     as source_category_display
+    ,   cast(c.category_0_coding_0_system as {{ dbt.type_string() }} )                                      as source_category_system
     ,   cast(clinical_status_hl7.code as {{ dbt.type_string() }} )                                          as clinical_status_hl7_code
     ,   cast(clinical_status_hl7.display as {{ dbt.type_string() }} )                                       as clinical_status_hl7_display
+    ,   cast(c.clinicalstatus_coding_0_code as {{ dbt.type_string() }} )                                    as source_clinical_status_code
+    ,   cast(c.clinicalstatus_coding_0_display as {{ dbt.type_string() }} )                                 as source_clinical_status_display
+    ,   cast(c.clinicalstatus_coding_0_system as {{ dbt.type_string() }} )                                  as source_clinical_status_system
     ,   cast(
             coalesce(
                 c.note_0_text,

@@ -6,6 +6,9 @@ with base_resource as (
         effectivedatetime,
         effectiveperiod_start,
         effectiveperiod_end,
+        category_0_coding_0_code,
+        category_0_coding_0_display,
+        category_0_coding_0_system,
         meta_source
     from {{ref('stage__diagnosticreport')}}
 ),
@@ -58,6 +61,9 @@ select
         )                                                                                                   as loinc_display
     ,   cast(category_hl7.code as {{ dbt.type_string() }} )                                                 as category_hl7_code
     ,   cast(category_hl7.display as {{ dbt.type_string() }} )                                              as category_hl7_display
+    ,   cast(dr.category_0_coding_0_code as {{ dbt.type_string() }} )                                       as source_category_code
+    ,   cast(dr.category_0_coding_0_display as {{ dbt.type_string() }} )                                    as source_category_display
+    ,   cast(dr.category_0_coding_0_system as {{ dbt.type_string() }} )                                     as source_category_system
     ,   cast(dr.meta_source as {{ dbt.type_string() }} )                                                    as data_source
 from base_resource dr
 left join target_code_codings tc_loinc

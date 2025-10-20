@@ -5,9 +5,12 @@ with base_resource as (
         status,
         period_start,
         period_end,
-        class_system,
         class_code,
         class_display,
+        class_system,
+        type_0_coding_0_code,
+        type_0_coding_0_display,
+        type_0_coding_0_system,
         meta_source
     from {{ref('stage__encounter')}}
 ),
@@ -77,8 +80,12 @@ select
         )                                                                                       as act_display
     ,   cast(enc.class_code as {{ dbt.type_string() }} )                                        as source_class_code
     ,   cast(enc.class_display as {{ dbt.type_string() }} )                                     as source_class_display
+    ,   cast(enc.class_system as {{ dbt.type_string() }} )                                      as source_class_system
     ,   cast(type_hl7.code as {{ dbt.type_string() }} )                                         as type_hl7_code
     ,   cast(type_hl7.display as {{ dbt.type_string() }} )                                      as type_hl7_display
+    ,   cast(enc.type_0_coding_0_code as {{ dbt.type_string() }} )                               as source_type_code
+    ,   cast(enc.type_0_coding_0_display as {{ dbt.type_string() }} )                            as source_type_display
+    ,   cast(enc.type_0_coding_0_system as {{ dbt.type_string() }} )                             as source_type_system
     ,   cast(dd_hl7.code as {{ dbt.type_string() }} )                                           as discharge_disposition_hl7_code
     ,   cast(dd_hl7.display as {{ dbt.type_string() }} )                                        as discharge_disposition_hl7_display
     ,   cast(reason_snomed_ct.code as {{ dbt.type_string() }} )                                 as reason_snomed_code
