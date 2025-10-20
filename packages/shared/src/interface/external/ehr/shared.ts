@@ -33,6 +33,7 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
       earliestOnly: z.boolean().optional(),
       chronicityFilter: z.enum(["all", "chronic", "non-chronic"]).optional(),
       hccFilter: z.enum(["all", "hcc", "non-hcc"]).optional(),
+      chronicOrHcc: z.boolean().optional(),
       relativeDateRange: relativeDateRangeSchema.optional(),
       disabled: z.boolean().optional(),
     })
