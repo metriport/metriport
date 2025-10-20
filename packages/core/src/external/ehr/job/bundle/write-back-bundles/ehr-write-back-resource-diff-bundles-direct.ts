@@ -433,8 +433,13 @@ export function shouldWriteBackResource({
     if (writeBackFilters.problem?.disabled) return false;
     if (!isCondition(resource)) return false;
     const condition = resource;
-    if (skipConditionChronicity(condition, writeBackFilters)) return false;
-    if (skipConditionHcc(condition, writeBackFilters)) return false;
+    const skipChronic = skipConditionChronicity(condition, writeBackFilters);
+    const skipHcc = skipConditionHcc(condition, writeBackFilters);
+    if (writeBackFilters.problem?.chronicOrHcc) {
+      if (skipChronic && skipHcc) return false;
+    } else {
+      if (skipChronic || skipHcc) return false;
+    }
     if (skipConditionStringFilters(ehr, condition, writeBackFilters)) return false;
     return true;
   } else if (writeBackResourceType === "lab") {
