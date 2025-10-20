@@ -8,7 +8,7 @@ import {
   type Coding,
 } from "@metriport/ihe-gateway-sdk";
 import { DocumentReferenceWithId, createDocReferenceContent } from "../../fhir/document";
-import { formatDate } from "../shared";
+import { formatDate, formatDatetime } from "../shared";
 
 const regex = /^(.+?)\^+(.+)$/;
 
@@ -54,8 +54,8 @@ export function cqToFHIR(
     ...(docRef.serviceStartTime || docRef.serviceStopTime
       ? {
           period: {
-            ...(docRef.serviceStartTime ? { start: formatDate(docRef.serviceStartTime) } : {}),
-            ...(docRef.serviceStopTime ? { end: formatDate(docRef.serviceStopTime) } : {}),
+            ...(docRef.serviceStartTime ? { start: formatDatetime(docRef.serviceStartTime) } : {}),
+            ...(docRef.serviceStopTime ? { end: formatDatetime(docRef.serviceStopTime) } : {}),
           },
         }
       : {}),

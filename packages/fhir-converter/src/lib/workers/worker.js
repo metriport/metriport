@@ -93,141 +93,186 @@ WorkerUtils.workerTaskProcessor(msg => {
       const startTime = new Date().getTime();
       const nowIso = new Date().toISOString();
       const getDuration = () => new Date().getTime() - startTime;
-      switch (msg.type) {
-        case "/api/convert/:srcDataType/:template":
-          {
-            let srcData = msg.srcData;
-            let templateName = msg.templateName;
-            let srcDataType = msg.srcDataType;
-            let patientId = msg.patientId;
-            let fileName = msg.fileName;
-            const isDebug = msg.isDebug;
 
-            console.log(`[patient ${patientId}] Processing file ${fileName} at ${nowIso}`);
+      // Cleanup function to ensure session state is reset
+      const cleanup = () => {
+        try {
+          session.set(constants.CLS_KEY_HANDLEBAR_INSTANCE, null);
+          session.set(constants.CLS_KEY_TEMPLATE_LOCATION, null);
+        } catch (cleanupErr) {
+          console.error(`[worker] Error during cleanup: ${cleanupErr.message}`);
+        }
+      };
 
-            let encounterTimePeriod = extractEncounterTimePeriod(srcData);
-            let dataTypeHandler = dataHandlerFactory.createDataHandler(srcDataType);
-            let handlebarInstance = GetHandlebarsInstance(dataTypeHandler);
-            let encompassingEncounterIds = getEncompassingEncounterId(srcData);
-            session.set(constants.CLS_KEY_HANDLEBAR_INSTANCE, handlebarInstance);
-            session.set(
-              constants.CLS_KEY_TEMPLATE_LOCATION,
-              path.join(constants.TEMPLATE_FILES_LOCATION, dataTypeHandler.dataType)
-            );
+      try {
+        switch (msg.type) {
+          case "/api/convert/:srcDataType/:template":
+            {
+              let srcData = msg.srcData;
+              let templateName = msg.templateName;
+              let srcDataType = msg.srcDataType;
+              let patientId = msg.patientId;
+              let fileName = msg.fileName;
+              const isDebug = msg.isDebug;
 
-            if (!srcData || srcData.length == 0) {
-              reject({
-                status: 400,
-                resultMsg: errorMessage(errorCodes.BadRequest, "No srcData provided."),
-                duration: getDuration(),
-              });
-            }
+              console.log(`[patient ${patientId}] Processing file ${fileName} at ${nowIso}`);
 
-            const getTemplate = templateName => {
-              return new Promise((fulfill, reject) => {
-                var template = compileCache.get(templateName);
-                if (!template) {
-                  fs.readFile(
-                    path.join(constants.TEMPLATE_FILES_LOCATION, srcDataType, templateName),
-                    (err, templateContent) => {
-                      if (err) {
-                        reject({
-                          status: 404,
-                          resultMsg: errorMessage(errorCodes.NotFound, "Template not found"),
-                          duration: getDuration(),
-                        });
-                      } else {
-                        try {
-                          template = handlebarInstance.compile(
-                            dataTypeHandler.preProcessTemplate(templateContent.toString())
-                          );
-                          compileCache.put(templateName, template);
-                          fulfill(template);
-                        } catch (convertErr) {
-                          reject({
-                            status: 400,
-                            resultMsg: errorMessage(
-                              errorCodes.BadRequest,
-                              "Error during template compilation. " + convertErr.toString()
-                            ),
-                            duration: getDuration(),
-                          });
-                        }
-                      }
-                    }
-                  );
-                } else {
-                  fulfill(template);
-                }
-              });
-            };
+              let encounterTimePeriod = extractEncounterTimePeriod(srcData);
+              let dataTypeHandler = dataHandlerFactory.createDataHandler(srcDataType);
+              let handlebarInstance = GetHandlebarsInstance(dataTypeHandler);
+              let encompassingEncounterIds = getEncompassingEncounterId(srcData);
+              session.set(constants.CLS_KEY_HANDLEBAR_INSTANCE, handlebarInstance);
+              session.set(
+                constants.CLS_KEY_TEMPLATE_LOCATION,
+                path.join(constants.TEMPLATE_FILES_LOCATION, dataTypeHandler.dataType)
+              );
 
-            dataTypeHandler
-              .parseSrcData(srcData)
-              .then(parsedData => {
-                var dataContext = {
-                  msg: parsedData,
-                };
-                // console.log(dataContext);
-                getTemplate(templateName).then(
-                  compiledTemplate => {
-                    try {
-                      fulfill({
-                        status: 200,
-                        resultMsg: generateResult(
-                          dataTypeHandler,
-                          dataContext,
-                          compiledTemplate,
-                          patientId,
-                          encounterTimePeriod,
-                          encompassingEncounterIds,
-                          isDebug
-                        ),
-                        duration: getDuration(),
-                      });
-                    } catch (convertErr) {
-                      reject({
-                        status: 400,
-                        resultMsg: errorMessage(
-                          errorCodes.BadRequest,
-                          "Error during template evaluation. " + convertErr.toString()
-                        ),
-                        duration: getDuration(),
-                      });
-                    }
-                  },
-                  err => {
-                    reject(err);
-                  }
-                );
-              })
-              .catch(err => {
+              if (!srcData || srcData.length == 0) {
+                cleanup();
                 reject({
                   status: 400,
-                  resultMsg: errorMessage(
-                    errorCodes.BadRequest,
-                    `Unable to parse input data for template ${templateName}. ${err.toString()}`
-                  ),
+                  resultMsg: errorMessage(errorCodes.BadRequest, "No srcData provided."),
                   duration: getDuration(),
                 });
-              });
-          }
-          break;
+                return;
+              }
 
-        case "templatesUpdated":
-          {
-            expireCache();
-            fulfill();
-          }
-          break;
+              const getTemplate = templateName => {
+                return new Promise((fulfill, reject) => {
+                  var template = compileCache.get(templateName);
+                  if (!template) {
+                    fs.readFile(
+                      path.join(constants.TEMPLATE_FILES_LOCATION, srcDataType, templateName),
+                      (err, templateContent) => {
+                        if (err) {
+                          reject({
+                            status: 404,
+                            resultMsg: errorMessage(errorCodes.NotFound, "Template not found"),
+                            duration: getDuration(),
+                          });
+                        } else {
+                          try {
+                            template = handlebarInstance.compile(
+                              dataTypeHandler.preProcessTemplate(templateContent.toString())
+                            );
+                            compileCache.put(templateName, template);
+                            fulfill(template);
+                          } catch (convertErr) {
+                            reject({
+                              status: 400,
+                              resultMsg: errorMessage(
+                                errorCodes.BadRequest,
+                                "Error during template compilation. " + convertErr.toString()
+                              ),
+                              duration: getDuration(),
+                            });
+                          }
+                        }
+                      }
+                    );
+                  } else {
+                    fulfill(template);
+                  }
+                });
+              };
 
-        case "constantsUpdated":
-          {
-            constants = JSON.parse(msg.data);
-            expireCache();
-            fulfill();
-          }
-          break;
+              dataTypeHandler
+                .parseSrcData(srcData)
+                .then(parsedData => {
+                  var dataContext = {
+                    msg: parsedData,
+                  };
+                  // console.log(dataContext);
+                  getTemplate(templateName).then(
+                    compiledTemplate => {
+                      try {
+                        fulfill({
+                          status: 200,
+                          resultMsg: generateResult(
+                            dataTypeHandler,
+                            dataContext,
+                            compiledTemplate,
+                            patientId,
+                            encounterTimePeriod,
+                            encompassingEncounterIds,
+                            isDebug
+                          ),
+                          duration: getDuration(),
+                        });
+                      } catch (convertErr) {
+                        cleanup();
+                        reject({
+                          status: 400,
+                          resultMsg: errorMessage(
+                            errorCodes.BadRequest,
+                            "Error during template evaluation. " + convertErr.toString()
+                          ),
+                          duration: getDuration(),
+                        });
+                      }
+                    },
+                    err => {
+                      cleanup();
+                      reject(err);
+                    }
+                  );
+                })
+                .catch(err => {
+                  cleanup();
+                  console.error(
+                    `Error parsing input data for template ${templateName}: ${err.toString()}`
+                  );
+                  console.error(err.stack);
+                  reject({
+                    status: 400,
+                    resultMsg: errorMessage(
+                      errorCodes.BadRequest,
+                      `Unable to parse input data for template ${templateName}. ${err.toString()}`
+                    ),
+                    duration: getDuration(),
+                  });
+                });
+            }
+            break;
+
+          case "templatesUpdated":
+            {
+              expireCache();
+              fulfill();
+            }
+            break;
+
+          case "constantsUpdated":
+            {
+              constants = JSON.parse(msg.data);
+              expireCache();
+              fulfill();
+            }
+            break;
+
+          default:
+            cleanup();
+            reject({
+              status: 400,
+              resultMsg: errorMessage(errorCodes.BadRequest, `Unknown message type: ${msg.type}`),
+              duration: getDuration(),
+            });
+        }
+      } catch (unhandledError) {
+        cleanup();
+        console.error(
+          `[worker] Unhandled error in worker task processor: ${
+            unhandledError.stack ?? unhandledError.message ?? unhandledError
+          }`
+        );
+        reject({
+          status: 500,
+          resultMsg: errorMessage(
+            errorCodes.InternalServerError,
+            `Worker error: ${unhandledError.message}`
+          ),
+          duration: getDuration(),
+        });
       }
     });
   });
