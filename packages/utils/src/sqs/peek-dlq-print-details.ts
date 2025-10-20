@@ -163,7 +163,7 @@ async function main({
     `${dirName}/patient_ids.csv`,
     ["cx_id,patient_id", ...patientIdsArray].join("\n")
   );
-  console.log(`>>> Saved ${patientIdsArray.length} unique patient IDs to patient_ids.txt`);
+  console.log(`>>> Saved ${patientIdsArray.length} unique patient IDs to patient_ids.csv`);
 
   if (downloadFiles) {
     console.log(`>>> Downloading files from S3 for ${uniqueMessageDetails.length} messages...`);

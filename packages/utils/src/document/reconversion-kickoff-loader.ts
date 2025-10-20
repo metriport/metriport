@@ -181,12 +181,9 @@ async function main() {
  * Loads data from a CSV file
  */
 async function loadDataFromCsvFile(path: string): Promise<{ patient_id: string; cx_id: string }[]> {
-  const records = await readCsv<{ cx_id: string; patient_id: string }>(path);
-  const patients = records.map(record => ({
-    cx_id: record.cx_id,
-    patient_id: record.patient_id,
-  }));
-  return patients;
+  const records = await readCsv<{ cx_id?: string; patient_id?: string }>(path);
+  const patients = records.filter(record => record.cx_id && record.patient_id);
+  return patients as { patient_id: string; cx_id: string }[];
 }
 
 /**
@@ -209,7 +206,9 @@ async function loadDataFromLargeJsonFile(
 }
 
 async function displayWarningAndConfirmationPrompt(payloadsLength: number) {
-  const msg = `You are about to send ${payloadsLength} messages to the reconversion kickoff queue, are you sure?`;
+  const msg =
+    `You are about to send ${payloadsLength} messages to the reconversion kickoff ` +
+    `queue, are you sure?`;
   console.log(msg);
   console.log("Are you sure you want to proceed?");
   const rl = readline.createInterface({
