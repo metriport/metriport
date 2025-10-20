@@ -24,7 +24,7 @@ performer_references as (
    ) }}
 ),
 all_references as (
-    select * from subject_reference
+    select * from patient_reference
     union all
     select * from encounter_reference
     union all
