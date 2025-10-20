@@ -20,13 +20,38 @@ on:
       - "packages/lambdas/**"
       - "packages/terminology/**"
       - "packages/mllp-server/**"
+      - "packages/data-transformation/**"
   workflow_dispatch: # manually executed by a user
+    inputs:
+      ref:
+        description: "Branch to run the workflow on"
+        required: false
+        default: "master"
+        type: string
 
 jobs:
+  branch-validation:
+    name: validate branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Validate branch
+        run: |
+          if [ "${{ github.ref_name }}" != "master" ]; then
+            echo "❌ This workflow can only run on the 'master' branch. Current branch: ${{ github.ref_name }}"
+            echo "Please ensure you are running this workflow from the master branch."
+            exit 1
+          else
+            echo "✅ Running on master branch - proceeding with deployment"
+          fi
+
   files-changed:
     name: detect changes
     runs-on: ubuntu-latest
     timeout-minutes: 3
+    needs: branch-validation
     # Map a step output to a job output
     outputs:
       api: ${{ steps.changes.outputs.api }}
