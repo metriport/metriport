@@ -243,7 +243,7 @@ with_fhir AS (
           )
         )
       ),
-      'effectiveDateTime', TO_CHAR(s.obs_date, 'YYYY-MM-DD'),
+      'effectiveDateTime', TO_CHAR(f.obs_date, 'YYYY-MM-DD'),
       'valueQuantity',
         IFF(f.resource_type = 'Observation' AND f.value_num IS NOT NULL,
             OBJECT_CONSTRUCT(
