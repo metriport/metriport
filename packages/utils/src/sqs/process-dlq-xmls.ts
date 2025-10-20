@@ -33,18 +33,18 @@ const converterUrl = getEnvVarOrFail("FHIR_CONVERTER_SERVER_URL");
 
 const filesToExclude: string[] = [];
 
+const numberOfParallelConversions = 10;
+const minJitterMillis = 500;
+const maxJitterMillis = 2_000;
 const LARGE_CHUNK_SIZE_IN_BYTES = 50_000_000;
-const axiosTimeoutSeconds = 30_000; // 30 seconds
+const axiosTimeoutSeconds = 30;
+
 const fhirConverter = axios.create({
   timeout: axiosTimeoutSeconds * 1_000,
   transitional: {
     clarifyTimeoutError: true,
   },
 });
-
-const numberOfParallelConversions = 10;
-const minJitterMillis = 500;
-const maxJitterMillis = 2_000;
 
 type ConversionResult = {
   fileName: string;
