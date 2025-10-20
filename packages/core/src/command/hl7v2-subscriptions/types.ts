@@ -43,7 +43,7 @@ export type RosterRowData = {
   addAllCaps: "ADD";
   address1AddressLine1SplitByTabAddress1: string;
   address1AddressLine1SplitByTabAddress2: string;
-  firstNameWithNoNicknames: string;
+  firstNameWithNoNicknames: string; // Removes nicknames like "John (Johnny)" -> "John"
 };
 
 export type HiePatientRosterMapping = {
