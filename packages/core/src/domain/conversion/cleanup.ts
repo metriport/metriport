@@ -37,8 +37,33 @@ export function replaceXmlTagChars(doc: string): string {
   let stringState = true;
   let startTagState = 0;
   let tagPropertiesState = false;
+  let inComment = false;
+
   for (let i = 0; i < chars.length; i++) {
     const c = chars[i];
+
+    // Check for comment start "<!--"
+    if (!inComment && c === "<" && i + 3 < chars.length) {
+      if (chars[i + 1] === "!" && chars[i + 2] === "-" && chars[i + 3] === "-") {
+        inComment = true;
+        i += 3; // Skip the next 3 characters
+        continue;
+      }
+    }
+
+    // Check for comment end "-->"
+    if (inComment && c === "-" && i + 2 < chars.length) {
+      if (chars[i + 1] === "-" && chars[i + 2] === ">") {
+        inComment = false;
+        i += 2; // Skip the next 2 characters
+        continue;
+      }
+    }
+
+    // Skip processing if we're inside a comment
+    if (inComment) {
+      continue;
+    }
 
     if (stringState) {
       if (c == ">") {

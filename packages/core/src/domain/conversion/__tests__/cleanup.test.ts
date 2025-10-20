@@ -7,6 +7,7 @@ import {
   replaceXmlTagChars,
   xmlTranslationCodeRegex,
   replaceAmpersand,
+  replaceNullFlavor,
 } from "../cleanup";
 
 describe("cleanUpTranslationCode", () => {
@@ -130,6 +131,78 @@ describe("replaceXmlTagChars", () => {
 
   test("expectedly does not handle both '<' and '>' in the same text", () => {
     expect(replaceXmlTagChars(createTestCase("A < B > C"))).toBe(createTestCase(`A < B > C`));
+  });
+
+  test("should not affect commented out XML processing instructions", () => {
+    const input =
+      '<!-- <?xml version="1.0" encoding="UTF-8" standalone="yes"?><?xml-stylesheet type="text/xsl" href="/admin/CDA.xsl>"?> -->';
+    const expected =
+      '<!-- <?xml version="1.0" encoding="UTF-8" standalone="yes"?><?xml-stylesheet type="text/xsl" href="/admin/CDA.xsl>"?> -->';
+    expect(replaceXmlTagChars(input)).toBe(expected);
+  });
+
+  test("should not affect multiple commented sections", () => {
+    const input = "<!-- <tag>content</tag> --><root>text</root><!-- <another>test</another> -->";
+    const expected = "<!-- <tag>content</tag> --><root>text</root><!-- <another>test</another> -->";
+    expect(replaceXmlTagChars(input)).toBe(expected);
+  });
+
+  test("should clean up < and > characters inside XML tags", () => {
+    const input = '<tag attr="value < 5 and > 3">content</tag>';
+    const expected = '<tag attr="value &lt; 5 and &gt; 3">content</tag>';
+    expect(replaceXmlTagChars(input)).toBe(expected);
+  });
+
+  test("should clean up < and > characters in tag attributes", () => {
+    const input = '<element condition="x < 10 and y > 5" />';
+    const expected = '<element condition="x &lt; 10 and y &gt; 5" />';
+    expect(replaceXmlTagChars(input)).toBe(expected);
+  });
+
+  test("should handle nested quotes in attributes", () => {
+    const input = "<tag attr=\"outer 'inner < test >' end\">";
+    const expected = "<tag attr=\"outer 'inner &lt; test &gt;' end\">";
+    expect(replaceXmlTagChars(input)).toBe(expected);
+  });
+});
+
+describe("replaceNullFlavor", () => {
+  test('should only replace <id nullFlavor="NI" with <id extension="1" root="1"', () => {
+    const input = '<id nullFlavor="NI">';
+    const expected = '<id extension="1" root="1"';
+    expect(replaceNullFlavor(input)).toBe(expected);
+  });
+
+  test("should not affect other nullFlavor values", () => {
+    const input = '<id nullFlavor="UNK">';
+    const expected = '<id nullFlavor="UNK">';
+    expect(replaceNullFlavor(input)).toBe(expected);
+  });
+
+  test("should not affect complex nested structures", () => {
+    const input =
+      '<id nullFlavor="NI"><assignedPerson><name><given nullFlavor="NA"/><family nullFlavor="NA"/>';
+    const expected =
+      '<id extension="1" root="1"<assignedPerson><name><given nullFlavor="NA"/><family nullFlavor="NA"/>';
+    expect(replaceNullFlavor(input)).toBe(expected);
+  });
+
+  test("should handle multiple occurrences", () => {
+    const input = '<id nullFlavor="NI">text<id nullFlavor="NI">more';
+    const expected = '<id extension="1" root="1"text<id extension="1" root="1"more';
+    expect(replaceNullFlavor(input)).toBe(expected);
+  });
+
+  test("should not affect nullFlavor with different spacing", () => {
+    const input = '<id nullFlavor = "NI">';
+    const expected = '<id nullFlavor = "NI">';
+    expect(replaceNullFlavor(input)).toBe(expected);
+  });
+
+  test("should handle case sensitivity", () => {
+    const input = '<id nullFlavor="ni">';
+    const expected = '<id nullFlavor="ni">';
+    expect(replaceNullFlavor(input)).toBe(expected);
   });
 });
 
