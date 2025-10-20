@@ -26,6 +26,7 @@
     "download-docs": "ts-node src/customer-requests/download-docs",
     "surescripts": "ts-node src/surescripts/index.ts",
     "quest": "ts-node src/quest/index.ts",
+    "comprehend": "ts-node src/comprehend/index.ts",
     "medical-coding": "ts-node src/medical-coding/index.ts",
     "mock-ihe-gateway": "ts-node src/saml/mock-ihe-gateway",
     "integration-test-and-compare-total-resource-counts": "bash src/fhir/fhir-converter/scripts/run_integration_and_compare.sh",

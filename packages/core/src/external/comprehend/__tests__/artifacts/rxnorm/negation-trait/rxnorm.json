@@ -1,0 +1,326 @@
+{
+  "inputText": "Start Amoxicillin 250 mg/5 mL oral suspension, give 10 mL by mouth three times daily for 7 days as needed for ear infection. The patient denies currently taking Aspirin 81 mg tablet daily but will continue Heparin 1000 units/mL injection, 5,000 units subcutaneously in the left thigh every 12 hours at a rate of 1 mL/min, tapering the dose by 1,000 units every 3 days.",
+  "response": {
+    "$metadata": {
+      "httpStatusCode": 200,
+      "requestId": "5d997219-9e54-4e7b-952d-3cdad082208e",
+      "attempts": 1,
+      "totalRetryDelay": 0
+    },
+    "Entities": [
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 18,
+            "EndOffset": 29,
+            "Id": 2,
+            "RelationshipScore": 0.6795811653137207,
+            "Score": 0.6603351831436157,
+            "Text": "250 mg/5 mL",
+            "Traits": [],
+            "Type": "STRENGTH"
+          },
+          {
+            "BeginOffset": 30,
+            "EndOffset": 34,
+            "Id": 3,
+            "RelationshipScore": 0.6795811653137207,
+            "Score": 0.6603351831436157,
+            "Text": "oral",
+            "Traits": [],
+            "Type": "ROUTE_OR_MODE"
+          },
+          {
+            "BeginOffset": 35,
+            "EndOffset": 45,
+            "Id": 4,
+            "RelationshipScore": 0.7552722692489624,
+            "Score": 0.7613970637321472,
+            "Text": "suspension",
+            "Traits": [],
+            "Type": "FORM"
+          },
+          {
+            "BeginOffset": 52,
+            "EndOffset": 57,
+            "Id": 5,
+            "RelationshipScore": 0.7552722692489624,
+            "Score": 0.7613970637321472,
+            "Text": "10 mL",
+            "Traits": [],
+            "Type": "DOSAGE"
+          },
+          {
+            "BeginOffset": 58,
+            "EndOffset": 66,
+            "Id": 6,
+            "RelationshipScore": 0.7814922332763672,
+            "Score": 0.7613970637321472,
+            "Text": "by mouth",
+            "Traits": [],
+            "Type": "ROUTE_OR_MODE"
+          },
+          {
+            "BeginOffset": 67,
+            "EndOffset": 84,
+            "Id": 8,
+            "RelationshipScore": 0.7552722692489624,
+            "Score": 0.7613970637321472,
+            "Text": "three times daily",
+            "Traits": [],
+            "Type": "FREQUENCY"
+          },
+          {
+            "BeginOffset": 89,
+            "EndOffset": 105,
+            "Id": 9,
+            "RelationshipScore": 0.6270833611488342,
+            "Score": 0.6603351831436157,
+            "Text": "7 days as needed",
+            "Traits": [],
+            "Type": "DURATION"
+          }
+        ],
+        "BeginOffset": 6,
+        "Category": "MEDICATION",
+        "EndOffset": 17,
+        "Id": 1,
+        "RxNormConcepts": [
+          {
+            "Code": "239191",
+            "Description": "amoxicillin 50 mg/ml oral suspension",
+            "Score": 0.6677695512771606
+          },
+          {
+            "Code": "246282",
+            "Description": "amoxicillin 100 mg/ml oral suspension",
+            "Score": 0.2449812889099121
+          },
+          {
+            "Code": "308189",
+            "Description": "amoxicillin 80 mg/ml oral suspension",
+            "Score": 0.24389632046222687
+          },
+          {
+            "Code": "313797",
+            "Description": "amoxicillin 25 mg/ml oral suspension",
+            "Score": 0.23105832934379578
+          },
+          {
+            "Code": "105152",
+            "Description": "amoxicillin 60 mg/ml oral suspension",
+            "Score": 0.17282117903232574
+          }
+        ],
+        "Score": 0.8617406487464905,
+        "Text": "Amoxicillin",
+        "Traits": [],
+        "Type": "GENERIC_NAME"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 169,
+            "EndOffset": 174,
+            "Id": 14,
+            "RelationshipScore": 0.7552722692489624,
+            "Score": 0.7613970637321472,
+            "Text": "81 mg",
+            "Traits": [],
+            "Type": "DOSAGE"
+          },
+          {
+            "BeginOffset": 175,
+            "EndOffset": 181,
+            "Id": 15,
+            "RelationshipScore": 0.8031880259513855,
+            "Score": 0.821601390838623,
+            "Text": "tablet",
+            "Traits": [],
+            "Type": "FORM"
+          },
+          {
+            "BeginOffset": 182,
+            "EndOffset": 187,
+            "Id": 16,
+            "RelationshipScore": 0.8534350991249084,
+            "Score": 0.8617406487464905,
+            "Text": "daily",
+            "Traits": [],
+            "Type": "FREQUENCY"
+          }
+        ],
+        "BeginOffset": 161,
+        "Category": "MEDICATION",
+        "EndOffset": 168,
+        "Id": 13,
+        "RxNormConcepts": [
+          {
+            "Code": "243670",
+            "Description": "aspirin 81 mg oral tablet",
+            "Score": 0.9213129878044128
+          },
+          {
+            "Code": "104474",
+            "Description": "aspirin 75 mg oral tablet",
+            "Score": 0.0961964875459671
+          },
+          {
+            "Code": "308416",
+            "Description": "aspirin 81 mg delayed release oral tablet",
+            "Score": 0.0847286731004715
+          },
+          {
+            "Code": "1191",
+            "Description": "aspirin",
+            "Score": 0.0449255034327507
+          },
+          {
+            "Code": "891136",
+            "Description": "aspirin 31200 mg oral tablet",
+            "Score": 0.044098906219005585
+          }
+        ],
+        "Score": 0.821601390838623,
+        "Text": "Aspirin",
+        "Traits": [
+          {
+            "Name": "NEGATION",
+            "Score": 0.779019296169281
+          }
+        ],
+        "Type": "GENERIC_NAME"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 214,
+            "EndOffset": 227,
+            "Id": 18,
+            "RelationshipScore": 0.6795811653137207,
+            "Score": 0.7172441482543945,
+            "Text": "1000 units/mL",
+            "Traits": [],
+            "Type": "STRENGTH"
+          },
+          {
+            "BeginOffset": 228,
+            "EndOffset": 237,
+            "Id": 19,
+            "RelationshipScore": 0.6795811653137207,
+            "Score": 0.6603351831436157,
+            "Text": "injection",
+            "Traits": [],
+            "Type": "FORM"
+          },
+          {
+            "BeginOffset": 239,
+            "EndOffset": 250,
+            "Id": 20,
+            "RelationshipScore": 0.7223333120346069,
+            "Score": 0.7613970637321472,
+            "Text": "5,000 units",
+            "Traits": [],
+            "Type": "DOSAGE"
+          },
+          {
+            "BeginOffset": 251,
+            "EndOffset": 265,
+            "Id": 21,
+            "RelationshipScore": 0.8031880259513855,
+            "Score": 0.821601390838623,
+            "Text": "subcutaneously",
+            "Traits": [],
+            "Type": "ROUTE_OR_MODE"
+          },
+          {
+            "BeginOffset": 273,
+            "EndOffset": 283,
+            "Id": 24,
+            "RelationshipScore": 0.5068173408508301,
+            "Score": 0.5330596566200256,
+            "Text": "left thigh",
+            "Traits": [],
+            "Type": "ROUTE_OR_MODE"
+          },
+          {
+            "BeginOffset": 284,
+            "EndOffset": 298,
+            "Id": 25,
+            "RelationshipScore": 0.7552722692489624,
+            "Score": 0.7613970637321472,
+            "Text": "every 12 hours",
+            "Traits": [],
+            "Type": "FREQUENCY"
+          },
+          {
+            "BeginOffset": 312,
+            "EndOffset": 320,
+            "Id": 26,
+            "RelationshipScore": 0.6270833611488342,
+            "Score": 0.7172441482543945,
+            "Text": "1 mL/min",
+            "Traits": [],
+            "Type": "RATE"
+          },
+          {
+            "BeginOffset": 343,
+            "EndOffset": 354,
+            "Id": 27,
+            "RelationshipScore": 0.5692254304885864,
+            "Score": 0.7172441482543945,
+            "Text": "1,000 units",
+            "Traits": [],
+            "Type": "DOSAGE"
+          },
+          {
+            "BeginOffset": 355,
+            "EndOffset": 367,
+            "Id": 28,
+            "RelationshipScore": 0.7552722692489624,
+            "Score": 0.821601390838623,
+            "Text": "every 3 days",
+            "Traits": [],
+            "Type": "FREQUENCY"
+          }
+        ],
+        "BeginOffset": 206,
+        "Category": "MEDICATION",
+        "EndOffset": 213,
+        "Id": 17,
+        "RxNormConcepts": [
+          {
+            "Code": "1659263",
+            "Description": "1 ml heparin sodium, porcine 5000 unt/ml injection",
+            "Score": 0.16851912438869476
+          },
+          {
+            "Code": "1361615",
+            "Description": "heparin sodium, porcine 5000 unt/ml injectable solution",
+            "Score": 0.06902065128087997
+          },
+          {
+            "Code": "1658659",
+            "Description": "1 ml heparin sodium, porcine 1000 unt/ml injection",
+            "Score": 0.056805320084095
+          },
+          {
+            "Code": "1658634",
+            "Description": "0.5 ml heparin sodium, porcine 10000 unt/ml injection",
+            "Score": 0.048467762768268585
+          },
+          {
+            "Code": "1658690",
+            "Description": "1000 ml heparin sodium, porcine 2 unt/ml injection",
+            "Score": 0.04266824945807457
+          }
+        ],
+        "Score": 0.6603351831436157,
+        "Text": "Heparin",
+        "Traits": [],
+        "Type": "GENERIC_NAME"
+      }
+    ],
+    "ModelVersion": "3.1.0.20221107"
+  }
+}

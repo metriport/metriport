@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehend Interactive</title>
+</head>
+<body style="background-color: #f0f0f0; font-family: Arial, sans-serif;">
+    <div style="display: flex; flex-direction: row; gap: 20px;">
+        <div style="width: 50%;">
+            <div style="display: flex; flex-direction: column; gap: 20px; padding: 20px;">
+                <div style="display: flex; flex-direction: column;">
+                    <label for="text" style="font-weight: bold;">Text to analyze</label>
+                    <textarea id="text" style="width: 100%; height: 150px; padding: 10px; border: 1px solid #ccc; border-radius: 4px;"></textarea>
+                </div>
+                <button id="analyzeButton" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Analyze</button>
+
+                <div style="display: flex; flex-direction: row; gap: 10px;">
+                    <input type="checkbox" id="inferRxNorm" checked>
+                    <label for="inferRxNorm">Infer RxNorm</label>
+                </div>
+
+                <div style="display: flex; flex-direction: row; gap: 10px;">
+                    <label for="patientId">Patient ID</label>
+                    <input type="text" id="patientId" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+
+                <div style="display: flex; flex-direction: row; gap: 10px;">
+                    <label for="encounterId">Encounter ID</label>
+                    <input type="text" id="encounterId" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+
+                <div style="display: flex; flex-direction: row; gap: 10px;">
+                    <label for="diagnosticReportId">Diagnostic Report ID</label>
+                    <input type="text" id="diagnosticReportId" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+
+                <div style="display: flex; flex-direction: row; gap: 10px;">
+                    <label for="dateNoteWritten">Date Written</label>
+                    <input type="date" id="dateNoteWritten" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+            </div>
+            <pre id="comprehend" style="margin-top: 20px; padding: 10px; background-color: #f9f9f9; border: 1px solid #ccc; border-radius: 4px;"></pre>
+        </div>
+        <div style="width: 50%;">
+            <pre id="result" style="margin-top: 20px; padding: 10px; background-color: #f9f9f9; border: 1px solid #ccc; border-radius: 4px;"></pre>
+        </div>
+    </div>
+    <script>
+        const analyzeButton = document.getElementById("analyzeButton");
+        const text = document.getElementById("text");
+        const result = document.getElementById("result");
+        const comprehendResult = document.getElementById("comprehend");
+        const patientId = document.getElementById("patientId");
+        const dateNoteWritten = document.getElementById("dateNoteWritten");
+        const encounterId = document.getElementById("encounterId");
+        const diagnosticReportId = document.getElementById("diagnosticReportId");
+
+        const inferRxNormCheckbox = document.getElementById("inferRxNorm");
+        function shouldInferRxNorm() {
+            return inferRxNormCheckbox.checked;
+        }
+
+        analyzeButton.addEventListener("click", async () => {
+            const response = await fetch("/analyze", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    text: text.value,
+                    inferRxNorm: shouldInferRxNorm(),
+                    patientId: patientId.value,
+                    dateNoteWritten: dateNoteWritten.value,
+                    encounterId: encounterId.value,
+                    diagnosticReportId: diagnosticReportId.value,
+                }),
+            });
+            const { comprehend, fhir } = await response.json();
+            result.innerHTML = JSON.stringify(fhir, null, 2);
+            comprehendResult.innerHTML = JSON.stringify(comprehend, null, 2);
+        });
+    </script>
+</body>
+</html>
