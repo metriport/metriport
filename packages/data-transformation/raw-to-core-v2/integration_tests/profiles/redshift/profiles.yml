@@ -1,0 +1,15 @@
+default:
+  outputs:
+    dev:
+      connect_timeout: 120
+      dbname: metriport
+      host: "{{ env_var('DBT_REDSHIFT_CI_HOST') }}"
+      keepalives_idle: 240
+      password: "{{ env_var('DBT_REDSHIFT_CI_PASSWORD') }}"
+      port: 5439
+      ra3_node: true
+      schema: default
+      threads: 4
+      type: redshift
+      user: "{{ env_var('DBT_REDSHIFT_CI_USER') }}"
+  target: dev
