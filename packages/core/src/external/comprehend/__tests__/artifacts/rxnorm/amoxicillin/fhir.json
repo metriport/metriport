@@ -1,0 +1,123 @@
+[
+  {
+    "resourceType": "Medication",
+    "id": "01995080-f8f3-7f57-b366-8cea9afdc29b",
+    "status": "active",
+    "code": {
+      "text": "Amoxicillin",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "239191",
+          "display": "amoxicillin 50 mg/ml oral suspension"
+        }
+      ]
+    },
+    "form": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "385024007",
+          "display": "suspension"
+        }
+      ]
+    },
+    "amount": {
+      "numerator": {
+        "value": 250,
+        "unit": "mg",
+        "system": "http://unitsofmeasure.org",
+        "code": "mg"
+      },
+      "denominator": {
+        "value": 5,
+        "unit": "mL",
+        "system": "http://unitsofmeasure.org",
+        "code": "mL"
+      },
+      "extension": [
+        {
+          "url": "https://metriport.com/data-extraction",
+          "valueString": "250 mg/5 mL"
+        }
+      ]
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Amoxicillin 250 mg/5 mL suspension, 10 mL by mouth three times daily for 7 days",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 11
+          },
+          "high": {
+            "value": 90
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01995080-f8f3-7f57-b366-8ceb165f6d71",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01995080-f8f3-7f57-b366-8cea9afdc29b"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
+    },
+    "dosage": [
+      {
+        "text": "10 mL",
+        "doseAndRate": [
+          {
+            "extension": [
+              {
+                "url": "https://metriport.com/data-extraction",
+                "valueString": "10 mL"
+              }
+            ],
+            "doseQuantity": {
+              "value": 10,
+              "unit": "mL",
+              "system": "http://unitsofmeasure.org",
+              "code": "mL"
+            }
+          }
+        ]
+      }
+    ],
+    "effectivePeriod": {
+      "extension": [
+        {
+          "url": "https://metriport.com/data-extraction",
+          "valueString": "7 days"
+        }
+      ],
+      "start": "2025-02-05",
+      "end": "2025-02-12"
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Amoxicillin 250 mg/5 mL suspension, 10 mL by mouth three times daily for 7 days",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 11
+          },
+          "high": {
+            "value": 90
+          }
+        }
+      }
+    ]
+  }
+]

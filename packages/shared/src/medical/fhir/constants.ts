@@ -29,6 +29,8 @@ export const CPT_CODE = "cpt";
 export const CPT_URL = "http://www.ama-assn.org/go/cpt";
 export const CPT_OID = "2.16.840.1.113883.6.12";
 
+export const UNIT_OF_MEASURE_URL = "http://unitsofmeasure.org";
+
 export const NDDF_URL = "http://terminology.hl7.org/CodeSystem/nddf";
 
 export const HL7_ACT_URL = "http://terminology.hl7.org/CodeSystem/v3-ActCode";

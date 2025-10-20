@@ -1,0 +1,321 @@
+[
+  {
+    "resourceType": "Medication",
+    "id": "01995080-f8f6-7a56-9106-5b2da35d4a55",
+    "status": "active",
+    "code": {
+      "text": "Amoxicillin",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "239191",
+          "display": "amoxicillin 50 mg/ml oral suspension"
+        }
+      ]
+    },
+    "form": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "385024007",
+          "display": "suspension"
+        }
+      ]
+    },
+    "amount": {
+      "numerator": {
+        "value": 250,
+        "unit": "mg",
+        "system": "http://unitsofmeasure.org",
+        "code": "mg"
+      },
+      "denominator": {
+        "value": 5,
+        "unit": "mL",
+        "system": "http://unitsofmeasure.org",
+        "code": "mL"
+      },
+      "extension": [
+        {
+          "url": "https://metriport.com/data-extraction",
+          "valueString": "250 mg/5 mL"
+        }
+      ]
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Amoxicillin 250 mg/5 mL oral suspension, give 10 mL by mouth three times daily for 7 days as needed",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 6
+          },
+          "high": {
+            "value": 105
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01995080-f8f6-7a56-9106-5b2e66c344c0",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01995080-f8f6-7a56-9106-5b2da35d4a55"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
+    },
+    "dosage": [
+      {
+        "text": "10 mL",
+        "doseAndRate": [
+          {
+            "extension": [
+              {
+                "url": "https://metriport.com/data-extraction",
+                "valueString": "10 mL"
+              }
+            ],
+            "doseQuantity": {
+              "value": 10,
+              "unit": "mL",
+              "system": "http://unitsofmeasure.org",
+              "code": "mL"
+            }
+          }
+        ],
+        "route": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "26643006",
+              "display": "Oral route"
+            }
+          ],
+          "extension": [
+            {
+              "url": "https://metriport.com/data-extraction",
+              "valueString": "oral"
+            }
+          ]
+        }
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Amoxicillin 250 mg/5 mL oral suspension, give 10 mL by mouth three times daily for 7 days as needed",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 6
+          },
+          "high": {
+            "value": 105
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "Medication",
+    "id": "01995080-f8f6-7a56-9106-5b2fe1bbf4da",
+    "status": "active",
+    "code": {
+      "text": "Aspirin",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "243670",
+          "display": "aspirin 81 mg oral tablet"
+        }
+      ]
+    },
+    "form": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "385055001",
+          "display": "tablet"
+        }
+      ]
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Aspirin 81 mg tablet daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 161
+          },
+          "high": {
+            "value": 187
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01995080-f8f6-7a56-9106-5b305d3b8eb6",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01995080-f8f6-7a56-9106-5b2fe1bbf4da"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
+    },
+    "dosage": [
+      {
+        "text": "81 mg",
+        "doseAndRate": [
+          {
+            "extension": [
+              {
+                "url": "https://metriport.com/data-extraction",
+                "valueString": "81 mg"
+              }
+            ],
+            "doseQuantity": {
+              "value": 81,
+              "unit": "mg",
+              "system": "http://unitsofmeasure.org",
+              "code": "mg"
+            }
+          }
+        ]
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Aspirin 81 mg tablet daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 161
+          },
+          "high": {
+            "value": 187
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "Medication",
+    "id": "01995080-f8f6-7a56-9106-5b31ac58dd41",
+    "status": "active",
+    "code": {
+      "text": "Heparin",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "1659263",
+          "display": "1 ml heparin sodium, porcine 5000 unt/ml injection"
+        }
+      ]
+    },
+    "amount": {
+      "numerator": {
+        "value": 1000,
+        "unit": "U",
+        "system": "http://unitsofmeasure.org",
+        "code": "U"
+      },
+      "denominator": {
+        "value": 1,
+        "unit": "mL",
+        "system": "http://unitsofmeasure.org",
+        "code": "mL"
+      },
+      "extension": [
+        {
+          "url": "https://metriport.com/data-extraction",
+          "valueString": "1000 units/mL"
+        }
+      ]
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Heparin 1000 units/mL injection, 5,000 units subcutaneously in the left thigh every 12 hours at a rate of 1 mL/min, tapering the dose by 1,000 units every 3 days",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 206
+          },
+          "high": {
+            "value": 367
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01995080-f8f6-7a56-9106-5b321f52cff4",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01995080-f8f6-7a56-9106-5b31ac58dd41"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
+    },
+    "dosage": [
+      {
+        "text": "5,000 units",
+        "doseAndRate": [
+          {
+            "extension": [
+              {
+                "url": "https://metriport.com/data-extraction",
+                "valueString": "5,000 units"
+              }
+            ],
+            "doseQuantity": {
+              "value": 5000,
+              "unit": "U",
+              "system": "http://unitsofmeasure.org",
+              "code": "U"
+            }
+          }
+        ]
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Heparin 1000 units/mL injection, 5,000 units subcutaneously in the left thigh every 12 hours at a rate of 1 mL/min, tapering the dose by 1,000 units every 3 days",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 206
+          },
+          "high": {
+            "value": 367
+          }
+        }
+      }
+    ]
+  }
+]
