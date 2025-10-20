@@ -6,6 +6,12 @@ group: "Schema"
 
 The encounter table is intended to store information that represents a unique patient interaction with the healthcare system. It's intended to be synonymous with a healthcare visit (e.g. hospital admission, office visit, etc.). All healthcare analytics use cases involving utilization require an encounter concept. Not only is it important to know about each unique encounter a patient has with the healthcare system, but it's also important to know the type of visit (e.g. acute inpatient, ED, office visit, inpatient rehab, etc.), the start and end dates for the visit, the total amount paid for the visit, and other pieces of information about the visit. The encounter table stores all of this important information in a single table.
 
+**Reference Table:**
+The `encounter_references` table contains normalized references from the encounter to other entities. It supports the following reference properties:
+* **subject**: Links to the patient involved in the encounter
+* **participant**: Links to practitioners and other participants in the encounter
+* **location**: Links to locations where the encounter occurred
+
 **Primary Keys:**
 * encounter_id
 
@@ -24,8 +30,12 @@ The encounter table is intended to store information that represents a unique pa
 | act_display | string | Human-readable description of ACT code |
 | source_class_code | string | Source class code for encounter |
 | source_class_display | string | Human-readable description of source class |
+| source_class_system | string | Original class system from source system |
 | type_hl7_code | string | HL7 encounter type code |
 | type_hl7_display | string | Human-readable description of HL7 encounter type |
+| source_type_code | string | Original type code from source system |
+| source_type_display | string | Original type display from source system |
+| source_type_system | string | Original type system from source system |
 | discharge_disposition_hl7_code | string | HL7 discharge disposition code |
 | discharge_disposition_hl7_display | string | Human-readable description of discharge disposition |
 | data_source | string | Source of the encounter data |

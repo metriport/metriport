@@ -9,6 +9,12 @@ A condition is any sort of symptom, problem, complaint, admitting diagnosis, or 
 **Normalization Note:**
 Normalization of coding systems only occurs when the source coding system is one of: ICD-10-CM, SNOMED CT, ICD-9-CM, or LOINC. Other coding systems will not have normalized codes.
 
+**Reference Table:**
+The `condition_references` table contains normalized references from the condition to other entities. It supports the following reference properties:
+* **subject**: Links to the patient who has the condition
+* **encounter**: Links to the encounter where the condition was recorded
+* **recorder**: Links to the practitioner who recorded the condition
+
 **Primary Keys:**
 * condition_id
 
@@ -30,7 +36,13 @@ Normalization of coding systems only occurs when the source coding system is one
 | icd_9_cm_display | string | Human-readable description of ICD-9-CM code |
 | category_hl7_code | string | HL7 category code for the condition |
 | category_hl7_display | string | Human-readable description of HL7 category |
+| source_category_code | string | Original category code from source system |
+| source_category_display | string | Original category display from source system |
+| source_category_system | string | Original category system from source system |
 | clinical_status_hl7_code | string | HL7 clinical status code |
 | clinical_status_hl7_display | string | Human-readable description of clinical status |
+| source_clinical_status_code | string | Original clinical status code from source system |
+| source_clinical_status_display | string | Original clinical status display from source system |
+| source_clinical_status_system | string | Original clinical status system from source system |
 | note_text | string | Additional notes about the condition |
 | data_source | string | Source of the condition data |

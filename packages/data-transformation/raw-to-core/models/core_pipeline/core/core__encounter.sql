@@ -83,9 +83,9 @@ select
     ,   cast(enc.class_system as {{ dbt.type_string() }} )                                      as source_class_system
     ,   cast(type_hl7.code as {{ dbt.type_string() }} )                                         as type_hl7_code
     ,   cast(type_hl7.display as {{ dbt.type_string() }} )                                      as type_hl7_display
-    ,   cast(enc.type_0_coding_0_code as {{ dbt.type_string() }} )                               as source_type_code
-    ,   cast(enc.type_0_coding_0_display as {{ dbt.type_string() }} )                            as source_type_display
-    ,   cast(enc.type_0_coding_0_system as {{ dbt.type_string() }} )                             as source_type_system
+    ,   cast(enc.type_0_coding_0_code as {{ dbt.type_string() }} )                              as source_type_code
+    ,   cast(enc.type_0_coding_0_display as {{ dbt.type_string() }} )                           as source_type_display
+    ,   cast(enc.type_0_coding_0_system as {{ dbt.type_string() }} )                            as source_type_system
     ,   cast(dd_hl7.code as {{ dbt.type_string() }} )                                           as discharge_disposition_hl7_code
     ,   cast(dd_hl7.display as {{ dbt.type_string() }} )                                        as discharge_disposition_hl7_display
     ,   cast(reason_snomed_ct.code as {{ dbt.type_string() }} )                                 as reason_snomed_code

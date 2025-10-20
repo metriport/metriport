@@ -6,6 +6,13 @@ group: "Schema"
 
 A medication dispense record represents the dispensing of a medication to a patient. This includes details about when the medication was prepared, dispensed, and the quantity provided.
 
+**Reference Table:**
+The `medication_dispense_references` table contains normalized references from the medication dispense to other entities. It supports the following reference properties:
+* **medication_reference**: Links to the medication that was dispensed
+* **subject**: Links to the patient who received the medication
+* **performer**: Links to practitioners who performed the dispensing
+* **location**: Links to the location where the medication was dispensed
+
 **Primary Keys:**
 * medication_dispense_id
 

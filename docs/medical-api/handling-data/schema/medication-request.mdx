@@ -6,6 +6,14 @@ group: "Schema"
 
 A medication request record represents a request for a medication to be prescribed or administered to a patient. This includes details about the medication requested, dosage instructions, and the practitioner making the request.
 
+**Reference Table:**
+The `medication_request_references` table contains normalized references from the medication request to other entities. It supports the following reference properties:
+* **medication_reference**: Links to the medication that was requested
+* **subject**: Links to the patient for whom the medication was requested
+* **encounter**: Links to the encounter where the request was made
+* **requester**: Links to the practitioner who made the request
+* **reason_reference**: Links to conditions or other reasons for the medication request
+
 **Primary Keys:**
 * medication_request_id
 

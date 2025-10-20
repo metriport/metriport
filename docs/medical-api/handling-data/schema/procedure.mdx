@@ -9,6 +9,14 @@ The procedure table contains information on procedures performed on patients, in
 **Normalization Note:**
 Normalization of coding systems only occurs when the source coding system is one of: CPT, LOINC, SNOMED CT, or HCPCS. Other coding systems will not have normalized codes.
 
+**Reference Table:**
+The `procedure_references` table contains normalized references from the procedure to other entities. It supports the following reference properties:
+* **subject**: Links to the patient who underwent the procedure
+* **encounter**: Links to the encounter where the procedure was performed
+* **performer**: Links to practitioners who performed the procedure
+* **location**: Links to the location where the procedure was performed
+* **report**: Links to diagnostic reports or other documents related to the procedure
+
 **Primary Keys:**
 * procedure_id
 

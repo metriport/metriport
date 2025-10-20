@@ -96,7 +96,7 @@ models:
       - name: reference_id
         tests:
           - relationships:
-              to: ref('core__diagnostic_report')
+              to: ref('core__observation')
               field: observation_id
               config:
                 where: property = 'result' and reference_type = 'Observation'

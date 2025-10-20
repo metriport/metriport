@@ -6,6 +6,12 @@ group: "Schema"
 
 A medication administration record represents the actual administration of a medication to a patient. This includes details about when, how, and by whom the medication was administered.
 
+**Reference Table:**
+The `medication_administration_references` table contains normalized references from the medication administration to other entities. It supports the following reference properties:
+* **medication_reference**: Links to the medication that was administered
+* **subject**: Links to the patient who received the medication
+* **performer**: Links to practitioners who performed the administration
+
 **Primary Keys:**
 * medication_administration_id
 

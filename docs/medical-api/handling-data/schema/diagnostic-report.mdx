@@ -6,6 +6,24 @@ group: "Schema"
 
 The diagnostic report table contains information about diagnostic reports, including lab results, imaging studies, and other diagnostic findings.
 
+**Reference Table:**
+The `diagnostic_report_references` table contains normalized references from the diagnostic report to other entities. It supports the following reference properties:
+* **subject**: Links to the patient who is the subject of the diagnostic report
+* **encounter**: Links to the encounter where the diagnostic report was generated
+* **performer**: Links to practitioners who performed the diagnostic procedure
+* **result**: Links to observations or other diagnostic results referenced in the report
+
+**Presented Forms Table:**
+The `diagnostic_report_presented_forms` table contains the actual content of diagnostic reports, including text, images, and other media. It supports the following properties:
+* **data**: The actual content of the presented form
+* **content_type**: MIME type of the content
+* **creation**: When the presented form was created
+* **hash**: Hash value for integrity checking
+* **language**: Language of the content
+* **size**: Size of the content
+* **title**: Title of the presented form
+* **url**: URL where the content can be accessed
+
 **Primary Keys:**
 * diagnostic_report_id
 
@@ -23,5 +41,8 @@ The diagnostic report table contains information about diagnostic reports, inclu
 | loinc_display | string | Human-readable description of LOINC code |
 | category_hl7_code | string | HL7 category code |
 | category_hl7_display | string | Human-readable description of HL7 category |
+| source_category_code | string | Original category code from source system |
+| source_category_display | string | Original category display from source system |
+| source_category_system | string | Original category system from source system |
 | presented_form_text | string | Text content of the diagnostic report |
 | data_source | string | Source of the diagnostic report data |
