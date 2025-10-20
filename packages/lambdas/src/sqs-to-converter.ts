@@ -1,7 +1,6 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import { buildConversionResultHandler } from "@metriport/core/command/conversion-result/conversion-result-factory";
 import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
-import { MetriportError } from "@metriport/shared";
 import {
   FhirConverterParams,
   FhirExtension,
@@ -36,7 +35,7 @@ import { normalize } from "@metriport/core/external/fhir/consolidated/normalize"
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
 import { errorToString, executeWithNetworkRetries } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
@@ -286,7 +285,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
         log(`${msg}: ${errorToString(error)}`);
         capture.message(msg, {
           extra: {
-            error: errorToString(error),
+            error,
             cxId,
             patientId,
             context: lambdaName,
@@ -357,72 +356,60 @@ async function convertPayloadToFHIR({
 }): Promise<Bundle<Resource>> {
   log(`Calling converter on url ${converterUrl} with params ${JSON.stringify(converterParams)}`);
 
-  try {
-    const combinedBundle: Bundle<Resource> = {
-      resourceType: "Bundle",
-      type: "batch",
-      entry: [],
-    };
+  const combinedBundle: Bundle<Resource> = {
+    resourceType: "Bundle",
+    type: "batch",
+    entry: [],
+  };
 
-    if (partitionedPayloads.length > 1) {
-      log(`The file was partitioned into ${partitionedPayloads.length} parts...`);
-    }
-
-    const bundleEntrySet = new Set<BundleEntry<Resource>>();
-    for (let index = 0; index < partitionedPayloads.length; index++) {
-      const payload = partitionedPayloads[index];
-
-      const chunkSize = payload ? new Blob([payload]).size : 0;
-      if (chunkSize > LARGE_CHUNK_SIZE_IN_BYTES) {
-        const msg = `Chunk size is too large`;
-        log(`${msg} - chunkSize ${chunkSize} on ${index}`);
-        capture.message(msg, {
-          extra: {
-            chunkSize,
-            patientId: converterParams.patientId,
-            fileName: converterParams.fileName,
-          },
-          level: "warning",
-        });
-      }
-
-      const res = await executeWithNetworkRetries(
-        () =>
-          fhirConverter.post(converterUrl, payload, {
-            params: converterParams,
-            headers: { "Content-Type": TXT_MIME_TYPE },
-          }),
-        {
-          // No retries on timeout b/c we want to re-enqueue instead of trying within the same lambda run,
-          // it could lead to timing out the lambda execution.
-          log,
-        }
-      );
-
-      const conversionResult = res.data.fhirResource as Bundle<Resource>;
-
-      if (conversionResult?.entry && conversionResult.entry.length > 0) {
-        log(
-          `Current partial bundle with index ${index} contains: ${conversionResult.entry.length} resources...`
-        );
-        conversionResult.entry.forEach(entry => bundleEntrySet.add(entry));
-      }
-    }
-    combinedBundle.entry = [...bundleEntrySet];
-
-    log(`Combined bundle contains: ${combinedBundle.entry.length} resources`);
-    return combinedBundle;
-  } catch (error) {
-    const defaultErrorMessage = "Failed to convert CDA to FHIR";
-    const errorMessage =
-      error instanceof AxiosError
-        ? error.response?.data?.error?.message ?? defaultErrorMessage
-        : defaultErrorMessage;
-    throw new MetriportError(errorMessage, error, {
-      patientId: converterParams.patientId,
-      fileName: converterParams.fileName,
-    });
+  if (partitionedPayloads.length > 1) {
+    log(`The file was partitioned into ${partitionedPayloads.length} parts...`);
   }
+
+  const bundleEntrySet = new Set<BundleEntry<Resource>>();
+  for (let index = 0; index < partitionedPayloads.length; index++) {
+    const payload = partitionedPayloads[index];
+
+    const chunkSize = payload ? new Blob([payload]).size : 0;
+    if (chunkSize > LARGE_CHUNK_SIZE_IN_BYTES) {
+      const msg = `Chunk size is too large`;
+      log(`${msg} - chunkSize ${chunkSize} on ${index}`);
+      capture.message(msg, {
+        extra: {
+          chunkSize,
+          patientId: converterParams.patientId,
+          fileName: converterParams.fileName,
+        },
+        level: "warning",
+      });
+    }
+
+    const res = await executeWithNetworkRetries(
+      () =>
+        fhirConverter.post(converterUrl, payload, {
+          params: converterParams,
+          headers: { "Content-Type": TXT_MIME_TYPE },
+        }),
+      {
+        // No retries on timeout b/c we want to re-enqueue instead of trying within the same lambda run,
+        // it could lead to timing out the lambda execution.
+        log,
+      }
+    );
+
+    const conversionResult = res.data.fhirResource as Bundle<Resource>;
+
+    if (conversionResult?.entry && conversionResult.entry.length > 0) {
+      log(
+        `Current partial bundle with index ${index} contains: ${conversionResult.entry.length} resources...`
+      );
+      conversionResult.entry.forEach(entry => bundleEntrySet.add(entry));
+    }
+  }
+  combinedBundle.entry = [...bundleEntrySet];
+
+  log(`Combined bundle contains: ${combinedBundle.entry.length} resources`);
+  return combinedBundle;
 }
 
 function parseBody(body: unknown): EventBody {

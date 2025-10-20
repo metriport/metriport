@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import {
   defaultGetTimeToWait,
   defaultOptions as defaultRetryWithBackoffOptions,
@@ -38,7 +38,11 @@ export const defaultOptionsRequestNotAccepted: ExecuteWithNetworkRetriesOptions 
 const defaultOptions: ExecuteWithNetworkRetriesOptions = {
   ...defaultRetryWithBackoffOptions,
   initialDelay: 1000,
-  httpCodesToRetry: [...defaultOptionsRequestNotAccepted.httpCodesToRetry],
+  httpCodesToRetry: [
+    ...defaultOptionsRequestNotAccepted.httpCodesToRetry,
+    "ECONNRESET", //  (Connection reset by peer): A connection was forcibly closed by a peer. This normally results from a loss of the connection on the remote socket due to a timeout or reboot. Commonly encountered via the http and net modules.
+    AxiosError.ERR_BAD_RESPONSE, // Response cannot be parsed properly or is in an unexpected format.
+  ],
   httpStatusCodesToRetry: [...defaultOptionsRequestNotAccepted.httpStatusCodesToRetry],
   retryOnTimeout: false,
 };
