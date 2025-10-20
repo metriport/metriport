@@ -16,7 +16,7 @@ target_type_codings as (
         get_target_codings(
             get_encounter_type_codings,
             'encounter_id', 
-            7, 
+            1, 
             1, 
             (
                 'http://terminology.hl7.org/CodeSystem/encounter-type',
@@ -43,7 +43,7 @@ target_reason_codings as (
             get_encounter_reason_codings, 
             'encounter_id', 
             1, 
-            0,
+            1,
             (
                 'http://snomed.info/sct',
             )
@@ -81,8 +81,8 @@ select
     ,   cast(type_hl7.display as {{ dbt.type_string() }} )                                      as type_hl7_display
     ,   cast(dd_hl7.code as {{ dbt.type_string() }} )                                           as discharge_disposition_hl7_code
     ,   cast(dd_hl7.display as {{ dbt.type_string() }} )                                        as discharge_disposition_hl7_display
-    ,   cast(reason_snomed_ct.code as {{ dbt.type_string() }} )                                                     as reason_snomed_code
-    ,   cast(reason_snomed_ct.display as {{ dbt.type_string() }} )                                                  as reason_snomed_display
+    ,   cast(reason_snomed_ct.code as {{ dbt.type_string() }} )                                 as reason_snomed_code
+    ,   cast(reason_snomed_ct.display as {{ dbt.type_string() }} )                              as reason_snomed_display
     ,   cast(enc.meta_source as {{ dbt.type_string() }} )                                       as data_source
 from base_resource as enc
 left join target_type_codings type_hl7

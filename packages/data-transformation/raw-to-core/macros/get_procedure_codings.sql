@@ -1,4 +1,4 @@
-{% macro get_procedcure_codings(systems, max_index) %}
+{% macro get_procedure_codings(systems, max_index) %}
     {% for i in range(max_index + 1) %}
     select *
     from (
@@ -20,7 +20,7 @@
     {% endfor %}
 {% endmacro %}
 
-{% macro get_procedcure_bodysite_codings(systems, max_index, secondary_max_index) %}
+{% macro get_procedure_bodysite_codings(systems, max_index, secondary_max_index) %}
     {% for i in range(max_index + 1) %}
     {% for j in range(secondary_max_index + 1) %}
     select *
@@ -44,7 +44,7 @@
     {% endfor %}
 {% endmacro %}
 
-{% macro get_procedcure_reason_codings(systems, max_index, secondary_max_index) %}
+{% macro get_procedure_reason_codings(systems, max_index, secondary_max_index) %}
     {% for i in range(max_index + 1) %}
     {% for j in range(secondary_max_index + 1) %}
     select *

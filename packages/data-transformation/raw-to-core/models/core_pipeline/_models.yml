@@ -21,25 +21,26 @@ models:
               config:
                 where: recorder_practitioner_id != ''
                 severity: warn
-  - name: core__diagnostic_report_observation
+  - name: core__diagnostic_report_references
     schema: core_v3
     enabled: false
-    alias: diagnostic_report_observation
+    alias: diagnostic_report_references
     materialized: table
     columns:
-      - name: observation_id
-        tests:
-          - relationships:
-              to: ref('core__observation')
-              field: observation_id
-              config:
-                severity: error
       - name: diagnostic_report_id
         tests:
           - relationships:
               to: ref('core__diagnostic_report')
               field: diagnostic_report_id
               config:
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__observation')
+              field: observation_id
+              config:
+                where: reference_type = 'Observation'
                 severity: error
   - name: core__diagnostic_report
     schema: core_v3
@@ -78,25 +79,26 @@ models:
               config:
                 where: performer_organization_id != ''
                 severity: warn
-  - name: core__encounter_condition
+  - name: core__encounter_references
     schema: core_v3
     enabled: false
-    alias: encounter_condition
+    alias: encounter_references
     materialized: table
     columns:
-      - name: condition_id
-        tests:
-          - relationships:
-              to: ref('core__condition')
-              field: condition_id
-              config:
-                severity: warn
       - name: encounter_id
         tests:
           - relationships:
               to: ref('core__encounter')
               field: encounter_id
               config:
+                severity: warn
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__condition')
+              field: condition_id
+              config:
+                where: reference_type = 'Condition'
                 severity: warn
   - name: core__encounter
     schema: core_v3
@@ -111,14 +113,6 @@ models:
               field: patient_id
               config:
                 severity: error
-      - name: participant_practitioner_id
-        tests:
-          - relationships:
-              to: ref('core__practitioner')
-              field: practitioner_id
-              config:
-                where: participant_practitioner_id != ''
-                severity: warn
       - name: location_id
         tests:
           - relationships:
@@ -362,6 +356,27 @@ models:
     enabled: false
     alias: practitioner
     materialized: table
+  - name: core__procedure_references
+    schema: core_v3
+    enabled: false
+    alias: procedure_references
+    materialized: table
+    columns:
+      - name: procedure_id
+        tests:
+          - relationships:
+              to: ref('core__procedure')
+              field: procedure_id
+              config:
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__diagnostic_report')
+              field: diagnostic_report_id
+              config:
+                where: reference_type = 'DiagnosticReport'
+                severity: error
   - name: core__procedure
     schema: core_v3
     alias: procedure

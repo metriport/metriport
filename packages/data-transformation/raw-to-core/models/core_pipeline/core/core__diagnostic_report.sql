@@ -6,36 +6,6 @@ with base_resource as (
         effectivedatetime,
         effectiveperiod_start,
         effectiveperiod_end,
-        presentedform_0_data,
-        presentedform_1_data,
-        presentedform_2_data,
-        presentedform_3_data,
-        presentedform_4_data,
-        presentedform_5_data,
-        presentedform_6_data,
-        presentedform_7_data,
-        presentedform_8_data,
-        presentedform_9_data,
-        presentedform_10_data,
-        presentedform_11_data,
-        presentedform_12_data,
-        presentedform_13_data,
-        presentedform_14_data,
-        presentedform_15_data,
-        presentedform_16_data,
-        presentedform_17_data,
-        presentedform_18_data,
-        presentedform_19_data,
-        presentedform_20_data,
-        presentedform_21_data,
-        presentedform_22_data,
-        presentedform_23_data,
-        presentedform_24_data,
-        presentedform_25_data,
-        presentedform_26_data,
-        presentedform_27_data,
-        presentedform_28_data,
-        presentedform_29_data,
         meta_source
     from {{ref('stage__diagnosticreport')}}
 ),
@@ -88,40 +58,6 @@ select
         )                                                                                                   as loinc_display
     ,   cast(category_hl7.code as {{ dbt.type_string() }} )                                                 as category_hl7_code
     ,   cast(category_hl7.display as {{ dbt.type_string() }} )                                              as category_hl7_display
-    ,   cast(
-            coalesce(
-                dr.presentedform_0_data,
-                dr.presentedform_1_data,
-                dr.presentedform_2_data,
-                dr.presentedform_3_data,
-                dr.presentedform_4_data,
-                dr.presentedform_5_data,
-                dr.presentedform_6_data,
-                dr.presentedform_7_data,
-                dr.presentedform_8_data,
-                dr.presentedform_9_data,
-                dr.presentedform_10_data,
-                dr.presentedform_11_data,
-                dr.presentedform_12_data,
-                dr.presentedform_13_data,
-                dr.presentedform_14_data,
-                dr.presentedform_15_data,
-                dr.presentedform_16_data,
-                dr.presentedform_17_data,
-                dr.presentedform_18_data,
-                dr.presentedform_19_data,
-                dr.presentedform_20_data,
-                dr.presentedform_21_data,
-                dr.presentedform_22_data,
-                dr.presentedform_23_data,
-                dr.presentedform_24_data,
-                dr.presentedform_25_data,
-                dr.presentedform_26_data,
-                dr.presentedform_27_data,
-                dr.presentedform_28_data,
-                dr.presentedform_29_data
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as presented_form_text
     ,   cast(dr.meta_source as {{ dbt.type_string() }} )                                                    as data_source
 from base_resource dr
 left join target_code_codings tc_loinc

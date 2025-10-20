@@ -42,3 +42,27 @@
     {% if not loop.last %}union all{% endif %}
     {% endfor %}
 {% endmacro %}
+
+{% macro get_encounter_reason_codings(systems, max_index, secondary_max_index) %}
+    {% for i in range(max_index + 1) %}
+    {% for j in range(max_second_index + 1) %}
+    select *
+    from (
+        select 
+                id as encounter_id
+            ,   reasoncode_{{i}}_coding_{{j}}_code as code
+            ,   case 
+                    when reasoncode_{{i}}_coding_{{j}}_system ilike '%snomed%' then 'http://snomed.info/sct'
+                    else reasoncode_{{i}}_coding_{{j}}_system 
+                end as system
+            ,   reasoncode_{{i}}_coding_{{j}}}_display as display
+            ,   {{i}} as index
+        from {{ref('stage__encounter')}}
+        where  reasoncode_{{i}}_coding_{{j}}_code != ''
+    ) as t
+    where t.system in {{ generate_tuple_from_list(systems) }}
+    {% if not loop.last %}union all{% endif %}
+    {% endfor %}
+    {% if not loop.last %}union all{% endif %}
+    {% endfor %}
+{% endmacro %}

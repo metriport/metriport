@@ -15,9 +15,9 @@ with base_resource as (
 target_code_codings as (
    {{   
         get_target_codings(
-            get_procedcure_codings,
+            get_procedure_codings,
             'procedure_id', 
-            7, 
+            9, 
             none, 
             (
                 'http://www.ama-assn.org/go/cpt',
@@ -29,10 +29,10 @@ target_code_codings as (
 target_bodysite_codings as (
     {{ 
         get_target_codings(
-            get_procedcure_bodysite_codings, 
+            get_procedure_bodysite_codings, 
             'procedure_id', 
             1, 
-            2, 
+            1, 
             (
                 'http://snomed.info/sct',
             )
@@ -42,10 +42,10 @@ target_bodysite_codings as (
 target_reason_codings as (
     {{ 
         get_target_codings(
-            get_procedcure_reason_codings, 
+            get_procedure_reason_codings, 
             'procedure_id', 
             1, 
-            0,
+            1,
             (
                 'http://snomed.info/sct',
             )
