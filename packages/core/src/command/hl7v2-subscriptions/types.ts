@@ -41,6 +41,9 @@ export type RosterRowData = {
   dateMid2025NoDelimiter: string;
   emptyString: string;
   addAllCaps: "ADD";
+  address1AddressLine1SplitByTabAddress1: string;
+  address1AddressLine1SplitByTabAddress2: string;
+  firstNameWithNoNicknames: string; // Removes nicknames like "John (Johnny)" -> "John"
 };
 
 export type HiePatientRosterMapping = {
