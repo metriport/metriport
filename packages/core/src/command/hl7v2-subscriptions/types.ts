@@ -43,7 +43,7 @@ export type RosterRowData = {
   addAllCaps: "ADD";
   address1AddressLine1SplitByTabAddress1: string;
   address1AddressLine1SplitByTabAddress2: string;
-  firstNameWithNoParenthesis: string;
+  firstNameWithNoNicknames: string;
 };
 
 export type HiePatientRosterMapping = {
