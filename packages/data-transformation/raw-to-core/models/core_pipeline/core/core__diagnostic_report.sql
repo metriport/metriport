@@ -27,7 +27,7 @@ target_category_codings as (
         get_target_codings(
             get_diagnostic_report_category_codings, 
             'diagnostic_report_id', 
-            2, 
+            1, 
             1, 
             (
                 'http://terminology.hl7.org/CodeSystem/v2-0074',

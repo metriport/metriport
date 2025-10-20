@@ -11,15 +11,14 @@ with base_resource as (
         valuecodeableconcept_text,
         valuecodeableconcept_coding_0_display,
         valuecodeableconcept_coding_1_display,
-        valuecodeableconcept_coding_2_display,
         valuequantity_unit,
         referencerange_0_high_unit,
         referencerange_0_low_unit,
         referencerange_1_high_unit,
         referencerange_1_low_unit,
         referencerange_0_low_value,
-        referencerange_1_low_value,
         referencerange_0_high_value,
+        referencerange_1_low_value,
         referencerange_1_high_value,
         note_0_text,
         note_1_text,
@@ -32,7 +31,7 @@ target_code_codings as (
         get_target_codings(
             get_observtaion_codings,
             'observation_id', 
-            2, 
+            9, 
             none,
             (
                 'http://loinc.org',
@@ -45,8 +44,8 @@ target_category_codings as (
         get_target_codings(
             get_observation_category_codings, 
             'observation_id', 
-            2, 
-            0, 
+            1, 
+            1, 
             (
                 'http://terminology.hl7.org/CodeSystem/observation-category',
             )
@@ -58,7 +57,7 @@ target_interpretation_codings as (
         get_target_codings(
             get_observation_interpretation_codings, 
             'observation_id', 
-            0, 
+            1, 
             1,
             (
                 'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation',
@@ -71,7 +70,7 @@ target_bodysite_codings as (
         get_target_codings(
             get_observation_bodysite_codings, 
             'observation_id', 
-            2, 
+            1, 
             none,
             [
                 'http://snomed.info/sct'
@@ -106,8 +105,7 @@ select
                 obvs.valuestring, 
                 obvs.valuecodeableconcept_text,
                 obvs.valuecodeableconcept_coding_0_display,
-                obvs.valuecodeableconcept_coding_1_display,
-                obvs.valuecodeableconcept_coding_2_display
+                obvs.valuecodeableconcept_coding_1_display
             ) as {{ dbt.type_string() }} 
         )                                                                                                   as value
     ,   cast(

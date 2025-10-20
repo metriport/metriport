@@ -20,9 +20,7 @@ select
             coalesce(
                 mr.note_0_text,
                 mr.note_1_text,
-                mr.note_2_text,
-                mr.note_3_text,
-                mr.note_4_text
+                mr.note_2_text
             ) as {{ dbt.type_string() }}
         )                                                                                           as note_text    
     ,   cast(intent as {{ dbt.type_string() }} )                                                    as intent

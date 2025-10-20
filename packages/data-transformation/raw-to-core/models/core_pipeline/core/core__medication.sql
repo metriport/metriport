@@ -1,6 +1,7 @@
 with base_resource as (
     select
         id,
+        status,
         meta_source
     from {{ref('stage__medication')}}
 ),

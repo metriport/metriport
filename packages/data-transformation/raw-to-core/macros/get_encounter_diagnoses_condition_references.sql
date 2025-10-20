@@ -2,11 +2,11 @@
     {% for i in range(max_index + 1) %}
     select
             id                                                  as encounter_id
-        ,   'diagnosis.condition'                               as property,
+        ,   'diagnosis.condition'                               as property
         ,   right(diagnosis_{{i}}_condition_reference, 36)      as reference_id
         ,   replace(
                 diagnosis_{{i}}_condition_reference,
-                conat(
+                concat(
                     '/', 
                     right(diagnosis_{{i}}_condition_reference, 36)
                 ),

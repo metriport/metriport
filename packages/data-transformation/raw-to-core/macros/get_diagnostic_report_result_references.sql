@@ -2,11 +2,11 @@
     {% for i in range(max_index + 1) %}
     select
             id                                          as diagnostic_report_id
-        ,   'result'                                    as property,
+        ,   'result'                                    as property
         ,   right(result_{{i}}_reference, 36)           as reference_id
         ,   replace(
                 result_{{i}}_reference,
-                conat(
+                concat(
                     '/', 
                     right(result_{{i}}_reference, 36)
                 ),

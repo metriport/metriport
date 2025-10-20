@@ -92,5 +92,5 @@ left join target_discharge_disposition_codings dd_hl7
     on enc.id = dd_hl7.encounter_id 
         and dd_hl7.system = 'http://terminology.hl7.org/CodeSystem/discharge-disposition'
 left join target_reason_codings reason_snomed_ct
-    on pro.id = reason_snomed_ct.procedure_id 
+    on enc.id = reason_snomed_ct.encounter_id 
         and reason_snomed_ct.system = 'http://snomed.info/sct'

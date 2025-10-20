@@ -43,7 +43,7 @@
     {% endfor %}
 {% endmacro %}
 
-{% macro get_encounter_reason_codings(systems, max_index, secondary_max_index) %}
+{% macro get_encounter_reason_codings(systems, max_index, max_second_index) %}
     {% for i in range(max_index + 1) %}
     {% for j in range(max_second_index + 1) %}
     select *
@@ -55,8 +55,8 @@
                     when reasoncode_{{i}}_coding_{{j}}_system ilike '%snomed%' then 'http://snomed.info/sct'
                     else reasoncode_{{i}}_coding_{{j}}_system 
                 end as system
-            ,   reasoncode_{{i}}_coding_{{j}}}_display as display
-            ,   {{i}} as index
+            ,   reasoncode_{{i}}_coding_{{j}}_display as display
+            ,   {{i}} * ({{ max_second_index }} + 1) + {{j}} as index
         from {{ref('stage__encounter')}}
         where  reasoncode_{{i}}_coding_{{j}}_code != ''
     ) as t
