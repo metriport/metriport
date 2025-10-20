@@ -6,9 +6,9 @@ import duration, { Duration } from "dayjs/plugin/duration";
 dayjs.extend(duration);
 
 export function elapsedTimeAsStr(startedAt: number, finishedAt = Date.now()) {
-  const ellapsedTime = dayjs.duration(finishedAt - startedAt);
-  const timeInMin = formatNumber(ellapsedTime.asMinutes());
-  const timeInMillis = formatNumber(ellapsedTime.asMilliseconds());
+  const elapsedTime = dayjs.duration(finishedAt - startedAt);
+  const timeInMin = formatNumber(elapsedTime.asMinutes());
+  const timeInMillis = formatNumber(elapsedTime.asMilliseconds());
   return `${timeInMillis} millis / ${timeInMin} min`;
 }
 

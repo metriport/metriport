@@ -15,7 +15,7 @@ export class FhirToCsvTransformHttp implements FhirToCsvTransformHandler {
     private readonly outputBucket: string | undefined = Config.getAnalyticsBucketName()
   ) {}
 
-  async startFhirToCsvTransform({
+  async runFhirToCsvTransform({
     cxId,
     patientId,
     outputPrefix,

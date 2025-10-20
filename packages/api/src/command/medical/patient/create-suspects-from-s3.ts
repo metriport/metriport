@@ -30,7 +30,6 @@ export async function createSuspectsFromS3({
   key,
 }: CreateSuspectsFromS3Params): Promise<void> {
   const bucket = Config.getAnalyticsBucketName();
-  if (!bucket) throw new MetriportError("Analytics platform bucket name is not set");
   const s3Client = new S3Utils(region);
   const csvAsString = await s3Client.getFileContentsAsString(bucket, key);
   let numberOfRows = 0;

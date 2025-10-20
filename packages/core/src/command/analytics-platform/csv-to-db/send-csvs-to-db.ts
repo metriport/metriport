@@ -7,32 +7,35 @@ import * as stream from "stream";
 import { S3Utils } from "../../../external/aws/s3";
 import { capture, out } from "../../../util";
 import { parseTableNameFromFhirToCsvIncrementalFileKey } from "../fhir-to-csv/file-name";
+import { ColumnRowValue } from "../sql";
 import {
   additionalColumnDefs,
-  createTableJobCommand,
+  columnJobIdName,
+  columnPatientIdName,
   getCreateIndexCommand,
-  getCreateTableCommand,
+  getCreatePartitionedTableCommand,
+  getCreateTableJobCommand,
   getCreateViewJobCommand,
   getCxDbName,
-  insertTableJobCommand,
+  getInsertTableJobCommand,
+  rawDbSchema,
 } from "./db-asset-defs";
 
 const INSERT_BATCH_SIZE = 100;
 
-type ResourceTypeSourceInfo = Record<string, { csvS3Key: string; tableName: string }>;
+type ResourceTypeSourceInfo = { resourceType: string; csvS3Key: string; tableName: string }[];
 
 /**
  * Streams patient CSV files from S3 and inserts them into PostgreSQL database.
- * Each CSV file represents a FHIR resource type (e.g., Patient, Condition, Encounter).
  *
- * @param param.cxId - Customer ID
- * @param param.patientId - Patient ID
- * @param param.patientCsvsS3Prefix - S3 prefix containing CSV files
- * @param param.analyticsBucketName - S3 bucket name
- * @param param.region - AWS region
- * @param param.dbCreds - Database credentials
- * @param param.tablesDefinitions - Tables definitions
- * @param param.jobId - ID of the job to insert CSVs into the database
+ * @param cxId - Customer ID
+ * @param patientId - Patient ID for the CSV files
+ * @param jobId - Job ID for tracking and logging purposes
+ * @param patientCsvsS3Prefix - S3 prefix containing CSV files for this patient
+ * @param analyticsBucketName - S3 bucket name containing the CSV files
+ * @param region - AWS region where the S3 bucket is located
+ * @param dbCreds - Database credentials for PostgreSQL connection
+ * @param tablesDefinitions - Record mapping table names to their SQL creation definitions
  */
 export async function sendPatientCsvsToDb({
   cxId,
@@ -56,8 +59,17 @@ export async function sendPatientCsvsToDb({
   const { log } = out(`sendPatientCsvsToDb - cx ${cxId}, pt ${patientId}`);
 
   const cxDbName = getCxDbName(cxId, dbCreds.dbname);
+  const schemaName = rawDbSchema;
 
-  capture.setExtra({ cxId, patientId, jobId, patientCsvsS3Prefix, analyticsBucketName, cxDbName });
+  capture.setExtra({
+    cxId,
+    patientId,
+    jobId,
+    patientCsvsS3Prefix,
+    analyticsBucketName,
+    cxDbName,
+    schemaName,
+  });
   log(
     `Running with params: ${JSON.stringify({
       jobId,
@@ -67,6 +79,7 @@ export async function sendPatientCsvsToDb({
       port: dbCreds.port,
       dbname: dbCreds.dbname,
       cxDbName,
+      schemaName,
       username: dbCreds.username,
       tablesDefinitions: Object.keys(tablesDefinitions).length,
     })}`
@@ -84,24 +97,23 @@ export async function sendPatientCsvsToDb({
   try {
     // List all CSV files in the S3 prefix
     const csvFileKeys = await listCsvFileKeys(s3Utils, analyticsBucketName, patientCsvsS3Prefix);
-    if (csvFileKeys.length === 0) {
+    if (csvFileKeys.length < 1) {
       log(`No CSV files found in prefix: ${patientCsvsS3Prefix}`);
       return;
     }
     log(`Found ${csvFileKeys.length} CSV files to process`);
 
-    const resourceTypeSourceInfo: ResourceTypeSourceInfo = getResourceTypeSourceInfo(
-      csvFileKeys,
-      tablesDefinitions
-    );
+    const resourceTypeSourceInfo = getResourceTypeSourceInfo(csvFileKeys);
 
     await dbClient.connect();
     log(`Connected to database`);
+    await dbClient.query(`SET search_path TO ${rawDbSchema}`);
+    log(`Using schema: ${rawDbSchema}`);
 
-    await prepareIncrementalJobInDb({ dbClient });
+    await prepareIncrementalJobInDb({ dbClient, schemaName });
 
     let counter = 0;
-    for (const [resourceType, { csvS3Key, tableName }] of Object.entries(resourceTypeSourceInfo)) {
+    for (const { resourceType, csvS3Key, tableName } of resourceTypeSourceInfo) {
       try {
         counter += await processResourceType({
           patientId,
@@ -125,7 +137,7 @@ export async function sendPatientCsvsToDb({
       }
     }
 
-    await finalizeIncrementalJobInDb({ dbClient, jobId, patientId });
+    await finalizeIncrementalJobInDb({ dbClient, jobId, patientId, schemaName });
 
     log(`Successfully processed ${csvFileKeys.length} CSV files, ${counter} rows inserted`);
   } finally {
@@ -149,45 +161,49 @@ async function listCsvFileKeys(
 /**
  * Returns the CSV file key and DB table name for each resource type.
  */
-function getResourceTypeSourceInfo(
-  csvFileKeys: string[],
-  tablesDefinitions: Record<string, string>
-): ResourceTypeSourceInfo {
-  const csvKeysByResourceType = groupBy(csvFileKeys, parseTableNameFromFhirToCsvIncrementalFileKey);
-  const resourceTypeSourceInfo: ResourceTypeSourceInfo = Object.keys(tablesDefinitions).reduce(
-    (acc, resourceType) => {
-      const csvS3Key = csvKeysByResourceType[resourceType]?.[0];
-      if (!csvS3Key) {
-        throw new MetriportError(`No CSV file key found for resource type`, undefined, {
-          resourceType,
-        });
-      }
-      acc[resourceType] = {
-        csvS3Key,
-        tableName: createTableName(resourceType),
-      };
-      return acc;
-    },
-    {} as ResourceTypeSourceInfo
-  );
-  return resourceTypeSourceInfo;
+function getResourceTypeSourceInfo(csvFileKeys: string[]): ResourceTypeSourceInfo {
+  const sourceInfoByResourceType = csvFileKeys.map(s3Key => {
+    const resourceType = parseTableNameFromFhirToCsvIncrementalFileKey(s3Key);
+    const tableName = createTableName(resourceType);
+    return { resourceType, tableName, csvS3Key: s3Key };
+  });
+  const resourceTypesWithMoreThanOneCsvFile = Object.entries(
+    groupBy(sourceInfoByResourceType, "resourceType")
+  ).filter(([, files]) => files.length > 1);
+  if (resourceTypesWithMoreThanOneCsvFile.length > 0) {
+    const { log } = out("getResourceTypeSourceInfo");
+    const filesAsStr = JSON.stringify(resourceTypesWithMoreThanOneCsvFile);
+    log(`Multiple CSV files found for resource type: ${filesAsStr}`);
+    throw new MetriportError(`Multiple CSV files found for resource type`, undefined, {
+      files: filesAsStr,
+    });
+  }
+  return sourceInfoByResourceType;
 }
 
-async function prepareIncrementalJobInDb({ dbClient }: { dbClient: Client }): Promise<void> {
-  await dbClient.query(createTableJobCommand);
+async function prepareIncrementalJobInDb({
+  dbClient,
+  schemaName,
+}: {
+  dbClient: Client;
+  schemaName: string;
+}): Promise<void> {
+  await dbClient.query(getCreateTableJobCommand(schemaName));
 }
 
 async function finalizeIncrementalJobInDb({
   dbClient,
   patientId,
   jobId,
+  schemaName,
 }: {
   dbClient: Client;
   patientId: string;
   jobId: string;
+  schemaName: string;
 }): Promise<void> {
   // Once this is done, the DB views will return the newly inserted rows.
-  await dbClient.query(insertTableJobCommand, [jobId, patientId]);
+  await dbClient.query(getInsertTableJobCommand(schemaName), [jobId, patientId]);
 }
 
 function createTableName(resourceType: string): string {
@@ -237,14 +253,18 @@ async function processResourceType({
   debug(`View ${viewName} created or already exists`);
 
   const columnNamesOnCsv = getColumnNamesFromColumnsDef(columnsDef);
-  const additionalColumnNames = getColumnNamesFromColumnsDef(additionalColumnDefs);
+
+  const batchAdditionalColumnNames = [
+    { name: columnPatientIdName, value: patientId },
+    { name: columnJobIdName, value: jobId },
+  ];
 
   const rowCount = await streamCsvToDatabase({
     patientId,
     jobId,
     tableName,
     columnNamesOnCsv,
-    additionalColumnNames,
+    batchAdditionalColumnNames,
     csvS3Key,
     analyticsBucketName,
     dbClient,
@@ -269,9 +289,9 @@ async function createTableIfNotExists(
   log: (msg: string) => void
 ): Promise<void> {
   try {
-    const createTableCmd = getCreateTableCommand(tableName, columnsDef);
+    const createTableCmd = getCreatePartitionedTableCommand(rawDbSchema, tableName, columnsDef);
     await client.query(createTableCmd);
-    const createIndexCmd = getCreateIndexCommand(tableName);
+    const createIndexCmd = getCreateIndexCommand(rawDbSchema, tableName);
     await client.query(createIndexCmd);
   } catch (error) {
     log(`Error creating table ${tableName}: ${error}`);
@@ -285,7 +305,7 @@ async function createViewIfNotExists(
   log: (msg: string) => void
 ): Promise<string> {
   try {
-    const { cmd, viewName } = getCreateViewJobCommand(tableName);
+    const { cmd, viewName } = getCreateViewJobCommand(rawDbSchema, tableName);
     await client.query(cmd);
     return viewName;
   } catch (error) {
@@ -296,13 +316,16 @@ async function createViewIfNotExists(
 
 /**
  * Streams CSV data from S3 and inserts it into the database using proper CSV parsing and batch inserts.
+ *
+ * Not using PG's s3_import extension because we need to insert additional column(s) to support the
+ * append-only mode.
  */
 async function streamCsvToDatabase({
   patientId,
   jobId,
   tableName,
   columnNamesOnCsv,
-  additionalColumnNames,
+  batchAdditionalColumnNames,
   csvS3Key,
   analyticsBucketName,
   dbClient,
@@ -313,7 +336,7 @@ async function streamCsvToDatabase({
   jobId: string;
   tableName: string;
   columnNamesOnCsv: string[];
-  additionalColumnNames: string[];
+  batchAdditionalColumnNames: ColumnRowValue[];
   csvS3Key: string;
   analyticsBucketName: string;
   dbClient: Client;
@@ -355,11 +378,9 @@ async function streamCsvToDatabase({
             const localBatch = batch;
             batch = [];
             await insertBatchIntoDatabase({
-              patientId,
-              jobId,
               tableName,
               columnNames: columnNamesOnCsv,
-              additionalColumnNames,
+              batchAdditionalColumnNames,
               batch: localBatch,
               dbClient,
             });
@@ -373,11 +394,9 @@ async function streamCsvToDatabase({
           // Process remaining rows in the batch
           if (batch.length > 0) {
             await insertBatchIntoDatabase({
-              patientId,
-              jobId,
               tableName,
               columnNames: columnNamesOnCsv,
-              additionalColumnNames,
+              batchAdditionalColumnNames,
               batch,
               dbClient,
             });
@@ -403,28 +422,27 @@ async function streamCsvToDatabase({
  * Inserts a batch of rows into the database using a single query for better performance.
  */
 async function insertBatchIntoDatabase({
-  patientId,
-  jobId,
   tableName,
   columnNames,
-  additionalColumnNames,
+  batchAdditionalColumnNames,
   batch,
   dbClient,
 }: {
-  patientId: string;
-  jobId: string;
   tableName: string;
   columnNames: string[];
-  additionalColumnNames: string[];
+  batchAdditionalColumnNames: ColumnRowValue[];
   batch: string[][];
   dbClient: Client;
 }): Promise<void> {
-  if (batch.length === 0) return;
+  if (batch.length < 1) return;
+
+  const additionalColumnNames = batchAdditionalColumnNames.map(c => c.name);
+  const additionalColumnValues = batchAdditionalColumnNames.map(c => c.value);
 
   // Create VALUES clause with placeholders for batch insert
   const valuesClauses = batch.map((_, batchIndex) => {
     const rowPlaceholders = [];
-    const amountOfPlaceholdersPerRow = columnNames.length + additionalColumnNames.length;
+    const amountOfPlaceholdersPerRow = columnNames.length + batchAdditionalColumnNames.length;
     for (let colIndex = 0; colIndex < amountOfPlaceholdersPerRow; colIndex++) {
       const paramIndex = batchIndex * amountOfPlaceholdersPerRow + colIndex + 1;
       rowPlaceholders.push(`$${paramIndex}`);
@@ -440,7 +458,7 @@ async function insertBatchIntoDatabase({
   // Flatten all values and add the additional columns for each row
   const allValues: string[] = [];
   batch.forEach(rowValues => {
-    allValues.push(...rowValues, patientId, jobId);
+    allValues.push(...rowValues, ...additionalColumnValues);
   });
 
   await dbClient.query(insertQuery, allValues);

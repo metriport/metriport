@@ -23,5 +23,6 @@ services:
       INPUT_S3_BUCKET: ${INPUT_S3_BUCKET}
       OUTPUT_S3_BUCKET: ${OUTPUT_S3_BUCKET}
       OUTPUT_PREFIX: ${OUTPUT_PREFIX}
+      INCLUDE_HEADER: ${INCLUDE_HEADER}
     networks:
       - metriportNetwork

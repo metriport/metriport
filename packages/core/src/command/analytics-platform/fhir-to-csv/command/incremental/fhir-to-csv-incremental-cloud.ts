@@ -21,10 +21,10 @@ export class FhirToCsvIncrementalCloud extends FhirToCsvIncrementalHandler {
       ...params,
       jobId,
     };
-    const payloadStrig = JSON.stringify(payload);
+    const payloadString = JSON.stringify(payload);
 
     await executeWithNetworkRetries(async () => {
-      await this.sqsClient.sendMessageToQueue(this.fhirToCsvQueueUrl, payloadStrig, {
+      await this.sqsClient.sendMessageToQueue(this.fhirToCsvQueueUrl, payloadString, {
         fifo: true,
         messageDeduplicationId: patientId,
         messageGroupId: patientId,

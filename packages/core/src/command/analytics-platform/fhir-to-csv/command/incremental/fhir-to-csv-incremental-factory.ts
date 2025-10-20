@@ -1,8 +1,19 @@
 import { FhirToCsvIncrementalHandler } from "./fhir-to-csv-incremental";
 import { FhirToCsvIncrementalCloud } from "./fhir-to-csv-incremental-cloud";
+import { FhirToCsvIncrementalDirect } from "./fhir-to-csv-incremental-direct";
+import { Config } from "../../../../../util/config";
+import { readConfigs } from "../../configs/read-column-defs";
 
 export function buildFhirToCsvIncrementalHandler(): FhirToCsvIncrementalHandler {
-  // We don't have the direct implementation here because it requires params that are not available
-  // in the cloud environment. Keeping the factory for maintainability.
+  if (Config.isDev()) {
+    const fhirToCsvConfigurationsFolder = `../data-transformation/fhir-to-csv/src/parseFhir/configurations`;
+    const tablesDefinitions = readConfigs(fhirToCsvConfigurationsFolder);
+    return new FhirToCsvIncrementalDirect(
+      Config.getAnalyticsBucketName(),
+      Config.getAWSRegion(),
+      Config.getAnalyticsDbCreds(),
+      tablesDefinitions
+    );
+  }
   return new FhirToCsvIncrementalCloud();
 }
