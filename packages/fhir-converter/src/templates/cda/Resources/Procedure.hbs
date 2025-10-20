@@ -43,11 +43,13 @@
         "status":{{>ValueSet/EventStatus.hbs code=procedureEntry.statusCode.code}},
         "code":{{>DataType/CodeableConcept.hbs code=procedureEntry.code}},
         {{#if procedureEntry.entryRelationship}}
-            "reasonCode": [
-                {{#each (toArray procedureEntry.entryRelationship)}}
-                    {{>DataType/CodeableConcept.hbs code=this.observation.value}},
-                {{/each}}
-            ],
+            {{#with (getSpecifiedEntryRelationshipArray procedureEntry.entryRelationship "RSON") as |reasonEntries|}}
+                "reasonCode": [
+                    {{#each reasonEntries as |reasonEntry|}}
+                        {{>DataType/CodeableConcept.hbs text=reasonEntry.observation.text._ code=reasonEntry.observation.value}},
+                    {{/each}}
+                ],                
+            {{/with}}
         {{/if}}
         {{#if procedureEntry.effectiveTime.value}}
             "performedDateTime":"{{formatAsDateTime procedureEntry.effectiveTime.value}}",
