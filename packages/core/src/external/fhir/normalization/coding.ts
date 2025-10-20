@@ -1,15 +1,16 @@
 import { Bundle, CodeableConcept, Coding, Resource } from "@medplum/fhirtypes";
-import { cloneDeep } from "lodash";
 import {
   CPT_URL,
   CVX_URL,
+  hl7FhirSystemUrls,
   ICD_10_URL,
   ICD_9_URL,
   LOINC_URL,
   NDC_URL,
   RXNORM_URL,
   SNOMED_URL,
-} from "../../../util/constants";
+} from "@metriport/shared/medical";
+import { cloneDeep, uniqBy } from "lodash";
 import { isCodeableConcept, isUsefulDisplay, isValidCoding } from "../codeable-concept";
 
 export const LOINC_CODE_REGEX = /^[a-zA-Z0-9]{3,8}-\d{1}$/;
@@ -48,7 +49,8 @@ export function normalizeCodeableConcept(concept: CodeableConcept): CodeableConc
   const codings = concept.coding;
   const normalizedCodings = codings.flatMap(normalizeCoding);
   const filteredCodings = ensureAtLeastOneValidCoding(normalizedCodings);
-  const sortedCodings = [...filteredCodings].sort((a, b) => rankCoding(a) - rankCoding(b));
+  const uniqueCodings = uniqBy(filteredCodings, c => `${c.system}-${c.code}`);
+  const sortedCodings = [...uniqueCodings].sort((a, b) => rankCoding(a) - rankCoding(b));
   const replacementText = sortedCodings.find(c => c.display && isUsefulDisplay(c.display))?.display;
 
   return {
@@ -105,6 +107,10 @@ function rankCoding(coding: Coding): number {
   const system = coding.system;
   if (!system) return 99;
 
+  if (hl7FhirSystemUrls.includes(system)) {
+    return 3;
+  }
+
   switch (system) {
     case RXNORM_URL:
       return 1;
@@ -119,9 +125,9 @@ function rankCoding(coding: Coding): number {
     case ICD_9_URL:
       return 2;
     case LOINC_URL:
-      return 3;
-    case SNOMED_URL:
       return 4;
+    case SNOMED_URL:
+      return 5;
     default:
       return 99;
   }

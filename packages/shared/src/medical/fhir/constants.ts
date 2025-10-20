@@ -37,8 +37,12 @@ export const HL7_ACT_URL = "http://terminology.hl7.org/CodeSystem/v3-ActCode";
 
 export const CONDITION_CLINICAL_STATUS_URL =
   "http://terminology.hl7.org/CodeSystem/condition-clinical";
+
 export const CONDITION_VERIFICATION_STATUS_URL =
   "http://terminology.hl7.org/CodeSystem/condition-ver-status";
+
+export const CONDITION_CATEGORY_SYSTEM_URL =
+  "http://terminology.hl7.org/CodeSystem/condition-category";
 
 export const PRACTITIONER_UPIN_URL = "http://hl7.org/fhir/sid/us-upin";
 export const PRACTITIONER_NPI_URL = "http://hl7.org/fhir/sid/us-npi";
@@ -53,6 +57,19 @@ export const DIAGNOSTIC_SERVICE_SECTIONS_URL = "http://terminology.hl7.org/CodeS
 export const EPIC_PARTIAL_URN = "1.2.840.114350.1.13";
 export const HL7_PARTIAL_URN = "2.16.840.1.113883";
 
+export const hl7FhirSystemUrls = [
+  NDDF_URL,
+  HL7_ACT_URL,
+  CONDITION_CLINICAL_STATUS_URL,
+  CONDITION_VERIFICATION_STATUS_URL,
+  CONDITION_CATEGORY_SYSTEM_URL,
+  PRACTITIONER_UPIN_URL,
+  PRACTITIONER_NPI_URL,
+  PRACTITIONER_ROLE_URL,
+  OBSERVATION_CATEGORY_URL,
+  DIAGNOSTIC_SERVICE_SECTIONS_URL,
+];
+
 export const knownSystemUrls = [
   RXNORM_URL,
   NDC_URL,
@@ -63,4 +80,5 @@ export const knownSystemUrls = [
   LOINC_URL,
   SNOMED_URL,
   HL7_ACT_URL,
+  ...hl7FhirSystemUrls,
 ];
