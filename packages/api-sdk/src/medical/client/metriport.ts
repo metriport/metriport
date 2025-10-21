@@ -733,7 +733,6 @@ export class MetriportMedicalApi {
 
   /**
    * Update an existing cohort. This does a full-overwrite of the payload contents.
-   * ⚠️ Be careful updating the name of your cohort, as it can be used as an identifier and may break your implementation elsewhere.
    * @param id The ID of the cohort to update.
    * @param data The properties to update on the cohort.
    * @returns The updated cohort.
@@ -751,17 +750,6 @@ export class MetriportMedicalApi {
   async getCohort(id: string): Promise<CohortWithSizeDTO> {
     const resp = await this.api.get(`${COHORT_URL}/${id}`);
     return resp.data;
-  }
-
-  /**
-   * Returns the cohort with the given name.
-   * @param name The name of the cohort to return.
-   * @returns The cohort with the given name.
-   */
-  async getCohortByName(name: string): Promise<{ cohort: CohortDTO }> {
-    const resp = await this.api.get(`${COHORT_URL}`, { params: { name } });
-    if (!resp.data) throw new Error("No cohort found with the given name");
-    return { cohort: resp.data.cohorts[0] };
   }
 
   /**
@@ -841,7 +829,7 @@ export class MetriportMedicalApi {
    * @returns The list of cohorts assigned to the patient.
    */
   async listCohortsForPatient(patientId: string): Promise<{ cohorts: CohortDTO[] }> {
-    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/cohort`);
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/cohorts`);
     return resp.data;
   }
 
