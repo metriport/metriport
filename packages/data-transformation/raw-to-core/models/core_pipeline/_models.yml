@@ -40,6 +40,11 @@ models:
     config:
       alias: condition
     columns:
+      - name: condition_id
+        tests:
+          - unique:
+              config:
+                severity: error
       - name: patient_id
         tests:
           - relationships:
@@ -113,6 +118,11 @@ models:
     config:
       alias: diagnostic_report
     columns:
+      - name: diagnostic_report_id
+        tests:
+          - unique:
+              config:
+                severity: error
       - name: patient_id
         tests:
           - relationships:
@@ -175,6 +185,11 @@ models:
     config:
       alias: encounter
     columns:
+      - name: encounter_id
+        tests:
+          - unique:
+              config:
+                severity: error
       - name: patient_id
         tests:
           - relationships:
@@ -229,6 +244,11 @@ models:
     config:
       alias: immunization
     columns:
+      - name: immunization_id
+        tests:
+          - unique:
+              config:
+                severity: error
       - name: patient_id
         tests:
           - relationships:
@@ -240,6 +260,11 @@ models:
     config:
       alias: location
     columns:
+      - name: location_id
+        tests:
+          - unique:
+              config:
+                severity: error
       - name: managing_organization_id
         tests:
           - relationships:
@@ -295,6 +320,11 @@ models:
     config:
       alias: medication_administration
     columns:
+      - name: medication_administration_id
+        tests:
+          - unique:
+              config:
+                severity: error
       - name: patient_id
         tests:
           - relationships:
@@ -364,6 +394,11 @@ models:
     config:
       alias: medication_dispense
     columns:
+      - name: medication_dispense_id
+        tests:
+          - unique:
+              config:
+                severity: error
       - name: patient_id
         tests:
           - relationships:
@@ -441,6 +476,11 @@ models:
     config:
       alias: medication_request
     columns:
+      - name: medication_request_id
+        tests:
+          - unique:
+              config:
+                severity: error
       - name: patient_id
         tests:
           - relationships:
@@ -486,6 +526,11 @@ models:
     config:
       alias: medication_statement
     columns:
+      - name: medication_statement_id
+        tests:
+          - unique:
+              config:
+                severity: error
       - name: patient_id
         tests:
           - relationships:
@@ -503,6 +548,12 @@ models:
   - name: core__medication
     config:
       alias: medication
+    columns:
+      - name: medication_id
+        tests:
+          - unique:
+              config:
+                severity: error
   - name: core__observation_references
     config:
       alias: observation_references
@@ -550,6 +601,11 @@ models:
     config:
       alias: observation
     columns:
+      - name: observation_id
+        tests:
+          - unique:
+              config:
+                severity: error
       - name: patient_id
         tests:
           - relationships:
@@ -560,12 +616,30 @@ models:
   - name: core__organization
     config:
       alias: organization
+    columns:
+      - name: organization_id
+        tests:
+          - unique:
+              config:
+                severity: error
   - name: core__patient
     config:
       alias: patient
+    columns:
+      - name: patient_id
+        tests:
+          - unique:
+              config:
+                severity: error
   - name: core__practitioner
     config:
       alias: practitioner
+    columns:
+      - name: practitioner_id
+        tests:
+          - unique:
+              config:
+                severity: error
   - name: core__procedure_references
     config:
       alias: procedure_references
@@ -629,6 +703,11 @@ models:
     config:
       alias: procedure
     columns:
+      - name: procedure_id
+        tests:
+          - unique:
+              config:
+                severity: error
       - name: patient_id
         tests:
           - relationships:

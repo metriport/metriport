@@ -15,7 +15,7 @@ select
     ,   cast(pat.name_0_given_0 as {{ dbt.type_string() }} )                                      as first_name
     ,   cast(pat.name_0_family as {{ dbt.type_string() }} )                                       as last_name
     ,   cast(pat.gender as {{ dbt.type_string() }} )                                              as gender
-    ,   {{ try_to_cast_date('pat.birthDate') }}                                                   as birth_date
+    ,   {{ try_to_cast_date('pat.birthdate') }}                                                   as birth_date
     ,   cast(ta.line_0 || coalesce(' ' || ta.line_1, '') as {{ dbt.type_string() }} )             as address
     ,   cast(ta.city as {{ dbt.type_string() }} )                                                 as city
     ,   cast(ta.state as {{ dbt.type_string() }} )                                                as state
