@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { getFhirResourcesFromRxNormEntities } from "@metriport/core/external/comprehend/rxnorm/fhir-converter";
+import { getFhirResourcesFromSnomedEntities } from "@metriport/core/external/comprehend/snomed/fhir-converter";
 import {
   TEST_PATIENT_ID,
   TEST_DATE_NOTE_WRITTEN,
@@ -21,6 +22,7 @@ command.name("build-all-tests");
 command.description("Build all tests");
 command.action(async () => {
   await rebuildAllRxNormTests();
+  await rebuildAllSnomedCTTests();
 });
 
 /**
@@ -40,6 +42,26 @@ async function rebuildAllRxNormTests() {
       },
     });
     writeFhirArtifact("rxnorm", artifactId, resources);
+  }
+}
+
+/**
+ * Rebuilds all SNOMED CT tests in the `packages/core/src/external/comprehend/__tests__/artifacts/snomedct` directory.
+ */
+async function rebuildAllSnomedCTTests() {
+  const artifactIds = listArtifactIds("snomedct");
+  for (const artifactId of artifactIds) {
+    const artifact = getArtifact("snomedct", artifactId);
+    const resources = getFhirResourcesFromSnomedEntities(artifact.response.Entities ?? [], {
+      confidenceThreshold: TEST_CONFIDENCE_THRESHOLD,
+      context: {
+        patientId: TEST_PATIENT_ID,
+        dateNoteWritten: TEST_DATE_NOTE_WRITTEN,
+        originalText: artifact.inputText,
+        encounterId: TEST_ENCOUNTER_ID,
+      },
+    });
+    writeFhirArtifact("snomedct", artifactId, resources);
   }
 }
 

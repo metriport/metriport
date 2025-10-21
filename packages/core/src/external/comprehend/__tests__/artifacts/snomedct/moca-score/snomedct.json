@@ -1,0 +1,2230 @@
+{
+  "inputText": "Examination:\nPatient appears well, alert and oriented,\nextraocular movements intact, face is symmetric at rest\nwith activation, symmetric UE movements.\n\nPrior in-person neurological examination:\nMOCA 27/30\nGeneral:\nappears well, in no acute distress.\nEyes:\nophthalmoscopic exam reveals sharp optic discs and normal\nretinal vasculature bilaterally.\nCardiovascular:\nWell-perfused\nResp: Comfortable on RA\nAbd:\nNon-distended\nExtremities: No rashes or lesions\nappreciated\n\nMS: alert and oriented x3, follows\ncommands, no aphasia, no dysarthria.",
+  "response": {
+    "$metadata": {
+      "httpStatusCode": 200,
+      "requestId": "0cf51dc1-5d56-44ba-9d72-2328dd34e981",
+      "attempts": 1,
+      "totalRetryDelay": 0
+    },
+    "Characters": {
+      "OriginalTextCharacters": 539
+    },
+    "Entities": [
+      {
+        "Attributes": [],
+        "BeginOffset": 21,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 33,
+        "Id": 1,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "397749000",
+            "Description": "Well cared for appearance (finding)",
+            "Score": 0.5941336750984192
+          },
+          {
+            "Code": "17326005",
+            "Description": "Well in self (finding)",
+            "Score": 0.5388931632041931
+          },
+          {
+            "Code": "267112005",
+            "Description": "Patient feels well (finding)",
+            "Score": 0.4359690546989441
+          },
+          {
+            "Code": "102499006",
+            "Description": "Fit and well (finding)",
+            "Score": 0.3946155607700348
+          },
+          {
+            "Code": "418138009",
+            "Description": "Patient condition finding (finding)",
+            "Score": 0.38189736008644104
+          }
+        ],
+        "Score": 0.7172441482543945,
+        "Text": "appears well",
+        "Traits": [
+          {
+            "Name": "SIGN",
+            "Score": 0.7299559712409973
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [],
+        "BeginOffset": 35,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 40,
+        "Id": 2,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "248234008",
+            "Description": "Mentally alert (finding)",
+            "Score": 0.8174327611923218
+          },
+          {
+            "Code": "365933000",
+            "Description": "Finding of mental alertness (finding)",
+            "Score": 0.14656613767147064
+          },
+          {
+            "Code": "248233002",
+            "Description": "Mental alertness (observable entity)",
+            "Score": 0.11255170404911041
+          },
+          {
+            "Code": "704426000",
+            "Description": "Impairment of mental alertness (finding)",
+            "Score": 0.095717653632164
+          },
+          {
+            "Code": "397727006",
+            "Description": "Ability to sense position and movement (observable entity)",
+            "Score": 0.07396834343671799
+          }
+        ],
+        "Score": 0.9350614547729492,
+        "Text": "alert",
+        "Traits": [
+          {
+            "Name": "SIGN",
+            "Score": 0.9214484095573425
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [],
+        "BeginOffset": 45,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 53,
+        "Id": 3,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "247663003",
+            "Description": "Orientated (finding)",
+            "Score": 0.5827118754386902
+          },
+          {
+            "Code": "426224004",
+            "Description": "Oriented to person, time and place (finding)",
+            "Score": 0.5503515601158142
+          },
+          {
+            "Code": "43173001",
+            "Description": "Orientation, function (observable entity)",
+            "Score": 0.2276463508605957
+          },
+          {
+            "Code": "311470005",
+            "Description": "Finding related to orientation (finding)",
+            "Score": 0.22056862711906433
+          },
+          {
+            "Code": "311552005",
+            "Description": "Spatial orientation, function (observable entity)",
+            "Score": 0.1358417272567749
+          }
+        ],
+        "Score": 0.9584784507751465,
+        "Text": "oriented",
+        "Traits": [
+          {
+            "Name": "SIGN",
+            "Score": 0.9405226111412048
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [],
+        "BeginOffset": 55,
+        "Category": "ANATOMY",
+        "EndOffset": 66,
+        "Id": 4,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "67833000",
+            "Description": "Structure of extraocular muscle (body structure)",
+            "Score": 0.5999960899353027
+          },
+          {
+            "Code": "373642008",
+            "Description": "Extraocular eye movement (observable entity)",
+            "Score": 0.4004049599170685
+          },
+          {
+            "Code": "866238002",
+            "Description": "Structure of extraocular muscle of left eye (body structure)",
+            "Score": 0.27222853899002075
+          },
+          {
+            "Code": "866241006",
+            "Description": "Structure of extraocular muscle of right eye (body structure)",
+            "Score": 0.25450679659843445
+          },
+          {
+            "Code": "128603005",
+            "Description": "Disorder of extraocular muscle (disorder)",
+            "Score": 0.24871376156806946
+          }
+        ],
+        "Score": 0.7172441482543945,
+        "Text": "extraocular",
+        "Traits": [],
+        "Type": "SYSTEM_ORGAN_SITE"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 55,
+            "Category": "ANATOMY",
+            "EndOffset": 66,
+            "Id": 4,
+            "RelationshipScore": 0.5692254304885864,
+            "RelationshipType": "SYSTEM_ORGAN_SITE",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "67833000",
+                "Description": "Structure of extraocular muscle (body structure)",
+                "Score": 0.5999960899353027
+              },
+              {
+                "Code": "373642008",
+                "Description": "Extraocular eye movement (observable entity)",
+                "Score": 0.4004049599170685
+              },
+              {
+                "Code": "866238002",
+                "Description": "Structure of extraocular muscle of left eye (body structure)",
+                "Score": 0.27222853899002075
+              },
+              {
+                "Code": "866241006",
+                "Description": "Structure of extraocular muscle of right eye (body structure)",
+                "Score": 0.25450679659843445
+              },
+              {
+                "Code": "128603005",
+                "Description": "Disorder of extraocular muscle (disorder)",
+                "Score": 0.24871376156806946
+              }
+            ],
+            "Score": 0.7172441482543945,
+            "Text": "extraocular",
+            "Traits": [],
+            "Type": "SYSTEM_ORGAN_SITE"
+          }
+        ],
+        "BeginOffset": 55,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 83,
+        "Id": 5,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "103251002",
+            "Description": "Normal ocular motility (finding)",
+            "Score": 0.739034116268158
+          },
+          {
+            "Code": "373642008",
+            "Description": "Extraocular eye movement (observable entity)",
+            "Score": 0.7015493512153625
+          },
+          {
+            "Code": "366079002",
+            "Description": "Finding of eye movement (finding)",
+            "Score": 0.39424195885658264
+          },
+          {
+            "Code": "299810004",
+            "Description": "Corneal reflex normal (finding)",
+            "Score": 0.3667828440666199
+          },
+          {
+            "Code": "246723000",
+            "Description": "Ocular muscle balance normal (finding)",
+            "Score": 0.3294060230255127
+          }
+        ],
+        "Score": 0.8617406487464905,
+        "Text": "extraocular movements intact",
+        "Traits": [
+          {
+            "Name": "SIGN",
+            "Score": 0.8787732124328613
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [],
+        "BeginOffset": 85,
+        "Category": "ANATOMY",
+        "EndOffset": 89,
+        "Id": 6,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "89545001",
+            "Description": "Face structure (body structure)",
+            "Score": 0.6611815094947815
+          },
+          {
+            "Code": "73897004",
+            "Description": "Skin structure of face (body structure)",
+            "Score": 0.07327577471733093
+          },
+          {
+            "Code": "423781004",
+            "Description": "Structure of left half of face (body structure)",
+            "Score": 0.05005457252264023
+          },
+          {
+            "Code": "123853000",
+            "Description": "Structure of region of face (body structure)",
+            "Score": 0.04553161934018135
+          },
+          {
+            "Code": "62961004",
+            "Description": "Structure of hair of face (body structure)",
+            "Score": 0.04233928397297859
+          }
+        ],
+        "Score": 0.7613970637321472,
+        "Text": "face",
+        "Traits": [],
+        "Type": "SYSTEM_ORGAN_SITE"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 85,
+            "Category": "ANATOMY",
+            "EndOffset": 89,
+            "Id": 6,
+            "RelationshipScore": 0.7223333120346069,
+            "RelationshipType": "SYSTEM_ORGAN_SITE",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "89545001",
+                "Description": "Face structure (body structure)",
+                "Score": 0.6611815094947815
+              },
+              {
+                "Code": "73897004",
+                "Description": "Skin structure of face (body structure)",
+                "Score": 0.07327577471733093
+              },
+              {
+                "Code": "423781004",
+                "Description": "Structure of left half of face (body structure)",
+                "Score": 0.05005457252264023
+              },
+              {
+                "Code": "123853000",
+                "Description": "Structure of region of face (body structure)",
+                "Score": 0.04553161934018135
+              },
+              {
+                "Code": "62961004",
+                "Description": "Structure of hair of face (body structure)",
+                "Score": 0.04233928397297859
+              }
+            ],
+            "Score": 0.7613970637321472,
+            "Text": "face",
+            "Traits": [],
+            "Type": "SYSTEM_ORGAN_SITE"
+          },
+          {
+            "BeginOffset": 103,
+            "Category": "MEDICAL_CONDITION",
+            "EndOffset": 110,
+            "Id": 8,
+            "RelationshipScore": 0.5068173408508301,
+            "RelationshipType": "QUALITY",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "263678003",
+                "Description": "At rest (qualifier value)",
+                "Score": 0.19875885546207428
+              },
+              {
+                "Code": "258157001",
+                "Description": "Rest (observable entity)",
+                "Score": 0.11119745671749115
+              },
+              {
+                "Code": "230006009",
+                "Description": "Head rest arm position (finding)",
+                "Score": 0.026709653437137604
+              },
+              {
+                "Code": "80817007",
+                "Description": "Cartilaginous rest (morphologic abnormality)",
+                "Score": 0.02634204365313053
+              },
+              {
+                "Code": "52598005",
+                "Description": "Rest pain (finding)",
+                "Score": 0.019990233704447746
+              }
+            ],
+            "Score": 0.7172441482543945,
+            "Text": "at rest",
+            "Traits": [],
+            "Type": "QUALITY"
+          },
+          {
+            "BeginOffset": 111,
+            "Category": "MEDICAL_CONDITION",
+            "EndOffset": 126,
+            "Id": 9,
+            "RelationshipScore": 0.5068173408508301,
+            "RelationshipType": "QUALITY",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "248172007",
+                "Description": "Facial symmetry (finding)",
+                "Score": 0.21729925274848938
+              },
+              {
+                "Code": "301310005",
+                "Description": "Finding of face (finding)",
+                "Score": 0.13625513017177582
+              },
+              {
+                "Code": "373642008",
+                "Description": "Extraocular eye movement (observable entity)",
+                "Score": 0.13567747175693512
+              },
+              {
+                "Code": "366090007",
+                "Description": "Finding of associated movements on eye movement (finding)",
+                "Score": 0.13032390177249908
+              },
+              {
+                "Code": "443441000",
+                "Description": "Synkinesis of face (finding)",
+                "Score": 0.11892484128475189
+              }
+            ],
+            "Score": 0.7613970637321472,
+            "Text": "with activation",
+            "Traits": [],
+            "Type": "QUALITY"
+          }
+        ],
+        "BeginOffset": 85,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 102,
+        "Id": 7,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "248172007",
+            "Description": "Facial symmetry (finding)",
+            "Score": 0.14323872327804565
+          },
+          {
+            "Code": "301310005",
+            "Description": "Finding of face (finding)",
+            "Score": 0.049360472708940506
+          },
+          {
+            "Code": "255473004",
+            "Description": "Symmetrical (qualifier value)",
+            "Score": 0.038803402334451675
+          },
+          {
+            "Code": "18772005",
+            "Description": "Symmetry (qualifier value)",
+            "Score": 0.03755689412355423
+          },
+          {
+            "Code": "698813003",
+            "Description": "Facial profile straight (finding)",
+            "Score": 0.029056517407298088
+          }
+        ],
+        "Score": 0.7172441482543945,
+        "Text": "face is symmetric",
+        "Traits": [
+          {
+            "Name": "SIGN",
+            "Score": 0.7299559712409973
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 138,
+            "Category": "ANATOMY",
+            "EndOffset": 140,
+            "Id": 11,
+            "RelationshipScore": 0.7552722692489624,
+            "RelationshipType": "SYSTEM_ORGAN_SITE",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "334478006",
+                "Description": "Unilocular joint structure (body structure)",
+                "Score": 0.00030066221370361745
+              },
+              {
+                "Code": "896816002",
+                "Description": "Joint structure of upper limb (body structure)",
+                "Score": 0.00015355332288891077
+              },
+              {
+                "Code": "48308004",
+                "Description": "Unitarian Universalist Church (religion/philosophy)",
+                "Score": 0.00014108662435319275
+              },
+              {
+                "Code": "88650009",
+                "Description": "Both upper extremities (body structure)",
+                "Score": 0.00012595935550052673
+              },
+              {
+                "Code": "33883002",
+                "Description": "Joint structure of head (body structure)",
+                "Score": 0.000118706222565379
+              }
+            ],
+            "Score": 0.877546489238739,
+            "Text": "UE",
+            "Traits": [],
+            "Type": "SYSTEM_ORGAN_SITE"
+          }
+        ],
+        "BeginOffset": 128,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 150,
+        "Id": 10,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "248172007",
+            "Description": "Facial symmetry (finding)",
+            "Score": 0.029213296249508858
+          },
+          {
+            "Code": "276996000",
+            "Description": "Visual evoked potential symmetry (observable entity)",
+            "Score": 0.007066159974783659
+          },
+          {
+            "Code": "277127006",
+            "Description": "Somatosensory evoked potentials symmetry (finding)",
+            "Score": 0.006895473226904869
+          },
+          {
+            "Code": "277114007",
+            "Description": "Symmetrical visually evoked potentials (finding)",
+            "Score": 0.006302861962467432
+          },
+          {
+            "Code": "251507007",
+            "Description": "Electroencephalogram symmetry (observable entity)",
+            "Score": 0.00604991614818573
+          }
+        ],
+        "Score": 0.5330596566200256,
+        "Text": "symmetric UE movements",
+        "Traits": [
+          {
+            "Name": "SIGN",
+            "Score": 0.47435709834098816
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [],
+        "BeginOffset": 138,
+        "Category": "ANATOMY",
+        "EndOffset": 140,
+        "Id": 11,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "334478006",
+            "Description": "Unilocular joint structure (body structure)",
+            "Score": 0.00030066221370361745
+          },
+          {
+            "Code": "896816002",
+            "Description": "Joint structure of upper limb (body structure)",
+            "Score": 0.00015355332288891077
+          },
+          {
+            "Code": "48308004",
+            "Description": "Unitarian Universalist Church (religion/philosophy)",
+            "Score": 0.00014108662435319275
+          },
+          {
+            "Code": "88650009",
+            "Description": "Both upper extremities (body structure)",
+            "Score": 0.00012595935550052673
+          },
+          {
+            "Code": "33883002",
+            "Description": "Joint structure of head (body structure)",
+            "Score": 0.000118706222565379
+          }
+        ],
+        "Score": 0.877546489238739,
+        "Text": "UE",
+        "Traits": [],
+        "Type": "SYSTEM_ORGAN_SITE"
+      },
+      {
+        "Attributes": [],
+        "BeginOffset": 169,
+        "Category": "ANATOMY",
+        "EndOffset": 181,
+        "Id": 12,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "21483005",
+            "Description": "Structure of central nervous system (body structure)",
+            "Score": 0.7392496466636658
+          },
+          {
+            "Code": "25087005",
+            "Description": "Structure of nervous system (body structure)",
+            "Score": 0.3349640965461731
+          },
+          {
+            "Code": "281247006",
+            "Description": "Structure of cervical nervous system (body structure)",
+            "Score": 0.23167532682418823
+          },
+          {
+            "Code": "363820009",
+            "Description": "Neurological observable (observable entity)",
+            "Score": 0.20991408824920654
+          },
+          {
+            "Code": "57592002",
+            "Description": "Central nervous system tract structure (body structure)",
+            "Score": 0.1988755315542221
+          }
+        ],
+        "Score": 0.5971075296401978,
+        "Text": "neurological",
+        "Traits": [],
+        "Type": "SYSTEM_ORGAN_SITE"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 200,
+            "Category": "TEST_TREATMENT_PROCEDURE",
+            "EndOffset": 205,
+            "Id": 14,
+            "RelationshipScore": 0.7223333120346069,
+            "RelationshipType": "TEST_VALUE",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "445430004",
+                "Description": "Measurement of cancer antigen 27-29 (procedure)",
+                "Score": 0.00039461173582822084
+              },
+              {
+                "Code": "732658001",
+                "Description": "30 (qualifier value)",
+                "Score": 0.0001260569115402177
+              },
+              {
+                "Code": "446619003",
+                "Description": "Adult comorbidity evaluation-27 (assessment scale)",
+                "Score": 0.00012205044913571328
+              },
+              {
+                "Code": "423743009",
+                "Description": "Distance vision 6/30 (finding)",
+                "Score": 0.00012070717639289796
+              },
+              {
+                "Code": "446363004",
+                "Description": "Adult comorbidity evaluation-27 score (observable entity)",
+                "Score": 0.00010688073234632611
+              }
+            ],
+            "Score": 0.8617406487464905,
+            "Text": "27/30",
+            "Traits": [],
+            "Type": "TEST_VALUE"
+          }
+        ],
+        "BeginOffset": 195,
+        "Category": "TEST_TREATMENT_PROCEDURE",
+        "EndOffset": 199,
+        "Id": 13,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "403950007",
+            "Description": "Moll's gland adenocarcinoma (disorder)",
+            "Score": 0.0000034674151265789988
+          },
+          {
+            "Code": "427867005",
+            "Description": "Cooperative mental state (finding)",
+            "Score": 0.0000024738162665016716
+          },
+          {
+            "Code": "94700002",
+            "Description": "Mottling of lung (finding)",
+            "Score": 0.0000020452764601941453
+          },
+          {
+            "Code": "248217000",
+            "Description": "State of consciousness and awareness (observable entity)",
+            "Score": 0.0000017991042113862932
+          },
+          {
+            "Code": "134413006",
+            "Description": "Contemplation stage (qualifier value)",
+            "Score": 0.0000017932765103978454
+          }
+        ],
+        "Score": 0.5971075296401978,
+        "Text": "MOCA",
+        "Traits": [],
+        "Type": "TEST_NAME"
+      },
+      {
+        "Attributes": [],
+        "BeginOffset": 215,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 227,
+        "Id": 15,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "17326005",
+            "Description": "Well in self (finding)",
+            "Score": 0.3283275067806244
+          },
+          {
+            "Code": "397749000",
+            "Description": "Well cared for appearance (finding)",
+            "Score": 0.325568288564682
+          },
+          {
+            "Code": "418138009",
+            "Description": "Patient condition finding (finding)",
+            "Score": 0.3007383644580841
+          },
+          {
+            "Code": "20572008",
+            "Description": "Good (qualifier value)",
+            "Score": 0.2978527545928955
+          },
+          {
+            "Code": "102512003",
+            "Description": "Well adult (finding)",
+            "Score": 0.2605959475040436
+          }
+        ],
+        "Score": 0.7950295805931091,
+        "Text": "appears well",
+        "Traits": [
+          {
+            "Name": "SIGN",
+            "Score": 0.6248409748077393
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [],
+        "BeginOffset": 235,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 249,
+        "Id": 16,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "69328002",
+            "Description": "Distress (finding)",
+            "Score": 0.8736698031425476
+          },
+          {
+            "Code": "67195008",
+            "Description": "Acute stress disorder (disorder)",
+            "Score": 0.41715091466903687
+          },
+          {
+            "Code": "373895009",
+            "Description": "Acute respiratory distress (finding)",
+            "Score": 0.3902461528778076
+          },
+          {
+            "Code": "63884000",
+            "Description": "Acute failure (finding)",
+            "Score": 0.31170833110809326
+          },
+          {
+            "Code": "271825005",
+            "Description": "Respiratory distress (finding)",
+            "Score": 0.28844696283340454
+          }
+        ],
+        "Score": 0.9350614547729492,
+        "Text": "acute distress",
+        "Traits": [
+          {
+            "Name": "NEGATION",
+            "Score": 0.7299559712409973
+          },
+          {
+            "Name": "SIGN",
+            "Score": 0.9013108015060425
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [],
+        "BeginOffset": 251,
+        "Category": "ANATOMY",
+        "EndOffset": 255,
+        "Id": 17,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "81745001",
+            "Description": "Structure of eye proper (body structure)",
+            "Score": 0.6374161243438721
+          },
+          {
+            "Code": "40638003",
+            "Description": "Structure of both eyes (body structure)",
+            "Score": 0.4438442885875702
+          },
+          {
+            "Code": "414174009",
+            "Description": "Eye observable (observable entity)",
+            "Score": 0.418144553899765
+          },
+          {
+            "Code": "119263007",
+            "Description": "Eye part (body structure)",
+            "Score": 0.2711838185787201
+          },
+          {
+            "Code": "244486005",
+            "Description": "Entire eye (body structure)",
+            "Score": 0.24211251735687256
+          }
+        ],
+        "Score": 0.7613970637321472,
+        "Text": "Eyes",
+        "Traits": [],
+        "Type": "SYSTEM_ORGAN_SITE"
+      },
+      {
+        "Attributes": [],
+        "BeginOffset": 257,
+        "Category": "TEST_TREATMENT_PROCEDURE",
+        "EndOffset": 277,
+        "Id": 18,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "53524009",
+            "Description": "Ophthalmoscopy (procedure)",
+            "Score": 0.13797378540039062
+          },
+          {
+            "Code": "55468007",
+            "Description": "Ocular slit lamp examination (procedure)",
+            "Score": 0.08191994577646255
+          },
+          {
+            "Code": "39029006",
+            "Description": "Electromyogram examination of eye (procedure)",
+            "Score": 0.06791546195745468
+          },
+          {
+            "Code": "252846004",
+            "Description": "Scanning laser ophthalmoscopy (procedure)",
+            "Score": 0.06697066128253937
+          },
+          {
+            "Code": "252801000",
+            "Description": "Ophthalmological test (procedure)",
+            "Score": 0.06643585860729218
+          }
+        ],
+        "Score": 0.6603351831436157,
+        "Text": "ophthalmoscopic exam",
+        "Traits": [],
+        "Type": "TEST_NAME"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 292,
+            "Category": "ANATOMY",
+            "EndOffset": 303,
+            "Id": 20,
+            "RelationshipScore": 0.6270833611488342,
+            "RelationshipType": "SYSTEM_ORGAN_SITE",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "81016008",
+                "Description": "Optic disc structure (body structure)",
+                "Score": 0.6152341365814209
+              },
+              {
+                "Code": "721900005",
+                "Description": "Structure of right optic disc (body structure)",
+                "Score": 0.1701500564813614
+              },
+              {
+                "Code": "830294002",
+                "Description": "Flat optic disc (finding)",
+                "Score": 0.15995466709136963
+              },
+              {
+                "Code": "362518006",
+                "Description": "Entire optic disc (body structure)",
+                "Score": 0.15132836997509003
+              },
+              {
+                "Code": "721899000",
+                "Description": "Structure of left optic disc (body structure)",
+                "Score": 0.14381645619869232
+              }
+            ],
+            "Score": 0.7172441482543945,
+            "Text": "optic discs",
+            "Traits": [],
+            "Type": "SYSTEM_ORGAN_SITE"
+          }
+        ],
+        "BeginOffset": 286,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 303,
+        "Id": 19,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "81016008",
+            "Description": "Optic disc structure (body structure)",
+            "Score": 0.09179247170686722
+          },
+          {
+            "Code": "247201009",
+            "Description": "Optic disc finding (finding)",
+            "Score": 0.09126181900501251
+          },
+          {
+            "Code": "830294002",
+            "Description": "Flat optic disc (finding)",
+            "Score": 0.06716901808977127
+          },
+          {
+            "Code": "301961009",
+            "Description": "Optic disc normal (finding)",
+            "Score": 0.06377942860126495
+          },
+          {
+            "Code": "247221005",
+            "Description": "Optic disc - sector notching (finding)",
+            "Score": 0.054496727883815765
+          }
+        ],
+        "Score": 0.7950295805931091,
+        "Text": "sharp optic discs",
+        "Traits": [
+          {
+            "Name": "SIGN",
+            "Score": 0.6768204569816589
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [],
+        "BeginOffset": 292,
+        "Category": "ANATOMY",
+        "EndOffset": 303,
+        "Id": 20,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "81016008",
+            "Description": "Optic disc structure (body structure)",
+            "Score": 0.6152341365814209
+          },
+          {
+            "Code": "721900005",
+            "Description": "Structure of right optic disc (body structure)",
+            "Score": 0.1701500564813614
+          },
+          {
+            "Code": "830294002",
+            "Description": "Flat optic disc (finding)",
+            "Score": 0.15995466709136963
+          },
+          {
+            "Code": "362518006",
+            "Description": "Entire optic disc (body structure)",
+            "Score": 0.15132836997509003
+          },
+          {
+            "Code": "721899000",
+            "Description": "Structure of left optic disc (body structure)",
+            "Score": 0.14381645619869232
+          }
+        ],
+        "Score": 0.7172441482543945,
+        "Text": "optic discs",
+        "Traits": [],
+        "Type": "SYSTEM_ORGAN_SITE"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 315,
+            "Category": "ANATOMY",
+            "EndOffset": 334,
+            "Id": 22,
+            "RelationshipScore": 0.7223333120346069,
+            "RelationshipType": "SYSTEM_ORGAN_SITE",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "28758002",
+                "Description": "Structure of blood vessel of retina (body structure)",
+                "Score": 0.3799390196800232
+              },
+              {
+                "Code": "280692003",
+                "Description": "Entire blood vessel of retina (body structure)",
+                "Score": 0.2929104268550873
+              },
+              {
+                "Code": "247108008",
+                "Description": "Retinal vessel finding (finding)",
+                "Score": 0.2233373522758484
+              },
+              {
+                "Code": "52539004",
+                "Description": "Vascular sheathing of retina (disorder)",
+                "Score": 0.221352681517601
+              },
+              {
+                "Code": "303299000",
+                "Description": "Structure of retinal arteriole (body structure)",
+                "Score": 0.21290884912014008
+              }
+            ],
+            "Score": 0.7613970637321472,
+            "Text": "retinal vasculature",
+            "Traits": [],
+            "Type": "SYSTEM_ORGAN_SITE"
+          },
+          {
+            "BeginOffset": 335,
+            "Category": "ANATOMY",
+            "EndOffset": 346,
+            "Id": 23,
+            "RelationshipScore": 0.5068173408508301,
+            "RelationshipType": "DIRECTION",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "51440002",
+                "Description": "Right and left (qualifier value)",
+                "Score": 0.5374738574028015
+              },
+              {
+                "Code": "262106005",
+                "Description": "Right to left (qualifier value)",
+                "Score": 0.04838874191045761
+              },
+              {
+                "Code": "255534001",
+                "Description": "Up and left (qualifier value)",
+                "Score": 0.03408133238554001
+              },
+              {
+                "Code": "255535000",
+                "Description": "Up and right (qualifier value)",
+                "Score": 0.023235170170664787
+              },
+              {
+                "Code": "255519007",
+                "Description": "Down and left (qualifier value)",
+                "Score": 0.02320808731019497
+              }
+            ],
+            "Score": 0.6603351831436157,
+            "Text": "bilaterally",
+            "Traits": [],
+            "Type": "DIRECTION"
+          }
+        ],
+        "BeginOffset": 308,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 346,
+        "Id": 21,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "247108008",
+            "Description": "Retinal vessel finding (finding)",
+            "Score": 0.26310282945632935
+          },
+          {
+            "Code": "165459007",
+            "Description": "Plasma viscosity normal (finding)",
+            "Score": 0.25807830691337585
+          },
+          {
+            "Code": "247130009",
+            "Description": "Retinal microvascular finding (finding)",
+            "Score": 0.22073392570018768
+          },
+          {
+            "Code": "398637008",
+            "Description": "Retina normal (finding)",
+            "Score": 0.21792079508304596
+          },
+          {
+            "Code": "247103004",
+            "Description": "Retina and choroid finding (finding)",
+            "Score": 0.21250511705875397
+          }
+        ],
+        "Score": 0.5330596566200256,
+        "Text": "normal\nretinal vasculature bilaterally",
+        "Traits": [
+          {
+            "Name": "SIGN",
+            "Score": 0.47435709834098816
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [],
+        "BeginOffset": 315,
+        "Category": "ANATOMY",
+        "EndOffset": 334,
+        "Id": 22,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "28758002",
+            "Description": "Structure of blood vessel of retina (body structure)",
+            "Score": 0.3799390196800232
+          },
+          {
+            "Code": "280692003",
+            "Description": "Entire blood vessel of retina (body structure)",
+            "Score": 0.2929104268550873
+          },
+          {
+            "Code": "247108008",
+            "Description": "Retinal vessel finding (finding)",
+            "Score": 0.2233373522758484
+          },
+          {
+            "Code": "52539004",
+            "Description": "Vascular sheathing of retina (disorder)",
+            "Score": 0.221352681517601
+          },
+          {
+            "Code": "303299000",
+            "Description": "Structure of retinal arteriole (body structure)",
+            "Score": 0.21290884912014008
+          }
+        ],
+        "Score": 0.7613970637321472,
+        "Text": "retinal vasculature",
+        "Traits": [],
+        "Type": "SYSTEM_ORGAN_SITE"
+      },
+      {
+        "Attributes": [],
+        "BeginOffset": 348,
+        "Category": "ANATOMY",
+        "EndOffset": 362,
+        "Id": 24,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "113257007",
+            "Description": "Structure of cardiovascular system (body structure)",
+            "Score": 0.791008710861206
+          },
+          {
+            "Code": "80891009",
+            "Description": "Heart structure (body structure)",
+            "Score": 0.06711716949939728
+          },
+          {
+            "Code": "113021009",
+            "Description": "Cardiovascular measurement (procedure)",
+            "Score": 0.06232457235455513
+          },
+          {
+            "Code": "278198007",
+            "Description": "Entire cardiovascular system (body structure)",
+            "Score": 0.057460010051727295
+          },
+          {
+            "Code": "281233007",
+            "Description": "Cardiovascular structure of trunk (body structure)",
+            "Score": 0.053838301450014114
+          }
+        ],
+        "Score": 0.6603351831436157,
+        "Text": "Cardiovascular",
+        "Traits": [],
+        "Type": "SYSTEM_ORGAN_SITE"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 348,
+            "Category": "ANATOMY",
+            "EndOffset": 362,
+            "Id": 24,
+            "RelationshipScore": 0.6270833611488342,
+            "RelationshipType": "SYSTEM_ORGAN_SITE",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "113257007",
+                "Description": "Structure of cardiovascular system (body structure)",
+                "Score": 0.791008710861206
+              },
+              {
+                "Code": "80891009",
+                "Description": "Heart structure (body structure)",
+                "Score": 0.06711716949939728
+              },
+              {
+                "Code": "113021009",
+                "Description": "Cardiovascular measurement (procedure)",
+                "Score": 0.06232457235455513
+              },
+              {
+                "Code": "278198007",
+                "Description": "Entire cardiovascular system (body structure)",
+                "Score": 0.057460010051727295
+              },
+              {
+                "Code": "281233007",
+                "Description": "Cardiovascular structure of trunk (body structure)",
+                "Score": 0.053838301450014114
+              }
+            ],
+            "Score": 0.6603351831436157,
+            "Text": "Cardiovascular",
+            "Traits": [],
+            "Type": "SYSTEM_ORGAN_SITE"
+          }
+        ],
+        "BeginOffset": 364,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 377,
+        "Id": 25,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "371863001",
+            "Description": "Perfusion finding (finding)",
+            "Score": 0.14344249665737152
+          },
+          {
+            "Code": "61618002",
+            "Description": "Normal cardiovascular function (finding)",
+            "Score": 0.10690711438655853
+          },
+          {
+            "Code": "397988007",
+            "Description": "Ventilation-perfusion finding (finding)",
+            "Score": 0.08507588505744934
+          },
+          {
+            "Code": "62222003",
+            "Description": "Normal vascular flow (finding)",
+            "Score": 0.06350640952587128
+          },
+          {
+            "Code": "58190003",
+            "Description": "Vascular flow, function (observable entity)",
+            "Score": 0.05991131067276001
+          }
+        ],
+        "Score": 0.9350614547729492,
+        "Text": "Well-perfused",
+        "Traits": [
+          {
+            "Name": "SIGN",
+            "Score": 0.9013108015060425
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [],
+        "BeginOffset": 378,
+        "Category": "ANATOMY",
+        "EndOffset": 382,
+        "Id": 26,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "321667001",
+            "Description": "Respiratory tract structure (body structure)",
+            "Score": 0.0006604251102544367
+          },
+          {
+            "Code": "20139000",
+            "Description": "Structure of respiratory system (body structure)",
+            "Score": 0.00022285895829554647
+          },
+          {
+            "Code": "251907000",
+            "Description": "Respiratory pressure (observable entity)",
+            "Score": 0.00019300144049338996
+          },
+          {
+            "Code": "53950000",
+            "Description": "Respiratory therapy (procedure)",
+            "Score": 0.00012575244181789458
+          },
+          {
+            "Code": "248546008",
+            "Description": "Ease of respiration (observable entity)",
+            "Score": 0.00011323265061946586
+          }
+        ],
+        "Score": 0.821601390838623,
+        "Text": "Resp",
+        "Traits": [],
+        "Type": "SYSTEM_ORGAN_SITE"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 378,
+            "Category": "ANATOMY",
+            "EndOffset": 382,
+            "Id": 26,
+            "RelationshipScore": 0.7814922332763672,
+            "RelationshipType": "SYSTEM_ORGAN_SITE",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "321667001",
+                "Description": "Respiratory tract structure (body structure)",
+                "Score": 0.0006604251102544367
+              },
+              {
+                "Code": "20139000",
+                "Description": "Structure of respiratory system (body structure)",
+                "Score": 0.00022285895829554647
+              },
+              {
+                "Code": "251907000",
+                "Description": "Respiratory pressure (observable entity)",
+                "Score": 0.00019300144049338996
+              },
+              {
+                "Code": "53950000",
+                "Description": "Respiratory therapy (procedure)",
+                "Score": 0.00012575244181789458
+              },
+              {
+                "Code": "248546008",
+                "Description": "Ease of respiration (observable entity)",
+                "Score": 0.00011323265061946586
+              }
+            ],
+            "Score": 0.821601390838623,
+            "Text": "Resp",
+            "Traits": [],
+            "Type": "SYSTEM_ORGAN_SITE"
+          }
+        ],
+        "BeginOffset": 384,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 401,
+        "Id": 27,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "304530009",
+            "Description": "Comfortable appearance (finding)",
+            "Score": 0.03215230628848076
+          },
+          {
+            "Code": "1148784009",
+            "Description": "Feeling comfortable (finding)",
+            "Score": 0.01254223845899105
+          },
+          {
+            "Code": "225994009",
+            "Description": "Placing patient in comfortable position (procedure)",
+            "Score": 0.010405917651951313
+          },
+          {
+            "Code": "250892005",
+            "Description": "Most comfortable listening level (observable entity)",
+            "Score": 0.007054980378597975
+          },
+          {
+            "Code": "22803001",
+            "Description": "Normal respiratory function (finding)",
+            "Score": 0.006655699107795954
+          }
+        ],
+        "Score": 0.5330596566200256,
+        "Text": "Comfortable on RA",
+        "Traits": [
+          {
+            "Name": "SIGN",
+            "Score": 0.47435709834098816
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [],
+        "BeginOffset": 402,
+        "Category": "ANATOMY",
+        "EndOffset": 405,
+        "Id": 28,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "258343008",
+            "Description": "ABD (body structure)",
+            "Score": 0.03616177290678024
+          },
+          {
+            "Code": "818983003",
+            "Description": "Structure of abdominopelvic cavity and/or content of abdominopelvic cavity and/or anterior abdominal wall (body structure)",
+            "Score": 0.026055045425891876
+          },
+          {
+            "Code": "302553009",
+            "Description": "Entire abdomen (body structure)",
+            "Score": 0.019115092232823372
+          },
+          {
+            "Code": "818987002",
+            "Description": "Structure of abdominopelvic cavity (body structure)",
+            "Score": 0.01476841326802969
+          },
+          {
+            "Code": "7832008",
+            "Description": "Abdominal aorta structure (body structure)",
+            "Score": 0.011889764107763767
+          }
+        ],
+        "Score": 0.7613970637321472,
+        "Text": "Abd",
+        "Traits": [],
+        "Type": "SYSTEM_ORGAN_SITE"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 402,
+            "Category": "ANATOMY",
+            "EndOffset": 405,
+            "Id": 28,
+            "RelationshipScore": 0.7814922332763672,
+            "RelationshipType": "SYSTEM_ORGAN_SITE",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "258343008",
+                "Description": "ABD (body structure)",
+                "Score": 0.03616177290678024
+              },
+              {
+                "Code": "818983003",
+                "Description": "Structure of abdominopelvic cavity and/or content of abdominopelvic cavity and/or anterior abdominal wall (body structure)",
+                "Score": 0.026055045425891876
+              },
+              {
+                "Code": "302553009",
+                "Description": "Entire abdomen (body structure)",
+                "Score": 0.019115092232823372
+              },
+              {
+                "Code": "818987002",
+                "Description": "Structure of abdominopelvic cavity (body structure)",
+                "Score": 0.01476841326802969
+              },
+              {
+                "Code": "7832008",
+                "Description": "Abdominal aorta structure (body structure)",
+                "Score": 0.011889764107763767
+              }
+            ],
+            "Score": 0.7613970637321472,
+            "Text": "Abd",
+            "Traits": [],
+            "Type": "SYSTEM_ORGAN_SITE"
+          }
+        ],
+        "BeginOffset": 407,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 420,
+        "Id": 29,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "162069004",
+            "Description": "Abdomen not distended (situation)",
+            "Score": 0.3263527750968933
+          },
+          {
+            "Code": "162068007",
+            "Description": "Abdominal distension symptom (finding)",
+            "Score": 0.055956196039915085
+          },
+          {
+            "Code": "60728008",
+            "Description": "Swollen abdomen (finding)",
+            "Score": 0.05384938046336174
+          },
+          {
+            "Code": "300403005",
+            "Description": "Localized abdominal distention (finding)",
+            "Score": 0.03711063414812088
+          },
+          {
+            "Code": "300402000",
+            "Description": "Uniform abdominal distention (finding)",
+            "Score": 0.024844421073794365
+          }
+        ],
+        "Score": 0.90631103515625,
+        "Text": "Non-distended",
+        "Traits": [
+          {
+            "Name": "SIGN",
+            "Score": 0.8787732124328613
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [],
+        "BeginOffset": 421,
+        "Category": "ANATOMY",
+        "EndOffset": 432,
+        "Id": 30,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "66019005",
+            "Description": "Limb structure (body structure)",
+            "Score": 0.6818277835845947
+          },
+          {
+            "Code": "2592007",
+            "Description": "All extremities (body structure)",
+            "Score": 0.5505243539810181
+          },
+          {
+            "Code": "243996003",
+            "Description": "Entire limb (body structure)",
+            "Score": 0.2954697012901306
+          },
+          {
+            "Code": "120573002",
+            "Description": "Extremity part (body structure)",
+            "Score": 0.22339892387390137
+          },
+          {
+            "Code": "363575007",
+            "Description": "Venous structure of limb (body structure)",
+            "Score": 0.2228190004825592
+          }
+        ],
+        "Score": 0.7950295805931091,
+        "Text": "Extremities",
+        "Traits": [],
+        "Type": "SYSTEM_ORGAN_SITE"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 421,
+            "Category": "ANATOMY",
+            "EndOffset": 432,
+            "Id": 30,
+            "RelationshipScore": 0.8031880259513855,
+            "RelationshipType": "SYSTEM_ORGAN_SITE",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "66019005",
+                "Description": "Limb structure (body structure)",
+                "Score": 0.6818277835845947
+              },
+              {
+                "Code": "2592007",
+                "Description": "All extremities (body structure)",
+                "Score": 0.5505243539810181
+              },
+              {
+                "Code": "243996003",
+                "Description": "Entire limb (body structure)",
+                "Score": 0.2954697012901306
+              },
+              {
+                "Code": "120573002",
+                "Description": "Extremity part (body structure)",
+                "Score": 0.22339892387390137
+              },
+              {
+                "Code": "363575007",
+                "Description": "Venous structure of limb (body structure)",
+                "Score": 0.2228190004825592
+              }
+            ],
+            "Score": 0.7950295805931091,
+            "Text": "Extremities",
+            "Traits": [],
+            "Type": "SYSTEM_ORGAN_SITE"
+          }
+        ],
+        "BeginOffset": 437,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 443,
+        "Id": 31,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "271807003",
+            "Description": "Eruption of skin (disorder)",
+            "Score": 0.31100162863731384
+          },
+          {
+            "Code": "95328003",
+            "Description": "Vesicular skin eruptions of the temporal region (disorder)",
+            "Score": 0.045620229095220566
+          },
+          {
+            "Code": "79893008",
+            "Description": "Vesicular eruption (disorder)",
+            "Score": 0.0367269329726696
+          },
+          {
+            "Code": "724877007",
+            "Description": "Localized eruption of skin (disorder)",
+            "Score": 0.030334196984767914
+          },
+          {
+            "Code": "827160004",
+            "Description": "Erythematous rash (finding)",
+            "Score": 0.03010813146829605
+          }
+        ],
+        "Score": 0.8921527862548828,
+        "Text": "rashes",
+        "Traits": [
+          {
+            "Name": "NEGATION",
+            "Score": 0.8530592322349548
+          },
+          {
+            "Name": "SIGN",
+            "Score": 0.9013108015060425
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 421,
+            "Category": "ANATOMY",
+            "EndOffset": 432,
+            "Id": 30,
+            "RelationshipScore": 0.8219892978668213,
+            "RelationshipType": "SYSTEM_ORGAN_SITE",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "66019005",
+                "Description": "Limb structure (body structure)",
+                "Score": 0.6818277835845947
+              },
+              {
+                "Code": "2592007",
+                "Description": "All extremities (body structure)",
+                "Score": 0.5505243539810181
+              },
+              {
+                "Code": "243996003",
+                "Description": "Entire limb (body structure)",
+                "Score": 0.2954697012901306
+              },
+              {
+                "Code": "120573002",
+                "Description": "Extremity part (body structure)",
+                "Score": 0.22339892387390137
+              },
+              {
+                "Code": "363575007",
+                "Description": "Venous structure of limb (body structure)",
+                "Score": 0.2228190004825592
+              }
+            ],
+            "Score": 0.7950295805931091,
+            "Text": "Extremities",
+            "Traits": [],
+            "Type": "SYSTEM_ORGAN_SITE"
+          }
+        ],
+        "BeginOffset": 447,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 454,
+        "Id": 32,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "95324001",
+            "Description": "Skin lesion (disorder)",
+            "Score": 0.37947720289230347
+          },
+          {
+            "Code": "300582001",
+            "Description": "Multiple lesions (finding)",
+            "Score": 0.29050496220588684
+          },
+          {
+            "Code": "52988006",
+            "Description": "Lesion (morphologic abnormality)",
+            "Score": 0.2076907604932785
+          },
+          {
+            "Code": "299573000",
+            "Description": "Lesion of toe (finding)",
+            "Score": 0.06506858021020889
+          },
+          {
+            "Code": "300577008",
+            "Description": "Finding of lesion (finding)",
+            "Score": 0.05946148931980133
+          }
+        ],
+        "Score": 0.9350614547729492,
+        "Text": "lesions",
+        "Traits": [
+          {
+            "Name": "NEGATION",
+            "Score": 0.9013108015060425
+          },
+          {
+            "Name": "SIGN",
+            "Score": 0.9405226111412048
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [],
+        "BeginOffset": 468,
+        "Category": "ANATOMY",
+        "EndOffset": 470,
+        "Id": 33,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "26107004",
+            "Description": "Structure of musculoskeletal system (body structure)",
+            "Score": 0.00998573936522007
+          },
+          {
+            "Code": "106029005",
+            "Description": "Musculoskeletal function (observable entity)",
+            "Score": 0.0012731179594993591
+          },
+          {
+            "Code": "164836004",
+            "Description": "Musculoskeletal movement (observable entity)",
+            "Score": 0.0010875137522816658
+          },
+          {
+            "Code": "364561008",
+            "Description": "Musculoskeletal observable (observable entity)",
+            "Score": 0.0008879783563315868
+          },
+          {
+            "Code": "33836004",
+            "Description": "Musculoskeletal mobility, function (observable entity)",
+            "Score": 0.0007295457180589437
+          }
+        ],
+        "Score": 0.7950295805931091,
+        "Text": "MS",
+        "Traits": [],
+        "Type": "SYSTEM_ORGAN_SITE"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 468,
+            "Category": "ANATOMY",
+            "EndOffset": 470,
+            "Id": 33,
+            "RelationshipScore": 0.7814922332763672,
+            "RelationshipType": "SYSTEM_ORGAN_SITE",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "26107004",
+                "Description": "Structure of musculoskeletal system (body structure)",
+                "Score": 0.00998573936522007
+              },
+              {
+                "Code": "106029005",
+                "Description": "Musculoskeletal function (observable entity)",
+                "Score": 0.0012731179594993591
+              },
+              {
+                "Code": "164836004",
+                "Description": "Musculoskeletal movement (observable entity)",
+                "Score": 0.0010875137522816658
+              },
+              {
+                "Code": "364561008",
+                "Description": "Musculoskeletal observable (observable entity)",
+                "Score": 0.0008879783563315868
+              },
+              {
+                "Code": "33836004",
+                "Description": "Musculoskeletal mobility, function (observable entity)",
+                "Score": 0.0007295457180589437
+              }
+            ],
+            "Score": 0.7950295805931091,
+            "Text": "MS",
+            "Traits": [],
+            "Type": "SYSTEM_ORGAN_SITE"
+          }
+        ],
+        "BeginOffset": 472,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 477,
+        "Id": 34,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "248234008",
+            "Description": "Mentally alert (finding)",
+            "Score": 0.5921350717544556
+          },
+          {
+            "Code": "248233002",
+            "Description": "Mental alertness (observable entity)",
+            "Score": 0.022491665557026863
+          },
+          {
+            "Code": "365933000",
+            "Description": "Finding of mental alertness (finding)",
+            "Score": 0.014260252937674522
+          },
+          {
+            "Code": "704426000",
+            "Description": "Impairment of mental alertness (finding)",
+            "Score": 0.0117572583258152
+          },
+          {
+            "Code": "426224004",
+            "Description": "Oriented to person, time and place (finding)",
+            "Score": 0.008398700505495071
+          }
+        ],
+        "Score": 0.9201511740684509,
+        "Text": "alert",
+        "Traits": [
+          {
+            "Name": "SIGN",
+            "Score": 0.8787732124328613
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 468,
+            "Category": "ANATOMY",
+            "EndOffset": 470,
+            "Id": 33,
+            "RelationshipScore": 0.8219892978668213,
+            "RelationshipType": "SYSTEM_ORGAN_SITE",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "26107004",
+                "Description": "Structure of musculoskeletal system (body structure)",
+                "Score": 0.00998573936522007
+              },
+              {
+                "Code": "106029005",
+                "Description": "Musculoskeletal function (observable entity)",
+                "Score": 0.0012731179594993591
+              },
+              {
+                "Code": "164836004",
+                "Description": "Musculoskeletal movement (observable entity)",
+                "Score": 0.0010875137522816658
+              },
+              {
+                "Code": "364561008",
+                "Description": "Musculoskeletal observable (observable entity)",
+                "Score": 0.0008879783563315868
+              },
+              {
+                "Code": "33836004",
+                "Description": "Musculoskeletal mobility, function (observable entity)",
+                "Score": 0.0007295457180589437
+              }
+            ],
+            "Score": 0.7950295805931091,
+            "Text": "MS",
+            "Traits": [],
+            "Type": "SYSTEM_ORGAN_SITE"
+          },
+          {
+            "BeginOffset": 491,
+            "Category": "MEDICAL_CONDITION",
+            "EndOffset": 493,
+            "Id": 36,
+            "RelationshipScore": 0.5692254304885864,
+            "RelationshipType": "QUALITY",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "426224004",
+                "Description": "Oriented to person, time and place (finding)",
+                "Score": 0.00655855517834425
+              },
+              {
+                "Code": "248239003",
+                "Description": "Response to commands (observable entity)",
+                "Score": 0.001395926927216351
+              },
+              {
+                "Code": "39538002",
+                "Description": "Disorientation to person, time and place (finding)",
+                "Score": 0.0009663542150519788
+              },
+              {
+                "Code": "365770002",
+                "Description": "Finding related to ability to tell the time (finding)",
+                "Score": 0.0008637855644337833
+              },
+              {
+                "Code": "405017007",
+                "Description": "Ability to identify person, place, and time (observable entity)",
+                "Score": 0.0007422952330671251
+              }
+            ],
+            "Score": 0.8435389995574951,
+            "Text": "x3",
+            "Traits": [],
+            "Type": "QUALITY"
+          }
+        ],
+        "BeginOffset": 482,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 490,
+        "Id": 35,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "426224004",
+            "Description": "Oriented to person, time and place (finding)",
+            "Score": 0.5206753015518188
+          },
+          {
+            "Code": "247663003",
+            "Description": "Orientated (finding)",
+            "Score": 0.06560016423463821
+          },
+          {
+            "Code": "311470005",
+            "Description": "Finding related to orientation (finding)",
+            "Score": 0.061226408928632736
+          },
+          {
+            "Code": "426794005",
+            "Description": "Oriented to time (finding)",
+            "Score": 0.046301163733005524
+          },
+          {
+            "Code": "39538002",
+            "Description": "Disorientation to person, time and place (finding)",
+            "Score": 0.03953108564019203
+          }
+        ],
+        "Score": 0.9201511740684509,
+        "Text": "oriented",
+        "Traits": [
+          {
+            "Name": "SIGN",
+            "Score": 0.9013108015060425
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 468,
+            "Category": "ANATOMY",
+            "EndOffset": 470,
+            "Id": 33,
+            "RelationshipScore": 0.7814922332763672,
+            "RelationshipType": "SYSTEM_ORGAN_SITE",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "26107004",
+                "Description": "Structure of musculoskeletal system (body structure)",
+                "Score": 0.00998573936522007
+              },
+              {
+                "Code": "106029005",
+                "Description": "Musculoskeletal function (observable entity)",
+                "Score": 0.0012731179594993591
+              },
+              {
+                "Code": "164836004",
+                "Description": "Musculoskeletal movement (observable entity)",
+                "Score": 0.0010875137522816658
+              },
+              {
+                "Code": "364561008",
+                "Description": "Musculoskeletal observable (observable entity)",
+                "Score": 0.0008879783563315868
+              },
+              {
+                "Code": "33836004",
+                "Description": "Musculoskeletal mobility, function (observable entity)",
+                "Score": 0.0007295457180589437
+              }
+            ],
+            "Score": 0.7950295805931091,
+            "Text": "MS",
+            "Traits": [],
+            "Type": "SYSTEM_ORGAN_SITE"
+          }
+        ],
+        "BeginOffset": 495,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 511,
+        "Id": 37,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "248239003",
+            "Description": "Response to commands (observable entity)",
+            "Score": 0.1565425992012024
+          },
+          {
+            "Code": "255260001",
+            "Description": "Following (attribute)",
+            "Score": 0.045490194112062454
+          },
+          {
+            "Code": "298336006",
+            "Description": "No motor response to command (finding)",
+            "Score": 0.04353099688887596
+          },
+          {
+            "Code": "298331001",
+            "Description": "Normal motor response to command (finding)",
+            "Score": 0.043094418942928314
+          },
+          {
+            "Code": "298332008",
+            "Description": "Localized motor response to command (finding)",
+            "Score": 0.03950878605246544
+          }
+        ],
+        "Score": 0.877546489238739,
+        "Text": "follows\ncommands",
+        "Traits": [
+          {
+            "Name": "SIGN",
+            "Score": 0.8530592322349548
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 468,
+            "Category": "ANATOMY",
+            "EndOffset": 470,
+            "Id": 33,
+            "RelationshipScore": 0.8219892978668213,
+            "RelationshipType": "SYSTEM_ORGAN_SITE",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "26107004",
+                "Description": "Structure of musculoskeletal system (body structure)",
+                "Score": 0.00998573936522007
+              },
+              {
+                "Code": "106029005",
+                "Description": "Musculoskeletal function (observable entity)",
+                "Score": 0.0012731179594993591
+              },
+              {
+                "Code": "164836004",
+                "Description": "Musculoskeletal movement (observable entity)",
+                "Score": 0.0010875137522816658
+              },
+              {
+                "Code": "364561008",
+                "Description": "Musculoskeletal observable (observable entity)",
+                "Score": 0.0008879783563315868
+              },
+              {
+                "Code": "33836004",
+                "Description": "Musculoskeletal mobility, function (observable entity)",
+                "Score": 0.0007295457180589437
+              }
+            ],
+            "Score": 0.7950295805931091,
+            "Text": "MS",
+            "Traits": [],
+            "Type": "SYSTEM_ORGAN_SITE"
+          }
+        ],
+        "BeginOffset": 516,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 523,
+        "Id": 38,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "87486003",
+            "Description": "Aphasia (finding)",
+            "Score": 0.8339240550994873
+          },
+          {
+            "Code": "230278002",
+            "Description": "Progressive aphasia (disorder)",
+            "Score": 0.40905022621154785
+          },
+          {
+            "Code": "46855008",
+            "Description": "Complete aphasia (finding)",
+            "Score": 0.3478018641471863
+          },
+          {
+            "Code": "328681008",
+            "Description": "Motor aphasia (finding)",
+            "Score": 0.344936341047287
+          },
+          {
+            "Code": "13044008",
+            "Description": "Associative aphasia (finding)",
+            "Score": 0.31897634267807007
+          }
+        ],
+        "Score": 0.9350614547729492,
+        "Text": "aphasia",
+        "Traits": [
+          {
+            "Name": "NEGATION",
+            "Score": 0.9013108015060425
+          },
+          {
+            "Name": "SIGN",
+            "Score": 0.8530592322349548
+          }
+        ],
+        "Type": "DX_NAME"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 468,
+            "Category": "ANATOMY",
+            "EndOffset": 470,
+            "Id": 33,
+            "RelationshipScore": 0.8031880259513855,
+            "RelationshipType": "SYSTEM_ORGAN_SITE",
+            "SNOMEDCTConcepts": [
+              {
+                "Code": "26107004",
+                "Description": "Structure of musculoskeletal system (body structure)",
+                "Score": 0.00998573936522007
+              },
+              {
+                "Code": "106029005",
+                "Description": "Musculoskeletal function (observable entity)",
+                "Score": 0.0012731179594993591
+              },
+              {
+                "Code": "164836004",
+                "Description": "Musculoskeletal movement (observable entity)",
+                "Score": 0.0010875137522816658
+              },
+              {
+                "Code": "364561008",
+                "Description": "Musculoskeletal observable (observable entity)",
+                "Score": 0.0008879783563315868
+              },
+              {
+                "Code": "33836004",
+                "Description": "Musculoskeletal mobility, function (observable entity)",
+                "Score": 0.0007295457180589437
+              }
+            ],
+            "Score": 0.7950295805931091,
+            "Text": "MS",
+            "Traits": [],
+            "Type": "SYSTEM_ORGAN_SITE"
+          }
+        ],
+        "BeginOffset": 528,
+        "Category": "MEDICAL_CONDITION",
+        "EndOffset": 538,
+        "Id": 39,
+        "SNOMEDCTConcepts": [
+          {
+            "Code": "8011004",
+            "Description": "Dysarthria (finding)",
+            "Score": 0.7818021178245544
+          },
+          {
+            "Code": "229690005",
+            "Description": "Dysarthriapneumophonia (finding)",
+            "Score": 0.2665928900241852
+          },
+          {
+            "Code": "719316004",
+            "Description": "Acquired dysarthria (finding)",
+            "Score": 0.21131128072738647
+          },
+          {
+            "Code": "229686008",
+            "Description": "Mixed dysarthria (finding)",
+            "Score": 0.2088015228509903
+          },
+          {
+            "Code": "229684006",
+            "Description": "Spastic dysarthria (finding)",
+            "Score": 0.11965104192495346
+          }
+        ],
+        "Score": 0.9350614547729492,
+        "Text": "dysarthria",
+        "Traits": [
+          {
+            "Name": "NEGATION",
+            "Score": 0.9405226111412048
+          },
+          {
+            "Name": "SIGN",
+            "Score": 0.9013108015060425
+          }
+        ],
+        "Type": "DX_NAME"
+      }
+    ],
+    "ModelVersion": "3.1.0.20220301",
+    "SNOMEDCTDetails": {
+      "Edition": "US",
+      "Language": "en",
+      "VersionDate": "20220301"
+    }
+  }
+}
