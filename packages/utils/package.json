@@ -36,7 +36,7 @@
     "generate-patient-csv": "ts-node src/patient-import/generate-patient-csv",
     "validate-patient-csv": "ts-node src/patient-import/validate-file",
     "uuidv7": "ts-node src/make-uuidv7",
-    "cda-to-html": "node dist/utils/src/customer-requests/cda-to-html.js",
+    "cda-to-html": "ts-node src/customer-requests/cda-to-html.ts",
     "saml-server": "ts-node src/saml/saml-server",
     "load-test": "artillery run ./src/terminology/load-test.yml",
     "npi": "ts-node src/facility/make-npi",
