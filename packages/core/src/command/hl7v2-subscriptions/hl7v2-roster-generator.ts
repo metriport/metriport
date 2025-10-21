@@ -280,6 +280,10 @@ export function createRosterRowInput(
   const dateMid2025NoDelimiter = buildDayjs(july2025).format("YYYYMMDD");
   const patientExternalId = p.externalId;
   const addAllCaps = "ADD" as const;
+  const address1SplitParts = a1?.addressLine1?.split("\t") ?? [];
+  const address1AddressLine1SplitByTabAddress1 = address1SplitParts[0] ?? "";
+  const address1AddressLine1SplitByTabAddress2 = address1SplitParts[1] ?? a1?.addressLine2 ?? "";
+  const firstNameWithNoNicknames = data.firstName.replace(/\s*\([^)]*\)/g, ""); // Removes nicknames like "John (Johnny)" -> "John"
 
   return {
     id: p.id,
@@ -318,5 +322,8 @@ export function createRosterRowInput(
     dateMid2025NoDelimiter,
     emptyString,
     addAllCaps,
+    address1AddressLine1SplitByTabAddress1,
+    address1AddressLine1SplitByTabAddress2,
+    firstNameWithNoNicknames,
   };
 }
