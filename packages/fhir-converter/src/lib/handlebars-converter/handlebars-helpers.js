@@ -1461,6 +1461,7 @@ module.exports.external = [
     name: "toString",
     description: "Converts to string: toString object",
     func: function (str) {
+      if (str == undefined) return "";
       return str.toString();
     },
   },
