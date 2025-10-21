@@ -9,6 +9,12 @@ The immunization table contains information on immunizations administered to pat
 **Normalization Note:**
 Vaccine codes are normalized to CVX (Vaccine Administered) coding system. The cvx_code and cvx_display fields contain the standardized CVX values.
 
+**Reference Table:**
+The `immunization_references` table contains normalized references from the immunization to other entities. It supports the following reference properties:
+* **subject**: Links to the patient who received the immunization
+* **encounter**: Links to the encounter where the immunization was administered
+* **performer**: Links to practitioners who performed the immunization
+
 **Primary Key:**
 * immunization_id
 
