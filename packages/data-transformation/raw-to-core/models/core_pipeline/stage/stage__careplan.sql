@@ -397,4 +397,4 @@ SELECT
     title,
     filename,
     processed_date
-FROM { source('raw', 'careplan') }
+FROM {{ source('raw', 'careplan_view') }}
