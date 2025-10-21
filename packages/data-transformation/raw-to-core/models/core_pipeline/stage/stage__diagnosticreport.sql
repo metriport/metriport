@@ -431,5 +431,6 @@ SELECT
     specimen_1_reference,
     specimen_2_reference,
     status,
-    filename
+    filename,
+    processed_date
 FROM {{ source("raw", "diagnosticreport_view") }}
