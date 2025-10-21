@@ -214,7 +214,7 @@ models:
               to: ref('core__patient')
               field: patient_id
               config:
-                where: property = 'subject'
+                where: property = 'patient'
                 severity: error
       - name: reference_id
         tests:
@@ -272,7 +272,7 @@ models:
               field: organization_id
               config:
                 where: managing_organization_id != ''
-                severity: warn
+                severity: error
   - name: core__medication_administration_references
     config:
       alias: medication_administration_references
@@ -697,7 +697,7 @@ models:
               to: ref('core__diagnostic_report')
               field: diagnostic_report_id
               config:
-                where: property = 'report_reference' and reference_type = 'DiagnosticReport'
+                where: property = 'report' and reference_type = 'DiagnosticReport'
                 severity: error
   - name: core__procedure
     config:

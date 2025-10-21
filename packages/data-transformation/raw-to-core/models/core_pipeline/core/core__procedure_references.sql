@@ -38,7 +38,7 @@ report_references as (
         29, 
         'procedure_id', 
         'report', 
-        'report', 
+        'reportreference',  -- Should just be report
         'reference'
     ) }}
 ),
