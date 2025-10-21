@@ -220,7 +220,7 @@ WorkerUtils.workerTaskProcessor(msg => {
                 .catch(err => {
                   cleanup();
                   console.error(
-                    `Error parsing input data for template ${templateName}: ${err.toString()}`
+                    `Error parsing input data for template ${templateName}: ${err.toString()}, fileName: ${fileName}`
                   );
                   console.error(err.stack);
                   reject({
