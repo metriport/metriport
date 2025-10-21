@@ -105,6 +105,7 @@ export function createAPIService({
   dbCredsSecret,
   dbReadReplicaEndpoint,
   dynamoDBTokenTable,
+  heartbeatRateLimitTable,
   alarmAction,
   dnsZones,
   fhirServerUrl,
@@ -156,6 +157,7 @@ export function createAPIService({
   dbCredsSecret: secret.ISecret;
   dbReadReplicaEndpoint: rds.Endpoint;
   dynamoDBTokenTable: dynamodb.Table;
+  heartbeatRateLimitTable: dynamodb.Table;
   alarmAction: SnsAction | undefined;
   dnsZones: DnsZones;
   fhirServerUrl: string;
@@ -274,6 +276,7 @@ export function createAPIService({
           DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
           DB_POOL_SETTINGS: JSON.stringify(dbPoolSettings),
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
+          HEARTBEAT_RATE_LIMIT_TABLE_NAME: heartbeatRateLimitTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
           API_LB_ADDRESS: props.config.loadBalancerDnsName,
           ...(props.config.apiGatewayUsagePlanId

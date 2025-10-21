@@ -126,6 +126,33 @@ async function createFeatureFlagsTable(ddb: AWS.DynamoDB): Promise<void> {
   }
 }
 
+async function createHeartbeatRateLimitTable(ddb: AWS.DynamoDB): Promise<void> {
+  if (!docTableNames.heartbeatRateLimit) return;
+  const doesTableExist = await tableExists(docTableNames.heartbeatRateLimit, ddb);
+  if (!doesTableExist) {
+    const params: AWS.DynamoDB.CreateTableInput = {
+      AttributeDefinitions: [
+        {
+          AttributeName: "heartbeatKey",
+          AttributeType: "S",
+        },
+      ],
+      KeySchema: [
+        {
+          AttributeName: "heartbeatKey",
+          KeyType: "HASH",
+        },
+      ],
+      ProvisionedThroughput: {
+        ReadCapacityUnits: 1,
+        WriteCapacityUnits: 1,
+      },
+      TableName: docTableNames.heartbeatRateLimit,
+    };
+    await ddb.createTable(params).promise();
+  }
+}
+
 export async function initDDBDev(): Promise<AWS.DynamoDB.DocumentClient> {
   const doc = new AWS.DynamoDB.DocumentClient({
     apiVersion: "2012-08-10",
@@ -138,6 +165,7 @@ export async function initDDBDev(): Promise<AWS.DynamoDB.DocumentClient> {
   await createTokenTable(ddb);
   await createRateLimitTable(ddb);
   await createFeatureFlagsTable(ddb);
+  await createHeartbeatRateLimitTable(ddb);
   return doc;
 }
 

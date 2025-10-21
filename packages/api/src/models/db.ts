@@ -99,6 +99,7 @@ export interface DocTableNames {
   token: string;
   rateLimit?: string;
   featureFlags: string;
+  heartbeatRateLimit?: string;
 }
 export let docTableNames: DocTableNames;
 
@@ -107,6 +108,7 @@ async function initDB(): Promise<void> {
   const tokenTableName = Config.getTokenTableName();
   const rateLimitTableName = Config.getRateLimitTableName();
   const featureFlagsTableName = ConfigCore.getFeatureFlagsTableName();
+  const heartbeatRateLimitTableName = Config.getHeartbeatRateLimitTableName();
   const logDBOperations = Config.isCloudEnv() ? false : true;
   const dbPoolSettings = getDbPoolSettings();
 
@@ -114,6 +116,7 @@ async function initDB(): Promise<void> {
     token: tokenTableName,
     rateLimit: rateLimitTableName,
     featureFlags: featureFlagsTableName,
+    heartbeatRateLimit: heartbeatRateLimitTableName,
   };
 
   // get database creds

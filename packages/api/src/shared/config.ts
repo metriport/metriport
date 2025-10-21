@@ -316,6 +316,10 @@ export class Config {
     return getEnvVar("RATE_LIMIT_TABLE_NAME");
   }
 
+  static getHeartbeatRateLimitTableName(): string {
+    return getEnvVarOrFail("HEARTBEAT_RATE_LIMIT_TABLE_NAME");
+  }
+
   static getCqDirRebuildHeartbeatUrl() {
     return getEnvVar("CQ_DIR_REBUILD_HEARTBEAT_URL");
   }
