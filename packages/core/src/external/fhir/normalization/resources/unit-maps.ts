@@ -223,3 +223,11 @@ export const glucoseUnitNormalizationMap = new Map<string, string>([
   ["ng/ml", "UNK"],
   ["oth", "UNK"],
 ]);
+
+export const efUnitNormalizationMap = new Map<string, string>([
+  ["%", "%"],
+  ["mci", "%"],
+  ["percent", "%"],
+  ["ml", "mL"],
+  ["ml/m2", "mL/m2"],
+]);

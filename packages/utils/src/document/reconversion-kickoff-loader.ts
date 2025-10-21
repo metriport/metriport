@@ -4,6 +4,8 @@ dotenv.config();
 import { ReconversionKickoffParams } from "@metriport/core/command/reconversion/reconversion-kickoff-direct";
 import { SQSClient } from "@metriport/core/external/aws/sqs";
 import { executeAsynchronously } from "@metriport/core/util";
+import { executeWithNetworkRetries, sleep } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
 import { errorToString } from "@metriport/shared/common/error";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
@@ -14,6 +16,7 @@ import * as fs from "fs";
 import { groupBy, isEmpty } from "lodash";
 import readline from "readline/promises";
 import { readCsv } from "../shared/csv";
+import { elapsedTimeAsStr } from "../shared/duration";
 
 dayjs.extend(duration);
 
@@ -22,6 +25,7 @@ dayjs.extend(duration);
  * It will send a message to the reconversion kickoff queue for each patient chunk (recommended to be 10/chunk).
  *
  * The reconversion kickoff lambda will then pick up the message and ping the API to reconvert patient documents.
+ * @see `POST /internal/docs/re-convert` on the API.
  *
  * The input file is generated using the following SQL command:
  * ```
@@ -57,20 +61,23 @@ const sqsClient = new SQSClient({ region: getEnvVarOrFail("AWS_REGION") });
  * @see https://aws.amazon.com/sqs/faqs/#topic-3:~:text=What%20is%20the%20throughput%20quota%20for%20an%20Amazon%20SQS%20FIFO%20queue%3F
  */
 const SQS_BATCH_SIZE = 2000;
-const MIN_JITTER_BETWEEN_BATCHES = dayjs.duration(1, "seconds");
+const MIN_JITTER_BETWEEN_PUT_TO_SQS = dayjs.duration(10, "milliseconds");
+const MAX_JITTER_BETWEEN_PUT_TO_SQS = dayjs.duration(100, "milliseconds");
 
 const fileName = "";
 const isCsvFile = true; // Set to true if the file is CSV format, false for JSON format
-const dateFrom = "2022-01-01"; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-10 12:00
-const dateTo = ""; // YYYY-MM-DD, with optional timestamp, e.g. 2025-07-11 12:00
+/** Start date that doc refs will be filtered by (required, inclusive) */
+const dateFrom = "1901-02-03"; // YYYY-MM-DD
+/** End date that doc refs will be filtered by (optional, inclusive) */
+const dateTo = ""; // YYYY-MM-DD
 
 async function main() {
-  if (isEmpty(fileName)) {
-    throw new Error("fileName is required");
-  }
-  if (isEmpty(dateFrom)) {
-    throw new Error("dateFrom is required");
-  }
+  await sleep(50); // Give some time to avoid mixing logs w/ Node's
+  const startedAt = Date.now();
+  console.log(`\n############ Started at ${buildDayjs(startedAt).toISOString()} ############\n`);
+
+  if (isEmpty(fileName)) throw new Error("fileName is required");
+  if (isEmpty(dateFrom)) throw new Error("dateFrom is required");
 
   const patients: Array<{ patient_id: string; cx_id: string }> = [];
 
@@ -121,39 +128,45 @@ async function main() {
 
   await executeAsynchronously(
     payloads,
-    async (payload, itemIndex) => {
-      const payloadString = JSON.stringify(payload);
+    async payload => {
       try {
+        if (!payload.cxId || payload.cxId === "undefined") {
+          console.log(`Invalid payload: ${JSON.stringify(payload)}`);
+          throw new Error(`Invalid cxId`);
+        }
+
+        const payloadString = JSON.stringify(payload);
         // For debugging - write to file
         // fs.appendFile("sqsMessages.json", payloadString + "\n", "utf8", () => {});
 
-        await sqsClient.sendMessageToQueue(sqsUrl, payloadString, {
-          fifo: true,
-          messageDeduplicationId: createUuidFromText(payloadString),
-          messageGroupId: RECONVESION_KICKOFF_JOB,
-        });
+        await executeWithNetworkRetries(async () =>
+          sqsClient.sendMessageToQueue(sqsUrl, payloadString, {
+            fifo: true,
+            messageDeduplicationId: createUuidFromText(payloadString),
+            messageGroupId: RECONVESION_KICKOFF_JOB,
+          })
+        );
 
         totalSent++;
-        if (itemIndex % 1000 === 0) {
-          console.log(`Progress: ${itemIndex + 1}/${payloads.length} messages sent`);
+        if (totalSent % 200 === 0) {
+          console.log(`Progress: ${totalSent}/${payloads.length} messages sent`);
         }
       } catch (e) {
-        console.error(`Error sending message ${itemIndex + 1}: ${errorToString(e)}`);
+        console.error(`Error sending message ${totalSent}: ${errorToString(e)}`);
 
         failedPayloads.push({
           payload,
           error: errorToString(e),
-          itemIndex,
+          itemIndex: totalSent,
         });
         totalErrors++;
       }
     },
     {
       numberOfParallelExecutions: SQS_BATCH_SIZE,
-      minJitterMillis: MIN_JITTER_BETWEEN_BATCHES.asMilliseconds(),
-      maxJitterMillis: MIN_JITTER_BETWEEN_BATCHES.asMilliseconds() * 1.5,
+      minJitterMillis: MIN_JITTER_BETWEEN_PUT_TO_SQS.asMilliseconds(),
+      maxJitterMillis: MAX_JITTER_BETWEEN_PUT_TO_SQS.asMilliseconds(),
       keepExecutingOnError: true,
-      log: console.log,
     }
   );
 
@@ -175,6 +188,8 @@ async function main() {
   console.log(`- Successfully sent: ${totalSent}`);
   console.log(`- Errors: ${totalErrors}`);
   console.log(`- Success rate: ${((totalSent / payloads.length) * 100).toFixed(2)}%`);
+
+  console.log(`\n############ Done in ${elapsedTimeAsStr(startedAt)} ############`);
 }
 
 /**
@@ -208,7 +223,7 @@ async function loadDataFromLargeJsonFile(
 async function displayWarningAndConfirmationPrompt(payloadsLength: number) {
   const msg =
     `You are about to send ${payloadsLength} messages to the reconversion kickoff ` +
-    `queue, are you sure?`;
+    `queue: ${sqsUrl}`;
   console.log(msg);
   console.log("Are you sure you want to proceed?");
   const rl = readline.createInterface({
