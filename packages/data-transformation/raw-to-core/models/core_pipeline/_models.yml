@@ -623,7 +623,7 @@ models:
               to: ref('core__diagnostic_report')
               field: diagnostic_report_id
               config:
-                where: property = 'report' and reference_type = 'DiagnosticReport'
+                where: property = 'report_reference' and reference_type = 'DiagnosticReport'
                 severity: error
   - name: core__procedure
     config:
