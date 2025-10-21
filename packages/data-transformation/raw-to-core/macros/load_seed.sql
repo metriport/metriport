@@ -114,7 +114,6 @@
 
 {% endmacro %}
 
-
 {% macro snowflake__load_seed(uri,pattern,compression,headers,null_marker) %}
     {% set sql %}
     copy into {{ this }}
@@ -148,7 +147,6 @@
     {% endif %}
 
 {% endmacro %}
-
 
 {% macro athena__load_seed(uri, pattern, compression, headers, null_marker) %}
 

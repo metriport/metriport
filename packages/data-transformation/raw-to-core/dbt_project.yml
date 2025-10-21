@@ -10,7 +10,6 @@ test-paths: ["tests"]
 seed-paths: ["seeds"]
 macro-paths: ["macros"]
 snapshot-paths: ["snapshots"]
-docs-paths: ["dbt_doc_blocks"]
 
 target-path: "target"
 clean-targets:
@@ -20,19 +19,15 @@ clean-targets:
 vars:
   input_database: db
   input_schema: schema
-  clinical_enabled: true
-  cms_hcc_payment_year: 2023
-  quality_measures_period_end: "2023-12-31"
-  tuva_last_run: '{{ run_started_at.astimezone(modules.pytz.timezone("UTC")) }}'
   custom_bucket_name: tuva-public-resources
 
 models:
   core_transform:
     core_pipeline:
       stage:
-        +materialized: ephemeral
+        +materialized: view
       core:
-        +schema: core_v2
+        +schema: core
         +materialized: table
 
     terminology:

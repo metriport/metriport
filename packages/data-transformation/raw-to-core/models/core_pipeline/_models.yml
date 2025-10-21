@@ -91,7 +91,15 @@ models:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
-                where: property = 'performer'
+                where: property = 'performer' and reference_type = 'Practitioner'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: property = 'performer' and reference_type = 'Organization'
                 severity: error
       - name: reference_id
         tests:
@@ -142,10 +150,18 @@ models:
       - name: reference_id
         tests:
           - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: property = 'participant.individual' and reference_type = 'Organization'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
               to: ref('core_location')
               field: location_id
               config:
-                where: property = 'location.location' and reference_type = 'Location'
+                where: property = 'location.location'
                 severity: error
       - name: reference_id
         tests:
@@ -165,6 +181,49 @@ models:
               to: ref('core__patient')
               field: patient_id
               config:
+                severity: error
+  - name: core__immunization_references
+    config:
+      alias: immunization_references
+    columns:
+      - name: immunization_id
+        tests:
+          - relationships:
+              to: ref('core__immunization')
+              field: immunization_id
+              config:
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                where: property = 'subject'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__encounter')
+              field: encounter_id
+              config:
+                where: property = 'encounter'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__practitioner')
+              field: practitioner_id
+              config:
+                where: property = 'performer.actor' and reference_type = 'Practitioner'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: property = 'performer.actor' and reference_type = 'Organization'
                 severity: error
   - name: core__immunization
     config:
@@ -222,7 +281,15 @@ models:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
-                where: property = 'performer'
+                where: property = 'performer.actor' and reference_type = 'Practitioner'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: property = 'performer.actor' and reference_type = 'Organization'
                 severity: error
   - name: core__medication_administration
     config:
@@ -272,18 +339,26 @@ models:
       - name: reference_id
         tests:
           - relationships:
-              to: ref('core__practitioner')
-              field: practitioner_id
-              config:
-                where: property = 'performer'
-                severity: error
-      - name: reference_id
-        tests:
-          - relationships:
               to: ref('core__location')
               field: location_id
               config:
                 where: property = 'location'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__practitioner')
+              field: practitioner_id
+              config:
+                where: property = 'performer.actor' and reference_type = 'Practitioner'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: property = 'performer.actor' and reference_type = 'Organization'
                 severity: error
   - name: core__medication_dispense
     config:
@@ -344,7 +419,15 @@ models:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
-                where: property = 'requester'
+                where: property = 'requester' and reference_type = 'Practitioner'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: property = 'requester' and reference_type = 'Organization'
                 severity: error
       - name: reference_id
         tests:
@@ -352,7 +435,7 @@ models:
               to: ref('core__condition')
               field: condition_id
               config:
-                where: property = 'reason_reference'
+                where: property = 'reason_reference' and reference_type = 'Condition'
                 severity: error
   - name: core__medication_request
     config:
@@ -453,7 +536,15 @@ models:
               to: ref('core__practitioner')
               field: practitioner_id
               config:
-                where: property = 'performer'
+                where: property = 'performer' and reference_type = 'Practitioner'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: property = 'performer' and reference_type = 'Organization'
                 severity: error
   - name: core__observation
     config:
@@ -489,10 +580,50 @@ models:
       - name: reference_id
         tests:
           - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                where: property = 'subject'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__encounter')
+              field: encounter_id
+              config:
+                where: property = 'encounter'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__location')
+              field: location_id
+              config:
+                where: property = 'location'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__practitioner')
+              field: practitioner_id
+              config:
+                where: property = 'performer.actor' and reference_type = 'Practitioner'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: property = 'performer.actor' and reference_type = 'Organization'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
               to: ref('core__diagnostic_report')
               field: diagnostic_report_id
               config:
-                where: reference_type = 'DiagnosticReport'
+                where: property = 'report' and reference_type = 'DiagnosticReport'
                 severity: error
   - name: core__procedure
     config:
