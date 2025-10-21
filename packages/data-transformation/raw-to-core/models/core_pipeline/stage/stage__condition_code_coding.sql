@@ -1,5 +1,4 @@
--- SELECT statement for condition_code_coding
-SELECT 
+-- SELECT 
     code,
     condition_id,
     display,

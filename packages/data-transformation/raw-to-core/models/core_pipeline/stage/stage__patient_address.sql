@@ -1,5 +1,4 @@
--- SELECT statement for patient_address
-SELECT 
+-- SELECT 
     city,
     country,
     line_0,

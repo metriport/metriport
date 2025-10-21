@@ -1,5 +1,4 @@
--- SELECT statement for medicationdispense
-SELECT 
+-- SELECT 
     resourcetype,
     id,
     implicitrules,

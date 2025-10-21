@@ -1,5 +1,4 @@
--- SELECT statement for diagnosticreport
-SELECT 
+-- SELECT 
     resourcetype,
     id,
     implicitrules,
@@ -417,12 +416,6 @@ SELECT
     result_27_reference,
     result_28_reference,
     result_29_reference,
-    resultsinterpreter_0_reference,
-    resultsinterpreter_1_reference,
-    resultsinterpreter_2_reference,
-    specimen_0_reference,
-    specimen_1_reference,
-    specimen_2_reference,
     result_2_reference,
     result_3_reference,
     result_4_reference,
@@ -431,6 +424,12 @@ SELECT
     result_7_reference,
     result_8_reference,
     result_9_reference,
+    resultsinterpreter_0_reference,
+    resultsinterpreter_1_reference,
+    resultsinterpreter_2_reference,
+    specimen_0_reference,
+    specimen_1_reference,
+    specimen_2_reference,
     status,
     filename,
     processed_date

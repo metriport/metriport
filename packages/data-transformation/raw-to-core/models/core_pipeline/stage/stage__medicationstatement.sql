@@ -1,5 +1,4 @@
--- SELECT statement for medicationstatement
-SELECT 
+-- SELECT 
     resourcetype,
     id,
     implicitrules,

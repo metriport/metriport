@@ -1,5 +1,4 @@
--- SELECT statement for medicationadministration
-SELECT 
+-- SELECT 
     resourcetype,
     id,
     implicitrules,
@@ -207,6 +206,7 @@ SELECT
     reasonreference_8_reference,
     reasonreference_9_reference,
     request_reference,
+    status,
     statusreason_0_coding_0_code,
     statusreason_0_coding_0_display,
     statusreason_0_coding_0_system,
@@ -224,7 +224,6 @@ SELECT
     supportinginformation_0_reference,
     supportinginformation_1_reference,
     supportinginformation_2_reference,
-    status,
     filename,
     processed_date
 FROM {{ source("raw", "medicationadministration_view") }}

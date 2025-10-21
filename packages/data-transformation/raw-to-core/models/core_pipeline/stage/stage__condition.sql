@@ -1,5 +1,4 @@
--- SELECT statement for condition
-SELECT 
+-- SELECT 
     resourcetype,
     id,
     implicitrules,

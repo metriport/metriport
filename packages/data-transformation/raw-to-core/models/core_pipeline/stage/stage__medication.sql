@@ -1,5 +1,4 @@
--- SELECT statement for medication
-SELECT 
+-- SELECT 
     resourcetype,
     id,
     implicitrules,
@@ -75,8 +74,6 @@ SELECT
     identifier_4_use,
     identifier_4_value,
     amount_denominator_code,
-    batch_expirationdate,
-    batch_lotnumber,
     amount_denominator_system,
     amount_denominator_unit,
     amount_denominator_value,
@@ -84,6 +81,8 @@ SELECT
     amount_numerator_system,
     amount_numerator_unit,
     amount_numerator_value,
+    batch_expirationdate,
+    batch_lotnumber,
     code_coding_0_code,
     code_coding_0_display,
     code_coding_0_system,
