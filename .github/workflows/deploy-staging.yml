@@ -22,37 +22,12 @@ on:
       - "packages/mllp-server/**"
       - "packages/data-transformation/**"
   workflow_dispatch: # manually executed by a user
-    inputs:
-      ref:
-        description: "Branch to run the workflow on"
-        required: false
-        default: "develop"
-        type: string
 
 jobs:
-  branch-validation:
-    name: validate branch
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Validate branch
-        run: |
-          if [ "${{ github.ref_name }}" != "develop" ]; then
-            echo "❌ This workflow can only run on the 'develop' branch. Current branch: ${{ github.ref_name }}"
-            echo "Please ensure you are running this workflow from the develop branch."
-            echo "If you want to deploy a different branch, you can use the 'branch to staging' workflow."
-            exit 1
-          else
-            echo "✅ Running on develop branch - proceeding with deployment"
-          fi
-
   files-changed:
     name: detect changes
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    needs: branch-validation
     # Map a step output to a job output
     outputs:
       api: ${{ steps.changes.outputs.api }}
@@ -78,13 +53,12 @@ jobs:
         with:
           filters: |
             api:
+              - "packages/shared/**"
               - "packages/api/**"
               - "packages/api-sdk/**"
               - "packages/commonwell-sdk/**"
               - "packages/ihe-gateway-sdk/**"
-              - "packages/infra/**"
               - "packages/core/**"
-              - "packages/shared/**"
               - "package*.json"
             mllp-server:
               - "packages/shared/**"
@@ -102,7 +76,6 @@ jobs:
               - "packages/fhir-converter/src/**"
               - "packages/fhir-converter/test/**"
               - "packages/fhir-converter/deploy/**"
-              - "packages/infra/**"
             terminology:
               - "packages/terminology/Dockerfile"
               - "packages/terminology/package*.json"
