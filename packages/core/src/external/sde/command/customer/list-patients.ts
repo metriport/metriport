@@ -1,10 +1,9 @@
+import _ from "lodash";
 import { out } from "../../../../util/log";
 import { S3Utils } from "../../../aws/s3";
 import { Config } from "../../../../util/config";
-import _ from "lodash";
-import { ListPatientsInput } from "../../types";
 
-export async function listPatientIdsWithDocuments({ cxId }: ListPatientsInput): Promise<string[]> {
+export async function listPatientIdsWithDocuments({ cxId }: { cxId: string }): Promise<string[]> {
   const { log } = out(`sde.listPatientsWithDocuments - cx ${cxId}`);
   log("Listing patients with documents by CX ID...");
 
