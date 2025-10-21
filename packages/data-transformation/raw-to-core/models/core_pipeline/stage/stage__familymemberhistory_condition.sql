@@ -1,4 +1,4 @@
--- SELECT 
+SELECT 
     familymemberhistory_id,
     code_coding_0_code,
     code_coding_0_display,

@@ -1,4 +1,4 @@
--- SELECT 
+SELECT 
     code,
     condition_id,
     display,

@@ -1,4 +1,4 @@
--- SELECT 
+SELECT 
     resourcetype,
     id,
     implicitrules,

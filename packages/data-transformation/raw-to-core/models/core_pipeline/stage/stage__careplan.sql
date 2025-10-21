@@ -1,4 +1,3 @@
--- SELECT statement for careplan
 SELECT 
     resourcetype,
     id,

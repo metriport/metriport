@@ -1,4 +1,4 @@
--- SELECT 
+SELECT 
     city,
     country,
     line_0,
