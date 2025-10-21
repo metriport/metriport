@@ -130,7 +130,9 @@ export async function getCohortByNameSafe({
   name: string;
 }): Promise<Cohort | undefined> {
   const normalizedName = normalizeCohortName(name);
-
+  if (!normalizedName) {
+    return undefined;
+  }
   const cohorts = await CohortModel.findAll({
     where: {
       cxId,
