@@ -39,12 +39,19 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
   log(`Invoking downstream lambda... it has ${timeoutForCsvTransform}ms to run`);
   const startedAt = Date.now();
   const fhirToCsvHandler = new FhirToCsvBulkDirect();
-  await fhirToCsvHandler.processFhirToCsvBulk({
+  const failedPatientIds = await fhirToCsvHandler.processFhirToCsvBulk({
     cxId,
     patientIds: [patientId],
     outputPrefix,
     timeoutInMillis: timeoutForCsvTransform,
   });
+  if (failedPatientIds.length > 0) {
+    throw new MetriportError(`Failed to convert FHIR to CSV`, undefined, {
+      cxId,
+      patientId,
+      failedPatientIds: failedPatientIds.join(","),
+    });
+  }
   log(`Done in ${Date.now() - startedAt}ms`);
 });
 

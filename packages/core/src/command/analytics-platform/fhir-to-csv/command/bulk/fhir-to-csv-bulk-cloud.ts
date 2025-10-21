@@ -17,6 +17,15 @@ export class FhirToCsvBulkCloud implements FhirToCsvBulkHandler {
     private readonly sqsClient: SQSClient = new SQSClient({ region: Config.getAWSRegion() })
   ) {}
 
+  /**
+   * Triggers the conversion of consolidated/FHIR to CSV in bulk.
+   *
+   * The conversion happens asynchronously by sending messages to SQS and letting the FhirToCsvBulkDirect
+   * lambda handle the conversion.
+   *
+   * @param request - The request object.
+   * @returns The IDs of the patients that failed to send to the queue (not the actual conversion).
+   */
   async processFhirToCsvBulk(params: ProcessFhirToCsvBulkRequest): Promise<string[]> {
     const { patientIds, cxId, outputPrefix, timeoutInMillis } = params;
     const { log } = out(`processFhirToCsvBulk.processFhirToCsvBulk - cx ${cxId}`);

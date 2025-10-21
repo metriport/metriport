@@ -6,6 +6,14 @@ import { FhirToCsvBulkHandler, ProcessFhirToCsvBulkRequest } from "./fhir-to-csv
 export class FhirToCsvBulkDirect implements FhirToCsvBulkHandler {
   constructor(private readonly waitTimeInMillis: number = 0) {}
 
+  /**
+   * Triggers the conversion of consolidated/FHIR to CSV in bulk.
+   *
+   * The conversion happens synchronously by calling the transform lambda for each patient.
+   *
+   * @param request - The request object.
+   * @returns The IDs of the patients that failed to convert.
+   */
   async processFhirToCsvBulk({
     cxId,
     patientIds,
