@@ -45,7 +45,6 @@ import {
   persistHl7MessageError,
   SupportedTriggerEvent,
 } from "./utils";
-import { sendHeartbeatToMonitoringService } from "../../external/monitoring/heartbeat";
 
 type HieConfig = { timezone: string };
 
@@ -423,18 +422,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
             },
             posthogApiKey
           );
-        })(),
-        (async () => {
-          const heartBeatMonitorMap = Config.getHeartBeatMonitorMap();
-          const heartBeatMonitorUrl = heartBeatMonitorMap[hieName];
-          if (!heartBeatMonitorUrl) {
-            throw new MetriportError(
-              `Heartbeat monitor URL not found for HIE: ${hieName}`,
-              undefined,
-              { hieName, heartBeatMonitorMap: JSON.stringify(heartBeatMonitorMap) }
-            );
-          }
-          await sendHeartbeatToMonitoringService(heartBeatMonitorUrl);
         })(),
       ]);
     } catch (error) {

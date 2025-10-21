@@ -519,8 +519,4 @@ export class Config {
   static getAiBriefBucketName(): string {
     return getEnvVarOrFail("AI_BRIEF_BUCKET_NAME");
   }
-
-  static getHeartBeatMonitorMap(): Record<string, string> {
-    return getEnvVarAsRecordOrFail("HEARTBEAT_MONITOR_MAP");
-  }
 }
