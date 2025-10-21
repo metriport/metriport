@@ -1651,7 +1651,7 @@ module.exports.external = [
     name: "startsWith",
     description: "Checks if a string starts with a given substring: startsWith string substring",
     func: function (str, substr) {
-      return str.startsWith(substr);
+      return String(str)?.startsWith(substr);
     },
   },
   {

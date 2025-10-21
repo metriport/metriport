@@ -167,41 +167,41 @@ describe("replaceXmlTagChars", () => {
 });
 
 describe("replaceNullFlavor", () => {
-  test('should only replace <id nullFlavor="NI" with <id extension="1" root="1"', () => {
+  test('should replace <id nullFlavor="NI" with <id extension="1" root="1"', () => {
     const input = '<id nullFlavor="NI">';
-    const expected = '<id extension="1" root="1"';
+    const expected = '<id extension="1" root="1" />';
     expect(replaceNullFlavor(input)).toBe(expected);
   });
 
-  test("should not affect other nullFlavor values", () => {
+  test("should replace all nullFlavor values in id tags", () => {
     const input = '<id nullFlavor="UNK">';
-    const expected = '<id nullFlavor="UNK">';
+    const expected = '<id extension="1" root="1" />';
     expect(replaceNullFlavor(input)).toBe(expected);
   });
 
-  test("should not affect complex nested structures", () => {
+  test("should only replace nullFlavor in id tags, not other elements", () => {
     const input =
       '<id nullFlavor="NI"><assignedPerson><name><given nullFlavor="NA"/><family nullFlavor="NA"/>';
     const expected =
-      '<id extension="1" root="1"<assignedPerson><name><given nullFlavor="NA"/><family nullFlavor="NA"/>';
+      '<id extension="1" root="1" /><assignedPerson><name><given nullFlavor="NA"/><family nullFlavor="NA"/>';
     expect(replaceNullFlavor(input)).toBe(expected);
   });
 
-  test("should handle multiple occurrences", () => {
-    const input = '<id nullFlavor="NI">text<id nullFlavor="NI">more';
-    const expected = '<id extension="1" root="1"text<id extension="1" root="1"more';
+  test("should handle multiple occurrences of id tags with nullFlavor", () => {
+    const input = '<id nullFlavor="NI">text<id nullFlavor="UNK">more';
+    const expected = '<id extension="1" root="1" />text<id extension="1" root="1" />more';
     expect(replaceNullFlavor(input)).toBe(expected);
   });
 
-  test("should not affect nullFlavor with different spacing", () => {
+  test("should handle nullFlavor with different spacing", () => {
     const input = '<id nullFlavor = "NI">';
-    const expected = '<id nullFlavor = "NI">';
+    const expected = '<id extension="1" root="1" />';
     expect(replaceNullFlavor(input)).toBe(expected);
   });
 
-  test("should handle case sensitivity", () => {
+  test("should handle case sensitivity in nullFlavor values", () => {
     const input = '<id nullFlavor="ni">';
-    const expected = '<id nullFlavor="ni">';
+    const expected = '<id extension="1" root="1" />';
     expect(replaceNullFlavor(input)).toBe(expected);
   });
 });

@@ -66,7 +66,7 @@ module.exports = class cda extends dataHandler {
   }
 
   removeLineBreaks(text) {
-    return text.replace(/(\r\n|\n|\r)/gm, " ");
+    return text == undefined ? "" : String(text).replace(/(\r\n|\n|\r)/gm, " ");
   }
 
   findAndReplacePropsWithIdValue(obj, propNames) {
