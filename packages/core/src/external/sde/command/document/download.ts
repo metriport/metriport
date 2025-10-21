@@ -3,7 +3,7 @@ import { out } from "../../../../util/log";
 import { S3Utils } from "../../../aws/s3";
 import { Bundle } from "@medplum/fhirtypes";
 import { parseFhirBundle } from "@metriport/shared/medical";
-import { DownloadPatientDocumentInput } from "../../types";
+import { ExtractDocumentRequest, ExtractionBundle } from "../../types";
 import { buildDocumentConversionFileName } from "../../file-names";
 import { listDocumentIds } from "./list-documents";
 import { executeAsynchronously } from "../../../../util/concurrency";
@@ -12,7 +12,7 @@ export async function downloadDocumentConversion({
   cxId,
   patientId,
   documentId,
-}: DownloadPatientDocumentInput): Promise<Bundle | undefined> {
+}: ExtractDocumentRequest): Promise<Bundle | undefined> {
   const { log } = out(
     `sde.downloadDocumentConversion - cx ${cxId}, pat ${patientId}, doc ${documentId}`
   );
@@ -34,18 +34,30 @@ export async function downloadDocumentConversion({
 export async function downloadAllDocumentConversions({
   cxId,
   patientId,
+  downloadInParallel = 10,
 }: {
   cxId: string;
   patientId: string;
-}): Promise<Bundle[]> {
+  downloadInParallel?: number;
+}): Promise<ExtractionBundle[]> {
+  const { log } = out(`sde.downloadAllDocumentConversions - cx ${cxId}, pat ${patientId}`);
   const documentIds = await listDocumentIds({ cxId, patientId });
-  const documentConversions: Bundle[] = [];
+  log(`Found ${documentIds.length} document IDs`);
 
-  await executeAsynchronously(documentIds, async documentId => {
-    const bundle = await downloadDocumentConversion({ cxId, patientId, documentId });
-    if (bundle) {
-      documentConversions.push(bundle);
+  const extractionBundles: ExtractionBundle[] = [];
+  await executeAsynchronously(
+    documentIds,
+    async documentId => {
+      const bundle = await downloadDocumentConversion({ cxId, patientId, documentId });
+      if (bundle) {
+        extractionBundles.push({ extractedFromDocumentId: documentId, extractedBundle: bundle });
+      }
+    },
+    {
+      numberOfParallelExecutions: downloadInParallel,
     }
-  });
-  return documentConversions;
+  );
+
+  log(`Downloaded ${extractionBundles.length} bundles`);
+  return extractionBundles;
 }

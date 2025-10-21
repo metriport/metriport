@@ -1,35 +1,15 @@
-export interface PatientReference {
-  cxId: string;
-  patientId: string;
+import { z } from "zod";
+import { Bundle } from "@medplum/fhirtypes";
+
+export interface ExtractionBundle {
+  extractedFromDocumentId: string;
+  extractedBundle: Bundle;
 }
 
-export interface DocumentReference {
-  bucket: string;
-  key: string;
-}
+export const extractDocumentRequestSchema = z.object({
+  cxId: z.string(),
+  patientId: z.string(),
+  documentId: z.string(),
+});
 
-export interface PatientWithDocuments extends PatientReference {
-  documents: DocumentReference[];
-}
-
-export interface ListPatientsInput {
-  cxId: string;
-}
-
-export interface ListDocumentsPerPatientInput {
-  cxId: string;
-  patientId: string;
-  bucketName?: string;
-}
-
-export interface DownloadPatientDocumentInput {
-  cxId: string;
-  patientId: string;
-  documentId: string;
-}
-
-export interface UnstructuredDataItem {
-  documentId: string;
-  resourceId: string;
-  unstructuredData: string;
-}
+export type ExtractDocumentRequest = z.infer<typeof extractDocumentRequestSchema>;
