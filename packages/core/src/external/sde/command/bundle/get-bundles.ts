@@ -2,49 +2,56 @@ import _ from "lodash";
 import { S3Utils } from "../../../aws/s3";
 import { Config } from "../../../../util/config";
 import { Bundle, BundleEntry } from "@medplum/fhirtypes";
-import { DataExtractionFile } from "../../types";
 import { getDataExtractionFilePrefix } from "../../file-names";
 import { executeAsynchronously } from "../../../../util/concurrency";
+import { parseFhirBundle } from "@metriport/shared/medical";
 import { out } from "../../../../util/log";
 
 const numberOfParallelExecutions = 10;
 
-export async function getBundles({
-  cxId,
-  patientId,
-}: {
+interface GetBundlesParams {
   cxId: string;
   patientId: string;
-}): Promise<Bundle[]> {
-  const { log } = out("sde.getBundles");
-  const prefix = getDataExtractionFilePrefix({ cxId, patientId });
+}
 
-  const s3Utils = new S3Utils(Config.getAWSRegion());
+/**
+ * Retrieves all bundles that have been extracted for a particular cxId and patientId. Will return an
+ * empty array if no bundles have been extracted, or the environment is not configured for SDE.
+ *
+ * @param cxId - The CX ID.
+ * @param patientId - The patient ID.
+ * @returns All bundles that have been extracted for the patient.
+ */
+export async function getBundles({ cxId, patientId }: GetBundlesParams): Promise<Bundle[]> {
+  const { log } = out("sde.getBundles");
   const bucketName = Config.getStructuredDataBucketName();
   if (!bucketName) {
     log(`No structured data bucket name found, skipping`);
     return [];
   }
-  const files = await s3Utils.listObjects(bucketName, prefix);
-  const keys = _(files.map(file => file.Key))
+
+  const s3 = new S3Utils(Config.getAWSRegion());
+  const extractionFilePrefix = getDataExtractionFilePrefix({ cxId, patientId });
+  const extractionFiles = await s3.listObjects(bucketName, extractionFilePrefix);
+  const extractionFileKeys = _(extractionFiles.map(file => file.Key))
     .compact()
     .value();
 
-  const bundleBuffers: Buffer[] = [];
+  const bundles: Bundle[] = [];
   await executeAsynchronously(
-    keys,
+    extractionFileKeys,
     async key => {
-      const buffer = await s3Utils.downloadFile({ bucket: bucketName, key });
-      bundleBuffers.push(buffer);
+      const buffer = await s3.downloadFile({ bucket: bucketName, key });
+      const bundle = parseFhirBundle(buffer.toString());
+      if (bundle) {
+        bundles.push(bundle);
+      }
     },
     {
       numberOfParallelExecutions,
     }
   );
-  const dataExtractionFiles: DataExtractionFile[] = bundleBuffers.map(
-    buffer => JSON.parse(buffer.toString()) as DataExtractionFile
-  );
-  const bundles = dataExtractionFiles.map(file => file.bundle);
+
   return bundles;
 }
 

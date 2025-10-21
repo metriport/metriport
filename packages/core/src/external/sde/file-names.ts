@@ -14,37 +14,45 @@ export function buildDocumentConversionFileName({
   cxId,
   patientId,
   documentId,
+  extension = ".xml.json",
 }: {
   cxId: string;
   patientId: string;
   documentId: string;
+  extension?: string;
 }): string {
-  return `${cxId}/${patientId}/${cxId}_${patientId}_${documentId}.xml.json`;
+  return `${cxId}/${patientId}/${cxId}_${patientId}_${documentId}${extension}`;
 }
 
 export function parseCdaToFhirConversionFileName({ fileName }: { fileName: string }): {
   cxId: string;
   patientId: string;
   documentId: string;
+  extension?: string | undefined;
 } {
   const [cxId, patientId, documentFileName] = fileName.split("/");
+  if (!documentFileName) {
+    throw new MetriportError(`Invalid cda to fhir conversion file name: ${fileName}`);
+  }
   const [_cxId, _patientId, documentId] = documentFileName?.split("_") ?? [];
   if (!_cxId || cxId !== _cxId || !_patientId || patientId !== _patientId || !documentId) {
     throw new MetriportError(`Invalid cda to fhir conversion file name: ${fileName}`);
   }
-  return { cxId, patientId, documentId };
+  const firstPeriod = documentFileName.indexOf(".");
+  const extension = firstPeriod >= 0 ? documentFileName.substring(firstPeriod) : undefined;
+  return { cxId, patientId, documentId, extension };
 }
 
 export function getDataExtractionFileName({
   cxId,
   patientId,
-  hash,
+  documentId,
 }: {
   cxId: string;
   patientId: string;
-  hash: string;
+  documentId: string;
 }): string {
-  return `cxId=${cxId}/patientId=${patientId}/hash=${hash}.json`;
+  return `cxId=${cxId}/patientId=${patientId}/documentId=${documentId}/bundle.json`;
 }
 
 export function getDataExtractionFilePrefix({
@@ -54,5 +62,5 @@ export function getDataExtractionFilePrefix({
   cxId: string;
   patientId: string;
 }): string {
-  return `cxId=${cxId}/patientId=${patientId}/hash=`;
+  return `cxId=${cxId}/patientId=${patientId}/documentId=`;
 }
