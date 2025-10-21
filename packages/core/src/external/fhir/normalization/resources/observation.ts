@@ -12,6 +12,7 @@ import {
   a1cUnitNormalizationMap,
   bmiPercentileUnitNormalizationMap,
   bmiUnitNormalizationMap,
+  efUnitNormalizationMap,
   gfrUnitNormalizationMap,
   glucoseUnitNormalizationMap,
 } from "./unit-maps";
@@ -83,6 +84,14 @@ const loincCodeToTargetCallbackFnMap = new Map<string, (unit: string) => string>
   // ["5792-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
   // ["53328-1", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
   // ["2350-7", (unit: string) => getStandardObservationUnit(unit, glucoseUnitNormalizationMap)],
+  // Ejection Fraction
+  ["10230-1", (unit: string) => getStandardObservationUnit(unit, efUnitNormalizationMap)],
+  ["8807-0", (unit: string) => getStandardObservationUnit(unit, efUnitNormalizationMap)],
+  ["79991-6", (unit: string) => getStandardObservationUnit(unit, efUnitNormalizationMap)],
+  ["39913-9", (unit: string) => getStandardObservationUnit(unit, efUnitNormalizationMap)],
+  ["18047-1", (unit: string) => getStandardObservationUnit(unit, efUnitNormalizationMap)],
+  ["104251-4", (unit: string) => getStandardObservationUnit(unit, efUnitNormalizationMap)],
+  ["104253-0", (unit: string) => getStandardObservationUnit(unit, efUnitNormalizationMap)],
 ]);
 
 function getStandardObservationUnit(unit: string, map: Map<string, string>): string {
