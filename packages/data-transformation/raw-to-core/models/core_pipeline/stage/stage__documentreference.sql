@@ -75,7 +75,6 @@ SELECT
     identifier_4_value,
     subject_reference,
     subject_type,
-    ; date,
     author_0_reference,
     author_0_type,
     contained_0_id,
