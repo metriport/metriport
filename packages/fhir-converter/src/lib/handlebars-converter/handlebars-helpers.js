@@ -1461,6 +1461,7 @@ module.exports.external = [
     name: "toString",
     description: "Converts to string: toString object",
     func: function (str) {
+      if (str == undefined) return "";
       return str.toString();
     },
   },
@@ -1651,7 +1652,7 @@ module.exports.external = [
     name: "startsWith",
     description: "Checks if a string starts with a given substring: startsWith string substring",
     func: function (str, substr) {
-      return str.startsWith(substr);
+      return String(str)?.startsWith(substr);
     },
   },
   {
