@@ -2,9 +2,13 @@
 SELECT 
     resourcetype,
     id,
+    implicitrules,
+    language,
     meta_versionid,
     meta_lastupdated,
     meta_source,
+    text_div,
+    text_status,
     identifier_0_assigner_reference,
     identifier_0_period_end,
     identifier_0_period_start,
