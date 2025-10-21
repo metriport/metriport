@@ -834,6 +834,16 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Add a patient to multiple cohorts.
+   * @param patientId The ID of the patient to add to cohorts.
+   * @param cohortIds The IDs of the cohorts to add the patient to.
+   * @returns void
+   */
+  async addPatientToCohorts(patientId: string, cohortIds: string[]): Promise<void> {
+    await this.api.post(`${PATIENT_URL}/${patientId}/cohorts`, { cohortIds });
+  }
+
+  /**
    * Returns the settings for a patient.
    * @param patientId The ID of the patient.
    * @returns The settings for the patient.

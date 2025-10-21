@@ -20,6 +20,7 @@ import status from "http-status";
 import { orderBy } from "lodash";
 import { z } from "zod";
 import { getCohortsForPatient } from "../../command/medical/cohort/get-cohort";
+import { addPatientToCohorts } from "../../command/medical/cohort/patient-cohort/add-patient-to-cohorts";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { startConsolidatedQuery } from "../../command/medical/patient/consolidated-get";
 import {
@@ -650,6 +651,32 @@ router.get(
     const cohorts = await getCohortsForPatient({ cxId, patientId });
 
     return res.status(status.OK).json({ cohorts });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /patient/:id/cohorts
+ *
+ * Add a patient to multiple cohorts.
+ *
+ * @param req.param.id The ID of the patient to add to cohorts.
+ * @param req.body.cohortIds The list of cohort IDs to add the patient to.
+ * @returns 204 No Content
+ */
+router.post(
+  "/cohorts",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+    const { cohortIds } = z.object({ cohortIds: z.array(z.string()) }).parse(req.body);
+
+    await addPatientToCohorts({
+      cxId,
+      patientId,
+      cohortIds,
+    });
+
+    return res.sendStatus(status.NO_CONTENT);
   })
 );
 
