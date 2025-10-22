@@ -144,7 +144,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       messageCode,
       triggerEvent,
       hieName: params.hieName,
-      log,
     });
 
     log(`Init S3 upload to bucket ${bucketName} with key ${rawDataFileKey}`);
@@ -371,14 +370,12 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     messageCode,
     triggerEvent,
     hieName,
-    log,
   }: {
     cxId: string;
     patientId: string;
     messageCode: string;
     triggerEvent: string;
     hieName: string;
-    log: typeof console.log;
   }) {
     try {
       const posthogApiKeyArn = Config.getPostHogApiKey();
@@ -428,7 +425,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
           );
         })(),
         (async () => {
-          await sendHeartbeat(hieName, log);
+          await sendHeartbeat(hieName);
         })(),
       ]);
     } catch (error) {
