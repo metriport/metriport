@@ -16,10 +16,8 @@ import {
 } from "../../external/fhir/adt-encounters";
 import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion";
 import { getHieConfigDictionary } from "../../external/hl7-notification/hie-config-dictionary";
-import { sendHeartbeatToMonitoringService } from "../../external/monitoring/heartbeat";
 import { capture, out } from "../../util";
 import { Config } from "../../util/config";
-import { isAdtsFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
 import { getEncounterClass } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/adt/encounter";
 import {
@@ -47,6 +45,7 @@ import {
   persistHl7MessageError,
   SupportedTriggerEvent,
 } from "./utils";
+import { sendHeartbeatToMonitoringService } from "../../external/monitoring/heartbeat";
 
 type HieConfig = { timezone: string };
 
@@ -154,13 +153,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       file: Buffer.from(asString(message)),
       contentType: "text/plain",
     });
-
-    // We have this so late into the function because we want to still store the message. Just not process it further.
-    const isCxAllowedToReceiveAdts = await isAdtsFeatureFlagEnabledForCx(cxId);
-    if (!isCxAllowedToReceiveAdts) {
-      log(`CX ${cxId} is not allowed to receive ADTs. Skipping...`);
-      return;
-    }
 
     if (!isSupportedTriggerEvent(triggerEvent)) {
       log(`Trigger event ${triggerEvent} is not supported. Skipping...`);
