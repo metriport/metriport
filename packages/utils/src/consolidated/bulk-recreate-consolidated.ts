@@ -11,6 +11,7 @@ import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
+import { getAllPatientIds } from "../patient/get-ids";
 import { elapsedTimeAsStr, getDelayTime } from "../shared/duration";
 import { initFile } from "../shared/file";
 import { buildGetDirPathInside, initRunsFolder } from "../shared/folder";
@@ -97,16 +98,15 @@ async function main() {
     }
   }
 
-  if (patientIds.length === 0) {
-    log(">>> No patient IDs provided. Please add patient IDs to the patientIds array.");
-    process.exit(1);
-  }
+  const isAllPatients = patientIds.length < 1;
+  const newPatientIds = isAllPatients ? await getAllPatientIds({ axios: api, cxId }) : patientIds;
+  const uniquePatientIds = [...new Set(newPatientIds)];
 
   const startedAt = Date.now();
-  log(`>>> Starting with ${patientIds.length} patient IDs...`);
+  log(`>>> Starting with ${uniquePatientIds.length} patient IDs...`);
 
   const { orgName } = await getCxData(cxId, undefined, false);
-  await displayWarningAndConfirmation(patientIds.length, orgName, log);
+  await displayWarningAndConfirmation(uniquePatientIds.length, orgName, log);
 
   const errorFileName = getOutputFileName(orgName) + ".error";
   initFile(errorFileName);
@@ -117,10 +117,10 @@ async function main() {
 
   let ptIndex = 0;
   await executeAsynchronously(
-    patientIds,
+    uniquePatientIds,
     async patientId => {
       await recreateConsolidatedForPatient(patientId, cxId, successFileName, errorFileName, log);
-      log(`>>> Progress: ${++ptIndex}/${patientIds.length} patients complete`);
+      log(`>>> Progress: ${++ptIndex}/${uniquePatientIds.length} patients complete`);
       const delayTime = getDelayTime({ log, minimumDelayTime, defaultDelayTime });
       log(`...sleeping for ${delayTime} ms`);
       await sleep(delayTime);
@@ -137,7 +137,7 @@ async function main() {
   }
   log(
     `############# Done recreating consolidated for all ${
-      patientIds.length
+      uniquePatientIds.length
     } patients in ${elapsedTimeAsStr(startedAt)}`
   );
   process.exit(0);
