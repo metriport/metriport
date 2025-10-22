@@ -67,29 +67,30 @@ async function createTokenTable(ddb: AWS.DynamoDB): Promise<void> {
 // Creates the rate limit table
 async function createRateLimitTable(ddb: AWS.DynamoDB): Promise<void> {
   if (!docTableNames.rateLimit) return;
+
   const doesTableExist = await tableExists(docTableNames.rateLimit, ddb);
-  if (!doesTableExist) {
-    const params: AWS.DynamoDB.CreateTableInput = {
-      AttributeDefinitions: [
-        {
-          AttributeName: rateLimitPartitionKey,
-          AttributeType: "S",
-        },
-      ],
-      KeySchema: [
-        {
-          AttributeName: rateLimitPartitionKey,
-          KeyType: "HASH",
-        },
-      ],
-      ProvisionedThroughput: {
-        ReadCapacityUnits: 1,
-        WriteCapacityUnits: 1,
+  if (doesTableExist) return;
+
+  const params: AWS.DynamoDB.CreateTableInput = {
+    AttributeDefinitions: [
+      {
+        AttributeName: rateLimitPartitionKey,
+        AttributeType: "S",
       },
-      TableName: docTableNames.rateLimit,
-    };
-    await ddb.createTable(params).promise();
-  }
+    ],
+    KeySchema: [
+      {
+        AttributeName: rateLimitPartitionKey,
+        KeyType: "HASH",
+      },
+    ],
+    ProvisionedThroughput: {
+      ReadCapacityUnits: 1,
+      WriteCapacityUnits: 1,
+    },
+    TableName: docTableNames.rateLimit,
+  };
+  await ddb.createTable(params).promise();
 }
 
 async function createFeatureFlagsTable(ddb: AWS.DynamoDB): Promise<void> {
