@@ -19,7 +19,8 @@ function isConditionalCheckFailedError(error: any): boolean {
 }
 
 export async function sendHeartbeat(hieName: string, log: typeof console.log): Promise<void> {
-  const monitorUrl = Config.getHeartBeatMonitorMap()[hieName];
+  const heartbeatMap = Config.getHeartBeatMonitorMap();
+  const monitorUrl = heartbeatMap[hieName];
   if (!monitorUrl) {
     throw new MetriportError(`Heartbeat monitor URL not found for ${hieName}`, undefined, {
       hieName,
@@ -27,6 +28,7 @@ export async function sendHeartbeat(hieName: string, log: typeof console.log): P
   }
 
   const isAllowedToPing = await shouldPing(hieName);
+  log(`Is allowed to ping ${hieName} monitor: ${isAllowedToPing}`);
   if (!isAllowedToPing) {
     return;
   }
