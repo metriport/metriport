@@ -3,8 +3,10 @@ dotenv.config();
 // keep that ^ on top
 import { convertStringToBrief } from "@metriport/core/command/ai-brief/brief";
 import { getAiBriefContentFromBundle } from "@metriport/core/command/ai-brief/shared";
+import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { generateAiBriefBundleEntry } from "@metriport/core/domain/ai-brief/generate";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
+import { Config } from "@metriport/core/util/config";
 import { out } from "@metriport/core/util/log";
 import fs from "fs";
 
@@ -18,18 +20,27 @@ import fs from "fs";
  * To run this script:
  * - Set the `patientId`, `cxId` consts.
  * - Specify the path to the FHIR Bundle payload - the output of `GET /consolidated`).
+ * - Delete the ai summary from the underlying bundle.
  * - Make sure to set the env vars in addition the ones below this comment block:
+ *   - ENV_TYPE="dev"
+ *   - DYNAMODB_ENDPOINT=http://localhost:8000
  *   - BEDROCK_REGION
  *   - BEDROCK_VERSION
  *   - MR_BRIEF_MODEL_ID
+ *
+ * - NOTE: If an ai summary already exists in your bundle at `sourceFilePath`, this script
+ *   will use the pre-existing ai summary, so make sure to delete it from the underlying bundle.
  */
 
 const sourceFilePath = "";
 
 const cxId = "";
 const patientId = "";
+
 // Update this to staging or local URL if you want to test the brief link
-const dashUrl = "http://dash.metriport.com";
+const dashUrl = "";
+
+FeatureFlags.init(Config.getAWSRegion(), Config.getFeatureFlagsTableName());
 
 async function main() {
   if (!cxId || !patientId) throw new Error("cxId or patientId is missing");
@@ -38,7 +49,7 @@ async function main() {
   const rawBundle = fs.readFileSync(sourceFilePath, "utf8");
   const bundle = JSON.parse(rawBundle);
 
-  const binaryBundleEntry = await generateAiBriefBundleEntry(bundle, cxId, patientId, log);
+  const binaryBundleEntry = await generateAiBriefBundleEntry({ bundle, cxId, patientId, log });
   console.log("binaryBundleEntry", JSON.stringify(binaryBundleEntry));
   console.log("bundle.leng bef", bundle.entry.length);
   if (binaryBundleEntry) {

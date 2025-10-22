@@ -37,6 +37,7 @@ export async function sendSignedXcpdRequest({
         request.gateway.oid
       }`
     );
+
     return {
       gateway: request.gateway,
       response,

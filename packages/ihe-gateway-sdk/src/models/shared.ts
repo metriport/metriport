@@ -120,6 +120,17 @@ export const XCPDGatewaySchema = z.object({
 });
 export type XCPDGateway = z.infer<typeof XCPDGatewaySchema>;
 
+const nullishStringToUndefinedSchema = z
+  .string()
+  .nullish()
+  .transform(v => v ?? undefined);
+export const codingSchema = z.object({
+  system: nullishStringToUndefinedSchema.optional(),
+  code: nullishStringToUndefinedSchema.optional(),
+  display: nullishStringToUndefinedSchema.optional(),
+});
+export type Coding = z.infer<typeof codingSchema>;
+
 export const documentReferenceSchema = z.object({
   homeCommunityId: z.string(),
   docUniqueId: z.string(), // TODO rename to externalGatewayDocId
@@ -136,10 +147,19 @@ export const documentReferenceSchema = z.object({
   url: z.string().nullish(),
   uri: z.string().nullish(),
   isNew: z.boolean().nullish(),
+  serviceStartTime: z.string().optional(),
+  serviceStopTime: z.string().optional(),
   creation: z.string().nullish(),
   title: z.string().nullish(),
   date: z.string().nullish(),
+  authorPerson: z.string().nullish(),
   authorInstitution: z.string().nullish(),
+  classCoding: codingSchema.optional(),
+  typeCoding: codingSchema.optional(),
+  formatCoding: codingSchema.optional(),
+  confidentialityCoding: codingSchema.optional(),
+  practiceSettingCoding: codingSchema.optional(),
+  healthcareFacilityTypeCoding: codingSchema.optional(),
   contained: z
     .array(
       z.object({

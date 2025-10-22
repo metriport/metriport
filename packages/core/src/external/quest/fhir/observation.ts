@@ -1,0 +1,156 @@
+import {
+  CodeableConcept,
+  Coding,
+  Observation,
+  Patient,
+  ObservationReferenceRange,
+  Reference,
+} from "@medplum/fhirtypes";
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
+import { getObservationCategory } from "../../fhir/resources/observation";
+import { ResponseDetail } from "../schema/response";
+import { getPatientReference } from "./patient";
+import { getQuestDataSourceExtension } from "./shared";
+import { LOINC_URL } from "@metriport/shared/medical";
+import {
+  HL7_OBSERVATION_INTERPRETATION_SYSTEM,
+  QUEST_LOCAL_RESULT_CODE_SYSTEM,
+  TEST_NOT_PERFORMED_PREFIX,
+} from "./constant";
+
+type ObservationValue = Pick<Observation, "valueQuantity" | "valueString" | "valueCodeableConcept">;
+
+export function getObservation(
+  detail: ResponseDetail,
+  { patient }: { patient: Patient }
+): Observation {
+  const code = getObservationCode(detail);
+  const status = getObservationStatus(detail);
+  const category = [getObservationCategory("laboratory")];
+  const subject = getPatientReference(patient);
+  const interpretation = getObservationInterpretation(detail);
+  const referenceRange = getObservationReferenceRange(detail);
+  const { valueQuantity, valueString } = getObservationValue(detail);
+  const extension = [getQuestDataSourceExtension()];
+  const note = getObservationNote(detail);
+
+  return {
+    resourceType: "Observation",
+    id: uuidv7(),
+    status,
+    subject,
+    category,
+    ...(valueQuantity ? { valueQuantity } : {}),
+    ...(valueString ? { valueString } : {}),
+    ...(referenceRange ? { referenceRange } : {}),
+    ...(interpretation ? { interpretation } : {}),
+    ...(code ? { code } : {}),
+    ...(note ? { note } : {}),
+    extension,
+  };
+}
+
+function getObservationNote(detail: ResponseDetail): Observation["note"] | undefined {
+  if (!detail.resultComments) return undefined;
+  return [
+    {
+      text: detail.resultComments,
+    },
+  ];
+}
+
+export function getObservationStatus(detail: ResponseDetail): NonNullable<Observation["status"]> {
+  if (detail.resultComments?.startsWith(TEST_NOT_PERFORMED_PREFIX)) {
+    return "cancelled";
+  }
+  return "final";
+}
+
+export function getObservationReference(observation: Observation): Reference<Observation> {
+  return {
+    reference: `Observation/${observation.id}`,
+  };
+}
+
+function getObservationCode(detail: ResponseDetail): CodeableConcept | undefined {
+  const text = detail.resultName;
+  const coding: Coding[] = [];
+  if (detail.loincCode) {
+    coding.push({
+      system: LOINC_URL,
+      code: detail.loincCode,
+    });
+  }
+  if (detail.localResultCode) {
+    coding.push({
+      system: QUEST_LOCAL_RESULT_CODE_SYSTEM,
+      code: detail.localResultCode,
+      ...(detail.resultName ? { display: detail.resultName } : {}),
+    });
+  }
+
+  if (coding.length === 0) return undefined;
+  return {
+    ...(text ? { text } : {}),
+    coding,
+  };
+}
+
+function getObservationReferenceRange({
+  referenceRangeLow,
+  referenceRangeHigh,
+  referenceRangeAlpha,
+}: ResponseDetail): ObservationReferenceRange[] | undefined {
+  const low = parseFloat(referenceRangeLow ?? "");
+  const high = parseFloat(referenceRangeHigh ?? "");
+  const text = referenceRangeAlpha;
+  if (!Number.isFinite(low) && !Number.isFinite(high)) return undefined;
+
+  return [
+    {
+      ...(text ? { text } : {}),
+      ...(Number.isFinite(low) ? { low: { value: low } } : {}),
+      ...(Number.isFinite(high) ? { high: { value: high } } : {}),
+    },
+  ];
+}
+
+function getObservationValue(detail: ResponseDetail): ObservationValue {
+  const observationValue: ObservationValue = {};
+  if (detail.resultValue != null) {
+    const value = parseFloat(detail.resultValue);
+    if (Number.isFinite(value) && detail.resultUnits) {
+      observationValue.valueQuantity = {
+        value,
+        unit: detail.resultUnits,
+      };
+    } else {
+      observationValue.valueString = detail.resultValue;
+    }
+  }
+  return observationValue;
+}
+
+function getObservationInterpretation(detail: ResponseDetail): CodeableConcept[] | undefined {
+  if (!detail.abnormalFlag) return undefined;
+
+  const code = detail.abnormalFlag;
+  const display = {
+    A: "Abnormal",
+    N: "Normal",
+    H: "High",
+    L: "Low",
+  }[code];
+
+  return [
+    {
+      coding: [
+        {
+          system: HL7_OBSERVATION_INTERPRETATION_SYSTEM,
+          code,
+          ...(display ? { display } : {}),
+        },
+      ],
+    },
+  ];
+}

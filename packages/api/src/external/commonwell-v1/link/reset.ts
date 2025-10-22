@@ -46,7 +46,6 @@ export async function reset(patientId: string, cxId: string, facilityId: string)
       patient,
       commonwellPatientId: cwPatientId,
       commonwellPersonId: undefined,
-      cqLinkStatus: undefined,
     });
   } catch (error) {
     const cwReference = commonWell?.lastReferenceHeader;

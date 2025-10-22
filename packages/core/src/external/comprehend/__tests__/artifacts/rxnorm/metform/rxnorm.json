@@ -1,0 +1,132 @@
+{
+  "inputText": "Patient is currently taking Metformin 500 mg twice daily and Atorvastatin 20 mg at bedtime.",
+  "response": {
+    "$metadata": {
+      "httpStatusCode": 200,
+      "requestId": "fc1e8618-674f-4bbc-82f9-ad62e7f0006f",
+      "attempts": 1,
+      "totalRetryDelay": 0
+    },
+    "Entities": [
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 38,
+            "EndOffset": 44,
+            "Id": 3,
+            "RelationshipScore": 0.8534350991249084,
+            "Score": 0.8435389995574951,
+            "Text": "500 mg",
+            "Traits": [],
+            "Type": "DOSAGE"
+          },
+          {
+            "BeginOffset": 45,
+            "EndOffset": 56,
+            "Id": 4,
+            "RelationshipScore": 0.8970123529434204,
+            "Score": 0.90631103515625,
+            "Text": "twice daily",
+            "Traits": [],
+            "Type": "FREQUENCY"
+          }
+        ],
+        "BeginOffset": 28,
+        "Category": "MEDICATION",
+        "EndOffset": 37,
+        "Id": 2,
+        "RxNormConcepts": [
+          {
+            "Code": "861007",
+            "Description": "metformin hydrochloride 500 mg oral tablet",
+            "Score": 0.5611650347709656
+          },
+          {
+            "Code": "860975",
+            "Description": "24 hr metformin hydrochloride 500 mg extended release oral tablet",
+            "Score": 0.047186557203531265
+          },
+          {
+            "Code": "1807917",
+            "Description": "osmotic 24 hr metformin hydrochloride 500 mg extended release oral tablet",
+            "Score": 0.014489246532320976
+          },
+          {
+            "Code": "861819",
+            "Description": "metformin hydrochloride 500 mg / sitagliptin 50 mg oral tablet",
+            "Score": 0.004639793187379837
+          },
+          {
+            "Code": "6809",
+            "Description": "metformin",
+            "Score": 0.004001210909336805
+          }
+        ],
+        "Score": 0.8617406487464905,
+        "Text": "Metformin",
+        "Traits": [],
+        "Type": "GENERIC_NAME"
+      },
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 74,
+            "EndOffset": 79,
+            "Id": 6,
+            "RelationshipScore": 0.8813977241516113,
+            "Score": 0.877546489238739,
+            "Text": "20 mg",
+            "Traits": [],
+            "Type": "DOSAGE"
+          },
+          {
+            "BeginOffset": 80,
+            "EndOffset": 90,
+            "Id": 7,
+            "RelationshipScore": 0.7814922332763672,
+            "Score": 0.7613970637321472,
+            "Text": "at bedtime",
+            "Traits": [],
+            "Type": "FREQUENCY"
+          }
+        ],
+        "BeginOffset": 61,
+        "Category": "MEDICATION",
+        "EndOffset": 73,
+        "Id": 5,
+        "RxNormConcepts": [
+          {
+            "Code": "617310",
+            "Description": "atorvastatin 20 mg oral tablet",
+            "Score": 0.9857556223869324
+          },
+          {
+            "Code": "197904",
+            "Description": "lovastatin 20 mg oral tablet",
+            "Score": 0.27392250299453735
+          },
+          {
+            "Code": "597967",
+            "Description": "amlodipine 10 mg / atorvastatin 20 mg oral tablet",
+            "Score": 0.2692171335220337
+          },
+          {
+            "Code": "312961",
+            "Description": "simvastatin 20 mg oral tablet",
+            "Score": 0.26143109798431396
+          },
+          {
+            "Code": "617312",
+            "Description": "atorvastatin 10 mg oral tablet",
+            "Score": 0.19008922576904297
+          }
+        ],
+        "Score": 0.8617406487464905,
+        "Text": "Atorvastatin",
+        "Traits": [],
+        "Type": "GENERIC_NAME"
+      }
+    ],
+    "ModelVersion": "3.1.0.20221107"
+  }
+}

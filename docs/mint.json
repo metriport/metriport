@@ -299,7 +299,15 @@
     },
     {
       "group": "EHR Apps",
-      "pages": ["ehr-apps/overview", "ehr-apps/athena", "ehr-apps/canvas", "ehr-apps/elation", "ehr-apps/healthie", "ehr-apps/salesforce"]
+      "pages": [
+        "ehr-apps/overview",
+        "ehr-apps/athena",
+        "ehr-apps/canvas",
+        "ehr-apps/elation",
+        "ehr-apps/healthie",
+        "ehr-apps/salesforce",
+        "ehr-apps/epic"
+      ]
     }
   ],
   "footerSocials": {

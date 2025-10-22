@@ -1,0 +1,123 @@
+{
+  "inputText": "Administer Heparin 1000 units/mL injection, 5,000 units subcutaneously in the left thigh every 12 hours at a rate of 1 mL/min.",
+  "response": {
+    "$metadata": {
+      "httpStatusCode": 200,
+      "requestId": "f0addc38-9cee-4db1-b60e-9da55b615ffb",
+      "attempts": 1,
+      "totalRetryDelay": 0
+    },
+    "Entities": [
+      {
+        "Attributes": [
+          {
+            "BeginOffset": 19,
+            "EndOffset": 32,
+            "Id": 2,
+            "RelationshipScore": 0.6795811653137207,
+            "Score": 0.7172441482543945,
+            "Text": "1000 units/mL",
+            "Traits": [],
+            "Type": "STRENGTH"
+          },
+          {
+            "BeginOffset": 33,
+            "EndOffset": 42,
+            "Id": 3,
+            "RelationshipScore": 0.6270833611488342,
+            "Score": 0.6603351831436157,
+            "Text": "injection",
+            "Traits": [],
+            "Type": "FORM"
+          },
+          {
+            "BeginOffset": 44,
+            "EndOffset": 55,
+            "Id": 4,
+            "RelationshipScore": 0.7223333120346069,
+            "Score": 0.7172441482543945,
+            "Text": "5,000 units",
+            "Traits": [],
+            "Type": "DOSAGE"
+          },
+          {
+            "BeginOffset": 56,
+            "EndOffset": 70,
+            "Id": 5,
+            "RelationshipScore": 0.8219892978668213,
+            "Score": 0.821601390838623,
+            "Text": "subcutaneously",
+            "Traits": [],
+            "Type": "ROUTE_OR_MODE"
+          },
+          {
+            "BeginOffset": 78,
+            "EndOffset": 88,
+            "Id": 8,
+            "RelationshipScore": 0.5068173408508301,
+            "Score": 0.5330596566200256,
+            "Text": "left thigh",
+            "Traits": [],
+            "Type": "ROUTE_OR_MODE"
+          },
+          {
+            "BeginOffset": 89,
+            "EndOffset": 103,
+            "Id": 9,
+            "RelationshipScore": 0.7814922332763672,
+            "Score": 0.7950295805931091,
+            "Text": "every 12 hours",
+            "Traits": [],
+            "Type": "FREQUENCY"
+          },
+          {
+            "BeginOffset": 117,
+            "EndOffset": 125,
+            "Id": 10,
+            "RelationshipScore": 0.6270833611488342,
+            "Score": 0.7613970637321472,
+            "Text": "1 mL/min",
+            "Traits": [],
+            "Type": "RATE"
+          }
+        ],
+        "BeginOffset": 11,
+        "Category": "MEDICATION",
+        "EndOffset": 18,
+        "Id": 1,
+        "RxNormConcepts": [
+          {
+            "Code": "1659263",
+            "Description": "1 ml heparin sodium, porcine 5000 unt/ml injection",
+            "Score": 0.16851966083049774
+          },
+          {
+            "Code": "1361615",
+            "Description": "heparin sodium, porcine 5000 unt/ml injectable solution",
+            "Score": 0.06902065128087997
+          },
+          {
+            "Code": "1658659",
+            "Description": "1 ml heparin sodium, porcine 1000 unt/ml injection",
+            "Score": 0.056805215775966644
+          },
+          {
+            "Code": "1658634",
+            "Description": "0.5 ml heparin sodium, porcine 10000 unt/ml injection",
+            "Score": 0.048467762768268585
+          },
+          {
+            "Code": "1658690",
+            "Description": "1000 ml heparin sodium, porcine 2 unt/ml injection",
+            "Score": 0.04266824945807457
+          }
+        ],
+        "Score": 0.8435389995574951,
+        "Text": "Heparin",
+        "Traits": [],
+        "Type": "GENERIC_NAME"
+      }
+    ],
+    "ModelVersion": "3.1.0.20221107"
+  }
+}

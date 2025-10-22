@@ -11,9 +11,13 @@ import { DEFAULT_ENCOUNTER_CLASS, adtToFhirEncounterClassMap, isAdtPatientClass 
 import { getParticipantsFromAdt } from "./practitioner";
 import { createEncounterId, getEncounterPeriod, getPatientClassCode } from "./utils";
 
-export function convertAdtToFhirResources(adt: Hl7Message, patientId: string): Resource[] {
+export function convertAdtToFhirResources(
+  adt: Hl7Message,
+  patientId: string,
+  hieName: string
+): Resource[] {
   const msgType = getHl7MessageTypeOrFail(adt);
-  const encounterId = createEncounterId(adt, patientId);
+  const encounterId = createEncounterId(adt, patientId, hieName);
   const encounterReason = getEncounterReason({ adt, patientId, encounterId });
   const status = getPatientStatus(msgType);
   const encounterClass = getEncounterClass(adt);
@@ -23,7 +27,7 @@ export function convertAdtToFhirResources(adt: Hl7Message, patientId: string): R
   const conditionReferences = conditions.map(condition =>
     buildConditionReference({ resource: condition })
   );
-  const location = getLocationFromAdt(adt);
+  const location = getLocationFromAdt(adt, hieName);
 
   const encounter: Encounter = {
     id: encounterId,

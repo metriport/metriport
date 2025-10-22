@@ -1,6 +1,6 @@
 {
   "name": "mllp-server",
-  "version": "0.5.5",
+  "version": "0.5.11",
   "description": "MLLP server that reads HL7 messages off of a raw tcp connection",
   "main": "app.js",
   "private": true,
@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
-    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "prettier-fix": "npx prettier '**/*.{js,ts,md}' --write --ignore-path ../../.prettierignore",
     "test": "jest --runInBand",
     "clean": "rimraf dist",
     "deepclean": "npm run clean && rimraf node_modules"

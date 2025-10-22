@@ -29,12 +29,46 @@ export const CPT_CODE = "cpt";
 export const CPT_URL = "http://www.ama-assn.org/go/cpt";
 export const CPT_OID = "2.16.840.1.113883.6.12";
 
+export const UNIT_OF_MEASURE_URL = "http://unitsofmeasure.org";
+
 export const NDDF_URL = "http://terminology.hl7.org/CodeSystem/nddf";
 
 export const HL7_ACT_URL = "http://terminology.hl7.org/CodeSystem/v3-ActCode";
 
+export const CONDITION_CLINICAL_STATUS_URL =
+  "http://terminology.hl7.org/CodeSystem/condition-clinical";
+
+export const CONDITION_VERIFICATION_STATUS_URL =
+  "http://terminology.hl7.org/CodeSystem/condition-ver-status";
+
+export const CONDITION_CATEGORY_SYSTEM_URL =
+  "http://terminology.hl7.org/CodeSystem/condition-category";
+
+export const PRACTITIONER_UPIN_URL = "http://hl7.org/fhir/sid/us-upin";
+export const PRACTITIONER_NPI_URL = "http://hl7.org/fhir/sid/us-npi";
+export const PRACTITIONER_ROLE_URL = "http://terminology.hl7.org/CodeSystem/practitioner-role";
+
+export const OBSERVATION_CATEGORY_URL =
+  "http://terminology.hl7.org/CodeSystem/observation-category";
+
+// https://build.fhir.org/valueset-diagnostic-service-sections.html
+export const DIAGNOSTIC_SERVICE_SECTIONS_URL = "http://terminology.hl7.org/CodeSystem/v2-0074";
+
 export const EPIC_PARTIAL_URN = "1.2.840.114350.1.13";
 export const HL7_PARTIAL_URN = "2.16.840.1.113883";
+
+export const hl7FhirSystemUrls = [
+  NDDF_URL,
+  HL7_ACT_URL,
+  CONDITION_CLINICAL_STATUS_URL,
+  CONDITION_VERIFICATION_STATUS_URL,
+  CONDITION_CATEGORY_SYSTEM_URL,
+  PRACTITIONER_UPIN_URL,
+  PRACTITIONER_NPI_URL,
+  PRACTITIONER_ROLE_URL,
+  OBSERVATION_CATEGORY_URL,
+  DIAGNOSTIC_SERVICE_SECTIONS_URL,
+];
 
 export const knownSystemUrls = [
   RXNORM_URL,
@@ -46,4 +80,5 @@ export const knownSystemUrls = [
   LOINC_URL,
   SNOMED_URL,
   HL7_ACT_URL,
+  ...hl7FhirSystemUrls,
 ];

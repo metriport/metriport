@@ -8,8 +8,17 @@ export type BaseOptions = {
 
 export type MemberRequestMetadata = BaseRequestMetadata;
 
+export type GetDirectoryParams = {
+  orgName?: string;
+  orgId?: string;
+  offset?: number;
+  limit?: number;
+  sort?: string;
+};
+
 export interface CommonWellMemberAPI {
   get lastTransactionId(): string | undefined;
+  listOrganizations(params?: GetDirectoryParams, options?: BaseOptions): Promise<OrganizationList>;
   createOrg(organization: Organization, options?: BaseOptions): Promise<Organization>;
   updateOrg(organization: Organization, options?: BaseOptions): Promise<Organization>;
   getAllOrgs(
