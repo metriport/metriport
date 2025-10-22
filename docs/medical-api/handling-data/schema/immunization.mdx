@@ -25,13 +25,13 @@ For detailed information about reference table structure and indexing, see the [
 
 | Column | Data Type | Description |
 | ------ | --------- | ----------- |
-| immunization_id | string | Unique identifier for the immunization |
-| patient_id | string | Unique identifier for the patient |
-| status | string | Status of the immunization record. Possible values:<br/>– <code>completed</code>: All steps required have been taken and the vaccine has been administered.<br/>– <code>entered-in-error</code>: The immunization record was created in error and should not be considered valid.<br/>– <code>not-done</code>: The immunization did not occur, as intended, but was not actually administered, for example, patient refusal. |
+| immunization_id | varchar | Unique identifier for the immunization |
+| patient_id | varchar | Unique identifier for the patient |
+| status | varchar | Status of the immunization record. Possible values:<br/>– <code>completed</code>: All steps required have been taken and the vaccine has been administered.<br/>– <code>entered-in-error</code>: The immunization record was created in error and should not be considered valid.<br/>– <code>not-done</code>: The immunization did not occur, as intended, but was not actually administered, for example, patient refusal. |
 | occurrence_date | date | Date when the immunization was administered |
-| cvx_code | string | CVX vaccine code |
-| cvx_display | string | Human-readable description of CVX code |
-| dose_amount | string | Quantity of the dose administered |
-| dose_unit | string | Unit of measurement for the dose |
-| note_text | string | Additional notes about the immunization |
-| data_source | string | Source of the immunization data |
+| cvx_code | varchar | CVX vaccine code |
+| cvx_display | varchar | Human-readable description of CVX code |
+| dose_amount | varchar | Quantity of the dose administered |
+| dose_unit | varchar | Unit of measurement for the dose |
+| note_text | varchar | Additional notes about the immunization |
+| data_source | varchar | Source of the immunization data |

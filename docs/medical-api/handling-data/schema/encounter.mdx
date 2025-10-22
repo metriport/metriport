@@ -23,22 +23,22 @@ For detailed information about reference table structure and indexing, see the [
 
 | Column | Data Type | Description |
 | ------ | --------- | ----------- |
-| encounter_id | string | Unique identifier for the encounter |
-| patient_id | string | Unique identifier for the patient |
-| status | string | Status of the encounter. Possible values:<br/>– <code>planned</code>: The encounter has not yet started.<br/>– <code>arrived</code>: The patient is present for the encounter, but the encounter has not yet begun.<br/>– <code>triaged</code>: The patient has been assessed for the priority of care.<br/>– <code>in-progress</code>: The encounter has begun and the patient is present.<br/>– <code>onleave</code>: The patient has temporarily left, but is expected to return.<br/>– <code>finished</code>: The encounter has ended.<br/>– <code>cancelled</code>: The encounter has been cancelled before it started.<br/>– <code>entered-in-error</code>: The encounter was entered in error and should not be considered valid.<br/>– <code>unknown</code>: The status of the encounter is unknown or cannot be determined.|
+| encounter_id | varchar | Unique identifier for the encounter |
+| patient_id | varchar | Unique identifier for the patient |
+| status | varchar | Status of the encounter. Possible values:<br/>– <code>planned</code>: The encounter has not yet started.<br/>– <code>arrived</code>: The patient is present for the encounter, but the encounter has not yet begun.<br/>– <code>triaged</code>: The patient has been assessed for the priority of care.<br/>– <code>in-progress</code>: The encounter has begun and the patient is present.<br/>– <code>onleave</code>: The patient has temporarily left, but is expected to return.<br/>– <code>finished</code>: The encounter has ended.<br/>– <code>cancelled</code>: The encounter has been cancelled before it started.<br/>– <code>entered-in-error</code>: The encounter was entered in error and should not be considered valid.<br/>– <code>unknown</code>: The status of the encounter is unknown or cannot be determined.|
 | start_date | date | Start date of the encounter |
 | end_date | date | End date of the encounter |
 | length_of_stay | integer | Length of stay in days |
-| act_code | string | ACT code for encounter class |
-| act_display | string | Human-readable description of ACT code |
-| source_class_code | string | Source class code for encounter |
-| source_class_display | string | Human-readable description of source class |
-| source_class_system | string | Original class system from source system |
-| type_hl7_code | string | HL7 encounter type code |
-| type_hl7_display | string | Human-readable description of HL7 encounter type |
-| source_type_code | string | Original type code from source system |
-| source_type_display | string | Original type display from source system |
-| source_type_system | string | Original type system from source system |
-| discharge_disposition_hl7_code | string | HL7 discharge disposition code |
-| discharge_disposition_hl7_display | string | Human-readable description of discharge disposition |
-| data_source | string | Source of the encounter data |
+| act_code | varchar | ACT code for encounter class |
+| act_display | varchar | Human-readable description of ACT code |
+| source_class_code | varchar | Source class code for encounter |
+| source_class_display | varchar | Human-readable description of source class |
+| source_class_system | varchar | Original class system from source system |
+| type_hl7_code | varchar | HL7 encounter type code |
+| type_hl7_display | varchar | Human-readable description of HL7 encounter type |
+| source_type_code | varchar | Original type code from source system |
+| source_type_display | varchar | Original type display from source system |
+| source_type_system | varchar | Original type system from source system |
+| discharge_disposition_hl7_code | varchar | HL7 discharge disposition code |
+| discharge_disposition_hl7_display | varchar | Human-readable description of discharge disposition |
+| data_source | varchar | Source of the encounter data |

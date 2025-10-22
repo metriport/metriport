@@ -25,22 +25,22 @@ For detailed information about reference table structure and indexing, see the [
 
 | Column | Data Type | Description |
 | ------ | --------- | ----------- |
-| observation_id | string | Unique identifier for the observation |
-| patient_id | string | Unique identifier for the patient |
-| status | string | Status of the observation. Possible values:<br/>– <code>registered</code>: The existence of the observation is registered, but there is no result yet available.<br/>– <code>preliminary</code>: This is an initial or interim observation: data may be incomplete or unverified.<br/>– <code>final</code>: The observation is complete and verified by an authorized person.<br/>– <code>amended</code>: Subsequent to being final, the observation has been modified; the current version is complete and verified.<br/>– <code>corrected</code>: Subsequent to being final, the observation has been modified to correct an error in the result.<br/>– <code>cancelled</code>: The observation is unavailable because the measurement was not started or not completed.<br/>– <code>entered-in-error</code>: The observation has been withdrawn following erroneous entry.<br/>– <code>unknown</code>: The authoring/source system does not know the current status of the observation. |
+| observation_id | varchar | Unique identifier for the observation |
+| patient_id | varchar | Unique identifier for the patient |
+| status | varchar | Status of the observation. Possible values:<br/>– <code>registered</code>: The existence of the observation is registered, but there is no result yet available.<br/>– <code>preliminary</code>: This is an initial or interim observation: data may be incomplete or unverified.<br/>– <code>final</code>: The observation is complete and verified by an authorized person.<br/>– <code>amended</code>: Subsequent to being final, the observation has been modified; the current version is complete and verified.<br/>– <code>corrected</code>: Subsequent to being final, the observation has been modified to correct an error in the result.<br/>– <code>cancelled</code>: The observation is unavailable because the measurement was not started or not completed.<br/>– <code>entered-in-error</code>: The observation has been withdrawn following erroneous entry.<br/>– <code>unknown</code>: The authoring/source system does not know the current status of the observation. |
 | effective_date | date | Start date of the observation |
 | end_date | date | End date of the observation |
-| loinc_code | string | LOINC code for the observation |
-| loinc_display | string | Human-readable description of LOINC code |
-| value | string | Value of the observation |
-| units | string | Unit of measurement |
-| reference_range_low | string | Lower bound of the reference range |
-| reference_range_high | string | Upper bound of the reference range |
-| category_hl7_code | string | HL7 category code |
-| category_hl7_display | string | Human-readable description of HL7 category |
-| interpretation_hl7_code | string | HL7 interpretation code |
-| interpretation_hl7_display | string | Human-readable description of HL7 interpretation |
-| bodysite_snomed_ct_code | string | SNOMED CT body site code |
-| bodysite_snomed_ct_display | string | Human-readable description of SNOMED CT body site |
-| note_text | string | Additional notes about the observation |
-| data_source | string | Source of the observation data |
+| loinc_code | varchar | LOINC code for the observation |
+| loinc_display | varchar | Human-readable description of LOINC code |
+| value | varchar | Value of the observation |
+| units | varchar | Unit of measurement |
+| reference_range_low | varchar | Lower bound of the reference range |
+| reference_range_high | varchar | Upper bound of the reference range |
+| category_hl7_code | varchar | HL7 category code |
+| category_hl7_display | varchar | Human-readable description of HL7 category |
+| interpretation_hl7_code | varchar | HL7 interpretation code |
+| interpretation_hl7_display | varchar | Human-readable description of HL7 interpretation |
+| bodysite_snomed_ct_code | varchar | SNOMED CT body site code |
+| bodysite_snomed_ct_display | varchar | Human-readable description of SNOMED CT body site |
+| note_text | varchar | Additional notes about the observation |
+| data_source | varchar | Source of the observation data |

@@ -27,18 +27,18 @@ For detailed information about reference table structure and indexing, see the [
 
 | Column | Data Type | Description |
 | ------ | --------- | ----------- |
-| procedure_id | string | Unique identifier for the procedure |
-| patient_id | string | Unique identifier for the patient |
-| status | string | Status of the procedure. Possible values:<br/>– <code>preparation</code>: The core event has not started yet, but some staging activities have begun (e.g., premedication, anesthetic, preparing the patient, etc.).<br/>– <code>in-progress</code>: The event is currently occurring.<br/>– <code>not-done</code>: The event was terminated prior to any activity beyond preparation.<br/>– <code>on-hold</code>: The event has been temporarily stopped but is expected to resume in the future.<br/>– <code>stopped</code>: The event was terminated prior to completion, after at least some activity has occurred.<br/>– <code>completed</code>: The event has now concluded.<br/>– <code>entered-in-error</code>: This electronic record should never have existed (e.g., wrong patient, wrong data, mistaken entry, etc.).<br/>– <code>unknown</code>: The authoring or source system does not know the current state of the event. |
+| procedure_id | varchar | Unique identifier for the procedure |
+| patient_id | varchar | Unique identifier for the patient |
+| status | varchar | Status of the procedure. Possible values:<br/>– <code>preparation</code>: The core event has not started yet, but some staging activities have begun (e.g., premedication, anesthetic, preparing the patient, etc.).<br/>– <code>in-progress</code>: The event is currently occurring.<br/>– <code>not-done</code>: The event was terminated prior to any activity beyond preparation.<br/>– <code>on-hold</code>: The event has been temporarily stopped but is expected to resume in the future.<br/>– <code>stopped</code>: The event was terminated prior to completion, after at least some activity has occurred.<br/>– <code>completed</code>: The event has now concluded.<br/>– <code>entered-in-error</code>: This electronic record should never have existed (e.g., wrong patient, wrong data, mistaken entry, etc.).<br/>– <code>unknown</code>: The authoring or source system does not know the current state of the event. |
 | performed_date | date | Start date of the procedure |
 | end_date | date | End date of the procedure |
-| cpt_code | string | CPT code for the procedure |
-| cpt_display | string | Human-readable description of CPT code |
-| snomed_code | string | SNOMED CT code for the procedure |
-| snomed_display | string | Human-readable description of SNOMED CT code |
-| bodysite_snomed_code | string | SNOMED CT body site code |
-| bodysite_snomed_display | string | Human-readable description of SNOMED CT body site |
-| reason_snomed_code | string | SNOMED CT reason code |
-| reason_snomed_display | string | Human-readable description of SNOMED CT reason |
-| note_text | string | Additional notes about the procedure |
-| data_source | string | Source of the procedure data |
+| cpt_code | varchar | CPT code for the procedure |
+| cpt_display | varchar | Human-readable description of CPT code |
+| snomed_code | varchar | SNOMED CT code for the procedure |
+| snomed_display | varchar | Human-readable description of SNOMED CT code |
+| bodysite_snomed_code | varchar | SNOMED CT body site code |
+| bodysite_snomed_display | varchar | Human-readable description of SNOMED CT body site |
+| reason_snomed_code | varchar | SNOMED CT reason code |
+| reason_snomed_display | varchar | Human-readable description of SNOMED CT reason |
+| note_text | varchar | Additional notes about the procedure |
+| data_source | varchar | Source of the procedure data |

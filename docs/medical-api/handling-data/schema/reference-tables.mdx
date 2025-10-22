@@ -12,10 +12,10 @@ Each reference table contains the following columns:
 
 | Column | Data Type | Description |
 | ------ | --------- | ----------- |
-| `{resource_id_field}` | string | The ID of the parent resource (e.g., `diagnostic_report_id`, `encounter_id`) |
-| `property` | string | The FHIR property name that contains the reference (e.g., 'performer', 'result', 'subject') |
-| `reference_id` | string | The extracted reference ID from the FHIR reference string |
-| `reference_type` | string | The resource type being referenced (e.g., 'Patient', 'Practitioner', 'Observation') |
+| `{resource_id_field}` | varchar | The ID of the parent resource (e.g., `diagnostic_report_id`, `encounter_id`) |
+| `property` | varchar | The FHIR property name that contains the reference (e.g., 'performer', 'result', 'subject') |
+| `reference_id` | varchar | The extracted reference ID from the FHIR reference string |
+| `reference_type` | varchar | The resource type being referenced (e.g., 'Patient', 'Practitioner', 'Observation') |
 
 ## Reference Tables by Resource Type
 

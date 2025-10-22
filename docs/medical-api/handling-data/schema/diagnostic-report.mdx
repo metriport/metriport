@@ -32,15 +32,15 @@ The `diagnostic_report_presented_forms` table contains the actual content of dia
 
 | Column | Data Type | Description |
 | ------ | --------- | ----------- |
-| `diagnostic_report_id` | string | The ID of the parent diagnostic report |
-| `data` | string | The base64-encoded attachment data |
-| `content_type` | string | MIME type of the attachment (e.g., 'application/pdf', 'image/jpeg') |
+| `diagnostic_report_id` | varchar | The ID of the parent diagnostic report |
+| `data` | varchar | The base64-encoded attachment data |
+| `content_type` | varchar | MIME type of the attachment (e.g., 'application/pdf', 'image/jpeg') |
 | `creation` | timestamp | Timestamp when the attachment was created |
-| `hash` | string | SHA-1 hash of the attachment content |
-| `language` | string | Language code of the attachment content |
+| `hash` | varchar | SHA-1 hash of the attachment content |
+| `language` | varchar | Language code of the attachment content |
 | `size` | integer | Size of the attachment in bytes |
-| `title` | string | Human-readable title of the attachment |
-| `url` | string | URL reference to the attachment (if applicable) |
+| `title` | varchar | Human-readable title of the attachment |
+| `url` | varchar | URL reference to the attachment (if applicable) |
 
 **Primary Keys:**
 * diagnostic_report_id
@@ -50,17 +50,17 @@ The `diagnostic_report_presented_forms` table contains the actual content of dia
 
 | Column | Data Type | Description |
 | ------ | --------- | ----------- |
-| diagnostic_report_id | string | Unique identifier for the diagnostic report |
-| patient_id | string | Unique identifier for the patient |
-| status | string | Status of the diagnostic report. Possible values: <br/>– `registered`: The existence of the report is registered, but there is nothing yet available. <br/>– `partial`: This is a partial (e.g. preliminary) report: data in the report may be incomplete or unverified. <br/>– `preliminary`: Verified early results are available, but the report is not yet final. <br/>– `final`: The report is complete, verified, and issued. <br/>– `amended`: The report has been modified subsequent to being final, and is complete and verified. <br/>– `corrected`: Subsequent to being final, the report has been modified to correct an error in the report or referenced results. <br/>– `appended`: New information is available, but it does not change the existing report content. <br/>– `cancelled`: The report is unavailable because the measurement was not started or not completed (also sometimes called "aborted"). <br/>– `entered-in-error`: The report has been withdrawn following a previous final release (e.g. released in error). <br/>– `unknown`: The current status of the report is unknown. |
+| diagnostic_report_id | varchar | Unique identifier for the diagnostic report |
+| patient_id | varchar | Unique identifier for the patient |
+| status | varchar | Status of the diagnostic report. Possible values: <br/>– `registered`: The existence of the report is registered, but there is nothing yet available. <br/>– `partial`: This is a partial (e.g. preliminary) report: data in the report may be incomplete or unverified. <br/>– `preliminary`: Verified early results are available, but the report is not yet final. <br/>– `final`: The report is complete, verified, and issued. <br/>– `amended`: The report has been modified subsequent to being final, and is complete and verified. <br/>– `corrected`: Subsequent to being final, the report has been modified to correct an error in the report or referenced results. <br/>– `appended`: New information is available, but it does not change the existing report content. <br/>– `cancelled`: The report is unavailable because the measurement was not started or not completed (also sometimes called "aborted"). <br/>– `entered-in-error`: The report has been withdrawn following a previous final release (e.g. released in error). <br/>– `unknown`: The current status of the report is unknown. |
 | effective_date | date | Start date of the diagnostic report |
 | end_date | date | End date of the diagnostic report |
-| loinc_code | string | LOINC code for the diagnostic report |
-| loinc_display | string | Human-readable description of LOINC code |
-| category_hl7_code | string | HL7 category code |
-| category_hl7_display | string | Human-readable description of HL7 category |
-| source_category_code | string | Original category code from source system |
-| source_category_display | string | Original category display from source system |
-| source_category_system | string | Original category system from source system |
-| presented_form_text | string | Text content of the diagnostic report |
-| data_source | string | Source of the diagnostic report data |
+| loinc_code | varchar | LOINC code for the diagnostic report |
+| loinc_display | varchar | Human-readable description of LOINC code |
+| category_hl7_code | varchar | HL7 category code |
+| category_hl7_display | varchar | Human-readable description of HL7 category |
+| source_category_code | varchar | Original category code from source system |
+| source_category_display | varchar | Original category display from source system |
+| source_category_system | varchar | Original category system from source system |
+| presented_form_text | varchar | Text content of the diagnostic report |
+| data_source | varchar | Source of the diagnostic report data |

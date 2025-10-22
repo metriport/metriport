@@ -11,13 +11,13 @@ The medication table contains standardized information about medications referen
 
 | Column | Data Type | Description |
 | ------ | --------- | ----------- |
-| medication_id | string | Unique identifier for the medication |
-| status | string | Status of the medication. Possible values:<br/>– <code>active</code>: The medication is currently in use.<br/>– <code>inactive</code>: The medication is not currently in use.<br/>– <code>entered-in-error</code>: The medication record was entered in error. Refer to <a href="https://hl7.org/fhir/R4/valueset-medication-status.html" target="_blank" rel="noopener noreferrer">HL7 FHIR Medication Status</a> for more details.|
-| rxnorm_code | string | RxNorm code for the medication |
-| rxnorm_display | string | Human-readable description from RxNorm |
-| ndc_code | string | National Drug Code for the medication |
-| ndc_display | string | Human-readable description from NDC |
-| data_source | string | Source of the medication data |
+| medication_id | varchar | Unique identifier for the medication |
+| status | varchar | Status of the medication. Possible values:<br/>– <code>active</code>: The medication is currently in use.<br/>– <code>inactive</code>: The medication is not currently in use.<br/>– <code>entered-in-error</code>: The medication record was entered in error. Refer to <a href="https://hl7.org/fhir/R4/valueset-medication-status.html" target="_blank" rel="noopener noreferrer">HL7 FHIR Medication Status</a> for more details.|
+| rxnorm_code | varchar | RxNorm code for the medication |
+| rxnorm_display | varchar | Human-readable description from RxNorm |
+| ndc_code | varchar | National Drug Code for the medication |
+| ndc_display | varchar | Human-readable description from NDC |
+| data_source | varchar | Source of the medication data |
 
 **Related Tables:**
 * [Medication Administration](/medical-api/handling-data/schema/medication-administration) - Records of medication administration
