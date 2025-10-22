@@ -77,6 +77,13 @@ async function main() {
   const startedAt = Date.now();
   console.log(`############## Started at ${buildDayjs().toISOString()} ##############`);
 
+  const cxIdPrefix = cxId.split("-")[0]?.toLowerCase();
+  const dbSuffix = database.split("_").at(-1)?.toLowerCase();
+  if (cxIdPrefix !== dbSuffix) {
+    console.error(`CX ID prefix ${cxIdPrefix} does not match database suffix ${dbSuffix}`);
+    return;
+  }
+
   try {
     initRunsFolder();
 
