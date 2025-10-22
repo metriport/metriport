@@ -211,6 +211,12 @@ describe("replaceNullFlavor", () => {
     expect(replaceNullFlavor(input)).toBe(expected);
   });
 
+  test("should handle nullFlavor id that still contains a root", () => {
+    const input = '<id root="12345" nullFlavor="NI">';
+    const expected = '<id extension="1" root="1">';
+    expect(replaceNullFlavor(input)).toBe(expected);
+  });
+
   test("should handle case sensitivity in nullFlavor values", () => {
     const input = '<id nullFlavor="ni">';
     const expected = '<id extension="1" root="1">';

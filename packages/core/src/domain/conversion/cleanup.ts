@@ -23,6 +23,7 @@ export function replaceCdUnkString(payloadRaw: string): string {
 
 export function replaceNullFlavor(payloadRaw: string): string {
   return payloadRaw.replace(/<id\b[^>]*\bnullFlavor\s*=\s*"[^"]*"[^>]*>/gi, match => {
+    if (match.includes("root") || match.includes("extension")) return match;
     const isSelfClosing = /\/\s*>$/.test(match);
     return isSelfClosing ? '<id extension="1" root="1"/>' : '<id extension="1" root="1">';
   });
