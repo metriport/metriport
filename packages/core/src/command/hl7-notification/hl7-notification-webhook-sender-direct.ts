@@ -46,6 +46,8 @@ import {
   SupportedTriggerEvent,
 } from "./utils";
 import { sendHeartbeatToMonitoringService } from "../../external/monitoring/heartbeat";
+import { FeatureFlags } from "../feature-flags/ffs-on-dynamodb";
+import { isAdtsEnabledFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 
 type HieConfig = { timezone: string };
 
@@ -105,6 +107,8 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
    * @returns - A promise that resolves when the message is sent to the API.
    */
   async execute(params: Hl7NotificationSenderParams): Promise<void> {
+    FeatureFlags.init(Config.getAWSRegion(), Config.getFeatureFlagsTableName());
+
     const s3Utils = new S3Utils(Config.getAWSRegion());
     const bucketName = Config.getHl7IncomingMessageBucketName();
     const { log } = out(`${this.context}, cx: ${params.cxId}, pt: ${params.patientId}`);
@@ -153,6 +157,13 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       file: Buffer.from(asString(message)),
       contentType: "text/plain",
     });
+
+    // We have this so late into the function because we want to still store the message. Just not process it further.
+    const isCxAllowedToReceiveAdts = await isAdtsEnabledFeatureFlagEnabledForCx(cxId);
+    if (!isCxAllowedToReceiveAdts) {
+      log(`CX ${cxId} is not allowed to receive ADTs. Skipping...`);
+      return;
+    }
 
     if (!isSupportedTriggerEvent(triggerEvent)) {
       log(`Trigger event ${triggerEvent} is not supported. Skipping...`);
