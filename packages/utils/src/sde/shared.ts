@@ -2,6 +2,9 @@ import fs from "fs";
 import path from "path";
 import { Bundle } from "@medplum/fhirtypes";
 import { ExtractionBundle, ExtractionSource } from "@metriport/core/external/sde/types";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { listDocumentIds } from "@metriport/core/external/sde/command/document/list-documents";
+import { downloadDocumentConversion } from "@metriport/core/external/sde/command/document/download";
 
 function getLocalDirectoryPath(directoryName: string) {
   const localDirectoryPath = path.join(process.cwd(), "runs/sde", directoryName);
@@ -123,4 +126,34 @@ export function scanDocuments(cxId: string, handler: (bundle: ExtractionBundle) 
       handler(bundle);
     });
   });
+}
+
+export async function downloadAllDocumentConversions({
+  cxId,
+  patientId,
+  downloadInParallel = 10,
+}: {
+  cxId: string;
+  patientId: string;
+  downloadInParallel?: number;
+}): Promise<ExtractionBundle[]> {
+  const documentIds = await listDocumentIds({ cxId, patientId });
+  console.log(`Downloading ${documentIds.length} documents for patient ${patientId}`);
+
+  const extractionBundles: ExtractionBundle[] = [];
+  await executeAsynchronously(
+    documentIds,
+    async documentId => {
+      const bundle = await downloadDocumentConversion({ cxId, patientId, documentId });
+      if (bundle) {
+        extractionBundles.push({ extractedFromDocumentId: documentId, extractedBundle: bundle });
+      }
+    },
+    {
+      numberOfParallelExecutions: downloadInParallel,
+    }
+  );
+
+  console.log(`Downloaded ${extractionBundles.length} bundles for patient ${patientId}`);
+  return extractionBundles;
 }
