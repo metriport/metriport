@@ -54,7 +54,7 @@ interface Hl7NotificationWebhookSenderNestedStackProps extends NestedStackProps 
   hl7ConversionBucket: s3.IBucket;
   incomingHl7NotificationBucket: s3.IBucket | undefined;
   secrets: Secrets;
-  heartbeatRateLimitTable: dynamodb.Table;
+  outboundRateLimitTable: dynamodb.Table;
 }
 
 export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
@@ -99,7 +99,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       hieConfigs,
       hl7Base64ScramblerSeed,
       heartbeatMonitorMap,
-      heartbeatRateLimitTable: props.heartbeatRateLimitTable,
+      outboundRateLimitTable: props.outboundRateLimitTable,
     });
 
     this.lambda = setup.lambda;
@@ -118,7 +118,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     hl7Base64ScramblerSeed: ISecret;
     hieConfigs: Record<string, HieConfig | VpnlessHieConfig>;
     heartbeatMonitorMap: Record<string, string>;
-    heartbeatRateLimitTable: dynamodb.Table;
+    outboundRateLimitTable: dynamodb.Table;
   }): { lambda: Lambda } {
     const {
       lambdaLayers,
@@ -133,7 +133,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       incomingHl7NotificationBucket,
       hl7Base64ScramblerSeed,
       heartbeatMonitorMap,
-      heartbeatRateLimitTable,
+      outboundRateLimitTable,
     } = ownProps;
     const {
       name,
@@ -173,7 +173,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
         HL7_CONVERSION_BUCKET_NAME: hl7ConversionBucket.bucketName,
         HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
         HL7_BASE64_SCRAMBLER_SEED_ARN: hl7Base64ScramblerSeed.secretArn,
-        HEARTBEAT_RATE_LIMIT_TABLE_NAME: heartbeatRateLimitTable.tableName,
+        OUTBOUND_RATE_LIMIT_TABLE_NAME: outboundRateLimitTable.tableName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         HIE_CONFIG_DICTIONARY: JSON.stringify(createHieConfigDictionary(hieConfigs)),
         POST_HOG_API_KEY_SECRET: analyticsSecret.secretArn,
@@ -185,7 +185,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     hl7ConversionBucket.grantReadWrite(lambda);
     incomingHl7NotificationBucket.grantReadWrite(lambda);
     hl7Base64ScramblerSeed.grantRead(lambda);
-    heartbeatRateLimitTable.grantReadWriteData(lambda);
+    outboundRateLimitTable.grantReadWriteData(lambda);
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
     analyticsSecret.grantRead(lambda);

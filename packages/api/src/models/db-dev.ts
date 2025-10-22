@@ -70,7 +70,6 @@ async function createRateLimitTable(ddb: AWS.DynamoDB): Promise<void> {
 
   const doesTableExist = await tableExists(docTableNames.rateLimit, ddb);
   if (doesTableExist) return;
-
   const params: AWS.DynamoDB.CreateTableInput = {
     AttributeDefinitions: [
       {
@@ -127,31 +126,37 @@ async function createFeatureFlagsTable(ddb: AWS.DynamoDB): Promise<void> {
   }
 }
 
-async function createHeartbeatRateLimitTable(ddb: AWS.DynamoDB): Promise<void> {
-  if (!docTableNames.heartbeatRateLimit) return;
-  const doesTableExist = await tableExists(docTableNames.heartbeatRateLimit, ddb);
-  if (!doesTableExist) {
-    const params: AWS.DynamoDB.CreateTableInput = {
-      AttributeDefinitions: [
-        {
-          AttributeName: "heartbeatKey",
-          AttributeType: "S",
-        },
-      ],
-      KeySchema: [
-        {
-          AttributeName: "heartbeatKey",
-          KeyType: "HASH",
-        },
-      ],
-      ProvisionedThroughput: {
-        ReadCapacityUnits: 1,
-        WriteCapacityUnits: 1,
+/**
+ * Creates the outbound rate limit table.
+ * The outbound rate limit table is used to track the requests sent to external systems.
+ * To avoid hitting the rate limit of the external systems.
+ * @param ddb - The DynamoDB client
+ */
+async function createOutboundRateLimitTable(ddb: AWS.DynamoDB): Promise<void> {
+  if (!docTableNames.outboundRateLimit) return;
+  const doesTableExist = await tableExists(docTableNames.outboundRateLimit, ddb);
+  if (doesTableExist) return;
+
+  const params: AWS.DynamoDB.CreateTableInput = {
+    AttributeDefinitions: [
+      {
+        AttributeName: "outboundKey",
+        AttributeType: "S",
       },
-      TableName: docTableNames.heartbeatRateLimit,
-    };
-    await ddb.createTable(params).promise();
-  }
+    ],
+    KeySchema: [
+      {
+        AttributeName: "outboundKey",
+        KeyType: "HASH",
+      },
+    ],
+    ProvisionedThroughput: {
+      ReadCapacityUnits: 1,
+      WriteCapacityUnits: 1,
+    },
+    TableName: docTableNames.outboundRateLimit,
+  };
+  await ddb.createTable(params).promise();
 }
 
 export async function initDDBDev(): Promise<AWS.DynamoDB.DocumentClient> {
@@ -166,7 +171,7 @@ export async function initDDBDev(): Promise<AWS.DynamoDB.DocumentClient> {
   await createTokenTable(ddb);
   await createRateLimitTable(ddb);
   await createFeatureFlagsTable(ddb);
-  await createHeartbeatRateLimitTable(ddb);
+  await createOutboundRateLimitTable(ddb);
   return doc;
 }
 

@@ -274,17 +274,17 @@ export class APIStack extends Stack {
       slackNotification?.alarmAction
     );
 
-    const heartbeatRateLimitConstructName = "HeartbeatRateLimit";
-    const heartbeatRateLimitTable = new dynamodb.Table(this, heartbeatRateLimitConstructName, {
-      partitionKey: { name: "heartbeatKey", type: dynamodb.AttributeType.STRING },
+    const outboundRateLimitConstructName = "OutboundRateLimit";
+    const outboundRateLimitTable = new dynamodb.Table(this, outboundRateLimitConstructName, {
+      partitionKey: { name: "outboundKey", type: dynamodb.AttributeType.STRING },
       replicationRegions: this.isProd(props) ? ["us-east-1"] : ["ca-central-1"],
       replicationTimeout: Duration.hours(3),
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       pointInTimeRecovery: true,
     });
     this.addDynamoPerformanceAlarms(
-      heartbeatRateLimitTable,
-      heartbeatRateLimitConstructName,
+      outboundRateLimitTable,
+      outboundRateLimitConstructName,
       slackNotification?.alarmAction
     );
 
@@ -529,7 +529,7 @@ export class APIStack extends Stack {
           hl7ConversionBucket,
           secrets,
           incomingHl7NotificationBucket,
-          heartbeatRateLimitTable,
+          outboundRateLimitTable,
         }
       );
 
@@ -682,7 +682,7 @@ export class APIStack extends Stack {
       dbCredsSecret,
       dbReadReplicaEndpoint: dbCluster.clusterReadEndpoint,
       dynamoDBTokenTable,
-      heartbeatRateLimitTable,
+      outboundRateLimitTable,
       alarmAction: slackNotification?.alarmAction,
       dnsZones,
       fhirServerUrl: props.config.fhirServerUrl,

@@ -198,10 +198,6 @@ export class Config {
     return getEnvVarOrFail("FEATURE_FLAGS_TABLE_NAME");
   }
 
-  static getHeartbeatRateLimitTableName(): string {
-    return getEnvVarOrFail("HEARTBEAT_RATE_LIMIT_TABLE_NAME");
-  }
-
   static getEhrResponsesBucketName(): string | undefined {
     return getEnvVar("EHR_RESPONSES_BUCKET_NAME");
   }
@@ -526,5 +522,9 @@ export class Config {
 
   static getHeartBeatMonitorMap(): Record<string, string> {
     return getEnvVarAsRecordOrFail("HEARTBEAT_MONITOR_MAP");
+  }
+
+  static getOutboundRateLimitTableName(): string | undefined {
+    return getEnvVar("OUTBOUND_RATE_LIMIT_TABLE_NAME");
   }
 }

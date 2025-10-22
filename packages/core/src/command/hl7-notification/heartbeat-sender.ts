@@ -31,19 +31,18 @@ export async function sendHeartbeat(hieName: string, log: typeof console.log): P
     });
   }
 
-  const isAllowedToPing = await shouldPing(hieName);
+  const isAllowedToPing = await shouldSendHeartbeat(hieName);
   log(`Is allowed to ping ${hieName} monitor: ${isAllowedToPing}`);
-  if (!isAllowedToPing) {
-    return;
-  }
+  if (!isAllowedToPing) return;
 
   await sendHeartbeatToMonitoringService(monitorUrl);
   log(`Sent ping to ${hieName} heartbeat monitor`);
 }
 
-async function shouldPing(hieName: string): Promise<boolean> {
-  const heartbeatTableName = Config.getHeartbeatRateLimitTableName();
-  const ddb = new DynamoDbUtils({ table: heartbeatTableName, partitionKey: "heartbeatKey" });
+async function shouldSendHeartbeat(hieName: string): Promise<boolean> {
+  const outboundRateLimitTableName = Config.getOutboundRateLimitTableName();
+  if (!outboundRateLimitTableName) return true;
+  const ddb = new DynamoDbUtils({ table: outboundRateLimitTableName, partitionKey: "outboundKey" });
   const key = ddb.createKey(`heartbeat-rate-limit#${hieName}`, undefined);
   const nowMs = Date.now();
   const nextAllowedPingAtMs = nowMs + HEARTBEAT_RATE_LIMIT_WINDOW.asMilliseconds();
@@ -54,13 +53,13 @@ async function shouldPing(hieName: string): Promise<boolean> {
         TableName: ddb._table,
         Key: key,
         UpdateExpression:
-          "SET nextAllowedPingAtMs = :nextAllowedPingAtMs, lastPingAtMs = :nowMs, hieName = :hieName",
+          "SET nextAllowedRequestAtMs = :nextAllowedRequestAtMs, lastRequestAtMs = :nowMs, identifier = :identifier",
         ConditionExpression:
-          "attribute_not_exists(nextAllowedPingAtMs) OR :nowMs >= nextAllowedPingAtMs",
+          "attribute_not_exists(nextAllowedRequestAtMs) OR :nowMs >= nextAllowedRequestAtMs",
         ExpressionAttributeValues: {
-          ":nextAllowedPingAtMs": nextAllowedPingAtMs,
+          ":nextAllowedRequestAtMs": nextAllowedPingAtMs,
           ":nowMs": nowMs,
-          ":hieName": hieName,
+          ":identifier": hieName,
         },
         ReturnValues: "NONE",
       })

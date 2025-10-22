@@ -105,7 +105,7 @@ export function createAPIService({
   dbCredsSecret,
   dbReadReplicaEndpoint,
   dynamoDBTokenTable,
-  heartbeatRateLimitTable,
+  outboundRateLimitTable,
   alarmAction,
   dnsZones,
   fhirServerUrl,
@@ -157,7 +157,7 @@ export function createAPIService({
   dbCredsSecret: secret.ISecret;
   dbReadReplicaEndpoint: rds.Endpoint;
   dynamoDBTokenTable: dynamodb.Table;
-  heartbeatRateLimitTable: dynamodb.Table;
+  outboundRateLimitTable: dynamodb.Table;
   alarmAction: SnsAction | undefined;
   dnsZones: DnsZones;
   fhirServerUrl: string;
@@ -276,7 +276,7 @@ export function createAPIService({
           DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
           DB_POOL_SETTINGS: JSON.stringify(dbPoolSettings),
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
-          HEARTBEAT_RATE_LIMIT_TABLE_NAME: heartbeatRateLimitTable.tableName,
+          OUTBOUND_RATE_LIMIT_TABLE_NAME: outboundRateLimitTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
           API_LB_ADDRESS: props.config.loadBalancerDnsName,
           ...(props.config.apiGatewayUsagePlanId
@@ -516,7 +516,7 @@ export function createAPIService({
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   rateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   featureFlagsTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
-  heartbeatRateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
+  outboundRateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
