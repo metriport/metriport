@@ -21,6 +21,8 @@ command.option("--cx-id <cx-id>", "The CX ID");
 command.argument("[phrases...]", "The phrases to search for");
 command.action(searchDocumentsAction);
 
+const CHARACTERS_AROUND_MATCH = 80;
+
 async function searchDocumentsAction(
   phrases: string[],
   { cxId }: { cxId?: string }
@@ -56,11 +58,16 @@ function searchDocuments(
     matches.push(...sourceMatches);
 
     for (const match of sourceMatches) {
-      const fragment = source.textContent.substring(
-        Math.max(0, match.startIndex - 80),
-        Math.min(source.textContent.length, match.endIndex + 80)
+      const before = source.textContent.substring(
+        Math.max(0, match.startIndex - CHARACTERS_AROUND_MATCH),
+        match.startIndex
       );
-      console.log(fragment);
+      const after = source.textContent.substring(
+        match.endIndex,
+        Math.min(source.textContent.length, match.endIndex + CHARACTERS_AROUND_MATCH)
+      );
+      const text = source.textContent.substring(match.startIndex, match.endIndex);
+      console.log(`${before}\x1b[1;32m${text}\x1b[0m${after}`);
     }
   }
   return matches;
