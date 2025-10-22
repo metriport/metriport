@@ -34,13 +34,13 @@ async function searchDocumentsAction(
   const automaton = new SearchAutomaton(phrases);
   console.log("Search terms:", automaton.getSearchTerms());
 
-  const cxIds = cxId ? [cxId] : listLocalCustomerIds();
+  const customerIds = cxId ? [cxId] : listLocalCustomerIds();
   let totalPatientsMatched = 0;
-  for (const cxId of cxIds) {
-    console.log(`Searching documents of customer ${cxId}`);
-    const patientIds = listLocalPatientIds(cxId);
+  for (const customerId of customerIds) {
+    console.log(`Searching documents of customer ${customerId}`);
+    const patientIds = listLocalPatientIds(customerId);
     for (const patientId of patientIds) {
-      const totalMatches = searchDocuments(automaton, cxId, patientId);
+      const totalMatches = searchDocuments(automaton, customerId, patientId);
       if (totalMatches.length > 0) {
         totalPatientsMatched++;
       }
