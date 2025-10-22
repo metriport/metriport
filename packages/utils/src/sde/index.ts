@@ -3,10 +3,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { Command } from "commander";
-import extractDocument from "./extract-sources";
-import listPatients from "./list-patients";
 import extractSources from "./extract-sources";
-import listDocumentsPerPatient from "./list-documents";
+import listPatients from "./list-patients";
 import downloadDocuments from "./download-documents";
 import searchDocuments from "./search-documents";
 
@@ -17,9 +15,7 @@ import searchDocuments from "./search-documents";
 const program = new Command();
 
 program.addCommand(listPatients);
-program.addCommand(extractDocument);
-program.addCommand(extractSources);
-program.addCommand(listDocumentsPerPatient);
 program.addCommand(downloadDocuments);
+program.addCommand(extractSources);
 program.addCommand(searchDocuments);
 program.parse(process.argv);

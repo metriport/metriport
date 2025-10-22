@@ -1,4 +1,4 @@
-import { Attachment, Bundle, DiagnosticReport, Encounter, Resource } from "@medplum/fhirtypes";
+import { Attachment, Bundle, DiagnosticReport, Resource } from "@medplum/fhirtypes";
 import { base64ToString } from "@metriport/shared/util";
 import { ExtractionSource } from "./types";
 
@@ -40,8 +40,6 @@ export function extractFromResource({
 }): ExtractionSource[] | undefined {
   const resourceType = resource.resourceType;
   switch (resourceType) {
-    case "Encounter":
-      return extractFromEncounter({ encounter: resource as Encounter, documentId });
     case "DiagnosticReport":
       return extractFromDiagnosticReport({
         diagnosticReport: resource as DiagnosticReport,
@@ -50,23 +48,6 @@ export function extractFromResource({
     default:
       return undefined;
   }
-}
-
-export function extractFromEncounter({
-  encounter,
-  documentId,
-}: {
-  encounter: Encounter;
-  documentId: string;
-}): ExtractionSource[] | undefined {
-  const presentedForm = getPresentedForm(encounter);
-  if (!presentedForm) return undefined;
-
-  return presentedForm.map(form => ({
-    documentId,
-    resource: encounter,
-    textContent: base64ToString(form.data ?? ""),
-  }));
 }
 
 export function extractFromDiagnosticReport({
