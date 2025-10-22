@@ -22,9 +22,10 @@ export function replaceCdUnkString(payloadRaw: string): string {
 }
 
 export function replaceNullFlavor(payloadRaw: string): string {
-  const stringToReplace = /<id\s*nullFlavor\s*=\s*".*?"\s*/g;
-  const replacement = `<id extension="1" root="1"`;
-  return payloadRaw.replace(stringToReplace, replacement);
+  return payloadRaw.replace(/<id\b[^>]*\bnullFlavor\s*=\s*"[^"]*"[^>]*>/gi, match => {
+    const isSelfClosing = /\/\s*>$/.test(match);
+    return isSelfClosing ? '<id extension="1" root="1"/>' : '<id extension="1" root="1">';
+  });
 }
 
 export function replaceAmpersand(payloadRaw: string): string {
