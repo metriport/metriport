@@ -137,7 +137,7 @@ export async function createConsolidatedFromConversions({
   await dangerouslyDeduplicate({ cxId, patientId, bundle });
   log(`...done, from ${lengthWithDups} to ${bundle.entry?.length} resources`);
 
-  log(`Hydrating consolidated bundle...`);
+  log(`Normalizing consolidated bundle...`);
   const normalizedBundle = normalizeFhir(bundle);
 
   // TODO This whole section with AI-related logic should be moved to the `generateAiBriefBundleEntry`.
