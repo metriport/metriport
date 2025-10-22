@@ -95,7 +95,6 @@ export const gfrUnitNormalizationMap = new Map<string, string>([
   ["ml/mn/1.73m2", "mL/min/1.73m2"],
   ["ml/minper1.73", "mL/min/1.73m2"],
   ["m/m/1.73", "mL/min/1.73m2"],
-  [".", "mL/min/1.73m2"],
   ["0", "mL/min/1.73m2"],
   ["1", "mL/min/1.73m2"],
   ["2", "mL/min/1.73m2"],
