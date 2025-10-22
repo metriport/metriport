@@ -54,6 +54,7 @@ import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
 import { PatientMonitoringNestedStack } from "./patient-monitoring-nested-stack";
 import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
+import { OutboundRateLimitingNestedStack } from "./outbound-rate-limiting-nested-stack";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
@@ -274,18 +275,16 @@ export class APIStack extends Stack {
       slackNotification?.alarmAction
     );
 
-    const outboundRateLimitConstructName = "OutboundRateLimit";
-    const outboundRateLimitTable = new dynamodb.Table(this, outboundRateLimitConstructName, {
-      partitionKey: { name: "outboundKey", type: dynamodb.AttributeType.STRING },
-      replicationRegions: this.isProd(props) ? ["us-east-1"] : ["ca-central-1"],
-      replicationTimeout: Duration.hours(3),
-      encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      pointInTimeRecovery: true,
-    });
-    this.addDynamoPerformanceAlarms(
-      outboundRateLimitTable,
-      outboundRateLimitConstructName,
-      slackNotification?.alarmAction
+    //-------------------------------------------
+    // Outbound Rate Limiting
+    //-------------------------------------------
+    const { outboundRateLimitTable } = new OutboundRateLimitingNestedStack(
+      this,
+      "OutboundRateLimitingNestedStack",
+      {
+        config: props.config,
+        alarmAction: slackNotification?.alarmAction,
+      }
     );
 
     //-------------------------------------------
