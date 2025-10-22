@@ -44,6 +44,9 @@ async function shouldSendHeartbeat(hieName: string): Promise<boolean> {
   const nowMs = Date.now();
   const nextAllowedPingAtMs = nowMs + HEARTBEAT_RATE_LIMIT_WINDOW.asMilliseconds();
 
+  // TODO: when we need to reuse the "outbound request rate limit" DDB table, let's convert this
+  // into a class that can be initialized w/ the rate window and used as a service for any service
+  // that needs to control its requests to  a 3rd party server.
   try {
     await ddb._docClient
       .update({

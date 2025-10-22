@@ -19,50 +19,49 @@ async function tableExists(tableName: string, ddb: AWS.DynamoDB) {
 // Creates the token table
 async function createTokenTable(ddb: AWS.DynamoDB): Promise<void> {
   const doesTableExist = await tableExists(docTableNames.token, ddb);
-  if (!doesTableExist) {
-    const params: AWS.DynamoDB.CreateTableInput = {
-      AttributeDefinitions: [
-        {
-          AttributeName: "token",
-          AttributeType: "S",
-        },
-        {
-          AttributeName: "oauthUserAccessToken",
-          AttributeType: "S",
-        },
-      ],
-      KeySchema: [
-        {
-          AttributeName: "token",
-          KeyType: "HASH",
-        },
-      ],
-      GlobalSecondaryIndexes: [
-        {
-          IndexName: "oauthUserAccessToken_idx",
-          KeySchema: [
-            {
-              AttributeName: "oauthUserAccessToken",
-              KeyType: "HASH",
-            },
-          ],
-          Projection: {
-            ProjectionType: "ALL",
-          },
-          ProvisionedThroughput: {
-            ReadCapacityUnits: 1,
-            WriteCapacityUnits: 1,
-          },
-        },
-      ],
-      ProvisionedThroughput: {
-        ReadCapacityUnits: 1,
-        WriteCapacityUnits: 1,
+  if (doesTableExist) return;
+  const params: AWS.DynamoDB.CreateTableInput = {
+    AttributeDefinitions: [
+      {
+        AttributeName: "token",
+        AttributeType: "S",
       },
-      TableName: docTableNames.token,
-    };
-    await ddb.createTable(params).promise();
-  }
+      {
+        AttributeName: "oauthUserAccessToken",
+        AttributeType: "S",
+      },
+    ],
+    KeySchema: [
+      {
+        AttributeName: "token",
+        KeyType: "HASH",
+      },
+    ],
+    GlobalSecondaryIndexes: [
+      {
+        IndexName: "oauthUserAccessToken_idx",
+        KeySchema: [
+          {
+            AttributeName: "oauthUserAccessToken",
+            KeyType: "HASH",
+          },
+        ],
+        Projection: {
+          ProjectionType: "ALL",
+        },
+        ProvisionedThroughput: {
+          ReadCapacityUnits: 1,
+          WriteCapacityUnits: 1,
+        },
+      },
+    ],
+    ProvisionedThroughput: {
+      ReadCapacityUnits: 1,
+      WriteCapacityUnits: 1,
+    },
+    TableName: docTableNames.token,
+  };
+  await ddb.createTable(params).promise();
 }
 // Creates the rate limit table
 async function createRateLimitTable(ddb: AWS.DynamoDB): Promise<void> {
@@ -94,36 +93,35 @@ async function createRateLimitTable(ddb: AWS.DynamoDB): Promise<void> {
 
 async function createFeatureFlagsTable(ddb: AWS.DynamoDB): Promise<void> {
   const doesTableExist = await tableExists(docTableNames.featureFlags, ddb);
-  if (!doesTableExist) {
-    const params: AWS.DynamoDB.CreateTableInput = {
-      AttributeDefinitions: [
-        {
-          AttributeName: partitionKey,
-          AttributeType: "S",
-        },
-        {
-          AttributeName: sortKey,
-          AttributeType: "N",
-        },
-      ],
-      KeySchema: [
-        {
-          AttributeName: partitionKey,
-          KeyType: "HASH",
-        },
-        {
-          AttributeName: sortKey,
-          KeyType: "RANGE",
-        },
-      ],
-      ProvisionedThroughput: {
-        ReadCapacityUnits: 1,
-        WriteCapacityUnits: 1,
+  if (doesTableExist) return;
+  const params: AWS.DynamoDB.CreateTableInput = {
+    AttributeDefinitions: [
+      {
+        AttributeName: partitionKey,
+        AttributeType: "S",
       },
-      TableName: docTableNames.featureFlags,
-    };
-    await ddb.createTable(params).promise();
-  }
+      {
+        AttributeName: sortKey,
+        AttributeType: "N",
+      },
+    ],
+    KeySchema: [
+      {
+        AttributeName: partitionKey,
+        KeyType: "HASH",
+      },
+      {
+        AttributeName: sortKey,
+        KeyType: "RANGE",
+      },
+    ],
+    ProvisionedThroughput: {
+      ReadCapacityUnits: 1,
+      WriteCapacityUnits: 1,
+    },
+    TableName: docTableNames.featureFlags,
+  };
+  await ddb.createTable(params).promise();
 }
 
 /**
