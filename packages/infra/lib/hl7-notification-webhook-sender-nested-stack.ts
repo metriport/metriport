@@ -16,6 +16,7 @@ import { Secrets } from "./shared/secrets";
 import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { createHieConfigDictionary } from "./shared/hie-config-dictionary";
 import { HieConfig, VpnlessHieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
+import { isProd } from "./shared/util";
 
 function settings() {
   const timeout = Duration.seconds(61);
@@ -54,7 +55,6 @@ interface Hl7NotificationWebhookSenderNestedStackProps extends NestedStackProps 
   hl7ConversionBucket: s3.IBucket;
   incomingHl7NotificationBucket: s3.IBucket | undefined;
   secrets: Secrets;
-  outboundRateLimitTable: dynamodb.Table;
 }
 
 export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
@@ -64,6 +64,15 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     super(scope, id, props);
 
     this.terminationProtection = true;
+
+    const outboundRateLimitConstructName = "OutboundRateLimit";
+    const outboundRateLimitTable = new dynamodb.Table(this, outboundRateLimitConstructName, {
+      partitionKey: { name: "outboundKey", type: dynamodb.AttributeType.STRING },
+      replicationRegions: isProd(props.config) ? ["us-east-1"] : ["ca-central-1"],
+      replicationTimeout: Duration.hours(3),
+      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      pointInTimeRecovery: true,
+    });
 
     const analyticsSecret = props.secrets["POST_HOG_API_KEY_SECRET"];
     if (!analyticsSecret) {
@@ -99,7 +108,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       hieConfigs,
       hl7Base64ScramblerSeed,
       heartbeatMonitorMap,
-      outboundRateLimitTable: props.outboundRateLimitTable,
+      outboundRateLimitTable,
     });
 
     this.lambda = setup.lambda;
