@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { Bundle } from "@medplum/fhirtypes";
-import { ExtractionBundle } from "@metriport/core/external/sde/types";
+import { ExtractionBundle, ExtractionSource } from "@metriport/core/external/sde/types";
 
 function getLocalDirectoryPath(directoryName: string) {
   const localDirectoryPath = path.join(process.cwd(), "runs/sde", directoryName);
@@ -35,6 +35,27 @@ export function localPatientDirectoryExists(cxId: string, patientId: string): bo
   return fs.existsSync(path.join(localDirectoryPath, patientId));
 }
 
+export function listLocalCustomerIds(): string[] {
+  const localDirectoryPath = getLocalDirectoryPath("customer");
+  return fs.readdirSync(localDirectoryPath);
+}
+
+export function listLocalPatientIds(cxId: string): string[] {
+  const localDirectoryPath = getLocalDirectoryPath(`customer/${cxId}`);
+  return fs.readdirSync(localDirectoryPath);
+}
+
+export function listLocalDocumentIds(cxId: string, patientId: string): string[] {
+  const localDirectoryPath = getLocalDirectoryPath(`customer/${cxId}/${patientId}`);
+  return fs.readdirSync(localDirectoryPath).map(fileName => path.basename(fileName, ".json"));
+}
+
+export function getLocalDocument(cxId: string, patientId: string, documentId: string): Bundle {
+  const localDirectoryPath = getLocalDirectoryPath(`customer/${cxId}/${patientId}`);
+  const filePath = path.join(localDirectoryPath, `${documentId}.json`);
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
 export function saveConversionBundle({
   cxId,
   patientId,
@@ -65,6 +86,29 @@ export function saveConversionBundles({
     const filePath = path.join(localDirectoryPath, `${bundle.extractedFromDocumentId}.json`);
     fs.writeFileSync(filePath, JSON.stringify(bundle.extractedBundle), "utf8");
   });
+}
+
+export function saveExtractionSources({
+  cxId,
+  patientId,
+  sources,
+}: {
+  cxId: string;
+  patientId: string;
+  sources: ExtractionSource[];
+}) {
+  const localDirectoryPath = getLocalDirectoryPath(`source/${cxId}/${patientId}`);
+  const filePath = path.join(localDirectoryPath, "sources.json");
+  fs.writeFileSync(filePath, JSON.stringify(sources), "utf8");
+}
+
+export function loadExtractionSources(cxId: string, patientId: string): ExtractionSource[] {
+  const localDirectoryPath = getLocalDirectoryPath(`source/${cxId}/${patientId}`);
+  const filePath = path.join(localDirectoryPath, "sources.json");
+  if (!fs.existsSync(filePath)) {
+    return [];
+  }
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
 export function scanDocuments(cxId: string, handler: (bundle: ExtractionBundle) => void) {

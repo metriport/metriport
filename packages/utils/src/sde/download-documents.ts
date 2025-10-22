@@ -34,9 +34,12 @@ async function downloadCustomerAction({ cxId }: { cxId: string }): Promise<void>
     patientIds,
     async patientId => {
       if (localPatientDirectoryExists(cxId, patientId)) {
+        console.log(`Patient ${patientId} already has downloaded documents`);
         return;
       }
-      await downloadAllDocumentConversions({ cxId, patientId });
+      const bundles = await downloadAllDocumentConversions({ cxId, patientId });
+      saveConversionBundles({ cxId, patientId, bundles });
+      console.log(`Downloaded ${bundles.length} documents for patient ${patientId}`);
     },
     { numberOfParallelExecutions: 10 }
   );
@@ -57,8 +60,9 @@ downloadPatient.action(downloadPatientAction);
 command.addCommand(downloadPatient);
 
 async function downloadPatientAction({ cxId, patientId }: { cxId: string; patientId: string }) {
-  const documents = await downloadAllDocumentConversions({ cxId, patientId });
-  saveConversionBundles({ cxId, patientId, bundles: documents });
+  const bundles = await downloadAllDocumentConversions({ cxId, patientId });
+  saveConversionBundles({ cxId, patientId, bundles });
+  console.log(`Downloaded ${bundles.length} documents for patient ${patientId}`);
 }
 
 /**

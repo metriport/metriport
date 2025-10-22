@@ -1,6 +1,9 @@
 import { Command } from "commander";
-import { SearchAutomaton } from "@metriport/core/external/comprehend/search/search-automaton";
-// import { searchDocuments } from "@metriport/core/external/sde/command/document/search-documents";
+import {
+  SearchAutomaton,
+  SearchMatch,
+} from "@metriport/core/external/comprehend/search/search-automaton";
+import { listLocalCustomerIds, listLocalPatientIds, loadExtractionSources } from "./shared";
 
 /**
  * Search all documents that have been retrieved locally for a particular phrase in the unstructured text.
@@ -18,11 +21,41 @@ command.option("--cx-id <cx-id>", "The CX ID");
 command.argument("[phrases...]", "The phrases to search for");
 command.action(searchDocumentsAction);
 
-async function searchDocumentsAction(phrases: string[], { cxId }: { cxId: string }): Promise<void> {
-  console.log(`Searching for documents in customer ${cxId} with phrases: ${phrases.join(", ")}`);
+async function searchDocumentsAction(
+  phrases: string[],
+  { cxId }: { cxId?: string }
+): Promise<void> {
   const automaton = new SearchAutomaton(phrases);
-  console.log(automaton.getSearchTerms());
-  // console.log(documents);
+  console.log("Search terms:", automaton.getSearchTerms());
+
+  const cxIds = cxId ? [cxId] : listLocalCustomerIds();
+  let totalPatientsMatched = 0;
+  for (const cxId of cxIds) {
+    console.log(`Searching documents of customer ${cxId}`);
+    const patientIds = listLocalPatientIds(cxId);
+    for (const patientId of patientIds) {
+      const totalMatches = searchDocuments(automaton, cxId, patientId);
+      if (totalMatches.length > 0) {
+        totalPatientsMatched++;
+      }
+    }
+  }
+
+  console.log(`Found ${totalPatientsMatched} patients with matches`);
+}
+
+function searchDocuments(
+  automaton: SearchAutomaton,
+  cxId: string,
+  patientId: string
+): SearchMatch[] {
+  const sources = loadExtractionSources(cxId, patientId);
+  const matches: SearchMatch[] = [];
+  for (const source of sources) {
+    const sourceMatches = automaton.findAll(source.textContent);
+    matches.push(...sourceMatches);
+  }
+  return matches;
 }
 
 export default command;

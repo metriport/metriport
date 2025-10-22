@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { listPatientIdsWithDocuments } from "@metriport/core/external/sde/command/document/list-patients";
-import { loadPatientIds, savePatientIds } from "./shared";
+import { loadPatientIds, listLocalPatientIds, savePatientIds } from "./shared";
 
 /**
  * List patients by CX ID
@@ -24,6 +24,13 @@ export async function listPatients({ cxId, useCache }: { cxId: string; useCache?
     savePatientIds(cxId, patientIds);
   }
   console.log(`Found ${patientIds.length} patients`);
+
+  const localPatientIds = listLocalPatientIds(cxId);
+  console.log(
+    `Found ${localPatientIds.length} local patients downloaded (${Math.round(
+      (localPatientIds.length / patientIds.length) * 100
+    )}%)`
+  );
 }
 
 export default command;

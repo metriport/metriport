@@ -1,13 +1,10 @@
-import { Bundle, BundleEntry, DiagnosticReport, Encounter, Resource } from "@medplum/fhirtypes";
-import { buildBundle } from "../fhir/bundle/bundle";
-
-interface ConversionBundleContext {
-  documentId: string;
-}
+import { Attachment, Bundle, DiagnosticReport, Encounter, Resource } from "@medplum/fhirtypes";
+import { base64ToString } from "@metriport/shared/util";
+import { ExtractionSource } from "./types";
 
 /**
- * Parses unstructured data from a FHIR bundle by extracting and decoding
- * base64-encoded data from presentedForm fields.
+ * Prepares unstructured data extraction from a FHIR bundle by first extracting and decoding
+ * base64-encoded text from sources like presentedForm of DiagnosticReport and Encounters.
  */
 export function extractFromConversionBundle({
   bundle,
@@ -15,45 +12,40 @@ export function extractFromConversionBundle({
 }: {
   bundle: Bundle;
   documentId: string;
-}): Bundle | undefined {
+}): ExtractionSource[] {
   if (!bundle.entry) {
-    return undefined;
+    return [];
   }
 
-  const extractedBundleEntries: BundleEntry[] = [];
-  const context: ConversionBundleContext = { documentId };
+  const extractionSources: ExtractionSource[] = [];
 
   for (const entry of bundle.entry) {
     const resource = entry.resource;
     if (!resource) continue;
-    const extractedFromResource = extractFromResource({ resource, ...context });
+    const extractedFromResource = extractFromResource({ resource, documentId });
     if (extractedFromResource) {
-      extractedBundleEntries.push(...extractedFromResource);
+      extractionSources.push(...extractedFromResource);
     }
   }
 
-  if (extractedBundleEntries.length > 0) {
-    return buildBundle({
-      type: "collection",
-      entries: extractedBundleEntries,
-    });
-  }
-
-  return undefined;
+  return extractionSources;
 }
 
 export function extractFromResource({
   resource,
-  ...context
-}: { resource: Resource } & ConversionBundleContext): BundleEntry[] | undefined {
+  documentId,
+}: {
+  resource: Resource;
+  documentId: string;
+}): ExtractionSource[] | undefined {
   const resourceType = resource.resourceType;
   switch (resourceType) {
     case "Encounter":
-      return extractFromEncounter({ encounter: resource as Encounter, ...context });
+      return extractFromEncounter({ encounter: resource as Encounter, documentId });
     case "DiagnosticReport":
       return extractFromDiagnosticReport({
         diagnosticReport: resource as DiagnosticReport,
-        ...context,
+        documentId,
       });
     default:
       return undefined;
@@ -62,23 +54,39 @@ export function extractFromResource({
 
 export function extractFromEncounter({
   encounter,
-}: { encounter: Encounter } & ConversionBundleContext): BundleEntry[] | undefined {
+  documentId,
+}: {
+  encounter: Encounter;
+  documentId: string;
+}): ExtractionSource[] | undefined {
   const presentedForm = getPresentedForm(encounter);
   if (!presentedForm) return undefined;
 
-  return [];
+  return presentedForm.map(form => ({
+    documentId,
+    resource: encounter,
+    textContent: base64ToString(form.data ?? ""),
+  }));
 }
 
 export function extractFromDiagnosticReport({
   diagnosticReport,
-}: { diagnosticReport: DiagnosticReport } & ConversionBundleContext): BundleEntry[] | undefined {
+  documentId,
+}: {
+  diagnosticReport: DiagnosticReport;
+  documentId: string;
+}): ExtractionSource[] | undefined {
   const presentedForm = getPresentedForm(diagnosticReport);
   if (!presentedForm) return undefined;
 
-  return [];
+  return presentedForm.map(form => ({
+    documentId,
+    resource: diagnosticReport,
+    textContent: base64ToString(form.data ?? ""),
+  }));
 }
 
-export function getPresentedForm(resource: Resource): Array<{ data?: string }> | undefined {
+export function getPresentedForm(resource: Resource): Attachment[] | undefined {
   if (!("presentedForm" in resource)) return undefined;
   const presentedForm = resource.presentedForm;
   if (!Array.isArray(presentedForm)) return undefined;
