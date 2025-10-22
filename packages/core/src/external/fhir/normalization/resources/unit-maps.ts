@@ -1,6 +1,7 @@
 export const gfrUnitNormalizationMap = new Map<string, string>([
   ["below", "UNK"],
   ["comment", "UNK"],
+  ["unk", "UNK"],
   ["seebelow", "UNK"],
   ["seecmnt", "UNK"],
   ["seecomment", "UNK"],
@@ -87,6 +88,11 @@ export const gfrUnitNormalizationMap = new Map<string, string>([
   ["{ml/min1.73_sq_m}", "mL/min/1.73m2"],
   ["{ml/minm2}", "mL/min/1.73m2"],
   ["{ml/min}", "mL/min/1.73m2"],
+  ["ml/min/1.73&quot;squaremeters&quot;", "mL/min/1.73m2"],
+  ["ml/min/[1.73_m2]", "mL/min/1.73m2"],
+  ["0", "mL/min/1.73m2"],
+  ["1", "mL/min/1.73m2"],
+  ["2", "mL/min/1.73m2"],
   ["g/dl", "g/dL"],
   ["mg/dl", "mg/dL"],
   ["ml", "mL"],
@@ -96,6 +102,7 @@ export const gfrUnitNormalizationMap = new Map<string, string>([
   ["gfrunit", "{egfr}"],
   ["{egfr}", "{egfr}"],
   ["{estgfr}", "{egfr}"],
+  ["glomerular_filtration_rate_unit", "{egfr}"],
 ]);
 
 export const a1cUnitNormalizationMap = new Map<string, string>([
@@ -151,6 +158,7 @@ export const a1cUnitNormalizationMap = new Map<string, string>([
   ["g/dl", "g/dL"],
   ["gm/dl", "mg/dL"],
   ["mg/dl", "mg/dL"],
+  ["mmol/mol", "mmol/mol"],
   [")", "UNK"],
   ["2559736295", "UNK"],
   ["null", "UNK"],
@@ -175,6 +183,8 @@ export const bmiUnitNormalizationMap = new Map<string, string>([
   ["{index_val}", "kg/m2"],
   ["{index}", "kg/m2"],
   ["percent", "kg/m2"],
+  ["kilogram/(meter^2)", "kg/m2"],
+  ["kilogrampersquaremeter", "kg/m2"],
   ["lb/in2", "lb/in2"],
   ["{lb/in2}", "lb/in2"],
   ["{lbs/in2}", "lb/in2"],
@@ -189,6 +199,8 @@ export const bmiPercentileUnitNormalizationMap = new Map<string, string>([
   ["{percentile}", "%"],
   ["1", "%"],
   ["%", "%"],
+  ["years", "years"],
+  ["years)", "years"],
 ]);
 
 export const glucoseUnitNormalizationMap = new Map<string, string>([
@@ -203,6 +215,7 @@ export const glucoseUnitNormalizationMap = new Map<string, string>([
   ["milligramsperdeciliter", "mg/dL"],
   ["{(mg/dl)}", "mg/dL"],
   ["{mg/dl}", "mg/dL"],
+  ["milligramperdeciliter", "mg/dL"],
   [")", "mg/dL"],
   ["mmol/l", "mmol/l"],
   ["%", "%"],
