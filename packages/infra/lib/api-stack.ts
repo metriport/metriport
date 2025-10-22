@@ -46,7 +46,6 @@ import { EhrNestedStack } from "./ehr-nested-stack";
 import { EnvType } from "./env-type";
 import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
 import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
-import { Hl7NotificationStack } from "./hl7-notification-stack";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
 import { createJobsScheduler } from "./jobs/jobs-scheduler";
 import { JobsNestedStack } from "./jobs/jobs-stack";
@@ -75,7 +74,6 @@ const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 interface APIStackProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
-  hl7NotificationStack?: Hl7NotificationStack;
 }
 
 export class APIStack extends Stack {
@@ -273,6 +271,20 @@ export class APIStack extends Stack {
     this.addDynamoPerformanceAlarms(
       dynamoDBTokenTable,
       dynamoConstructName,
+      slackNotification?.alarmAction
+    );
+
+    const outboundRateLimitConstructName = "OutboundRateLimit";
+    const outboundRateLimitTable = new dynamodb.Table(this, outboundRateLimitConstructName, {
+      partitionKey: { name: "outboundKey", type: dynamodb.AttributeType.STRING },
+      replicationRegions: this.isProd(props) ? ["us-east-1"] : ["ca-central-1"],
+      replicationTimeout: Duration.hours(3),
+      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      pointInTimeRecovery: true,
+    });
+    this.addDynamoPerformanceAlarms(
+      outboundRateLimitTable,
+      outboundRateLimitConstructName,
       slackNotification?.alarmAction
     );
 
@@ -517,6 +529,7 @@ export class APIStack extends Stack {
           hl7ConversionBucket,
           secrets,
           incomingHl7NotificationBucket,
+          outboundRateLimitTable,
         }
       );
 
@@ -669,6 +682,7 @@ export class APIStack extends Stack {
       dbCredsSecret,
       dbReadReplicaEndpoint: dbCluster.clusterReadEndpoint,
       dynamoDBTokenTable,
+      outboundRateLimitTable,
       alarmAction: slackNotification?.alarmAction,
       dnsZones,
       fhirServerUrl: props.config.fhirServerUrl,
