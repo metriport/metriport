@@ -43,7 +43,7 @@ async function shouldSendHeartbeat(hieName: string): Promise<boolean> {
   const outboundRateLimitTableName = Config.getOutboundRateLimitTableName();
   if (!outboundRateLimitTableName) return true;
   const ddb = new DynamoDbUtils({ table: outboundRateLimitTableName, partitionKey: "outboundKey" });
-  const key = ddb.createKey(`heartbeat-rate-limit#${hieName}`, undefined);
+  const key = ddb.createKey(`heartbeat-rate-limit#${hieName}`);
   const nowMs = Date.now();
   const nextAllowedPingAtMs = nowMs + HEARTBEAT_RATE_LIMIT_WINDOW.asMilliseconds();
 

@@ -76,7 +76,7 @@ export class DynamoDbUtils {
     return await this._docClient.get(params).promise();
   }
 
-  createKey(partition: string, range: string | undefined) {
+  createKey(partition: string, range?: string) {
     return {
       [this._partitionKey]: partition,
       ...(this._rangeKey && range ? { [this._rangeKey]: range } : undefined),
