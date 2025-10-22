@@ -47,7 +47,7 @@ import {
 } from "./utils";
 import { sendHeartbeatToMonitoringService } from "../../external/monitoring/heartbeat";
 import { FeatureFlags } from "../feature-flags/ffs-on-dynamodb";
-import { isAdtsEnabledFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
+import { isAdtsFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 
 type HieConfig = { timezone: string };
 
@@ -159,7 +159,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     });
 
     // We have this so late into the function because we want to still store the message. Just not process it further.
-    const isCxAllowedToReceiveAdts = await isAdtsEnabledFeatureFlagEnabledForCx(cxId);
+    const isCxAllowedToReceiveAdts = await isAdtsFeatureFlagEnabledForCx(cxId);
     if (!isCxAllowedToReceiveAdts) {
       log(`CX ${cxId} is not allowed to receive ADTs. Skipping...`);
       return;
