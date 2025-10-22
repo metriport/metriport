@@ -2,7 +2,7 @@ version: "3.8"
 
 name: core-transform
 services:
-  raw-to-core:
+  core-transform:
     container_name: core-transform
     build:
       dockerfile: ./Dockerfile.dev
