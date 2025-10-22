@@ -39,11 +39,9 @@ export async function sendHeartbeat(hieName: string, log: typeof console.log): P
 }
 
 async function shouldPing(hieName: string): Promise<boolean> {
-  console.log(`In should ping for ${hieName}`);
   const heartbeatTableName = Config.getHeartbeatRateLimitTableName();
   const ddb = new DynamoDbUtils({ table: heartbeatTableName, partitionKey: "heartbeatKey" });
   const key = ddb.createKey(`heartbeat-rate-limit#${hieName}`, undefined);
-  console.log(`Creating key for ${hieName}`);
   const nowMs = Date.now();
   const nextAllowedPingAtMs = nowMs + HEARTBEAT_RATE_LIMIT_WINDOW.asMilliseconds();
 
@@ -66,7 +64,6 @@ async function shouldPing(hieName: string): Promise<boolean> {
       .promise();
     return true;
   } catch (error: unknown) {
-    console.log(`error: ${error}`);
     if (isConditionalCheckFailedError(error)) {
       return false;
     }
