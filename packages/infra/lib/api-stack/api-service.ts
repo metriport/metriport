@@ -516,6 +516,7 @@ export function createAPIService({
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   rateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   featureFlagsTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
+  heartbeatRateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);

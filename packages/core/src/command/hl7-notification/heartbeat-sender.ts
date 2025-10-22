@@ -9,12 +9,15 @@ dayjs.extend(duration);
 
 const HEARTBEAT_RATE_LIMIT_WINDOW = dayjs.duration(2, "minutes");
 
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isConditionalCheckFailedError(error: any): boolean {
+function isConditionalCheckFailedError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
   return (
-    error.name === "ConditionalCheckFailedException" ||
-    error.code === "ConditionalCheckFailedException" ||
-    error.Code === "ConditionalCheckFailedException"
+    ("name" in error && error.name === "ConditionalCheckFailedException") ||
+    ("code" in error && error.code === "ConditionalCheckFailedException") ||
+    ("Code" in error && error.Code === "ConditionalCheckFailedException")
   );
 }
 
