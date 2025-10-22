@@ -22,6 +22,7 @@ export async function sendHeartbeat(hieName: string, log: typeof console.log): P
   const heartbeatMap = Config.getHeartBeatMonitorMap();
   const monitorUrl = heartbeatMap[hieName];
   if (!monitorUrl) {
+    log(`Heartbeat monitor URL not found for ${hieName}`);
     throw new MetriportError(`Heartbeat monitor URL not found for ${hieName}`, undefined, {
       hieName,
     });
