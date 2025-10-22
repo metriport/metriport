@@ -27,6 +27,10 @@ async function searchDocumentsAction(
   phrases: string[],
   { cxId }: { cxId?: string }
 ): Promise<void> {
+  if (phrases.length === 0) {
+    console.error("No search phrases provided");
+    return;
+  }
   const automaton = new SearchAutomaton(phrases);
   console.log("Search terms:", automaton.getSearchTerms());
 
