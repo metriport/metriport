@@ -1,4 +1,4 @@
-import { MetriportError } from "@metriport/shared/dist/error/metriport-error";
+import { MetriportError } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { DynamoDbUtils } from "../../external/aws/dynamodb";
