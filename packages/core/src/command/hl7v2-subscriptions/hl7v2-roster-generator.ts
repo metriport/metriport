@@ -36,7 +36,6 @@ import {
 } from "./types";
 import { createScrambledId } from "./utils";
 import { getCxsWithAdtsFeatureFlagEnabled } from "../feature-flags/domain-ffs";
-import { FeatureFlags } from "../feature-flags/ffs-on-dynamodb";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
@@ -56,8 +55,6 @@ export class Hl7v2RosterGenerator {
   }
 
   async execute(config: HieConfig | VpnlessHieConfig): Promise<void> {
-    FeatureFlags.init(Config.getAWSRegion(), Config.getFeatureFlagsTableName());
-
     const { log } = out("Hl7v2RosterGenerator");
     const { states } = config;
     const hieName = config.name;
