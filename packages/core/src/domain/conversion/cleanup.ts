@@ -15,15 +15,15 @@ export function cleanUpPayload(payloadRaw: string): string {
   return payloadCleanedCode;
 }
 
-function replaceCdUnkString(payloadRaw: string): string {
+export function replaceCdUnkString(payloadRaw: string): string {
   const stringToReplace = /xsi:type="CD UNK"/g;
   const replacement = `xsi:type="CD"`;
   return payloadRaw.replace(stringToReplace, replacement);
 }
 
-function replaceNullFlavor(payloadRaw: string): string {
-  const stringToReplace = /<id\s*nullFlavor\s*=\s*".*?"\s*\/>/g;
-  const replacement = `<id extension="1" root="1"/>`;
+export function replaceNullFlavor(payloadRaw: string): string {
+  const stringToReplace = /<id\s*nullFlavor\s*=\s*".*?"\s*/g;
+  const replacement = `<id extension="1" root="1"`;
   return payloadRaw.replace(stringToReplace, replacement);
 }
 
@@ -36,8 +36,34 @@ export function replaceXmlTagChars(doc: string): string {
 
   let stringState = true;
   let startTagState = 0;
+  let tagPropertiesState = false;
+  let inComment = false;
+
   for (let i = 0; i < chars.length; i++) {
     const c = chars[i];
+
+    // Check for comment start "<!--"
+    if (!inComment && c === "<" && i + 3 < chars.length) {
+      if (chars[i + 1] === "!" && chars[i + 2] === "-" && chars[i + 3] === "-") {
+        inComment = true;
+        i += 3; // Skip the next 3 characters
+        continue;
+      }
+    }
+
+    // Check for comment end "-->"
+    if (inComment && c === "-" && i + 2 < chars.length) {
+      if (chars[i + 1] === "-" && chars[i + 2] === ">") {
+        inComment = false;
+        i += 2; // Skip the next 2 characters
+        continue;
+      }
+    }
+
+    // Skip processing if we're inside a comment
+    if (inComment) {
+      continue;
+    }
 
     if (stringState) {
       if (c == ">") {
@@ -49,11 +75,22 @@ export function replaceXmlTagChars(doc: string): string {
     }
     // tag state
     else {
+      if (c == '"') {
+        tagPropertiesState = !tagPropertiesState;
+      }
       if (c == ">") {
-        stringState = true;
+        if (tagPropertiesState) {
+          chars[i] = "&gt;";
+        } else {
+          stringState = true;
+        }
       } else if (c == "<") {
-        chars[startTagState] = "&lt;";
-        startTagState = i;
+        if (tagPropertiesState && i != startTagState) {
+          chars[i] = "&lt;";
+        } else {
+          chars[startTagState] = "&lt;";
+          startTagState = i;
+        }
       }
     }
   }
