@@ -6,6 +6,5 @@ select
     , cast(null as {{ dbt.type_string() }} ) as practice_affiliation
     , cast(pract.qualification_0_code_coding_0_display as {{ dbt.type_string() }} ) as specialty
     , cast(null as {{ dbt.type_string() }} ) as sub_specialty
-    , cast(pract.meta_source as {{ dbt.type_string() }} ) as data_source
+    , cast(null as {{ dbt.type_string() }} ) as data_source
  from {{ ref('stage__practitioner') }} as pract
- 

@@ -30,7 +30,7 @@ select
     , cast(null as {{ dbt.type_string() }} ) as normalized_abnormal_flag
     , cast(null as {{ dbt.type_string() }} ) as specimen
     , cast(null as {{ dbt.type_string() }} ) as ordering_practitioner_id
-    , cast(ao.data_source as {{ dbt.type_string() }} ) as data_source
+    , cast(data_source as {{ dbt.type_string() }} ) as data_source
 from {{ref('int__all_observations')}} ao
 where category = 'laboratory'
 

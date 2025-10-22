@@ -29,7 +29,7 @@ select
     , cast(null  as {{ dbt.type_string() }} ) as paid_amount
     , cast(null  as {{ dbt.type_string() }} ) as allowed_amount
     , cast(null  as {{ dbt.type_string() }} ) as charge_amount
-    , cast(enc.meta_source as {{ dbt.type_string() }} ) as data_source
+     , 'metriport' as data_source
 from {{ ref('stage__encounter') }} as enc
 left join {{ref('encounter_type_map')}} etm
     on enc.type_0_text = etm.hg_type

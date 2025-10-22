@@ -13,5 +13,5 @@ select
     , cast(coalesce(l.address_0_postalcode, l.address_1_postalcode, l.address_2_postalcode) as {{ dbt.type_string() }} ) as zip_code
     , cast(case when l.position_latitude != '' and l.position_latitude is not null then l.position_latitude else null end as {{ dbt.type_float() }} ) as latitude
     , cast(case when l.position_longitude != '' and l.position_longitude is not null then l.position_longitude else null end as {{ dbt.type_float() }} ) as longitude
-    , cast(l.meta_source as {{ dbt.type_string() }} ) as data_source
+    , cast('metriport' as {{ dbt.type_string() }} ) as data_source
 from {{ref('stage__location')}} l

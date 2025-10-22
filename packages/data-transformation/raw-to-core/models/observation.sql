@@ -21,6 +21,6 @@
     , cast(ao.source_reference_range_high as {{ dbt.type_string() }} ) as source_reference_range_high
     , cast(null as {{ dbt.type_string() }} ) as normalized_reference_range_low
     , cast(null as {{ dbt.type_string() }} ) as normalized_reference_range_high
-    , cast(ao.data_source as {{ dbt.type_string() }} ) as data_source
+    , cast('metriport' as {{ dbt.type_string() }} ) as data_source
 from {{ref('int__all_observations')}} ao
 where category <> 'laboratory'

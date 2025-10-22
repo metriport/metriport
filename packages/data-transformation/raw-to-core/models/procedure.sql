@@ -45,7 +45,7 @@ select
 , cast(null as {{ dbt.type_string() }} ) as modifier_4
 , cast(null as {{ dbt.type_string() }} ) as modifier_5
 , cast(right(pro.{{ protected_columns('PERFORMER_0_ACTOR_REFERENCE') }}, 36) as {{ dbt.type_string() }} ) as practitioner_id
-, cast(pro.meta_source as {{ dbt.type_string() }} ) as data_source
+, cast('metriport' as {{ dbt.type_string() }} ) as data_source
 from {{ ref('stage__procedure' ) }} pro
 left join {{ ref('stage__patient' ) }} pat
     on right(pro.subject_reference, 36) = pat.id
@@ -58,3 +58,4 @@ left join {{ref('terminology__snomed_ct')}} snomed
 left join {{ref('terminology__loinc')}} loinc
     on pro.code_coding_0_system = 'http://loinc.org'
     and pro.code_coding_0_code = loinc.loinc
+

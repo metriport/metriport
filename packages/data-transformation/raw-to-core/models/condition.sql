@@ -84,7 +84,7 @@ select
     , cast(null as {{ dbt.type_int() }} )                                                               as condition_rank
     , cast(null as {{ dbt.type_string() }} )                                                            as present_on_admit_code
     , cast(null as {{ dbt.type_string() }} )                                                            as present_on_admit_description
-    , cast(c.meta_source as {{ dbt.type_string() }} )                                                   as data_source
+    , cast('metriport' as {{ dbt.type_string() }} )                                                     as data_source
 from {{ref('stage__condition')}} c
 left join {{ref('stage__patient')}} p
     on right(c.{{ protected_columns('SUBJECT_REFERENCE') }}, 36) = p.id

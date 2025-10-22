@@ -2,7 +2,7 @@ name: "metriport_connector"
 version: "1.0.0"
 config-version: 2
 
-profile: "snowflake"
+profile: "postgres"
 
 model-paths: ["models"]
 analysis-paths: ["analyses"]
@@ -32,12 +32,6 @@ models:
       +materialized: ephemeral
     intermediate:
       +schema: input_layer_stage
-      +materialized: table
-    intermediate_v2:
-      +schema: input_layer_stage_v2
-      +materialized: table
-    core_v2:
-      +schema: core_v2
       +materialized: table
 
 seeds:

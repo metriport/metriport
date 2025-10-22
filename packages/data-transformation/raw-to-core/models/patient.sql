@@ -1,7 +1,6 @@
 with address as (
     select *
     from {{ ref('stage__patient_address') }} x
-    qualify row_number() over (partition by PATIENT_ID order by processed_date ) = 1
 )
 
 select pat.id                                                   as patient_id
@@ -21,6 +20,6 @@ select pat.id                                                   as patient_id
       , null                                                    as county
       , null                                                    as latitude
       , null                                                    as longitude
-      , 'metriport'                                             as data_source
-from {{ ref('stage__patient') }}                                as pat
+      , 'metriport'                                            as data_source
+from {{ ref('stage__patient') }}                               as pat
     left join address on pat.id = address.patient_id
