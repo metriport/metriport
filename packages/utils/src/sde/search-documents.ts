@@ -36,25 +36,37 @@ async function searchDocumentsAction(
 
   const customerIds = cxId ? [cxId] : listLocalCustomerIds();
   let totalPatientsMatched = 0;
+  let totalSourcesSearched = 0;
+  let totalPatientsSearched = 0;
+
   for (const customerId of customerIds) {
     console.log(`Searching documents of customer ${customerId}`);
     const patientIds = listLocalPatientIds(customerId);
     for (const patientId of patientIds) {
-      const totalMatches = searchDocuments(automaton, customerId, patientId);
-      if (totalMatches.length > 0) {
+      const { matches, sourcesSearched } = searchDocuments(automaton, customerId, patientId);
+      if (matches.length > 0) {
         totalPatientsMatched++;
       }
+      totalSourcesSearched += sourcesSearched;
+      totalPatientsSearched++;
     }
   }
 
-  console.log(`Found ${totalPatientsMatched} patients with matches`);
+  console.log(
+    `Found ${totalPatientsMatched} patients with matches across ${totalSourcesSearched} sources`
+  );
+  console.log(
+    `Searched ${totalPatientsSearched} patients (${Math.round(
+      totalSourcesSearched / totalPatientsSearched
+    )} sources/patient)`
+  );
 }
 
 function searchDocuments(
   automaton: SearchAutomaton,
   cxId: string,
   patientId: string
-): SearchMatch[] {
+): { matches: SearchMatch[]; sourcesSearched: number } {
   const sources = loadExtractionSources(cxId, patientId);
   const matches: SearchMatch[] = [];
   for (const source of sources) {
@@ -74,7 +86,7 @@ function searchDocuments(
       console.log(`${before}\x1b[1;32m${text}\x1b[0m${after}`);
     }
   }
-  return matches;
+  return { matches, sourcesSearched: sources.length };
 }
 
 export default command;

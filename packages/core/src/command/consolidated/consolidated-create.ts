@@ -17,7 +17,7 @@ import {
   dangerouslyAddEntriesToBundle,
 } from "../../external/fhir/bundle/bundle";
 import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
-import { normalizeFhir } from "../../external/fhir/normalization/normalize-fhir";
+import { normalize } from "../../external/fhir/consolidated/normalize";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
@@ -138,7 +138,7 @@ export async function createConsolidatedFromConversions({
   log(`...done, from ${lengthWithDups} to ${bundle.entry?.length} resources`);
 
   log(`Normalizing consolidated bundle...`);
-  const normalizedBundle = normalizeFhir(bundle);
+  const normalizedBundle = await normalize({ cxId, patientId, bundle });
 
   // TODO This whole section with AI-related logic should be moved to the `generateAiBriefBundleEntry`.
   log(
