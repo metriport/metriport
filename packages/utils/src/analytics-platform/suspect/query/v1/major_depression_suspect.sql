@@ -12,7 +12,7 @@
 WITH depression_dx_exclusion AS (
   /* Exclude existing depression diagnoses (direct mapping of V2) */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE
     UPPER(c.ICD_10_CM_CODE) LIKE 'F32%'   -- MDD, single episode (incl. F32.A)
     OR UPPER(c.ICD_10_CM_CODE) LIKE 'F33%'-- MDD, recurrent
@@ -29,13 +29,13 @@ phq_raw AS (
     'Observation'                                                 AS resource_type,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    COALESCE(o.START_DATE, o.END_DATE)                            AS obs_date,
+    o.VALUE                                                           AS RESULT,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    COALESCE(o.EFFECTIVE_DATE, o.END_DATE)                            AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE UPPER(o.LOINC_CODE) IN ('44261-6','55758-7')  -- PHQ-9 total, PHQ-2 total
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
 ),
 
 /* -------------------------

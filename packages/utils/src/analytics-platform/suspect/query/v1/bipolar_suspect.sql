@@ -3,7 +3,7 @@
    ------------------------------------------------------------
    Purpose
      Flag "bipolar_disorder suspects" if patient has Lithium
-     (LOINC 14334-7) lab results in CORE__OBSERVATION.
+     (LOINC 14334-7) lab results in OBSERVATION.
      This is a *screening signal* only, not a diagnosis.
 
    Exclusions
@@ -19,7 +19,7 @@
 WITH bipolar_dx_exclusion AS (
   /* Patients already diagnosed with Bipolar Disorder */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'F31%'
 ),
 
@@ -27,7 +27,7 @@ substance_induced_exclusion AS (
   /* Patients with substance/medication-induced mood disorder
      (handle both dotted and undotted representations) */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE c.ICD_10_CM_CODE IN ('F1014','F1524','F1914')
 
 ),
@@ -43,19 +43,19 @@ lithium_raw AS (
     'Observation'                                                    AS resource_type,
     o.LOINC_CODE                                                     AS NORMALIZED_CODE,
     o.LOINC_DISPLAY                                                  AS NORMALIZED_DESCRIPTION,
-    o.RESULT,
+    o.VALUE                                                          AS RESULT,
     o.UNITS                                                          AS units,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    CAST(o.START_DATE AS DATE)                                       AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    CAST(o.EFFECTIVE_DATE AS DATE)                                       AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE o.LOINC_CODE = '14334-7'  -- Lithium [Moles/volume] in Serum or Plasma
     /* ensure numeric token exists */
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     /* ensure units aren't null or empty */
     AND NULLIF(o.UNITS,'') IS NOT NULL
     /* ensure numeric token > 0 */
-    AND TRY_TO_DOUBLE(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')) > 0
+    AND TRY_TO_DOUBLE(REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')) > 0
 ),
 
 /* -------------------------

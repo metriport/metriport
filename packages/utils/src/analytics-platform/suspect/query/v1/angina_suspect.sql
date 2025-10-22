@@ -8,9 +8,9 @@
      troponin against sex-specific 99th percentile thresholds.
 
    Data sources (new schemas)
-     • CORE__OBSERVATION  (LOINC troponins, result + units, dates)
-     • CORE__CONDITION    (ICD-10 exclusions I20*)
-     • CORE__PATIENT      (SEX → M/F for URL thresholds)
+     • OBSERVATION  (LOINC troponins, result + units, dates)
+     • CONDITION    (ICD-10 exclusions I20*)
+     • PATIENT      (SEX → M/F for URL thresholds)
 
    Troponin LOINCs and URL cutoffs (ng/L):
      • Troponin I ..................... 10839-9  → M: 26,  F: 16
@@ -28,7 +28,7 @@
 WITH angina_dx_exclusion AS (
   /* Exclude patients already diagnosed with angina (ICD-10 I20.*) */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'I20%'
 ),
 
@@ -42,19 +42,19 @@ troponin_raw AS (
     'Observation'                                                  AS resource_type,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE                                                        AS RESULT,
     o.UNITS                                                        AS units_raw,
     /* first numeric token (handles "0.034 ng/mL", "40 ng/L", etc.) */
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    CAST(o.START_DATE AS DATE)                                      AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    CAST(o.EFFECTIVE_DATE AS DATE)                                      AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE o.LOINC_CODE IN ('10839-9','89579-7','6598-7','67151-1')
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     /* require non-empty units */
     AND NULLIF(o.UNITS,'') IS NOT NULL
     /* numeric token must be > 0 */
-    AND TRY_TO_DOUBLE(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')) > 0
+    AND TRY_TO_DOUBLE(REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')) > 0
 ),
 
 /* RAW: patient sex limited to the troponin cohort */
@@ -66,7 +66,7 @@ patient_sex_raw AS (
       WHEN p.GENDER ILIKE 'f%' THEN 'F'
       ELSE NULL
     END AS sex_code
-  FROM CORE_V3.CORE__PATIENT p
+  FROM CORE_V3.PATIENT p
   WHERE p.PATIENT_ID IN (SELECT DISTINCT PATIENT_ID FROM troponin_raw)
 ),
 

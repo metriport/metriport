@@ -28,7 +28,7 @@
 WITH cancer_dx_exclusion AS (
   /* Exclude patients already carrying malignant neoplasm (C*) or history (Z85.*) */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE UPPER(c.ICD_10_CM_CODE) LIKE 'C%'     -- malignant neoplasms C00–C97
      OR UPPER(c.ICD_10_CM_CODE) LIKE 'Z85%'   -- personal history of malignant neoplasm
 ),
@@ -42,7 +42,7 @@ cancer_tx_raw AS (
     p.PROCEDURE_ID                             AS resource_id,
     'Procedure'                                AS resource_type,
     COALESCE(NULLIF(p.STATUS,''), 'completed') AS status,
-    COALESCE(p.START_DATE, p.END_DATE)         AS obs_date,
+    COALESCE(p.PERFORMED_DATE, p.END_DATE)         AS obs_date,
 
     /* code/display fields we may emit into FHIR */
     p.CPT_CODE,
@@ -57,7 +57,7 @@ cancer_tx_raw AS (
     p.REASON_SNOMED_DISPLAY,
     p.NOTE_TEXT,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE
     (
       /* Chemotherapy administration (CPT) */

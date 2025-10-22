@@ -18,14 +18,14 @@
      • G41*   = Status epilepticus
 
    Notes
-     - Uses CORE_V3.CORE__CONDITION, CORE_V3.CORE__PROCEDURE, CORE_V3.CORE__OBSERVATION.
+     - Uses CORE_V3.CONDITION, CORE_V3.PROCEDURE, CORE_V3.OBSERVATION.
      - Column “BODYSITE_SNOMED_CODE” name preserved from schema.
    ============================================================ */
 
 WITH seizure_dx_exclusion AS (
   /* Patients already carrying a “history of” or active epilepsy/status dx */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE
     UPPER(c.ICD_10_CM_CODE) IN (
       'Z8669'  -- Personal history of other diseases of the nervous system & sense organs
@@ -43,7 +43,7 @@ raw_eeg_proc AS (
     p.PROCEDURE_ID                             AS resource_id,
     'Procedure'                                AS resource_type,
     COALESCE(NULLIF(p.STATUS,''), 'completed') AS status,
-    COALESCE(p.START_DATE, p.END_DATE)         AS obs_date,
+    COALESCE(p.PERFORMED_DATE, p.END_DATE)         AS obs_date,
     p.CPT_CODE,
     p.CPT_DISPLAY,
     p.SNOMED_CODE,
@@ -54,7 +54,7 @@ raw_eeg_proc AS (
     p.REASON_SNOMED_DISPLAY,
     p.NOTE_TEXT,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE
     UPPER(p.CPT_CODE) IN (
       '95812',  -- EEG extended; 41–60 min
@@ -81,7 +81,7 @@ raw_aed_admin AS (
     p.PROCEDURE_ID                             AS resource_id,
     'Procedure'                                AS resource_type,
     COALESCE(NULLIF(p.STATUS,''), 'completed') AS status,
-    COALESCE(p.START_DATE, p.END_DATE)         AS obs_date,
+    COALESCE(p.PERFORMED_DATE, p.END_DATE)         AS obs_date,
     p.CPT_CODE,
     p.CPT_DISPLAY,
     p.SNOMED_CODE,
@@ -92,7 +92,7 @@ raw_aed_admin AS (
     p.REASON_SNOMED_DISPLAY,
     p.NOTE_TEXT,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE
     UPPER(p.CPT_CODE) IN (
       'J1953'  -- Injection, levetiracetam, 10 mg (IV Keppra)
@@ -108,14 +108,14 @@ raw_eeg_obs AS (
     o.OBSERVATION_ID                           AS resource_id,
     'Observation'                              AS resource_type,
     COALESCE(NULLIF(o.STATUS,''), 'final')     AS status,
-    COALESCE(o.START_DATE, o.END_DATE)         AS obs_date,
+    COALESCE(o.EFFECTIVE_DATE, o.END_DATE)     AS obs_date,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE                                    AS RESULT,
     o.UNITS,
     o.NOTE_TEXT,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE UPPER(o.LOINC_CODE) IN (
     '11523-8',  -- EEG study
     '92050-4'   -- Video EEG study

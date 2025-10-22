@@ -13,15 +13,15 @@
      Exclusion: already diagnosed with heart failure (ICD-10 I50.*).
 
    Tables used (CORE_V3):
-     • CORE__OBSERVATION (LOINC labs)
-     • CORE__PROCEDURE   (CPT/SNOMED echocardiography)
-     • CORE__CONDITION   (ICD-10 symptoms)
+     • OBSERVATION (LOINC labs)
+     • PROCEDURE   (CPT/SNOMED echocardiography)
+     • CONDITION   (ICD-10 symptoms)
    ============================================================ */
 
 WITH hf_dx_exclusion AS (
   /* Exclude patients already diagnosed with heart failure (I50.*) */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE UPPER(c.ICD_10_CM_CODE) LIKE 'I50%'
 ),
 
@@ -31,23 +31,23 @@ WITH hf_dx_exclusion AS (
 peptide_raw AS (
   SELECT
     o.PATIENT_ID,
-    o.OBSERVATION_ID                               AS resource_id,
+    o.OBSERVATION_ID                                AS resource_id,
     'Observation'                                   AS resource_type,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE                                         AS RESULT,
     o.UNITS                                         AS units_raw,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    COALESCE(o.START_DATE, o.END_DATE)              AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    COALESCE(o.EFFECTIVE_DATE, o.END_DATE)              AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE UPPER(o.LOINC_CODE) IN (
     '30934-4',  -- BNP [Mass/volume] in Serum/Plasma
     '42637-9',  -- BNP [Substance/amount] in Serum/Plasma
     '33762-6',  -- NT-proBNP [Mass/volume] in Serum/Plasma
     '83107-3'   -- NT-proBNP [Substance/amount] in Serum/Plasma
   )
-  AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+  AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
 ),
 
 /* -------------------------
@@ -56,10 +56,10 @@ peptide_raw AS (
 echo_raw AS (
   SELECT
     p.PATIENT_ID,
-    p.PROCEDURE_ID                                AS resource_id,
+    p.PROCEDURE_ID                                 AS resource_id,
     'Procedure'                                    AS resource_type,
     COALESCE(NULLIF(p.STATUS,''), 'completed')     AS status,
-    COALESCE(p.START_DATE, p.END_DATE)             AS obs_date,
+    COALESCE(p.PERFORMED_DATE, p.END_DATE)         AS obs_date,
     p.CPT_CODE,
     p.CPT_DISPLAY,
     p.SNOMED_CODE,
@@ -70,7 +70,7 @@ echo_raw AS (
     p.REASON_SNOMED_DISPLAY,
     p.NOTE_TEXT,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE
        UPPER(p.CPT_CODE) IN (
          '93306',  -- TTE, complete (2D, M-mode, Doppler, color)
@@ -91,9 +91,9 @@ symptom_raw AS (
     c.CONDITION_ID                                 AS resource_id,
     'Condition'                                     AS resource_type,
     c.ICD_10_CM_CODE,
-    COALESCE(c.START_DATE, c.RECORDED_DATE, c.END_DATE) AS obs_date,
+    COALESCE(c.ONSET_DATE, c.RECORDED_DATE, c.END_DATE) AS obs_date,
     c.DATA_SOURCE
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE
        UPPER(c.ICD_10_CM_CODE) LIKE 'R060%'  -- Dyspnea
     OR UPPER(c.ICD_10_CM_CODE) = 'R5383'     -- Other fatigue

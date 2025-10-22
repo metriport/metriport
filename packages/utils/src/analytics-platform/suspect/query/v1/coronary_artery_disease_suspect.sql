@@ -14,7 +14,7 @@
 
 WITH cad_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'I25%'
 ),
 
@@ -28,30 +28,30 @@ troponin_raw AS (
     'Observation'    AS resource_type,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE          AS RESULT,
     /* infer units from RESULT if UNITS is blank */
     COALESCE(
       NULLIF(o.UNITS,''),
       CASE
-        WHEN UPPER(o.RESULT) LIKE '%NG/L%'  THEN 'ng/L'
-        WHEN UPPER(o.RESULT) LIKE '%NG/ML%' THEN 'ng/mL'
-        WHEN UPPER(o.RESULT) LIKE '%PG/ML%' THEN 'pg/mL'
-        WHEN UPPER(o.RESULT) LIKE '%UG/L%'  THEN 'ug/L'
-        WHEN UPPER(o.RESULT) LIKE '%ΜG/L%'  THEN 'ug/L'   -- Greek mu
-        WHEN UPPER(o.RESULT) LIKE '%µG/L%'  THEN 'ug/L'   -- micro symbol
+        WHEN UPPER(o.VALUE) LIKE '%NG/L%'  THEN 'ng/L'
+        WHEN UPPER(o.VALUE) LIKE '%NG/ML%' THEN 'ng/mL'
+        WHEN UPPER(o.VALUE) LIKE '%PG/ML%' THEN 'pg/mL'
+        WHEN UPPER(o.VALUE) LIKE '%UG/L%'  THEN 'ug/L'
+        WHEN UPPER(o.VALUE) LIKE '%ΜG/L%'  THEN 'ug/L'   -- Greek mu
+        WHEN UPPER(o.VALUE) LIKE '%µG/L%'  THEN 'ug/L'   -- micro symbol
         ELSE NULL
       END
     ) AS units_raw,
     /* capture number incl. scientific notation */
     REGEXP_SUBSTR(
-      REPLACE(o.RESULT, ',', ''),
+      REPLACE(o.VALUE, ',', ''),
       '[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?'
     ) AS value_token,
-    CAST(o.START_DATE AS DATE) AS obs_date,
+    CAST(o.EFFECTIVE_DATE AS DATE) AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE o.LOINC_CODE IN ('10839-9','6598-7')
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''),
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''),
         '[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?') IS NOT NULL
 ),
 
@@ -94,9 +94,9 @@ revasc_raw AS (
     'Procedure'    AS resource_type,
     p.CPT_CODE     AS NORMALIZED_CODE,
     p.CPT_DISPLAY  AS NORMALIZED_DESCRIPTION,
-    CAST(p.START_DATE AS DATE) AS obs_date,
+    CAST(p.PERFORMED_DATE AS DATE) AS obs_date,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE p.CPT_CODE IN ('92928','92929','33511','33512')
 ),
 revasc_clean AS (

@@ -19,14 +19,14 @@
      - Ribavirin explicitly excluded.
 
    New schemas used:
-     • CORE__OBSERVATION        (labs)
-     • CORE__CONDITION          (dx exclusions)
-     • CORE_V3.CORE__MEDICATION_REQUEST + CORE_V3.CORE__MEDICATION (DAA Rx)
+     • OBSERVATION        (labs)
+     • CONDITION          (dx exclusions)
+     • CORE_V3.MEDICATION_REQUEST + CORE_V3.MEDICATION (DAA Rx)
    ============================================================ */
 
 WITH hepc_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'B18.2%'
 ),
 
@@ -40,14 +40,14 @@ hcv_lab_raw AS (
     'Observation'                                                      AS resource_type,
     o.LOINC_CODE                   AS NORMALIZED_CODE,
     o.LOINC_DISPLAY                AS NORMALIZED_DESCRIPTION,
-    o.RESULT,
+    o.VALUE                                                            AS RESULT,
     o.UNITS                        AS units_raw,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    CAST(o.START_DATE AS DATE)                                         AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    CAST(o.EFFECTIVE_DATE AS DATE)                                         AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE o.LOINC_CODE IN ('13955-0','16128-1','11011-4','38180-6','32286-7','48159-8')
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
 ),
 
 /* -------------------------
@@ -109,8 +109,8 @@ med_daa_raw AS (
     CAST(mr.AUTHORED_ON AS DATE)                                    AS obs_date,
     COALESCE(NULLIF(mr.STATUS,''),'active')                         AS mr_status,
     mr.DATA_SOURCE
-  FROM CORE_V3.CORE__MEDICATION_REQUEST mr
-  JOIN CORE_V3.CORE__MEDICATION m
+  FROM CORE_V3.MEDICATION_REQUEST mr
+  JOIN CORE_V3.MEDICATION m
     ON m.MEDICATION_ID = mr.MEDICATION_ID
   WHERE mr.AUTHORED_ON IS NOT NULL
     AND (

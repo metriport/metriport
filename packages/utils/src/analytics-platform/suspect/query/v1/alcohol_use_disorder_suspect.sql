@@ -4,20 +4,20 @@
    Flow: RAW → NORM → CLEAN → SUSPECT → FHIR → RETURN
 
    Data sources (new schema):
-     • CORE__OBSERVATION  — ethanol lab (LOINC 5643-2)
-     • CORE__CONDITION    — ICD-10 exclusions (F10% alcohol disorders)
-     • CORE__PROCEDURE    — OPTIONAL “strong add set” (SBIRT/BI CPT/HCPCS)
+     • OBSERVATION  — ethanol lab (LOINC 5643-2)
+     • CONDITION    — ICD-10 exclusions (F10% alcohol disorders)
+     • PROCEDURE    — OPTIONAL “strong add set” (SBIRT/BI CPT/HCPCS)
                             gated by alcohol-harm SNOMED reasons
 
    Purpose:
      1) Lab path (primary): Identify suspects based on blood alcohol level
-        (BAL) from CORE__OBSERVATION where LOINC_CODE = '5643-2'.
+        (BAL) from OBSERVATION where LOINC_CODE = '5643-2'.
         We normalize units to mg/dL:
           - mg/dL → as-is
           - g/dL  → × 1000
           - % (w/v) → × 1000  (≈ g/dL)
         Plausibility guard: keep 10–1000 mg/dL. Require non-empty units
-        and a numeric token > 0. Exclude patients with F10% in CORE__CONDITION.
+        and a numeric token > 0. Exclude patients with F10% in CONDITION.
         Threshold buckets (exactly matching original logic):
           - ≥ 300 mg/dL → alcohol_very_high_300plus
           - 200–299 mg/dL → alcohol_high_200plus
@@ -44,13 +44,13 @@
      a minimal FHIR payload for UI review.
 
    This query is a direct functional mapping of the original logic to
-   the new CORE__OBSERVATION / CORE__CONDITION / CORE__PROCEDURE schema.
+   the new OBSERVATION / CONDITION / PROCEDURE schema.
    ============================================================ */
 
 WITH aud_dx_exclusion AS (
   /* Patients already diagnosed with alcohol-related disorders (exclude) */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'F10%'
 ),
 
@@ -64,19 +64,19 @@ ethanol_raw AS (
     'Observation'                                                  AS resource_type,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE                                                        AS RESULT,
     o.UNITS                                                        AS units_raw,
     /* Extract the first numeric piece (handles "0.08 %", "300 mg/dL", etc.) */
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    CAST(o.START_DATE AS DATE)                                     AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    CAST(o.EFFECTIVE_DATE AS DATE)                                     AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE o.LOINC_CODE = '5643-2'  -- Ethanol [Mass/volume] in Serum or Plasma
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     /* Require non-empty units up front */
     AND NULLIF(o.UNITS, '') IS NOT NULL
     /* ensure numeric token > 0 */
-    AND TRY_TO_DOUBLE(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')) > 0
+    AND TRY_TO_DOUBLE(REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')) > 0
 ),
 
 /* -------------------------
@@ -157,9 +157,9 @@ sbirt_suspects AS (
     'Procedure'     AS resource_type,
     p.CPT_CODE,
     p.CPT_DISPLAY,
-    CAST(p.START_DATE AS DATE) AS proc_date,
+    CAST(p.PERFORMED_DATE AS DATE) AS proc_date,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE UPPER(p.CPT_CODE) IN (
       '99408',  -- Alcohol and/or substance (other than tobacco) abuse structured screening & brief intervention; 15–30 minutes
       '99409',  -- Alcohol and/or substance (other than tobacco) abuse structured screening & brief intervention; >30 minutes

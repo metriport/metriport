@@ -12,14 +12,14 @@
      highest-severity CKD bucket per patient.
 
    New schemas used:
-     • CORE__CONDITION   (ICD_10_CM_CODE)
-     • CORE__OBSERVATION (LOINC_CODE / RESULT / UNITS / START_DATE)
-     • CORE__PROCEDURE   (CPT_CODE / CPT_DISPLAY / START_DATE)
+     • CONDITION   (ICD_10_CM_CODE)
+     • OBSERVATION (LOINC_CODE / RESULT / UNITS / START_DATE)
+     • PROCEDURE   (CPT_CODE / CPT_DISPLAY / START_DATE)
    ============================================================ */
 
 WITH ckd_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'N18%'
 ),
 
@@ -34,14 +34,14 @@ egfr_raw AS (
     'Observation'                                                  AS resource_type,
     o.LOINC_CODE                                                   AS NORMALIZED_CODE,
     o.LOINC_DISPLAY                                                AS NORMALIZED_DESCRIPTION,
-    o.RESULT,
+    o.VALUE                                                        AS RESULT,
     o.UNITS                                                        AS units_raw,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    CAST(o.START_DATE AS DATE)                                     AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    CAST(o.EFFECTIVE_DATE AS DATE)                                     AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE o.LOINC_CODE IN ('33914-3','62238-1','69405-9','98979-8')
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     AND NULLIF(o.UNITS,'') IS NOT NULL
 ),
 
@@ -56,20 +56,20 @@ albumin_raw AS (
     'Observation'                                                  AS resource_type,
     o.LOINC_CODE                                                   AS NORMALIZED_CODE,
     o.LOINC_DISPLAY                                                AS NORMALIZED_DESCRIPTION,
-    o.RESULT,
+    o.VALUE                                                        AS RESULT,
     o.UNITS                                                        AS units_raw,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    CAST(o.START_DATE AS DATE)                                     AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    CAST(o.EFFECTIVE_DATE AS DATE)                                     AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE o.LOINC_CODE = '9318-7'
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     AND NULLIF(o.UNITS,'') IS NOT NULL
 ),
 
 /* -------------------------
    RAW: Dialysis procedures (treat as stage 5)
-   (CPT; SNOMED-only primary code path not available in CORE__PROCEDURE)
+   (CPT; SNOMED-only primary code path not available in PROCEDURE)
    ------------------------- */
 dialysis_raw AS (
   SELECT
@@ -78,9 +78,9 @@ dialysis_raw AS (
     'Procedure'                                 AS resource_type,
     p.CPT_CODE                                   AS NORMALIZED_CODE,
     p.CPT_DISPLAY                                AS NORMALIZED_DESCRIPTION,
-    CAST(p.START_DATE AS DATE)                  AS obs_date,
+    CAST(p.PERFORMED_DATE AS DATE)                  AS obs_date,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE p.CPT_CODE IN ('90935','90937')
 ),
 

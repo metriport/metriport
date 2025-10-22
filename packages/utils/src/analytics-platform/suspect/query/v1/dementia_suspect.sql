@@ -12,7 +12,7 @@
 
 WITH dementia_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE UPPER(c.ICD_10_CM_CODE) LIKE 'F01%'  -- Vascular dementia
      OR UPPER(c.ICD_10_CM_CODE) LIKE 'F02%'  -- Dementia in other diseases
      OR UPPER(c.ICD_10_CM_CODE) LIKE 'F03%'  -- Unspecified dementia
@@ -28,15 +28,15 @@ moca_raw AS (
     o.OBSERVATION_ID                                AS resource_id,
     'Observation'                                   AS resource_type,
     COALESCE(NULLIF(o.STATUS,''), 'final')          AS status,
-    COALESCE(o.START_DATE, o.END_DATE)              AS obs_date,
+    COALESCE(o.EFFECTIVE_DATE, o.END_DATE)          AS obs_date,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE                                         AS RESULT,
     o.UNITS,
     o.NOTE_TEXT,
     o.DATA_SOURCE,
-    REGEXP_SUBSTR(o.RESULT, '[-+]?[0-9]*\\.?[0-9]+') AS value_token
-  FROM CORE_V3.CORE__OBSERVATION o
+    REGEXP_SUBSTR(o.VALUE, '[-+]?[0-9]*\\.?[0-9]+') AS value_token
+  FROM CORE_V3.OBSERVATION o
   WHERE UPPER(o.LOINC_CODE) IN (
     '72133-2',  -- Montreal Cognitive Assessment [MoCA]
     '72172-0'   -- Total score [MoCA]
@@ -137,8 +137,8 @@ nmda_rx_raw AS (
     /* MoCA/Obs-only fields set NULL */
     NULL AS moca_score, NULL AS RESULT, NULL AS UNITS, NULL AS NOTE_TEXT,
     mr.DATA_SOURCE
-  FROM CORE_V3.CORE__MEDICATION_REQUEST mr
-  JOIN CORE_V3.CORE__MEDICATION m
+  FROM CORE_V3.MEDICATION_REQUEST mr
+  JOIN CORE_V3.MEDICATION m
     ON m.MEDICATION_ID = mr.MEDICATION_ID
   WHERE
     /* match only dementia-specific NMDA antagonist products */

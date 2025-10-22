@@ -16,7 +16,7 @@
 WITH cas_dx_exclusion AS (
   /* Exclude patients already diagnosed with carotid occlusion/stenosis */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE UPPER(c.ICD_10_CM_CODE) LIKE 'I65%'  -- I65.* Occlusion and stenosis of precerebral arteries
 ),
 
@@ -29,7 +29,7 @@ cas_raw AS (
     p.PROCEDURE_ID                             AS resource_id,
     'Procedure'                                AS resource_type,
     COALESCE(NULLIF(p.STATUS,''), 'completed') AS status,
-    COALESCE(p.START_DATE, p.END_DATE)         AS obs_date,
+    COALESCE(p.PERFORMED_DATE, p.END_DATE)         AS obs_date,
 
     /* code/display fields we may emit into FHIR */
     p.CPT_CODE,
@@ -44,7 +44,7 @@ cas_raw AS (
     p.REASON_SNOMED_DISPLAY,
     p.NOTE_TEXT,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE UPPER(p.CPT_CODE) IN (
     '36215',  -- Selective catheter placement, arterial system (used in cervicocerebral/cerebral angiography)
     '35301'   -- Thromboendarterectomy (endarterectomy), carotid/vertebral/subclavian (i.e., carotid endarterectomy)

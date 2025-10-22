@@ -9,13 +9,13 @@
      Exclude patients already diagnosed with obesity.
 
    Schemas used:
-     • CORE__OBSERVATION (LOINC_CODE, LOINC_DISPLAY, RESULT, UNITS, START_DATE)
-     • CORE__CONDITION   (ICD_10_CM_CODE)
+     • OBSERVATION (LOINC_CODE, LOINC_DISPLAY, RESULT, UNITS, START_DATE)
+     • CONDITION   (ICD_10_CM_CODE)
    ============================================================ */
 
 WITH obesity_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE LEFT(c.ICD_10_CM_CODE, 3) = 'E66'  -- E66.01, E66.2, E66.813 (no dots)
 ),
 
@@ -29,14 +29,14 @@ bmi_raw AS (
     'Observation'                                                      AS resource_type,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+   o.VALUE                                                             AS RESULT,
     o.UNITS                                                            AS units_raw,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    CAST(o.START_DATE AS DATE)                                         AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    CAST(o.EFFECTIVE_DATE AS DATE)                                         AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE o.LOINC_CODE = '39156-5'  -- BMI
-    AND NULLIF(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+'), '') IS NOT NULL
+    AND NULLIF(REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+'), '') IS NOT NULL
 ),
 
 weight_raw AS (
@@ -46,14 +46,14 @@ weight_raw AS (
     'Observation'                                                      AS resource_type,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE,
     o.UNITS                                                            AS units_raw,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    CAST(o.START_DATE AS DATE)                                         AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    CAST(o.EFFECTIVE_DATE AS DATE)                                         AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE o.LOINC_CODE = '29463-7'  -- Body weight
-    AND NULLIF(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+'), '') IS NOT NULL
+    AND NULLIF(REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+'), '') IS NOT NULL
 ),
 
 height_raw AS (
@@ -63,14 +63,14 @@ height_raw AS (
     'Observation'                                                      AS resource_type,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE,
     o.UNITS                                                            AS units_raw,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    CAST(o.START_DATE AS DATE)                                         AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    CAST(o.EFFECTIVE_DATE AS DATE)                                         AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE o.LOINC_CODE = '8302-2'   -- Body height
-    AND NULLIF(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+'), '') IS NOT NULL
+    AND NULLIF(REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+'), '') IS NOT NULL
 ),
 
 /* -------------------------

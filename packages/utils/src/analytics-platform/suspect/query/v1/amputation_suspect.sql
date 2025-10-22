@@ -4,8 +4,8 @@
    Flow: RAW → NORM → CLEAN → SUSPECT → FHIR → RETURN
 
    Data sources (new schema):
-     • CORE__PROCEDURE  — definitive CPT amputation procedures
-     • CORE__CONDITION  — ICD-10 exclusions (Z89% acquired absence)
+     • PROCEDURE  — definitive CPT amputation procedures
+     • CONDITION  — ICD-10 exclusions (Z89% acquired absence)
 
    Purpose:
      Flag patients with evidence of limb amputation based on a
@@ -28,13 +28,13 @@
      FHIR payload for UI review.
 
    This is a direct functional mapping of the original logic to
-   the new CORE__* schema.
+   the new * schema.
    ============================================================ */
 
 WITH amputation_dx_exclusion AS (
   /* Exclude patients already carrying an amputation/absence status diagnosis (ICD-10 Z89.*) */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'Z89%'
 ),
 
@@ -48,9 +48,9 @@ amputation_raw AS (
     'Procedure'                             AS resource_type,
     p.CPT_CODE,
     p.CPT_DISPLAY,
-    CAST(p.START_DATE AS DATE)              AS proc_date,
+    CAST(p.PERFORMED_DATE AS DATE)              AS proc_date,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE UPPER(p.CPT_CODE) IN (
     '27590',  -- Above-knee amputation (through femur)
     '27880',  -- Below-knee amputation (through tibia/fibula)

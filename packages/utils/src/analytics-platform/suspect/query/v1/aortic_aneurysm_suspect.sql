@@ -14,14 +14,14 @@
      • I71*  (Aortic aneurysm and dissection; any)
 
    Notes
-     - Uses CORE_V3.CORE__CONDITION, CORE_V3.CORE__PROCEDURE, CORE_V3.CORE__OBSERVATION.
+     - Uses CORE_V3.CONDITION, CORE_V3.PROCEDURE, CORE_V3.OBSERVATION.
      - All UNION branches now align to the same 22-column schema.
    ============================================================ */
 
 WITH aortic_aneurysm_dx_exclusion AS (
   /* Patients already diagnosed with aortic aneurysm/dissection (dotless ICD-10) */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE UPPER(c.ICD_10_CM_CODE) LIKE 'I71%'  -- Aortic aneurysm & dissection
 ),
 
@@ -34,7 +34,7 @@ raw_imaging AS (
     p.PROCEDURE_ID                             AS resource_id,
     'Procedure'                                AS resource_type,
     COALESCE(NULLIF(p.STATUS,''), 'completed') AS status,
-    COALESCE(p.START_DATE, p.END_DATE)         AS obs_date,
+    COALESCE(p.PERFORMED_DATE, p.END_DATE)         AS obs_date,
     p.CPT_CODE,
     p.CPT_DISPLAY,
     p.SNOMED_CODE,
@@ -45,7 +45,7 @@ raw_imaging AS (
     p.REASON_SNOMED_DISPLAY,
     p.NOTE_TEXT,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE
     UPPER(p.CPT_CODE) IN (
       '93978', -- Duplex scan of aorta/IVC/iliac, complete bilateral
@@ -71,7 +71,7 @@ raw_repair AS (
     p.PROCEDURE_ID                             AS resource_id,
     'Procedure'                                AS resource_type,
     COALESCE(NULLIF(p.STATUS,''), 'completed') AS status,
-    COALESCE(p.START_DATE, p.END_DATE)         AS obs_date,
+    COALESCE(p.PERFORMED_DATE, p.END_DATE)         AS obs_date,
     p.CPT_CODE,
     p.CPT_DISPLAY,
     p.SNOMED_CODE,
@@ -82,7 +82,7 @@ raw_repair AS (
     p.REASON_SNOMED_DISPLAY,
     p.NOTE_TEXT,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE
     /* EVAR family (endovascular abdominal aortic repair) */
     UPPER(p.CPT_CODE) IN (
@@ -117,16 +117,16 @@ obs_docs_raw AS (
     o.OBSERVATION_ID                           AS resource_id,
     'Observation'                              AS resource_type,
     COALESCE(NULLIF(o.STATUS,''), 'final')     AS status,
-    COALESCE(o.START_DATE, o.END_DATE)         AS obs_date,
+    COALESCE(o.EFFECTIVE_DATE, o.END_DATE)         AS obs_date,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE,
     o.UNITS,
     o.BODYSITE_SNOMED_CT_CODE,
     o.BODYSITE_SNOMED_CT_DISPLAY,
     o.NOTE_TEXT,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE UPPER(o.LOINC_CODE) IN (
     '24602-7',  -- MR Abd aorta
     '24612-6',  -- MR Chest aorta
@@ -144,16 +144,16 @@ obs_meas_raw AS (
     o.OBSERVATION_ID                           AS resource_id,
     'Observation'                              AS resource_type,
     COALESCE(NULLIF(o.STATUS,''), 'final')     AS status,
-    COALESCE(o.START_DATE, o.END_DATE)         AS obs_date,
+    COALESCE(o.EFFECTIVE_DATE, o.END_DATE)         AS obs_date,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE,
     o.UNITS,
     o.BODYSITE_SNOMED_CT_CODE,
     o.BODYSITE_SNOMED_CT_DISPLAY,
     o.NOTE_TEXT,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE UPPER(o.LOINC_CODE) IN (
     '18010-9', -- Aorta diameter by US
     '18011-7', -- Aortic arch diameter by US
@@ -314,7 +314,7 @@ aa_obs_doc_suspects AS (
     /* obs fields */
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE,
     o.UNITS
   FROM obs_docs_clean o
   WHERE
@@ -360,10 +360,10 @@ aa_obs_meas_aaa AS (
   FROM (
     SELECT
       o.*,
-      IFF(TRY_TO_DOUBLE(o.RESULT) IS NULL, NULL,
+      IFF(TRY_TO_DOUBLE(o.VALUE) IS NULL, NULL,
           CASE
-            WHEN UPPER(o.UNITS) IN ('CM','CM.','CENTIMETER','CENTIMETERS') THEN TRY_TO_DOUBLE(o.RESULT)
-            WHEN UPPER(o.UNITS) IN ('MM','MM.','MILLIMETER','MILLIMETERS') THEN TRY_TO_DOUBLE(o.RESULT) / 10.0
+            WHEN UPPER(o.UNITS) IN ('CM','CM.','CENTIMETER','CENTIMETERS') THEN TRY_TO_DOUBLE(o.VALUE)
+            WHEN UPPER(o.UNITS) IN ('MM','MM.','MILLIMETER','MILLIMETERS') THEN TRY_TO_DOUBLE(o.VALUE) / 10.0
             ELSE NULL
           END
       ) AS diameter_cm

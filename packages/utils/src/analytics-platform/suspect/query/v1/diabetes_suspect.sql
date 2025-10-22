@@ -10,7 +10,7 @@
 
 WITH dm_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE LEFT(c.ICD_10_CM_CODE, 3) IN ('E08','E09','E10','E11','E13')
 ),
 
@@ -25,23 +25,23 @@ glucose_raw AS (
     'Observation'                                                      AS resource_type,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE                                                            AS RESULT,
     o.UNITS                                                            AS units_raw,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    CAST(o.START_DATE AS DATE)                                         AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')  AS value_token,
+    CAST(o.EFFECTIVE_DATE AS DATE)                                     AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE
     (
       o.LOINC_CODE = '1558-6'  -- Glucose [Mass/volume] in Serum or Plasma -- fasting
       OR (
         o.LOINC_CODE = '2345-7' -- Generic serum/plasma glucose
         AND (
-          UPPER(o.LOINC_DISPLAY) LIKE '%FAST%' OR UPPER(o.RESULT) LIKE '%FAST%'
+          UPPER(o.LOINC_DISPLAY) LIKE '%FAST%' OR UPPER(o.VALUE) LIKE '%FAST%'
         )
       )
     )
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     AND NULLIF(o.UNITS,'') IS NOT NULL
 ),
 
@@ -53,15 +53,15 @@ hba1c_raw AS (
     'Observation'                                                      AS resource_type,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE                                                            AS RESULT,
     o.UNITS                                                            AS units_raw,  -- must be '%'
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    CAST(o.START_DATE AS DATE)                                         AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')  AS value_token,
+    CAST(o.EFFECTIVE_DATE AS DATE)                                     AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE o.LOINC_CODE = '4548-4'   -- HbA1c
     AND NULLIF(o.UNITS,'') = '%'
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
 ),
 
 /* -------------------------

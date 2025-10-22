@@ -11,7 +11,7 @@
 WITH osa_dx_exclusion AS (
   -- Exclude patients with confounding conditions that often lead to PAP use
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'I50%'   -- Heart failure
      OR c.ICD_10_CM_CODE LIKE 'J80%'   -- ARDS
 ),
@@ -26,9 +26,9 @@ osa_raw AS (
     'Procedure'                            AS resource_type,
     p.CPT_CODE                             AS code,
     p.CPT_DISPLAY                          AS display,
-    CAST(p.START_DATE AS DATE)             AS obs_date,
+    CAST(p.PERFORMED_DATE AS DATE)             AS obs_date,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE p.CPT_CODE IN (
     '95810',  -- Polysomnography (attended PSG)
     '95811',  -- Polysomnography with CPAP/BiPAP titration (attended)

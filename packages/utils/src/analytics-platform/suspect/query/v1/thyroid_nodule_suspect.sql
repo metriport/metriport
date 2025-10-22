@@ -15,14 +15,14 @@
      • E052 (E05.2 Thyrotoxicosis w/ toxic multinodular goiter)
 
    Notes
-     - Uses CORE_V3.CORE__CONDITION and CORE_V3.CORE__PROCEDURE.
+     - Uses CORE_V3.CONDITION and CORE_V3.PROCEDURE.
      - Column “BODYSITE_SNOMED_CODE” is used as provided.
    ============================================================ */
 
 WITH thyroid_nodule_dx_exclusion AS (
   /* Patients already carrying a thyroid nodule diagnosis (dotless ICD-10) */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE UPPER(c.ICD_10_CM_CODE) IN (
     'E041',  -- Nontoxic single thyroid nodule
     'E042',  -- Nontoxic multinodular goiter
@@ -40,7 +40,7 @@ raw_us AS (
     p.PROCEDURE_ID                             AS resource_id,
     'Procedure'                                AS resource_type,
     COALESCE(NULLIF(p.STATUS,''), 'completed') AS status,
-    COALESCE(p.START_DATE, p.END_DATE)         AS obs_date,
+    COALESCE(p.PERFORMED_DATE, p.END_DATE)         AS obs_date,
     p.CPT_CODE,
     p.CPT_DISPLAY,
     p.SNOMED_CODE,
@@ -51,7 +51,7 @@ raw_us AS (
     p.REASON_SNOMED_DISPLAY,
     p.NOTE_TEXT,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE
     UPPER(p.CPT_CODE) IN (
       '76536'   -- Ultrasound, soft tissues of head/neck (e.g., thyroid), real-time with image documentation
@@ -70,7 +70,7 @@ raw_biopsy AS (
     p.PROCEDURE_ID                             AS resource_id,
     'Procedure'                                AS resource_type,
     COALESCE(NULLIF(p.STATUS,''), 'completed') AS status,
-    COALESCE(p.START_DATE, p.END_DATE)         AS obs_date,
+    COALESCE(p.PERFORMED_DATE, p.END_DATE)         AS obs_date,
     p.CPT_CODE,
     p.CPT_DISPLAY,
     p.SNOMED_CODE,
@@ -81,7 +81,7 @@ raw_biopsy AS (
     p.REASON_SNOMED_DISPLAY,
     p.NOTE_TEXT,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE
     /* FNA families (first + each additional) and FNA w/ imaging guidance */
     UPPER(p.CPT_CODE) IN (

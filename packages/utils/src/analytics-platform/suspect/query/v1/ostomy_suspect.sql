@@ -25,7 +25,7 @@
 WITH ostomy_dx_exclusion AS (
   -- Exclude patients already carrying an ostomy status diagnosis (ICD-10 Z93.*)
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE UPPER(COALESCE(c.ICD_10_CM_CODE,'')) LIKE 'Z93%'
 ),
 
@@ -39,9 +39,9 @@ ostomy_raw AS (
     'Procedure'                          AS resource_type,
     p.CPT_CODE                           AS NORMALIZED_CODE,
     p.CPT_DISPLAY                        AS NORMALIZED_DESCRIPTION,
-    CAST(COALESCE(p.END_DATE, p.START_DATE) AS DATE) AS obs_date,
+    CAST(COALESCE(p.END_DATE, p.PERFORMED_DATE) AS DATE) AS obs_date,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE p.CPT_CODE IN (
     /* Colostomy */
     '44320','44188','45395',
@@ -83,8 +83,8 @@ closure_raw AS (
   SELECT
     p.PATIENT_ID,
     p.CPT_CODE,
-    CAST(COALESCE(p.END_DATE, p.START_DATE) AS DATE) AS closure_date
-  FROM CORE_V3.CORE__PROCEDURE p
+    CAST(COALESCE(p.END_DATE, p.PERFORMED_DATE) AS DATE) AS closure_date
+  FROM CORE_V3.PROCEDURE p
   WHERE p.CPT_CODE IN (
     /* Enterostomy closures */
     '44227','44620','44626',

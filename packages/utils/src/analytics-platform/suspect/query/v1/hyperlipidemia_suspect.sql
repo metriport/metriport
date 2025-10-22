@@ -12,13 +12,13 @@
        → hyperlipidemia_lipidlowering_med
 
    Schemas used:
-     • CORE__OBSERVATION, CORE__CONDITION
-     • CORE_V3.CORE__MEDICATION_REQUEST, CORE_V3.CORE__MEDICATION
+     • OBSERVATION, CONDITION
+     • CORE_V3.MEDICATION_REQUEST, CORE_V3.MEDICATION
    ============================================================ */
 
 WITH hyperlipidemia_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'E78%'
 ),
 
@@ -32,12 +32,12 @@ lipid_raw AS (
     'Observation'                                                      AS resource_type,
     o.LOINC_CODE                                                       AS NORMALIZED_CODE,
     o.LOINC_DISPLAY                                                    AS NORMALIZED_DESCRIPTION,
-    o.RESULT,
+    o.VALUE                                                            AS RESULT,
     o.UNITS                                                            AS units_raw,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    CAST(o.START_DATE AS DATE)                                         AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    CAST(o.EFFECTIVE_DATE AS DATE)                                         AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE o.LOINC_CODE IN (
       '2089-1','13457-7','18262-6','39469-2', -- LDL variants
       '2093-3',                               -- Total cholesterol
@@ -45,7 +45,7 @@ lipid_raw AS (
       '2085-9',                               -- HDL
       '43396-1'                               -- Non-HDL
     )
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     AND NULLIF(o.UNITS,'') IS NOT NULL
 ),
 lipid_norm AS (
@@ -155,8 +155,8 @@ med_request_raw AS (
     COALESCE(m.RXNORM_DISPLAY, m.NDC_DISPLAY)  AS display,
     CAST(mr.AUTHORED_ON AS DATE)               AS ev_date,
     mr.DATA_SOURCE
-  FROM CORE_V3.CORE__MEDICATION_REQUEST mr
-  JOIN CORE_V3.CORE__MEDICATION m ON m.MEDICATION_ID = mr.MEDICATION_ID
+  FROM CORE_V3.MEDICATION_REQUEST mr
+  JOIN CORE_V3.MEDICATION m ON m.MEDICATION_ID = mr.MEDICATION_ID
   WHERE mr.AUTHORED_ON IS NOT NULL
     AND (
       /* Statins */

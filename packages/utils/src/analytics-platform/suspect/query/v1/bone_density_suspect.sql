@@ -13,13 +13,13 @@
      • M85.8* (Other specified disorders of bone density and structure — includes osteopenia)
 
    Notes
-     - Uses CORE_V3.CORE__OBSERVATION for DXA results; relies on T-score LOINCs.
+     - Uses CORE_V3.OBSERVATION for DXA results; relies on T-score LOINCs.
      - Picks the worst (most negative) T-score per patient per calendar day.
    ============================================================ */
 
 WITH bone_density_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE UPPER(c.ICD_10_CM_CODE) LIKE 'M80%'   -- Osteoporosis w/ fracture
      OR UPPER(c.ICD_10_CM_CODE) LIKE 'M81%'   -- Osteoporosis w/o fracture
      OR UPPER(c.ICD_10_CM_CODE) LIKE 'M858%'  -- Osteopenia / other bone density disorders
@@ -31,18 +31,18 @@ WITH bone_density_dx_exclusion AS (
 tscore_raw AS (
   SELECT
     o.PATIENT_ID,
-    o.OBSERVATION_ID                         AS resource_id,
-    'Observation'                            AS resource_type,
-    COALESCE(NULLIF(o.STATUS,''), 'final')   AS status,
-    COALESCE(o.START_DATE, o.END_DATE)       AS obs_ts,
-    TO_DATE(COALESCE(o.START_DATE, o.END_DATE)) AS obs_date,
+    o.OBSERVATION_ID                                AS resource_id,
+    'Observation'                                   AS resource_type,
+    COALESCE(NULLIF(o.STATUS,''), 'final')          AS status,
+    COALESCE(o.EFFECTIVE_DATE, o.END_DATE)          AS obs_ts,
+    TO_DATE(COALESCE(o.EFFECTIVE_DATE, o.END_DATE)) AS obs_date,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE                                         AS RESULT,
     o.UNITS,
     o.NOTE_TEXT,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE UPPER(o.LOINC_CODE) IN (
     '38267-1',  -- DXA Lumbar spine [T-score] Bone density
     '80948-3',  -- DXA Femur - left [T-score] Bone density

@@ -8,7 +8,7 @@
 WITH cva_history_dx_exclusion AS (
   /* Patients already carrying explicit "history/sequelae of stroke" */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE
     UPPER(c.ICD_10_CM_CODE) IN (
       'Z8673'   -- Personal history of TIA and cerebral infarction without residual deficits
@@ -25,7 +25,7 @@ raw_imaging AS (
     p.PROCEDURE_ID                             AS resource_id,
     'Procedure'                                AS resource_type,
     COALESCE(NULLIF(p.STATUS,''), 'completed') AS status,
-    COALESCE(p.START_DATE, p.END_DATE)         AS obs_date,
+    COALESCE(p.PERFORMED_DATE, p.END_DATE)         AS obs_date,
     p.CPT_CODE,
     p.CPT_DISPLAY,
     p.SNOMED_CODE,
@@ -36,7 +36,7 @@ raw_imaging AS (
     p.REASON_SNOMED_DISPLAY,
     p.NOTE_TEXT,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE
     /* CT head + CTA head/neck */
     UPPER(p.CPT_CODE) IN (
@@ -72,7 +72,7 @@ raw_reperfusion AS (
     p.PROCEDURE_ID                             AS resource_id,
     'Procedure'                                AS resource_type,
     COALESCE(NULLIF(p.STATUS,''), 'completed') AS status,
-    COALESCE(p.START_DATE, p.END_DATE)         AS obs_date,
+    COALESCE(p.PERFORMED_DATE, p.END_DATE)         AS obs_date,
     p.CPT_CODE,
     p.CPT_DISPLAY,
     p.SNOMED_CODE,
@@ -83,7 +83,7 @@ raw_reperfusion AS (
     p.REASON_SNOMED_DISPLAY,
     p.NOTE_TEXT,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE
     UPPER(p.CPT_CODE) IN (
       '61645'   -- Intracranial mechanical thrombectomy and/or thrombolytic infusion
@@ -106,14 +106,14 @@ obs_nihss_raw AS (
     o.OBSERVATION_ID                           AS resource_id,
     'Observation'                              AS resource_type,
     COALESCE(NULLIF(o.STATUS,''), 'final')     AS status,
-    COALESCE(o.START_DATE, o.END_DATE)         AS obs_date,
+    COALESCE(o.EFFECTIVE_DATE, o.END_DATE)     AS obs_date,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE                                    AS RESULT,
     o.UNITS,
     o.NOTE_TEXT,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE UPPER(o.LOINC_CODE) IN (
     '70182-1',  -- NIH Stroke Scale (NIHSS) panel
     '72089-6'   -- NIHSS total score

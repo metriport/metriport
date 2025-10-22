@@ -16,7 +16,7 @@
 WITH pad_dx_exclusion AS (
   -- Exclude patients already carrying a PAD diagnosis (ICD-10 I70.2*)
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'I702%'
 ),
 
@@ -30,9 +30,9 @@ pad_raw AS (
     'Procedure'                            AS resource_type,
     p.CPT_CODE                             AS code,
     p.CPT_DISPLAY                          AS display,
-    CAST(p.START_DATE AS DATE)             AS obs_date,
+    CAST(p.PERFORMED_DATE AS DATE)             AS obs_date,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE p.CPT_CODE IN (
     '37221',  -- Lower-extremity endovascular atherectomy (per spec)
     '37226'   -- Lower-extremity endovascular angioplasty (per spec)

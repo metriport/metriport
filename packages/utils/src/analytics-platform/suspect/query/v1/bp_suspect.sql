@@ -13,13 +13,13 @@
      - Stage 1 HTN: SBP 130–139 OR DBP 80–89
 
    New schemas used:
-     • CORE__OBSERVATION  (LOINC_CODE, LOINC_DISPLAY, RESULT, UNITS, START_DATE)
-     • CORE__CONDITION    (ICD_10_CM_CODE)
+     • OBSERVATION  (LOINC_CODE, LOINC_DISPLAY, RESULT, UNITS, START_DATE)
+     • CONDITION    (ICD_10_CM_CODE)
    ============================================================ */
 
 WITH htn_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE LEFT(c.ICD_10_CM_CODE, 3) IN ('I10','I11','I12','I13','I15')
 ),
 
@@ -33,16 +33,16 @@ bp_raw AS (
     'Observation'                                                      AS resource_type,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE                                                            AS RESULT,
     o.UNITS                                                            AS units_raw,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    CAST(o.START_DATE AS DATE)                                         AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')  AS value_token,
+    CAST(o.EFFECTIVE_DATE AS DATE)                                     AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE o.LOINC_CODE IN ('8480-6','8462-4')
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     AND NULLIF(o.UNITS, '') IS NOT NULL
-    AND TRY_TO_DOUBLE(REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')) > 0
+    AND TRY_TO_DOUBLE(REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+')) > 0
 ),
 
 /* -------------------------

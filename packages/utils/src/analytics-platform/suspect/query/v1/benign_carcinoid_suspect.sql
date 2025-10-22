@@ -12,9 +12,9 @@
        "neuroendocrine" or "carcinoid" BUT NOT malignant.
 
    Data sources (new schemas)
-     • CORE__OBSERVATION  (LOINC 1695-6)
-     • CORE__CONDITION    (ICD-10 D3A.* exclusion)
-     • CORE__PROCEDURE    (CPT + SNOMED reason for supportive evidence)
+     • OBSERVATION  (LOINC 1695-6)
+     • CONDITION    (ICD-10 D3A.* exclusion)
+     • PROCEDURE    (CPT + SNOMED reason for supportive evidence)
 
    Units → canonical mg/24 h:
      • mg/24 h / mg/(24.h) / mg/d → as-is
@@ -30,7 +30,7 @@
 
 WITH benign_carcinoid_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'D3A%'
 ),
 
@@ -44,14 +44,14 @@ five_hiaa_raw AS (
     'Observation'                                                      AS resource_type,
     o.LOINC_CODE                                                       AS NORMALIZED_CODE,
     o.LOINC_DISPLAY                                                    AS NORMALIZED_DESCRIPTION,
-    o.RESULT,
+    o.VALUE                                                            AS RESULT,
     o.UNITS                                                            AS units_raw,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    CAST(o.START_DATE AS DATE)                                         AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    CAST(o.EFFECTIVE_DATE AS DATE)                                         AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE o.LOINC_CODE = '1695-6'  -- 5-HIAA [Mass/time] in 24h Urine
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
     AND NULLIF(o.UNITS,'') IS NOT NULL
 ),
 five_hiaa_norm AS (
@@ -101,9 +101,9 @@ proc_net_reason_raw AS (
     p.CPT_DISPLAY                          AS display,
     p.REASON_SNOMED_CODE                   AS reason_code,
     p.REASON_SNOMED_DISPLAY                AS reason_display,
-    CAST(p.START_DATE AS DATE)             AS ev_date,
+    CAST(p.PERFORMED_DATE AS DATE)             AS ev_date,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE
     (
       /* SSTR PET/CT + SPECT */

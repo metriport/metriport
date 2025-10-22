@@ -26,7 +26,7 @@
 WITH hypo_dx_exclusion AS (
   /* Exclude known hypothyroidism: ICD-10 E03.* */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE UPPER(c.ICD_10_CM_CODE) LIKE 'E03%'
 ),
 
@@ -40,18 +40,18 @@ tsh_raw AS (
     'Observation'    AS resource_type,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE          AS RESULT,
     o.UNITS          AS units_raw,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    COALESCE(o.START_DATE, o.END_DATE) AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    COALESCE(o.EFFECTIVE_DATE, o.END_DATE) AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE UPPER(o.LOINC_CODE) IN (
     '11580-8',  -- TSH [Units/volume] in Serum or Plasma
     '3016-3',   -- TSH [Units/volume] in Serum or Plasma
     '3015-5'    -- TSH [Units/volume] in Serum or Plasma
   )
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
 ),
 ft4_raw AS (
   SELECT
@@ -60,17 +60,17 @@ ft4_raw AS (
     'Observation'    AS resource_type,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE          AS RESULT,
     o.UNITS          AS units_raw,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    COALESCE(o.START_DATE, o.END_DATE) AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    COALESCE(o.EFFECTIVE_DATE, o.END_DATE) AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE UPPER(o.LOINC_CODE) IN (
     '3024-7',  -- Thyroxine (T4) free [Mass/volume] in Serum or Plasma
     '6892-4'   -- Thyroxine (T4) free [Moles/volume] in Serum or Plasma
   )
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
 ),
 tt4_raw AS (
   SELECT
@@ -79,14 +79,14 @@ tt4_raw AS (
     'Observation'    AS resource_type,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE          AS RESULT,
     o.UNITS          AS units_raw,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    COALESCE(o.START_DATE, o.END_DATE) AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    COALESCE(o.EFFECTIVE_DATE, o.END_DATE) AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE UPPER(o.LOINC_CODE) = '3026-2'  -- Thyroxine (T4) [Mass/volume] in Serum or Plasma
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
 ),
 
 /* -------------------------
@@ -209,7 +209,7 @@ levothyroxine_catalog AS (
     m.NDC_CODE,
     m.NDC_DISPLAY,
     m.DATA_SOURCE
-  FROM CORE_V3.CORE__MEDICATION m
+  FROM CORE_V3.MEDICATION m
   WHERE
     (UPPER(COALESCE(m.RXNORM_DISPLAY,'')) LIKE '%LEVOTHYROX%'  -- levothyroxine (generic)
       OR UPPER(COALESCE(m.NDC_DISPLAY,'')) LIKE '%LEVOTHYROX%'
@@ -235,7 +235,7 @@ levothyroxine_request_raw AS (
     lc.NDC_DISPLAY,
     mr.AUTHORED_ON           AS obs_date,
     mr.DATA_SOURCE
-  FROM CORE_V3.CORE__MEDICATION_REQUEST mr
+  FROM CORE_V3.MEDICATION_REQUEST mr
   JOIN levothyroxine_catalog lc
     ON lc.MEDICATION_ID = mr.MEDICATION_ID
   WHERE NOT EXISTS (SELECT 1 FROM hypo_dx_exclusion x WHERE x.PATIENT_ID = mr.PATIENT_ID)

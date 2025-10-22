@@ -12,14 +12,14 @@
      • Exclude H353*  (Age-related macular degeneration, any laterality/severity)
 
    Notes
-     - Uses CORE_V3.CORE__CONDITION and CORE_V3.CORE__PROCEDURE.
+     - Uses CORE_V3.CONDITION and CORE_V3.PROCEDURE.
      - Column “BODYSITE_SNOMED_ODE” is used as provided (typo preserved from schema).
    ============================================================ */
 
 WITH amd_dx_exclusion AS (
   /* Patients already diagnosed with age-related macular degeneration (dotless ICD-10) */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE UPPER(c.ICD_10_CM_CODE) LIKE 'H353%'  -- AMD (any)
 ),
 
@@ -32,7 +32,7 @@ raw_eye AS (
     p.PROCEDURE_ID                             AS resource_id,
     'Procedure'                                AS resource_type,
     COALESCE(NULLIF(p.STATUS,''), 'completed') AS status,
-    COALESCE(p.START_DATE, p.END_DATE)         AS obs_date,
+    COALESCE(p.PERFORMED_DATE, p.END_DATE)         AS obs_date,
     p.CPT_CODE,
     p.CPT_DISPLAY,
     p.SNOMED_CODE,
@@ -43,7 +43,7 @@ raw_eye AS (
     p.REASON_SNOMED_DISPLAY,
     p.NOTE_TEXT,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE
     UPPER(p.CPT_CODE) IN (
       '92004', -- Comprehensive ophthalmological services (new)

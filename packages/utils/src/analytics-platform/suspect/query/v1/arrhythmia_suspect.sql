@@ -16,11 +16,11 @@
    Dx Exclusion (ICD-10-CM): I47.*, I48.*, I49.*
 
    Data sources (new schemas)
-     • CORE__CONDITION
-     • CORE__PROCEDURE
-     • CORE__OBSERVATION
-     • CORE_V3.CORE__MEDICATION_REQUEST
-     • CORE_V3.CORE__MEDICATION
+     • CONDITION
+     • PROCEDURE
+     • OBSERVATION
+     • CORE_V3.MEDICATION_REQUEST
+     • CORE_V3.MEDICATION
 
    Definitive procedure evidence (CPT):
      • 92960  External electrical cardioversion
@@ -47,7 +47,7 @@ WITH
 arrhythmia_dx_exclusion AS (
   /* Existing arrhythmia diagnosis → exclude (I47.*, I48.*, I49.*) */
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'I47%'
      OR c.ICD_10_CM_CODE LIKE 'I48%'
      OR c.ICD_10_CM_CODE LIKE 'I49%'
@@ -63,9 +63,9 @@ proc_definitive_raw AS (
     'Procedure'                                 AS resource_type,
     p.CPT_CODE                                  AS code,
     p.CPT_DISPLAY                               AS display,
-    CAST(p.START_DATE AS DATE)                  AS ev_date,
+    CAST(p.PERFORMED_DATE AS DATE)                  AS ev_date,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE p.CPT_CODE IN (
     '92960',  -- External electrical cardioversion
     '92961',  -- Internal electrical cardioversion
@@ -92,11 +92,11 @@ ekg_obs_raw AS (
     'Observation'                              AS resource_type,
     o.LOINC_CODE                               AS code,
     o.LOINC_DISPLAY                            AS display,
-    CAST(o.START_DATE AS DATE)                 AS ev_date,
-    o.RESULT,
+    CAST(o.EFFECTIVE_DATE AS DATE)             AS ev_date,
+    o.VALUE                                    AS RESULT,
     o.NOTE_TEXT,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE
     (
       UPPER(o.LOINC_DISPLAY) LIKE '%ELECTROCARDIOGRAM%'
@@ -105,13 +105,13 @@ ekg_obs_raw AS (
       OR UPPER(o.CATEGORY_HL7_DISPLAY) LIKE '%ELECTROCARDIOGRAM%'
     )
     AND (
-      (o.RESULT   ILIKE '%atrial fibrillation%' OR o.RESULT   ILIKE '%a-fib%' OR o.RESULT   ILIKE '%afib%'
-       OR o.RESULT ILIKE '%atrial flutter%'     OR o.RESULT   ILIKE '%svt%'   OR o.RESULT   ILIKE '%supraventricular tachycardia%'
-       OR o.RESULT ILIKE '%ventricular tachycardia%' OR o.RESULT ILIKE '%vt%' OR o.RESULT   ILIKE '%ventricular fibrillation%' OR o.RESULT ILIKE '%vf%'
-       OR o.RESULT ILIKE '%junctional rhythm%'  OR o.RESULT   ILIKE '%av block%' OR o.RESULT ILIKE '%atrioventricular block%'
-       OR o.RESULT ILIKE '%mobitz%'             OR o.RESULT   ILIKE '%complete heart block%'
-       OR o.RESULT ILIKE '%sick sinus%'         OR o.RESULT   ILIKE '%sinus pause%'
-       OR o.RESULT ILIKE '%pvc%'                OR o.RESULT   ILIKE '%pvcs%'  OR o.RESULT   ILIKE '%pac%' OR o.RESULT ILIKE '%pacs%')
+      (o.VALUE   ILIKE '%atrial fibrillation%' OR o.VALUE   ILIKE '%a-fib%' OR o.VALUE   ILIKE '%afib%'
+       OR o.VALUE ILIKE '%atrial flutter%'     OR o.VALUE   ILIKE '%svt%'   OR o.VALUE   ILIKE '%supraventricular tachycardia%'
+       OR o.VALUE ILIKE '%ventricular tachycardia%' OR o.VALUE ILIKE '%vt%' OR o.VALUE   ILIKE '%ventricular fibrillation%' OR o.VALUE ILIKE '%vf%'
+       OR o.VALUE ILIKE '%junctional rhythm%'  OR o.VALUE   ILIKE '%av block%' OR o.VALUE ILIKE '%atrioventricular block%'
+       OR o.VALUE ILIKE '%mobitz%'             OR o.VALUE   ILIKE '%complete heart block%'
+       OR o.VALUE ILIKE '%sick sinus%'         OR o.VALUE   ILIKE '%sinus pause%'
+       OR o.VALUE ILIKE '%pvc%'                OR o.VALUE   ILIKE '%pvcs%'  OR o.VALUE   ILIKE '%pac%' OR o.VALUE ILIKE '%pacs%')
       OR
       (o.NOTE_TEXT ILIKE '%atrial fibrillation%' OR o.NOTE_TEXT ILIKE '%a-fib%' OR o.NOTE_TEXT ILIKE '%afib%'
        OR o.NOTE_TEXT ILIKE '%atrial flutter%'   OR o.NOTE_TEXT ILIKE '%svt%'   OR o.NOTE_TEXT ILIKE '%supraventricular tachycardia%'
@@ -122,12 +122,12 @@ ekg_obs_raw AS (
        OR o.NOTE_TEXT ILIKE '%pvc%'              OR o.NOTE_TEXT ILIKE '%pvcs%'  OR o.NOTE_TEXT ILIKE '%pac%' OR o.NOTE_TEXT ILIKE '%pacs%')
     )
     AND (
-      (o.RESULT    IS NULL OR (
-         o.RESULT NOT ILIKE '%no evidence of%'
-     AND o.RESULT NOT ILIKE '%without%'
-     AND o.RESULT NOT ILIKE '%normal sinus%'
-     AND o.RESULT NOT ILIKE '%nsr%'
-     AND o.RESULT NOT ILIKE '%no arrhythmia%'))
+      (o.VALUE    IS NULL OR (
+         o.VALUE NOT ILIKE '%no evidence of%'
+     AND o.VALUE NOT ILIKE '%without%'
+     AND o.VALUE NOT ILIKE '%normal sinus%'
+     AND o.VALUE NOT ILIKE '%nsr%'
+     AND o.VALUE NOT ILIKE '%no arrhythmia%'))
       AND
       (o.NOTE_TEXT IS NULL OR (
          o.NOTE_TEXT NOT ILIKE '%no evidence of%'
@@ -152,11 +152,11 @@ ecg_proc_reason_raw AS (
     'Procedure'                                 AS resource_type,
     p.CPT_CODE                                  AS code,
     p.CPT_DISPLAY                               AS display,
-    CAST(p.START_DATE AS DATE)                  AS ev_date,
+    CAST(p.PERFORMED_DATE AS DATE)                  AS ev_date,
     p.REASON_SNOMED_CODE,
     p.REASON_SNOMED_DISPLAY,
     p.DATA_SOURCE
-  FROM CORE_V3.CORE__PROCEDURE p
+  FROM CORE_V3.PROCEDURE p
   WHERE p.CPT_CODE IN (
     '93000',  -- Electrocardiogram, complete
     '93005',  -- Electrocardiogram, tracing only
@@ -201,8 +201,8 @@ med_antiarrhythmic_raw AS (
     CAST(mr.AUTHORED_ON AS DATE)                AS ev_date,
     mr.STATUS                                   AS req_status,
     mr.DATA_SOURCE
-  FROM CORE_V3.CORE__MEDICATION_REQUEST mr
-  JOIN CORE_V3.CORE__MEDICATION m
+  FROM CORE_V3.MEDICATION_REQUEST mr
+  JOIN CORE_V3.MEDICATION m
     ON m.MEDICATION_ID = mr.MEDICATION_ID
   WHERE mr.AUTHORED_ON IS NOT NULL
     AND (
@@ -247,8 +247,8 @@ med_beta_ccb_raw AS (
     CAST(mr.AUTHORED_ON AS DATE)                AS med_date,
     mr.STATUS                                   AS req_status,
     mr.DATA_SOURCE
-  FROM CORE_V3.CORE__MEDICATION_REQUEST mr
-  JOIN CORE_V3.CORE__MEDICATION m
+  FROM CORE_V3.MEDICATION_REQUEST mr
+  JOIN CORE_V3.MEDICATION m
     ON m.MEDICATION_ID = mr.MEDICATION_ID
   WHERE mr.AUTHORED_ON IS NOT NULL
     AND (

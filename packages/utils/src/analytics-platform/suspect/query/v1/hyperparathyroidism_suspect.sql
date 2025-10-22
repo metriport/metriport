@@ -21,7 +21,7 @@
 
 WITH hyperpara_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
-  FROM CORE_V3.CORE__CONDITION c
+  FROM CORE_V3.CONDITION c
   WHERE UPPER(c.ICD_10_CM_CODE) LIKE 'E21%'
 ),
 
@@ -31,66 +31,66 @@ WITH hyperpara_dx_exclusion AS (
 pth_raw AS (
   SELECT
     o.PATIENT_ID,
-    o.OBSERVATION_ID                               AS resource_id,
+    o.OBSERVATION_ID                                AS resource_id,
     'Observation'                                   AS resource_type,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE                                         AS RESULT,
     o.UNITS                                         AS units_raw,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    COALESCE(o.START_DATE, o.END_DATE)              AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    COALESCE(o.EFFECTIVE_DATE, o.END_DATE)              AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE UPPER(o.LOINC_CODE) = '2731-8'   -- Parathyroid hormone [Mass/volume] in Serum or Plasma
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
 ),
 total_ca_raw AS (
   SELECT
     o.PATIENT_ID,
-    o.OBSERVATION_ID                               AS resource_id,
+    o.OBSERVATION_ID                                AS resource_id,
     'Observation'                                   AS resource_type,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE                                         AS RESULT,
     o.UNITS                                         AS units_raw,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    COALESCE(o.START_DATE, o.END_DATE)              AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    COALESCE(o.EFFECTIVE_DATE, o.END_DATE)              AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE UPPER(o.LOINC_CODE) = '17861-6'  -- Calcium.total [Mass/volume] in Serum or Plasma
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
 ),
 ion_ca_mmol_raw AS (
   SELECT
     o.PATIENT_ID,
-    o.OBSERVATION_ID                               AS resource_id,
+    o.OBSERVATION_ID                                AS resource_id,
     'Observation'                                   AS resource_type,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE                                         AS RESULT,
     o.UNITS                                         AS units_raw,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    COALESCE(o.START_DATE, o.END_DATE)              AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    COALESCE(o.EFFECTIVE_DATE, o.END_DATE)              AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE UPPER(o.LOINC_CODE) = '1995-0'   -- Calcium.ionized [Moles/volume] in Serum or Plasma
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
 ),
 ion_ca_mgdl_raw AS (
   SELECT
     o.PATIENT_ID,
-    o.OBSERVATION_ID                               AS resource_id,
+    o.OBSERVATION_ID                                AS resource_id,
     'Observation'                                   AS resource_type,
     o.LOINC_CODE,
     o.LOINC_DISPLAY,
-    o.RESULT,
+    o.VALUE                                         AS RESULT,
     o.UNITS                                         AS units_raw,
-    REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
-    COALESCE(o.START_DATE, o.END_DATE)              AS obs_date,
+    REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') AS value_token,
+    COALESCE(o.EFFECTIVE_DATE, o.END_DATE)              AS obs_date,
     o.DATA_SOURCE
-  FROM CORE_V3.CORE__OBSERVATION o
+  FROM CORE_V3.OBSERVATION o
   WHERE UPPER(o.LOINC_CODE) = '12180-6'  -- Calcium.ionized [Mass/volume] in Serum or Plasma by ISE
-    AND REGEXP_SUBSTR(REPLACE(o.RESULT, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
+    AND REGEXP_SUBSTR(REPLACE(o.VALUE, ',', ''), '[-+]?[0-9]*\\.?[0-9]+') IS NOT NULL
 ),
 
 /* -------------------------
