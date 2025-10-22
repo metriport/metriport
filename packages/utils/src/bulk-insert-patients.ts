@@ -492,6 +492,7 @@ export function mapCsvPatientToMetriportPatient(csvPatient: {
   // All validations passed, return patient object
   return {
     externalId,
+    cohorts: [],
     firstName,
     lastName,
     dob,

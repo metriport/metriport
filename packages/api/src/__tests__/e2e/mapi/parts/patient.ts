@@ -22,6 +22,7 @@ export const createPatient: PatientCreate = {
     zip: "45485",
     country: "USA",
   },
+  cohorts: ["Test Cohort"],
 };
 
 export const createSecondaryPatient: PatientCreate = {
@@ -40,6 +41,7 @@ export const createSecondaryPatient: PatientCreate = {
     zip: "45485",
     country: "USA",
   },
+  cohorts: ["Test Cohort"],
 };
 
 export function validateLocalPatient(

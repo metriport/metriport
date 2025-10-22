@@ -66,7 +66,7 @@ router.post(
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientCreateSchema.parse(req.body);
-    const { settings, ...patientCreateProps } = payload;
+    const { settings, cohorts, ...patientCreateProps } = payload;
 
     if (Config.isSandbox()) {
       // limit the amount of patients that can be created in sandbox mode
@@ -91,6 +91,7 @@ router.post(
       forceCommonwell,
       forceCarequality,
       settings,
+      cohorts,
     });
 
     if (!Config.isProdEnv()) {

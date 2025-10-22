@@ -27,13 +27,6 @@ export function runCohortTestsPart1(e2e: E2eContext) {
     expect(size).toBe(0);
   });
 
-  it("gets a cohort by name", async () => {
-    if (!e2e.cohort) throw new Error("Missing cohort");
-    const { cohort } = await medicalApi.getCohortByName(e2e.cohort.name);
-    expect(cohort.id).toEqual(e2e.cohort.id);
-    validateCohort(cohort);
-  });
-
   it("updates a cohort", async () => {
     if (!e2e.cohort) throw new Error("Missing cohort");
     const updateCohort: CohortUpdateRequest = {

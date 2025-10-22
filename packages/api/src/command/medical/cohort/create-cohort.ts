@@ -1,7 +1,7 @@
 import { out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError } from "@metriport/shared";
-import { Cohort, CohortCreateCmd } from "@metriport/shared/domain/cohort";
+import { Cohort, CohortCreateCmd, normalizeCohortName } from "@metriport/shared/domain/cohort";
 import { CohortModel } from "../../../models/medical/cohort";
 import { getCohortByNameSafe } from "./get-cohort";
 import { validateMonitoringSettingsForCx } from "./utils";
@@ -14,8 +14,8 @@ export async function createCohort({
   settings,
 }: CohortCreateCmd): Promise<Cohort> {
   const { log } = out(`createCohort - cx: ${cxId}`);
-
-  const existingCohort = await getCohortByNameSafe({ cxId, name });
+  const normalizedName = normalizeCohortName(name);
+  const existingCohort = await getCohortByNameSafe({ cxId, name: normalizedName });
   if (existingCohort) {
     throw new BadRequestError("A cohort with this name already exists", undefined, {
       existingCohortId: existingCohort.id,
@@ -29,7 +29,7 @@ export async function createCohort({
   const cohortCreate = {
     id: uuidv7(),
     cxId,
-    name,
+    name: normalizedName,
     description,
     color,
     settings,
