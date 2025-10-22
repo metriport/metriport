@@ -1,7 +1,7 @@
 import { out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError } from "@metriport/shared";
-import { Cohort, CohortCreateCmd } from "@metriport/shared/domain/cohort";
+import { Cohort, CohortCreateCmd, normalizeCohortName } from "@metriport/shared/domain/cohort";
 import { CohortModel } from "../../../models/medical/cohort";
 import { getCohortByNameSafe } from "./get-cohort";
 import { validateMonitoringSettingsForCx } from "./utils";
