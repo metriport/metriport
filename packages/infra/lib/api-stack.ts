@@ -515,6 +515,7 @@ export class APIStack extends Stack {
           hl7ConversionBucket,
           secrets,
           incomingHl7NotificationBucket,
+          featureFlagsTable,
         }
       );
 
