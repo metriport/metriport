@@ -539,6 +539,7 @@ export class APIStack extends Stack {
           secrets,
           incomingHl7NotificationBucket,
           outboundRateLimitTable,
+          featureFlagsTable,
         }
       );
 

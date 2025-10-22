@@ -365,6 +365,7 @@ export class LambdasNestedStack extends NestedStack {
         hl7v2RosterBucket,
         config: props.config,
         alarmAction: props.alarmAction,
+        featureFlagsTable: props.featureFlagsTable,
       });
 
       this.hl7LahieSftpIngestionLambda = this.setupLahieSftpIngestionLambda({
@@ -1256,8 +1257,17 @@ export class LambdasNestedStack extends NestedStack {
     hl7v2RosterBucket: s3.IBucket;
     config: EnvConfig;
     alarmAction: SnsAction | undefined;
+    featureFlagsTable: dynamodb.Table;
   }): Lambda[] {
-    const { lambdaLayers, vpc, secrets, hl7v2RosterBucket, config, alarmAction } = ownProps;
+    const {
+      lambdaLayers,
+      vpc,
+      secrets,
+      hl7v2RosterBucket,
+      config,
+      alarmAction,
+      featureFlagsTable,
+    } = ownProps;
     const sentryDsn = config.lambdasSentryDSN;
     const envType = config.environmentType;
 
@@ -1296,6 +1306,7 @@ export class LambdasNestedStack extends NestedStack {
             ROSTER_UPLOAD_SFTP_PASSWORD_NAME: passwordSecretName,
             ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
             POST_HOG_API_KEY_SECRET: posthogSecretName,
+            FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
           },
           timeout: Duration.minutes(10),
           layers: [lambdaLayers.shared],
@@ -1307,6 +1318,7 @@ export class LambdasNestedStack extends NestedStack {
         passwordSecret.grantRead(lambda);
         hl7ScramblerSeedSecret.grantRead(lambda);
         hl7v2RosterBucket.grantReadWrite(lambda);
+        featureFlagsTable.grantReadData(lambda);
 
         rosterUploadLambdas.push(lambda);
       });
