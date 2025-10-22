@@ -17,7 +17,7 @@ import {
   dangerouslyAddEntriesToBundle,
 } from "../../external/fhir/bundle/bundle";
 import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
-import { hydrateFhir } from "../../external/fhir/hydration/hydrate-fhir";
+import { normalizeFhir } from "../../external/fhir/normalization/normalize-fhir";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
@@ -138,8 +138,7 @@ export async function createConsolidatedFromConversions({
   log(`...done, from ${lengthWithDups} to ${bundle.entry?.length} resources`);
 
   log(`Hydrating consolidated bundle...`);
-  const { data: hydratedBundle, metadata } = await hydrateFhir(bundle, log);
-  log(`...done in ${metadata?.duration} ms`);
+  const normalizedBundle = normalizeFhir(bundle);
 
   // TODO This whole section with AI-related logic should be moved to the `generateAiBriefBundleEntry`.
   log(
@@ -148,14 +147,14 @@ export async function createConsolidatedFromConversions({
   const shouldGenerateAiBrief =
     isAiBriefFeatureFlagEnabled &&
     !useCachedAiBrief &&
-    hydratedBundle.entry &&
-    hydratedBundle.entry.length > 0;
+    normalizedBundle.entry &&
+    normalizedBundle.entry.length > 0;
 
   if (shouldGenerateAiBrief) {
     const aiBriefEntry = await generateAiBriefWithTimeout(
       controls =>
         generateAiBriefBundleEntry({
-          bundle: hydratedBundle,
+          bundle: normalizedBundle,
           cxId,
           patientId,
           log,
@@ -166,15 +165,15 @@ export async function createConsolidatedFromConversions({
       log
     );
     if (aiBriefEntry) {
-      hydratedBundle.entry?.push(aiBriefEntry);
+      normalizedBundle.entry?.push(aiBriefEntry);
     }
   }
 
   const shouldUseCachedAiBrief =
     isAiBriefFeatureFlagEnabled &&
     useCachedAiBrief &&
-    hydratedBundle.entry &&
-    hydratedBundle.entry.length > 0;
+    normalizedBundle.entry &&
+    normalizedBundle.entry.length > 0;
 
   //Generates AI brief if it doesn't exist in S3
   if (shouldUseCachedAiBrief) {
@@ -183,7 +182,7 @@ export async function createConsolidatedFromConversions({
         getCachedAiBriefOrGenerateNewOne({
           cxId,
           patientId,
-          bundle: hydratedBundle,
+          bundle: normalizedBundle,
           log,
           aiBriefControls: controls,
         }),
@@ -192,7 +191,7 @@ export async function createConsolidatedFromConversions({
       log
     );
     if (aiBriefEntry) {
-      hydratedBundle.entry?.push(aiBriefEntry);
+      normalizedBundle.entry?.push(aiBriefEntry);
     }
   }
 
@@ -201,7 +200,7 @@ export async function createConsolidatedFromConversions({
   await s3Utils.uploadFile({
     bucket: destinationBucketName,
     key: dedupDestFileName,
-    file: Buffer.from(JSON.stringify(hydratedBundle)),
+    file: Buffer.from(JSON.stringify(normalizedBundle)),
     contentType: "application/json",
   });
 
@@ -220,7 +219,7 @@ export async function createConsolidatedFromConversions({
   );
 
   log(`Done`);
-  return hydratedBundle;
+  return normalizedBundle;
 }
 
 async function getConversions({
