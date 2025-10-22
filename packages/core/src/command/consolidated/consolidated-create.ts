@@ -17,6 +17,7 @@ import {
   dangerouslyAddEntriesToBundle,
 } from "../../external/fhir/bundle/bundle";
 import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
+import { hydrateFhir } from "../../external/fhir/hydration/hydrate-fhir";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
@@ -136,37 +137,27 @@ export async function createConsolidatedFromConversions({
   await dangerouslyDeduplicate({ cxId, patientId, bundle });
   log(`...done, from ${lengthWithDups} to ${bundle.entry?.length} resources`);
 
+  log(`Hydrating consolidated bundle...`);
+  const { data: hydratedBundle, metadata } = await hydrateFhir(bundle, log);
+  log(`...done in ${metadata?.duration} ms`);
+
   // TODO This whole section with AI-related logic should be moved to the `generateAiBriefBundleEntry`.
   log(
     `isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled} useCachedAiBrief: ${useCachedAiBrief}`
   );
   const shouldGenerateAiBrief =
-    isAiBriefFeatureFlagEnabled && !useCachedAiBrief && bundle.entry && bundle.entry.length > 0;
+    isAiBriefFeatureFlagEnabled &&
+    !useCachedAiBrief &&
+    hydratedBundle.entry &&
+    hydratedBundle.entry.length > 0;
 
   if (shouldGenerateAiBrief) {
     const aiBriefEntry = await generateAiBriefWithTimeout(
       controls =>
-        generateAiBriefBundleEntry({ bundle, cxId, patientId, log, aiBriefControls: controls }),
-      cxId,
-      patientId,
-      log
-    );
-    if (aiBriefEntry) {
-      bundle.entry?.push(aiBriefEntry);
-    }
-  }
-
-  const shouldUseCachedAiBrief =
-    isAiBriefFeatureFlagEnabled && useCachedAiBrief && bundle.entry && bundle.entry.length > 0;
-
-  //Generates AI brief if it doesn't exist in S3
-  if (shouldUseCachedAiBrief) {
-    const aiBriefEntry = await generateAiBriefWithTimeout(
-      controls =>
-        getCachedAiBriefOrGenerateNewOne({
+        generateAiBriefBundleEntry({
+          bundle: hydratedBundle,
           cxId,
           patientId,
-          bundle,
           log,
           aiBriefControls: controls,
         }),
@@ -175,7 +166,33 @@ export async function createConsolidatedFromConversions({
       log
     );
     if (aiBriefEntry) {
-      bundle.entry?.push(aiBriefEntry);
+      hydratedBundle.entry?.push(aiBriefEntry);
+    }
+  }
+
+  const shouldUseCachedAiBrief =
+    isAiBriefFeatureFlagEnabled &&
+    useCachedAiBrief &&
+    hydratedBundle.entry &&
+    hydratedBundle.entry.length > 0;
+
+  //Generates AI brief if it doesn't exist in S3
+  if (shouldUseCachedAiBrief) {
+    const aiBriefEntry = await generateAiBriefWithTimeout(
+      controls =>
+        getCachedAiBriefOrGenerateNewOne({
+          cxId,
+          patientId,
+          bundle: hydratedBundle,
+          log,
+          aiBriefControls: controls,
+        }),
+      cxId,
+      patientId,
+      log
+    );
+    if (aiBriefEntry) {
+      hydratedBundle.entry?.push(aiBriefEntry);
     }
   }
 
@@ -184,7 +201,7 @@ export async function createConsolidatedFromConversions({
   await s3Utils.uploadFile({
     bucket: destinationBucketName,
     key: dedupDestFileName,
-    file: Buffer.from(JSON.stringify(bundle)),
+    file: Buffer.from(JSON.stringify(hydratedBundle)),
     contentType: "application/json",
   });
 
@@ -203,7 +220,7 @@ export async function createConsolidatedFromConversions({
   );
 
   log(`Done`);
-  return bundle;
+  return hydratedBundle;
 }
 
 async function getConversions({
