@@ -7,11 +7,9 @@ import { prefixedLog } from "./shared/log";
 import { getSingleMessageOrFail } from "./shared/sqs";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 import { Config } from "@metriport/core/util/config";
-import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 
 // Keep this as early on the file as possible
 capture.init();
-FeatureFlags.init(Config.getAWSRegion(), Config.getFeatureFlagsTableName());
 
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");

@@ -16,7 +16,7 @@ import _ from "lodash";
 import { stripInvalidCharactersFromPatientData } from "../../domain/character-sanitizer";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
-import { capture, out } from "../../util";
+import { out } from "../../util";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
 import { METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER } from "./constants";
@@ -35,7 +35,6 @@ import {
   VpnlessHieConfig,
 } from "./types";
 import { createScrambledId } from "./utils";
-import { getCxsWithAdtsFeatureFlagEnabled } from "../feature-flags/domain-ffs";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
@@ -80,30 +79,7 @@ export class Hl7v2RosterGenerator {
     const orgs = await simpleExecuteWithRetries(() => this.getOrganizations([...cxIds]), log);
     const orgsByCxId = _.keyBy(orgs, "cxId");
 
-    const cxsWithAdtsEnabled = await getCxsWithAdtsFeatureFlagEnabled();
-    const adtsEnabledCxSet = new Set(cxsWithAdtsEnabled);
-
-    log(`Checking ${patients.length} patients if they are allowed be in the roster.`);
-    const patientsWithAdtsEnabled: Patient[] = [];
-    for (const patient of patients) {
-      const cxId = patient.cxId;
-
-      // Don't want to call await isAdtsFeatureFla...() here because then we would be making a db call for each patient.
-      if (!adtsEnabledCxSet.has(cxId)) {
-        capture.error(`CX ${cxId} is not allowed to generate roster. Skipping...`, {
-          extra: {
-            cxId: cxId,
-            hieName,
-          },
-        });
-        continue;
-      }
-
-      patientsWithAdtsEnabled.push(patient);
-    }
-
-    log(`Processing ${patientsWithAdtsEnabled.length} patients`);
-    const rosterRowInputs = patientsWithAdtsEnabled.map(p => {
+    const rosterRowInputs = patients.map(p => {
       const org = orgsByCxId[p.cxId];
       if (!org) {
         throw new MetriportError(

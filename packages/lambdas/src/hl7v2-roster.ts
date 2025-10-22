@@ -6,10 +6,8 @@ import { initTimer } from "@metriport/shared/common/timer";
 import { out } from "@metriport/core/util/log";
 import { Config } from "@metriport/core/util/config";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
-import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 
 capture.init();
-FeatureFlags.init(Config.getAWSRegion(), Config.getFeatureFlagsTableName());
 
 const apiUrl = getEnvOrFail("API_URL");
 const bucketName = getEnvOrFail("HL7V2_ROSTER_BUCKET_NAME");

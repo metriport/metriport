@@ -16,10 +16,8 @@ import {
 } from "../../external/fhir/adt-encounters";
 import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion";
 import { getHieConfigDictionary } from "../../external/hl7-notification/hie-config-dictionary";
-import { sendHeartbeatToMonitoringService } from "../../external/monitoring/heartbeat";
 import { capture, out } from "../../util";
 import { Config } from "../../util/config";
-import { isAdtsFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
 import { getEncounterClass } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/adt/encounter";
 import {
@@ -48,6 +46,7 @@ import {
   persistHl7MessageError,
   SupportedTriggerEvent,
 } from "./utils";
+import { sendHeartbeatToMonitoringService } from "../../external/monitoring/heartbeat";
 
 type HieConfig = { timezone: string };
 
