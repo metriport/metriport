@@ -4,7 +4,7 @@ import { out } from "../../../../util/log";
 import { S3Utils } from "../../../aws/s3";
 import { getCdaToFhirConversionPrefix, parseCdaToFhirConversionFileName } from "../../file-names";
 
-const documentKeyFilter = ".xml.json";
+const documentKeySuffix = ".xml.json";
 
 export async function listDocumentIds({
   cxId,
@@ -28,7 +28,7 @@ export async function listDocumentIds({
   const documentIds = _(documents)
     .map(document => document.Key)
     .compact()
-    .filter(key => key.endsWith(documentKeyFilter))
+    .filter(key => key.endsWith(documentKeySuffix))
     .map(key => {
       const { documentId } = parseCdaToFhirConversionFileName({ fileName: key });
       return documentId;

@@ -54,6 +54,14 @@ function searchDocuments(
   for (const source of sources) {
     const sourceMatches = automaton.findAll(source.textContent);
     matches.push(...sourceMatches);
+
+    for (const match of sourceMatches) {
+      const fragment = source.textContent.substring(
+        Math.max(0, match.startIndex - 80),
+        Math.min(source.textContent.length, match.endIndex + 80)
+      );
+      console.log(fragment);
+    }
   }
   return matches;
 }
