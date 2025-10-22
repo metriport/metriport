@@ -79,12 +79,6 @@ export class SDEStack extends NestedStack {
     return {
       structuredDataBucket: this.structuredDataBucket,
       extractDocumentLambda: this.extractDocumentLambda,
-      sdeLambdas: [
-        {
-          envVarName: "SDE_EXTRACT_DOCUMENT_LAMBDA_NAME",
-          lambda: this.extractDocumentLambda,
-        },
-      ],
     };
   }
 

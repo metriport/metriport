@@ -429,12 +429,6 @@ export function createAPIService({
           }),
           ...(sdeAssets && {
             STRUCTURED_DATA_BUCKET_NAME: sdeAssets.structuredDataBucket.bucketName,
-            ...Object.fromEntries(
-              sdeAssets.sdeLambdas.map(({ envVarName, lambda }) => [
-                envVarName,
-                lambda.functionName,
-              ])
-            ),
           }),
           RUN_PATIENT_JOB_QUEUE_URL: jobAssets.runPatientJobQueue.queueUrl,
           ...(props.config.hl7Notification?.dischargeNotificationSlackUrl && {
