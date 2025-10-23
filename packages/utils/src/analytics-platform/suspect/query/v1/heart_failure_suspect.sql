@@ -91,6 +91,7 @@ symptom_raw AS (
     c.CONDITION_ID                                 AS resource_id,
     'Condition'                                     AS resource_type,
     c.ICD_10_CM_CODE,
+    c.ICD_10_CM_DISPLAY,
     COALESCE(c.ONSET_DATE, c.RECORDED_DATE, c.END_DATE) AS obs_date,
     c.DATA_SOURCE
   FROM CORE_V3.CONDITION c
@@ -200,6 +201,7 @@ hf_supporting AS (
     NULL AS CPT_CODE, NULL AS CPT_DISPLAY,
     NULL AS SNOMED_CODE, NULL AS SNOMED_DISPLAY,
     NULL AS ICD_10_CM_CODE,
+    NULL AS ICD_10_CM_DISPLAY,
     p.RESULT,
     p.units,
     p.value_num,
@@ -222,6 +224,7 @@ hf_supporting AS (
     e.CPT_CODE, e.CPT_DISPLAY,
     e.SNOMED_CODE, e.SNOMED_DISPLAY,
     NULL AS ICD_10_CM_CODE,
+    NULL AS ICD_10_CM_DISPLAY,
     NULL AS RESULT,
     NULL AS units,
     NULL AS value_num,
@@ -244,6 +247,7 @@ hf_supporting AS (
     NULL AS CPT_CODE, NULL AS CPT_DISPLAY,
     NULL AS SNOMED_CODE, NULL AS SNOMED_DISPLAY,
     s.ICD_10_CM_CODE,
+    s.ICD_10_CM_DISPLAY,
     NULL AS RESULT,
     NULL AS units,
     NULL AS value_num,
@@ -307,8 +311,9 @@ hf_with_fhir_condition AS (
       'resourceType', 'Condition',
       'id',            f.resource_id,
       'code', OBJECT_CONSTRUCT(
+        'text',   f.ICD_10_CM_DISPLAY,
         'coding', ARRAY_CONSTRUCT(
-          OBJECT_CONSTRUCT('system','http://hl7.org/fhir/sid/icd-10-cm','code',f.ICD_10_CM_CODE)
+          OBJECT_CONSTRUCT('system','http://hl7.org/fhir/sid/icd-10-cm','code',f.ICD_10_CM_CODE,'display',f.ICD_10_CM_DISPLAY)
         )
       ),
       'onsetDateTime', IFF(f.obs_date IS NOT NULL, TO_CHAR(f.obs_date,'YYYY-MM-DD'), NULL)
