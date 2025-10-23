@@ -1,7 +1,7 @@
 import _ from "lodash";
-import { out } from "../../../../util/log";
-import { S3Utils } from "../../../aws/s3";
-import { Config } from "../../../../util/config";
+import { out } from "../../../util/log";
+import { S3Utils } from "../../../external/aws/s3";
+import { Config } from "../../../util/config";
 
 export async function listPatientIdsWithDocuments({ cxId }: { cxId: string }): Promise<string[]> {
   const { log } = out(`sde.listPatientsWithDocuments - cx ${cxId}`);

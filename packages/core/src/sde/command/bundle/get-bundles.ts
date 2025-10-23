@@ -1,11 +1,11 @@
 import _ from "lodash";
-import { S3Utils } from "../../../aws/s3";
-import { Config } from "../../../../util/config";
+import { S3Utils } from "../../../external/aws/s3";
+import { Config } from "../../../util/config";
 import { Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { getDataExtractionFilePrefix } from "../../file-names";
-import { executeAsynchronously } from "../../../../util/concurrency";
+import { executeAsynchronously } from "../../../util/concurrency";
 import { parseFhirBundle } from "@metriport/shared/medical";
-import { out } from "../../../../util/log";
+import { out } from "../../../util/log";
 interface GetBundlesParams {
   cxId: string;
   patientId: string;

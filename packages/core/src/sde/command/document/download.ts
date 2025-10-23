@@ -1,13 +1,13 @@
 import { BadRequestError } from "@metriport/shared";
-import { Config } from "../../../../util/config";
-import { out } from "../../../../util/log";
-import { S3Utils } from "../../../aws/s3";
+import { Config } from "../../../util/config";
+import { out } from "../../../util/log";
+import { S3Utils } from "../../../external/aws/s3";
 import { Bundle } from "@medplum/fhirtypes";
 import { parseFhirBundle } from "@metriport/shared/medical";
 import { ExtractDocumentRequest, ExtractionBundle } from "../../types";
 import { buildDocumentConversionFileName } from "../../file-names";
 import { listDocumentIds } from "./list-documents";
-import { executeAsynchronously } from "../../../../util/concurrency";
+import { executeAsynchronously } from "../../../util/concurrency";
 
 export async function downloadDocumentConversion({
   cxId,

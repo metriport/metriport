@@ -23,7 +23,7 @@ import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion"
 import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
 import { getBundleResources as getPharmacyResources } from "../../external/surescripts/command/bundle/get-bundle";
 import { getBundleResources as getLabResources } from "../../external/quest/command/bundle/get-bundle";
-import { getBundleResources as getDataExtractionResources } from "../../external/sde/command/bundle/get-bundles";
+import { getBundleResources as getDataExtractionResources } from "../../sde/command/bundle/get-bundles";
 import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { processAsyncError } from "../../util/error/shared";

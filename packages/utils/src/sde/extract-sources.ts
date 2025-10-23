@@ -5,7 +5,7 @@ import {
   getLocalDocument,
   listLocalPatientIds,
 } from "./shared";
-import { extractFromConversionBundle } from "@metriport/core/external/sde/extract";
+import { extractFromConversionBundle } from "@metriport/core/sde/extract";
 // import { extractDocument } from "@metriport/core/external/sde/command/document/extract-document";
 
 /**

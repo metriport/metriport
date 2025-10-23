@@ -1,7 +1,7 @@
 import { Command } from "commander";
-import { downloadDocumentConversion } from "@metriport/core/external/sde/command/document/download";
 import { downloadAllDocumentConversions } from "./shared";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { downloadDocumentConversion } from "@metriport/core/sde/command/document/download";
 import {
   loadPatientIds,
   saveConversionBundle,

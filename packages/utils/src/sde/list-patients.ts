@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { listPatientIdsWithDocuments } from "@metriport/core/external/sde/command/document/list-patients";
+import { listPatientIdsWithDocuments } from "@metriport/core/sde/command/document/list-patients";
 import { loadPatientIds, listLocalPatientIds, savePatientIds } from "./shared";
 
 /**

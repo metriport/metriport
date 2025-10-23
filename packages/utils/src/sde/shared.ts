@@ -2,10 +2,10 @@ import fs from "fs";
 import path from "path";
 import { Bundle } from "@medplum/fhirtypes";
 import { initRunsFolder } from "../shared/folder";
-import { ExtractionBundle, ExtractionSource } from "@metriport/core/external/sde/types";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { listDocumentIds } from "@metriport/core/external/sde/command/document/list-documents";
-import { downloadDocumentConversion } from "@metriport/core/external/sde/command/document/download";
+import { ExtractionBundle, ExtractionSource } from "@metriport/core/sde/types";
+import { listDocumentIds } from "@metriport/core/sde/command/document/list-documents";
+import { downloadDocumentConversion } from "@metriport/core/sde/command/document/download";
 
 function getLocalDirectoryPath(directoryName: string) {
   initRunsFolder("sde");

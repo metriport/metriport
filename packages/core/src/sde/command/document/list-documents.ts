@@ -1,7 +1,7 @@
 import _ from "lodash";
-import { Config } from "../../../../util/config";
-import { out } from "../../../../util/log";
-import { S3Utils } from "../../../aws/s3";
+import { Config } from "../../../util/config";
+import { out } from "../../../util/log";
+import { S3Utils } from "../../../external/aws/s3";
 import { getCdaToFhirConversionPrefix, parseCdaToFhirConversionFileName } from "../../file-names";
 
 const documentKeySuffix = ".xml.json";
