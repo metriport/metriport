@@ -54,7 +54,6 @@ import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
 import { PatientMonitoringNestedStack } from "./patient-monitoring-nested-stack";
 import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
-import { OutboundRateLimitingNestedStack } from "./outbound-rate-limiting-nested-stack";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
@@ -273,18 +272,6 @@ export class APIStack extends Stack {
       dynamoDBTokenTable,
       dynamoConstructName,
       slackNotification?.alarmAction
-    );
-
-    //-------------------------------------------
-    // Outbound Rate Limiting
-    //-------------------------------------------
-    const { outboundRateLimitTable } = new OutboundRateLimitingNestedStack(
-      this,
-      "OutboundRateLimitingNestedStack",
-      {
-        config: props.config,
-        alarmAction: slackNotification?.alarmAction,
-      }
     );
 
     //-------------------------------------------
@@ -512,6 +499,18 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
+    // Rate Limiting
+    //-------------------------------------------
+    const { rateLimitTable, outboundRateLimitTable } = new RateLimitingNestedStack(
+      this,
+      "RateLimitingNestedStack",
+      {
+        config: props.config,
+        alarmAction: slackNotification?.alarmAction,
+      }
+    );
+
+    //-------------------------------------------
     // HL7 Notification Webhook Sender
     //-------------------------------------------
     let hl7NotificationWebhookSenderLambda: lambda.Function | undefined;
@@ -578,14 +577,6 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       alarmAction: slackNotification?.alarmAction,
       lambdaLayers,
-    });
-
-    //-------------------------------------------
-    // Rate Limiting
-    //-------------------------------------------
-    const { rateLimitTable } = new RateLimitingNestedStack(this, "RateLimitingNestedStack", {
-      config: props.config,
-      alarmAction: slackNotification?.alarmAction,
     });
 
     //-------------------------------------------
