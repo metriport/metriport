@@ -45,7 +45,7 @@ import {
   persistHl7MessageError,
   SupportedTriggerEvent,
 } from "./utils";
-import { sendHeartbeatToMonitoringService } from "../../external/monitoring/heartbeat";
+import { sendHeartbeat } from "./heartbeat-sender";
 
 type HieConfig = { timezone: string };
 
@@ -378,11 +378,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     hieName: string;
   }) {
     try {
-      const posthogApiKeyArn = Config.getPostHogApiKey();
-      if (!posthogApiKeyArn) {
-        throw new MetriportError("No posthog API key provided in webhook sender");
-      }
-
       await Promise.all([
         reportAdvancedMetrics({
           service: "Hl7NotificationWebhookSender",
@@ -408,6 +403,10 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
           ],
         }),
         (async () => {
+          const posthogApiKeyArn = Config.getPostHogApiKey();
+          if (!posthogApiKeyArn) {
+            throw new MetriportError("No posthog API key provided in webhook sender");
+          }
           const posthogApiKey = await getSecretValueOrFail(posthogApiKeyArn, Config.getAWSRegion());
           return analytics(
             {
@@ -425,22 +424,16 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
           );
         })(),
         (async () => {
-          const heartBeatMonitorMap = Config.getHeartBeatMonitorMap();
-          const heartBeatMonitorUrl = heartBeatMonitorMap[hieName];
-          if (!heartBeatMonitorUrl) {
-            throw new MetriportError(
-              `Heartbeat monitor URL not found for HIE: ${hieName}`,
-              undefined,
-              { hieName, heartBeatMonitorMap: JSON.stringify(heartBeatMonitorMap) }
-            );
-          }
-          await sendHeartbeatToMonitoringService(heartBeatMonitorUrl);
+          await sendHeartbeat(hieName);
         })(),
       ]);
     } catch (error) {
-      capture.error("Failed to notify analytics", {
-        extra: { cxId, patientId, messageCode, triggerEvent, hieName, error },
-      });
+      capture.error(
+        "Failed to notify analytics or send heartbeat ping. This did not block the ADT from processing.",
+        {
+          extra: { cxId, patientId, messageCode, triggerEvent, hieName, error },
+        }
+      );
     }
   }
 }
