@@ -184,6 +184,6 @@ function getAiBriefResourceFromBundle(bundle: Bundle<Binary>): Binary {
   return firstEntry.resource as Binary;
 }
 
-function getAiBriefFileKey(cxId: string, patientId: string): string {
+export function getAiBriefFileKey(cxId: string, patientId: string): string {
   return `${cxId}/${patientId}/${AI_BRIEF_FILE_NAME}`;
 }
