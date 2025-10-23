@@ -7,17 +7,14 @@ import { Pagination, getPaginationFilters, getPaginationLimits } from "../../pag
 
 export type GetHl7v2SubscribersParams = {
   hieStates: string[];
-  hieName: string;
   pagination?: Pagination;
 };
 
 function getCommonQueryOptions({
   hieStates,
-  hieName,
   pagination,
 }: Omit<GetHl7v2SubscribersParams, "hieStates"> & { hieStates: string[] }) {
   const order: Order = [["id", "DESC"]];
-  const hieSpecificOverride = `adtMonitoring_override${hieName}`;
   return {
     where: {
       ...(pagination ? getPaginationFilters(pagination) : {}),
@@ -27,8 +24,7 @@ function getCommonQueryOptions({
             (
               EXISTS (
                 SELECT 1
-                FROM jsonb_array_elements("PatientModelReadOnly".data->'address') addr
-                WHERE addr->>'state' = ANY(ARRAY[:hieStates])
+                WHERE "PatientModelReadOnly".data->'address'->0->>'state' = ANY(ARRAY[:hieStates])
               )
               AND
               EXISTS (
@@ -36,18 +32,9 @@ function getCommonQueryOptions({
                 FROM patient_cohort pc
                 JOIN cohort ch ON pc.cohort_id = ch.id
                 WHERE pc.patient_id = "PatientModelReadOnly".id
-                GROUP BY pc.patient_id
-                HAVING COUNT(*) > 0
-                  AND BOOL_AND(COALESCE(ch.settings->>'adtMonitoring','false') = 'true')
+                  AND jsonb_typeof(ch.settings->'monitoring'->'adt') = 'boolean'
+                  AND (ch.settings->'monitoring'->>'adt')::boolean = true
               )
-            )
-            OR
-            EXISTS (
-              SELECT 1
-              FROM patient_cohort pc
-              JOIN cohort ch ON pc.cohort_id = ch.id
-              WHERE pc.patient_id = "PatientModelReadOnly".id
-                AND jsonb_extract_path_text(ch.settings, :hieSpecificOverride) = 'true'
             )
           )
         `),
@@ -55,7 +42,6 @@ function getCommonQueryOptions({
     } as WhereOptions,
     replacements: {
       hieStates,
-      hieSpecificOverride,
     },
     ...(pagination ? getPaginationLimits(pagination) : {}),
     ...(pagination ? { order } : {}),
@@ -64,7 +50,6 @@ function getCommonQueryOptions({
 
 export async function getHl7v2Subscribers({
   hieStates,
-  hieName,
   pagination,
 }: GetHl7v2SubscribersParams): Promise<PatientModelReadOnly[]> {
   const { log } = out(`Get HL7v2 subscribers`);
@@ -72,7 +57,7 @@ export async function getHl7v2Subscribers({
 
   try {
     const findOptions: FindOptions<PatientModelReadOnly> = {
-      ...getCommonQueryOptions({ hieStates, hieName, pagination }),
+      ...getCommonQueryOptions({ hieStates, pagination }),
     };
 
     const patients = await PatientModelReadOnly.findAll(findOptions);
