@@ -4,14 +4,10 @@ export interface BasetenConfig {
   timeoutInSeconds?: number;
 }
 
-export const BASETEN_ENCODING_FORMATS = ["float", "base64"] as const;
-export type EmbeddingEncoding = (typeof BASETEN_ENCODING_FORMATS)[number];
-
-export interface EmbeddingConfig<E extends EmbeddingEncoding = "float"> extends BasetenConfig {
+export interface EmbeddingConfig extends BasetenConfig {
   url?: string;
   apiKey?: string;
   model: string;
-  encodingFormat?: E;
   /**
    * Allows specification of a "downprojection" of an embedding vector to a lower dimension.
    * If unspecified, this will use the model's default dimension.
@@ -20,16 +16,22 @@ export interface EmbeddingConfig<E extends EmbeddingEncoding = "float"> extends 
   userIdentifier?: string;
 }
 
-export interface EmbeddingResponse<F> {
+export interface EmbeddingResponse {
+  object: "list";
   model: string;
   usage: {
+    prompt_tokens: number;
     total_tokens: number;
   };
+  total_time: number;
   individual_request_times: number[];
-  data: {
-    index: number;
-    embedding: F extends "base64" ? string : number[];
-  }[];
+  data: EmbeddingData[];
+}
+
+export interface EmbeddingData {
+  object: "embedding";
+  index: number;
+  embedding: number[];
 }
 
 export interface RerankConfig extends BasetenConfig {

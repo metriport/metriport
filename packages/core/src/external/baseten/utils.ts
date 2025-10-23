@@ -1,4 +1,4 @@
-import { EmbeddingConfig } from "./types";
+import { BasetenConfig } from "./types";
 import {
   DEFAULT_BATCH_SIZE,
   DEFAULT_CONCURRENCY,
@@ -13,7 +13,7 @@ import {
  * @param config - The embedding configuration.
  * @returns The batch size.
  */
-export function getBatchSize(config: EmbeddingConfig): number {
+export function getBatchSize(config: BasetenConfig): number {
   const batchSize = config.batchSize ?? DEFAULT_BATCH_SIZE;
   return Math.max(1, Math.min(batchSize, MAX_BATCH_SIZE));
 }
@@ -23,7 +23,7 @@ export function getBatchSize(config: EmbeddingConfig): number {
  * @param config - The embedding configuration.
  * @returns The maximum number of concurrent requests.
  */
-export function getMaxConcurrentRequests(config: EmbeddingConfig): number {
+export function getMaxConcurrentRequests(config: BasetenConfig): number {
   const concurrency = config.maxConcurrentRequests ?? DEFAULT_CONCURRENCY;
   return Math.max(1, Math.min(concurrency, MAX_CONCURRENCY));
 }
@@ -33,7 +33,7 @@ export function getMaxConcurrentRequests(config: EmbeddingConfig): number {
  * @param config - The embedding configuration.
  * @returns The timeout in seconds.
  */
-export function getTimeoutSeconds(config: EmbeddingConfig): number {
+export function getTimeoutSeconds(config: BasetenConfig): number {
   const timeoutSeconds = config.timeoutInSeconds ?? DEFAULT_TIMEOUT_SECONDS;
   return Math.max(1, Math.min(timeoutSeconds, MAX_TIMEOUT_SECONDS));
 }

@@ -1,7 +1,8 @@
 import { PerformanceClient } from "@basetenlabs/performance-client";
 import { Config } from "../../util/config";
-import { EmbeddingConfig, EmbeddingResponse, EmbeddingEncoding } from "./types";
+import { EmbeddingConfig, EmbeddingResponse } from "./types";
 import { getBatchSize, getMaxConcurrentRequests, getTimeoutSeconds } from "./utils";
+import { EMBEDDING_ENCODING_FORMAT } from "./constants";
 
 export class EmbeddingClient {
   private client: PerformanceClient;
@@ -14,26 +15,21 @@ export class EmbeddingClient {
     this.config = config;
   }
 
-  async createEmbeddings<E extends EmbeddingEncoding = "float">(
-    texts: string[]
-  ): Promise<EmbeddingResponse<E>> {
+  async createEmbeddings(texts: string[]): Promise<EmbeddingResponse> {
     const batchSize = getBatchSize(this.config);
     const maxConcurrentRequests = getMaxConcurrentRequests(this.config);
     const timeoutSeconds = getTimeoutSeconds(this.config);
 
-    const response: EmbeddingResponse<E> = await this.client.embed(
+    const response: EmbeddingResponse = await this.client.embed(
       texts,
       this.config.model,
-      this.config.encodingFormat,
+      EMBEDDING_ENCODING_FORMAT,
       this.config.dimensions,
       this.config.userIdentifier,
       maxConcurrentRequests,
       batchSize,
       timeoutSeconds
     );
-
-    console.log(response);
-
     return response;
   }
 }

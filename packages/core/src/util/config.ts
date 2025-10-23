@@ -204,7 +204,6 @@ export class Config {
   static getBasetenApiKey(): string {
     return getEnvVarOrFail("BASETEN_API_KEY");
   }
-
   static getBasetenEmbeddingUrl(): string {
     return getEnvVarOrFail("BASETEN_EMBEDDING_URL");
   }

@@ -1,3 +1,5 @@
+export const EMBEDDING_ENCODING_FORMAT = "float";
+
 export const DEFAULT_BATCH_SIZE = 128;
 export const MAX_BATCH_SIZE = 1024;
 
