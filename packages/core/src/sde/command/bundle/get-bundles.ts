@@ -6,11 +6,14 @@ import { getDataExtractionFilePrefix } from "../../file-names";
 import { executeAsynchronously } from "../../../util/concurrency";
 import { parseFhirBundle } from "@metriport/shared/medical";
 import { out } from "../../../util/log";
+
 interface GetBundlesParams {
   cxId: string;
   patientId: string;
-  parallelDownloads?: number;
 }
+
+// Number of parallel requests to S3 for downloading bundles
+const getBundlesInParallel = 10;
 
 /**
  * Retrieves all bundles that have been extracted for a particular cxId and patientId. Will return an
@@ -20,11 +23,7 @@ interface GetBundlesParams {
  * @param patientId - The patient ID.
  * @returns All bundles that have been extracted for the patient.
  */
-export async function getBundles({
-  cxId,
-  patientId,
-  parallelDownloads = 10,
-}: GetBundlesParams): Promise<Bundle[]> {
+export async function getBundles({ cxId, patientId }: GetBundlesParams): Promise<Bundle[]> {
   const { log } = out("sde.getBundles");
   const bucketName = Config.getStructuredDataBucketName();
   if (!bucketName) {
@@ -50,7 +49,7 @@ export async function getBundles({
       }
     },
     {
-      numberOfParallelExecutions: parallelDownloads,
+      numberOfParallelExecutions: getBundlesInParallel,
     }
   );
 

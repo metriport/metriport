@@ -11,7 +11,7 @@ import { createLambda } from "../shared/lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SDEAssets } from "./types";
 
-const extractDocumentLambdaTimeout = Duration.seconds(300);
+const extractDocumentLambdaTimeout = Duration.minutes(5);
 
 interface SDENestedStackProps extends NestedStackProps {
   config: EnvConfig;
