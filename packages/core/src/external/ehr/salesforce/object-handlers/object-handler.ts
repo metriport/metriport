@@ -1,3 +1,5 @@
+import { MetriportError } from "@metriport/shared/dist/error/metriport-error";
+
 /**
  * Represents raw data from Salesforce before normalization
  */
@@ -41,6 +43,10 @@ export interface SalesforceObjectHandler {
    * Transform raw Salesforce data into normalized format
    */
   normalizeData(rawData: SalesforceObjectData): SalesforcePatient;
+
+  getString(data: SalesforceObjectData, field: string): string;
+
+  getStringOrNull(data: SalesforceObjectData, field: string): string | null;
 }
 
 /**
@@ -50,4 +56,18 @@ export abstract class BaseSalesforceObjectHandler implements SalesforceObjectHan
   abstract getObjectType(): string;
   abstract getSOQLFields(): readonly string[];
   abstract normalizeData(rawData: SalesforceObjectData): SalesforcePatient;
+
+  getString(data: SalesforceObjectData, field: string): string {
+    const value = data[field];
+    if (typeof value === "string") return value;
+    throw new MetriportError(`Field required but not found or not a string`, undefined, {
+      field,
+      value: String(value),
+    });
+  }
+
+  getStringOrNull(data: SalesforceObjectData, field: string): string | null {
+    const value = data[field];
+    return typeof value === "string" ? value : null;
+  }
 }

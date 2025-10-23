@@ -47,20 +47,4 @@ export class AccountHandler extends BaseSalesforceObjectHandler {
       birthdate: this.getStringOrNull(rawData, "Birth_Date__c"),
     };
   }
-
-  private getString(data: SalesforceObjectData, field: string): string {
-    const value = data[field];
-    if (typeof value !== "string") {
-      throw new Error(`Field ${field} is required but not found or not a string`);
-    }
-    return value;
-  }
-
-  private getStringOrNull(data: SalesforceObjectData, field: string): string | null {
-    const value = data[field];
-    if (value === null || value === undefined) {
-      return null;
-    }
-    return typeof value === "string" ? value : null;
-  }
 }
