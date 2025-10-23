@@ -55,13 +55,13 @@
     )
     {% endset %}
 
-    {% call statement('postgressql',fetch_result=true) %}
+    {% call statement('postgresssql',fetch_result=true) %}
     {{ sql }}
     {% endcall %}
 
     {% if execute %}
     {# debugging { log(sql, True)} #}
-    {% set results = load_result('postgressql') %}
+    {% set results = load_result('postgresssql') %}
     {{ log("Loaded data from external s3 resource\n  loaded to: " ~ this ~ "\n  from: s3://" ~ s3_bucket ~ "/" ~ s3_key ,True) }}
     {# debugging { log(results, True) } #}
     {% endif %}

@@ -168,7 +168,7 @@ models:
       - name: reference_id
         tests:
           - relationships:
-              to: ref('core_location')
+              to: ref('core__location')
               field: location_id
               config:
                 where: property = 'location.location'
