@@ -236,7 +236,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
             "projection.enabled": "true",
             ...parameters,
             "storage.location.template":
-              `s3://${iheParsedResponsesBucket.bucketName}` + locationString + "/",
+              `s3://${iheParsedResponsesBucket.bucketName}/` + locationString.join("/") + "/",
           },
           tableType: "EXTERNAL_TABLE",
         },
