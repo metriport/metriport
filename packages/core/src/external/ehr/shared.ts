@@ -69,6 +69,7 @@ import { capture } from "../../util/notifications";
 import { uuidv7 } from "../../util/uuid-v7";
 import { S3Utils } from "../aws/s3";
 import { CONDITION_RELATED_URL } from "../fhir/shared/extensions/chronicity-extension";
+import { findHccExtension } from "../fhir/shared/extensions/hcc-extension";
 import { BundleType } from "./bundle/bundle-shared";
 import { createOrReplaceBundle } from "./bundle/command/create-or-replace-bundle";
 import { FetchBundleParams, fetchBundle } from "./bundle/command/fetch-bundle";
@@ -558,6 +559,12 @@ export function isChronicCondition(condition?: Condition): boolean {
     (e: Extension) => e.url === CONDITION_RELATED_URL
   );
   return chronicityExtension?.valueCoding?.code === "C" ? true : false;
+}
+
+export function isHccCondition(condition?: Condition): boolean {
+  if (!condition) return false;
+  const hccExtension = findHccExtension(condition.extension ?? []);
+  return hccExtension !== undefined;
 }
 
 export function getMedicationRxnormCoding(medication: Medication): Coding | undefined {

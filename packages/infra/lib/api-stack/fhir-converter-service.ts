@@ -27,13 +27,13 @@ export function settings() {
   const prod = isProd(config);
   // Watch out for the combination of vCPUs and memory, more vCPU requires more memory
   // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size
-  const cpuAmount = prod ? 4 : 2;
+  const cpuAmount = prod ? 1 : 2;
   return {
     cpuAmount,
     cpu: cpuAmount * vCPU,
     memoryLimitMiB: prod ? 8192 : 4096,
-    taskCountMin: prod ? 32 : 1,
-    taskCountMax: prod ? 64 : 4,
+    taskCountMin: prod ? 128 : 1,
+    taskCountMax: prod ? 256 : 4,
     // How long this service can run for
     maxExecutionTimeout: MAXIMUM_LAMBDA_TIMEOUT,
   };

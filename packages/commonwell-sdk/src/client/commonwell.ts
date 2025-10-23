@@ -1,11 +1,4 @@
-import {
-  BadRequestError,
-  base64ToBuffer,
-  defaultOptionsRequestNotAccepted,
-  executeWithNetworkRetries,
-  MetriportError,
-  NotFoundError,
-} from "@metriport/shared";
+import { BadRequestError, base64ToBuffer, MetriportError, NotFoundError } from "@metriport/shared";
 import { isAxiosError } from "axios";
 import httpStatus from "http-status";
 import * as stream from "stream";
@@ -37,7 +30,7 @@ import {
   StatusResponse,
   statusResponseSchema,
 } from "../models/patient";
-import { APIMode, CommonWellOptions, defaultOnError500, OnError500Options } from "./common";
+import { APIMode, CommonWellOptions } from "./common";
 import {
   BaseOptions,
   CommonWellAPI,
@@ -58,7 +51,6 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
   private _npi: string;
   private _homeCommunityId: string;
   private _authGrantorReferenceOid?: string | undefined;
-  private onError500: OnError500Options;
 
   /**
    * Creates a new instance of the CommonWell API client pertaining to an
@@ -108,7 +100,6 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
     this._npi = npi;
     this._homeCommunityId = homeCommunityId;
     this._authGrantorReferenceOid = authGrantorReference;
-    this.onError500 = { ...defaultOnError500, ...options.onError500 };
   }
 
   get oid() {
@@ -282,6 +273,8 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
    *
    * The links returned are confirmed links of LOLA 2 or higher.
    *
+   * Note, there is no retry logic included for this method, since it's best used with custom logic.
+   *
    * @param meta                Metadata about the request.
    * @param patientId           The person id to be link to a patient.
    * @returns Response with list of links to Patients
@@ -293,9 +286,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
     const headers = this.buildQueryHeaders(options?.meta);
     const url = buildPatientLinkEndpoint(this.oid, patientId);
     try {
-      const resp = await this.executeWithRetriesOn500IfEnabled(() =>
-        this.api.get(url, { headers })
-      );
+      const resp = await this.api.get(url, { headers });
       return patientExistingLinksSchema.parse(resp.data);
     } catch (error) {
       throw this.getDescriptiveError(error, "Failed to get patient links by patient id");
@@ -315,6 +306,8 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
    *
    * The links returned are LOLA 1.
    *
+   * Note, there is no retry logic included for this method, since it's best used with custom logic.
+   *
    * @param patientId The ID of the patient to get probable links for.
    * @returns Response with list of probable (LOLA1) links to other Patients
    */
@@ -326,9 +319,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
     const url = buildProbableLinkEndpoint(this.oid, patientId);
 
     try {
-      const resp = await this.executeWithRetriesOn500IfEnabled(() =>
-        this.api.get(url, { headers })
-      );
+      const resp = await this.api.get(url, { headers });
       return patientProbableLinksRespSchema.parse(resp.data);
     } catch (error) {
       throw this.getDescriptiveError(error, "Failed to get probable links by patient id");
@@ -570,7 +561,7 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
         });
       }
       const data = binary.data;
-      if (!data)
+      if (!data) {
         throw new CommonwellError(errorMessage, undefined, {
           reason: "Missing data",
           contentType,
@@ -581,12 +572,14 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
               : "not-an-object",
           inputUrl,
         });
+      }
       const dataBuffer = base64ToBuffer(data);
       outputStream.write(dataBuffer);
-      outputStream.end();
       return { contentType, size: dataBuffer.byteLength };
     } catch (error) {
       throw this.getDescriptiveError(error, "Failed to download document");
+    } finally {
+      outputStream.end();
     }
   }
 
@@ -620,19 +613,6 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
         ? { authGrantorReference: this._authGrantorReferenceOid }
         : {}),
     };
-  }
-
-  private async executeWithRetriesOn500IfEnabled<T>(fn: () => Promise<T>): Promise<T> {
-    return this.onError500.retry
-      ? executeWithNetworkRetries(fn, {
-          ...this.onError500,
-          httpCodesToRetry: [...defaultOptionsRequestNotAccepted.httpCodesToRetry],
-          httpStatusCodesToRetry: [
-            ...defaultOptionsRequestNotAccepted.httpStatusCodesToRetry,
-            httpStatus.INTERNAL_SERVER_ERROR,
-          ],
-        })
-      : fn();
   }
 
   private getDescriptiveError(error: unknown, title: string): unknown {

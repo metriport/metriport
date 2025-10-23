@@ -253,6 +253,23 @@ export async function isRecentVisitAiSummaryEnabledForCx(cxId: string): Promise<
   return cxIdsWithRecentVisitAiSummaryEnabled.some(i => i === cxId);
 }
 
+export async function getCxsWithCardiacCareAiSummary(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithCardiacCareAiSummary");
+}
+export async function isCardiacCareAiSummaryEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithCardiacCareAiSummaryEnabled = await getCxsWithCardiacCareAiSummary();
+  return cxIdsWithCardiacCareAiSummaryEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithNitratesAndConditionsAiSummary(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithNitratesAndConditionsAiSummary");
+}
+export async function isNitratesAndConditionsAiSummaryEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithNitratesAndConditionsAiSummaryEnabled =
+    await getCxsWithNitratesAndConditionsAiSummary();
+  return cxIdsWithNitratesAndConditionsAiSummaryEnabled.some(i => i === cxId);
+}
+
 // ENG-536 remove this once we automatically find the discharge summary
 export async function getCxsWithDischargeSlackNotificationFeatureFlag(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithDischargeSlackNotificationFeatureFlag");
@@ -320,10 +337,6 @@ export async function isAnalyticsIncrementalIngestionEnabledForCx(cxId: string):
 // TODO: ENG-1089 - Remove this once we fully migrate to the new DOA flow on CQ.
 export async function isCqDoaEnabled(): Promise<boolean> {
   return isFeatureFlagEnabled("cqDoaFeatureFlag");
-}
-
-export async function isCwDoaEnabled(): Promise<boolean> {
-  return isFeatureFlagEnabled("cwDoaFeatureFlag");
 }
 
 export async function getCxsWithNewSoapEnvelopeFeatureFlag(): Promise<string[]> {

@@ -28,7 +28,7 @@ export async function convertTabularDataToFhirBundle({
   rows: IncomingData<ResponseDetail>[];
   log: LogFunction;
 }): Promise<Bundle> {
-  const entries = rows.flatMap(getBundleEntries);
+  const entries = rows.flatMap(row => getBundleEntries(row, { patientId }));
   const bundle = buildBundle({ type: "collection", entries });
   dangerouslyDeduplicateFhir(bundle, cxId, patientId);
   const { data: hydratedBundle } = await hydrateFhir(bundle, log);
@@ -41,8 +41,11 @@ export async function convertTabularDataToFhirBundle({
  * @param data - An object containing a key-value mapping of column headers to column values from a single row of data.
  * @returns An array of FHIR resources as bundle entries for any data in this row.
  */
-function getBundleEntries({ data }: IncomingData<ResponseDetail>): BundleEntry[] {
-  const patient = getPatient(data);
+function getBundleEntries(
+  { data }: IncomingData<ResponseDetail>,
+  { patientId }: { patientId: string }
+): BundleEntry[] {
+  const patient = getPatient(data, { patientId });
   const practitioner = getPractitioner(data);
   const organization = getOrganization(data);
   const location = getLocation(data);

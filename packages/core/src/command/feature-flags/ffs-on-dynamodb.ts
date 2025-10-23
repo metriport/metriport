@@ -60,6 +60,8 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   debugFeatureFlag: { enabled: false },
   cxsWithPcpVisitAiSummaryFeatureFlag: { enabled: false, values: [] },
   cxsWithRecentVisitAiSummary: { enabled: false, values: [] },
+  cxsWithCardiacCareAiSummary: { enabled: false, values: [] },
+  cxsWithNitratesAndConditionsAiSummary: { enabled: false, values: [] },
   cxsWithDischargeRequeryFeatureFlag: { enabled: false, values: [] },
   cxsWithDischargeSlackNotificationFeatureFlag: { enabled: false, values: [] },
   cxsWithXmlRedownloadFeatureFlag: { enabled: false, values: [] },
@@ -68,7 +70,6 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   cxsWithQuestFeatureFlag: { enabled: false, values: [] },
   analyticsIncrementalIngestion: { enabled: false, values: [] },
   cqDoaFeatureFlag: { enabled: false },
-  cwDoaFeatureFlag: { enabled: false },
   cxsWithNewSoapEnvelopeFeatureFlag: { enabled: false, values: [] },
 };
 

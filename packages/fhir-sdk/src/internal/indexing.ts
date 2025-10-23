@@ -151,7 +151,19 @@ export function buildDateRangeIndex(
     const dateIntervals = extractDateIntervalsFromResource(resource);
 
     for (const interval of dateIntervals) {
-      dateRangeIndex.insert(interval);
+      try {
+        dateRangeIndex.insert(interval);
+      } catch (error) {
+        // Handle bad data case where low > high
+        console.warn(
+          `Error inserting date interval (${interval.low}, ${interval.high}) into index. Swapping values.`
+        );
+        dateRangeIndex.insert({
+          ...interval,
+          low: interval.high,
+          high: interval.low,
+        });
+      }
     }
   }
 }

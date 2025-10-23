@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "1.29.8",
+  "version": "1.29.11",
   "description": "",
   "main": "app.js",
   "private": true,
@@ -53,6 +53,7 @@
     "express": "^4.19.2",
     "express-http-proxy": "^1.6.3",
     "express-promise-router": "^4.1.1",
+    "groq-sdk": "^0.33.0",
     "helmet": "^6.0.1",
     "http-status": "~1.7.0",
     "jaro-winkler": "^0.2.8",

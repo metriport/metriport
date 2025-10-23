@@ -54,7 +54,7 @@ export async function getTcmEncounters({
   coding?: string;
   status?: string;
   pagination: PaginationV2WithQueryClauses;
-  encounterClass?: string;
+  encounterClass?: string[];
   search?: string;
 }): Promise<TcmEncounterResult[]> {
   const tcmEncounterTable = TcmEncounterModel.tableName;
@@ -111,7 +111,11 @@ export async function getTcmEncounters({
           : ""
       }
       ${coding === "cardiac" ? ` AND tcm_encounter.has_cardiac_code = true` : ""}
-      ${encounterClass ? ` AND tcm_encounter.class = :encounterClass` : ""}
+      ${
+        encounterClass !== undefined && encounterClass.length > 0
+          ? ` AND tcm_encounter.class IN (:encounterClass)`
+          : ""
+      }
       ${
         search
           ? ` AND (tcm_encounter.facility_name ILIKE :search OR CONCAT(patient.data->>'firstName', ' ', patient.data->>'lastName') ILIKE :search)`
@@ -189,7 +193,7 @@ export async function getTcmEncountersCount({
   coding?: string;
   status?: string;
   search?: string;
-  encounterClass?: string;
+  encounterClass?: string[];
 }): Promise<number> {
   const tcmEncounterTable = TcmEncounterModel.tableName;
   const patientTable = PatientModel.tableName;
@@ -227,7 +231,11 @@ export async function getTcmEncountersCount({
         : ""
     }
     ${coding === "cardiac" ? ` AND tcm_encounter.has_cardiac_code = true` : ""}
-    ${encounterClass ? ` AND tcm_encounter.class = :encounterClass` : ""}
+    ${
+      encounterClass !== undefined && encounterClass.length > 0
+        ? ` AND tcm_encounter.class IN (:encounterClass)`
+        : ""
+    }
     ${
       search
         ? ` AND (tcm_encounter.facility_name ILIKE :search OR CONCAT(patient.data->>'firstName', ' ', patient.data->>'lastName') ILIKE :search)`

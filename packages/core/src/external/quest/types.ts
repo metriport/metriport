@@ -21,6 +21,25 @@ export const questRosterResponseSchema = z.object({
 
 export type QuestRosterResponse = z.infer<typeof questRosterResponseSchema>;
 
+export type QuestRosterType = "notifications" | "backfill";
+
+export const rosterTypeSchema = z.enum(["notifications", "backfill"]);
+export const questRosterRequestSchema = z.object({
+  rosterType: rosterTypeSchema,
+});
+
+export type QuestRosterRequest = z.infer<typeof questRosterRequestSchema>;
+
+export interface QuestPatientRequest extends QuestPatientStatus {
+  cxId: string;
+  patientId: string;
+}
+
+export interface QuestPatientStatus {
+  backfill: boolean;
+  notifications: boolean;
+}
+
 /**
  * A Quest response file may be prefixed with "Sweep_" or ""
  */

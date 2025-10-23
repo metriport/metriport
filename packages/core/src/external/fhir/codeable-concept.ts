@@ -1,6 +1,6 @@
 import { CodeableConcept, Coding, Resource } from "@medplum/fhirtypes";
+import { knownSystemUrls } from "@metriport/shared/medical";
 import { isUnknownCoding } from "../../fhir-deduplication/shared";
-import { knownSystemUrls } from "../../util/constants";
 
 export const unknownValues = ["unknown", "unk"];
 

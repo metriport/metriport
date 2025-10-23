@@ -20,17 +20,12 @@ export async function getPatientMapping(
 ): Promise<PatientMapping> {
   const { log } = out(`Quest getPatientMapping - externalId ${externalId}`);
   const api = axiosInstance ?? axios.create({ baseURL: Config.getApiUrl() });
-  const getPatientMappingUrl = `/internal/quest/patient/${externalId}`;
+  const queryParams = new URLSearchParams({ externalId });
+  const getPatientMappingUrl = `/internal/quest/patient/mapping?${queryParams.toString()}`;
   try {
     const response = await executeWithNetworkRetries(async () => {
       return api.get(getPatientMappingUrl);
     });
-    if (response.status === 404) {
-      throw new NotFoundError(`Patient mapping not found for external Quest ID`, undefined, {
-        externalId,
-        url: getPatientMappingUrl,
-      });
-    }
     const data = patientMappingSchema.parse(response.data);
     return data;
   } catch (error) {
