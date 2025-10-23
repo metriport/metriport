@@ -11,12 +11,8 @@ import { listDocumentIds } from "@metriport/core/sde/command/document/list-docum
 import { downloadDocumentConversion } from "@metriport/core/sde/command/document/download";
 
 function getLocalDirectoryPath(directoryName: string) {
-  initRunsFolder("sde");
-  const localDirectoryPath = path.join(process.cwd(), "runs/sde", directoryName);
-  if (!fs.existsSync(localDirectoryPath)) {
-    fs.mkdirSync(localDirectoryPath, { recursive: true });
-  }
-  return localDirectoryPath;
+  const sdePath = initRunsFolder(`sde/${directoryName}`);
+  return path.join(process.cwd(), sdePath);
 }
 
 export function savePatientIds(cxId: string, patientIds: string[]): void {
