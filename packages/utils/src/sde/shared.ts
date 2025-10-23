@@ -17,22 +17,19 @@ function getLocalDirectoryPath(directoryName: string) {
 }
 
 export function savePatientIds(cxId: string, patientIds: string[]): void {
-  const localDirectoryPath = getLocalDirectoryPath(`customer/${cxId}`);
-  const filePath = path.join(localDirectoryPath, "patient-ids.json");
+  const localDirectoryPath = getLocalDirectoryPath("patient-ids");
+  const filePath = path.join(localDirectoryPath, `${cxId}.json`);
   fs.writeFileSync(filePath, JSON.stringify(patientIds, null, 2), "utf8");
 }
 
 export function loadPatientIds(cxId: string): string[] {
-  const localDirectoryPath = getLocalDirectoryPath(`customer/${cxId}`);
-  const filePath = path.join(localDirectoryPath, "patient-ids.json");
+  const localDirectoryPath = getLocalDirectoryPath("patient-ids");
+  const filePath = path.join(localDirectoryPath, `${cxId}.json`);
   if (!fs.existsSync(filePath)) {
     return [];
   }
-  const ids = JSON.parse(fs.readFileSync(filePath, "utf8"));
-  if (!Array.isArray(ids)) {
-    return [];
-  }
-  return ids;
+  const patientIds = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  return patientIds;
 }
 
 export function localPatientDirectoryExists(cxId: string, patientId: string): boolean {
