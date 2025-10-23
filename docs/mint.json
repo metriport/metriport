@@ -149,7 +149,7 @@
             "medical-api/handling-data/data-analytics",
             {
               "group": "Schema",
-              "icon": "house",
+              "icon": "table",
               "pages": [
                 "medical-api/handling-data/schema/condition",
                 "medical-api/handling-data/schema/diagnostic-report",

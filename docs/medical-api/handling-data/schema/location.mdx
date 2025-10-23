@@ -16,15 +16,15 @@ The `location` table stores information about healthcare facilities, practice lo
 * location_id
 
 **Foreign Keys:**
-* managing_organization
+* managing_organization_id
 
 | Column | Data Type | Description |
 | ------ | --------- | ----------- |
 | location_id | varchar | Unique identifier for the location |
+| managing_organization_id | varchar | Unique identifier for the managing organization |
 | name | varchar | Name of the location |
 | type_display | varchar | Type of healthcare facility |
 | physical_type_display | varchar | Physical type of the facility |
-| managing_organization_id | varchar | Unique identifier for the managing organization |
 | address | varchar | Address of the location |
 | address_line | varchar | Address line of the location |
 | city | varchar | City |
