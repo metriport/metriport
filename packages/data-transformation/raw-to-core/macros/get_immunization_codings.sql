@@ -10,7 +10,7 @@
                     else vaccinecode_coding_{{i}}_system 
                 end as system
             ,   vaccinecode_coding_{{i}}_display as display
-            ,   {{i}} as index
+            ,   {{i}} as coding_index
         from {{ref('stage__immunization')}}
         where  vaccinecode_coding_{{i}}_code != ''
     ) as t

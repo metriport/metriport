@@ -10,7 +10,7 @@
                     else code_coding_{{i}}_system 
                 end as system
             ,   code_coding_{{i}}_display as display
-            ,   {{i}} as index
+            ,   {{i}} as coding_index
         from {{ref('stage__diagnosticreport')}}
         where  code_coding_{{i}}_code != ''
     ) as t
@@ -31,7 +31,7 @@
                     when category_{{i}}_coding_{{j}}_system ilike '%v2-0074' then 'http://terminology.hl7.org/CodeSystem/v2-0074'
                 end as system
             ,   category_{{i}}_coding_{{j}}_display as display
-            ,   {{i}} * ({{ secondary_max_index }} + 1) + {{j}} as index
+            ,   {{i}} * ({{ secondary_max_index }} + 1) + {{j}} as coding_index
         from {{ref('stage__diagnosticreport')}}
         where  category_{{i}}_coding_{{j}}_code != ''
     ) as t

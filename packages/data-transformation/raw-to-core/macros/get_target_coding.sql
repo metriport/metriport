@@ -15,7 +15,7 @@
     codings_with_rank as (
         select 
                 *
-            ,   row_number() over (partition by {{ codings_macro_id_field }}, system order by index) as coding_rank
+            ,   row_number() over (partition by {{ codings_macro_id_field }}, system order by coding_index) as coding_rank
         from codings
     )
     select * 

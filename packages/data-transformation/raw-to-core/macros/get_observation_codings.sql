@@ -11,7 +11,7 @@
                     else code_coding_{{i}}_system 
                 end as system
             ,   code_coding_{{i}}_display as display
-            ,   {{i}} as index
+            ,   {{i}} as coding_index
         from {{ref('stage__observation')}}
         where code_coding_{{i}}_code != ''
     ) as t
@@ -33,7 +33,7 @@
                     else category_{{i}}_coding_{{j}}_system 
                 end as system
             ,   category_{{i}}_coding_{{j}}_display as display
-            ,   {{i}} * ({{ secondary_max_index }} + 1) + {{j}} as index
+            ,   {{i}} * ({{ secondary_max_index }} + 1) + {{j}} as coding_index
         from {{ref('stage__observation')}}
         where  category_{{i}}_coding_{{j}}_code != ''
     ) as t
@@ -57,7 +57,7 @@
                     else interpretation_{{i}}_coding_{{j}}_system 
                 end as system
             ,   interpretation_{{i}}_coding_{{j}}_display as display
-            ,   {{i}} * ({{ secondary_max_index }} + 1) + {{j}} as index
+            ,   {{i}} * ({{ secondary_max_index }} + 1) + {{j}} as coding_index
         from {{ref('stage__observation')}}
         where  interpretation_{{i}}_coding_{{j}}_code != ''
     ) as t
@@ -80,7 +80,7 @@
                     else bodysite_coding_{{i}}_system 
                 end as system
             ,   bodysite_coding_{{i}}_display as display
-            ,   {{i}} as index
+            ,   {{i}} as coding_index
         from {{ref('stage__observation')}}
         where  bodysite_coding_{{i}}_code != ''
     ) as t

@@ -11,7 +11,7 @@
                     else code_coding_{{i}}_system 
                 end as system
             ,   code_coding_{{i}}_display as display
-            ,   {{i}} as index
+            ,   {{i}} as coding_index
         from {{ref('stage__procedure')}}
         where  code_coding_{{i}}_code != ''
     ) as t
@@ -33,7 +33,7 @@
                     else bodysite_{{i}}_coding_{{j}}_system 
                 end as system
             ,   bodysite_{{i}}_coding_{{j}}_display as display
-            ,   {{i}} * ({{ secondary_max_index }} + 1) + {{j}} as index
+            ,   {{i}} * ({{ secondary_max_index }} + 1) + {{j}} as coding_index
         from {{ref('stage__procedure')}}
         where  bodysite_{{i}}_coding_{{j}}_code != ''
     ) as t
@@ -57,7 +57,7 @@
                     else reasoncode_{{i}}_coding_{{j}}_system 
                 end as system
             ,   reasoncode_{{i}}_coding_{{j}}_display as display
-            ,   {{i}} * ({{ secondary_max_index }} + 1) + {{j}} as index
+            ,   {{i}} * ({{ secondary_max_index }} + 1) + {{j}} as coding_index
         from {{ref('stage__procedure')}}
         where  reasoncode_{{i}}_coding_{{j}}_code != ''
     ) as t
