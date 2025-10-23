@@ -24,6 +24,7 @@ import { elapsedTimeAsStr } from "../shared/duration";
 
 const dlqUrl = getEnvVarOrFail("DLQ_URL");
 const awsRegion = getEnvVarOrFail("AWS_REGION");
+const blacklistCxIds = getEnvVarOrFail("BLACKLIST_CX_IDS"); // Likely an empty array for your .env
 
 const numberOfParallelPeeks = 10;
 const numberOfParallelDownloadsFromS3 = 10;
@@ -74,6 +75,10 @@ type DlqMessageAttributes = {
     StringValue: string;
   };
 };
+
+function getBlacklistCxIds(): string[] {
+  return JSON.parse(blacklistCxIds) as string[];
+}
 
 async function main({
   maxMessages,
@@ -126,6 +131,7 @@ async function main({
       messagesOfRequest.forEach(m => {
         const attr = m.MessageAttributes as unknown as DlqMessageAttributes | undefined;
         if (!attr) return;
+        if (getBlacklistCxIds().includes(attr.cxId?.StringValue)) return;
         const startedAt = attr.jobStartedAt?.StringValue ?? attr.startedAt?.StringValue;
         const patientId = attr.patientId?.StringValue;
         const body = m.Body ? JSON.parse(m.Body) : undefined;

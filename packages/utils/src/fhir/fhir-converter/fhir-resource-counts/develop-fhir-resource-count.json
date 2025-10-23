@@ -1,5 +1,5 @@
 {
-  "total": 693399,
+  "total": 692484,
   "totalAttachments": 108,
   "countPerType": {
     "AllergyIntolerance": 1549,
@@ -7,7 +7,7 @@
     "Condition": 71423,
     "Device": 5873,
     "DiagnosticReport": 72101,
-    "Encounter": 72722,
+    "Encounter": 71817,
     "Immunization": 3718,
     "Location": 11013,
     "Medication": 13173,
@@ -15,7 +15,7 @@
     "MedicationStatement": 10418,
     "Observation": 230865,
     "Organization": 22367,
-    "Practitioner": 58574,
+    "Practitioner": 58564,
     "Procedure": 41386,
     "CarePlan": 39378,
     "Consent": 182,
