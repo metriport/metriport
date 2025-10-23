@@ -7,16 +7,10 @@ import { getPatientInfoOrFail, patientAuthorization } from "../middlewares/patie
 import { checkRateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getFrom } from "../util";
 import { networkQuerySchema } from "./schemas/network";
-import {
-  queryDocumentsFromSource,
-  getSourceQueryStatus,
-} from "../../command/medical/network/source-query";
+import { getSourceQueryStatus } from "../../command/medical/network/source-query";
+import { queryDocumentsAcrossNetworks } from "../../command/medical/network/network-query";
 import { getPatientPrimaryFacilityIdOrFail } from "../../command/medical/patient/get-patient-facilities";
-import {
-  NetworkQueryParams,
-  networkSources,
-  SourceQueryProgress,
-} from "@metriport/core/domain/network-query";
+import { networkSources, SourceQueryProgress } from "@metriport/core/domain/network-query";
 
 const router = Router();
 
@@ -73,24 +67,13 @@ router.post(
       facilityId ?? (await getPatientPrimaryFacilityIdOrFail({ cxId, patientId }));
 
     const networkQuery = networkQuerySchema.parse(req.body);
-    const networkQueryParams: NetworkQueryParams = {
+    const networkQueryProgress = await queryDocumentsAcrossNetworks({
+      ...networkQuery,
       cxId,
       patientId,
       facilityId: patientFacilityId,
-    };
-    const queryProgressPromises: Array<Promise<SourceQueryProgress[]>> = [];
-    for (const source of networkQuery.sources) {
-      queryProgressPromises.push(
-        queryDocumentsFromSource({
-          ...networkQuery,
-          ...networkQueryParams,
-          source,
-        })
-      );
-    }
+    });
 
-    const queryProgress = await Promise.all(queryProgressPromises);
-    const networkQueryProgress = _.flatten(queryProgress);
     return res.status(OK).json(networkQueryProgress);
   })
 );
