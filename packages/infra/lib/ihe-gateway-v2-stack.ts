@@ -199,7 +199,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     for (const [key, value] of Object.entries(partitionKeyMap)) {
       parameters = { ...parameters, ...value.parameters };
       partitionKeys.push(value.partitionKey);
-      locationString.push(`${key}=$\{${key}}`);
+      locationString.push(`${key}=\${${key}}`);
       new glue.CfnTable(this, `iheParsedResponsesDebugTable_Detail=${key}`, {
         catalogId: this.account,
         databaseName: "default",
