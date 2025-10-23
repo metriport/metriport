@@ -15,7 +15,11 @@ import duration from "dayjs/plugin/duration";
 import stringify from "fast-json-stable-stringify";
 import fs from "fs";
 import { elapsedTimeAsStr } from "../shared/duration";
-import { buildGetDirPathInside, getFileNameForOrg, initRunsFolder } from "../shared/folder";
+import {
+  buildGetDirPathInside,
+  getFileNameForOrgWithTimestamp,
+  initRunsFolder,
+} from "../shared/folder";
 // Not happy with importing from a diff package, but it's a quick fix for now
 import { Facility } from "../../../api/src/domain/medical/facility";
 import { cmdToCqOrgDetails } from "../../../api/src/external/carequality/command/cq-organization/create-or-update-cq-organization";
@@ -151,8 +155,10 @@ async function process(
   const cqOrg = (await cqApi.getOrganization(org.oid)) ?? "NOT_FOUND";
 
   const pathAndPrefix = outputFolderName + "/" + type + "_";
-  const outputFileNameMetriport = getFileNameForOrg(org.name + "_metriport");
-  const outputFileNameCq = getFileNameForOrg(org.name + "_cq");
+  const outputFileNameMetriport = getFileNameForOrgWithTimestamp({
+    orgName: org.name + "_metriport",
+  });
+  const outputFileNameCq = getFileNameForOrgWithTimestamp({ orgName: org.name + "_cq" });
 
   const outputCq = JSON.stringify(JSON.parse(stringify(cqOrg)), null, 2);
   fs.writeFileSync(pathAndPrefix + outputFileNameCq, outputCq);
