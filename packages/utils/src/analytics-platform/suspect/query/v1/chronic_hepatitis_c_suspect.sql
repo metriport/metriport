@@ -69,6 +69,7 @@ hcv_lab_clean AS (
   WHERE n.value_num IS NOT NULL
     AND n.value_num > 0
     AND NOT EXISTS (SELECT 1 FROM hepc_dx_exclusion x WHERE x.PATIENT_ID = n.PATIENT_ID)
+    AND NULLIF(n.units_raw, '') IS NOT NULL
 ),
 
 /* -------------------------
