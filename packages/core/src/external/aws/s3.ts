@@ -53,7 +53,9 @@ export type FileInfoExists = {
   sizeInBytes: number; // TODO Enable this when testing something that uses this code
   contentType: string;
   eTag?: string;
+  /** @deprecated Use `updatedAt` instead - S3 doesn't have a createdAt field, only updatedAt */
   createdAt: Date | undefined;
+  updatedAt: Date | undefined;
   metadata: Record<string, string> | undefined;
 };
 
@@ -273,6 +275,7 @@ export class S3Utils {
         contentType: head.ContentType ?? "",
         eTag: head.ETag ?? "",
         createdAt: head.LastModified,
+        updatedAt: head.LastModified,
         metadata: head.Metadata,
       };
     } catch (err) {
