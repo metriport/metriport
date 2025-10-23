@@ -1,5 +1,6 @@
 export const gfrUnitNormalizationMap = new Map<string, string>([
   ["below", "UNK"],
+  ["seetext", "UNK"],
   ["comment", "UNK"],
   ["unk", "UNK"],
   ["seebelow", "UNK"],
@@ -12,6 +13,7 @@ export const gfrUnitNormalizationMap = new Map<string, string>([
   ["{_}", "UNK"],
   ["{ratio}", "UNK"],
   ["{see_below}", "UNK"],
+  [".", "UNK"],
   ["(ckd-epi)ml/min/1.73m2", "mL/min/1.73m2"],
   ["(ckd-epi2021)ml/min/1.73m2", "mL/min/1.73m2"],
   ["(ml/min/1.73)", "mL/min/1.73m2"],
@@ -90,6 +92,9 @@ export const gfrUnitNormalizationMap = new Map<string, string>([
   ["{ml/min}", "mL/min/1.73m2"],
   ["ml/min/1.73&quot;squaremeters&quot;", "mL/min/1.73m2"],
   ["ml/min/[1.73_m2]", "mL/min/1.73m2"],
+  ["ml/mn/1.73m2", "mL/min/1.73m2"],
+  ["ml/minper1.73", "mL/min/1.73m2"],
+  ["m/m/1.73", "mL/min/1.73m2"],
   ["0", "mL/min/1.73m2"],
   ["1", "mL/min/1.73m2"],
   ["2", "mL/min/1.73m2"],
@@ -164,6 +169,7 @@ export const a1cUnitNormalizationMap = new Map<string, string>([
   ["null", "UNK"],
   ["{_}", "UNK"],
   ["{zz}", "UNK"],
+  ["unk", "UNK"],
 ]);
 
 export const bmiUnitNormalizationMap = new Map<string, string>([
@@ -192,6 +198,7 @@ export const bmiUnitNormalizationMap = new Map<string, string>([
   ["cm", "UNK"],
   ["na", "UNK"],
   ["{number}", "UNK"],
+  ["unk", "UNK"],
 ]);
 
 export const bmiPercentileUnitNormalizationMap = new Map<string, string>([
@@ -235,6 +242,7 @@ export const glucoseUnitNormalizationMap = new Map<string, string>([
   ["ng/dl", "UNK"],
   ["ng/ml", "UNK"],
   ["oth", "UNK"],
+  ["unk", "UNK"],
 ]);
 
 export const efUnitNormalizationMap = new Map<string, string>([
