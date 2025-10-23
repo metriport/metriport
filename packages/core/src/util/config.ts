@@ -523,4 +523,8 @@ export class Config {
   static getHeartBeatMonitorMap(): Record<string, string> {
     return getEnvVarAsRecordOrFail("HEARTBEAT_MONITOR_MAP");
   }
+
+  static getOutboundRateLimitTableName(): string | undefined {
+    return getEnvVar("OUTBOUND_RATE_LIMIT_TABLE_NAME");
+  }
 }
