@@ -21,6 +21,7 @@ WITH ckd_dx_exclusion AS (
   SELECT DISTINCT c.PATIENT_ID
   FROM CORE_V3.CONDITION c
   WHERE c.ICD_10_CM_CODE LIKE 'N18%'
+  OR c.ICD_10_CM_CODE LIKE 'N17%'
 ),
 
 /* -------------------------
