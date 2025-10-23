@@ -196,6 +196,18 @@ daily_choice AS (
 ),
 
 /* -------------------------
+   AGE FILTER: include only 18–45 at obs_date
+   ------------------------- */
+daily_choice_age_filtered AS (
+  SELECT d.*
+  FROM daily_choice d
+  JOIN CORE_V3.PATIENT p
+    ON p.PATIENT_ID = d.PATIENT_ID
+  WHERE p.BIRTH_DATE IS NOT NULL
+    AND FLOOR(DATEDIFF('day', p.BIRTH_DATE, d.obs_date) / 365.2425) BETWEEN 18 AND 45
+),
+
+/* -------------------------
    FHIR
    ------------------------- */
 obs_with_fhir AS (
@@ -224,7 +236,7 @@ obs_with_fhir AS (
     s.resource_id,
     s.resource_type,
     s.DATA_SOURCE AS data_source
-  FROM daily_choice s
+  FROM daily_choice_age_filtered s
 )
 
 /* -------------------------
