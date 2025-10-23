@@ -111,7 +111,7 @@ lung_nodule_norm AS (
 ),
 
 /* -------------------------
-   CLEAN: apply diagnosis exclusions
+   CLEAN: apply diagnosis exclusions and validate code-display pairs
    ------------------------- */
 lung_nodule_clean AS (
   SELECT *
@@ -121,6 +121,10 @@ lung_nodule_clean AS (
     FROM pulmonary_nodule_dx_exclusion x
     WHERE x.PATIENT_ID = n.PATIENT_ID
   )
+  AND (n.CPT_CODE IS NULL OR n.CPT_CODE = '' OR NULLIF(n.CPT_DISPLAY, '') IS NOT NULL)
+  AND (n.SNOMED_CODE IS NULL OR n.SNOMED_CODE = '' OR NULLIF(n.SNOMED_DISPLAY, '') IS NOT NULL)
+  AND (n.bodysite_snomed_code IS NULL OR n.bodysite_snomed_code = '' OR NULLIF(n.bodysite_snomed_display, '') IS NOT NULL)
+  AND (n.REASON_SNOMED_CODE IS NULL OR n.REASON_SNOMED_CODE = '' OR NULLIF(n.REASON_SNOMED_DISPLAY, '') IS NOT NULL)
 ),
 
 /* -------------------------
