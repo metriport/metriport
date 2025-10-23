@@ -1,5 +1,6 @@
 import { CfnOutput, Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
@@ -53,6 +54,7 @@ interface Hl7NotificationWebhookSenderNestedStackProps extends NestedStackProps 
   hl7ConversionBucket: s3.IBucket;
   incomingHl7NotificationBucket: s3.IBucket | undefined;
   secrets: Secrets;
+  featureFlagsTable: dynamodb.Table;
 }
 
 export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
@@ -84,6 +86,8 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
         .map(hieConfig => [hieConfig.name, hieConfig.checklyPingUrl])
     );
 
+    const { featureFlagsTable } = props;
+
     const setup = this.setupHl7NotificationWebhookSenderLambda({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
@@ -97,6 +101,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       hieConfigs,
       hl7Base64ScramblerSeed,
       heartbeatMonitorMap,
+      featureFlagsTable,
     });
 
     this.lambda = setup.lambda;
@@ -115,6 +120,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     hl7Base64ScramblerSeed: ISecret;
     hieConfigs: Record<string, HieConfig | VpnlessHieConfig>;
     heartbeatMonitorMap: Record<string, string>;
+    featureFlagsTable: dynamodb.Table;
   }): { lambda: Lambda } {
     const {
       lambdaLayers,
@@ -129,6 +135,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       incomingHl7NotificationBucket,
       hl7Base64ScramblerSeed,
       heartbeatMonitorMap,
+      featureFlagsTable,
     } = ownProps;
     const {
       name,
@@ -172,6 +179,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
         HIE_CONFIG_DICTIONARY: JSON.stringify(createHieConfigDictionary(hieConfigs)),
         POST_HOG_API_KEY_SECRET: analyticsSecret.secretArn,
         HEARTBEAT_MONITOR_MAP: JSON.stringify(heartbeatMonitorMap),
+        FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
       },
     });
 
@@ -179,6 +187,8 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     hl7ConversionBucket.grantReadWrite(lambda);
     incomingHl7NotificationBucket.grantReadWrite(lambda);
     hl7Base64ScramblerSeed.grantRead(lambda);
+
+    featureFlagsTable.grantReadData(lambda);
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
     analyticsSecret.grantRead(lambda);
