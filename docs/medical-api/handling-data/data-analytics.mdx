@@ -1,5 +1,6 @@
 ---
 title: "General"
+icon: "star"
 description: "Transform your data for analytics and pipe it into warehouses like Snowflake, Redshift, BigQuery, and more"
 group: "Data Analytics"
 ---
@@ -66,14 +67,23 @@ The Metriport data model consists of several core tables that represent differen
 ### Core Tables
 
 - **[Condition](/medical-api/handling-data/schema/condition)** - Symptoms, problems, complaints, and diagnoses reported during encounters
+- **[Diagnostic Report](/medical-api/handling-data/schema/diagnostic-report)** - Diagnostic reports containing test results and clinical findings
 - **[Encounter](/medical-api/handling-data/schema/encounter)** - Unique patient interactions with the healthcare system
 - **[Immunization](/medical-api/handling-data/schema/immunization)** - Vaccines administered to patients
-- **[Lab Result](/medical-api/handling-data/schema/lab-result)** - Laboratory test results with LOINC codes
 - **[Location](/medical-api/handling-data/schema/location)** - Practice and facility locations where care is provided
 - **[Medication](/medical-api/handling-data/schema/medication)** - Medications ordered or administered during encounters
+- **[Medication Administration](/medical-api/handling-data/schema/medication-administration)** - Records of medications actually administered to patients
+- **[Medication Dispense](/medical-api/handling-data/schema/medication-dispense)** - Records of medications dispensed to patients
+- **[Medication Request](/medical-api/handling-data/schema/medication-request)** - Medication orders and prescriptions
+- **[Medication Statement](/medical-api/handling-data/schema/medication-statement)** - Patient-reported medication information
 - **[Observation](/medical-api/handling-data/schema/observation)** - Clinical measurements like blood pressure, height, and weight
+- **[Organization](/medical-api/handling-data/schema/organization)** - Healthcare organizations and facilities
 - **[Patient](/medical-api/handling-data/schema/patient)** - Patient demographic information and core patient data
 - **[Practitioner](/medical-api/handling-data/schema/practitioner)** - Healthcare providers who deliver care
 - **[Procedure](/medical-api/handling-data/schema/procedure)** - Procedures performed on patients
+
+### Reference Tables
+
+The data model also includes **[Reference Tables](/medical-api/handling-data/schema/reference-tables)** that provide normalized structures for storing FHIR resource references, enabling consistent linking between different healthcare entities across the data model.
 
 Each schema page provides detailed information about the table structure, including primary keys, foreign keys, and column definitions.
