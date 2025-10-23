@@ -28,6 +28,7 @@ function getSettings(props: RateLimitingNestedStackProps) {
 
 export class RateLimitingNestedStack extends NestedStack {
   readonly rateLimitTable: dynamodb.Table;
+  readonly outboundRateLimitTable: dynamodb.Table;
 
   constructor(scope: Construct, id: string, props: RateLimitingNestedStackProps) {
     super(scope, id, props);
@@ -48,6 +49,19 @@ export class RateLimitingNestedStack extends NestedStack {
     this.rateLimitTable = this.setupRateLimitTable({
       dynamoConstructName,
       dynamoRateLimitPartitionKey,
+      dynamoReplicationRegions,
+      dynamoReplicationTimeout,
+      dynamoPointInTimeRecovery,
+      alarmAction,
+      consumedWriteCapacityUnitsAlarmThreshold,
+      consumedWriteCapacityUnitsAlarmPeriod,
+      consumedReadCapacityUnitsAlarmThreshold,
+      consumedReadCapacityUnitsAlarmPeriod,
+    });
+
+    this.outboundRateLimitTable = this.setupOutboundRateLimitTable({
+      dynamoConstructName: "OutboundRateLimit",
+      dynamoOutboundKeyPartitionKey: "outboundKey",
       dynamoReplicationRegions,
       dynamoReplicationTimeout,
       dynamoPointInTimeRecovery,
@@ -86,6 +100,63 @@ export class RateLimitingNestedStack extends NestedStack {
     const table = new dynamodb.Table(this, dynamoConstructName, {
       partitionKey: {
         name: dynamoRateLimitPartitionKey,
+        type: dynamodb.AttributeType.STRING,
+      },
+      replicationRegions: dynamoReplicationRegions,
+      replicationTimeout: dynamoReplicationTimeout,
+      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      pointInTimeRecovery: dynamoPointInTimeRecovery,
+    });
+    // TODO: note that the pointInTimeRecovery (PITR) setting does not persist
+    // through to the replica tables.
+    //
+    // See this CDK issue: https://github.com/aws/aws-cdk/issues/18582
+    //
+    // For future DDB tables, can potentailly use this is a workaround:
+    // https://stackoverflow.com/questions/70687039/how-to-set-point-in-time-recovery-on-a-dynamodb-replica
+    //
+    // For now, we will manually enable PITR on replicas in the console.
+    // add performance alarms for monitoring prod environment
+    this.addDynamoPerformanceAlarms({
+      table,
+      dynamoConstructName,
+      consumedWriteCapacityUnitsAlarmThreshold,
+      consumedWriteCapacityUnitsAlarmPeriod,
+      consumedReadCapacityUnitsAlarmThreshold,
+      consumedReadCapacityUnitsAlarmPeriod,
+      alarmAction,
+    });
+    return table;
+  }
+
+  // NOTE: this is to be a shared service, see `packages/core/src/command/hl7-notification/heartbeat-sender.ts`
+  private setupOutboundRateLimitTable(ownProps: {
+    dynamoConstructName: string;
+    dynamoOutboundKeyPartitionKey: string;
+    dynamoReplicationRegions: string[];
+    dynamoReplicationTimeout: Duration;
+    dynamoPointInTimeRecovery: boolean;
+    alarmAction?: SnsAction;
+    consumedWriteCapacityUnitsAlarmThreshold: number;
+    consumedWriteCapacityUnitsAlarmPeriod: number;
+    consumedReadCapacityUnitsAlarmThreshold: number;
+    consumedReadCapacityUnitsAlarmPeriod: number;
+  }): dynamodb.Table {
+    const {
+      dynamoConstructName,
+      dynamoOutboundKeyPartitionKey,
+      dynamoReplicationRegions,
+      dynamoReplicationTimeout,
+      dynamoPointInTimeRecovery,
+      alarmAction,
+      consumedWriteCapacityUnitsAlarmThreshold,
+      consumedWriteCapacityUnitsAlarmPeriod,
+      consumedReadCapacityUnitsAlarmThreshold,
+      consumedReadCapacityUnitsAlarmPeriod,
+    } = ownProps;
+    const table = new dynamodb.Table(this, dynamoConstructName, {
+      partitionKey: {
+        name: dynamoOutboundKeyPartitionKey,
         type: dynamodb.AttributeType.STRING,
       },
       replicationRegions: dynamoReplicationRegions,
