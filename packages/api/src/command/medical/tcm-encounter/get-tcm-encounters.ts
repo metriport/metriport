@@ -2,7 +2,6 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { omit } from "lodash";
 import { QueryTypes } from "sequelize";
-import { TcmEncounterEventType } from "../../../domain/medical/tcm-encounter";
 import { PatientModel } from "../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
 import { PatientMappingModel } from "../../../models/patient-mapping";
@@ -31,12 +30,6 @@ export type TcmEncounterResult = TcmEncounterModel["dataValues"] & {
   patientData: PatientModel["dataValues"]["data"];
   patientFacilityIds: PatientModel["dataValues"]["facilityIds"];
   externalUrls: Array<ExternalUrlItem>;
-};
-
-export type TcmEncounterFindOptions = {
-  cxId: string;
-  patientId: string;
-  latestEvent?: TcmEncounterEventType;
 };
 
 // Column validation and WHERE clause building is now handled centrally in the paginated() function

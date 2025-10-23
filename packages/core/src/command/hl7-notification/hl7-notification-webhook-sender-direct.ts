@@ -327,7 +327,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     const dischargeData: DischargeData[] = encounterPeriod?.end
       ? [
           {
-            type: "findDischargeSummary",
             encounterEndDate: encounterPeriod.end,
             tcmEncounterId: encounterId,
           },

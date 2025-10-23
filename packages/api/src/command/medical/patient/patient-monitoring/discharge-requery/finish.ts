@@ -135,6 +135,8 @@ export async function finishDischargeRequery({
       ? dischargeRequeryJob.paramsOps.remainingAttempts - 1
       : dischargeRequeryJob.paramsOps.remainingAttempts;
 
+  const stillProcessing = remainingAttempts > 0 && processing.length > 0;
+
   if (pipelineStatus === "successful") {
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const dqProgress = patient.data.documentQueryProgress;
@@ -150,6 +152,7 @@ export async function finishDischargeRequery({
           downloadCount,
           convertCount,
           metGoals: completed,
+          [stillProcessing ? "processing" : "failed"]: processing,
         },
       });
 
@@ -167,7 +170,7 @@ export async function finishDischargeRequery({
     }
   }
 
-  if (remainingAttempts > 0 && processing.length > 0) {
+  if (stillProcessing) {
     await createDischargeRequeryJob({
       patientId,
       cxId,
@@ -196,7 +199,7 @@ async function processDischargeSummaryAssociation({
   processing: DischargeAssociationBreakdown[];
   completed: DischargeAssociationBreakdown[];
 }> {
-  const { log } = out(`checkGoals - cx ${cxId}, pt ${patientId}`);
+  const { log } = out(`processDischargeSummaryAssociation - cx ${cxId}, pt ${patientId}`);
   log(`Checking goals: ${JSON.stringify(dischargeData)}`);
 
   const consolidated = await getConsolidatedFile({
@@ -219,7 +222,7 @@ async function processDischargeSummaryAssociation({
   const encounters = findEncounterResources(consolidated.bundle);
   const matchingResults = await Promise.all(
     dischargeData.map(async discharge => {
-      const matchingEncounters = getMatchingEncountersWithDocId(encounters, discharge);
+      const matchingEncounters = getMatchingEncountersWithSummaryPath(encounters, discharge);
 
       let result: DischargeAssociationBreakdown;
       if (matchingEncounters.length < 1) {
@@ -242,7 +245,7 @@ async function processDischargeSummaryAssociation({
         const encounterWithDisposition = encounters.find(
           e => e.id === matchingEncounters[0].id && e.hospitalization?.dischargeDisposition
         );
-        const selectedEncounter = encounterWithDisposition
+        const matchingEncounter = encounterWithDisposition
           ? matchingEncounters.find(m => m.id === encounterWithDisposition.id) ??
             matchingEncounters[0]
           : matchingEncounters[0];
@@ -260,8 +263,8 @@ async function processDischargeSummaryAssociation({
           discharge,
           status: "completed",
           reason: msg,
-          encounterId: selectedEncounter.id,
-          dischargeSummaryFilePath: selectedEncounter.dischargeSummaryFilePath,
+          encounterId: matchingEncounter.id,
+          dischargeSummaryFilePath: matchingEncounter.dischargeSummaryFilePath,
         };
       }
 
@@ -278,8 +281,8 @@ async function processDischargeSummaryAssociation({
   const groupedByStatus = _.groupBy(matchingResults, "status");
 
   return {
-    processing: groupedByStatus.processing,
-    completed: groupedByStatus.completed,
+    processing: groupedByStatus.processing ?? [],
+    completed: groupedByStatus.completed ?? [],
   };
 }
 
@@ -288,7 +291,7 @@ type MatchingEncounter = {
   dischargeSummaryFilePath: string;
 };
 
-function getMatchingEncountersWithDocId(
+function getMatchingEncountersWithSummaryPath(
   encounters: Encounter[],
   discharge: DischargeData
 ): MatchingEncounter[] {
@@ -343,7 +346,8 @@ async function updateTcmEncountersWithDischargeSummaryPaths(
     .map(async association => {
       const tcmEncounterId = association.discharge.tcmEncounterId;
       log(
-        `Updating TCM encounter ${tcmEncounterId} with discharge summary path: ${association.dischargeSummaryFilePath}`
+        `Updating TCM encounter ${tcmEncounterId} with ` +
+          `discharge summary path: ${association.dischargeSummaryFilePath}`
       );
 
       try {

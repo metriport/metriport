@@ -13,6 +13,7 @@ describe("createDischargeRequeryJob", () => {
   const dischargeData = {
     encounterEndDate: "2024-01-01T12:00:00Z",
     type: "findDischargeSummary" as const,
+    tcmEncounterId: faker.string.uuid(),
   };
 
   let createPatientJobMock: jest.SpyInstance;
