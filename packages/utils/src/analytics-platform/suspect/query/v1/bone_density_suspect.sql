@@ -1,20 +1,8 @@
 /* ============================================================
    OSTEOPOROSIS / OSTEOPENIA — SUSPECT QUERY (DXA T-score–based)
+   + Include DXA Procedure resources (CPT 7708% w/ osteo context)
    ------------------------------------------------------------
    Flow: RAW → NORM → CLEAN → DAILY_MIN → SUSPECT → FHIR → RETURN
-   Purpose
-     Flag bone density suspects using DXA T-scores:
-       • Osteoporosis: T-score ≤ −2.5
-       • Osteopenia : −2.5 < T-score ≤ −1.0
-
-   Exclusion (diagnosis-based; ICD-10-CM):
-     • M80*  (Osteoporosis with current pathological fracture)
-     • M81*  (Osteoporosis without current pathological fracture)
-     • M85.8* (Other specified disorders of bone density and structure — includes osteopenia)
-
-   Notes
-     - Uses CORE_V3.OBSERVATION for DXA results; relies on T-score LOINCs.
-     - Picks the worst (most negative) T-score per patient per calendar day.
    ============================================================ */
 
 WITH bone_density_dx_exclusion AS (
@@ -177,6 +165,61 @@ bd_with_fhir AS (
       'effectiveDateTime', IFF(s.obs_date IS NOT NULL, TO_CHAR(s.obs_date,'YYYY-MM-DD'), NULL)
     ) AS fhir
   FROM all_bd_suspects s
+),
+
+/* -------------------------
+   DXA PROCEDURE hits (same-day as the T-score suspects)
+   ------------------------- */
+dxa_proc_raw AS (
+  SELECT
+    p.PATIENT_ID,
+    p.PROCEDURE_ID                         AS proc_id,
+    COALESCE(p.PERFORMED_DATE, p.END_DATE) AS proc_ts,
+    TO_DATE(COALESCE(p.PERFORMED_DATE, p.END_DATE)) AS proc_date,
+    p.CPT_CODE,
+    p.CPT_DISPLAY,
+    p.DATA_SOURCE
+  FROM CORE_V3.PROCEDURE p
+  WHERE UPPER(p.CPT_CODE) LIKE '7708%'                -- DXA
+    AND p.REASON_SNOMED_DISPLAY ILIKE '%osteo%'       -- osteo context
+),
+
+proc_with_fhir AS (
+  SELECT
+    s.PATIENT_ID,
+    s.suspect_group,
+    s.suspect_icd10_code,
+    s.suspect_icd10_short_description,
+
+    p.proc_id        AS resource_id,
+    'Procedure'      AS resource_type,
+    p.DATA_SOURCE,
+    OBJECT_CONSTRUCT(
+      'resourceType', 'Procedure',
+      'id',            p.proc_id,
+      'status',        'completed',
+      'code', OBJECT_CONSTRUCT(
+        'text',   p.CPT_DISPLAY,
+        'coding', ARRAY_CONSTRUCT(
+          OBJECT_CONSTRUCT(
+            'system',  'http://www.ama-assn.org/go/cpt',
+            'code',     p.CPT_CODE,
+            'display',  p.CPT_DISPLAY
+          )
+        )
+      ),
+      'performedDateTime', TO_VARCHAR(p.proc_ts, 'YYYY-MM-DD')
+    ) AS fhir
+  FROM all_bd_suspects s
+  JOIN dxa_proc_raw p
+    ON p.PATIENT_ID = s.PATIENT_ID
+),
+
+/* Combine Observation + Procedure resources for aggregation */
+bd_all_with_fhir AS (
+  SELECT * FROM bd_with_fhir
+  UNION ALL
+  SELECT * FROM proc_with_fhir
 )
 
 /* -------------------------
@@ -196,6 +239,6 @@ SELECT
     )
   ) AS responsible_resources,
   CURRENT_TIMESTAMP() AS last_run
-FROM bd_with_fhir
+FROM bd_all_with_fhir
 GROUP BY PATIENT_ID, suspect_group, suspect_icd10_code, suspect_icd10_short_description
 ORDER BY PATIENT_ID, suspect_group;
