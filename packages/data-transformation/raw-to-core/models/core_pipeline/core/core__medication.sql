@@ -26,7 +26,7 @@ select
     ,   cast(tc_rxnorm.display as {{ dbt.type_string() }} )                                                 as rxnorm_display
     ,   cast(tc_ndc.code as {{ dbt.type_string() }} )                                                       as ndc_code
     ,   cast(tc_ndc.display as {{ dbt.type_string() }} )                                                    as ndc_display
-    ,   cast(meta_source as {{ dbt.type_string() }} )                                                       as data_source
+    ,   cast(m.meta_source as {{ dbt.type_string() }} )                                                     as data_source
 from base_resource m
 left join target_code_codings tc_rxnorm
     on m.id = tc_rxnorm.medication_id 

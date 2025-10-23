@@ -29,7 +29,7 @@ with base_resource as (
 target_code_codings as (
    {{   
         get_target_codings(
-            get_observtaion_codings,
+            get_observation_codings,
             'observation_id', 
             9, 
             none,

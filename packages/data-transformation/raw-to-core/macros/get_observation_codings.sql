@@ -1,4 +1,4 @@
-{% macro get_observtaion_codings(systems, max_index) %}
+{% macro get_observation_codings(systems, max_index) %}
     {% for i in range(max_index + 1) %}
     select *
     from (
