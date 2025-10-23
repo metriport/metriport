@@ -205,7 +205,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         databaseName: "default",
         tableInput: {
           description: `Table used for debugging IHE parsed responses using partition projection for ${key}`,
-          name: `ihe_parsed_responses_by_date_level_${key}`,
+          name: `ihe_parsed_responses_level_${key}`,
           partitionKeys: [...partitionKeys],
           storageDescriptor: {
             columns: [
