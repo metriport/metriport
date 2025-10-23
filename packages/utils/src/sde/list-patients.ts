@@ -1,6 +1,10 @@
 import { Command } from "commander";
-import { listPatientIdsWithDocuments } from "@metriport/core/sde/command/document/list-patients";
-import { loadPatientIds, listLocalPatientIds, savePatientIds } from "./shared";
+import {
+  loadPatientIds,
+  listLocalPatientIds,
+  savePatientIds,
+  listPatientIdsWithDocuments,
+} from "./shared";
 
 /**
  * List patients by CX ID

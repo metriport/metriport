@@ -1,7 +1,10 @@
 import fs from "fs";
 import path from "path";
+import _ from "lodash";
 import { Bundle } from "@medplum/fhirtypes";
 import { initRunsFolder } from "../shared/folder";
+import { Config } from "@metriport/core/util/config";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { ExtractionBundle, ExtractionSource } from "@metriport/core/sde/types";
 import { listDocumentIds } from "@metriport/core/sde/command/document/list-documents";
@@ -155,4 +158,27 @@ export async function downloadAllDocumentConversions({
 
   console.log(`Downloaded ${extractionBundles.length} bundles for patient ${patientId}`);
   return extractionBundles;
+}
+
+export async function listPatientIdsWithDocuments({ cxId }: { cxId: string }): Promise<string[]> {
+  const s3 = new S3Utils(Config.getAWSRegion());
+  const bucketName = Config.getCdaToFhirConversionBucketName();
+  if (!bucketName) {
+    console.error(`No cda to fhir conversion bucket name found`);
+    return [];
+  }
+
+  const patientDirectories = await s3.listFirstLevelSubdirectories({
+    bucket: bucketName,
+    prefix: cxId + "/",
+  });
+  return _(patientDirectories)
+    .map(directory => {
+      if (!directory.Prefix) return undefined;
+      const [_cxId, patientId] = directory.Prefix.split("/");
+      if (!_cxId || _cxId !== cxId || !patientId) return undefined;
+      return patientId;
+    })
+    .compact()
+    .value();
 }
