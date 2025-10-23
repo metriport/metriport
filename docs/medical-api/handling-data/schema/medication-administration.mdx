@@ -2,11 +2,13 @@
 title: "Medication Administration"
 description: "Schema documentation for the Medication Administration table in the Metriport data model"
 group: "Schema"
+icon: "n/a"
 ---
 
 A medication administration record represents the actual administration of a medication to a patient. This includes details about when, how, and by whom the medication was administered.
 
 **Reference Table:**
+
 The `medication_administration_references` table contains normalized references from the medication administration to other entities. It supports the following reference properties:
 * **medication_reference**: links to the medication that was administered
 * **subject**: links to the patient who received the medication

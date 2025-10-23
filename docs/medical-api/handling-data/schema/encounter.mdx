@@ -2,11 +2,13 @@
 title: "Encounter"
 description: "Schema documentation for the Encounter table in the Metriport data model"
 group: "Schema"
+icon: "n/a"
 ---
 
 An encounter encompasses the lifecycle from pre-admission, the actual encounter (for ambulatory encounters), and admission, stay and discharge (for inpatient encounters). During the encounter the patient may move from practitioner to practitioner and location to location.
 
 **Reference Table:**
+
 The `encounter_references` table contains normalized references from the encounter to other entities. It supports the following reference properties:
 * **subject**: links to the patient involved in the encounter
 * **participant**: links to practitioners and other participants in the encounter

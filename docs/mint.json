@@ -153,6 +153,7 @@
               "pages": [
                 "medical-api/handling-data/schema/condition",
                 "medical-api/handling-data/schema/diagnostic-report",
+                "medical-api/handling-data/schema/diagnostic-report-presented-forms",
                 "medical-api/handling-data/schema/encounter",
                 "medical-api/handling-data/schema/immunization",
                 "medical-api/handling-data/schema/location",

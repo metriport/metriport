@@ -2,11 +2,13 @@
 title: "Medication Dispense"
 description: "Schema documentation for the Medication Dispense table in the Metriport data model"
 group: "Schema"
+icon: "n/a"
 ---
 
 A medication dispense record represents the dispensing of a medication to a patient. This includes details about when the medication was prepared, dispensed, and the quantity provided.
 
 **Reference Table:**
+
 The `medication_dispense_references` table contains normalized references from the medication dispense to other entities. It supports the following reference properties:
 * **medication_reference**: links to the medication that was dispensed
 * **subject**: links to the patient who received the medication

@@ -2,11 +2,13 @@
 title: "Medication Statement"
 description: "Schema documentation for the Medication Statement table in the Metriport data model"
 group: "Schema"
+icon: "n/a"
 ---
 
 A medication statement record represents a record of a medication that is being consumed by a patient. This includes details about the medication, its current status, and any relevant clinical information.
 
 **Reference Table:**
+
 The `medication_statement_references` table contains normalized references from the medication statement to other entities. It supports the following reference properties:
 * **medication_reference**: links to the medication referenced in the statement
 * **subject**: links to the patient who is taking the medication
