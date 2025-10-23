@@ -1,19 +1,18 @@
-import crypto from "crypto";
 import { MetriportError } from "@metriport/shared";
+import crypto from "crypto";
 
 const ed25519Prefix = "MCowBQYDK2VwAyEA";
 
 // Interpreted from Elation dosc https://docs.elationhealth.com/reference/webhooks
 export function verifyWebhookSignatureEd25519Elation(
   key: string,
-  body: object,
+  rawBody: string,
   signature: string
 ): boolean {
   const newKey = createPublicKey(key);
-  const newBody = createJsonDumpsBody(body);
   const verified = crypto.verify(
     null,
-    Buffer.from(newBody),
+    Buffer.from(rawBody),
     newKey,
     Buffer.from(signature, "base64")
   );
@@ -26,10 +25,6 @@ function createPublicKey(key: string) {
 ${ed25519Prefix}${key}
 -----END PUBLIC KEY-----
   `;
-}
-
-function createJsonDumpsBody(body: object) {
-  return JSON.stringify(body).replace(/":/g, '": ').replace(/,"/g, ', "');
 }
 
 // From Healthie docs https://docs.gethealthie.com/guides/webhooks/
