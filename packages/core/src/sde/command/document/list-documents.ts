@@ -1,8 +1,12 @@
 import _ from "lodash";
+import path from "path";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { S3Utils } from "../../../external/aws/s3";
-import { getCdaToFhirConversionPrefix, parseCdaToFhirConversionFileName } from "../../file-names";
+import {
+  createDocumentFilePathPrefix,
+  parseDocumentFileName,
+} from "../../../domain/document/filename";
 
 const documentKeySuffix = ".xml.json";
 
@@ -22,7 +26,7 @@ export async function listDocumentIds({
     return [];
   }
 
-  const prefix = getCdaToFhirConversionPrefix({ cxId, patientId });
+  const prefix = createDocumentFilePathPrefix(cxId, patientId);
   const documents = await s3.listObjects(bucketName, prefix);
 
   const documentIds = _(documents)
@@ -30,8 +34,8 @@ export async function listDocumentIds({
     .compact()
     .filter(key => key.endsWith(documentKeySuffix))
     .map(key => {
-      const { documentId } = parseCdaToFhirConversionFileName({ fileName: key });
-      return documentId;
+      const { docId } = parseDocumentFileName(key);
+      return path.basename(docId, ".xml");
     })
     .compact()
     .value();
