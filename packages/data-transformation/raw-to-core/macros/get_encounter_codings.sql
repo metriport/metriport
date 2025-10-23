@@ -13,7 +13,7 @@
             ,   type_{{i}}_coding_{{j}}_display as display
             ,   {{i}} * ({{ max_second_index }} + 1) + {{j}} as coding_index
         from {{ref('stage__encounter')}}
-        where  type_{{i}}_coding_{{j}}_code != ''
+        where  type_{{i}}_coding_{{j}}_code != '' and type_{{i}}_coding_{{j}}_code is not null
     ) as t
     where t.system in {{ generate_tuple_from_list(systems) }}
     {% if not loop.last %}union all{% endif %}
@@ -36,7 +36,7 @@
             ,   hospitalization_dischargedisposition_coding_{{i}}_display as display
             ,   {{i}} as coding_index
         from {{ref('stage__encounter')}}
-        where  hospitalization_dischargedisposition_coding_{{i}}_code != ''
+        where  hospitalization_dischargedisposition_coding_{{i}}_code != '' and hospitalization_dischargedisposition_coding_{{i}}_code is not null
     ) as t
     where t.system in {{ generate_tuple_from_list(systems) }}
     {% if not loop.last %}union all{% endif %}
@@ -58,7 +58,7 @@
             ,   reasoncode_{{i}}_coding_{{j}}_display as display
             ,   {{i}} * ({{ max_second_index }} + 1) + {{j}} as coding_index
         from {{ref('stage__encounter')}}
-        where  reasoncode_{{i}}_coding_{{j}}_code != ''
+        where  reasoncode_{{i}}_coding_{{j}}_code != '' and reasoncode_{{i}}_coding_{{j}}_code is not null
     ) as t
     where t.system in {{ generate_tuple_from_list(systems) }}
     {% if not loop.last %}union all{% endif %}

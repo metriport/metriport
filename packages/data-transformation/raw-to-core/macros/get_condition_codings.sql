@@ -14,7 +14,7 @@
             ,   code_coding_{{i}}_display as display
             ,   {{i}} as coding_index
         from {{ref('stage__condition')}}
-        where code_coding_{{i}}_code != ''
+        where code_coding_{{i}}_code != '' and code_coding_{{i}}_code is not null
     ) as t
     where t.system in {{ generate_tuple_from_list(systems) }}
     {% if not loop.last %}union all{% endif %}
@@ -36,7 +36,7 @@
             ,   category_{{i}}_coding_{{j}}_display as display
             ,   {{i}} * ({{ secondary_max_index }} + 1) + {{j}} as coding_index
         from {{ref('stage__condition')}}
-        where category_{{i}}_coding_{{j}}_code != ''
+        where category_{{i}}_coding_{{j}}_code != '' and category_{{i}}_coding_{{j}}_code is not null
     ) as t
     where t.system in {{ generate_tuple_from_list(systems) }}
     {% if not loop.last %}union all{% endif %}
@@ -59,7 +59,7 @@
             ,   clinicalstatus_coding_{{i}}_display as display
             ,   {{i}} as coding_index
         from {{ref('stage__condition')}}
-        where  clinicalstatus_coding_{{i}}_code != ''
+        where  clinicalstatus_coding_{{i}}_code != '' and clinicalstatus_coding_{{i}}_code is not null
     ) as t
     where t.system in {{ generate_tuple_from_list(systems) }}
     {% if not loop.last %}union all{% endif %}

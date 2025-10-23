@@ -13,7 +13,7 @@
             ,   code_coding_{{i}}_display as display
             ,   {{i}} as coding_index
         from {{ref('stage__procedure')}}
-        where  code_coding_{{i}}_code != ''
+        where  code_coding_{{i}}_code != '' and code_coding_{{i}}_code is not null
     ) as t
     where t.system in {{ generate_tuple_from_list(systems) }}
     {% if not loop.last %}union all{% endif %}
@@ -35,7 +35,7 @@
             ,   bodysite_{{i}}_coding_{{j}}_display as display
             ,   {{i}} * ({{ secondary_max_index }} + 1) + {{j}} as coding_index
         from {{ref('stage__procedure')}}
-        where  bodysite_{{i}}_coding_{{j}}_code != ''
+        where  bodysite_{{i}}_coding_{{j}}_code != '' and bodysite_{{i}}_coding_{{j}}_code is not null
     ) as t
     where t.system in {{ generate_tuple_from_list(systems) }}
     {% if not loop.last %}union all{% endif %}
@@ -59,7 +59,7 @@
             ,   reasoncode_{{i}}_coding_{{j}}_display as display
             ,   {{i}} * ({{ secondary_max_index }} + 1) + {{j}} as coding_index
         from {{ref('stage__procedure')}}
-        where  reasoncode_{{i}}_coding_{{j}}_code != ''
+        where  reasoncode_{{i}}_coding_{{j}}_code != '' and reasoncode_{{i}}_coding_{{j}}_code is not null
     ) as t
     where t.system in {{ generate_tuple_from_list(systems) }}
     {% if not loop.last %}union all{% endif %}

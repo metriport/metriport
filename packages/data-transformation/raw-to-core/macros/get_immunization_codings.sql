@@ -12,7 +12,7 @@
             ,   vaccinecode_coding_{{i}}_display as display
             ,   {{i}} as coding_index
         from {{ref('stage__immunization')}}
-        where  vaccinecode_coding_{{i}}_code != ''
+        where  vaccinecode_coding_{{i}}_code != '' and vaccinecode_coding_{{i}}_code is not null
     ) as t
     where t.system in {{ generate_tuple_from_list(systems) }}
     {% if not loop.last %}union all{% endif %}
