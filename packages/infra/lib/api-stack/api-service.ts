@@ -395,6 +395,9 @@ export function createAPIService({
           ...(props.config.cqDirectoryRebuilder?.heartbeatUrl && {
             CQ_DIR_REBUILD_HEARTBEAT_URL: props.config.cqDirectoryRebuilder.heartbeatUrl,
           }),
+          ...(props.config.cwDirectoryRebuilder?.heartbeatUrl && {
+            CW_DIR_REBUILD_HEARTBEAT_URL: props.config.cwDirectoryRebuilder.heartbeatUrl,
+          }),
           ...(surescriptsAssets && {
             PHARMACY_CONVERSION_BUCKET_NAME: surescriptsAssets.pharmacyConversionBucket.bucketName,
             SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsAssets.surescriptsReplicaBucket.bucketName,

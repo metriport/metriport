@@ -1,11 +1,11 @@
 import {
   Aspects,
-  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
+  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
@@ -37,6 +37,7 @@ import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
 import { createCqDirectoryRebuilder } from "./api-stack/cq-directory-rebuilder";
+import { createCwDirectoryRebuilder } from "./api-stack/cw-directory-rebuilder";
 import { createScheduledDBMaintenance } from "./api-stack/db-maintenance";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
@@ -53,6 +54,11 @@ import { LambdasLayersNestedStack } from "./lambda-layers-nested-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
 import { PatientMonitoringNestedStack } from "./patient-monitoring-nested-stack";
+import { QuestNestedStack } from "./quest/quest-stack";
+import {
+  createDownloadResponseScheduledLambda,
+  createUploadRosterScheduledLambda,
+} from "./quest/scheduled-lambda";
 import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
@@ -63,11 +69,6 @@ import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
 import { SurescriptsNestedStack } from "./surescripts/surescripts-stack";
-import { QuestNestedStack } from "./quest/quest-stack";
-import {
-  createUploadRosterScheduledLambda,
-  createDownloadResponseScheduledLambda,
-} from "./quest/scheduled-lambda";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 
@@ -828,6 +829,14 @@ export class APIStack extends Stack {
     });
 
     createCqDirectoryRebuilder({
+      lambdaLayers,
+      stack: this,
+      vpc: this.vpc,
+      apiAddress: apiDirectUrl,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+
+    createCwDirectoryRebuilder({
       lambdaLayers,
       stack: this,
       vpc: this.vpc,
