@@ -1,0 +1,528 @@
+[
+  {
+    "resourceType": "Medication",
+    "id": "01995080-f8f4-7ca9-af8c-344cb3d3ed3e",
+    "status": "active",
+    "code": {
+      "text": "Hydroxyurea",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "197797",
+          "display": "hydroxyurea 500 mg oral capsule"
+        }
+      ]
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Hydroxyurea 500 mg daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 0
+          },
+          "high": {
+            "value": 24
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01995080-f8f4-7ca9-af8c-344da2cbaf9d",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01995080-f8f4-7ca9-af8c-344cb3d3ed3e"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
+    },
+    "dosage": [
+      {
+        "text": "500 mg",
+        "doseAndRate": [
+          {
+            "extension": [
+              {
+                "url": "https://metriport.com/data-extraction",
+                "valueString": "500 mg"
+              }
+            ],
+            "doseQuantity": {
+              "value": 500,
+              "unit": "mg",
+              "system": "http://unitsofmeasure.org",
+              "code": "mg"
+            }
+          }
+        ]
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Hydroxyurea 500 mg daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 0
+          },
+          "high": {
+            "value": 24
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "Medication",
+    "id": "01995080-f8f4-7ca9-af8c-344e54b0ab01",
+    "status": "active",
+    "code": {
+      "text": "Metamucil",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "6802",
+          "display": "metamucil"
+        }
+      ]
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Metamucil three teaspoons daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 26
+          },
+          "high": {
+            "value": 57
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01995080-f8f4-7ca9-af8c-344f94483c72",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01995080-f8f4-7ca9-af8c-344e54b0ab01"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
+    },
+    "dosage": [
+      {
+        "text": "three teaspoons"
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Metamucil three teaspoons daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 26
+          },
+          "high": {
+            "value": 57
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "Medication",
+    "id": "01995080-f8f4-7ca9-af8c-3450f49ec665",
+    "status": "active",
+    "code": {
+      "text": "amitriptyline",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "856845",
+          "display": "amitriptyline hydrochloride 50 mg oral tablet"
+        }
+      ]
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "amitriptyline 50 mg at h.s.",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 59
+          },
+          "high": {
+            "value": 86
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01995080-f8f4-7ca9-af8c-34510341d365",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01995080-f8f4-7ca9-af8c-3450f49ec665"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
+    },
+    "dosage": [
+      {
+        "text": "50 mg",
+        "doseAndRate": [
+          {
+            "extension": [
+              {
+                "url": "https://metriport.com/data-extraction",
+                "valueString": "50 mg"
+              }
+            ],
+            "doseQuantity": {
+              "value": 50,
+              "unit": "mg",
+              "system": "http://unitsofmeasure.org",
+              "code": "mg"
+            }
+          }
+        ]
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "amitriptyline 50 mg at h.s.",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 59
+          },
+          "high": {
+            "value": 86
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "Medication",
+    "id": "01995080-f8f4-7ca9-af8c-3452895c596f",
+    "status": "active",
+    "code": {
+      "text": "Synthroid",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "966250",
+          "display": "levothyroxine sodium 0.1 mg oral tablet [synthroid]"
+        }
+      ]
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Synthroid 0.1 mg daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 88
+          },
+          "high": {
+            "value": 110
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01995080-f8f4-7ca9-af8c-3453ec9b2555",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01995080-f8f4-7ca9-af8c-3452895c596f"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
+    },
+    "dosage": [
+      {
+        "text": "0.1 mg",
+        "doseAndRate": [
+          {
+            "extension": [
+              {
+                "url": "https://metriport.com/data-extraction",
+                "valueString": "0.1 mg"
+              }
+            ],
+            "doseQuantity": {
+              "value": 0.1,
+              "unit": "mg",
+              "system": "http://unitsofmeasure.org",
+              "code": "mg"
+            }
+          }
+        ]
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Synthroid 0.1 mg daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 88
+          },
+          "high": {
+            "value": 110
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "Medication",
+    "id": "01995080-f8f4-7ca9-af8c-3454ce763a47",
+    "status": "active",
+    "code": {
+      "text": "Ambien",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "854878",
+          "display": "zolpidem tartrate 5 mg oral tablet [ambien]"
+        }
+      ]
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Ambien 5 mg at h.s.",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 112
+          },
+          "high": {
+            "value": 131
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01995080-f8f4-7ca9-af8c-3455a15fa8b3",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01995080-f8f4-7ca9-af8c-3454ce763a47"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
+    },
+    "dosage": [
+      {
+        "text": "5 mg",
+        "doseAndRate": [
+          {
+            "extension": [
+              {
+                "url": "https://metriport.com/data-extraction",
+                "valueString": "5 mg"
+              }
+            ],
+            "doseQuantity": {
+              "value": 5,
+              "unit": "mg",
+              "system": "http://unitsofmeasure.org",
+              "code": "mg"
+            }
+          }
+        ]
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Ambien 5 mg at h.s.",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 112
+          },
+          "high": {
+            "value": 131
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "Medication",
+    "id": "01995080-f8f4-7ca9-af8c-345698fd1db1",
+    "status": "active",
+    "code": {
+      "text": "triamterene/hydrochlorothiazide",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "310818",
+          "display": "hydrochlorothiazide 50 mg / triamterene 75 mg oral tablet"
+        }
+      ]
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "triamterene/hydrochlorothiazide 75/50 daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 133
+          },
+          "high": {
+            "value": 176
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01995080-f8f4-7ca9-af8c-3457b7b347f8",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01995080-f8f4-7ca9-af8c-345698fd1db1"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
+    },
+    "dosage": [
+      {
+        "text": "75/50"
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "triamterene/hydrochlorothiazide 75/50 daily",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 133
+          },
+          "high": {
+            "value": 176
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "Medication",
+    "id": "01995080-f8f4-7ca9-af8c-34582c424ebe",
+    "status": "active",
+    "code": {
+      "text": "Lortab",
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "144254",
+          "display": "lortab"
+        }
+      ]
+    },
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Lortab 5/500",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 182
+          },
+          "high": {
+            "value": 194
+          }
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "01995080-f8f4-7ca9-af8c-34599744ff10",
+    "status": "active",
+    "medicationReference": {
+      "reference": "Medication/01995080-f8f4-7ca9-af8c-34582c424ebe"
+    },
+    "subject": {
+      "reference": "Patient/92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa",
+      "id": "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa"
+    },
+    "dosage": [
+      {
+        "text": "5/500"
+      }
+    ],
+    "extension": [
+      {
+        "url": "https://metriport.com/data-extraction",
+        "valueString": "Lortab 5/500",
+        "valueReference": {
+          "reference": "Encounter/7669de0c-65b9-4b03-87e0-9b0ac3261fb7"
+        },
+        "valueRange": {
+          "low": {
+            "value": 182
+          },
+          "high": {
+            "value": 194
+          }
+        }
+      }
+    ]
+  }
+]

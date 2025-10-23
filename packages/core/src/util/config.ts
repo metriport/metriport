@@ -1,5 +1,6 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
 import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
+import type { BedrockRegion } from "../external/bedrock/client";
 import { SftpConfig } from "../external/sftp/types";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
 
@@ -107,6 +108,9 @@ export class Config {
   static getHl7IncomingMessageBucketName(): string {
     return getEnvVarOrFail("HL7_INCOMING_MESSAGE_BUCKET_NAME");
   }
+  static getHl7RawMessageBucketName(): string {
+    return getEnvVarOrFail("HL7_RAW_MESSAGE_BUCKET_NAME");
+  }
   static getHl7OutgoingMessageBucketName(): string {
     return getEnvVarOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME");
   }
@@ -170,16 +174,24 @@ export class Config {
     return getEnvVarOrFail("FHIR_TO_BUNDLE_COUNT_LAMBDA_NAME");
   }
 
-  static getBedrockRegion(): string | undefined {
-    return getEnvVar("BEDROCK_REGION");
+  static getBedrockRegion(): BedrockRegion {
+    return (getEnvVar("BEDROCK_REGION") ?? "us-east-1") as BedrockRegion;
   }
 
   static getBedrockVersion(): string | undefined {
     return getEnvVar("BEDROCK_VERSION");
   }
 
+  static getComprehendRegion(): string {
+    return getEnvVar("COMPREHEND_REGION") ?? Config.getAWSRegion();
+  }
+
   static getAiBriefModelId(): string | undefined {
     return getEnvVar("AI_BRIEF_MODEL_ID");
+  }
+
+  static getGroqApiKey(): string {
+    return getEnvVarOrFail("GROQ_API_KEY");
   }
 
   static getFeatureFlagsTableName(): string {
@@ -428,8 +440,8 @@ export class Config {
     return getEnvVarOrFail("CORE_TRANSFORM_BATCH_JOB_DEFINITION_ARN");
   }
 
-  static getRosterUploadSftpPasswordArn(): string {
-    return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_ARN`);
+  static getRosterUploadSftpPasswordName(): string {
+    return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_NAME`);
   }
 
   static getLahieIngestionLambdaName(): string {
@@ -498,5 +510,21 @@ export class Config {
 
   static getAlohrIngestionLambdaName(): string {
     return getEnvVarOrFail("ALOHR_INGESTION_LAMBDA_NAME");
+  }
+
+  static getAlohrIngestionTimezone(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_TIMEZONE");
+  }
+
+  static getAiBriefBucketName(): string {
+    return getEnvVarOrFail("AI_BRIEF_BUCKET_NAME");
+  }
+
+  static getHeartBeatMonitorMap(): Record<string, string> {
+    return getEnvVarAsRecordOrFail("HEARTBEAT_MONITOR_MAP");
+  }
+
+  static getOutboundRateLimitTableName(): string | undefined {
+    return getEnvVar("OUTBOUND_RATE_LIMIT_TABLE_NAME");
   }
 }

@@ -6,11 +6,9 @@ import {
   XCA_DR_STRING,
   XCPD_STRING,
 } from "@metriport/carequality-sdk/common/util";
-import { DOA_EXTENSION_URL } from "@metriport/core/external/carequality/extension";
 import { normalizeState } from "@metriport/shared/domain/address/state";
 import { CQOrgDetailsWithUrls } from "../../shared";
 import { metriportOid } from "./constants";
-import { isCqDoaEnabled } from "@metriport/core/command/feature-flags/domain-ffs";
 
 export const transactionUrl =
   "https://sequoiaproject.org/fhir/sphd/StructureDefinition/Transaction";
@@ -55,15 +53,6 @@ async function getFhirOrganization(
     parentOrgOid,
     oboName,
   } = orgDetails;
-
-  const isDoaFeatureFlagEnabled = await isCqDoaEnabled();
-
-  /**
-   * TODO: ENG-1089 - Remove this once we fully migrate to the new DOA flow on CQ.
-   *
-   * No extension needed after the migration - it will be added on the principal instead of the delegate.
-   */
-  const oboOid = isDoaFeatureFlagEnabled ? undefined : orgDetails.oboOid;
 
   const state = normalizeState(stateRaw);
   const addressText = `${addressLine1} ${city} ${state} ${postalCode} US`;
@@ -137,16 +126,6 @@ async function getFhirOrganization(
           code: "CQ",
         },
       },
-      ...(oboOid
-        ? [
-            {
-              url: DOA_EXTENSION_URL,
-              valueReference: {
-                reference: `Organization/${oboOid}`,
-              },
-            },
-          ]
-        : []),
       {
         url: "https://sequoiaproject.org/fhir/sphd/StructureDefinition/org-managing-org",
         valueReference: {

@@ -11,12 +11,32 @@ import { analytics, EventTypes } from "../../external/analytics/posthog";
 import { getAnthropicModelId } from "../../external/bedrock/model/anthropic/version";
 import { BedrockChat } from "../../external/langchain/bedrock";
 import { out } from "../../util";
-import { isPcpVisitAiSummaryFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
+import {
+  isRecentVisitAiSummaryEnabledForCx,
+  isCardiacCareAiSummaryEnabledForCx,
+  isNitratesAndConditionsAiSummaryEnabledForCx,
+  isPcpVisitAiSummaryFeatureFlagEnabledForCx,
+} from "../feature-flags/domain-ffs";
+import {
+  documentVariableName as cardiacCareDocumentVariableName,
+  mainSummaryPrompt as cardiacCareMainSummaryPrompt,
+  refinedSummaryPrompt as cardiacCareRefinedSummaryPrompt,
+} from "./cardiac-care-prompt";
+import {
+  documentVariableName as nitratesAndConditionsDocumentVariableName,
+  mainSummaryPrompt as nitratesAndConditionsMainSummaryPrompt,
+  refinedSummaryPrompt as nitratesAndConditionsRefinedSummaryPrompt,
+} from "./nitrates-and-conditions-prompt";
 import {
   documentVariableName as pcpVisitDocumentVariableName,
   mainSummaryPrompt as pcpVisitMainSummaryPrompt,
   refinedSummaryPrompt as pcpVisitRefinedSummaryPrompt,
 } from "./pcp-visit-prompt";
+import {
+  documentVariableName as recentVisitDocumentVariableName,
+  mainSummaryPrompt as recentVisitMainSummaryPrompt,
+  refinedSummaryPrompt as recentVisitRefinedSummaryPrompt,
+} from "./recent-visit-prompt";
 import { documentVariableName, mainSummaryPrompt, refinedSummaryPrompt } from "./prompts";
 import { AiBriefControls } from "./shared";
 
@@ -147,7 +167,35 @@ async function getInputsForAiBriefGeneration(cxId: string): Promise<{
   refinedPrompt: string;
   documentVariable: string;
 }> {
+  const isNitratesAndConditions = await isNitratesAndConditionsAiSummaryEnabledForCx(cxId);
+  const isCardiacCare = await isCardiacCareAiSummaryEnabledForCx(cxId);
+  const isRecentVisit = await isRecentVisitAiSummaryEnabledForCx(cxId);
   const isPcpVisit = await isPcpVisitAiSummaryFeatureFlagEnabledForCx(cxId);
+
+  // Order matters! Most specific prompts should be checked first
+  if (isNitratesAndConditions) {
+    return {
+      mainPrompt: nitratesAndConditionsMainSummaryPrompt,
+      refinedPrompt: nitratesAndConditionsRefinedSummaryPrompt,
+      documentVariable: nitratesAndConditionsDocumentVariableName,
+    };
+  }
+
+  if (isCardiacCare) {
+    return {
+      mainPrompt: cardiacCareMainSummaryPrompt,
+      refinedPrompt: cardiacCareRefinedSummaryPrompt,
+      documentVariable: cardiacCareDocumentVariableName,
+    };
+  }
+
+  if (isRecentVisit) {
+    return {
+      mainPrompt: recentVisitMainSummaryPrompt,
+      refinedPrompt: recentVisitRefinedSummaryPrompt,
+      documentVariable: recentVisitDocumentVariableName,
+    };
+  }
 
   if (isPcpVisit) {
     return {
@@ -157,6 +205,7 @@ async function getInputsForAiBriefGeneration(cxId: string): Promise<{
     };
   }
 
+  // Default fallback
   return {
     mainPrompt: mainSummaryPrompt,
     refinedPrompt: refinedSummaryPrompt,

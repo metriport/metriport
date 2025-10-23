@@ -6,6 +6,7 @@ import {
   Observation,
   Resource,
   ResourceType,
+  Procedure,
 } from "@medplum/fhirtypes";
 import {
   BadRequestError,
@@ -61,7 +62,9 @@ import {
   getMedicationStatementStartDate,
   getObservationLoincCode,
   getObservationObservedDate,
+  getProcedureCptCode,
   isChronicCondition,
+  isHccCondition,
   isLab,
   isLabPanel,
   isVital,
@@ -430,7 +433,13 @@ export function shouldWriteBackResource({
     if (writeBackFilters.problem?.disabled) return false;
     if (!isCondition(resource)) return false;
     const condition = resource;
-    if (skipConditionChronicity(condition, writeBackFilters)) return false;
+    const skipChronic = skipConditionChronicity(condition, writeBackFilters);
+    const skipHcc = skipConditionHcc(condition, writeBackFilters);
+    if (writeBackFilters.problem?.chronicOrHcc) {
+      if (skipChronic && skipHcc) return false;
+    } else {
+      if (skipChronic || skipHcc) return false;
+    }
     if (skipConditionStringFilters(ehr, condition, writeBackFilters)) return false;
     return true;
   } else if (writeBackResourceType === "lab") {
@@ -474,7 +483,10 @@ export function shouldWriteBackResource({
     return true;
   } else if (writeBackResourceType === "procedure") {
     if (writeBackFilters.procedure?.disabled) return false;
-    return isProcedure(resource);
+    if (!isProcedure(resource)) return false;
+    const procedure = resource;
+    if (skipProcedureCptCode(procedure, writeBackFilters)) return false;
+    return true;
   } else if (writeBackResourceType === "allergy") {
     if (writeBackFilters.allergy?.disabled) return false;
     return isAllergyIntolerance(resource);
@@ -492,6 +504,17 @@ export function skipConditionChronicity(
   if (!chronicityFilter || chronicityFilter === "all") return false;
   if (isChronicCondition(condition) && chronicityFilter === "chronic") return false;
   if (!isChronicCondition(condition) && chronicityFilter === "non-chronic") return false;
+  return true;
+}
+
+export function skipConditionHcc(
+  condition: Condition,
+  writeBackFilters: WriteBackFiltersPerResourceType
+): boolean {
+  const hccFilter = writeBackFilters.problem?.hccFilter;
+  if (!hccFilter || hccFilter === "all") return false;
+  if (isHccCondition(condition) && hccFilter === "hcc") return false;
+  if (!isHccCondition(condition) && hccFilter === "non-hcc") return false;
   return true;
 }
 
@@ -710,6 +733,17 @@ export function skipMedicationStatementDateAbsolute(
   const startDate = getMedicationStatementStartDate(medicationStatement);
   if (!startDate) return true;
   return buildDayjs(startDate).isBefore(buildDayjs(absoluteDate));
+}
+
+export function skipProcedureCptCode(
+  procedure: Procedure,
+  writeBackFilters: WriteBackFiltersPerResourceType
+): boolean {
+  const cptCodes = writeBackFilters?.procedure?.cptCodes;
+  if (!cptCodes) return false;
+  const cptCode = getProcedureCptCode(procedure);
+  if (!cptCode) return true;
+  return !cptCodes.includes(cptCode);
 }
 
 async function getSecondaryResourcesToWriteBackMap({

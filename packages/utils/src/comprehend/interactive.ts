@@ -1,0 +1,57 @@
+import { Command } from "commander";
+import express from "express";
+import bodyParser from "body-parser";
+import cors from "cors";
+import path from "path";
+import { ComprehendClient } from "@metriport/core/external/comprehend/client";
+import { getFhirResourcesFromRxNormEntities } from "@metriport/core/external/comprehend/rxnorm/fhir-converter";
+import type { ComprehendContext } from "@metriport/core/external/comprehend/types";
+
+/**
+ * Interactive tool to test the Comprehend API.
+ *
+ * npm run comprehend -- interactive
+ */
+const command = new Command();
+command.name("interactive");
+command.option("--port <port>", "Port to run the server on", "3000");
+command.description("Interactive tool to test the Comprehend API.");
+command.action(runInteractive);
+
+// Path linking requires this to be run as `npm run comprehend -- interactive`
+const HTML_DIR = path.join(process.cwd(), "src/comprehend/html");
+
+async function runInteractive({ port = 3000 }: { port?: number } = {}) {
+  const app = express();
+  app.use(cors());
+
+  app.get("/", (req, res) => {
+    res.sendFile(path.join(HTML_DIR, "interactive.html"));
+  });
+
+  app.use(bodyParser.json());
+  app.post("/analyze", async (req, res) => {
+    const { text, patientId, dateNoteWritten, encounterId, diagnosticReportId } = req.body;
+    const context: ComprehendContext = {
+      patientId,
+      dateNoteWritten,
+      originalText: text,
+      encounterId,
+      diagnosticReportId,
+    };
+
+    const client = new ComprehendClient();
+    const comprehend = await client.inferRxNorm(text);
+    const fhir = getFhirResourcesFromRxNormEntities(comprehend.Entities ?? [], {
+      confidenceThreshold: 0.1,
+      context,
+    });
+    res.json({ comprehend, fhir });
+  });
+
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+}
+
+export default command;

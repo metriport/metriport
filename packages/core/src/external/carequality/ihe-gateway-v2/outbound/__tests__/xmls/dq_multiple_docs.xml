@@ -31,6 +31,16 @@
                             <Value>2.16.840.1.113883.3.9621</Value>
                         </ValueList>
                     </Slot>
+                    <Slot name="serviceStartTime">
+                        <ValueList>
+                            <Value>20210415</Value>
+                        </ValueList>
+                    </Slot>
+                    <Slot name="serviceStopTime">
+                        <ValueList>
+                            <Value>20210415205312</Value>
+                        </ValueList>
+                    </Slot>
                     <Slot name="size">
                         <ValueList>
                             <Value>141255</Value>

@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "1.29.6",
+  "version": "1.29.11",
   "description": "",
   "main": "app.js",
   "private": true,
@@ -45,6 +45,7 @@
     "aws-sdk": "^2.1243.0",
     "axios": "^1.8.2",
     "base64url": "^3.0.1",
+    "better-sse": "^0.15.1",
     "convert-units": "^2.3.4",
     "cors": "^2.8.5",
     "dayjs": "^1.11.9",
@@ -52,6 +53,7 @@
     "express": "^4.19.2",
     "express-http-proxy": "^1.6.3",
     "express-promise-router": "^4.1.1",
+    "groq-sdk": "^0.33.0",
     "helmet": "^6.0.1",
     "http-status": "~1.7.0",
     "jaro-winkler": "^0.2.8",

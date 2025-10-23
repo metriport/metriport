@@ -37,7 +37,6 @@ import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
 import { createCqDirectoryRebuilder } from "./api-stack/cq-directory-rebuilder";
-import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-connector";
 import { createScheduledDBMaintenance } from "./api-stack/db-maintenance";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
@@ -362,6 +361,21 @@ export class APIStack extends Stack {
       }
     };
 
+    let aiBriefBucket: s3.Bucket | undefined;
+    if (!isSandbox(props.config)) {
+      aiBriefBucket = new s3.Bucket(this, "AiBriefBucket", {
+        bucketName: props.config.aiBriefBucketName,
+        publicReadAccess: false,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+        cors: [
+          {
+            allowedOrigins: ["*"],
+            allowedMethods: [s3.HttpMethods.GET],
+          },
+        ],
+      });
+    }
+
     const sandboxSeedDataBucket = isSandbox(props.config)
       ? getSandboxSeedDataBucket(props.config)
       : undefined;
@@ -481,7 +495,20 @@ export class APIStack extends Stack {
         documentIndexName: props.config.openSearch.openSearch.indexName,
       },
       analyticsQueue: analyticsPlatformStack?.getAssets()?.fhirToCsvIncrementalQueue,
+      aiBriefBucket,
     });
+
+    //-------------------------------------------
+    // Rate Limiting
+    //-------------------------------------------
+    const { rateLimitTable, outboundRateLimitTable } = new RateLimitingNestedStack(
+      this,
+      "RateLimitingNestedStack",
+      {
+        config: props.config,
+        alarmAction: slackNotification?.alarmAction,
+      }
+    );
 
     //-------------------------------------------
     // HL7 Notification Webhook Sender
@@ -500,6 +527,7 @@ export class APIStack extends Stack {
           hl7ConversionBucket,
           secrets,
           incomingHl7NotificationBucket,
+          outboundRateLimitTable,
         }
       );
 
@@ -552,14 +580,6 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
-    // Rate Limiting
-    //-------------------------------------------
-    const { rateLimitTable } = new RateLimitingNestedStack(this, "RateLimitingNestedStack", {
-      config: props.config,
-      alarmAction: slackNotification?.alarmAction,
-    });
-
-    //-------------------------------------------
     // Terminology Server Service
     //-------------------------------------------
     if (!isSandbox(props.config)) {
@@ -604,18 +624,6 @@ export class APIStack extends Stack {
       });
       fhirToMedicalRecordLambda2 = lambdas.fhirToMedicalRecordLambda2;
     }
-
-    const cwEnhancedQueryQueues = cwEnhancedCoverageConnector.setupRequiredInfra({
-      stack: this,
-      vpc: this.vpc,
-      lambdaLayers,
-      envType: props.config.environmentType,
-      secrets,
-      apiAddress: "",
-      bucket: generalBucket,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
-    const cookieStore = cwEnhancedQueryQueues?.cookieStore;
 
     //-------------------------------------------
     // EHR
@@ -664,6 +672,7 @@ export class APIStack extends Stack {
       dbCredsSecret,
       dbReadReplicaEndpoint: dbCluster.clusterReadEndpoint,
       dynamoDBTokenTable,
+      outboundRateLimitTable,
       alarmAction: slackNotification?.alarmAction,
       dnsZones,
       fhirServerUrl: props.config.fhirServerUrl,
@@ -703,7 +712,6 @@ export class APIStack extends Stack {
       searchAuth: { userName: searchDomainUserName, secret: searchDomainSecret },
       searchIndexName: ccdaSearchIndexName,
       featureFlagsTable,
-      cookieStore,
       surescriptsAssets: surescriptsStack?.getAssets(),
       questAssets: questStack?.getAssets(),
       jobAssets: jobsStack.getAssets(),
@@ -841,34 +849,23 @@ export class APIStack extends Stack {
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
-    createUploadRosterScheduledLambda({
-      lambdaLayers,
-      stack: this,
-      vpc: this.vpc,
-      apiAddress: apiDirectUrl,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
-
-    createDownloadResponseScheduledLambda({
-      lambdaLayers,
-      stack: this,
-      vpc: this.vpc,
-      apiAddress: apiDirectUrl,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
-
-    cookieStore &&
-      cwEnhancedCoverageConnector.setupLambdas({
+    if (props.config.quest) {
+      createUploadRosterScheduledLambda({
+        lambdaLayers,
         stack: this,
         vpc: this.vpc,
-        lambdaLayers,
-        envType: props.config.environmentType,
-        secrets,
         apiAddress: apiDirectUrl,
-        bucket: generalBucket,
         alarmSnsAction: slackNotification?.alarmAction,
-        cookieStore,
       });
+
+      createDownloadResponseScheduledLambda({
+        lambdaLayers,
+        stack: this,
+        vpc: this.vpc,
+        apiAddress: apiDirectUrl,
+        alarmSnsAction: slackNotification?.alarmAction,
+      });
+    }
 
     //-------------------------------------------
     // API Gateway

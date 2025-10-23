@@ -6,7 +6,7 @@ import { QuestResponseFile, QuestSftpConfig } from "./types";
 
 // S3 constants for response files and source documents
 const RESPONSE_FILE_PREFIX = "/Metriport_";
-const SOURCE_DOCUMENT_DIRECTORY = "source_document";
+export const SOURCE_DOCUMENT_DIRECTORY = "source_document";
 
 export class QuestReplica extends S3Replica {
   private readonly incomingResponseFilePrefix: string;
@@ -49,5 +49,9 @@ export class QuestReplica extends S3Replica {
       `${SOURCE_DOCUMENT_DIRECTORY}/${sourceDocument.fileName}`,
       sourceDocument.fileContent
     );
+  }
+
+  async listAllSourceDocumentKeys(): Promise<string[]> {
+    return await this.listFileNames(`${SOURCE_DOCUMENT_DIRECTORY}/`);
   }
 }

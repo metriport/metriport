@@ -67,6 +67,14 @@ export const tcmEncounterResponseSchema = tcmEncounterUpsertSchema.extend({
 });
 export type TcmEncounterResponse = z.infer<typeof tcmEncounterResponseSchema>;
 
+const encounterClassOptions = [
+  "inpatient encounter",
+  "ambulatory",
+  "emergency",
+  "short stay",
+  "pre-admission",
+] as const;
+
 const tcmEncounterQuerySchema = z
   .object({
     after: z.string().datetime().optional(),
@@ -77,8 +85,28 @@ const tcmEncounterQuerySchema = z
     status: z.enum(outreachStatuses).optional(),
     search: z.string().optional(),
     encounterClass: z
-      .enum(["inpatient encounter", "ambulatory", "emergency", "short stay", "pre-admission"])
-      .optional(),
+      .union([
+        z.enum(encounterClassOptions),
+        z.array(z.enum(encounterClassOptions)),
+        z
+          .string()
+          .transform(s =>
+            Array.from(
+              new Set(
+                s
+                  .split(",")
+                  .map(v => v.trim())
+                  .filter(Boolean)
+              )
+            )
+          )
+          .pipe(z.array(z.enum(encounterClassOptions))),
+      ])
+      .optional()
+      .transform(val => {
+        const arr = Array.isArray(val) ? val : val ? [val] : [];
+        return arr.length > 0 ? arr : undefined;
+      }),
   })
   .and(createQueryMetaSchemaV2(tcmEncounterMaxPageSize));
 

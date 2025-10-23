@@ -2,53 +2,70 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+
+import { Command } from "commander";
 import { sleep } from "@metriport/shared";
 import fs from "fs";
+import path from "path";
 import SaxonJS from "saxon-js";
 import { elapsedTimeAsStr } from "../shared/duration";
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const styleSheetText = require("../../../lambdas/src/cda-to-visualization/stylesheet.js");
+import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
 
 /**
- * Script to convert a CDA document to HTML.
+ * IMPORTANT: Run `npm run build` before running this script.
  *
- * To use it:
- * 1. Set the variables:
- *  - SOURCE_FILE: the full path to the CDA/XML file
- * 2. Run the script with:
- *  - `npm run cda-to-html`
+ * This script converts a CDA document to HTML. Pass an absolute or relative path to the CDA/XML file
+ * as an argument - if it is a relative path, it must be relative to the utils directory.
+ *
+ * Usage:
+ * > npm run cda-to-html -- runs/cda-to-html/example-cda.xml
+ * > npm run cda-to-html -- /Users/user/Documents/example-cda.xml
+ *
+ * In the example above, the output HTML will be written to the same directory as "example-cda.html".
  */
+const program = new Command();
+program.name("cda-to-html");
+program.description("CLI to test conversion of a CDA document to HTML");
+program.argument("<source-file>", "The path to the CDA/XML file");
+program.showHelpAfterError();
+program.action(convertCdaToHtml);
 
-const SOURCE_FILE = ``;
+const styleSheetText = require(path.join(
+  __dirname,
+  "../../../../../lambdas/src/cda-to-visualization/stylesheet.js"
+));
 
 let cda10: unknown;
 let narrative: unknown;
 const styleSheetTextStringified = JSON.stringify(styleSheetText);
 
-async function main() {
+async function convertCdaToHtml(sourceFile: string) {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
   const startedAt = Date.now();
   console.log(`############## Started at ${new Date(startedAt).toISOString()} ##############`);
 
-  const document = fs.readFileSync(SOURCE_FILE, { encoding: "utf8" });
+  const sourcePath = path.resolve(process.cwd(), sourceFile);
+  if (!fs.existsSync(sourcePath)) {
+    console.error(`Source file ${sourcePath} does not exist`);
+    return;
+  }
 
-  // https://metriport-inc.sentry.io/issues/5641255225/?alert_rule_id=14442454&alert_type=issue&environment=production&notification_uuid=24c13683-7ce2-43bf-b620-7fc31eca8502&project=4505252341153792&referrer=slack
-  const normalizedDocument = normalizeDocument(document);
+  const document = fs.readFileSync(sourcePath, { encoding: "utf8" });
+
+  // Clean up the document according to the standard normalization process
+  const normalizedDocument = cleanUpPayload(document);
 
   console.log(`Converting to HTML...`);
   const htmlStartedAt = Date.now();
   const html = await convertToHtml(normalizedDocument, console.log);
   const htmlDuration = Date.now() - htmlStartedAt;
-  fs.writeFileSync(`${SOURCE_FILE}_output.html`, html);
+  const sourceDirectory = path.dirname(sourcePath);
+  const sourceFileName = path.basename(sourceFile, ".xml");
+  const outputPath = path.join(sourceDirectory, `${sourceFileName}.html`);
+  fs.writeFileSync(outputPath, html);
+  console.log(`HTML file written to ${outputPath}`);
 
   console.log(`>>> Done in ${elapsedTimeAsStr(startedAt)}, HTML in ${htmlDuration}ms`);
-}
-
-// Based on packages/lambdas/src/cda-to-visualization.ts
-function normalizeDocument(document: string): string {
-  const normalizedDocument = document.replace(/\s&\s/g, " &amp; ");
-  return normalizedDocument;
 }
 
 // TODO #2619 Move this to core and point the lambda to it too
@@ -101,4 +118,4 @@ async function getNarrative() {
   return narrative;
 }
 
-main();
+program.parse(process.argv);

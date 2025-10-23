@@ -16,7 +16,7 @@ import _ from "lodash";
 import { stripInvalidCharactersFromPatientData } from "../../domain/character-sanitizer";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
-import { capture, out } from "../../util";
+import { out } from "../../util";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
 import { METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER } from "./constants";
@@ -25,6 +25,7 @@ import {
   TrackRosterSizePerCustomerParams,
 } from "./hl7v2-roster-analytics";
 import { uploadToRemoteSftp } from "./hl7v2-roster-uploader";
+import { toBambooId } from "./hl7v2-to-fhir-conversion/shared";
 import {
   HieConfig,
   HiePatientRosterMapping,
@@ -34,7 +35,6 @@ import {
   VpnlessHieConfig,
 } from "./types";
 import { createScrambledId } from "./utils";
-import { toBambooId } from "./hl7v2-to-fhir-conversion/shared";
 const region = Config.getAWSRegion();
 
 type RosterRow = Record<string, string>;
@@ -72,14 +72,6 @@ export class Hl7v2RosterGenerator {
     log(`Found ${rawPatients.length} total patients`);
 
     const patients = rawPatients.map(stripInvalidCharactersFromPatientData);
-
-    if (patients.length === 0) {
-      capture.message(`No patients found for ${hieName}, skipping roster generation`, {
-        extra: loggingDetails,
-        level: "warning",
-      });
-      return;
-    }
 
     const cxIds = new Set(patients.map(p => p.cxId));
 
@@ -171,6 +163,9 @@ export class Hl7v2RosterGenerator {
   }
 
   private async getOrganizations(cxIds: string[]): Promise<InternalOrganizationDTO[]> {
+    if (cxIds.length === 0) {
+      return [];
+    }
     const currentUrl = `${this.apiUrl}/${GET_ORGANIZATION_ENDPOINT}`;
     const baseParams = { cxIds: cxIds.join(",") };
 
@@ -285,6 +280,10 @@ export function createRosterRowInput(
   const dateMid2025NoDelimiter = buildDayjs(july2025).format("YYYYMMDD");
   const patientExternalId = p.externalId;
   const addAllCaps = "ADD" as const;
+  const address1SplitParts = a1?.addressLine1?.split("\t") ?? [];
+  const address1AddressLine1SplitByTabAddress1 = address1SplitParts[0] ?? "";
+  const address1AddressLine1SplitByTabAddress2 = address1SplitParts[1] ?? a1?.addressLine2 ?? "";
+  const firstNameWithNoNicknames = data.firstName.replace(/\s*\([^)]*\)/g, ""); // Removes nicknames like "John (Johnny)" -> "John"
 
   return {
     id: p.id,
@@ -323,5 +322,8 @@ export function createRosterRowInput(
     dateMid2025NoDelimiter,
     emptyString,
     addAllCaps,
+    address1AddressLine1SplitByTabAddress1,
+    address1AddressLine1SplitByTabAddress2,
+    firstNameWithNoNicknames,
   };
 }

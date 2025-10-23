@@ -1,9 +1,12 @@
-import { Bundle, BundleEntry } from "@medplum/fhirtypes";
+import { Binary, Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/shared";
 import { parseFhirBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { generateAiBriefBundleEntry } from "../../domain/ai-brief/generate";
+import {
+  generateAiBriefBundleEntry,
+  getCachedAiBriefOrGenerateNewOne,
+} from "../../domain/ai-brief/generate";
 import { createConsolidatedDataFilePath } from "../../domain/consolidated/filename";
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
@@ -48,6 +51,7 @@ export type ConsolidatePatientDataCommand = {
   patient: Patient;
   destinationBucketName?: string | undefined;
   sourceBucketName?: string | undefined;
+  useCachedAiBrief?: boolean | undefined;
 };
 
 type BundleLocation = { bucket: string; key: string };
@@ -60,6 +64,7 @@ export async function createConsolidatedFromConversions({
   patient,
   destinationBucketName = getConsolidatedLocation(),
   sourceBucketName = getConsolidatedSourceLocation(),
+  useCachedAiBrief,
 }: ConsolidatePatientDataCommand): Promise<Bundle> {
   const patientId = patient.id;
   const { log } = out(`createConsolidatedFromConversions - cx ${cxId}, pat ${patientId}`);
@@ -128,25 +133,45 @@ export async function createConsolidatedFromConversions({
   log(`...done, from ${lengthWithDups} to ${bundle.entry?.length} resources`);
 
   // TODO This whole section with AI-related logic should be moved to the `generateAiBriefBundleEntry`.
-  log(`isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled}`);
-  if (isAiBriefFeatureFlagEnabled && bundle.entry && bundle.entry.length > 0) {
-    const aiBriefControls: AiBriefControls = {
-      cancelled: false,
-    };
-    const binaryBundleEntry = await Promise.race([
-      generateAiBriefBundleEntry(bundle, cxId, patientId, log, aiBriefControls),
-      controlDuration(AI_BRIEF_TIMEOUT.asMilliseconds(), TIMED_OUT),
-    ]);
+  log(
+    `isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled} useCachedAiBrief: ${useCachedAiBrief}`
+  );
+  const shouldGenerateAiBrief =
+    isAiBriefFeatureFlagEnabled && !useCachedAiBrief && bundle.entry && bundle.entry.length > 0;
 
-    if (binaryBundleEntry === TIMED_OUT) {
-      aiBriefControls.cancelled = true;
-      log(`AI Brief generation timed out after ${AI_BRIEF_TIMEOUT.asMinutes()} minutes`);
-      capture.message("AI Brief generation timed out", {
-        extra: { cxId, patientId, timeoutMinutes: AI_BRIEF_TIMEOUT.asMinutes() },
-        level: "warning",
-      });
-    } else if (binaryBundleEntry) {
-      bundle.entry?.push(binaryBundleEntry);
+  if (shouldGenerateAiBrief) {
+    const aiBriefEntry = await generateAiBriefWithTimeout(
+      controls =>
+        generateAiBriefBundleEntry({ bundle, cxId, patientId, log, aiBriefControls: controls }),
+      cxId,
+      patientId,
+      log
+    );
+    if (aiBriefEntry) {
+      bundle.entry?.push(aiBriefEntry);
+    }
+  }
+
+  const shouldUseCachedAiBrief =
+    isAiBriefFeatureFlagEnabled && useCachedAiBrief && bundle.entry && bundle.entry.length > 0;
+
+  //Generates AI brief if it doesn't exist in S3
+  if (shouldUseCachedAiBrief) {
+    const aiBriefEntry = await generateAiBriefWithTimeout(
+      controls =>
+        getCachedAiBriefOrGenerateNewOne({
+          cxId,
+          patientId,
+          bundle,
+          log,
+          aiBriefControls: controls,
+        }),
+      cxId,
+      patientId,
+      log
+    );
+    if (aiBriefEntry) {
+      bundle.entry?.push(aiBriefEntry);
     }
   }
 
@@ -243,4 +268,32 @@ async function listConversionBundlesFromS3({
     o.Key ? { bucket: sourceBucketName, key: o.Key } : []
   );
   return conversionBundles;
+}
+
+async function generateAiBriefWithTimeout(
+  aiBriefGenerator: (controls: AiBriefControls) => Promise<BundleEntry<Binary> | undefined>,
+  cxId: string,
+  patientId: string,
+  log: typeof console.log
+): Promise<BundleEntry<Binary> | undefined> {
+  const aiBriefControls: AiBriefControls = {
+    cancelled: false,
+  };
+  const aiBriefPromise = aiBriefGenerator(aiBriefControls);
+  const aiBriefEntry = await Promise.race([
+    aiBriefPromise,
+    controlDuration(AI_BRIEF_TIMEOUT.asMilliseconds(), TIMED_OUT),
+  ]);
+
+  if (aiBriefEntry === TIMED_OUT) {
+    aiBriefControls.cancelled = true;
+    log(`AI Brief generation timed out after ${AI_BRIEF_TIMEOUT.asMinutes()} minutes`);
+    capture.message("AI Brief generation timed out", {
+      extra: { cxId, patientId, timeoutMinutes: AI_BRIEF_TIMEOUT.asMinutes() },
+      level: "warning",
+    });
+    return undefined;
+  }
+
+  return aiBriefEntry;
 }
