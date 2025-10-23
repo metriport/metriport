@@ -11,11 +11,14 @@ Normalization of coding systems only occurs when the source coding system is one
 
 **Reference Table:**
 The `observation_references` table contains normalized references from the observation to other entities. It supports the following reference properties:
-* **subject**: Links to the patient who is the subject of the observation
-* **encounter**: Links to the encounter where the observation was made
-* **performer**: Links to practitioners who performed the observation
+* **subject**: links to the patient who is the subject of the observation
+* **encounter**: links to the encounter where the observation was made
+* **performer**: links to practitioners who performed the observation
 
 For detailed information about reference table structure and indexing, see the [Reference Tables documentation](/medical-api/handling-data/schema/reference-tables).
+
+**Observation:**
+The `observation` table stores clinical measurements, laboratory results, vital signs, and other clinical findings for patients.
 
 **Primary Keys:**
 * observation_id

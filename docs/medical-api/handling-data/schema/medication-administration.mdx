@@ -8,11 +8,14 @@ A medication administration record represents the actual administration of a med
 
 **Reference Table:**
 The `medication_administration_references` table contains normalized references from the medication administration to other entities. It supports the following reference properties:
-* **medication_reference**: Links to the medication that was administered
-* **subject**: Links to the patient who received the medication
-* **performer**: Links to practitioners who performed the administration
+* **medication_reference**: links to the medication that was administered
+* **subject**: links to the patient who received the medication
+* **performer**: links to practitioners who performed the administration
 
 For detailed information about reference table structure and indexing, see the [Reference Tables documentation](/medical-api/handling-data/schema/reference-tables).
+
+**Medication Administration:**
+The `medication_administration` table records the actual administration of medications to patients, including timing, dosage, and clinical details.
 
 **Primary Keys:**
 * medication_administration_id

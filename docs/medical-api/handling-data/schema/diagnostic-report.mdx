@@ -4,30 +4,18 @@ description: "Schema documentation for the Diagnostic Report table in the Metrip
 group: "Schema"
 ---
 
-The diagnostic report table contains information about diagnostic reports, including lab results, imaging studies, and other diagnostic findings.
+A diagnostic report is the set of information that is typically provided by a diagnostic service when investigations are complete. The information includes a mix of atomic results, text reports, images, and codes. 
 
 **Reference Table:**
 The `diagnostic_report_references` table contains normalized references from the diagnostic report to other entities. It supports the following reference properties:
-* **subject**: Links to the patient who is the subject of the diagnostic report
-* **encounter**: Links to the encounter where the diagnostic report was generated
-* **performer**: Links to practitioners who performed the diagnostic procedure
-* **result**: Links to observations or other diagnostic results referenced in the report
+* **subject**: links to the patient who is the subject of the diagnostic report
+* **encounter**: links to the encounter where the diagnostic report was generated
+* **performer**: links to practitioners who performed the diagnostic procedure
+* **result**: links to observations or other diagnostic results referenced in the report
 
 For detailed information about reference table structure and indexing, see the [Reference Tables documentation](/medical-api/handling-data/schema/reference-tables).
 
 **Presented Forms Table:**
-The `diagnostic_report_presented_forms` table contains the actual content of diagnostic reports, including text, images, and other media. It supports the following properties:
-* **data**: The actual content of the presented form
-* **content_type**: MIME type of the content
-* **creation**: When the presented form was created
-* **hash**: Hash value for integrity checking
-* **language**: Language of the content
-* **size**: Size of the content
-* **title**: Title of the presented form
-* **url**: URL where the content can be accessed
-
-## Presented Forms Structure
-
 The `diagnostic_report_presented_forms` table contains the actual content of diagnostic reports, including text, images, and other media. It supports the following properties:
 
 | Column | Data Type | Description |
@@ -41,6 +29,8 @@ The `diagnostic_report_presented_forms` table contains the actual content of dia
 | `size` | integer | Size of the attachment in bytes |
 | `title` | varchar | Human-readable title of the attachment |
 | `url` | varchar | URL reference to the attachment (if applicable) |
+
+**Diagnostic Report Table:**
 
 **Primary Keys:**
 * diagnostic_report_id

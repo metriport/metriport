@@ -149,17 +149,24 @@
             "medical-api/handling-data/data-analytics",
             {
               "group": "Schema",
+              "icon": "house",
               "pages": [
                 "medical-api/handling-data/schema/condition",
+                "medical-api/handling-data/schema/diagnostic-report",
                 "medical-api/handling-data/schema/encounter",
                 "medical-api/handling-data/schema/immunization",
-                "medical-api/handling-data/schema/lab-result",
                 "medical-api/handling-data/schema/location",
                 "medical-api/handling-data/schema/medication",
+                "medical-api/handling-data/schema/medication-administration",
+                "medical-api/handling-data/schema/medication-dispense",
+                "medical-api/handling-data/schema/medication-request",
+                "medical-api/handling-data/schema/medication-statement",
                 "medical-api/handling-data/schema/observation",
+                "medical-api/handling-data/schema/organization",
                 "medical-api/handling-data/schema/patient",
                 "medical-api/handling-data/schema/practitioner",
-                "medical-api/handling-data/schema/procedure"
+                "medical-api/handling-data/schema/procedure",
+                "medical-api/handling-data/schema/reference-tables"
               ]
             }
           ]

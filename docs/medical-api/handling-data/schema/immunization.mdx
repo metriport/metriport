@@ -4,18 +4,21 @@ description: "Schema documentation for the Immunization table in the Metriport d
 group: "Schema"
 ---
 
-The immunization table contains information on immunizations administered to patients, including the vaccine code, description, and administration date.
+The immunization resource is intended to cover the recording of current and historical administration of vaccines to patients across all healthcare disciplines in all care settings and all regions. This includes immunization of both humans and animals but does not include the administration of non-vaccine agents, even those that may have or claim to have immunological effects.
 
 **Normalization Note:**
 Vaccine codes are normalized to CVX (Vaccine Administered) coding system. The cvx_code and cvx_display fields contain the standardized CVX values.
 
 **Reference Table:**
 The `immunization_references` table contains normalized references from the immunization to other entities. It supports the following reference properties:
-* **subject**: Links to the patient who received the immunization
-* **encounter**: Links to the encounter where the immunization was administered
-* **performer**: Links to practitioners who performed the immunization
+* **subject**: links to the patient who received the immunization
+* **encounter**: links to the encounter where the immunization was administered
+* **performer**: links to practitioners who performed the immunization
 
 For detailed information about reference table structure and indexing, see the [Reference Tables documentation](/medical-api/handling-data/schema/reference-tables).
+
+**Immunization:**
+The `immunization` table stores immunization records for patients, including vaccine information, administration details, and clinical status.
 
 **Primary Key:**
 * immunization_id
