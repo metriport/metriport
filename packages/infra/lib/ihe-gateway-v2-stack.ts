@@ -195,11 +195,11 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
 
     let parameters: Record<string, string> = {};
     const partitionKeys: { name: string; type: string }[] = [];
-    const locationString: string[] = [];
+    const locationStrings: string[] = [];
     for (const [key, value] of Object.entries(partitionKeyMap)) {
       parameters = { ...parameters, ...value.parameters };
       partitionKeys.push(value.partitionKey);
-      locationString.push(`${key}=\${${key}}`);
+      locationStrings.push(`${key}=\${${key}}`);
       new glue.CfnTable(this, `iheParsedResponsesDebugTable_Detail=${key}`, {
         catalogId: this.account,
         databaseName: "default",
@@ -236,7 +236,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
             "projection.enabled": "true",
             ...parameters,
             "storage.location.template":
-              `s3://${iheParsedResponsesBucket.bucketName}` + locationString + "/",
+              `s3://${iheParsedResponsesBucket.bucketName}/` + locationStrings.join("/") + "/",
           },
           tableType: "EXTERNAL_TABLE",
         },
