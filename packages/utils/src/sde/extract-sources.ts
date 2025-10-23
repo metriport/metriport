@@ -6,7 +6,6 @@ import {
   listLocalPatientIds,
 } from "./shared";
 import { extractFromConversionBundle } from "@metriport/core/sde/extract";
-// import { extractDocument } from "@metriport/core/external/sde/command/document/extract-document";
 
 /**
  * Extracts all source text content from conversion bundles, and saves them locally per patient.
