@@ -28,14 +28,15 @@ function getCommonQueryOptions({ pagination }: GetQuestRosterParams) {
       ...(pagination ? getPaginationFilters(pagination) : {}),
       [Op.and]: [
         Sequelize.literal(`
-            EXISTS (
-              SELECT 1
-              FROM patient_cohort pc
-              JOIN cohort ch ON ch.id = pc.cohort_id
-              WHERE pc.patient_id = "PatientModelReadOnly"."id"
-                AND COALESCE((ch.settings->>'questMonitoring')::boolean, false) IS TRUE
-            )
-          `),
+          EXISTS (
+            SELECT 1
+            FROM patient_cohort pc
+            JOIN cohort ch ON ch.id = pc.cohort_id
+            WHERE pc.patient_id = "PatientModelReadOnly"."id"
+              AND jsonb_typeof(ch.settings->'monitoring'->'laboratory'->'notifications') = 'boolean'
+              AND (ch.settings->'monitoring'->'laboratory'->>'notifications')::boolean IS TRUE
+          )
+        `),
       ],
     } satisfies WhereOptions,
     include: [
