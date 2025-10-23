@@ -6,9 +6,6 @@ group: "Schema"
 
 A condition is used to record detailed information about a condition, problem, diagnosis, or other event, situation, issue, or clinical concept that has risen to a level of concern. The condition could be a point in time diagnosis in context of an encounter, it could be an item on the practitioner’s Problem List, or it could be a concern that doesn’t exist on the practitioner’s Problem List. Often times, a condition is about a clinician's assessment and assertion of a particular aspect of a patient's state of health. It can be used to record information about a disease/illness identified from application of clinical reasoning over the pathologic and pathophysiologic findings (diagnosis), or identification of health issues/situations that a practitioner considers harmful, potentially harmful and may be investigated and managed (problem), or other health issue/situation that may require ongoing monitoring and/or management (health issue/concern).
 
-**Normalization Note:**
-Normalization of coding systems only occurs when the coding system is one of: ICD-10-CM, SNOMED CT, ICD-9-CM, or LOINC. Other coding systems will not be normalized.
-
 **Reference Table:**
 The `condition_references` table contains normalized references from the condition to other entities. It supports the following reference properties:
 * **subject**: links to the patient who has the condition
@@ -17,7 +14,7 @@ The `condition_references` table contains normalized references from the conditi
 
 For detailed information about reference table structure and indexing, see the [Reference Tables documentation](/medical-api/handling-data/schema/reference-tables).
 
-**Condition Table:**
+**Condition:**
 
 **Primary Keys:**
 * condition_id

@@ -6,9 +6,6 @@ group: "Schema"
 
 The procedure resource is used to record the details of current and historical procedures performed on or for a patient. A procedure is an activity that is performed on, with, or for a patient as part of the provision of care.
 
-**Normalization Note:**
-Normalization of coding systems only occurs when the source coding system is one of: CPT, LOINC, SNOMED CT, or HCPCS. Other coding systems will not have normalized codes.
-
 **Reference Table:**
 The `procedure_references` table contains normalized references from the procedure to other entities. It supports the following reference properties:
 * **subject**: links to the patient who underwent the procedure
@@ -19,7 +16,7 @@ The `procedure_references` table contains normalized references from the procedu
 
 For detailed information about reference table structure and indexing, see the [Reference Tables documentation](/medical-api/handling-data/schema/reference-tables).
 
-**Procedure:**
+**Procedure Table:**
 The `procedure` table records medical procedures performed on patients, including surgical procedures, diagnostic tests, and other clinical interventions.
 
 **Primary Keys:**

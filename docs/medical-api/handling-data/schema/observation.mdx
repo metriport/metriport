@@ -6,9 +6,6 @@ group: "Schema"
 
 The observation resource is used to support diagnosis, monitor progress, determine baselines and patterns and even capture demographic characteristics.
 
-**Normalization Note:**
-Normalization of coding systems only occurs when the source coding system is one of: LOINC or SNOMED CT. Other coding systems will not have normalized codes.
-
 **Reference Table:**
 The `observation_references` table contains normalized references from the observation to other entities. It supports the following reference properties:
 * **subject**: links to the patient who is the subject of the observation
@@ -17,8 +14,7 @@ The `observation_references` table contains normalized references from the obser
 
 For detailed information about reference table structure and indexing, see the [Reference Tables documentation](/medical-api/handling-data/schema/reference-tables).
 
-**Observation:**
-The `observation` table stores clinical measurements, laboratory results, vital signs, and other clinical findings for patients.
+**Observation Table:**
 
 **Primary Keys:**
 * observation_id
