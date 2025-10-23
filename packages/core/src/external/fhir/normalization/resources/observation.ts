@@ -271,6 +271,7 @@ function normalizeUnit(
   | { isConvertibleUnit: false; unit: string | undefined }
   | { isConvertibleUnit: true; unit: Unit | string }
   | undefined {
+  if (!unit) return undefined;
   const trimmedUnit = unit.trim();
   const standardUnit = getStandardUnitFromLoincCode(unit, loincCode);
   if (standardUnit) return { isConvertibleUnit: false, unit: standardUnit };
