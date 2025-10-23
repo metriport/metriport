@@ -319,4 +319,8 @@ export class Config {
   static getCqDirRebuildHeartbeatUrl() {
     return getEnvVar("CQ_DIR_REBUILD_HEARTBEAT_URL");
   }
+
+  static getCwDirRebuildHeartbeatUrl() {
+    return getEnvVar("CW_DIR_REBUILD_HEARTBEAT_URL");
+  }
 }

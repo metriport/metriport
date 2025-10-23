@@ -1,4 +1,5 @@
 import { safelyUploadPrincipalAndDelegatesToS3 } from "@metriport/core/external/hie-shared/principal-and-delegates";
+import { sendHeartbeatToMonitoringService } from "@metriport/core/external/monitoring/heartbeat";
 import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import { initDbPool } from "@metriport/core/util/sequelize";
@@ -151,4 +152,7 @@ export async function rebuildCwDirectory(failGracefully = false): Promise<void> 
   }
 
   log(`CW directory successfully rebuilt! :) Took ${Date.now() - startedAt}ms`);
+
+  const heartbeatUrl = Config.getCwDirRebuildHeartbeatUrl();
+  if (heartbeatUrl) await sendHeartbeatToMonitoringService(heartbeatUrl);
 }
