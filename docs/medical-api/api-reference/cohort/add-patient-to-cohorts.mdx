@@ -35,7 +35,8 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-const result = await metriport.addPatientToCohorts("00000000-0000-0000-0000-000000000000", {
+const patientId = "00000000-0000-0000-0000-000000000000";
+const result = await metriport.addPatientToCohorts(patientId, {
   cohortIds: [
     "00000000-0000-0000-0000-000000000000", 
     "11111111-1111-1111-1111-111111111111"
