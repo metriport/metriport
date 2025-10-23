@@ -76,44 +76,6 @@
 
 {% endmacro %}
 
-{% macro redshift__load_seed(uri,pattern,compression,headers,null_marker) %}
-
-    {% set sql %}
-
-    {% set access_key_part_1 = '' %}
-    {% set access_key_part_2 = '' %}
-
-    {% set secret_key_part_1 = '' %}
-    {% set secret_key_part_2 = '' %}
-
-    {% set full_access_key = access_key_part_1 ~ access_key_part_2 %}
-    {% set full_secret_key = secret_key_part_1 ~ secret_key_part_2 %}
-
-    copy  {{ this }}
-    from 's3://{{ uri }}/{{ pattern }}'
-        access_key_id '{{ full_access_key }}'
-        secret_access_key '{{ full_secret_key }}'
-    csv
-    {% if compression == true %} gzip {% else %} {% endif %}
-    {% if headers == true %} ignoreheader 1 {% else %} {% endif %}
-    emptyasnull
-    region 'us-east-1'
-
-    {% endset %}
-
-    {% call statement('redsql',fetch_result=true) %}
-    {{ sql }}
-    {% endcall %}
-
-    {% if execute %}
-    {# debugging { log(sql, True)} #}
-    {% set results = load_result('redsql') %}
-    {{ log("Loaded data from external s3 resource\n  loaded to: " ~ this ~ "\n  from: s3://" ~ uri ,True) }}
-    {# debugging { log(results, True) } #}
-    {% endif %}
-
-{% endmacro %}
-
 {% macro snowflake__load_seed(uri,pattern,compression,headers,null_marker) %}
     {% set sql %}
     copy into {{ this }}

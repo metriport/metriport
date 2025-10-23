@@ -23,12 +23,6 @@
 
 {%- endmacro -%}
 
-{%- macro redshift__try_to_cast_datetime(column_name) -%}
-
-    try_cast( {{ column_name }} as timestamp)
-
-{%- endmacro -%}
-
 {%- macro snowflake__try_to_cast_datetime(column_name) -%}
 
     try_to_timestamp(cast( {{ column_name }} as string))
