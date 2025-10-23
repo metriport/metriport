@@ -6,13 +6,13 @@ export interface ExtractionBundle {
   extractedBundle: Bundle;
 }
 
-export const extractDocumentRequestSchema = z.object({
+export const structuredDataExtractionSchema = z.object({
   cxId: z.string(),
   patientId: z.string(),
   documentId: z.string(),
 });
 
-export type ExtractDocumentRequest = z.infer<typeof extractDocumentRequestSchema>;
+export type StructuredDataExtractionRequest = z.infer<typeof structuredDataExtractionSchema>;
 
 export interface ExtractionSource {
   documentId: string;

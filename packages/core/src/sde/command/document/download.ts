@@ -3,14 +3,14 @@ import { Config } from "../../../util/config";
 import { S3Utils } from "../../../external/aws/s3";
 import { Bundle } from "@medplum/fhirtypes";
 import { parseFhirBundle } from "@metriport/shared/medical";
-import { ExtractDocumentRequest } from "../../types";
+import { StructuredDataExtractionRequest } from "../../types";
 import { createDocumentFilePath } from "../../../domain/document/filename";
 
 export async function downloadDocumentConversion({
   cxId,
   patientId,
   documentId,
-}: ExtractDocumentRequest): Promise<Bundle | undefined> {
+}: StructuredDataExtractionRequest): Promise<Bundle | undefined> {
   const s3 = new S3Utils(Config.getAWSRegion());
   const bucketName = Config.getCdaToFhirConversionBucketName();
   if (!bucketName) {
