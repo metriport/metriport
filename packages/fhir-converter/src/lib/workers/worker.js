@@ -162,7 +162,7 @@ WorkerUtils.workerTaskProcessor(msg => {
                               status: 400,
                               resultMsg: errorMessage(
                                 errorCodes.BadRequest,
-                                "Error during template compilation. " + convertErr.toString()
+                                "Error during template compilation. " + errorToString(convertErr)
                               ),
                               duration: getDuration(),
                             });
@@ -205,7 +205,7 @@ WorkerUtils.workerTaskProcessor(msg => {
                           status: 400,
                           resultMsg: errorMessage(
                             errorCodes.BadRequest,
-                            "Error during template evaluation. " + convertErr.toString()
+                            "Error during template evaluation. " + errorToString(convertErr)
                           ),
                           duration: getDuration(),
                         });
@@ -220,14 +220,18 @@ WorkerUtils.workerTaskProcessor(msg => {
                 .catch(err => {
                   cleanup();
                   console.error(
-                    `Error parsing input data for template ${templateName}: ${err.toString()}, fileName: ${fileName}`
+                    `Error parsing input data for template ${templateName}: ${errorToString(
+                      err
+                    )}, fileName: ${fileName}`
                   );
                   console.error(err.stack);
                   reject({
                     status: 400,
                     resultMsg: errorMessage(
                       errorCodes.BadRequest,
-                      `Unable to parse input data for template ${templateName}. ${err.toString()}`
+                      `Unable to parse input data for template ${templateName}. ${errorToString(
+                        err
+                      )}`
                     ),
                     duration: getDuration(),
                   });
@@ -262,7 +266,7 @@ WorkerUtils.workerTaskProcessor(msg => {
         cleanup();
         console.error(
           `[worker] Unhandled error in worker task processor: ${
-            unhandledError.stack ?? unhandledError.message ?? unhandledError
+            unhandledError.stack ?? errorToString(unhandledError) ?? unhandledError
           }`
         );
         reject({
@@ -277,3 +281,7 @@ WorkerUtils.workerTaskProcessor(msg => {
     });
   });
 });
+
+function errorToString(err) {
+  return err ? err.toString().slice(0, 40) : undefined;
+}
