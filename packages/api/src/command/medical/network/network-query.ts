@@ -7,7 +7,8 @@ export async function queryDocumentsAcrossNetworks(
   networkQuery: NetworkQueryParams & { sources: NetworkSource[] }
 ) {
   const queryProgressPromises: Array<Promise<SourceQueryProgress[]>> = [];
-  for (const source of networkQuery.sources) {
+  const uniqueSources = _.uniq(networkQuery.sources);
+  for (const source of uniqueSources) {
     queryProgressPromises.push(
       queryDocumentsFromSource({
         ...networkQuery,
