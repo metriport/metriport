@@ -235,6 +235,7 @@
             "medical-api/fhir/resources/binary",
             "medical-api/fhir/resources/bundle",
             "medical-api/fhir/resources/capabilitystatement",
+            "medical-api/fhir/resources/careplan",
             "medical-api/fhir/resources/communication",
             "medical-api/fhir/resources/composition",
             "medical-api/fhir/resources/condition",
