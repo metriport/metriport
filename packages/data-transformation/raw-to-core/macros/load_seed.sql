@@ -115,7 +115,7 @@
   {% if execute %}
         {%- set columns = adapter.get_columns_in_relation(this) -%}
         {%- set column_definitions = [] -%}
-        {%- set null_char = 'N' if null_marker else '' -%}
+        {%- set null_char = '\\N' if null_marker else '' -%}
 
         {% for col in columns %}
             {% do column_definitions.append(col.name ~ " string" ) %}
@@ -138,7 +138,10 @@
             ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
             STORED AS TEXTFILE
             LOCATION '{{ bucket }}'
-            TBLPROPERTIES ('skip.header.line.count'='{{ header_line_count }}', 'compressionType'='GZIP');
+            TBLPROPERTIES (
+              'skip.header.line.count'='{{ header_line_count }}'
+              {%- if compression -%}, 'compressionType'='GZIP'{%- endif -%}
+            );
         {% endset %}
 
         {% set drop_seed_table %}
