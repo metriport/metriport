@@ -241,9 +241,10 @@ async function processDischargeSummaryAssociation({
           dischargeSummaryFilePath: matchingEncounters[0].dischargeSummaryFilePath,
         };
       } else {
-        // Find the encounter with discharge disposition, or use the first one
+        // Prefer an encounter with discharge disposition among the matches, else use the first
         const encounterWithDisposition = encounters.find(
-          e => e.id === matchingEncounters[0].id && e.hospitalization?.dischargeDisposition
+          e =>
+            !!e.hospitalization?.dischargeDisposition && matchingEncounters.some(m => m.id === e.id)
         );
         const matchingEncounter = encounterWithDisposition
           ? matchingEncounters.find(m => m.id === encounterWithDisposition.id) ??
