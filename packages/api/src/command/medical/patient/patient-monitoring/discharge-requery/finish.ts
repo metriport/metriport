@@ -27,7 +27,7 @@ type DischargeAssociationBreakdown = {
   status: "processing" | "completed";
   reason?: string;
   encounterId?: string;
-  dischargeSummaryFilePath?: string;
+  dischargeSummaryFilePath: string;
 };
 
 /**
@@ -210,6 +210,7 @@ async function processDischargeSummaryAssociation({
         discharge,
         status: "processing" as const,
         reason: "No consolidated file found",
+        dischargeSummaryFilePath: "",
       })),
       completed: [],
     };
@@ -218,38 +219,49 @@ async function processDischargeSummaryAssociation({
   const encounters = findEncounterResources(consolidated.bundle);
   const matchingResults = await Promise.all(
     dischargeData.map(async discharge => {
-      const targetEncounter = getMatchingEncounters(encounters, discharge);
+      const matchingEncounters = getMatchingEncountersWithDocId(encounters, discharge);
 
       let result: DischargeAssociationBreakdown;
-      if (targetEncounter.length < 1) {
+      if (matchingEncounters.length < 1) {
         result = {
           discharge,
           status: "processing",
           reason: "No matching encounters found",
+          dischargeSummaryFilePath: "",
         };
-      } else if (targetEncounter.length === 1) {
+      } else if (matchingEncounters.length === 1) {
         result = {
           discharge,
           status: "completed",
           reason: "Found a discharge encounter",
-          encounterId: targetEncounter[0].id,
-          dischargeSummaryFilePath: getDischargeSummaryFilePath(targetEncounter[0]),
+          encounterId: matchingEncounters[0].id,
+          dischargeSummaryFilePath: matchingEncounters[0].dischargeSummaryFilePath,
         };
       } else {
-        const encounter =
-          targetEncounter.find(e => e.hospitalization?.dischargeDisposition) ?? targetEncounter[0];
+        // Find the encounter with discharge disposition, or use the first one
+        const encounterWithDisposition = encounters.find(
+          e => e.id === matchingEncounters[0].id && e.hospitalization?.dischargeDisposition
+        );
+        const selectedEncounter = encounterWithDisposition
+          ? matchingEncounters.find(m => m.id === encounterWithDisposition.id) ??
+            matchingEncounters[0]
+          : matchingEncounters[0];
 
         const msg = "Multiple discharge encounter matches found";
         await sendNotificationToSlack(
           msg,
-          JSON.stringify({ patientId, cxId, discharge, numberOfMatches: encounter.length }, null, 2)
+          JSON.stringify(
+            { patientId, cxId, discharge, numberOfMatches: matchingEncounters.length },
+            null,
+            2
+          )
         );
         result = {
           discharge,
           status: "completed",
           reason: msg,
-          encounterId: encounter.id,
-          dischargeSummaryFilePath: getDischargeSummaryFilePath(encounter),
+          encounterId: selectedEncounter.id,
+          dischargeSummaryFilePath: selectedEncounter.dischargeSummaryFilePath,
         };
       }
 
@@ -271,20 +283,43 @@ async function processDischargeSummaryAssociation({
   };
 }
 
-function getMatchingEncounters(encounters: Encounter[], discharge: DischargeData) {
-  return encounters.filter(
-    e =>
-      e.period?.end === discharge.encounterEndDate &&
-      e.extension
-        ?.filter(isDocIdExtension)
-        ?.some(e => e.valueString?.includes(`.${XML_FILE_EXTENSION}`))
-  );
-}
+type MatchingEncounter = {
+  id: string;
+  dischargeSummaryFilePath: string;
+};
 
-function getDischargeSummaryFilePath(encounter: Encounter) {
-  return encounter.extension
-    ?.filter(isDocIdExtension)
-    ?.find(e => e.valueString?.includes(`.${XML_FILE_EXTENSION}`))?.valueString;
+function getMatchingEncountersWithDocId(
+  encounters: Encounter[],
+  discharge: DischargeData
+): MatchingEncounter[] {
+  return encounters
+    .filter(
+      e =>
+        e.period?.end === discharge.encounterEndDate &&
+        e.extension
+          ?.filter(isDocIdExtension)
+          ?.some(e => e.valueString?.includes(`.${XML_FILE_EXTENSION}`))
+    )
+    .map(encounter => {
+      const dischargeSummaryFilePath = encounter.extension
+        ?.filter(isDocIdExtension)
+        ?.find(e => e.valueString?.includes(`.${XML_FILE_EXTENSION}`))?.valueString;
+
+      if (!dischargeSummaryFilePath) {
+        throw new Error(
+          `Encounter ${encounter.id} has doc ID extension but no discharge summary file path`
+        );
+      }
+
+      if (!encounter.id) {
+        throw new Error(`Encounter has no ID`);
+      }
+
+      return {
+        id: encounter.id,
+        dischargeSummaryFilePath,
+      };
+    });
 }
 
 /**
@@ -304,7 +339,7 @@ async function updateTcmEncountersWithDischargeSummaryPaths(
 
   // Update TCM encounters with discharge summary file paths
   const updatePromises = completedAssociations
-    .filter(association => association.dischargeSummaryFilePath && association.encounterId)
+    .filter(association => association.encounterId)
     .map(async association => {
       const tcmEncounterId = association.discharge.tcmEncounterId;
       log(
