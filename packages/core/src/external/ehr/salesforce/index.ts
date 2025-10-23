@@ -53,10 +53,6 @@ class SalesforceApi {
     });
   }
 
-  /**
-   * Get patient from Salesforce using patient ID
-   * Patient ID format: "contact_XXXXX" or "account_XXXXX"
-   */
   async getPatient({
     cxId,
     patientId,

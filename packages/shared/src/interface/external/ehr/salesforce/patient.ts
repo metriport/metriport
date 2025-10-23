@@ -65,13 +65,6 @@ export const genericPatientSchema = z
   })
   .passthrough();
 
-/**
- * Legacy schema for backward compatibility - kept for existing code
- * @deprecated Use normalized patient data instead
- */
-export const patientSchema = contactPatientSchema;
-export type Patient = z.infer<typeof patientSchema>;
-
 export type ContactPatient = z.infer<typeof contactPatientSchema>;
 export type AccountPatient = z.infer<typeof accountPatientSchema>;
 export type GenericPatient = z.infer<typeof genericPatientSchema>;

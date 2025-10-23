@@ -1,9 +1,7 @@
 import { BaseSalesforceObjectHandler, SalesforcePatient, SalesforceObjectData } from ".";
 
 /**
- * Handler for Salesforce Account objects (PersonAccount)
- * Note: PersonAccount is a special Account type that represents an individual,
- * combining Account and Contact features
+ * Handler for Salesforce Account objects
  */
 export class AccountHandler extends BaseSalesforceObjectHandler {
   private static readonly ACCOUNT_FIELDS = [
