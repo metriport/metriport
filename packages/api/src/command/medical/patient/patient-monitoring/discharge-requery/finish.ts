@@ -27,7 +27,6 @@ type DischargeAssociationBreakdown = {
   status: "processing" | "completed";
   reason?: string;
   encounterId?: string;
-  tcmEncounterId?: string;
   dischargeSummaryFilePath?: string;
 };
 

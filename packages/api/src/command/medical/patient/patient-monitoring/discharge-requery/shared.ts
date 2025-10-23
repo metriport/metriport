@@ -1,6 +1,7 @@
 import { sendToSlack, SlackMessage } from "@metriport/core/external/slack/index";
+import { capture, out } from "@metriport/core/util";
 import { Config } from "@metriport/core/util/config";
-import { capture } from "@metriport/core/util";
+import { errorToString } from "@metriport/shared/common/error";
 
 // TODO ENG-601 - Remove this once we have tested this solution live
 export async function sendNotificationToSlack(subject: string, msg: string) {
@@ -18,6 +19,7 @@ export async function sendNotificationToSlack(subject: string, msg: string) {
   try {
     await sendToSlack(message, channelUrl);
   } catch (error) {
-    capture.error(error, { extra: { msg, subject } });
+    const { log } = out("sendNotificationToSlack");
+    log(`Error sending notification to Slack: ${errorToString(error)}`);
   }
 }
