@@ -96,7 +96,8 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
 
     iheParsedResponsesBucket.grantWrite(writeToS3LambdaOutboundPD);
 
-    this.createParsedReponseTables(iheParsedResponsesBucket);
+    this.createParsedResponseTables(iheParsedResponsesBucket);
+    this.createParsedResponseProjectionTables(iheParsedResponsesBucket);
 
     const patientDiscoveryLambda = this.setupIHEGatewayV2PatientDiscoveryLambda(
       props,
@@ -119,7 +120,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     documentRetrievalLambda.grantInvoke(props.apiTaskRole);
   }
 
-  private createParsedReponseTables(iheParsedResponsesBucket: s3.Bucket) {
+  private createParsedResponseTables(iheParsedResponsesBucket: s3.Bucket) {
     new glue.CfnTable(this, "iheParsedResponsesDebugTable", {
       catalogId: this.account,
       databaseName: "default",
@@ -160,6 +161,87 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         tableType: "EXTERNAL_TABLE",
       },
     });
+  }
+
+  private createParsedResponseProjectionTables(iheParsedResponsesBucket: s3.Bucket) {
+    type PartitionKey = "date" | "cx_id" | "patient_id" | "stage";
+    const partitionKeyMap: Record<
+      PartitionKey,
+      { parameters: Record<string, string>; partitionKey: { name: string; type: string } }
+    > = {
+      date: {
+        parameters: {
+          "projection.date.type": "date",
+          "projection.date.format": "yyyy-MM-dd",
+          "projection.date.range": "NOW-5YEARS,NOW+5YEARS",
+          "projection.date.interval": "1",
+          "projection.date.interval.unit": "DAYS",
+        },
+        partitionKey: { name: "date", type: "string" },
+      },
+      cx_id: {
+        parameters: { "projection.cx_id.type": "injected" },
+        partitionKey: { name: "cx_id", type: "string" },
+      },
+      patient_id: {
+        parameters: { "projection.patient_id.type": "injected" },
+        partitionKey: { name: "patient_id", type: "string" },
+      },
+      stage: {
+        parameters: { "projection.stage.type": "injected" },
+        partitionKey: { name: "stage", type: "string" },
+      },
+    };
+
+    let parameters: Record<string, string> = {};
+    const partitionKeys: { name: string; type: string }[] = [];
+    const locationStrings: string[] = [];
+    for (const [key, value] of Object.entries(partitionKeyMap)) {
+      parameters = { ...parameters, ...value.parameters };
+      partitionKeys.push(value.partitionKey);
+      locationStrings.push(`${key}=\${${key}}`);
+      new glue.CfnTable(this, `iheParsedResponsesDebugTable_Detail=${key}`, {
+        catalogId: this.account,
+        databaseName: "default",
+        tableInput: {
+          description: `Table used for debugging IHE parsed responses using partition projection for ${key}`,
+          name: `ihe_parsed_responses_level_${key}`,
+          partitionKeys: [...partitionKeys],
+          storageDescriptor: {
+            columns: [
+              { name: "id", type: "string" },
+              { name: "timestamp", type: "string" },
+              { name: "requesttimestamp", type: "string" },
+              { name: "responsetimestamp", type: "string" },
+              { name: "gateway", type: "struct<url:string,oid:string,id:string>" },
+              { name: "patientmatch", type: "string" },
+              { name: "ihegatewayv2", type: "boolean" },
+              {
+                name: "operationoutcome",
+                type: "struct<resourcetype:string,id:string,issue:array<struct<severity:string,code:string,details:struct<text:string>>>>",
+              },
+              // Partition columns flat in data - duplicate columns are prepended "_"
+              { name: "_date", type: "string" },
+              { name: "cxid", type: "string" },
+              { name: "patientid", type: "string" },
+              { name: "_stage", type: "string" },
+            ],
+            compressed: false,
+            inputFormat: "org.apache.hadoop.mapred.TextInputFormat",
+            outputFormat: "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat",
+            location: `s3://${iheParsedResponsesBucket.bucketName}/`,
+            serdeInfo: { serializationLibrary: "org.openx.data.jsonserde.JsonSerDe" },
+          },
+          parameters: {
+            "projection.enabled": "true",
+            ...parameters,
+            "storage.location.template":
+              `s3://${iheParsedResponsesBucket.bucketName}/` + locationStrings.join("/") + "/",
+          },
+          tableType: "EXTERNAL_TABLE",
+        },
+      });
+    }
   }
 
   private setupWriteToS3OutboundPD(ownProps: {
