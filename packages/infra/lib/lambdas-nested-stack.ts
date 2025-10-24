@@ -76,6 +76,7 @@ interface LambdasNestedStackProps extends NestedStackProps {
   medicalDocumentsBucket: s3.Bucket;
   pharmacyBundleBucket: s3.Bucket | undefined;
   labBundleBucket: s3.Bucket | undefined;
+  structuredDataBucket: s3.Bucket | undefined;
   hl7ConversionBucket: s3.Bucket | undefined;
   sandboxSeedDataBucket: s3.IBucket | undefined;
   alarmAction?: SnsAction;
@@ -94,6 +95,7 @@ type GenericConsolidatedLambdaProps = {
   bundleBucket: s3.IBucket;
   pharmacyBundleBucket: s3.IBucket | undefined;
   labBundleBucket: s3.IBucket | undefined;
+  structuredDataBucket: s3.IBucket | undefined;
   conversionsBucket: s3.IBucket;
   hl7ConversionBucket: s3.IBucket | undefined;
   envType: EnvType;
@@ -241,6 +243,7 @@ export class LambdasNestedStack extends NestedStack {
       conversionsBucket: this.fhirConverterConnector.bucket,
       pharmacyBundleBucket: props.pharmacyBundleBucket,
       labBundleBucket: props.labBundleBucket,
+      structuredDataBucket: props.structuredDataBucket,
       hl7ConversionBucket: props.hl7ConversionBucket,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
@@ -259,6 +262,7 @@ export class LambdasNestedStack extends NestedStack {
       conversionsBucket: this.fhirConverterConnector.bucket,
       pharmacyBundleBucket: props.pharmacyBundleBucket,
       labBundleBucket: props.labBundleBucket,
+      structuredDataBucket: props.structuredDataBucket,
       hl7ConversionBucket: props.hl7ConversionBucket,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
@@ -775,6 +779,7 @@ export class LambdasNestedStack extends NestedStack {
     aiBriefBucket,
     hl7ConversionBucket,
     labBundleBucket,
+    structuredDataBucket,
     sentryDsn,
     envType,
     alarmAction,
@@ -802,6 +807,9 @@ export class LambdasNestedStack extends NestedStack {
         }),
         ...(labBundleBucket && {
           LAB_CONVERSION_BUCKET_NAME: labBundleBucket.bucketName,
+        }),
+        ...(structuredDataBucket && {
+          STRUCTURED_DATA_BUCKET_NAME: structuredDataBucket.bucketName,
         }),
         ...(hl7ConversionBucket && {
           HL7_CONVERSION_BUCKET_NAME: hl7ConversionBucket.bucketName,
@@ -835,6 +843,7 @@ export class LambdasNestedStack extends NestedStack {
     conversionsBucket.grantRead(theLambda);
     pharmacyBundleBucket?.grantRead(theLambda);
     labBundleBucket?.grantRead(theLambda);
+    structuredDataBucket?.grantRead(theLambda);
     hl7ConversionBucket?.grantRead(theLambda);
     aiBriefBucket?.grantReadWrite(theLambda);
 
