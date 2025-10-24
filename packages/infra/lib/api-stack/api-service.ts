@@ -26,19 +26,25 @@ import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
+import { AnalyticsPlatformsAssets } from "../analytics-platform/types";
 import { JobsAssets } from "../jobs/types";
+import { QuestAssets } from "../quest/types";
 import { defaultBedrockPolicyStatement } from "../shared/bedrock";
 import { DnsZones } from "../shared/dns";
+import { createHieConfigDictionary } from "../shared/hie-config-dictionary";
 import { getMaxPostgresConnections } from "../shared/rds";
 import { buildLbAccessLogPrefix } from "../shared/s3";
-import { buildSecrets, Secrets, secretsToECS } from "../shared/secrets";
+import {
+  buildSecrets,
+  collectHiePasswordSecretNames,
+  Secrets,
+  secretsToECS,
+} from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
 import { SurescriptsAssets } from "../surescripts/types";
-import { QuestAssets } from "../quest/types";
-import { AnalyticsPlatformsAssets } from "../analytics-platform/types";
-import { createHieConfigDictionary } from "../shared/hie-config-dictionary";
+import { SDEAssets } from "../sde/types";
 
 interface ApiProps extends StackProps {
   config: EnvConfig;
@@ -100,6 +106,7 @@ export function createAPIService({
   dbCredsSecret,
   dbReadReplicaEndpoint,
   dynamoDBTokenTable,
+  outboundRateLimitTable,
   alarmAction,
   dnsZones,
   fhirServerUrl,
@@ -139,9 +146,9 @@ export function createAPIService({
   consolidatedSearchLambda,
   consolidatedIngestionQueue,
   featureFlagsTable,
-  cookieStore,
   surescriptsAssets,
   questAssets,
+  sdeAssets,
   jobAssets,
   analyticsPlatformAssets,
 }: {
@@ -152,6 +159,7 @@ export function createAPIService({
   dbCredsSecret: secret.ISecret;
   dbReadReplicaEndpoint: rds.Endpoint;
   dynamoDBTokenTable: dynamodb.Table;
+  outboundRateLimitTable: dynamodb.Table;
   alarmAction: SnsAction | undefined;
   dnsZones: DnsZones;
   fhirServerUrl: string;
@@ -191,9 +199,9 @@ export function createAPIService({
   consolidatedSearchLambda: ILambda;
   consolidatedIngestionQueue: IQueue;
   featureFlagsTable: dynamodb.Table;
-  cookieStore: secret.ISecret | undefined;
   surescriptsAssets: SurescriptsAssets | undefined;
   questAssets: QuestAssets | undefined;
+  sdeAssets: SDEAssets | undefined;
   jobAssets: JobsAssets;
   analyticsPlatformAssets: AnalyticsPlatformsAssets | undefined;
 }): {
@@ -220,7 +228,6 @@ export function createAPIService({
     ? props.config.connectWidgetUrl
     : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
 
-  const coverageEnhancementConfig = props.config.commonwell.coverageEnhancement;
   const dbReadReplicaEndpointAsString = JSON.stringify({
     host: dbReadReplicaEndpoint.hostname,
     port: dbReadReplicaEndpoint.port,
@@ -260,7 +267,7 @@ export function createAPIService({
         secrets: {
           DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret),
           SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
-          ...secretsToECS(secrets),
+          ...secretsToECS(removeUnusedSecretsForApiService(secrets, props.config)),
           ...secretsToECS(buildSecrets(stack, props.config.propelAuth.secrets)),
         },
         environment: {
@@ -272,6 +279,7 @@ export function createAPIService({
           DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
           DB_POOL_SETTINGS: JSON.stringify(dbPoolSettings),
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
+          OUTBOUND_RATE_LIMIT_TABLE_NAME: outboundRateLimitTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
           API_LB_ADDRESS: props.config.loadBalancerDnsName,
           ...(props.config.apiGatewayUsagePlanId
@@ -376,12 +384,6 @@ export function createAPIService({
             PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
           }),
           FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
-          ...(coverageEnhancementConfig && {
-            CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
-          }),
-          ...(cookieStore && {
-            CW_MANAGEMENT_COOKIE_SECRET_ARN: cookieStore.secretArn,
-          }),
           ...(props.config.iheGateway?.trustStoreBucketName && {
             CQ_TRUST_BUNDLE_BUCKET_NAME: props.config.iheGateway.trustStoreBucketName,
           }),
@@ -390,6 +392,7 @@ export function createAPIService({
             EHR_ELATION_ENVIRONMENT: props.config.ehrIntegration.elation.env,
             EHR_HEALTHIE_ENVIRONMENT: props.config.ehrIntegration.healthie.env,
             EHR_ECLINICALWORKS_ENVIRONMENT: props.config.ehrIntegration.eclinicalworks.env,
+            EHR_SALESFORCE_ENVIRONMENT: props.config.ehrIntegration.salesforce.env,
           }),
           ...(!isSandbox(props.config) && {
             DASH_URL: props.config.dashUrl,
@@ -397,6 +400,9 @@ export function createAPIService({
           }),
           ...(props.config.cqDirectoryRebuilder?.heartbeatUrl && {
             CQ_DIR_REBUILD_HEARTBEAT_URL: props.config.cqDirectoryRebuilder.heartbeatUrl,
+          }),
+          ...(props.config.cwDirectoryRebuilder?.heartbeatUrl && {
+            CW_DIR_REBUILD_HEARTBEAT_URL: props.config.cwDirectoryRebuilder.heartbeatUrl,
           }),
           ...(surescriptsAssets && {
             PHARMACY_CONVERSION_BUCKET_NAME: surescriptsAssets.pharmacyConversionBucket.bucketName,
@@ -427,19 +433,30 @@ export function createAPIService({
               questAssets.questQueues.map(({ envVarName, queue }) => [envVarName, queue.queueUrl])
             ),
           }),
+          ...(sdeAssets && {
+            STRUCTURED_DATA_BUCKET_NAME: sdeAssets.structuredDataBucket.bucketName,
+          }),
           RUN_PATIENT_JOB_QUEUE_URL: jobAssets.runPatientJobQueue.queueUrl,
           ...(props.config.hl7Notification?.dischargeNotificationSlackUrl && {
             DISCHARGE_NOTIFICATION_SLACK_URL:
               props.config.hl7Notification.dischargeNotificationSlackUrl,
           }),
           ...(analyticsPlatformAssets && {
-            FHIR_TO_CSV_QUEUE_URL: analyticsPlatformAssets.fhirToCsvQueue.queueUrl,
+            FHIR_TO_CSV_BULK_QUEUE_URL: analyticsPlatformAssets.fhirToCsvBulkQueue.queueUrl,
+            FHIR_TO_CSV_INCREMENTAL_QUEUE_URL:
+              analyticsPlatformAssets.fhirToCsvIncrementalQueue.queueUrl,
+            ANALYTICS_BUCKET_NAME: analyticsPlatformAssets.analyticsPlatformBucket.bucketName,
+            CORE_TRANSFORM_BATCH_JOB_QUEUE_ARN:
+              analyticsPlatformAssets.coreTransformBatchJobQueue.jobQueueArn,
+            CORE_TRANSFORM_BATCH_JOB_DEFINITION_ARN:
+              analyticsPlatformAssets.coreTransformBatchJob.jobDefinitionArn,
           }),
           ...(props.config.hl7Notification?.hieConfigs && {
             HIE_CONFIG_DICTIONARY: JSON.stringify(
               createHieConfigDictionary(props.config.hl7Notification.hieConfigs)
             ),
           }),
+          GENERAL_BUCKET_NAME: generalBucket.bucketName,
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),
@@ -508,6 +525,7 @@ export function createAPIService({
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   rateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   featureFlagsTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
+  outboundRateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
@@ -526,6 +544,10 @@ export function createAPIService({
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   ehrBundleBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  generalBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+  analyticsPlatformAssets?.analyticsPlatformBucket.grantRead(
+    fargateService.taskDefinition.taskRole
+  );
 
   incomingHl7NotificationBucket?.grantRead(fargateService.taskDefinition.taskRole);
 
@@ -548,11 +570,6 @@ export function createAPIService({
 
   if (fhirToMedicalRecordLambda2) {
     fhirToMedicalRecordLambda2.grantInvoke(fargateService.taskDefinition.taskRole);
-  }
-
-  if (cookieStore) {
-    cookieStore.grantRead(fargateService.service.taskDefinition.taskRole);
-    cookieStore.grantWrite(fargateService.service.taskDefinition.taskRole);
   }
 
   provideAccessToQueue({
@@ -589,9 +606,18 @@ export function createAPIService({
   if (analyticsPlatformAssets) {
     provideAccessToQueue({
       accessType: "send",
-      queue: analyticsPlatformAssets.fhirToCsvQueue,
+      queue: analyticsPlatformAssets.fhirToCsvBulkQueue,
       resource: fargateService.taskDefinition.taskRole,
     });
+    provideAccessToQueue({
+      accessType: "send",
+      queue: analyticsPlatformAssets.fhirToCsvIncrementalQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+    analyticsPlatformAssets.coreTransformBatchJob.grantSubmitJob(
+      fargateService.taskDefinition.taskRole,
+      analyticsPlatformAssets.coreTransformBatchJobQueue
+    );
   }
 
   if (dischargeRequeryQueue) {
@@ -734,4 +760,26 @@ function getDbPoolSettings(config: EnvConfig): EnvConfig["apiDatabase"]["poolSet
     );
   }
   return dbPoolSettings;
+}
+
+function removeUnusedSecretsForApiService(secrets: Secrets, config: EnvConfig): Secrets {
+  const secretsWithoutRosterUpload = removeRosterUploadSecrets(secrets, config);
+
+  return secretsWithoutRosterUpload;
+}
+
+function removeRosterUploadSecrets(secrets: Secrets, config: EnvConfig): Secrets {
+  const hl7Notification = config.hl7Notification;
+  if (!hl7Notification) {
+    return secrets;
+  }
+  const hieConfigs = hl7Notification.hieConfigs;
+  if (!hieConfigs) {
+    return secrets;
+  }
+  const hiePasswordSecretNames = collectHiePasswordSecretNames(hieConfigs);
+
+  return Object.fromEntries(
+    Object.entries(secrets).filter(([key]) => !Object.keys(hiePasswordSecretNames).includes(key))
+  );
 }

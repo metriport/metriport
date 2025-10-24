@@ -1,15 +1,15 @@
-import {
-  OutboundPatientDiscoveryReq,
-  OutboundDocumentQueryReq,
-  OutboundDocumentRetrievalReq,
-} from "@metriport/ihe-gateway-sdk";
 import { IHEGatewayV2 } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/ihe-gateway-v2";
 import {
-  createSignSendProcessXCPDRequest,
   createSignSendProcessDqRequests,
   createSignSendProcessDrRequests,
+  createSignSendProcessXCPDRequest,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/ihe-gateway-v2-logic";
 import { SamlCertsAndKeys } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/security/types";
+import {
+  OutboundDocumentQueryReq,
+  OutboundDocumentRetrievalReq,
+  OutboundPatientDiscoveryReq,
+} from "@metriport/ihe-gateway-sdk";
 import { Config } from "../../shared/config";
 
 const cqPath = "/internal/carequality";

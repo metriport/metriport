@@ -143,6 +143,20 @@ export async function findFirstPatientMappingForSource({
   return mappings?.dataValues;
 }
 
+export async function findPatientWithExternalId({
+  externalId,
+  source,
+}: Omit<PatientMappingParams, "cxId" | "patientId" | "secondaryMappings">): Promise<
+  PatientMapping | undefined
+> {
+  const mappings = await PatientMappingModel.findOne({
+    where: { externalId, source },
+    order: [["createdAt", "ASC"]],
+    limit: 1,
+  });
+  return mappings?.dataValues;
+}
+
 async function getPatientMappingModelById({
   cxId,
   patientId,

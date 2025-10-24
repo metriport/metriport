@@ -5,7 +5,11 @@ import { stripUrnPrefix } from "../../../../../../util/urn";
 import { storeDqRequest } from "../../../monitor/store";
 import { Slot } from "../../../schema";
 import { extractText } from "../../../utils";
-import { convertSamlHeaderToAttributes, extractTimestamp } from "../../shared";
+import {
+  convertSamlHeaderToAttributes,
+  extractTimestamp,
+  validateDelegatedRequest,
+} from "../../shared";
 import { iti38RequestSchema } from "./schema";
 import { out } from "../../../../../../util/log";
 import { getSlotValue } from "../../../utils";
@@ -45,7 +49,6 @@ export async function processInboundDqRequest(request: string): Promise<InboundD
     const samlAttributes = convertSamlHeaderToAttributes(iti38Request.Envelope.Header);
     const slots = toArray(iti38Request.Envelope.Body.AdhocQueryRequest.AdhocQuery.Slot);
     const externalGatewayPatient = extractExternalGatewayPatient(slots);
-
     const inboundRequest = {
       id: stripUrnPrefix(extractText(iti38Request.Envelope.Header.MessageID)),
       timestamp: extractTimestamp(iti38Request.Envelope.Header),
@@ -56,6 +59,13 @@ export async function processInboundDqRequest(request: string): Promise<InboundD
       ),
     };
     await storeDqRequest({ request, inboundRequest });
+    if (samlAttributes.principalOid) {
+      log(
+        `Validating delegated request: principal - ${samlAttributes.principalOid}, delegate -${samlAttributes.homeCommunityId}`
+      );
+      await validateDelegatedRequest(samlAttributes.principalOid, samlAttributes.homeCommunityId);
+      log("Successfully validated");
+    }
     return inboundRequest;
   } catch (error) {
     const msg = "Failed to parse ITI-38 request";

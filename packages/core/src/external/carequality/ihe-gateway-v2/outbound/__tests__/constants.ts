@@ -234,10 +234,43 @@ export const expectedDqDocumentReference = [
     docUniqueId: "123456789",
     contentType: "application/pdf",
     language: "en-US",
+    serviceStartTime: "2021-04-15T00:00:00.000Z",
+    serviceStopTime: "2021-04-15T20:53:12.000Z",
     size: 141255,
     title: "Continuity of Care Document",
     creation: "2024-03-27T21:43:04.878Z",
     authorInstitution: "Metriport^^^^^^^^^2.16.840.1.113883.3.9621",
+    authorPerson: "Jonah Inc^^^^^^^&018b64e2-beae-76e1-9c2a-c40de9276cf7&ISO",
+    classCoding: {
+      system: "http://loinc.org",
+      code: "34133-9",
+      display: "Continuity of Care Document",
+    },
+    typeCoding: {
+      system: "http://loinc.org",
+      code: "100556-0",
+      display: "Continuity of Care Document",
+    },
+    formatCoding: {
+      system: "urn:oid:1.3.6.1.4.1.19376.1.2.3",
+      code: "urn:ihe:pcc:xphr:2007",
+      display: "Continuity of Care Document",
+    },
+    confidentialityCoding: {
+      system: "urn:oid:2.16.840.1.113883.5.25",
+      code: "N",
+      display: "Normal",
+    },
+    practiceSettingCoding: {
+      system: "http://snomed.info/sct",
+      code: "394612005",
+      display: "Urology",
+    },
+    healthcareFacilityTypeCoding: {
+      system: "http://snomed.info/sct",
+      code: "418518002",
+      display: "Health Encounter Site",
+    },
   },
   {
     homeCommunityId: "2.16.840.1.113883.3.9621",
@@ -245,10 +278,43 @@ export const expectedDqDocumentReference = [
     docUniqueId: "987654321",
     contentType: "application/pdf",
     language: "en-US",
+    serviceStartTime: undefined,
+    serviceStopTime: undefined,
     size: 163264,
     title: "Continuity of Care Document",
     creation: "2024-03-29T16:31:46.000Z",
     authorInstitution: "Metriport^^^^^^^^^2.16.840.1.113883.3.9621",
+    authorPerson: "Jonah Inc^^^^^^^&018b64e2-beae-76e1-9c2a-c40de9276cf7&ISO",
+    classCoding: {
+      system: "http://loinc.org",
+      code: "34133-9",
+      display: "Continuity of Care Document",
+    },
+    typeCoding: {
+      system: "http://loinc.org",
+      code: "100556-0",
+      display: "Continuity of Care Document",
+    },
+    formatCoding: {
+      system: "urn:oid:1.3.6.1.4.1.19376.1.2.3",
+      code: "urn:ihe:pcc:xphr:2007",
+      display: "Continuity of Care Document",
+    },
+    confidentialityCoding: {
+      system: "urn:oid:2.16.840.1.113883.5.25",
+      code: "N",
+      display: "Normal",
+    },
+    practiceSettingCoding: {
+      system: "http://snomed.info/sct",
+      code: "394612005",
+      display: "Urology",
+    },
+    healthcareFacilityTypeCoding: {
+      system: "http://snomed.info/sct",
+      code: "418518002",
+      display: "Health Encounter Site",
+    },
   },
 ];
 

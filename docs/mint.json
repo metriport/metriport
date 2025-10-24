@@ -228,6 +228,7 @@
             "medical-api/fhir/resources/binary",
             "medical-api/fhir/resources/bundle",
             "medical-api/fhir/resources/capabilitystatement",
+            "medical-api/fhir/resources/careplan",
             "medical-api/fhir/resources/communication",
             "medical-api/fhir/resources/composition",
             "medical-api/fhir/resources/condition",
@@ -299,7 +300,15 @@
     },
     {
       "group": "EHR Apps",
-      "pages": ["ehr-apps/overview", "ehr-apps/athena", "ehr-apps/canvas", "ehr-apps/elation", "ehr-apps/healthie", "ehr-apps/salesforce"]
+      "pages": [
+        "ehr-apps/overview",
+        "ehr-apps/athena",
+        "ehr-apps/canvas",
+        "ehr-apps/elation",
+        "ehr-apps/healthie",
+        "ehr-apps/salesforce",
+        "ehr-apps/epic"
+      ]
     }
   ],
   "footerSocials": {

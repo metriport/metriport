@@ -192,11 +192,15 @@ export class S3Utils {
     return await pipeline(readStream, writeStream);
   }
 
-  async getFileContentsAsString(s3BucketName: string, s3FileName: string): Promise<string> {
+  async getFileContentsAsString(
+    s3BucketName: string,
+    s3FileName: string,
+    encoding?: BufferEncoding
+  ): Promise<string> {
     return hydrateErrors(
       async () => {
         const stream = this.getReadStream(s3BucketName, s3FileName);
-        return await this.streamToString(stream);
+        return await this.streamToString(stream, encoding);
       },
       {
         bucket: s3BucketName,
@@ -210,12 +214,13 @@ export class S3Utils {
     return this.s3.getObject({ Bucket: s3BucketName, Key: s3FileName }).createReadStream();
   }
 
-  streamToString(stream: stream.Readable): Promise<string> {
+  streamToString(stream: stream.Readable, encoding: BufferEncoding = "utf-8"): Promise<string> {
     const chunks: Buffer[] = [];
     return new Promise((resolve, reject) => {
       stream.on("data", chunk => chunks.push(Buffer.from(chunk)));
       stream.on("error", err => reject(err));
-      stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+      // TODO ENG-1064 Try to idenfity the encoding from the Buffer before converting it to string
+      stream.on("end", () => resolve(Buffer.concat(chunks).toString(encoding)));
     });
   }
 

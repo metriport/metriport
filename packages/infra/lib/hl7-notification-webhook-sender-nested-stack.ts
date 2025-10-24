@@ -1,5 +1,6 @@
 import { CfnOutput, Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
@@ -13,6 +14,8 @@ import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
 import { Secrets } from "./shared/secrets";
 import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
+import { createHieConfigDictionary } from "./shared/hie-config-dictionary";
+import { HieConfig, VpnlessHieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 
 function settings() {
   const timeout = Duration.seconds(61);
@@ -49,7 +52,9 @@ interface Hl7NotificationWebhookSenderNestedStackProps extends NestedStackProps 
   lambdaLayers: LambdaLayers;
   outgoingHl7NotificationBucket: s3.IBucket;
   hl7ConversionBucket: s3.IBucket;
+  incomingHl7NotificationBucket: s3.IBucket | undefined;
   secrets: Secrets;
+  outboundRateLimitTable: dynamodb.Table;
 }
 
 export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
@@ -65,6 +70,22 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       throw new Error("Analytics secret is required");
     }
 
+    const hl7Base64ScramblerSeed = props.secrets["HL7_BASE64_SCRAMBLER_SEED"];
+    if (!hl7Base64ScramblerSeed) {
+      throw new Error("HL7 base64 scrambler seed is undefined");
+    }
+    const hieConfigs = props.config.hl7Notification?.hieConfigs;
+    if (!hieConfigs) {
+      throw new Error("HIE configs are undefined");
+    }
+    const heartbeatMonitorMap = Object.fromEntries(
+      Object.values(hieConfigs)
+        .filter((hieConfig): hieConfig is HieConfig & { checklyPingUrl: string } =>
+          Boolean(hieConfig.checklyPingUrl)
+        )
+        .map(hieConfig => [hieConfig.name, hieConfig.checklyPingUrl])
+    );
+
     const setup = this.setupHl7NotificationWebhookSenderLambda({
       lambdaLayers: props.lambdaLayers,
       vpc: props.vpc,
@@ -73,7 +94,12 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       alarmAction: props.alarmAction,
       outgoingHl7NotificationBucket: props.outgoingHl7NotificationBucket,
       hl7ConversionBucket: props.hl7ConversionBucket,
+      incomingHl7NotificationBucket: props.incomingHl7NotificationBucket,
       analyticsSecret,
+      hieConfigs,
+      hl7Base64ScramblerSeed,
+      heartbeatMonitorMap,
+      outboundRateLimitTable: props.outboundRateLimitTable,
     });
 
     this.lambda = setup.lambda;
@@ -87,7 +113,12 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     alarmAction: SnsAction | undefined;
     outgoingHl7NotificationBucket: s3.IBucket;
     hl7ConversionBucket: s3.IBucket;
+    incomingHl7NotificationBucket: s3.IBucket | undefined;
     analyticsSecret: ISecret;
+    hl7Base64ScramblerSeed: ISecret;
+    hieConfigs: Record<string, HieConfig | VpnlessHieConfig>;
+    heartbeatMonitorMap: Record<string, string>;
+    outboundRateLimitTable: dynamodb.Table;
   }): { lambda: Lambda } {
     const {
       lambdaLayers,
@@ -98,6 +129,11 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       outgoingHl7NotificationBucket,
       hl7ConversionBucket,
       analyticsSecret,
+      hieConfigs,
+      incomingHl7NotificationBucket,
+      hl7Base64ScramblerSeed,
+      heartbeatMonitorMap,
+      outboundRateLimitTable,
     } = ownProps;
     const {
       name,
@@ -118,6 +154,10 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       alarmSnsAction: alarmAction,
     });
 
+    if (!incomingHl7NotificationBucket) {
+      throw new Error("Incoming HL7 notification bucket is undefined");
+    }
+
     const lambda = createLambda({
       ...lambdaSettings,
       name,
@@ -131,12 +171,21 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
         // API_URL set on the api-stack after the OSS API is created
         HL7_OUTGOING_MESSAGE_BUCKET_NAME: outgoingHl7NotificationBucket.bucketName,
         HL7_CONVERSION_BUCKET_NAME: hl7ConversionBucket.bucketName,
+        HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
+        HL7_BASE64_SCRAMBLER_SEED_ARN: hl7Base64ScramblerSeed.secretArn,
+        OUTBOUND_RATE_LIMIT_TABLE_NAME: outboundRateLimitTable.tableName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        HIE_CONFIG_DICTIONARY: JSON.stringify(createHieConfigDictionary(hieConfigs)),
+        POST_HOG_API_KEY_SECRET: analyticsSecret.secretArn,
+        HEARTBEAT_MONITOR_MAP: JSON.stringify(heartbeatMonitorMap),
       },
     });
 
     outgoingHl7NotificationBucket.grantReadWrite(lambda);
     hl7ConversionBucket.grantReadWrite(lambda);
+    incomingHl7NotificationBucket.grantReadWrite(lambda);
+    hl7Base64ScramblerSeed.grantRead(lambda);
+    outboundRateLimitTable.grantReadWriteData(lambda);
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
     analyticsSecret.grantRead(lambda);

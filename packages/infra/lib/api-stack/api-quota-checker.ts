@@ -6,14 +6,14 @@ import { getConfig } from "../shared/config";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { createScheduledLambda } from "../shared/lambda-scheduled";
 
-export type EnhancedCoverageConnectorProps = {
+type ApiQuotaCheckerConnectorProps = {
   stack: Construct;
   lambdaLayers: LambdaLayers;
   vpc: IVpc;
   apiAddress: string;
 };
 
-function getSettings(props: EnhancedCoverageConnectorProps) {
+function getSettings(props: ApiQuotaCheckerConnectorProps) {
   return {
     ...props,
     name: "ScheduledAPIQuotaChecker",
@@ -29,7 +29,7 @@ function getSettings(props: EnhancedCoverageConnectorProps) {
   };
 }
 
-export function createScheduledAPIQuotaChecker(props: EnhancedCoverageConnectorProps): IFunction {
+export function createScheduledAPIQuotaChecker(props: ApiQuotaCheckerConnectorProps): IFunction {
   const config = getConfig();
   const { stack, lambdaLayers, vpc, name, lambdaTimeout, scheduleExpression, url, httpTimeout } =
     getSettings(props);

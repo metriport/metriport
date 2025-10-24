@@ -33,7 +33,10 @@
                     {{#with (extractTextFromNestedProperties noteText) as |extractedText|}}
                         {{#with (buildDefaultDiagReportDetails notesSection) as |noteAct|}}
                             {{>Resources/DiagnosticReport.hbs diagReport=noteAct categoryCode=notesSection.code ID=(generateUUID (toJsonString noteText))}}
-                            {{>References/DiagnosticReport/assessment.hbs text=extractedText ID=(generateUUID (toJsonString noteText))}}
+                            {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                                {{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString noteText)) REF=(concat 'Patient/' patientId.Id)}},
+                            {{/with}}
+                            {{>References/DiagnosticReport/assessment.hbs diagReport=noteAct text=extractedText ID=(generateUUID (toJsonString noteText))}}
                             {{#if @encompassingEncounterIds}} 
                                 {{>References/DiagnosticReport/encounter.hbs diagReport=noteAct ID=(generateUUID (toJsonString noteText)) REF=(concat 'Encounter/' @encompassingEncounterIds.newId)}}
                             {{/if}}
@@ -66,7 +69,7 @@
                     {{/if}}   
                     
                     {{#if noteEntry.act.text}} 
-                        {{>References/DiagnosticReport/assessment.hbs text=(extractTextFromNestedProperties noteEntry.act.text) ID=(generateUUID (toJsonString noteEntry.act))}}
+                        {{>References/DiagnosticReport/assessment.hbs diagReport=noteEntry.act text=(extractTextFromNestedProperties noteEntry.act.text) ID=(generateUUID (toJsonString noteEntry.act))}}
                     {{/if}}
 
                 {{/each}}

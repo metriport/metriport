@@ -8,7 +8,6 @@ import duration from "dayjs/plugin/duration";
 import { QueryTypes, Sequelize } from "sequelize";
 import { MetriportError } from "../../../util/error/metriport-error";
 import { errorToString } from "../../../util/error/shared";
-import { capture } from "../../../util/notifications";
 import { checkIfRaceIsComplete, controlDuration, RaceControl } from "../../../util/race-control";
 import { initDbPool } from "../../../util/sequelize";
 import {
@@ -109,18 +108,6 @@ async function pollResults({
     } else if (!allGWsCompleted) {
       const msg = `IHE GW results are incomplete for ${context}`;
       console.log(`${msg}. ${details}`);
-      capture.message(msg, {
-        extra: {
-          requestId,
-          patientId,
-          cxId,
-          resultsTable,
-          numOfGateways,
-          iheGatewayResults,
-          context,
-        },
-        level: "info",
-      });
     }
     // TODO Include in the result if it timed out and allGwsCompleted
     return iheGatewayResults;

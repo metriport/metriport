@@ -8,6 +8,7 @@ import {
 } from "@medplum/fhirtypes";
 import { toArray } from "@metriport/shared";
 import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
+import { Dayjs } from "dayjs";
 import { cloneDeep } from "lodash";
 import { condenseBundle } from "../../domain/ai-brief/condense-bundle";
 import {
@@ -25,7 +26,9 @@ import { filterBundleByDate } from "../consolidated/consolidated-filter-by-date"
 import { getDatesFromEffectiveDateTimeOrPeriod } from "../consolidated/consolidated-filter-shared";
 
 const NUM_HISTORICAL_YEARS = 1;
+const MAX_HISTORICAL_YEARS = 2; // Maximum 24 months for recent visit prompt
 const MAX_REPORTS_PER_GROUP = 3;
+const MIN_RESOURCES_FOR_SUFFICIENT_DATA = 50;
 
 /**
  * List of resource types that are referenced by other resources but not directly relevant
@@ -60,10 +63,10 @@ export function prepareBundleForAiSummarization(bundle: Bundle, log: typeof cons
     .filter((date): date is string => date !== undefined)
     .sort((a, b) => b.localeCompare(a))[0];
   const initialDate = latestReportDate ? buildDayjs(latestReportDate) : buildDayjs(new Date());
-  const dateFrom = initialDate.subtract(NUM_HISTORICAL_YEARS, "year").format(ISO_DATE);
-  const filteredBundle = filterBundleByDate(bundle, dateFrom);
-  const slimPayloadBundle = buildSlimmerPayload(filteredBundle);
-  const bundleText = JSON.stringify(slimPayloadBundle);
+
+  const { finalSlimPayloadBundle, timeframeUsed } = determineOptimalTimeframe(bundle, initialDate);
+
+  const bundleText = JSON.stringify(finalSlimPayloadBundle);
 
   const duration = Date.now() - startedAt;
   // TODO At some point we should remove this, at least the metrics on initial bundle since we're
@@ -71,13 +74,45 @@ export function prepareBundleForAiSummarization(bundle: Bundle, log: typeof cons
   const metrics = {
     initialBundleSize: bundle.entry?.length,
     initialBundleBytes: sizeInBytes(JSON.stringify(bundle)),
-    finalBundleSize: slimPayloadBundle?.length,
+    finalBundleSize: finalSlimPayloadBundle.length,
     finalBundleBytes: sizeInBytes(bundleText),
+    timeframeUsed,
     durationMs: duration,
   };
   log(`Bundle filtering metrics: ${JSON.stringify(metrics)}`);
 
   return bundleText;
+}
+
+function determineOptimalTimeframe(
+  bundle: Bundle,
+  initialDate: Dayjs
+): {
+  finalSlimPayloadBundle: SlimResource[];
+  timeframeUsed: number;
+} {
+  const initialStartDate = initialDate.subtract(NUM_HISTORICAL_YEARS, "year").format(ISO_DATE);
+  const filteredBundleOneYear = filterBundleByDate(bundle, initialStartDate);
+  const slimPayloadBundleOneYear = buildSlimmerPayload(filteredBundleOneYear) ?? [];
+  const resourceCount = slimPayloadBundleOneYear.length;
+
+  const hasSufficientData = resourceCount >= MIN_RESOURCES_FOR_SUFFICIENT_DATA;
+
+  if (hasSufficientData) {
+    return {
+      finalSlimPayloadBundle: slimPayloadBundleOneYear,
+      timeframeUsed: NUM_HISTORICAL_YEARS,
+    };
+  }
+
+  const maxStartDate = initialDate.subtract(MAX_HISTORICAL_YEARS, "year").format(ISO_DATE);
+  const finalFilteredBundle = filterBundleByDate(bundle, maxStartDate);
+  const finalSlimPayloadBundle = buildSlimmerPayload(finalFilteredBundle) ?? [];
+
+  return {
+    finalSlimPayloadBundle,
+    timeframeUsed: MAX_HISTORICAL_YEARS,
+  };
 }
 
 export function buildSlimmerPayload(bundle: Bundle): SlimResource[] | undefined {
@@ -156,7 +191,7 @@ function removeUselessAttributes(res: Resource) {
 
   // Remove unknown coding displays, empty arrays, and "unknown" string values recursively
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cleanupObject = (obj: any): void => {
+  function cleanupObject(obj: any): void {
     if (!obj || typeof obj !== "object") return;
 
     if (Array.isArray(obj)) {
@@ -201,7 +236,7 @@ function removeUselessAttributes(res: Resource) {
         }
       }
     }
-  };
+  }
 
   cleanupObject(res);
   return res;

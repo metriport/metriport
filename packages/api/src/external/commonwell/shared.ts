@@ -15,7 +15,7 @@ export async function getCwInitiator(
   patient: Pick<Patient, "id" | "cxId">,
   facilityId?: string
 ): Promise<HieInitiator> {
-  return getHieInitiator(patient, facilityId);
+  return getHieInitiator(patient, facilityId, true);
 }
 
 export async function isFacilityEnabledToQueryCW(

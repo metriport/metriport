@@ -13,8 +13,9 @@ import { buildDayjs } from "@metriport/shared/common/date";
 /**
  * Sends an HL7v2 ADT message to a local MLLP server.
  *
- * This script demonstrates sending a sample HL7v2 ADT message to an MLLP server running locally.
+ * This script lets you send a sample HL7v2 ADT message to the MLLP server.
  * The message is hardcoded in the script and contains a discharge notification (ADT^A03).
+ * You can test different HIE configurations by adding the ZIT segment to the message.
  *
  * The script:
  * - Parses the HL7 message string into a structured format
@@ -36,14 +37,12 @@ import { buildDayjs } from "@metriport/shared/common/date";
 
 const cxId = getEnvVarOrFail("CX_ID");
 const ptId = getEnvVarOrFail("PT_ID");
-
 const scrambledId = createScrambledId(cxId, ptId);
 const messageId = Math.floor(Math.random() * 999999999);
 const visitNumber = Math.floor(Math.random() * 999999);
 
 const yesterday = buildDayjs().subtract(1, "day").format("YYYYMMDDHHmmss");
 const now = buildDayjs().format("YYYYMMDDHHmmss");
-
 // This is a sample ADT message, not real patient data
 const msg = `MSH|^~\\&|HEALTHSHARE|HMHW|METRIPORTPA|METRIPORTPA|20250506224313||ADT^A03|${messageId}^111222333|P|2.5.1
 EVN|A03|20250102000000|||||AHHH^Houston Methodist West Hospital
@@ -58,11 +57,21 @@ DG1|4|I10|E78.5^Dyslipidemia^I10|Dyslipidemia
 DG1|5|I10|E03.9^Hypothyroidism, unspecified^I10|Hypothyroidism, unspecified
 `;
 
+/**
+ * Use this if you want to impersonate / simulate a specific source HIE for testing purposes.
+ */
+//ZIT|MyTestHIE|America/Los_Angeles
+
+/**
+ * Use this if you want to test sending a Bamboo specific message.
+ **/
+//ZFA|1|something|something|123 Main Street^Unit 1^Boston^MA^02108^USA
+
 async function sendAdtToMllpServer() {
   const hl7Message = Hl7Message.parse(msg);
 
   const client = new Hl7Client({
-    host: "localhost",
+    host: "127.0.0.1",
     port: 2575,
   });
 

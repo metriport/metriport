@@ -31,6 +31,9 @@
                 {{!-- typeCode "REFR" -> priority for the encounter --}}
                 {{#with (getSpecifiedEntryRelationship careplanEntry.encounter.entryRelationship "RSON") as |conditionEntry|}}
                     {{>Resources/Condition.hbs conditionEntry=conditionEntry.observation ID=(generateUUID (toJsonString conditionEntry.observation))}},
+                    {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+	                    {{>References/Condition/subject.hbs ID=(generateUUID (toJsonString conditionEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                    {{/with}}
                     {{>References/CarePlan/addresses.hbs ID=(generateUUID (toJsonString careplanEntry)) REF=(concat 'Condition/' (generateUUID (toJsonString conditionEntry.observation)))}}
                 {{/with}}
                 
@@ -62,6 +65,9 @@
                 {{!-- typeCode "REFR" -> priority for the encounter --}}
                 {{#with (getSpecifiedEntryRelationship careplanEntry.observation.entryRelationship "RSON") as |conditionEntry|}}
                     {{>Resources/Condition.hbs conditionEntry=conditionEntry.observation ID=(generateUUID (toJsonString conditionEntry.observation))}},
+                    {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+	                    {{>References/Condition/subject.hbs ID=(generateUUID (toJsonString conditionEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                    {{/with}}
                     {{>References/CarePlan/addresses.hbs ID=(generateUUID (toJsonString careplanEntry)) REF=(concat 'Condition/' (generateUUID (toJsonString conditionEntry.observation)))}}
                 {{/with}}
                 {{!-- typeCode "SUBJ" -> instructions for the encounter --}}
@@ -94,6 +100,9 @@
                 {{!-- typeCode "REFR" -> priority for the encounter --}}
                 {{#with (getSpecifiedEntryRelationship careplanEntry.procedure.entryRelationship "RSON") as |conditionEntry|}}
                     {{>Resources/Condition.hbs conditionEntry=conditionEntry.observation ID=(generateUUID (toJsonString conditionEntry.observation))}},
+                    {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+	                    {{>References/Condition/subject.hbs ID=(generateUUID (toJsonString conditionEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                    {{/with}}
                     {{>References/CarePlan/addresses.hbs ID=(generateUUID (toJsonString careplanEntry)) REF=(concat 'Condition/' (generateUUID (toJsonString conditionEntry.observation)))}}
                 {{/with}}
                 {{!-- typeCode "SUBJ" -> instructions for the encounter --}}

@@ -13,9 +13,28 @@ export type DynamoDbUtilsOptions = {
 type AttributeValuesMapping = { [k: string]: string | number };
 
 export class DynamoDbUtils {
+  /**
+   * TODO Make this private and expose it through a `getDocClient()` function
+   * @deprecated this should not be accessed directly, use `getDocClient()` instead
+   */
   public readonly _docClient: DocumentClient;
+
+  /**
+   * TODO Make this private and expose it through a `getTable()` function
+   * @deprecated this should not be accessed directly, use `getTable()` instead
+   */
   public readonly _table: string;
+
+  /**
+   * TODO Make this private and expose it through a `getPartitionKey()` function
+   * @deprecated this should not be accessed directly, use `getPartitionKey()` instead
+   */
   public readonly _partitionKey: string;
+
+  /**
+   * TODO Make this private and expose it through a `getRangeKey()` function
+   * @deprecated this should not be accessed directly, use `getRangeKey()` instead
+   */
   public readonly _rangeKey: string | undefined;
 
   constructor(opts: DynamoDbUtilsOptions) {
@@ -76,7 +95,7 @@ export class DynamoDbUtils {
     return await this._docClient.get(params).promise();
   }
 
-  createKey(partition: string, range: string | undefined) {
+  createKey(partition: string, range?: string | undefined) {
     return {
       [this._partitionKey]: partition,
       ...(this._rangeKey && range ? { [this._rangeKey]: range } : undefined),

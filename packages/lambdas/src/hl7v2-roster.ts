@@ -7,6 +7,8 @@ import { out } from "@metriport/core/util/log";
 import { Config } from "@metriport/core/util/config";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
 
+capture.init();
+
 const apiUrl = getEnvOrFail("API_URL");
 const bucketName = getEnvOrFail("HL7V2_ROSTER_BUCKET_NAME");
 
@@ -25,6 +27,10 @@ export const handler = capture.wrapHandler(async (config: HieConfig): Promise<vo
   const secretArn = Config.getHl7Base64ScramblerSeedArn();
   const hl7Base64ScramblerSeed = await getSecretValueOrFail(secretArn, Config.getAWSRegion());
   process.env["HL7_BASE64_SCRAMBLER_SEED"] = hl7Base64ScramblerSeed;
+  if (config.name === "MyTestHIE") {
+    log("MyTestHIE is a test hie with no sftp connection. Skipping roster upload.");
+    return;
+  }
 
   log(`Starting roster generation for config: ${config.name}`);
   await new Hl7v2RosterGenerator(apiUrl, bucketName).execute(config);

@@ -2,6 +2,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { readConfigs } from "@metriport/core/command/analytics-platform/fhir-to-csv/configs/read-column-defs";
 import { buildMergeCsvsJobPrefix } from "@metriport/core/command/analytics-platform/merge-csvs/file-name";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import {
@@ -12,10 +13,10 @@ import {
 import { errorToString, getEnvVarOrFail, sleep } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import * as AWS from "aws-sdk";
+import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import fs from "fs";
-import ini from "ini";
+import readline from "readline/promises";
 import * as snowflake from "snowflake-sdk";
 import { elapsedTimeAsStr } from "../../shared/duration";
 import { getCxData } from "../../shared/get-cx-data";
@@ -51,14 +52,6 @@ dayjs.extend(duration);
  * - ts-node src/analytics-platform/snowflake/3-ingest-from-merged-csvs.ts 2025-08-08T04-38-04
  */
 
-const mergeCsvJobId = process.argv[2];
-if (!mergeCsvJobId) {
-  console.log(
-    "Usage: ts-node src/analytics-platform/snowflake/3-ingest-from-merged-csvs.ts <mergeCsvJobId>"
-  );
-  throw new Error("mergeCsvJobId is required");
-}
-
 const cxId = getEnvVarOrFail("CX_ID");
 const bucketName = getEnvVarOrFail("ANALYTICS_BUCKET_NAME");
 const region = getEnvVarOrFail("AWS_REGION");
@@ -70,26 +63,29 @@ const database = getEnvVarOrFail("SNOWFLAKE_DB");
 const schema = getEnvVarOrFail("SNOWFLAKE_SCHEMA");
 const warehouse = getEnvVarOrFail("SNOWFLAKE_WH");
 
-const prefixName = buildMergeCsvsJobPrefix({ cxId, jobId: mergeCsvJobId });
-const prefixUrl = `s3://${bucketName}/${prefixName}`;
-
 snowflake.configure({
   ocspFailOpen: false,
   logLevel: "WARN",
   additionalLogToConsole: false,
 });
 
-const confirmationTime = dayjs.duration(10, "seconds");
+const program = new Command();
+program
+  .name("3-ingest-from-merged-csvs")
+  .description("CLI to trigger the ingestion of patients' CSV files into Snowflake")
+  .requiredOption("-mrg, --merge-csv-job-id <id>", "The MergeCsv job ID to ingest the CSVs for")
+  .showHelpAfterError()
+  .action(main);
 
-// The resource types to be used in the test.
-// type ResourceType = "observation" | "patient" | "condition";
-
-async function main() {
+async function main({ mergeCsvJobId }: { mergeCsvJobId: string }) {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
   const startedAt = Date.now();
   console.log(`############## Started at ${buildDayjs().toISOString()} ##############`);
 
-  const columnDefs = readConfigs();
+  const prefixName = buildMergeCsvsJobPrefix({ cxId, jobId: mergeCsvJobId });
+  const prefixUrl = `s3://${bucketName}/${prefixName}`;
+
+  const columnDefs = readConfigs(`../data-transformation/fhir-to-csv/src/parseFhir/configurations`);
   const [{ orgName }, files] = await Promise.all([
     getCxData(cxId, undefined, false),
     s3Utils.listObjects(bucketName, prefixName),
@@ -99,12 +95,16 @@ async function main() {
   await displayWarningAndConfirmation(files, orgName, database);
   console.log(`>>> Running it with mergeCsvJobId: ${mergeCsvJobId}`);
 
-  await ingestIntoSnowflake(columnDefs, files);
+  await ingestIntoSnowflake(columnDefs, files, prefixUrl);
 
   console.log(`>>>>>>> Done after ${elapsedTimeAsStr(startedAt)}`);
 }
 
-async function ingestIntoSnowflake(columnDefs: Record<string, string>, files: AWS.S3.ObjectList) {
+async function ingestIntoSnowflake(
+  columnDefs: Record<string, string>,
+  files: AWS.S3.ObjectList,
+  prefixUrl: string
+) {
   const connection = snowflake.createConnection({
     account,
     token,
@@ -140,6 +140,7 @@ async function ingestIntoSnowflake(columnDefs: Record<string, string>, files: AW
         columnDefs,
         files,
         executeAsync,
+        prefixUrl,
       });
     }
 
@@ -160,6 +161,7 @@ async function processTable({
   columnDefs,
   files,
   executeAsync,
+  prefixUrl,
 }: {
   resourceType: string;
   tableName: string;
@@ -169,6 +171,7 @@ async function processTable({
     statement: snowflake.RowStatement;
     rows: any[] | undefined; // eslint-disable-line @typescript-eslint/no-explicit-any
   }>;
+  prefixUrl: string;
 }) {
   const columnsDef = columnDefs[resourceType];
 
@@ -204,42 +207,6 @@ function createTableName(resourceType: string): string {
   return resourceType.toUpperCase();
 }
 
-/**
- * Reads from a .ini file and returns the list of properties under [Struct] section.
- */
-function readIniFile(path: string): string[] {
-  const data = fs.readFileSync(path, "utf8");
-  const config = ini.parse(data);
-
-  // Extract properties from the [Struct] section
-  const structSection = config.Struct;
-  if (!structSection) {
-    throw new Error("No [Struct] section found in the INI file");
-  }
-
-  // Return the list of property names (keys) from the Struct section
-  return Object.keys(structSection);
-}
-
-// TODO ENG-858 Configs won't be available at runtime in the lambda like this, will need a diff approach
-function readConfigs(): Record<string, string> {
-  const iniFolder = `../data-transformation/fhir-to-csv/src/parseFhir/configurations`;
-  const files = fs.readdirSync(iniFolder);
-  const iniFiles = files.filter(file => file.endsWith(".ini"));
-  const columnDefs: Record<string, string> = {};
-
-  for (const file of iniFiles) {
-    const columns = readIniFile(`${iniFolder}/${file}`);
-    const resourceType = file.split("_").slice(1).join("_")?.replace(".ini", "")?.toLowerCase();
-    if (!resourceType) {
-      throw new Error(`Invalid resource type in file: ${file}`);
-    }
-    columnDefs[resourceType] = columns.map(column => `${column} VARCHAR`).join(", ");
-  }
-
-  return columnDefs;
-}
-
 async function displayWarningAndConfirmation(
   files: AWS.S3.ObjectList,
   orgName: string,
@@ -249,8 +216,17 @@ async function displayWarningAndConfirmation(
     `You are about to ingest ${files.length} files of ` +
     `customer ${orgName} (${cxId}) into Snowflake DB ${dbName}, are you sure?`;
   console.log(msg);
-  console.log("Cancel this now if you're not sure.");
-  await sleep(confirmationTime.asMilliseconds());
+  console.log("Are you sure you want to proceed?");
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  const answer = await rl.question("Type 'yes' to proceed: ");
+  if (answer !== "yes") {
+    console.log("Aborting...");
+    process.exit(0);
+  }
+  rl.close();
 }
 
-main();
+export default program;

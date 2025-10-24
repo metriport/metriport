@@ -1,6 +1,7 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { postProcessBundle } from "@metriport/core/domain/conversion/bundle-modifications/post-process";
 import { cleanUpPayload } from "@metriport/core/domain/conversion/cleanup";
+import { getSanitizedContents } from "@metriport/core/external/cda/get-file-contents";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
@@ -33,11 +34,16 @@ export async function convertCDAsToFHIR(
   console.log(`Converting ${fileNames.length} files, ${parallelConversions} at a time...`);
   let errorCount = 0;
   let nonXMLBodyCount = 0;
+  const attachmentsProcessedPerFile: number[] = [];
   await executeAsynchronously(
     fileNames,
     async fileName => {
       try {
-        const conversionResult = await convert(baseFolderName, fileName, api, options);
+        const {
+          updatedConversionResult: conversionResult,
+          attachmentsProcessed: attachmentsProcessedForFile,
+        } = await convert(baseFolderName, fileName, api, options);
+        attachmentsProcessedPerFile.push(attachmentsProcessedForFile);
         const destFileName = path.join(outputFolderName, fileName.replace(".xml", fhirExtension));
         makeDirIfNeeded(destFileName);
         writeFileContents(destFileName, JSON.stringify(conversionResult));
@@ -61,6 +67,9 @@ export async function convertCDAsToFHIR(
   console.log(
     `Converted ${fileNames.length - errorCount} files in ${conversionDuration} ms.${reportFailure}`
   );
+
+  const attachmentsProcessed = attachmentsProcessedPerFile.reduce((sum, count) => sum + count, 0);
+  console.log(`Attachments processed: ${attachmentsProcessed}`);
   return { errorCount, nonXMLBodyCount };
 }
 
@@ -69,7 +78,7 @@ export async function convert(
   fileName: string,
   api: AxiosInstance,
   options?: ProcessingOptions
-): Promise<Bundle<Resource>> {
+): Promise<{ updatedConversionResult: Bundle<Resource>; attachmentsProcessed: number }> {
   const cxId = uuidv7();
   const patientId = getPatientIdFromFileName(fileName);
 
@@ -79,8 +88,9 @@ export async function convert(
   }
 
   const payloadClean = cleanUpPayload(fileContents);
+  const sanitizedPayload = getSanitizedContents(payloadClean);
   const { documentContents: noB64FileContents, b64Attachments } =
-    removeBase64PdfEntries(payloadClean);
+    removeBase64PdfEntries(sanitizedPayload);
 
   if (b64Attachments && options?.processAttachments) {
     console.log(`Extracted ${b64Attachments.total} B64 attachments`);
@@ -128,6 +138,7 @@ export async function convert(
       cxId,
       patientId,
       bundle: combinedBundle,
+      isVerbose: false,
     });
   }
 
@@ -143,5 +154,5 @@ export async function convert(
   const documentExtension = buildDocIdFhirExtension(fileName.split("-").pop() ?? ".json");
   const updatedConversionResult = postProcessBundle(combinedBundle, patientId, documentExtension);
 
-  return updatedConversionResult;
+  return { updatedConversionResult, attachmentsProcessed: b64Attachments?.total ?? 0 };
 }

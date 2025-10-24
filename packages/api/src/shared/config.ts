@@ -316,7 +316,15 @@ export class Config {
     return getEnvVar("RATE_LIMIT_TABLE_NAME");
   }
 
+  static getOutboundRateLimitTableName(): string | undefined {
+    return getEnvVar("OUTBOUND_RATE_LIMIT_TABLE_NAME");
+  }
+
   static getCqDirRebuildHeartbeatUrl() {
     return getEnvVar("CQ_DIR_REBUILD_HEARTBEAT_URL");
+  }
+
+  static getCwDirRebuildHeartbeatUrl() {
+    return getEnvVar("CW_DIR_REBUILD_HEARTBEAT_URL");
   }
 }

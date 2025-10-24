@@ -4,13 +4,13 @@ import _ from "lodash";
 import { makePatient } from "../../../domain/__tests__/patient";
 import { Address } from "../../../domain/address";
 import * as rosterGeneratorModule from "../hl7v2-roster-generator";
-import * as packIdsModule from "../utils";
+import * as configModule from "../../../util/config";
 import { HiePatientRosterMapping } from "../types";
+import { createScrambledId } from "../utils";
 
 const states = [USState.MA];
 
 describe("AdtRosterGenerator", () => {
-  let scrambleIdMock: jest.SpyInstance;
   let patientId: string;
   let cxId: string;
   let scrambledId: string;
@@ -63,11 +63,10 @@ describe("AdtRosterGenerator", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    scrambleIdMock = jest.spyOn(packIdsModule, "createScrambledId");
+    jest.spyOn(configModule.Config, "getHl7Base64ScramblerSeed").mockReturnValue("unit-test-seed");
     patientId = faker.string.uuid();
     cxId = faker.string.uuid();
-    scrambledId = `${cxId}_${patientId}`;
-    scrambleIdMock.mockReturnValueOnce(scrambledId);
+    scrambledId = createScrambledId(cxId, patientId);
   });
 
   afterAll(() => {
@@ -199,7 +198,6 @@ describe("AdtRosterGenerator", () => {
 
       const result = rosterGeneratorModule.createRosterRow(input, mockSchema);
 
-      expect(scrambleIdMock).toHaveBeenCalledTimes(1);
       expect(
         _.isMatch(result, {
           "DRIVERS LICENSE": "",
