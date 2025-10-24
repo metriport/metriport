@@ -1,5 +1,5 @@
 /* ============================================================
-   HYPERTENSION — SUSPECT QUERY (BP Observations) — NEW SCHEMAS
+   HYPERTENSION — SUSPECT QUERY (BP Observations + HTN Meds)
    ------------------------------------------------------------
    Standard flow: RAW → NORM → CLEAN → SUSPECT → FHIR → RETURN
    Purpose
@@ -47,7 +47,6 @@ bp_raw AS (
 
 /* -------------------------
    NORM: keep only mmHg variants; canonicalize to mmHg
-   (drop everything else by leaving value_mmhg NULL)
    ------------------------- */
 bp_norm AS (
   SELECT
@@ -113,7 +112,7 @@ bp_suspects AS (
 ),
 
 /* -------------------------
-   FHIR
+   FHIR for Observations (Zod-safe)
    ------------------------- */
 obs_with_fhir AS (
   SELECT
@@ -126,12 +125,12 @@ obs_with_fhir AS (
       'id',            s.resource_id,
       'status',        'final',
       'code', OBJECT_CONSTRUCT(
-        'text',   NULLIF(s.LOINC_DISPLAY,''),
+        'text',   COALESCE(s.LOINC_DISPLAY, ''),
         'coding', ARRAY_CONSTRUCT(
           OBJECT_CONSTRUCT(
             'system',  'http://loinc.org',
-            'code',     s.LOINC_CODE,
-            'display',  s.LOINC_DISPLAY
+            'code',     COALESCE(s.LOINC_CODE, ''),
+            'display',  COALESCE(s.LOINC_DISPLAY, '')
           )
         )
       ),
@@ -139,13 +138,155 @@ obs_with_fhir AS (
       'valueQuantity', OBJECT_CONSTRUCT(
         'value', s.value_num,
         'unit',  'mmHg'
-      ),
-      'valueString', IFF(TRY_TO_DOUBLE(s.RESULT) IS NULL, s.RESULT, NULL)
+      )
     ) AS fhir,
     s.resource_id,
     s.resource_type,
     s.DATA_SOURCE AS data_source
   FROM bp_suspects s
+),
+
+/* ============================================================
+   MEDICATION PATH — HTN-only combos (RxNorm whitelist)
+   ============================================================ */
+med_rx_raw AS (
+  SELECT
+    mr.PATIENT_ID,
+    mr.MEDICATION_REQUEST_ID                         AS resource_id,
+    'MedicationRequest'                              AS resource_type,
+    COALESCE(NULLIF(mr.STATUS,''), 'active')         AS status,
+    mr.AUTHORED_ON                                   AS authored_on,
+    m.RXNORM_CODE,
+    m.RXNORM_DISPLAY,
+    mr.DATA_SOURCE
+  FROM CORE_V3.MEDICATION_REQUEST mr
+  JOIN CORE_V3.MEDICATION m
+    ON m.MEDICATION_ID = mr.MEDICATION_ID
+  WHERE COALESCE(NULLIF(mr.STATUS,''), 'active') NOT IN ('entered-in-error','stopped','cancelled')
+    AND mr.AUTHORED_ON >= DATEADD(month, -18, CURRENT_DATE)
+    AND m.RXNORM_CODE IN (
+      -- ===== HTN-only fixed-dose combos (RxNorm) =====
+      '85783',    -- lisinopril-hydrochlorothiazide
+      '197885',   -- hydrochlorothiazide 12.5 MG / lisinopril 10 MG Oral Tablet
+      '197886',   -- hydrochlorothiazide 12.5 MG / lisinopril 20 MG Oral Tablet
+      '197887',   -- hydrochlorothiazide 25 MG / lisinopril 20 MG Oral Tablet
+      '200284',   -- hydrochlorothiazide 12.5 MG / valsartan 80 MG Oral Tablet
+      '200285',   -- valsartan 160 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '207961',   -- hydrochlorothiazide 12.5 MG / lisinopril 10 MG Oral Tablet [Prinzide]
+      '214223',   -- amlodipine / benazepril
+      '214617',   -- hydrochlorothiazide / irbesartan
+      '214618',   -- hydrochlorothiazide / lisinopril
+      '214619',   -- hydrochlorothiazide / losartan
+      '214626',   -- hydrochlorothiazide / valsartan
+      '217681',   -- losartan-hydrochlorothiazide
+      '218090',   -- amlodipine-benazepril
+      '283316',   -- telmisartan 40 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '283317',   -- telmisartan 80 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '310792',   -- irbesartan 150 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '310793',   -- irbesartan 300 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '310796',   -- quinapril 10 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '310809',   -- quinapril 20 MG / hydrochlorothiazide 25 MG Oral Tablet
+      '349353',   -- hydrochlorothiazide 25 MG / valsartan 160 MG Oral Tablet
+      '403853',   -- hydrochlorothiazide 12.5 MG / olmesartan medoxomil 20 MG Oral Tablet
+      '403854',   -- hydrochlorothiazide 12.5 MG / olmesartan medoxomil 40 MG Oral Tablet
+      '403855',   -- hydrochlorothiazide 25 MG / olmesartan medoxomil 40 MG Oral Tablet
+      '404880',   -- olmesartan-hydrochlorothiazide
+      '477130',   -- telmisartan 80 MG / hydrochlorothiazide 25 MG Oral Tablet
+      '485471',   -- irbesartan 300 MG / hydrochlorothiazide 25 MG Oral Tablet
+      '578325',   -- candesartan cilexetil 16 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '578330',   -- candesartan cilexetil 32 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '636042',   -- valsartan 320 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '636045',   -- hydrochlorothiazide 25 MG / valsartan 320 MG Oral Tablet
+      '722126',   -- amlodipine 10 MG / valsartan 160 MG Oral Tablet
+      '722131',   -- amlodipine 10 MG / valsartan 320 MG Oral Tablet
+      '722134',   -- amlodipine 5 MG / valsartan 160 MG Oral Tablet
+      '722137',   -- amlodipine 5 MG / valsartan 320 MG Oral Tablet
+      '730861',   -- amlodipine 10 MG / olmesartan medoxomil 20 MG Oral Tablet
+      '730862',   -- amlodipine-olmesartan
+      '730866',   -- amlodipine 10 MG / olmesartan medoxomil 40 MG Oral Tablet
+      '730869',   -- amlodipine 5 MG / olmesartan medoxomil 20 MG Oral Tablet
+      '730872',   -- amlodipine 5 MG / olmesartan medoxomil 40 MG Oral Tablet
+      '809014',   -- hydrochlorothiazide 12.5 MG / valsartan 80 MG Oral Tablet [Diovan HCT]
+      '848131',   -- amlodipine 10 MG / valsartan 160 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '848135',   -- amlodipine 10 MG / valsartan 320 MG / hydrochlorothiazide 25 MG Oral Tablet
+      '848140',   -- amlodipine 5 MG / valsartan 160 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '848145',   -- amlodipine 5 MG / valsartan 160 MG / hydrochlorothiazide 25 MG Oral Tablet
+      '848151',   -- amlodipine 10 MG / valsartan 160 MG / hydrochlorothiazide 25 MG Oral Tablet
+      '857166',   -- fosinopril sodium 10 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '857174',   -- fosinopril sodium 20 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '858824',   -- enalapril maleate 5 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '858828',   -- enalapril maleate 10 MG / hydrochlorothiazide 25 MG Oral Tablet
+      '876514',   -- telmisartan 40 MG / amlodipine 10 MG Oral Tablet
+      '876519',   -- telmisartan 80 MG / amlodipine 10 MG Oral Tablet
+      '876524',   -- telmisartan 40 MG / amlodipine 5 MG Oral Tablet
+      '876529',   -- telmisartan 80 MG / amlodipine 5 MG Oral Tablet
+      '898342',   -- amlodipine besylate 10 MG / benazepril HCl 20 MG Oral Capsule
+      '898344',   -- amlodipine 10 MG / benazepril hydrochloride 20 MG Oral Capsule [Lotrel]
+      '898346',   -- amlodipine besylate 10 MG / benazepril HCl 40 MG Oral Capsule
+      '898350',   -- amlodipine besylate 2.5 MG / benazepril HCl 10 MG Oral Capsule
+      '898353',   -- amlodipine besylate 5 MG / benazepril HCl 10 MG Oral Capsule
+      '898356',   -- amlodipine besylate 5 MG / benazepril HCl 20 MG Oral Capsule
+      '898359',   -- amlodipine besylate 5 MG / benazepril HCl 40 MG Oral Capsule
+      '898361',   -- amlodipine 5 MG / benazepril hydrochloride 40 MG Oral Capsule [Lotrel]
+      '898362',   -- benazepril HCl 10 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '898367',   -- benazepril HCl 20 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '898372',   -- benazepril HCl 20 MG / hydrochlorothiazide 25 MG Oral Tablet
+      '898378',   -- benazepril HCl 5 MG / hydrochlorothiazide 6.25 MG Oral Tablet
+      '979464',   -- hydrochlorothiazide 12.5 MG / losartan potassium 100 MG Oral Tablet
+      '979468',   -- hydrochlorothiazide 12.5 MG / losartan potassium 50 MG Oral Tablet
+      '979471',   -- hydrochlorothiazide 25 MG / losartan potassium 100 MG Oral Tablet
+      '999967',   -- olmesartan medoxomil 20 MG / amlodipine 5 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '999986',   -- olmesartan medoxomil 40 MG / amlodipine 10 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '999991',   -- olmesartan medoxomil 40 MG / amlodipine 10 MG / hydrochlorothiazide 25 MG Oral Tablet
+      '999996',   -- olmesartan medoxomil 40 MG / amlodipine 5 MG / hydrochlorothiazide 12.5 MG Oral Tablet
+      '1000001',  -- olmesartan medoxomil 40 MG / amlodipine 5 MG / hydrochlorothiazide 25 MG Oral Tablet
+      '1235144',  -- azilsartan medoxomil 40 MG / chlorthalidone 12.5 MG Oral Tablet
+      '1235151',  -- azilsartan medoxomil 40 MG / chlorthalidone 25 MG Oral Tablet
+      '1600716',  -- perindopril arginine 14 MG / amlodipine 10 MG Oral Tablet
+      '1600728'   -- perindopril arginine 7 MG / amlodipine 5 MG Oral Tablet
+    )
+),
+med_rx_clean AS (
+  SELECT *
+  FROM med_rx_raw r
+  WHERE NOT EXISTS (SELECT 1 FROM htn_dx_exclusion x WHERE x.PATIENT_ID = r.PATIENT_ID)
+    AND NULLIF(r.DATA_SOURCE,'') IS NOT NULL
+),
+med_htn_rx AS (
+  SELECT
+    r.PATIENT_ID,
+    'med_htn_combo'                           AS suspect_group,
+    'I10'                                     AS suspect_icd10_code,
+    'Essential (primary) hypertension'        AS suspect_icd10_short_description,
+    OBJECT_CONSTRUCT(
+      'resourceType', 'MedicationRequest',
+      'id',            r.resource_id,
+      'status',        r.status,
+      'authoredOn',    TO_CHAR(r.authored_on, 'YYYY-MM-DD'),
+      'medicationCodeableConcept', OBJECT_CONSTRUCT(
+        'text',   COALESCE(r.RXNORM_DISPLAY, ''),
+        'coding', ARRAY_CONSTRUCT(
+          OBJECT_CONSTRUCT(
+            'system','http://www.nlm.nih.gov/research/umls/rxnorm',
+            'code',   COALESCE(r.RXNORM_CODE, ''),
+            'display',COALESCE(r.RXNORM_DISPLAY, '')
+          )
+        )
+      )
+    ) AS fhir,
+    r.resource_id,
+    r.resource_type,
+    r.DATA_SOURCE AS data_source
+  FROM med_rx_clean r
+),
+
+/* -------------------------
+   UNION ALL EVIDENCE (observations + medications)
+   ------------------------- */
+all_evidence AS (
+  SELECT * FROM obs_with_fhir
+  UNION ALL
+  SELECT * FROM med_htn_rx
 )
 
 /* -------------------------
@@ -159,13 +300,13 @@ SELECT
   ARRAY_AGG(
     OBJECT_CONSTRUCT(
       'id',            resource_id,
-      'resource_type', resource_type,
+      'resource_type', resource_type,   -- Observation or MedicationRequest
       'data_source',   data_source,
       'fhir',          fhir
     )
   ) AS responsible_resources,
   CURRENT_TIMESTAMP() AS last_run
-FROM obs_with_fhir
-WHERE suspect_group IS NOT NULL
+FROM all_evidence
+WHERE NULLIF(suspect_group, '') IS NOT NULL
 GROUP BY PATIENT_ID, suspect_group, suspect_icd10_code, suspect_icd10_short_description
 ORDER BY PATIENT_ID, suspect_group;
