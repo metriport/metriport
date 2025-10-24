@@ -18,8 +18,10 @@ import fs from "fs";
 import readline from "readline/promises";
 import { getAllPatientIds } from "../patient/get-ids";
 import { elapsedTimeAsStr } from "../shared/duration";
+import { buildGetDirPathInside, initRunsFolder } from "../shared/folder";
 import { getCxData } from "../shared/get-cx-data";
 import { getIdsFromFile } from "../shared/ids";
+import { initFile } from "../shared/file";
 
 dayjs.extend(duration);
 
@@ -56,6 +58,8 @@ const region = getEnvVarOrFail("AWS_REGION");
 const s3Utils = new S3Utils(region);
 const api = axios.create({ baseURL: apiUrl });
 
+const getFolderName = buildGetDirPathInside(`1-fhir-to-csv`);
+
 const program = new Command();
 program
   .name("1-fhir-to-csv")
@@ -74,7 +78,8 @@ async function main({
   file?: string;
   checkConsolidated?: boolean;
 }) {
-  await sleep(100);
+  await sleep(50);
+  initRunsFolder();
   const { log } = out("");
 
   const startedAt = Date.now();
@@ -124,6 +129,10 @@ async function main({
           patientsWithoutConsolidatedData.length
         }):\n${patientsWithoutConsolidatedData.join("\n")}\n`
       );
+      const outputFilePath = getFolderName(``);
+      const fileName = `${outputFilePath}/patients-without-consolidated-data.txt`;
+      initFile(fileName);
+      fs.writeFileSync(fileName, patientsWithoutConsolidatedData.join("\n"));
     } else {
       log(`>>> All patients have consolidated data!`);
     }
