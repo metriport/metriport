@@ -77,19 +77,25 @@ export class Hl7v2RosterGenerator {
     const cxIds = new Set(patients.map(p => p.cxId));
 
     const cxsAllowedToUploadRoster = await getCxsWithAdtsRosterUploadFeatureFlagEnabled();
-    const filteredCxs = Array.from(cxIds).filter(cxId => cxsAllowedToUploadRoster.includes(cxId));
+    const filteredCxs: string[] = [];
+    const filteredOutCxs: string[] = [];
 
-    const filteredOutCxs = Array.from(cxIds).filter(
-      cxId => !cxsAllowedToUploadRoster.includes(cxId)
-    );
+    cxIds.forEach(cxId => {
+      if (cxsAllowedToUploadRoster.includes(cxId)) {
+        filteredCxs.push(cxId);
+      } else {
+        filteredOutCxs.push(cxId);
+      }
+    });
+
     if (filteredOutCxs.length > 0) {
       const msg =
-        `Customer without ADTS roster upload feature flag enabled tried to upload a roster. ` +
+        `Customer(s) without ADT roster upload feature flag enabled, tried to upload a roster. ` +
         `Ask in slack if this is expected. Roster processing will continue for the allowed customers.`;
       capture.error(msg, {
         extra: {
           filteredOutCxs,
-          totalCxIds: cxIds,
+          totalCxIds: Array.from(cxIds),
           allowedCxs: cxsAllowedToUploadRoster,
           hieName,
         },
