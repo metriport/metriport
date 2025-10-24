@@ -73,8 +73,7 @@
             "medical-api/api-reference/facility/get-facility",
             "medical-api/api-reference/facility/update-facility",
             "medical-api/api-reference/facility/list-facilities",
-            "medical-api/api-reference/facility/delete-facility",
-            "medical-api/api-reference/patient/list-patients-in-cohort"
+            "medical-api/api-reference/facility/delete-facility"
           ]
         },
         {
@@ -94,7 +93,7 @@
             "medical-api/api-reference/patient/add-patients-to-cohort",
             "medical-api/api-reference/patient/remove-patients-from-cohort",
             "medical-api/api-reference/patient/add-patient-to-cohorts",
-            "medical-api/api-reference/patient/list-patient-cohorts"
+            "medical-api/api-reference/patient/list-cohorts-for-patient"
           ]
         },
         {
@@ -105,7 +104,8 @@
             "medical-api/api-reference/cohort/get-cohort",
             "medical-api/api-reference/cohort/update-cohort",
             "medical-api/api-reference/cohort/delete-cohort",
-            "medical-api/api-reference/cohort/list-cohorts"
+            "medical-api/api-reference/cohort/list-cohorts",
+            "medical-api/api-reference/cohort/list-patients-in-cohort"
           ]
         },
         {
