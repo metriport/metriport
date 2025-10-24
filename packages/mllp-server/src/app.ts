@@ -3,6 +3,7 @@ dotenv.config();
 
 import { Hl7Server } from "@medplum/hl7";
 import { buildHl7NotificationWebhookSender } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-factory";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
@@ -15,7 +16,16 @@ import type { Logger } from "@metriport/core/util/log";
 import { out } from "@metriport/core/util/log";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { initSentry } from "./sentry";
-import { asString, getCleanIpAddress, lookupHieTzEntryForIp, withErrorHandling } from "./utils";
+import {
+  asString,
+  bucketName,
+  createRawHl7MessageFileKey,
+  getCleanIpAddress,
+  getHieConfig,
+  s3Utils,
+  translateMessage,
+  withErrorHandling,
+} from "./utils";
 
 initSentry();
 
@@ -29,22 +39,38 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
       "message",
       withErrorHandling(connection, logger, async ({ message: rawMessage }) => {
         const clientIp = getCleanIpAddress(connection.socket.remoteAddress);
+        const rawFileKey = createRawHl7MessageFileKey(clientIp);
+
+        const uploadResult = await uploadFileSafely(
+          s3Utils,
+          bucketName,
+          rawFileKey,
+          asString(rawMessage)
+        );
+        if (!uploadResult.success) {
+          capture.error(uploadResult.error);
+        }
+
         const clientPort = connection.socket.remotePort;
 
         log(`New message over connection ${clientIp}:${clientPort}`);
+        const hieConfigDictionary = getHieConfigDictionary();
+        const { hieName, impersonationTimezone } = getHieConfig(
+          hieConfigDictionary,
+          clientIp,
+          rawMessage
+        );
 
-        const { cxId, patientId } = getCxIdAndPatientIdOrFail(rawMessage);
+        const newMessage = translateMessage(rawMessage, hieName);
+        const { cxId, patientId } = getCxIdAndPatientIdOrFail(newMessage);
 
-        const messageId = getMessageUniqueIdentifier(rawMessage);
-        const sendingApplication = getSendingApplication(rawMessage) ?? "Unknown HIE";
-        const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(rawMessage);
+        const messageId = getMessageUniqueIdentifier(newMessage);
+        const sendingApplication = getSendingApplication(newMessage) ?? "Unknown HIE";
+        const { messageCode, triggerEvent } = getHl7MessageTypeOrFail(newMessage);
         const messageReceivedTimestamp = buildDayjs(Date.now()).toISOString();
         log(
           `cx: ${cxId}, pt: ${patientId} Received ${triggerEvent} message from ${sendingApplication} at ${messageReceivedTimestamp} (messageId: ${messageId})`
         );
-        const hieConfigDictionary = getHieConfigDictionary();
-        const { hieName } = lookupHieTzEntryForIp(hieConfigDictionary, clientIp);
-
         capture.setExtra({
           cxId,
           patientId,
@@ -55,12 +81,13 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         await buildHl7NotificationWebhookSender().execute({
           cxId,
           patientId,
-          message: asString(rawMessage),
+          message: asString(newMessage),
           messageReceivedTimestamp,
           hieName,
+          impersonationTimezone,
         });
 
-        connection.send(rawMessage.buildAck());
+        connection.send(newMessage.buildAck());
       })
     );
 
@@ -78,6 +105,27 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   });
 
   return server;
+}
+
+type UploadResult = { success: true } | { success: false; error: unknown };
+
+async function uploadFileSafely(
+  s3Utils: S3Utils,
+  bucket: string,
+  key: string,
+  content: string
+): Promise<UploadResult> {
+  try {
+    await s3Utils.uploadFile({
+      bucket,
+      key,
+      file: Buffer.from(content),
+      contentType: "text/plain",
+    });
+    return { success: true };
+  } catch (error) {
+    return { success: false, error };
+  }
 }
 
 async function main() {

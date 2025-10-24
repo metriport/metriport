@@ -14,6 +14,7 @@ import { CQPatientDataModel } from "../external/carequality/models/cq-patient-da
 import { OutboundDocumentQueryRespModel } from "../external/carequality/models/outbound-document-query-resp";
 import { OutboundDocumentRetrievalRespModel } from "../external/carequality/models/outbound-document-retrieval-resp";
 import { OutboundPatientDiscoveryRespModel } from "../external/carequality/models/outbound-patient-discovery-resp";
+import { CwDirectoryEntryViewModel } from "../external/commonwell/models/cw-directory-view";
 import { CwPatientDataModel } from "../external/commonwell/models/cw-patient-data";
 import { HIEDirectoryEntryViewModel } from "../external/hie/models/hie-directory-view";
 import { FacilityModel } from "../models/medical/facility";
@@ -30,7 +31,6 @@ import { FeedbackEntryModel } from "./feedback-entry";
 import { InvalidLinksModel } from "./invalid-links";
 import { JwtTokenModel } from "./jwt-token";
 import { CohortModel } from "./medical/cohort";
-import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
 import { DocRefMappingModel } from "./medical/docref-mapping";
 import { MAPIAccess } from "./medical/mapi-access";
 import { PatientModel } from "./medical/patient";
@@ -54,6 +54,7 @@ const models: ModelSetup[] = [
   OrganizationModel.setup,
   CQDirectoryEntryViewModel.setup,
   CQPatientDataModel.setup,
+  CwDirectoryEntryViewModel.setup,
   CwPatientDataModel.setup,
   FacilityModel.setup,
   PatientModel.setup,
@@ -65,7 +66,6 @@ const models: ModelSetup[] = [
   OutboundPatientDiscoveryRespModel.setup,
   OutboundDocumentQueryRespModel.setup,
   OutboundDocumentRetrievalRespModel.setup,
-  CoverageEnhancementModel.setup,
   FeedbackModel.setup,
   FeedbackEntryModel.setup,
   CxMappingModel.setup,
@@ -99,6 +99,7 @@ export interface DocTableNames {
   token: string;
   rateLimit?: string;
   featureFlags: string;
+  outboundRateLimit?: string;
 }
 export let docTableNames: DocTableNames;
 
@@ -107,6 +108,7 @@ async function initDB(): Promise<void> {
   const tokenTableName = Config.getTokenTableName();
   const rateLimitTableName = Config.getRateLimitTableName();
   const featureFlagsTableName = ConfigCore.getFeatureFlagsTableName();
+  const outboundRateLimitTableName = Config.getOutboundRateLimitTableName();
   const logDBOperations = Config.isCloudEnv() ? false : true;
   const dbPoolSettings = getDbPoolSettings();
 
@@ -114,6 +116,7 @@ async function initDB(): Promise<void> {
     token: tokenTableName,
     rateLimit: rateLimitTableName,
     featureFlags: featureFlagsTableName,
+    outboundRateLimit: outboundRateLimitTableName,
   };
 
   // get database creds

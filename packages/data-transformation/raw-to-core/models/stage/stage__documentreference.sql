@@ -101,6 +101,4 @@ SELECT
     type_coding_0_system,
     filename,
     processed_date 
-FROM {{source('raw', 'documentreference') }} x
-
-QUALIFY rank() over(partition by filename order by processed_date desc) = 1
+FROM {{source('raw', 'documentreference_view') }} x

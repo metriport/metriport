@@ -20,7 +20,6 @@ export const booleanFFsSchema = z.object({
 export type BooleanFeatureFlags = z.infer<typeof booleanFFsSchema>;
 
 export const cxBasedFFsSchema = z.object({
-  cxsWithEnhancedCoverageFeatureFlag: ffStringValuesSchema,
   cxsWithCQDirectFeatureFlag: ffStringValuesSchema,
   cxsWithCWFeatureFlag: ffStringValuesSchema,
   cxsWithADHDMRFeatureFlag: ffStringValuesSchema,
@@ -41,10 +40,14 @@ export const cxBasedFFsSchema = z.object({
   cxsWithStrictMatchingAlgorithm: ffStringValuesSchema,
   cxsWithAthenaCustomFieldsEnabled: ffStringValuesSchema,
   cxsWithPcpVisitAiSummaryFeatureFlag: ffStringValuesSchema,
-  cxsWithHl7NotificationWebhookFeatureFlag: ffStringValuesSchema,
+  cxsWithRecentVisitAiSummary: ffStringValuesSchema,
+  cxsWithCardiacCareAiSummary: ffStringValuesSchema,
+  cxsWithNitratesAndConditionsAiSummary: ffStringValuesSchema,
   cxsWithDischargeSlackNotificationFeatureFlag: ffStringValuesSchema,
   cxsWithDischargeRequeryFeatureFlag: ffStringValuesSchema,
   cxsWithXmlRedownloadFeatureFlag: ffStringValuesSchema,
+  analyticsIncrementalIngestion: ffStringValuesSchema,
+  cxsWithNewSoapEnvelopeFeatureFlag: ffStringValuesSchema,
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 

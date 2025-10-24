@@ -1,6 +1,8 @@
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
-import { getEnvVar, getEnvVarOrFail } from "./env-var";
 import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
+import type { BedrockRegion } from "../external/bedrock/client";
+import { SftpConfig } from "../external/sftp/types";
+import { getEnvVar, getEnvVarOrFail } from "./env-var";
 
 /**
  * Shared configs, still defining how to work with this. For now:
@@ -106,6 +108,9 @@ export class Config {
   static getHl7IncomingMessageBucketName(): string {
     return getEnvVarOrFail("HL7_INCOMING_MESSAGE_BUCKET_NAME");
   }
+  static getHl7RawMessageBucketName(): string {
+    return getEnvVarOrFail("HL7_RAW_MESSAGE_BUCKET_NAME");
+  }
   static getHl7OutgoingMessageBucketName(): string {
     return getEnvVarOrFail("HL7_OUTGOING_MESSAGE_BUCKET_NAME");
   }
@@ -169,16 +174,24 @@ export class Config {
     return getEnvVarOrFail("FHIR_TO_BUNDLE_COUNT_LAMBDA_NAME");
   }
 
-  static getBedrockRegion(): string | undefined {
-    return getEnvVar("BEDROCK_REGION");
+  static getBedrockRegion(): BedrockRegion {
+    return (getEnvVar("BEDROCK_REGION") ?? "us-east-1") as BedrockRegion;
   }
 
   static getBedrockVersion(): string | undefined {
     return getEnvVar("BEDROCK_VERSION");
   }
 
+  static getComprehendRegion(): string {
+    return getEnvVar("COMPREHEND_REGION") ?? Config.getAWSRegion();
+  }
+
   static getAiBriefModelId(): string | undefined {
     return getEnvVar("AI_BRIEF_MODEL_ID");
+  }
+
+  static getGroqApiKey(): string {
+    return getEnvVarOrFail("GROQ_API_KEY");
   }
 
   static getFeatureFlagsTableName(): string {
@@ -344,6 +357,10 @@ export class Config {
     return getEnvVar("LAB_CONVERSION_BUCKET_NAME");
   }
 
+  static getStructuredDataBucketName(): string | undefined {
+    return getEnvVar("STRUCTURED_DATA_BUCKET_NAME");
+  }
+
   static getAthenaHealthEnv(): string | undefined {
     return getEnvVar("EHR_ATHENA_ENVIRONMENT");
   }
@@ -394,20 +411,41 @@ export class Config {
     return getEnvVarOrFail("FHIR_CONVERTER_BUCKET_NAME");
   }
 
+  static getAnalyticsBucketName(): string | undefined {
+    return getEnvVar("ANALYTICS_BUCKET_NAME");
+  }
+  /** For development only - cloud should call a lambda that has it setup differently */
+  static getAnalyticsDbCreds(): string {
+    return getEnvVarOrFail("ANALYTICS_DB_CREDS");
+  }
+
   // ENG-536 remove this once we automatically find the discharge summary
   static getDischargeNotificationSlackUrl(): string {
     return getEnvVarOrFail("DISCHARGE_NOTIFICATION_SLACK_URL");
   }
 
-  static getFhirToCsvQueueUrl(): string {
-    return getEnvVarOrFail("FHIR_TO_CSV_QUEUE_URL");
+  static getFhirToCsvBulkQueueUrl(): string {
+    return getEnvVarOrFail("FHIR_TO_CSV_BULK_QUEUE_URL");
+  }
+  static getFhirToCsvIncrementalQueueUrl(): string {
+    return getEnvVarOrFail("FHIR_TO_CSV_INCREMENTAL_QUEUE_URL");
   }
   static getFhirToCsvTransformLambdaName(): string {
     return getEnvVarOrFail("FHIR_TO_CSV_TRANSFORM_LAMBDA_NAME");
   }
+  static getFhirToCsvTransformHttpEndpoint(): string {
+    return getEnvVar("FHIR_TO_CSV_TRANSFORM_HTTP_ENDPOINT") ?? "http://localhost:8001";
+  }
 
-  static getRosterUploadSftpPasswordArn(): string {
-    return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_ARN`);
+  static getCoreTransformBatchJobQueueArn(): string {
+    return getEnvVarOrFail("CORE_TRANSFORM_BATCH_JOB_QUEUE_ARN");
+  }
+  static getCoreTransformBatchJobDefinitionArn(): string {
+    return getEnvVarOrFail("CORE_TRANSFORM_BATCH_JOB_DEFINITION_ARN");
+  }
+
+  static getRosterUploadSftpPasswordName(): string {
+    return getEnvVarOrFail(`${ROSTER_UPLOAD_SFTP_PASSWORD}_NAME`);
   }
 
   static getLahieIngestionLambdaName(): string {
@@ -456,5 +494,41 @@ export class Config {
 
   static getInternalServerUrl(): string {
     return getEnvVarOrFail("INTERNAL_SERVER_BASE_URL");
+  }
+
+  static getAlohrIngestionBucket(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_BUCKET_NAME");
+  }
+
+  static getAlohrIngestionRemotePath(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_REMOTE_PATH");
+  }
+
+  static getAlohrIngestionPasswordArn(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_PASSWORD_ARN");
+  }
+
+  static getAlohrIngestionSftpConfig(): Partial<SftpConfig> {
+    return getEnvVarAsRecordOrFail("ALOHR_INGESTION_SFTP_CONFIG");
+  }
+
+  static getAlohrIngestionLambdaName(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_LAMBDA_NAME");
+  }
+
+  static getAlohrIngestionTimezone(): string {
+    return getEnvVarOrFail("ALOHR_INGESTION_TIMEZONE");
+  }
+
+  static getAiBriefBucketName(): string {
+    return getEnvVarOrFail("AI_BRIEF_BUCKET_NAME");
+  }
+
+  static getHeartBeatMonitorMap(): Record<string, string> {
+    return getEnvVarAsRecordOrFail("HEARTBEAT_MONITOR_MAP");
+  }
+
+  static getOutboundRateLimitTableName(): string | undefined {
+    return getEnvVar("OUTBOUND_RATE_LIMIT_TABLE_NAME");
   }
 }

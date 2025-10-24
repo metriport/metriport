@@ -1,15 +1,15 @@
 import { Hl7Message } from "@medplum/core";
+import { errorToString } from "@metriport/shared";
+import { buildDayjs, ISO_DATE_TIME } from "@metriport/shared/common/date";
+import { S3Utils } from "../../external/aws/s3";
+import { utcifyHl7Message } from "../../external/hl7-notification/datetime";
+import { Config } from "../../util/config";
 import {
   createUnparseableHl7MessageErrorMessageFileKey,
   createUnparseableHl7MessageFileKey,
   getCxIdAndPatientIdOrFail,
   getOptionalValueFromMessage,
 } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
-import { utcifyHl7Message } from "../../external/hl7-notification/datetime";
-import { errorToString } from "@metriport/shared";
-import { buildDayjs, ISO_DATE_TIME } from "@metriport/shared/common/date";
-import { S3Utils } from "../../external/aws/s3";
-import { Config } from "../../util/config";
 
 export interface ParsedHl7Data {
   message: Hl7Message;
@@ -18,12 +18,17 @@ export interface ParsedHl7Data {
 }
 
 const supportedTypes = ["A01", "A03"] as const;
+const CONSOLIDATED_REFRESH_TRIGGER_EVENTS = ["A01", "A03"] as const;
 
 export type SupportedTriggerEvent = (typeof supportedTypes)[number];
 export function isSupportedTriggerEvent(
   triggerEvent: string
 ): triggerEvent is SupportedTriggerEvent {
   return supportedTypes.includes(triggerEvent as SupportedTriggerEvent);
+}
+
+export function isConsolidatedRefreshTriggerEvent(triggerEvent: string): boolean {
+  return CONSOLIDATED_REFRESH_TRIGGER_EVENTS.includes(triggerEvent as SupportedTriggerEvent);
 }
 
 export async function parseHl7Message(
@@ -33,7 +38,6 @@ export async function parseHl7Message(
   const message = utcifyHl7Message(rawMessage, hieConfig);
 
   const { cxId, patientId } = getCxIdAndPatientIdOrFail(message);
-
   return {
     message,
     cxId,

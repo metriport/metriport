@@ -316,11 +316,11 @@ export class Config {
     return getEnvVar("RATE_LIMIT_TABLE_NAME");
   }
 
-  static getCqDirRebuildHeartbeatUrl() {
-    return getEnvVar("CQ_DIR_REBUILD_HEARTBEAT_URL");
+  static getOutboundRateLimitTableName(): string | undefined {
+    return getEnvVar("OUTBOUND_RATE_LIMIT_TABLE_NAME");
   }
 
-  static getAnalyticsPlatformBucketName(): string | undefined {
-    return getEnvVar("ANALYTICS_BUCKET_NAME");
+  static getCqDirRebuildHeartbeatUrl() {
+    return getEnvVar("CQ_DIR_REBUILD_HEARTBEAT_URL");
   }
 }

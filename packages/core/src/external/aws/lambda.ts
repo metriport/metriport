@@ -26,15 +26,15 @@ export function makeLambdaClient(region: string, timeoutInMillis?: number): Lamb
  * Note: callers are responsible for handling the error, usually by calling `getLambdaResultPayloadV3()`.
  */
 export function makeLambdaClientV3(region: string, timeoutInMillis?: number): LambdaClientV3 {
-  const requestHandler: NodeHttpHandler | object = timeoutInMillis
+  const requestHandler: NodeHttpHandler | undefined = timeoutInMillis
     ? new NodeHttpHandler({
         connectionTimeout: timeoutInMillis,
         requestTimeout: timeoutInMillis,
       })
-    : {};
+    : undefined;
   const lambdaClient = new LambdaClientV3({
     region,
-    requestHandler,
+    ...(requestHandler ? { requestHandler } : {}),
   });
   return lambdaClient;
 }

@@ -9,7 +9,7 @@ import {
   mixedResourceTypesBundle,
   CONSTANT_TIME_EXPECTED_THRESHOLD_MS,
 } from "./fixtures/fhir-bundles";
-import { Patient } from "@medplum/fhirtypes";
+import { Bundle, Observation, Patient } from "@medplum/fhirtypes";
 
 describe("FhirBundleSdk", () => {
   describe("Bundle Loading and Initialization", () => {
@@ -534,6 +534,654 @@ describe("FhirBundleSdk", () => {
         const end = performance.now();
 
         expect(end - start).toBeLessThan(CONSTANT_TIME_EXPECTED_THRESHOLD_MS);
+      });
+    });
+  });
+
+  describe("Reference Walking (BFS)", () => {
+    describe("Basic single-level traversal", () => {
+      it("should walk references from an Observation to related resources", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const observation = sdk.getObservationById("observation-001");
+
+        if (observation === undefined) {
+          throw new Error("Observation not found");
+        }
+
+        const result = sdk.walkReferences(observation);
+
+        expect(result).toBeDefined();
+        expect(result.startResource).toBe(observation);
+        expect(result.allResources).toBeDefined();
+        expect(Array.isArray(result.allResources)).toBe(true);
+
+        // Should include the observation itself plus referenced resources
+        // Observation references: subject (Patient), encounter (Encounter), performer (Practitioner)
+        expect(result.allResources.length).toBeGreaterThanOrEqual(4);
+
+        // Check that referenced resources are included
+        const resourceIds = result.allResources.map(r => r.id);
+        expect(resourceIds).toContain("observation-001"); // start resource
+        expect(resourceIds).toContain("patient-123"); // subject
+        expect(resourceIds).toContain("encounter-789"); // encounter
+        expect(resourceIds).toContain("practitioner-456"); // performer
+      });
+
+      it("should organize resources by depth level", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const observation = sdk.getObservationById("observation-001");
+
+        if (observation === undefined) {
+          throw new Error("Observation not found");
+        }
+        const result = sdk.walkReferences(observation);
+
+        expect(result.resourcesByDepth).toBeDefined();
+        expect(result.resourcesByDepth instanceof Map).toBe(true);
+
+        // Depth 0 should contain the starting resource
+        const depth0 = result.resourcesByDepth.get(0);
+        expect(depth0).toBeDefined();
+        expect(depth0?.length).toBe(1);
+        if (depth0 && depth0[0]) {
+          expect(depth0[0].id).toBe("observation-001");
+        }
+
+        // Depth 1 should contain directly referenced resources
+        const depth1 = result.resourcesByDepth.get(1);
+        if (depth1 === undefined) {
+          throw new Error("Depth 1 not found");
+        }
+        expect(depth1.length).toBeGreaterThan(0);
+      });
+
+      it("should report the depth reached", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const observation = sdk.getObservationById("observation-001");
+
+        if (observation === undefined) {
+          throw new Error("Observation not found");
+        }
+
+        const result = sdk.walkReferences(observation);
+
+        expect(result.depthReached).toBeGreaterThanOrEqual(0);
+        expect(typeof result.depthReached).toBe("number");
+      });
+    });
+
+    describe("Multi-level traversal", () => {
+      it("should traverse multiple levels from DiagnosticReport", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const diagnosticReport = sdk.getDiagnosticReportById("diagnostic-report-002");
+
+        if (diagnosticReport === undefined) {
+          throw new Error("DiagnosticReport not found");
+        }
+        const result = sdk.walkReferences(diagnosticReport);
+
+        // DiagnosticReport -> Observation (level 1) -> Patient/Encounter/Practitioner (level 2)
+        expect(result.depthReached).toBeGreaterThanOrEqual(1);
+
+        const allResourceIds = result.allResources.map(r => r.id);
+        expect(allResourceIds).toContain("diagnostic-report-002"); // start
+        expect(allResourceIds).toContain("observation-001"); // result reference
+        expect(allResourceIds).toContain("patient-123"); // from observation
+      });
+    });
+
+    describe("Include start resource option", () => {
+      it("should include start resource by default", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const observation = sdk.getObservationById("observation-001");
+
+        if (observation === undefined) {
+          throw new Error("Observation not found");
+        }
+
+        const result = sdk.walkReferences(observation);
+
+        expect(result.allResources.map(r => r.id)).toContain("observation-001");
+      });
+
+      it("should exclude start resource when includeStartResource is false", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const observation = sdk.getObservationById("observation-001");
+
+        if (observation === undefined) {
+          throw new Error("Observation not found");
+        }
+        const result = sdk.walkReferences(observation, { includeStartResource: false });
+
+        expect(result.allResources.map(r => r.id)).not.toContain("observation-001");
+        // But should still have referenced resources
+        expect(result.allResources.length).toBeGreaterThan(0);
+      });
+    });
+
+    describe("Max depth limiting", () => {
+      it("should respect maxDepth of 0 (only start resource)", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const observation = sdk.getObservationById("observation-001");
+
+        if (observation === undefined) {
+          throw new Error("Observation not found");
+        }
+
+        const result = sdk.walkReferences(observation, { maxDepth: 0 });
+
+        expect(result.depthReached).toBe(0);
+        expect(result.allResources.length).toBe(1);
+        if (result.allResources[0]) {
+          expect(result.allResources[0].id).toBe("observation-001");
+        }
+        expect(result.resourcesByDepth.size).toBe(1);
+      });
+
+      it("should respect maxDepth of 1 (start + direct references)", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const observation = sdk.getObservationById("observation-001");
+
+        if (observation === undefined) {
+          throw new Error("Observation not found");
+        }
+
+        const result = sdk.walkReferences(observation, { maxDepth: 1 });
+
+        expect(result.depthReached).toBe(1);
+        // Should have observation + its direct references (patient, encounter, practitioner)
+        expect(result.allResources.length).toBeGreaterThanOrEqual(4);
+        expect(result.resourcesByDepth.size).toBeGreaterThanOrEqual(2);
+
+        // Should have depth 0 and depth 1
+        expect(result.resourcesByDepth.has(0)).toBe(true);
+        expect(result.resourcesByDepth.has(1)).toBe(true);
+        // Should not have depth 2
+        expect(result.resourcesByDepth.has(2)).toBe(false);
+      });
+
+      it("should respect maxDepth of 2 from DiagnosticReport", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const diagnosticReport = sdk.getDiagnosticReportById("diagnostic-report-002");
+
+        if (diagnosticReport === undefined) {
+          throw new Error("DiagnosticReport not found");
+        }
+
+        const result = sdk.walkReferences(diagnosticReport, { maxDepth: 2 });
+
+        // Note: In validCompleteBundle, DiagnosticReport references form a tightly connected graph
+        // where all resources at depth 2 have already been visited at depth 1, so depthReached is 1
+        expect(result.depthReached).toBeGreaterThanOrEqual(1);
+        expect(result.resourcesByDepth.has(0)).toBe(true); // DiagnosticReport
+        expect(result.resourcesByDepth.has(1)).toBe(true); // Observation, Patient, Encounter, Practitioner
+        // Depth 2 may or may not exist depending on the reference structure
+        expect(result.resourcesByDepth.has(3)).toBe(false); // Should not exist
+
+        // Verify we got all expected resources
+        const allResourceIds = result.allResources.map(r => r.id);
+        expect(allResourceIds).toContain("diagnostic-report-002");
+        expect(allResourceIds).toContain("observation-001");
+        expect(allResourceIds).toContain("patient-123");
+      });
+
+      it("should handle Infinity maxDepth (default)", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const observation = sdk.getObservationById("observation-001");
+
+        if (observation === undefined) {
+          throw new Error("Observation not found");
+        }
+
+        const resultWithInfinity = sdk.walkReferences(observation, { maxDepth: Infinity });
+        const resultWithoutOption = sdk.walkReferences(observation);
+
+        // Both should traverse all reachable resources
+        expect(resultWithInfinity.allResources.length).toBe(
+          resultWithoutOption.allResources.length
+        );
+        expect(resultWithInfinity.depthReached).toBe(resultWithoutOption.depthReached);
+      });
+    });
+
+    describe("Circular reference handling", () => {
+      it("should handle circular references without infinite loops", async () => {
+        // Create bundle with circular references
+        const circularBundle: Bundle = {
+          resourceType: "Bundle",
+          type: "collection",
+          entry: [
+            {
+              resource: {
+                resourceType: "Organization",
+                id: "org-1",
+                partOf: { reference: "Organization/org-2" },
+              },
+            },
+            {
+              resource: {
+                resourceType: "Organization",
+                id: "org-2",
+                partOf: { reference: "Organization/org-1" },
+              },
+            },
+          ],
+        };
+
+        const sdk = await FhirBundleSdk.create(circularBundle);
+        const org1 = sdk.getOrganizationById("org-1");
+
+        // Should complete without hanging
+        if (org1 === undefined) {
+          throw new Error("Organization not found");
+        }
+        const result = sdk.walkReferences(org1);
+
+        expect(result).toBeDefined();
+        expect(result.allResources.length).toBe(2); // Both organizations
+        const ids = result.allResources.map(r => r.id);
+        expect(ids).toContain("org-1");
+        expect(ids).toContain("org-2");
+      });
+    });
+
+    describe("Array reference handling", () => {
+      it("should handle array references correctly", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const observation = sdk.getObservationById("observation-001");
+
+        if (observation === undefined) {
+          throw new Error("Observation not found");
+        }
+
+        const result = sdk.walkReferences(observation);
+
+        // Observation has performer array
+        const practitionerId = "practitioner-456";
+        expect(result.allResources.map(r => r.id)).toContain(practitionerId);
+      });
+
+      it("should handle DiagnosticReport result array", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const diagnosticReport = sdk.getDiagnosticReportById("diagnostic-report-002");
+
+        if (diagnosticReport === undefined) {
+          throw new Error("DiagnosticReport not found");
+        }
+
+        const result = sdk.walkReferences(diagnosticReport);
+
+        // DiagnosticReport has result array pointing to Observations
+        expect(result.allResources.map(r => r.id)).toContain("observation-001");
+      });
+    });
+
+    describe("Edge cases", () => {
+      it("should handle resources with no references", async () => {
+        const bundleWithIsolatedPatient: Bundle = {
+          resourceType: "Bundle",
+          type: "collection",
+          entry: [
+            {
+              resource: {
+                resourceType: "Patient",
+                id: "patient-isolated",
+                name: [{ family: "Isolated", given: ["Patient"] }],
+              },
+            },
+          ],
+        };
+
+        const sdk = await FhirBundleSdk.create(bundleWithIsolatedPatient);
+        const patient = sdk.getPatientById("patient-isolated");
+
+        if (patient === undefined) {
+          throw new Error("Patient not found");
+        }
+
+        const result = sdk.walkReferences(patient);
+
+        expect(result.allResources.length).toBe(1);
+        expect(result.depthReached).toBe(0);
+        expect(result.allResources[0]?.id).toBe("patient-isolated");
+      });
+
+      it("should handle resources with broken references", async () => {
+        const sdk = await FhirBundleSdk.create(bundleWithBrokenReferences);
+        const observation = sdk.getObservationById("observation-broken");
+
+        // Should not throw, just return what's reachable
+        if (observation === undefined) {
+          throw new Error("Observation not found");
+        }
+
+        const result = sdk.walkReferences(observation);
+
+        expect(result).toBeDefined();
+        expect(result.startResource.id).toBe("observation-broken");
+      });
+
+      it("should handle empty options", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const observation = sdk.getObservationById("observation-001");
+
+        if (observation === undefined) {
+          throw new Error("Observation not found");
+        }
+
+        const result = sdk.walkReferences(observation, {});
+
+        expect(result).toBeDefined();
+        expect(result.allResources.length).toBeGreaterThan(0);
+      });
+    });
+  });
+
+  describe("LLM Context Generation", () => {
+    describe("stripNonClinicalData", () => {
+      it("should remove meta field", () => {
+        const patient: Patient = {
+          resourceType: "Patient",
+          id: "patient-123",
+          meta: {
+            lastUpdated: "2023-01-01T00:00:00Z",
+            versionId: "1",
+            source: "http://example.com",
+          },
+          name: [{ family: "Smith", given: ["John"] }],
+        };
+
+        const cleaned = FhirBundleSdk.stripNonClinicalData(patient);
+
+        expect(cleaned.meta).toBeUndefined();
+        expect(cleaned.name).toEqual([{ family: "Smith", given: ["John"] }]);
+        expect(cleaned.id).toBeUndefined();
+      });
+
+      it("should remove extension field", () => {
+        const patient: Patient = {
+          resourceType: "Patient",
+          id: "patient-123",
+          extension: [
+            {
+              url: "http://example.com/extension",
+              valueString: "some extension",
+            },
+          ],
+          name: [{ family: "Smith", given: ["John"] }],
+        };
+
+        const cleaned = FhirBundleSdk.stripNonClinicalData(patient);
+
+        expect(cleaned.extension).toBeUndefined();
+        expect(cleaned.name).toEqual([{ family: "Smith", given: ["John"] }]);
+      });
+
+      it("should remove text field", () => {
+        const observation: Observation = {
+          resourceType: "Observation",
+          id: "obs-123",
+          status: "final",
+          code: {
+            coding: [{ system: "http://loinc.org", code: "12345" }],
+          },
+          text: {
+            status: "generated",
+            div: "<div>Some narrative</div>",
+          },
+        };
+
+        const cleaned = FhirBundleSdk.stripNonClinicalData(observation);
+
+        expect(cleaned.text).toBeUndefined();
+        expect(cleaned.code).toBeDefined();
+        expect(cleaned.status).toBe("final");
+      });
+
+      it("should not mutate the original resource", () => {
+        const patient: Patient = {
+          resourceType: "Patient",
+          id: "patient-123",
+          meta: {
+            lastUpdated: "2023-01-01T00:00:00Z",
+          },
+          name: [{ family: "Smith", given: ["John"] }],
+        };
+
+        const cleaned = FhirBundleSdk.stripNonClinicalData(patient);
+
+        // Original should be unchanged
+        expect(patient.meta).toBeDefined();
+        expect(patient.id).toBe("patient-123");
+        // Cleaned should have removed them
+        expect(cleaned.meta).toBeUndefined();
+        expect(cleaned.id).toBeUndefined();
+      });
+
+      it("should handle nested extension fields", () => {
+        const patient: Patient = {
+          resourceType: "Patient",
+          id: "patient-123",
+          name: [
+            {
+              family: "Smith",
+              given: ["John"],
+              extension: [
+                {
+                  url: "http://example.com/name-extension",
+                  valueString: "some value",
+                },
+              ],
+            },
+          ],
+        };
+
+        const cleaned = FhirBundleSdk.stripNonClinicalData(patient);
+
+        expect(cleaned.name?.[0]?.extension).toBeUndefined();
+        expect(cleaned.name?.[0]?.family).toBe("Smith");
+      });
+
+      it("should remove id field", () => {
+        const patient: Patient = {
+          resourceType: "Patient",
+          id: "patient-123",
+          name: [{ family: "Smith", given: ["John"] }],
+        };
+
+        const cleaned = FhirBundleSdk.stripNonClinicalData(patient);
+
+        expect(cleaned.id).toBeUndefined();
+        expect(cleaned.name).toEqual([{ family: "Smith", given: ["John"] }]);
+      });
+
+      it("should remove identifier field", () => {
+        const patient: Patient = {
+          resourceType: "Patient",
+          id: "patient-123",
+          identifier: [
+            {
+              system: "http://hospital.example.org",
+              value: "123456",
+            },
+          ],
+          name: [{ family: "Smith", given: ["John"] }],
+        };
+
+        const cleaned = FhirBundleSdk.stripNonClinicalData(patient);
+
+        expect(cleaned.identifier).toBeUndefined();
+        expect(cleaned.name).toEqual([{ family: "Smith", given: ["John"] }]);
+      });
+
+      it("should remove all reference fields from REFERENCE_METHOD_MAPPING", () => {
+        const observation: Observation = {
+          resourceType: "Observation",
+          id: "obs-123",
+          status: "final",
+          code: {
+            coding: [{ system: "http://loinc.org", code: "12345" }],
+          },
+          subject: { reference: "Patient/patient-123" },
+          encounter: { reference: "Encounter/encounter-456" },
+          performer: [{ reference: "Practitioner/practitioner-789" }],
+          basedOn: [{ reference: "ServiceRequest/sr-001" }],
+        };
+
+        const cleaned = FhirBundleSdk.stripNonClinicalData(observation);
+
+        // All reference fields should be removed
+        expect(cleaned.subject).toBeUndefined();
+        expect(cleaned.encounter).toBeUndefined();
+        expect(cleaned.performer).toBeUndefined();
+        expect(cleaned.basedOn).toBeUndefined();
+        // Clinical data should remain
+        expect(cleaned.status).toBe("final");
+        expect(cleaned.code).toBeDefined();
+      });
+    });
+
+    describe("generateLLMContext", () => {
+      it("should generate structured text format by default", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const observation = sdk.getObservationById("observation-001");
+
+        if (observation === undefined) {
+          throw new Error("Observation not found");
+        }
+
+        const context = sdk.generateLLMContext(observation);
+
+        expect(context).toContain("PRIMARY RESOURCE:");
+        expect(context).toContain("[Type: Observation");
+        expect(context).toContain("DIRECTLY REFERENCED");
+      });
+
+      it("should respect maxDepth option", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const observation = sdk.getObservationById("observation-001");
+
+        if (observation === undefined) {
+          throw new Error("Observation not found");
+        }
+
+        const context = sdk.generateLLMContext(observation, { maxDepth: 0 });
+
+        expect(context).toContain("PRIMARY RESOURCE:");
+        expect(context).not.toContain("DIRECTLY REFERENCED");
+      });
+
+      it("should generate JSON format when specified", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const observation = sdk.getObservationById("observation-001");
+
+        if (observation === undefined) {
+          throw new Error("Observation not found");
+        }
+
+        const context = sdk.generateLLMContext(observation, { format: "json" });
+
+        expect(() => JSON.parse(context)).not.toThrow();
+        const parsed = JSON.parse(context);
+        expect(parsed.primaryResource).toBeDefined();
+        expect(parsed.primaryResource.resourceType).toBe("Observation");
+      });
+
+      it("should strip non-clinical data from all resources", async () => {
+        const bundleWithMeta: Bundle = {
+          resourceType: "Bundle",
+          type: "collection",
+          entry: [
+            {
+              resource: {
+                resourceType: "Observation",
+                id: "obs-with-meta",
+                status: "final",
+                code: {
+                  coding: [{ system: "http://loinc.org", code: "12345" }],
+                },
+                meta: {
+                  lastUpdated: "2023-01-01T00:00:00Z",
+                },
+                extension: [
+                  {
+                    url: "http://example.com/extension",
+                    valueString: "test",
+                  },
+                ],
+              },
+            },
+          ],
+        };
+
+        const sdk = await FhirBundleSdk.create(bundleWithMeta);
+        const observation = sdk.getObservationById("obs-with-meta");
+
+        if (observation === undefined) {
+          throw new Error("Observation not found");
+        }
+
+        const context = sdk.generateLLMContext(observation, { format: "json" });
+        const parsed = JSON.parse(context);
+
+        expect(parsed.primaryResource.meta).toBeUndefined();
+        expect(parsed.primaryResource.extension).toBeUndefined();
+        expect(parsed.primaryResource.code).toBeDefined();
+      });
+
+      it("should group resources by type at each depth", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const diagnosticReport = sdk.getDiagnosticReportById("diagnostic-report-002");
+
+        if (diagnosticReport === undefined) {
+          throw new Error("DiagnosticReport not found");
+        }
+
+        const context = sdk.generateLLMContext(diagnosticReport, { maxDepth: 2 });
+
+        // Should have resource type groupings
+        expect(context).toContain("---");
+        expect(context).toMatch(/--- \w+ \(\d+\) ---/);
+      });
+
+      it("should handle includeStartResource option", async () => {
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const observation = sdk.getObservationById("observation-001");
+
+        if (observation === undefined) {
+          throw new Error("Observation not found");
+        }
+
+        const contextWithStart = sdk.generateLLMContext(observation, {
+          includeStartResource: true,
+        });
+        const contextWithoutStart = sdk.generateLLMContext(observation, {
+          includeStartResource: false,
+        });
+
+        expect(contextWithStart).toContain("PRIMARY RESOURCE:");
+        expect(contextWithoutStart).not.toContain("PRIMARY RESOURCE:");
+        expect(contextWithoutStart).toContain("DIRECTLY REFERENCED");
+      });
+
+      it("should log resource counts to console", async () => {
+        const consoleSpy = jest.spyOn(console, "log").mockImplementation();
+
+        const sdk = await FhirBundleSdk.create(validCompleteBundle);
+        const observation = sdk.getObservationById("observation-001");
+
+        if (observation === undefined) {
+          throw new Error("Observation not found");
+        }
+
+        sdk.generateLLMContext(observation);
+
+        expect(consoleSpy).toHaveBeenCalledWith(
+          expect.stringContaining("[LLM Context] Total resources discovered:")
+        );
+        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("[LLM Context] Depth"));
+
+        consoleSpy.mockRestore();
       });
     });
   });

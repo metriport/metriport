@@ -1,0 +1,4 @@
+export const TEST_PATIENT_ID = "92b5ff9e-415b-49f1-9bf3-2a4a8ca443aa";
+export const TEST_DATE_NOTE_WRITTEN = "2025-02-05T12:00:00.000Z";
+export const TEST_ENCOUNTER_ID = "7669de0c-65b9-4b03-87e0-9b0ac3261fb7";
+export const TEST_CONFIDENCE_THRESHOLD = 0.1;

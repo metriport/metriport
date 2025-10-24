@@ -1,6 +1,7 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import { buildConversionResultHandler } from "@metriport/core/command/conversion-result/conversion-result-factory";
 import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
+import { MetriportError } from "@metriport/shared";
 import {
   FhirConverterParams,
   FhirExtension,
@@ -23,16 +24,19 @@ import {
 } from "@metriport/core/domain/conversion/upload-conversion-steps";
 import { MedicalDataSource } from "@metriport/core/external";
 import { executeWithRetriesS3, S3Utils } from "@metriport/core/external/aws/s3";
+import {
+  getFileContentsFromS3IfConvertible,
+  getSanitizedContents,
+} from "@metriport/core/external/cda/get-file-contents";
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
-import { isConvertibleFromS3 } from "@metriport/core/external/cda/is-convertible";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
 import { errorToString, executeWithNetworkRetries } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
@@ -147,7 +151,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
       log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
       const downloadStart = Date.now();
 
-      const isConvertibleResult = await isConvertibleFromS3({
+      const isConvertibleResult = await getFileContentsFromS3IfConvertible({
         bucketName: s3BucketName,
         fileKey: s3FileName,
         s3Utils,
@@ -161,9 +165,9 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
         continue;
       }
 
-      const { documentContents: payloadNoB64, b64Attachments } = removeBase64PdfEntries(
-        isConvertibleResult.contents
-      );
+      const sanitizedPayload = getSanitizedContents(isConvertibleResult.contents);
+      const { documentContents: payloadNoB64, b64Attachments } =
+        removeBase64PdfEntries(sanitizedPayload);
 
       if (b64Attachments && b64Attachments.total > 0) {
         log(`Extracted ${b64Attachments.total} B64 attachments - will process them soon`);
@@ -282,7 +286,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
         log(`${msg}: ${errorToString(error)}`);
         capture.message(msg, {
           extra: {
-            error,
+            error: errorToString(error),
             cxId,
             patientId,
             context: lambdaName,
@@ -353,60 +357,72 @@ async function convertPayloadToFHIR({
 }): Promise<Bundle<Resource>> {
   log(`Calling converter on url ${converterUrl} with params ${JSON.stringify(converterParams)}`);
 
-  const combinedBundle: Bundle<Resource> = {
-    resourceType: "Bundle",
-    type: "batch",
-    entry: [],
-  };
+  try {
+    const combinedBundle: Bundle<Resource> = {
+      resourceType: "Bundle",
+      type: "batch",
+      entry: [],
+    };
 
-  if (partitionedPayloads.length > 1) {
-    log(`The file was partitioned into ${partitionedPayloads.length} parts...`);
-  }
-
-  const bundleEntrySet = new Set<BundleEntry<Resource>>();
-  for (let index = 0; index < partitionedPayloads.length; index++) {
-    const payload = partitionedPayloads[index];
-
-    const chunkSize = payload ? new Blob([payload]).size : 0;
-    if (chunkSize > LARGE_CHUNK_SIZE_IN_BYTES) {
-      const msg = `Chunk size is too large`;
-      log(`${msg} - chunkSize ${chunkSize} on ${index}`);
-      capture.message(msg, {
-        extra: {
-          chunkSize,
-          patientId: converterParams.patientId,
-          fileName: converterParams.fileName,
-        },
-        level: "warning",
-      });
+    if (partitionedPayloads.length > 1) {
+      log(`The file was partitioned into ${partitionedPayloads.length} parts...`);
     }
 
-    const res = await executeWithNetworkRetries(
-      () =>
-        fhirConverter.post(converterUrl, payload, {
-          params: converterParams,
-          headers: { "Content-Type": TXT_MIME_TYPE },
-        }),
-      {
-        // No retries on timeout b/c we want to re-enqueue instead of trying within the same lambda run,
-        // it could lead to timing out the lambda execution.
-        log,
+    const bundleEntrySet = new Set<BundleEntry<Resource>>();
+    for (let index = 0; index < partitionedPayloads.length; index++) {
+      const payload = partitionedPayloads[index];
+
+      const chunkSize = payload ? new Blob([payload]).size : 0;
+      if (chunkSize > LARGE_CHUNK_SIZE_IN_BYTES) {
+        const msg = `Chunk size is too large`;
+        log(`${msg} - chunkSize ${chunkSize} on ${index}`);
+        capture.message(msg, {
+          extra: {
+            chunkSize,
+            patientId: converterParams.patientId,
+            fileName: converterParams.fileName,
+          },
+          level: "warning",
+        });
       }
-    );
 
-    const conversionResult = res.data.fhirResource as Bundle<Resource>;
-
-    if (conversionResult?.entry && conversionResult.entry.length > 0) {
-      log(
-        `Current partial bundle with index ${index} contains: ${conversionResult.entry.length} resources...`
+      const res = await executeWithNetworkRetries(
+        () =>
+          fhirConverter.post(converterUrl, payload, {
+            params: converterParams,
+            headers: { "Content-Type": TXT_MIME_TYPE },
+          }),
+        {
+          // No retries on timeout b/c we want to re-enqueue instead of trying within the same lambda run,
+          // it could lead to timing out the lambda execution.
+          log,
+        }
       );
-      conversionResult.entry.forEach(entry => bundleEntrySet.add(entry));
-    }
-  }
-  combinedBundle.entry = [...bundleEntrySet];
 
-  log(`Combined bundle contains: ${combinedBundle.entry.length} resources`);
-  return combinedBundle;
+      const conversionResult = res.data.fhirResource as Bundle<Resource>;
+
+      if (conversionResult?.entry && conversionResult.entry.length > 0) {
+        log(
+          `Current partial bundle with index ${index} contains: ${conversionResult.entry.length} resources...`
+        );
+        conversionResult.entry.forEach(entry => bundleEntrySet.add(entry));
+      }
+    }
+    combinedBundle.entry = [...bundleEntrySet];
+
+    log(`Combined bundle contains: ${combinedBundle.entry.length} resources`);
+    return combinedBundle;
+  } catch (error) {
+    const defaultErrorMessage = "Failed to convert CDA to FHIR";
+    const errorMessage =
+      error instanceof AxiosError
+        ? error.response?.data?.error?.message ?? defaultErrorMessage
+        : defaultErrorMessage;
+    throw new MetriportError(errorMessage, error, {
+      patientId: converterParams.patientId,
+      fileName: converterParams.fileName,
+    });
+  }
 }
 
 function parseBody(body: unknown): EventBody {

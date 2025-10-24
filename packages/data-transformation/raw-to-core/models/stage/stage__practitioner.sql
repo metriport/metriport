@@ -125,6 +125,4 @@ SELECT
     telecom_4_value,
     filename,
     processed_date 
-FROM {{source('raw', 'practitioner') }} x
-
-QUALIFY rank() over(partition by filename order by processed_date desc) = 1
+FROM {{source('raw', 'practitioner_view') }} x

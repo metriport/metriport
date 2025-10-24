@@ -82,6 +82,8 @@ interface LambdasNestedStackProps extends NestedStackProps {
   featureFlagsTable: dynamodb.Table;
   bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
   openSearch: OpenSearchConfigForLambdas;
+  analyticsQueue?: IQueue | undefined;
+  aiBriefBucket: s3.Bucket | undefined;
 }
 
 type GenericConsolidatedLambdaProps = {
@@ -101,6 +103,8 @@ type GenericConsolidatedLambdaProps = {
   featureFlagsTable: dynamodb.Table;
   consolidatedIngestionQueue: IQueue;
   bedrock: { modelId: string; region: string; anthropicVersion: string } | undefined;
+  analyticsQueue?: IQueue;
+  aiBriefBucket: s3.Bucket | undefined;
 };
 
 type ConsolidatedLambdaProps = Omit<GenericConsolidatedLambdaProps, "name" | "entry" | "memory">;
@@ -121,6 +125,7 @@ export class LambdasNestedStack extends NestedStack {
   readonly acmCertificateMonitorLambda: Lambda;
   readonly hl7v2RosterUploadLambdas: Lambda[] | undefined;
   readonly hl7LahieSftpIngestionLambda: Lambda | undefined;
+  readonly hl7AlohrSftpIngestionLambda: Lambda | undefined;
   readonly conversionResultNotifierLambda: Lambda;
   readonly reconversionKickoffLambda: Lambda;
   readonly reconversionKickoffQueue: Queue;
@@ -243,6 +248,8 @@ export class LambdasNestedStack extends NestedStack {
       featureFlagsTable: props.featureFlagsTable,
       bedrock: props.config.bedrock,
       consolidatedIngestionQueue: this.consolidatedIngestionQueue,
+      analyticsQueue: props.analyticsQueue,
+      aiBriefBucket: props.aiBriefBucket,
     });
     this.fhirToBundleCountLambda = this.setupFhirBundleCountLambda({
       lambdaLayers: props.lambdaLayers,
@@ -259,6 +266,7 @@ export class LambdasNestedStack extends NestedStack {
       featureFlagsTable: props.featureFlagsTable,
       bedrock: props.config.bedrock,
       consolidatedIngestionQueue: this.consolidatedIngestionQueue,
+      aiBriefBucket: props.aiBriefBucket,
     });
 
     this.consolidatedSearchLambda = this.setupConsolidatedSearchLambda({
@@ -329,6 +337,19 @@ export class LambdasNestedStack extends NestedStack {
         ],
       });
 
+      const alohrSftpIngestionBucket = new s3.Bucket(this, "alohrSftpIngestionBucket", {
+        bucketName: props.config.hl7Notification.AlohrSftpIngestionLambda.bucketName,
+        publicReadAccess: false,
+        encryption: s3.BucketEncryption.S3_MANAGED,
+        versioned: true,
+        cors: [
+          {
+            allowedOrigins: ["*"],
+            allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
+          },
+        ],
+      });
+
       this.hl7v2RosterUploadLambdas = this.setupRosterUploadLambdas({
         lambdaLayers: props.lambdaLayers,
         vpc: props.vpc,
@@ -345,6 +366,15 @@ export class LambdasNestedStack extends NestedStack {
         config: props.config,
         alarmAction: props.alarmAction,
         lahieSftpIngestionBucket,
+      });
+
+      this.hl7AlohrSftpIngestionLambda = this.setupAlohrSftpIngestionLambda({
+        lambdaLayers: props.lambdaLayers,
+        vpc: props.vpc,
+        secrets: props.secrets,
+        config: props.config,
+        alarmAction: props.alarmAction,
+        alohrSftpIngestionBucket,
       });
     }
 
@@ -742,6 +772,7 @@ export class LambdasNestedStack extends NestedStack {
     bundleBucket,
     conversionsBucket,
     pharmacyBundleBucket,
+    aiBriefBucket,
     hl7ConversionBucket,
     labBundleBucket,
     sentryDsn,
@@ -750,6 +781,7 @@ export class LambdasNestedStack extends NestedStack {
     featureFlagsTable,
     bedrock,
     consolidatedIngestionQueue,
+    analyticsQueue,
   }: GenericConsolidatedLambdaProps): Lambda {
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
 
@@ -783,6 +815,12 @@ export class LambdasNestedStack extends NestedStack {
         }),
         CONSOLIDATED_INGESTION_QUEUE_URL: consolidatedIngestionQueue.queueUrl,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        ...(analyticsQueue && {
+          FHIR_TO_CSV_INCREMENTAL_QUEUE_URL: analyticsQueue.queueUrl,
+        }),
+        ...(aiBriefBucket && {
+          AI_BRIEF_BUCKET_NAME: aiBriefBucket.bucketName,
+        }),
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       memory: 6144,
@@ -798,10 +836,12 @@ export class LambdasNestedStack extends NestedStack {
     pharmacyBundleBucket?.grantRead(theLambda);
     labBundleBucket?.grantRead(theLambda);
     hl7ConversionBucket?.grantRead(theLambda);
+    aiBriefBucket?.grantReadWrite(theLambda);
 
     featureFlagsTable.grantReadData(theLambda);
 
     consolidatedIngestionQueue.grantSendMessages(theLambda);
+    analyticsQueue?.grantSendMessages(theLambda);
 
     // Always add the bedrock policy to the lambda, regardless of whether bedrock is defined or not
     addBedrockPolicyToLambda(theLambda);
@@ -1030,6 +1070,76 @@ export class LambdasNestedStack extends NestedStack {
     return acmCertificateMonitorLambda;
   }
 
+  private setupAlohrSftpIngestionLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    secrets: Secrets;
+    config: EnvConfig;
+    alohrSftpIngestionBucket: s3.IBucket;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const envType = ownProps.config.environmentType;
+    const alohrProps = ownProps.config.hl7Notification?.AlohrSftpIngestionLambda;
+    const sftpPasswordSecret = ownProps.secrets["ALOHR_INGESTION_PASSWORD"];
+    const queue = ownProps.config.hl7Notification?.notificationWebhookSenderQueue;
+    const alohr = ownProps.config.hl7Notification?.hieConfigs["Alohr"];
+
+    if (!alohrProps) {
+      throw new Error("AlohrSftpIngestionLambda is undefined in config.");
+    }
+    if (!ownProps.config.hl7Notification) {
+      throw new Error("HL7Notification is undefined in config.");
+    }
+    if (!queue) {
+      throw new Error("HL7NotificationWebhookSenderQueue is undefined in config.");
+    }
+    if (!sftpPasswordSecret) {
+      throw new Error("ALOHR_INGESTION_PASSWORD is not defined in config.");
+    }
+    if (!alohr) {
+      throw new Error("Alohr is undefined in config.");
+    }
+
+    const sftpConfig = alohrProps.sftpConfig;
+    const lambdaTimeout = Duration.minutes(5);
+    const lambdaMemorySize = 1024;
+    const hl7Base64ScramblerSeed = ownProps.secrets["HL7_BASE64_SCRAMBLER_SEED"];
+
+    if (!hl7Base64ScramblerSeed) {
+      throw new Error("HL7_BASE64_SCRAMBLER_SEED is not defined in config.");
+    }
+
+    const lambda = createScheduledLambda({
+      layers: [ownProps.lambdaLayers.shared],
+      vpc: ownProps.vpc,
+      timeout: lambdaTimeout,
+      memory: lambdaMemorySize,
+      scheduleExpression: "0/15 * * * ? *",
+      envType,
+      entry: "hl7-alohr-sftp-ingestion",
+      envVars: {
+        ALOHR_INGESTION_SFTP_CONFIG: JSON.stringify(sftpConfig),
+        ALOHR_INGESTION_REMOTE_PATH: sftpConfig.remotePath,
+        ALOHR_INGESTION_PASSWORD_ARN: sftpPasswordSecret.secretArn,
+        ALOHR_INGESTION_BUCKET_NAME: ownProps.alohrSftpIngestionBucket.bucketName,
+        HL7_BASE64_SCRAMBLER_SEED_ARN: hl7Base64ScramblerSeed.secretArn,
+        HL7_NOTIFICATION_QUEUE_URL: queue.url,
+        ALOHR_INGESTION_TIMEZONE: alohr.timezone,
+      },
+      stack: this,
+      name: "Hl7SftpIngestionAlohr",
+      alarmSnsAction: ownProps.alarmAction,
+    });
+
+    sftpPasswordSecret.grantRead(lambda);
+
+    ownProps.alohrSftpIngestionBucket.grantReadWrite(lambda);
+    hl7Base64ScramblerSeed.grantRead(lambda);
+    const webhookSenderQueue = Queue.fromQueueArn(this, "Hl7WebhookSenderQueueAlohr", queue.arn);
+    webhookSenderQueue.grantSendMessages(lambda);
+    return lambda;
+  }
+
   private setupLahieSftpIngestionLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
@@ -1156,7 +1266,7 @@ export class LambdasNestedStack extends NestedStack {
             HL7V2_ROSTER_BUCKET_NAME: hl7v2RosterBucket.bucketName,
             API_URL: config.loadBalancerDnsName,
             HL7_BASE64_SCRAMBLER_SEED_ARN: hl7ScramblerSeedSecret.secretArn,
-            ROSTER_UPLOAD_SFTP_PASSWORD_ARN: passwordSecret.secretArn,
+            ROSTER_UPLOAD_SFTP_PASSWORD_NAME: passwordSecretName,
             ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
             POST_HOG_API_KEY_SECRET: posthogSecretName,
           },

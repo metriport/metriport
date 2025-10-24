@@ -187,8 +187,8 @@ The format follows:
     <ResponseField name="messageId" type="string" required>
       The ID for this message from Metriport, useful for debugging purposes only;
     </ResponseField>
-    <ResponseField name="requestId" type="string">
-      The ID of the request that initiated the async flow for this webhook;
+    <ResponseField name="requestId" type="string" optional>
+      The ID of the request that initiated the async flow for this webhook.
     </ResponseField>
     <ResponseField name="when" type="string" required>
       The timestamp when this message was originally sent, formatted as [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601)

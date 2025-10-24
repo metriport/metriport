@@ -1,5 +1,6 @@
 import { CfnOutput, Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
@@ -53,6 +54,7 @@ interface Hl7NotificationWebhookSenderNestedStackProps extends NestedStackProps 
   hl7ConversionBucket: s3.IBucket;
   incomingHl7NotificationBucket: s3.IBucket | undefined;
   secrets: Secrets;
+  outboundRateLimitTable: dynamodb.Table;
 }
 
 export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
@@ -72,6 +74,17 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     if (!hl7Base64ScramblerSeed) {
       throw new Error("HL7 base64 scrambler seed is undefined");
     }
+    const hieConfigs = props.config.hl7Notification?.hieConfigs;
+    if (!hieConfigs) {
+      throw new Error("HIE configs are undefined");
+    }
+    const heartbeatMonitorMap = Object.fromEntries(
+      Object.values(hieConfigs)
+        .filter((hieConfig): hieConfig is HieConfig & { checklyPingUrl: string } =>
+          Boolean(hieConfig.checklyPingUrl)
+        )
+        .map(hieConfig => [hieConfig.name, hieConfig.checklyPingUrl])
+    );
 
     const setup = this.setupHl7NotificationWebhookSenderLambda({
       lambdaLayers: props.lambdaLayers,
@@ -83,8 +96,10 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       hl7ConversionBucket: props.hl7ConversionBucket,
       incomingHl7NotificationBucket: props.incomingHl7NotificationBucket,
       analyticsSecret,
-      hieConfigs: props.config.hl7Notification?.hieConfigs ?? {},
+      hieConfigs,
       hl7Base64ScramblerSeed,
+      heartbeatMonitorMap,
+      outboundRateLimitTable: props.outboundRateLimitTable,
     });
 
     this.lambda = setup.lambda;
@@ -102,6 +117,8 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     analyticsSecret: ISecret;
     hl7Base64ScramblerSeed: ISecret;
     hieConfigs: Record<string, HieConfig | VpnlessHieConfig>;
+    heartbeatMonitorMap: Record<string, string>;
+    outboundRateLimitTable: dynamodb.Table;
   }): { lambda: Lambda } {
     const {
       lambdaLayers,
@@ -115,6 +132,8 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
       hieConfigs,
       incomingHl7NotificationBucket,
       hl7Base64ScramblerSeed,
+      heartbeatMonitorMap,
+      outboundRateLimitTable,
     } = ownProps;
     const {
       name,
@@ -154,8 +173,11 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
         HL7_CONVERSION_BUCKET_NAME: hl7ConversionBucket.bucketName,
         HL7_INCOMING_MESSAGE_BUCKET_NAME: incomingHl7NotificationBucket.bucketName,
         HL7_BASE64_SCRAMBLER_SEED_ARN: hl7Base64ScramblerSeed.secretArn,
+        OUTBOUND_RATE_LIMIT_TABLE_NAME: outboundRateLimitTable.tableName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         HIE_CONFIG_DICTIONARY: JSON.stringify(createHieConfigDictionary(hieConfigs)),
+        POST_HOG_API_KEY_SECRET: analyticsSecret.secretArn,
+        HEARTBEAT_MONITOR_MAP: JSON.stringify(heartbeatMonitorMap),
       },
     });
 
@@ -163,6 +185,7 @@ export class Hl7NotificationWebhookSenderNestedStack extends NestedStack {
     hl7ConversionBucket.grantReadWrite(lambda);
     incomingHl7NotificationBucket.grantReadWrite(lambda);
     hl7Base64ScramblerSeed.grantRead(lambda);
+    outboundRateLimitTable.grantReadWriteData(lambda);
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
     analyticsSecret.grantRead(lambda);

@@ -1,8 +1,11 @@
 import {
   Bundle,
+  Condition,
   DiagnosticReport,
   Encounter,
+  Location,
   Observation,
+  Organization,
   Patient,
   Practitioner,
 } from "@medplum/fhirtypes";
@@ -22,7 +25,7 @@ export const validCompleteBundle: Bundle = {
   resourceType: "Bundle",
   id: "test-bundle-complete",
   type: "collection",
-  total: 5,
+  total: 9,
   entry: [
     {
       fullUrl: "urn:uuid:patient-123",
@@ -46,6 +49,23 @@ export const validCompleteBundle: Bundle = {
             country: "USA",
           },
         ],
+        contact: [
+          {
+            relationship: [
+              {
+                coding: [
+                  {
+                    system: "http://terminology.hl7.org/CodeSystem/v2-0131",
+                    code: "C",
+                  },
+                ],
+              },
+            ],
+            organization: {
+              reference: "Organization/org-123",
+            },
+          },
+        ],
       } as Patient,
     },
     {
@@ -65,9 +85,77 @@ export const validCompleteBundle: Bundle = {
             code: {
               text: "Internal Medicine",
             },
+            issuer: {
+              reference: "Organization/org-123",
+            },
           },
         ],
       } as Practitioner,
+    },
+    {
+      fullUrl: "urn:uuid:org-123",
+      resource: {
+        resourceType: "Organization",
+        id: "org-123",
+        name: "Medical Center Hospital",
+        type: [
+          {
+            coding: [
+              {
+                system: "http://terminology.hl7.org/CodeSystem/organization-type",
+                code: "prov",
+                display: "Healthcare Provider",
+              },
+            ],
+          },
+        ],
+      } as Organization,
+    },
+    {
+      fullUrl: "urn:uuid:location-111",
+      resource: {
+        resourceType: "Location",
+        id: "location-111",
+        name: "Emergency Room",
+        status: "active",
+        mode: "instance",
+      } as Location,
+    },
+    {
+      fullUrl: "urn:uuid:condition-222",
+      resource: {
+        resourceType: "Condition",
+        id: "condition-222",
+        clinicalStatus: {
+          coding: [
+            {
+              system: "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              code: "active",
+            },
+          ],
+        },
+        verificationStatus: {
+          coding: [
+            {
+              system: "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              code: "confirmed",
+            },
+          ],
+        },
+        code: {
+          coding: [
+            {
+              system: "http://snomed.info/sct",
+              code: "38341003",
+              display: "Hypertension",
+            },
+          ],
+          text: "Hypertension",
+        },
+        subject: {
+          reference: "Patient/patient-123",
+        },
+      } as Condition,
     },
     {
       fullUrl: "urn:uuid:encounter-789",
@@ -90,6 +178,39 @@ export const validCompleteBundle: Bundle = {
             },
           },
         ],
+        diagnosis: [
+          {
+            condition: {
+              reference: "Condition/condition-222",
+            },
+            use: {
+              coding: [
+                {
+                  system: "http://terminology.hl7.org/CodeSystem/diagnosis-role",
+                  code: "AD",
+                  display: "Admission diagnosis",
+                },
+              ],
+            },
+            rank: 1,
+          },
+        ],
+        location: [
+          {
+            location: {
+              reference: "Location/location-111",
+            },
+            status: "active",
+          },
+        ],
+        hospitalization: {
+          origin: {
+            reference: "Location/location-111",
+          },
+          destination: {
+            reference: "Location/location-111",
+          },
+        },
         period: {
           start: "2023-09-29T14:00:00+00:00",
           end: "2023-09-29T15:00:00+00:00",

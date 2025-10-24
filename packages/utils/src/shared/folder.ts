@@ -6,7 +6,7 @@ export const runsFolderName = "runs";
 /**
  * Creates a symlink to the runs folder in the user's home directory
  */
-export function initRunsFolder(subFolder?: string) {
+export function initRunsFolder(subFolder?: string): string {
   const homeDir = os.homedir();
   const dest = `${homeDir}/Documents/phi/runs`;
   if (!fs.existsSync(dest)) {
@@ -23,7 +23,9 @@ export function initRunsFolder(subFolder?: string) {
     if (!fs.existsSync(subFolderPath)) {
       fs.mkdirSync(subFolderPath, { recursive: true });
     }
+    return subFolderPath;
   }
+  return pathName;
 }
 
 /**

@@ -1,6 +1,6 @@
 {
   "name": "@metriport/core",
-  "version": "1.26.5",
+  "version": "1.26.11",
   "private": true,
   "description": "Metriport helps you access and manage health and medical data, through a single open source API. Common code shared across packages.",
   "author": "Metriport Inc. <contact@metriport.com>",
@@ -22,6 +22,8 @@
     "./domain/*": "./dist/domain/*.js",
     "./external": "./dist/external/index.js",
     "./external/*": "./dist/external/*.js",
+    "./sde": "./dist/sde/index.js",
+    "./sde/*": "./dist/sde/*.js",
     "./mpi": "./dist/mpi/index.js",
     "./mpi/*": "./dist/mpi/*.js",
     "./fhir-deduplication": "./dist/fhir-deduplication/index.js",
@@ -62,6 +64,12 @@
       "mpi/*": [
         "dist/mpi/*"
       ],
+      "sde": [
+        "dist/sde/index.d.ts"
+      ],
+      "sde/*": [
+        "dist/sde/*"
+      ],
       "fhir-deduplication": [
         "dist/fhir-deduplication/index.d.ts"
       ],
@@ -98,7 +106,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
-    "prettier-fix": "npx prettier '**/*.ts' --write",
+    "prettier-fix": "npx prettier '**/*.{js,ts,md}' --write --ignore-path ../../.prettierignore",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
     "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
   },
@@ -106,6 +114,7 @@
     "@aws-crypto/sha256-js": "5.0.0",
     "@aws-sdk/client-acm": "^3.616.0",
     "@aws-sdk/client-bedrock-runtime": "^3.616.0",
+    "@aws-sdk/client-comprehendmedical": "^3.879.0",
     "@aws-sdk/client-lambda": "^3.865.0",
     "@aws-sdk/client-s3": "^3.800.0",
     "@aws-sdk/credential-provider-node": "^3.800.0",
@@ -137,6 +146,7 @@
     "dayjs": "^1.11.9",
     "express-rate-limit": "^7.4.1",
     "formidable": "^3.5.1",
+    "groq-sdk": "^0.33.0",
     "http-status": "~1.7.0",
     "ini": "^5.0.0",
     "ip-cidr": "^4.0.2",
