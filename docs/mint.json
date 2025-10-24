@@ -73,7 +73,8 @@
             "medical-api/api-reference/facility/get-facility",
             "medical-api/api-reference/facility/update-facility",
             "medical-api/api-reference/facility/list-facilities",
-            "medical-api/api-reference/facility/delete-facility"
+            "medical-api/api-reference/facility/delete-facility",
+            "medical-api/api-reference/patient/list-patients-in-cohort"
           ]
         },
         {
@@ -89,7 +90,12 @@
             "medical-api/api-reference/patient/list-patients",
             "medical-api/api-reference/patient/create-patient-external-sync",
             "medical-api/api-reference/patient/hie-opt-out",
-            "medical-api/api-reference/patient/bulk-create-patient"
+            "medical-api/api-reference/patient/bulk-create-patient",
+            "medical-api/api-reference/patient/get-patient-settings",
+            "medical-api/api-reference/patient/add-patients-to-cohort",
+            "medical-api/api-reference/patient/remove-patients-from-cohort",
+            "medical-api/api-reference/patient/add-patient-to-cohorts",
+            "medical-api/api-reference/patient/list-patient-cohorts"
           ]
         },
         {
@@ -100,13 +106,7 @@
             "medical-api/api-reference/cohort/get-cohort",
             "medical-api/api-reference/cohort/update-cohort",
             "medical-api/api-reference/cohort/delete-cohort",
-            "medical-api/api-reference/cohort/list-cohorts",
-            "medical-api/api-reference/cohort/add-patients-to-cohort",
-            "medical-api/api-reference/cohort/remove-patients-from-cohort",
-            "medical-api/api-reference/cohort/get-patient-settings",
-            "medical-api/api-reference/cohort/add-patient-to-cohorts",
-            "medical-api/api-reference/cohort/list-patients-in-cohort",
-            "medical-api/api-reference/cohort/list-patient-cohorts"
+            "medical-api/api-reference/cohort/list-cohorts"
           ]
         },
         {
@@ -158,10 +158,16 @@
         "medical-api/handling-data/ai-summaries",
         "medical-api/handling-data/medical-record-summary",
         "medical-api/handling-data/webhooks",
-        "medical-api/handling-data/realtime-patient-notifications",
+        {
+          "group": "Patient-Monitoring",
+          "icon": "wifi",
+          "pages": [
+            "medical-api/handling-data/patient-monitoring",
+            "medical-api/handling-data/realtime-patient-notifications", 
+            "medical-api/handling-data/scheduled-queries"
+          ]
+        },
         "medical-api/handling-data/cohorts",
-        "medical-api/handling-data/patient-monitoring",
-        "medical-api/handling-data/scheduled-queries",
         {
           "group": "Data Analytics and Warehousing",
           "icon": "database",

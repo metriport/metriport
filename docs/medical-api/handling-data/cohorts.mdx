@@ -17,9 +17,14 @@ that monitors a less critical group of individuals with just HIE data enabled.
 Every cohort has a unique name and a collection of settings which apply to all patients within that cohort.
 By default, you have 3 cohorts with the following names + behaviors:
 
-- 🟢 Low Risk: Monthly medical record refresh & no additional monitoring 
-- 🟡 Medium Risk: Monthly medical record refresh & prescription medication history  
-- 🔴 High Risk: Weekly medical record refresh & monitoring enabled for all available sources
+- 🟢 Low Risk: `monthly` medical record refresh & no additional monitoring 
+- 🟡 Medium Risk: `biweekly` medical record refresh & `pharmacy` notifications  
+- 🔴 High Risk: `weekly` medical record refresh & monitoring enabled for all available sources
+
+<Info>
+  If you do not have **pharmacy**, **ADT**, or **laboratory** monitoring features enabled for your account, 
+  these settings will be disabled in the default cohorts. Contact us if you'd like to enable these features.
+</Info>
 
 <Note>
   All of this can be personalized based on your needs,
@@ -28,7 +33,7 @@ By default, you have 3 cohorts with the following names + behaviors:
   existing
   cohort](/medical-api/api-reference/cohort/update-cohort)
   or [add existing patients to a
-  cohort](/medical-api/api-reference/cohort/add-patients-to-cohort)).
+  cohort](/medical-api/api-reference/patient/add-patients-to-cohort)).
 </Note>
 
 # The Cohort Model
@@ -151,8 +156,8 @@ there is a `cohorts` array parameter to set any number of cohorts on a patient. 
 
 As needed:
 
-- [Add Patients To Cohort](/medical-api/api-reference/cohort/add-patients-to-cohort)
-- [Remove Patients From Cohort](/medical-api/api-reference/cohort/remove-patients-from-cohort)
+- [Add Patients To Cohort](/medical-api/api-reference/patient/add-patients-to-cohort)
+- [Remove Patients From Cohort](/medical-api/api-reference/patient/remove-patients-from-cohort)
 
 
 ## Available settings
@@ -169,9 +174,7 @@ Use settings to enable monitoring for certain data sources.
 
 ### How are settings combined across multiple cohorts?
 
-When a patient belongs to multiple cohorts, their settings are aggregated from all cohorts they belong to. 
-If there are conflicting settings between cohorts, the least restrictive option is applied (logical OR). 
-See [get patient settings](/medical-api/api-reference/cohort/get-patient-settings) for details.
+If a patient is in multiple cohorts, an enabled setting stays enabled. Even if another cohort disables it.
 
 # Additional information
 Click here for additional information related to [patient monitoring](/medical-api/handling-data/patient-monitoring).

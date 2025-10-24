@@ -1,15 +1,15 @@
 ---
 title: "Scheduled Queries"
-icon: "calendar"
+icon: "ocdIndent"
 description: "Query the networks on your schedule."
 ---
 
 # Overview
-Scheduled Queries is an automated and scheduled version of [Start Document Query](/medical-api/api-reference/document/start-document-query).
+Scheduled Queries is an automated and scheduled version of adhoc queries (e.g., [Start Document Query](/medical-api/api-reference/document/start-document-query)).
 
-It allows you to specify a schedule in which document queries should be executed automatically.
+It allows you to specify a schedule in which queries should be executed automatically.
 
-You can choose one of the frequencies below for each of the document query source:
+You can choose one of the frequencies below for each of the query source:
  - `weekly`: runs every Saturday.  
  - `biweekly`: runs every other Saturday, starting with the first Saturday of the month.  
  - `monthly`: runs the last weekend of the month.  
@@ -25,5 +25,5 @@ The available data sources are:
 </Info>
 
 
-To use this feature, [set it up in one or more Cohorts](/medical-api/handling-data/cohorts) and associate the patients you want to have enabled for each schedule.
+Use this feature by [setting it up in one or more Cohorts](/medical-api/handling-data/cohorts) and associating the patients you want to have enabled for each schedule.
 

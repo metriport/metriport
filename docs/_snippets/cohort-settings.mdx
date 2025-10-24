@@ -58,7 +58,7 @@
       </Info>
     </ParamField>
     <ParamField body="laboratory" type="object" optional>
-      Laboratory notifications - subscribes patients for ongoing notifications of new lab results.  
+      Laboratory / lab results monitoring - enables laboratory test results monitoring where available.  
       <Expandable title="laboratory object properties">
         <ParamField body="notifications" type="boolean" optional>
           Enable/disable laboratory monitoring notifications. Defaults to disabled.
@@ -83,9 +83,5 @@
         </ParamField>
       </Expandable>
     </ParamField>
-    <Info>
-      For **pharmacy** and **laboratory** monitoring, choose either `notifications` OR `schedule`, but not both. 
-      If `notifications` is `true`, `schedule` value is ignored.
-    </Info>
   </Expandable>
 </ParamField>

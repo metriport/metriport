@@ -1,13 +1,14 @@
 ---
 title: "Patient Monitoring"
-icon: "clock"
+sidebarTitle: "General"
+icon: "ocdIndent"
 description: "Automated monitoring of patient medical data."
 ---
 
 # Overview
 Metriport supports two ways to access patient medical data:  
- - Adhoc: you ask for data whenever you need it (e.g., [Start Document Query](/medical-api/api-reference/document/start-document-query))  
- - Automated: you receive the data without initiating the request, either through [Realtime Patient Notifications](/medical-api/handling-data/patient-monitoring#real-time-patient-notifications) 
+ - **Adhoc**: you request data whenever you need it through various API endpoints (see [Start Document Query](/medical-api/api-reference/document/start-document-query) for an example)  
+ - **Automated**: you receive the data without initiating the request, either through [Realtime Patient Notifications](/medical-api/handling-data/patient-monitoring#real-time-patient-notifications) 
  or [Scheduled Queries](/medical-api/handling-data/patient-monitoring#scheduled-queries).
 
 Patient Monitoring is the automated way to receive patient data.
@@ -23,11 +24,11 @@ These notifications include:
 For more information see [Real-time Patient Notifications](/medical-api/handling-data/realtime-patient-notifications).
 
 # Scheduled Queries
-This allows you to specify a schedule in which document queries should be executed automatically.
+This allows you to specify a schedule in which queries should be executed automatically.
 
-This is essentially an automated and scheduled version of [Start Document Query](/medical-api/api-reference/document/start-document-query).
+This is a scheduled version of adhoc data queries.
 
-You can choose one of the [supported frequencies](/medical-api/handling-data/scheduled-queries#overview) to automatically trigger a Document Query for each of the supported sources.
+You can choose one of the [supported frequencies](/medical-api/handling-data/scheduled-queries#overview) to automatically trigger a Query for each of the supported sources.
 
 For more details, see [Scheduled Queries](/medical-api/handling-data/scheduled-queries).
 
