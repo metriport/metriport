@@ -1,7 +1,20 @@
+import _ from "lodash";
 import { PerformanceClient } from "@basetenlabs/performance-client";
 import { Config } from "../../util/config";
-import { EmbeddingConfig, EmbeddingResponse } from "./types";
-import { getBatchSize, getMaxConcurrentRequests, getTimeoutSeconds } from "./utils";
+import {
+  EmbeddingConfig,
+  EmbeddingResponse,
+  TextWithIndex,
+  TextWithEmbedding,
+  TextWithIndexAndEmbedding,
+} from "./types";
+import {
+  getBatchSize,
+  getMaxConcurrentRequests,
+  getTimeoutSeconds,
+  createTextWithEmbedding,
+  createTextWithIndexAndEmbedding,
+} from "./utils";
 import { EMBEDDING_ENCODING_FORMAT } from "./constants";
 
 export class EmbeddingClient {
@@ -15,13 +28,13 @@ export class EmbeddingClient {
     this.config = config;
   }
 
-  async createEmbeddings(texts: string[]): Promise<EmbeddingResponse> {
+  async batchEmbed(textsToEmbed: string[]): Promise<EmbeddingResponse> {
     const batchSize = getBatchSize(this.config);
     const maxConcurrentRequests = getMaxConcurrentRequests(this.config);
     const timeoutSeconds = getTimeoutSeconds(this.config);
 
     const response: EmbeddingResponse = await this.client.embed(
-      texts,
+      textsToEmbed,
       this.config.model,
       EMBEDDING_ENCODING_FORMAT,
       this.config.dimensions,
@@ -30,6 +43,25 @@ export class EmbeddingClient {
       batchSize,
       timeoutSeconds
     );
+
     return response;
+  }
+
+  async createTextWithEmbedding(textsToEmbed: string[]): Promise<TextWithEmbedding[]> {
+    const response = await this.batchEmbed(textsToEmbed);
+    const textWithEmbeddings = response.data.map(data =>
+      createTextWithEmbedding(data, textsToEmbed)
+    );
+    return _.compact(textWithEmbeddings);
+  }
+
+  async createTextWithIndexAndEmbedding(
+    textsWithIndex: TextWithIndex[]
+  ): Promise<TextWithIndexAndEmbedding[]> {
+    const response = await this.batchEmbed(textsWithIndex.map(({ text }) => text));
+    const textWithIndexAndEmbeddings = response.data.map((data, index) =>
+      createTextWithIndexAndEmbedding(data, textsWithIndex, index)
+    );
+    return _.compact(textWithIndexAndEmbeddings);
   }
 }

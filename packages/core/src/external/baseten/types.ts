@@ -34,6 +34,18 @@ export interface EmbeddingData {
   embedding: number[];
 }
 
+export interface TextWithEmbedding {
+  text: string;
+  embedding: number[];
+}
+
+export interface TextWithIndex {
+  text: string;
+  index: number;
+}
+
+export interface TextWithIndexAndEmbedding extends TextWithIndex, TextWithEmbedding {}
+
 export interface RerankConfig extends BasetenConfig {
   model: string;
   rawScores?: boolean;

@@ -1,4 +1,10 @@
-import { BasetenConfig } from "./types";
+import {
+  BasetenConfig,
+  EmbeddingData,
+  TextWithEmbedding,
+  TextWithIndex,
+  TextWithIndexAndEmbedding,
+} from "./types";
 import {
   DEFAULT_BATCH_SIZE,
   DEFAULT_CONCURRENCY,
@@ -36,4 +42,30 @@ export function getMaxConcurrentRequests(config: BasetenConfig): number {
 export function getTimeoutSeconds(config: BasetenConfig): number {
   const timeoutSeconds = config.timeoutInSeconds ?? DEFAULT_TIMEOUT_SECONDS;
   return Math.max(1, Math.min(timeoutSeconds, MAX_TIMEOUT_SECONDS));
+}
+
+export function createTextWithEmbedding(
+  data: EmbeddingData,
+  texts: string[]
+): TextWithEmbedding | undefined {
+  const text = texts[data.index];
+  if (!text) return undefined;
+  return {
+    text,
+    embedding: data.embedding,
+  };
+}
+
+export function createTextWithIndexAndEmbedding(
+  data: EmbeddingData,
+  textsWithIndex: TextWithIndex[],
+  index: number
+): TextWithIndexAndEmbedding | undefined {
+  const textWithIndex = textsWithIndex[index];
+  if (!textWithIndex) return undefined;
+  return {
+    text: textWithIndex.text,
+    index: textWithIndex.index,
+    embedding: data.embedding,
+  };
 }
