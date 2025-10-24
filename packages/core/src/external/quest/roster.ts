@@ -42,6 +42,11 @@ async function getAllEnrolledPatients({
     const rosterPage = questRosterResponseSchema.parse(response.data);
     enrolledPatients.push(...rosterPage.patients);
     currentUrl = rosterPage.meta.nextPage;
+
+    // TODO ENG-1259 - fix pagination to supply path with parameters correctly inserted
+    if (currentUrl) {
+      currentUrl = currentUrl.replace("/:rosterType?", `/${rosterType}?`);
+    }
   }
   return enrolledPatients;
 }
