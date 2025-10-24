@@ -1,213 +1,336 @@
-// import { faker } from "@faker-js/faker";
-// import { Encounter } from "@medplum/fhirtypes";
-// import { findMatchingEncounterOrNotifyOfFailure } from "../finish";
-// import * as sharedModule from "../shared";
+import { faker } from "@faker-js/faker";
+import { Encounter, Extension } from "@medplum/fhirtypes";
+import * as consolidatedGetModule from "@metriport/core/command/consolidated/consolidated-get";
+import { DOC_ID_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
+import { XML_FILE_EXTENSION } from "@metriport/core/util/mime";
+import { DischargeData } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
+import {
+  getMatchingEncountersWithSummaryPath,
+  processDischargeSummaryAssociation,
+} from "../finish";
+import * as sharedModule from "../shared";
 
-// describe("processDischargeData", () => {
-//   let sendSlackNotificationMock: jest.SpyInstance;
-//   let mockDate: Date;
-//   const cxId = faker.string.uuid();
+function makeDocIdFhirExtension(docId: string): Extension {
+  return {
+    url: DOC_ID_EXTENSION_URL,
+    valueString: docId,
+  };
+}
 
-//   beforeEach(() => {
-//     jest.clearAllMocks();
-//     mockDate = new Date("2024-01-01T12:00:00Z");
-//     jest.useFakeTimers();
-//     jest.setSystemTime(mockDate);
+describe("processDischargeSummaryAssociation", () => {
+  const dischargeSummaryPath1 = `${faker.system.filePath()}.${XML_FILE_EXTENSION}`;
+  const dischargeSummaryPath2 = `${faker.system.filePath()}.${XML_FILE_EXTENSION}`;
 
-//     sendSlackNotificationMock = jest.spyOn(sharedModule, "sendNotificationToSlack");
-//   });
+  let sendSlackNotificationMock: jest.SpyInstance;
+  let getConsolidatedFileMock: jest.SpyInstance;
+  let mockDate: Date;
+  const cxId = faker.string.uuid();
+  const patientId = faker.string.uuid();
 
-//   afterEach(() => {
-//     jest.useRealTimers();
-//   });
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockDate = new Date("2024-01-01T12:00:00Z");
+    jest.useFakeTimers();
+    jest.setSystemTime(mockDate);
 
-//   describe("when no encounters are provided", () => {
-//     it("should return processing status with appropriate reason", async () => {
-//       const encounters: Encounter[] = [];
+    sendSlackNotificationMock = jest.spyOn(sharedModule, "sendNotificationToSlack");
+    getConsolidatedFileMock = jest.spyOn(consolidatedGetModule, "getConsolidatedFile");
+  });
 
-//       const result = await findMatchingEncounterOrNotifyOfFailure(encounters, cxId);
+  afterEach(() => {
+    jest.useRealTimers();
+  });
 
-//       expect(result).toEqual(
-//         expect.objectContaining({
-//           status: "processing",
-//           reason: "No matching encounters found",
-//         })
-//       );
-//     });
-//   });
+  describe("getMatchingEncountersWithSummaryPath", () => {
+    it("should return empty array when no encounters match", () => {
+      const encounters: Encounter[] = [];
+      const dischargeData = makeDischargeData();
 
-//   describe("when multiple encounters are provided", () => {
-//     it("should return the discharge disposition encounter and completed status", async () => {
-//       const sourceUrl = faker.internet.url();
-//       const sourceUrl2 = faker.internet.url();
-//       const encounterId1 = faker.string.uuid();
-//       const encounterId2 = faker.string.uuid();
-//       const encounters: Encounter[] = [
-//         makeEncounter({
-//           id: encounterId1,
-//           meta: {
-//             source: sourceUrl,
-//           },
-//           extension: [],
-//           hospitalization: {
-//             dischargeDisposition: {
-//               coding: [{ code: "home" }],
-//             },
-//           },
-//         }),
-//         makeEncounter({
-//           id: encounterId2,
-//           meta: {
-//             source: sourceUrl2,
-//           },
-//           extension: [],
-//         }),
-//       ];
+      const result = getMatchingEncountersWithSummaryPath(encounters, dischargeData);
 
-//       const result = await findMatchingEncounterOrNotifyOfFailure(encounters, cxId);
+      expect(result).toEqual([]);
+    });
 
-//       expect(result).toEqual(
-//         expect.objectContaining({
-//           status: "completed",
-//           dischargeSummaryFilePath: sourceUrl,
-//           reason: "Found a discharge disposition encounter",
-//           encounterId: encounterId1,
-//         })
-//       );
-//     });
+    it("should return matching encounters with discharge summary file paths", () => {
+      const encounterId1 = faker.string.uuid();
+      const encounterId2 = faker.string.uuid();
+      const encounterEndDate = "2024-01-01T12:00:00Z";
 
-//     it("should return failed status and send slack notification when multiple encounters have discharge disposition", async () => {
-//       const encounterId1 = faker.string.uuid();
-//       const encounterId2 = faker.string.uuid();
-//       const encounters: Encounter[] = [
-//         makeEncounter({
-//           id: encounterId1,
-//           hospitalization: {
-//             dischargeDisposition: {
-//               coding: [{ code: "home" }],
-//             },
-//           },
-//         }),
-//         makeEncounter({
-//           id: encounterId2,
-//           hospitalization: {
-//             dischargeDisposition: {
-//               coding: [{ code: "home" }],
-//             },
-//           },
-//         }),
-//       ];
+      const encounters: Encounter[] = [
+        makeEncounter({
+          id: encounterId1,
+          period: {
+            start: "2024-01-01T10:00:00Z",
+            end: encounterEndDate,
+          },
+          extension: [makeDocIdFhirExtension(dischargeSummaryPath1)],
+        }),
+        makeEncounter({
+          id: encounterId2,
+          period: {
+            start: "2024-01-01T11:00:00Z",
+            end: encounterEndDate,
+          },
+          extension: [makeDocIdFhirExtension(dischargeSummaryPath2)],
+        }),
+        makeEncounter({
+          id: faker.string.uuid(),
+          period: {
+            start: "2024-01-01T09:00:00Z",
+            end: "2024-01-01T11:00:00Z", // Different end date
+          },
+        }),
+      ];
 
-//       sendSlackNotificationMock.mockImplementationOnce(() => Promise.resolve());
-//       const result = await findMatchingEncounterOrNotifyOfFailure(encounters, cxId);
-//       expect(result).toEqual(
-//         expect.objectContaining({
-//           status: "completed",
-//           reason: "Multiple discharge encounters found for the same date",
-//         })
-//       );
+      const dischargeData = makeDischargeData({
+        encounterEndDate,
+        tcmEncounterId: faker.string.uuid(),
+      });
 
-//       expect(sendSlackNotificationMock).toHaveBeenCalledWith(
-//         "Multiple discharge encounters found for the same date",
-//         [encounterId1, encounterId2]
-//       );
-//     });
+      const result = getMatchingEncountersWithSummaryPath(encounters, dischargeData);
 
-//     it("should return failed status and send slack notification with multiple encounters that don't have discharge disposition", async () => {
-//       const encounterId1 = faker.string.uuid();
-//       const encounterId2 = faker.string.uuid();
-//       const encounters: Encounter[] = [
-//         makeEncounter({ id: encounterId1 }),
-//         makeEncounter({ id: encounterId2 }),
-//       ];
+      expect(result).toHaveLength(2);
+      expect(result).toEqual(
+        expect.arrayContaining([
+          {
+            id: encounterId1,
+            dischargeSummaryFilePath: dischargeSummaryPath1,
+          },
+          {
+            id: encounterId2,
+            dischargeSummaryFilePath: dischargeSummaryPath2,
+          },
+        ])
+      );
+    });
 
-//       sendSlackNotificationMock.mockImplementationOnce(() => Promise.resolve());
-//       const result = await findMatchingEncounterOrNotifyOfFailure(encounters, cxId);
-//       expect(result).toEqual(
-//         expect.objectContaining({
-//           status: "failed",
-//           reason: "Multiple encounters found for the same date",
-//         })
-//       );
+    it("should filter encounters that don't have discharge summary file paths", () => {
+      const encounterId = faker.string.uuid();
+      const encounterEndDate = "2024-01-01T12:00:00Z";
 
-//       expect(sendSlackNotificationMock).toHaveBeenCalledWith(
-//         "Multiple encounters found for the same date",
-//         [encounterId1, encounterId2]
-//       );
-//     });
-//   });
+      const encounters: Encounter[] = [
+        makeEncounter({
+          id: encounterId,
+          period: {
+            start: "2024-01-01T10:00:00Z",
+            end: encounterEndDate,
+          },
+          extension: [makeDocIdFhirExtension("some-other-file.txt")], // Not XML file
+        }),
+      ];
 
-//   describe("when single encounter is provided", () => {
-//     it("should return completed status with the source url for a discharge disposition encounter", async () => {
-//       const sourceUrl = faker.internet.url();
-//       const encounters: Encounter[] = [
-//         makeEncounter({
-//           id: faker.string.uuid(),
-//           meta: {
-//             source: sourceUrl,
-//           },
-//           hospitalization: {
-//             dischargeDisposition: {
-//               coding: [{ code: "home" }],
-//             },
-//           },
-//         }),
-//       ];
+      const dischargeData = makeDischargeData({
+        encounterEndDate,
+      });
 
-//       const result = await findMatchingEncounterOrNotifyOfFailure(encounters, cxId);
-//       expect(result).toEqual(
-//         expect.objectContaining({
-//           status: "completed",
-//           dischargeSummaryFilePath: sourceUrl,
-//           reason: "Found a discharge disposition encounter",
-//         })
-//       );
-//     });
+      const result = getMatchingEncountersWithSummaryPath(encounters, dischargeData);
 
-//     it("should return completed status with the source url", async () => {
-//       const sourceUrl = faker.internet.url();
-//       const encounters: Encounter[] = [
-//         makeEncounter({
-//           id: faker.string.uuid(),
-//           meta: {
-//             source: sourceUrl,
-//           },
-//           extension: [],
-//         }),
-//       ];
+      expect(result).toEqual([]);
+    });
+  });
 
-//       const result = await findMatchingEncounterOrNotifyOfFailure(encounters, cxId);
-//       expect(result).toEqual(
-//         expect.objectContaining({
-//           status: "completed",
-//           dischargeSummaryFilePath: sourceUrl,
-//           reason: "Matching encounter datetime",
-//         })
-//       );
-//     });
-//   });
-// });
+  describe("processDischargeSummaryAssociation", () => {
+    it("should return processing status when no consolidated file is found", async () => {
+      getConsolidatedFileMock.mockResolvedValueOnce({ bundle: null });
 
-// function makeEncounter(params: Partial<Encounter> = {}): Encounter {
-//   return {
-//     resourceType: "Encounter",
-//     id: params.id ?? faker.string.uuid(),
-//     status: params.status ?? "finished",
-//     class: params.class ?? {
-//       system: "http://terminology.hl7.org/CodeSystem/v3-ActCode",
-//       code: "AMB",
-//       display: "ambulatory",
-//     },
-//     subject: params.subject ?? {
-//       reference: `Patient/${faker.string.uuid()}`,
-//     },
-//     period: params.period ?? {
-//       start: "2024-01-01T10:00:00Z",
-//       end: "2024-01-01T12:00:00Z",
-//     },
-//     meta: params.meta,
-//     extension: params.extension,
-//     hospitalization: params.hospitalization,
-//     ...params,
-//   };
-// }
+      const dischargeData = [makeDischargeData()];
+
+      const result = await processDischargeSummaryAssociation({
+        dischargeData,
+        cxId,
+        patientId,
+      });
+
+      expect(result).toEqual({
+        processing: [
+          {
+            discharge: dischargeData[0],
+            status: "processing",
+            reason: "No consolidated file found",
+            dischargeSummaryFilePath: "",
+          },
+        ],
+        completed: [],
+      });
+    });
+
+    it("should return completed status when matching encounter is found", async () => {
+      const encounterId = faker.string.uuid();
+      const dischargeSummaryPath = `${faker.system.filePath()}.${XML_FILE_EXTENSION}`;
+      const encounterEndDate = "2024-01-01T12:00:00Z";
+
+      const encounters: Encounter[] = [
+        makeEncounter({
+          id: encounterId,
+          period: {
+            start: "2024-01-01T10:00:00Z",
+            end: encounterEndDate,
+          },
+          extension: [makeDocIdFhirExtension(dischargeSummaryPath)],
+        }),
+      ];
+
+      getConsolidatedFileMock.mockResolvedValueOnce({
+        bundle: {
+          resourceType: "Bundle",
+          entry: encounters.map(encounter => ({ resource: encounter })),
+        },
+      });
+
+      const dischargeData = [makeDischargeData({ encounterEndDate })];
+
+      const result = await processDischargeSummaryAssociation({
+        dischargeData,
+        cxId,
+        patientId,
+      });
+
+      expect(result).toEqual({
+        processing: [],
+        completed: [
+          {
+            discharge: dischargeData[0],
+            status: "completed",
+            reason: "Found a discharge encounter",
+            encounterId,
+            dischargeSummaryFilePath: dischargeSummaryPath,
+          },
+        ],
+      });
+    });
+
+    it("should return processing status when no matching encounters are found", async () => {
+      const encounters: Encounter[] = [
+        makeEncounter({
+          period: {
+            start: "2024-01-01T10:00:00Z",
+            end: "2024-01-01T11:00:00Z", // Different end date
+          },
+        }),
+      ];
+
+      getConsolidatedFileMock.mockResolvedValueOnce({
+        bundle: {
+          resourceType: "Bundle",
+          entry: encounters.map(encounter => ({ resource: encounter })),
+        },
+      });
+
+      const dischargeData = [makeDischargeData({ encounterEndDate: "2024-01-01T12:00:00Z" })];
+
+      const result = await processDischargeSummaryAssociation({
+        dischargeData,
+        cxId,
+        patientId,
+      });
+
+      expect(result).toEqual({
+        processing: [
+          {
+            discharge: dischargeData[0],
+            status: "processing",
+            reason: "No matching encounters found",
+            dischargeSummaryFilePath: "",
+          },
+        ],
+        completed: [],
+      });
+    });
+
+    it("should handle multiple discharge data and send slack notification for multiple matches", async () => {
+      const encounterId1 = faker.string.uuid();
+      const encounterId2 = faker.string.uuid();
+      const encounterEndDate = "2024-01-01T12:00:00Z";
+
+      const encounters: Encounter[] = [
+        makeEncounter({
+          id: encounterId1,
+          period: {
+            start: "2024-01-01T10:00:00Z",
+            end: encounterEndDate,
+          },
+          extension: [makeDocIdFhirExtension(dischargeSummaryPath1)],
+          hospitalization: {
+            dischargeDisposition: {
+              coding: [{ code: "home" }],
+            },
+          },
+        }),
+        makeEncounter({
+          id: encounterId2,
+          period: {
+            start: "2024-01-01T11:00:00Z",
+            end: encounterEndDate,
+          },
+          extension: [makeDocIdFhirExtension(dischargeSummaryPath2)],
+        }),
+      ];
+
+      getConsolidatedFileMock.mockResolvedValueOnce({
+        bundle: {
+          resourceType: "Bundle",
+          entry: encounters.map(encounter => ({ resource: encounter })),
+        },
+      });
+
+      sendSlackNotificationMock.mockImplementationOnce(() => Promise.resolve());
+
+      const dischargeData = [makeDischargeData({ encounterEndDate })];
+
+      const result = await processDischargeSummaryAssociation({
+        dischargeData,
+        cxId,
+        patientId,
+      });
+
+      expect(result.completed).toHaveLength(1);
+      expect(result.completed[0]).toEqual(
+        expect.objectContaining({
+          status: "completed",
+          reason: "Multiple discharge encounter matches found",
+          encounterId: encounterId1, // Should prefer the one with discharge disposition
+          dischargeSummaryFilePath: dischargeSummaryPath1,
+        })
+      );
+
+      expect(sendSlackNotificationMock).toHaveBeenCalledTimes(1);
+      const [subject, message] = sendSlackNotificationMock.mock.calls[0];
+      expect(subject).toBe("Multiple discharge encounter matches found");
+      expect(message).toContain(patientId);
+      expect(message).toContain(cxId);
+      expect(message).toContain("numberOfMatches");
+      expect(message).toContain("2");
+    });
+  });
+});
+
+function makeDischargeData(params: Partial<DischargeData> = {}): DischargeData {
+  return {
+    encounterEndDate: params.encounterEndDate ?? "2024-01-01T12:00:00Z",
+    tcmEncounterId: params.tcmEncounterId ?? faker.string.uuid(),
+  };
+}
+
+function makeEncounter(params: Partial<Encounter> = {}): Encounter {
+  return {
+    resourceType: "Encounter",
+    id: params.id ?? faker.string.uuid(),
+    status: params.status ?? "finished",
+    class: params.class ?? {
+      system: "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+      code: "AMB",
+      display: "ambulatory",
+    },
+    subject: params.subject ?? {
+      reference: `Patient/${faker.string.uuid()}`,
+    },
+    period: params.period ?? {
+      start: "2024-01-01T10:00:00Z",
+      end: "2024-01-01T12:00:00Z",
+    },
+    meta: params.meta,
+    extension: params.extension,
+    hospitalization: params.hospitalization,
+    ...params,
+  };
+}

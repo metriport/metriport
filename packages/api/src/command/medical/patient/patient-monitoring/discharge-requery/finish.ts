@@ -187,7 +187,7 @@ export async function finishDischargeRequery({
   );
 }
 
-async function processDischargeSummaryAssociation({
+export async function processDischargeSummaryAssociation({
   dischargeData,
   cxId,
   patientId,
@@ -292,7 +292,7 @@ type MatchingEncounter = {
   dischargeSummaryFilePath: string;
 };
 
-function getMatchingEncountersWithSummaryPath(
+export function getMatchingEncountersWithSummaryPath(
   encounters: Encounter[],
   discharge: DischargeData
 ): MatchingEncounter[] {
