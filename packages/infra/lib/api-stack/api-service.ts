@@ -44,6 +44,7 @@ import { provideAccessToQueue } from "../shared/sqs";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
 import { SurescriptsAssets } from "../surescripts/types";
+import { SDEAssets } from "../sde/types";
 
 interface ApiProps extends StackProps {
   config: EnvConfig;
@@ -105,6 +106,7 @@ export function createAPIService({
   dbCredsSecret,
   dbReadReplicaEndpoint,
   dynamoDBTokenTable,
+  outboundRateLimitTable,
   alarmAction,
   dnsZones,
   fhirServerUrl,
@@ -146,6 +148,7 @@ export function createAPIService({
   featureFlagsTable,
   surescriptsAssets,
   questAssets,
+  sdeAssets,
   jobAssets,
   analyticsPlatformAssets,
 }: {
@@ -156,6 +159,7 @@ export function createAPIService({
   dbCredsSecret: secret.ISecret;
   dbReadReplicaEndpoint: rds.Endpoint;
   dynamoDBTokenTable: dynamodb.Table;
+  outboundRateLimitTable: dynamodb.Table;
   alarmAction: SnsAction | undefined;
   dnsZones: DnsZones;
   fhirServerUrl: string;
@@ -197,6 +201,7 @@ export function createAPIService({
   featureFlagsTable: dynamodb.Table;
   surescriptsAssets: SurescriptsAssets | undefined;
   questAssets: QuestAssets | undefined;
+  sdeAssets: SDEAssets | undefined;
   jobAssets: JobsAssets;
   analyticsPlatformAssets: AnalyticsPlatformsAssets | undefined;
 }): {
@@ -274,6 +279,7 @@ export function createAPIService({
           DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
           DB_POOL_SETTINGS: JSON.stringify(dbPoolSettings),
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
+          OUTBOUND_RATE_LIMIT_TABLE_NAME: outboundRateLimitTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
           API_LB_ADDRESS: props.config.loadBalancerDnsName,
           ...(props.config.apiGatewayUsagePlanId
@@ -427,6 +433,9 @@ export function createAPIService({
               questAssets.questQueues.map(({ envVarName, queue }) => [envVarName, queue.queueUrl])
             ),
           }),
+          ...(sdeAssets && {
+            STRUCTURED_DATA_BUCKET_NAME: sdeAssets.structuredDataBucket.bucketName,
+          }),
           RUN_PATIENT_JOB_QUEUE_URL: jobAssets.runPatientJobQueue.queueUrl,
           ...(props.config.hl7Notification?.dischargeNotificationSlackUrl && {
             DISCHARGE_NOTIFICATION_SLACK_URL:
@@ -516,6 +525,7 @@ export function createAPIService({
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   rateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   featureFlagsTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
+  outboundRateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);

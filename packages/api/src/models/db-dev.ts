@@ -19,111 +19,142 @@ async function tableExists(tableName: string, ddb: AWS.DynamoDB) {
 // Creates the token table
 async function createTokenTable(ddb: AWS.DynamoDB): Promise<void> {
   const doesTableExist = await tableExists(docTableNames.token, ddb);
-  if (!doesTableExist) {
-    const params: AWS.DynamoDB.CreateTableInput = {
-      AttributeDefinitions: [
-        {
-          AttributeName: "token",
-          AttributeType: "S",
-        },
-        {
-          AttributeName: "oauthUserAccessToken",
-          AttributeType: "S",
-        },
-      ],
-      KeySchema: [
-        {
-          AttributeName: "token",
-          KeyType: "HASH",
-        },
-      ],
-      GlobalSecondaryIndexes: [
-        {
-          IndexName: "oauthUserAccessToken_idx",
-          KeySchema: [
-            {
-              AttributeName: "oauthUserAccessToken",
-              KeyType: "HASH",
-            },
-          ],
-          Projection: {
-            ProjectionType: "ALL",
-          },
-          ProvisionedThroughput: {
-            ReadCapacityUnits: 1,
-            WriteCapacityUnits: 1,
-          },
-        },
-      ],
-      ProvisionedThroughput: {
-        ReadCapacityUnits: 1,
-        WriteCapacityUnits: 1,
+  if (doesTableExist) return;
+  const params: AWS.DynamoDB.CreateTableInput = {
+    AttributeDefinitions: [
+      {
+        AttributeName: "token",
+        AttributeType: "S",
       },
-      TableName: docTableNames.token,
-    };
-    await ddb.createTable(params).promise();
-  }
+      {
+        AttributeName: "oauthUserAccessToken",
+        AttributeType: "S",
+      },
+    ],
+    KeySchema: [
+      {
+        AttributeName: "token",
+        KeyType: "HASH",
+      },
+    ],
+    GlobalSecondaryIndexes: [
+      {
+        IndexName: "oauthUserAccessToken_idx",
+        KeySchema: [
+          {
+            AttributeName: "oauthUserAccessToken",
+            KeyType: "HASH",
+          },
+        ],
+        Projection: {
+          ProjectionType: "ALL",
+        },
+        ProvisionedThroughput: {
+          ReadCapacityUnits: 1,
+          WriteCapacityUnits: 1,
+        },
+      },
+    ],
+    ProvisionedThroughput: {
+      ReadCapacityUnits: 1,
+      WriteCapacityUnits: 1,
+    },
+    TableName: docTableNames.token,
+  };
+  await ddb.createTable(params).promise();
 }
 // Creates the rate limit table
 async function createRateLimitTable(ddb: AWS.DynamoDB): Promise<void> {
   if (!docTableNames.rateLimit) return;
+
   const doesTableExist = await tableExists(docTableNames.rateLimit, ddb);
-  if (!doesTableExist) {
-    const params: AWS.DynamoDB.CreateTableInput = {
-      AttributeDefinitions: [
-        {
-          AttributeName: rateLimitPartitionKey,
-          AttributeType: "S",
-        },
-      ],
-      KeySchema: [
-        {
-          AttributeName: rateLimitPartitionKey,
-          KeyType: "HASH",
-        },
-      ],
-      ProvisionedThroughput: {
-        ReadCapacityUnits: 1,
-        WriteCapacityUnits: 1,
+  if (doesTableExist) return;
+  const params: AWS.DynamoDB.CreateTableInput = {
+    AttributeDefinitions: [
+      {
+        AttributeName: rateLimitPartitionKey,
+        AttributeType: "S",
       },
-      TableName: docTableNames.rateLimit,
-    };
-    await ddb.createTable(params).promise();
-  }
+    ],
+    KeySchema: [
+      {
+        AttributeName: rateLimitPartitionKey,
+        KeyType: "HASH",
+      },
+    ],
+    ProvisionedThroughput: {
+      ReadCapacityUnits: 1,
+      WriteCapacityUnits: 1,
+    },
+    TableName: docTableNames.rateLimit,
+  };
+  await ddb.createTable(params).promise();
 }
 
 async function createFeatureFlagsTable(ddb: AWS.DynamoDB): Promise<void> {
   const doesTableExist = await tableExists(docTableNames.featureFlags, ddb);
-  if (!doesTableExist) {
-    const params: AWS.DynamoDB.CreateTableInput = {
-      AttributeDefinitions: [
-        {
-          AttributeName: partitionKey,
-          AttributeType: "S",
-        },
-        {
-          AttributeName: sortKey,
-          AttributeType: "N",
-        },
-      ],
-      KeySchema: [
-        {
-          AttributeName: partitionKey,
-          KeyType: "HASH",
-        },
-        {
-          AttributeName: sortKey,
-          KeyType: "RANGE",
-        },
-      ],
-      ProvisionedThroughput: {
-        ReadCapacityUnits: 1,
-        WriteCapacityUnits: 1,
+  if (doesTableExist) return;
+  const params: AWS.DynamoDB.CreateTableInput = {
+    AttributeDefinitions: [
+      {
+        AttributeName: partitionKey,
+        AttributeType: "S",
       },
-      TableName: docTableNames.featureFlags,
-    };
-    await ddb.createTable(params).promise();
-  }
+      {
+        AttributeName: sortKey,
+        AttributeType: "N",
+      },
+    ],
+    KeySchema: [
+      {
+        AttributeName: partitionKey,
+        KeyType: "HASH",
+      },
+      {
+        AttributeName: sortKey,
+        KeyType: "RANGE",
+      },
+    ],
+    ProvisionedThroughput: {
+      ReadCapacityUnits: 1,
+      WriteCapacityUnits: 1,
+    },
+    TableName: docTableNames.featureFlags,
+  };
+  await ddb.createTable(params).promise();
+}
+
+/**
+ * Creates the outbound rate limit table.
+ * The outbound rate limit table is used to track the requests sent to external systems.
+ * To avoid hitting the rate limit of the external systems.
+ * @param ddb - The DynamoDB client
+ */
+async function createOutboundRateLimitTable(ddb: AWS.DynamoDB): Promise<void> {
+  if (!docTableNames.outboundRateLimit) return;
+  const doesTableExist = await tableExists(docTableNames.outboundRateLimit, ddb);
+  if (doesTableExist) return;
+
+  const params: AWS.DynamoDB.CreateTableInput = {
+    AttributeDefinitions: [
+      {
+        AttributeName: "outboundKey",
+        AttributeType: "S",
+      },
+    ],
+    KeySchema: [
+      {
+        AttributeName: "outboundKey",
+        KeyType: "HASH",
+      },
+    ],
+    ProvisionedThroughput: {
+      ReadCapacityUnits: 1,
+      WriteCapacityUnits: 1,
+    },
+    TableName: docTableNames.outboundRateLimit,
+  };
+  await ddb.createTable(params).promise();
 }
 
 export async function initDDBDev(): Promise<AWS.DynamoDB.DocumentClient> {
@@ -138,6 +169,7 @@ export async function initDDBDev(): Promise<AWS.DynamoDB.DocumentClient> {
   await createTokenTable(ddb);
   await createRateLimitTable(ddb);
   await createFeatureFlagsTable(ddb);
+  await createOutboundRateLimitTable(ddb);
   return doc;
 }
 

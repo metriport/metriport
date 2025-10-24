@@ -357,6 +357,10 @@ export class Config {
     return getEnvVar("LAB_CONVERSION_BUCKET_NAME");
   }
 
+  static getStructuredDataBucketName(): string | undefined {
+    return getEnvVar("STRUCTURED_DATA_BUCKET_NAME");
+  }
+
   static getAthenaHealthEnv(): string | undefined {
     return getEnvVar("EHR_ATHENA_ENVIRONMENT");
   }
@@ -522,5 +526,9 @@ export class Config {
 
   static getHeartBeatMonitorMap(): Record<string, string> {
     return getEnvVarAsRecordOrFail("HEARTBEAT_MONITOR_MAP");
+  }
+
+  static getOutboundRateLimitTableName(): string | undefined {
+    return getEnvVar("OUTBOUND_RATE_LIMIT_TABLE_NAME");
   }
 }

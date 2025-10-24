@@ -6,9 +6,14 @@ import { capture } from "../../util";
  * Notifies our monitoring service that the service ran successfully.
  */
 export async function sendHeartbeatToMonitoringService(url: string): Promise<void> {
-  await executeWithNetworkRetries(async () => {
-    await axios.post(url);
-  });
+  await executeWithNetworkRetries(
+    async () => {
+      await axios.post(url);
+    },
+    {
+      httpStatusCodesToRetry: [500, 502, 503, 504],
+    }
+  );
 }
 
 export async function sendHeartbeatToMonitoringServiceSafe(

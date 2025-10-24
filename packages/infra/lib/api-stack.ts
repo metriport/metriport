@@ -58,6 +58,7 @@ import {
   createUploadRosterScheduledLambda,
 } from "./quest/scheduled-lambda";
 import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
+import { SDEStack } from "./sde/sde-stack";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
@@ -433,6 +434,16 @@ export class APIStack extends Stack {
       });
     }
 
+    let sdeStack: SDEStack | undefined = undefined;
+    if (props.config.structuredDataBucketName) {
+      sdeStack = new SDEStack(this, "SDEStack", {
+        config: props.config,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+        lambdaLayers,
+      });
+    }
+
     //-------------------------------------------
     // Analytics Platform
     //-------------------------------------------
@@ -498,6 +509,18 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
+    // Rate Limiting
+    //-------------------------------------------
+    const { rateLimitTable, outboundRateLimitTable } = new RateLimitingNestedStack(
+      this,
+      "RateLimitingNestedStack",
+      {
+        config: props.config,
+        alarmAction: slackNotification?.alarmAction,
+      }
+    );
+
+    //-------------------------------------------
     // HL7 Notification Webhook Sender
     //-------------------------------------------
     let hl7NotificationWebhookSenderLambda: lambda.Function | undefined;
@@ -514,6 +537,7 @@ export class APIStack extends Stack {
           hl7ConversionBucket,
           secrets,
           incomingHl7NotificationBucket,
+          outboundRateLimitTable,
         }
       );
 
@@ -563,14 +587,6 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       alarmAction: slackNotification?.alarmAction,
       lambdaLayers,
-    });
-
-    //-------------------------------------------
-    // Rate Limiting
-    //-------------------------------------------
-    const { rateLimitTable } = new RateLimitingNestedStack(this, "RateLimitingNestedStack", {
-      config: props.config,
-      alarmAction: slackNotification?.alarmAction,
     });
 
     //-------------------------------------------
@@ -666,6 +682,7 @@ export class APIStack extends Stack {
       dbCredsSecret,
       dbReadReplicaEndpoint: dbCluster.clusterReadEndpoint,
       dynamoDBTokenTable,
+      outboundRateLimitTable,
       alarmAction: slackNotification?.alarmAction,
       dnsZones,
       fhirServerUrl: props.config.fhirServerUrl,
@@ -707,6 +724,7 @@ export class APIStack extends Stack {
       featureFlagsTable,
       surescriptsAssets: surescriptsStack?.getAssets(),
       questAssets: questStack?.getAssets(),
+      sdeAssets: sdeStack?.getAssets(),
       jobAssets: jobsStack.getAssets(),
       analyticsPlatformAssets: analyticsPlatformStack?.getAssets(),
     });
@@ -800,6 +818,7 @@ export class APIStack extends Stack {
       consolidatedIngestionLambda,
       ...(surescriptsStack?.getLambdas() ?? []),
       ...(questStack?.getLambdas() ?? []),
+      ...(sdeStack?.getLambdas() ?? []),
       jobsStack.getAssets().runPatientJobLambda,
       analyticsPlatformStack?.getAssets().fhirToCsvBulkLambda,
     ];
