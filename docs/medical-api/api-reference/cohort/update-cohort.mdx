@@ -37,7 +37,9 @@ All fields are optional for updates. The API performs partial updates:
   "name": "Updated Cohort Name",
   "settings": {
     "monitoring": {
-      "adt": true,
+      "adt": {
+        "enabled": true
+      },
       "pharmacy": {
         "notifications": false,
         "schedule": {
@@ -57,7 +59,9 @@ In this example, only `name`, `adt`, and `pharmacy` settings are updated. The `h
 {
   "settings": {
     "monitoring": {
-      "adt": false,
+      "adt": {
+        "enabled": false
+      },
       "pharmacy": {
         "notifications": false,
         "schedule": {
@@ -92,7 +96,9 @@ const cohort = await metriport.updateCohort(
           "enabled": true,
           "frequency": "weekly"
         },
-        "adt": true,
+        "adt": {
+          "enabled": true
+        },
         "pharmacy": {
           "notifications": true,
           "schedule": {
@@ -127,7 +133,9 @@ const cohort = await metriport.updateCohort(
         "enabled": true,
         "frequency": "weekly"
       },
-      "adt": true,
+      "adt": {
+        "enabled": true
+      },
       "pharmacy": {
         "notifications": true,
         "schedule": {

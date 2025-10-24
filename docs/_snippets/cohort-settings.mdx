@@ -23,9 +23,14 @@
         your HIE monitoring settings now. These settings will automatically take effect when the feature launches.
       </Info>
     </ParamField>
-    <ParamField body="adt" type="boolean" optional>
+    <ParamField body="adt" type="object" optional>
       ADT (Admission, Discharge, Transfer) monitoring - subscribes patients to ADT notifications
-      based on their [primary address](/medical-api/api-reference/patient/create-patient#param-address). Defaults to disabled.
+      based on their [primary address](/medical-api/api-reference/patient/create-patient#param-address).
+      <Expandable title="adt object properties" defaultOpen={false}>
+        <ParamField body="enabled" type="boolean" optional>
+          Enable or disable ADT monitoring notifications. Defaults to disabled.
+        </ParamField>
+      </Expandable>
     </ParamField>
     <ParamField body="pharmacy" type="object" optional>
       Pharmacy / medication history monitoring - enables retail fill data monitoring where available.  

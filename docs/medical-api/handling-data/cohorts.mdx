@@ -49,7 +49,9 @@ or retrieve the members of that cohort via API.
   "color": "red",
   "settings": {
     "monitoring": {
-      "adt": true,
+      "adt": {
+        "enabled": true
+      },
       "hie": {
         "enabled": true,
         "frequency": "weekly"
@@ -89,7 +91,9 @@ const cohort = await metriportApi.createCohort({
   color: "purple",
   settings: {
     monitoring: {
-      adt: true
+      adt: {
+        enabled: true
+      }
     }
   }
  });

@@ -61,7 +61,9 @@ const result = await metriport.addPatientToCohorts(patientId, {
             "enabled": true,
             "frequency": "weekly"
           },
-          "adt": true,
+          "adt": {
+            "enabled": true
+          },
           "pharmacy": {
             "notifications": true,
             "schedule": {
@@ -91,7 +93,9 @@ const result = await metriport.addPatientToCohorts(patientId, {
             "enabled": true,
             "frequency": "monthly"
           },
-          "adt": false,
+          "adt": {
+            "enabled": false
+          },
           "pharmacy": {
             "notifications": false,
             "schedule": {
@@ -121,7 +125,9 @@ const result = await metriport.addPatientToCohorts(patientId, {
             "enabled": true,
             "frequency": "biweekly"
           },
-          "adt": false,
+          "adt": {
+            "enabled": false
+          },
           "pharmacy": {
             "notifications": true,
             "schedule": {
