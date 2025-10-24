@@ -11,7 +11,10 @@ export enum FacilityType {
 export const facilityInternalDetailsSchema = z
   .object({
     id: z.string().optional(),
-    nameInMetriport: z.string().min(1),
+    nameInMetriport: z
+      .string()
+      .min(1)
+      .transform(name => name.replace(/&/g, "and")),
     npi: z
       .string()
       .length(10)
