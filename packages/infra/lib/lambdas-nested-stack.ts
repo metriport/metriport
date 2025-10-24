@@ -261,8 +261,8 @@ export class LambdasNestedStack extends NestedStack {
       bundleBucket: props.medicalDocumentsBucket,
       conversionsBucket: this.fhirConverterConnector.bucket,
       pharmacyBundleBucket: props.pharmacyBundleBucket,
-      structuredDataBucket: props.structuredDataBucket,
       labBundleBucket: props.labBundleBucket,
+      structuredDataBucket: props.structuredDataBucket,
       hl7ConversionBucket: props.hl7ConversionBucket,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
@@ -842,7 +842,7 @@ export class LambdasNestedStack extends NestedStack {
     bundleBucket.grantReadWrite(theLambda);
     conversionsBucket.grantRead(theLambda);
     pharmacyBundleBucket?.grantRead(theLambda);
-    structuredDataBucket?.grantReadWrite(theLambda);
+    structuredDataBucket?.grantRead(theLambda);
     labBundleBucket?.grantRead(theLambda);
     hl7ConversionBucket?.grantRead(theLambda);
     aiBriefBucket?.grantReadWrite(theLambda);
