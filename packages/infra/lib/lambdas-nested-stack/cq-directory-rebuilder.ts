@@ -23,8 +23,8 @@ function getSettings(
   return {
     ...props,
     name: "ScheduledCqDirectoryRebuilder",
-    lambdaMemory: 256,
-    lambdaTimeout: Duration.seconds(60), // How long can the lambda run for, max is 900 seconds (15 minutes)
+    lambdaMemory: 128,
+    lambdaTimeout: Duration.seconds(30), // How long can the lambda run for, max is 900 seconds (15 minutes)
     scheduleExpression: config.scheduleExpressions, // See: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
     url: `http://${apiUrl}/internal/carequality/directory/rebuild`,
     httpTimeout: Duration.seconds(5),

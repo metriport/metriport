@@ -9,3 +9,15 @@ export async function sendHeartbeatToMonitoringService(url: string): Promise<voi
     await axios.post(url);
   });
 }
+
+export async function sendHeartbeatToMonitoringServiceSafe(url: string): Promise<void> {
+  try {
+    await executeWithNetworkRetries(async () => {
+      await axios.post(url);
+    });
+  } catch (error) {
+    capture.error("Failed to send heartbeat to monitoring service", {
+      extra: { url, error },
+    });
+  }
+}
