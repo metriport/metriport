@@ -46,7 +46,7 @@ export async function getCohortsForPatient({
 }: {
   cxId: string;
   patientId: string;
-}): Promise<Cohort[]> {
+}): Promise<CohortWithSize[]> {
   const cohorts = await CohortModel.findAll({
     where: { cxId },
     include: [
@@ -59,7 +59,18 @@ export async function getCohortsForPatient({
     ],
   });
 
-  return cohorts.map(_ => _.dataValues);
+  // Get sizes for all cohorts in parallel
+  const cohortsWithSizes = await Promise.all(
+    cohorts.map(async cohort => {
+      const size = await getCohortSize({ cohortId: cohort.id, cxId });
+      return {
+        cohort: cohort.dataValues,
+        size,
+      };
+    })
+  );
+
+  return cohortsWithSizes;
 }
 
 /**

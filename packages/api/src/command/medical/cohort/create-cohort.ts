@@ -30,7 +30,7 @@ export async function createCohort({
     id: uuidv7(),
     cxId,
     name,
-    description,
+    description: description ?? "",
     color,
     settings,
   };

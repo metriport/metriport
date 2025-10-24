@@ -1,5 +1,5 @@
 import { Cohort, CohortColors, CohortSettings } from "@metriport/shared/domain/cohort";
-import { CreationOptional, DataTypes, Sequelize } from "sequelize";
+import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../_default";
 import { PatientCohortModel } from "./patient-cohort";
 
@@ -8,9 +8,9 @@ export class CohortModel extends BaseModel<CohortModel> implements Cohort {
 
   declare cxId: string;
   declare name: string;
-  declare description: CreationOptional<string>;
+  declare description: string;
   declare color: CohortColors;
-  declare settings: CreationOptional<CohortSettings>;
+  declare settings: CohortSettings;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     CohortModel.init(
@@ -24,14 +24,12 @@ export class CohortModel extends BaseModel<CohortModel> implements Cohort {
         },
         description: {
           type: DataTypes.STRING,
-          defaultValue: "",
         },
         color: {
           type: DataTypes.STRING,
         },
         settings: {
           type: DataTypes.JSONB,
-          defaultValue: {},
         },
       },
       {

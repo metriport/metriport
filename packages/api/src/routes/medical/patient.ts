@@ -33,7 +33,6 @@ import { forceEhrPatientSync } from "../../command/medical/patient/force-ehr-pat
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import { getPatientFacilities } from "../../command/medical/patient/get-patient-facilities";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
-import { getPatientSettings } from "../../command/medical/patient/get-settings";
 import { getLatestSuspectsBySuspectGroup } from "../../command/medical/patient/get-suspect";
 import { setPatientFacilities } from "../../command/medical/patient/set-patient-facilities";
 import { getHieOptOut, setHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
@@ -43,7 +42,6 @@ import { countResources } from "../../external/fhir/patient/count-resources";
 import { REQUEST_ID_HEADER_NAME } from "../../routes/header";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
-import { handleParams } from "../helpers/handle-params";
 import { getOutputFormatFromRequest } from "../helpers/output-format";
 import { requestLogger } from "../helpers/request-logger";
 import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
@@ -648,9 +646,9 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id: patientId } = getPatientInfoOrFail(req);
 
-    const cohorts = await getCohortsForPatient({ cxId, patientId });
+    const cohortsWithSizes = await getCohortsForPatient({ cxId, patientId });
 
-    return res.status(status.OK).json({ cohorts });
+    return res.status(status.OK).json({ cohorts: cohortsWithSizes });
   })
 );
 
@@ -677,27 +675,6 @@ router.post(
     });
 
     return res.sendStatus(status.NO_CONTENT);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * GET /patient/:id/settings
- *
- * Returns a settings object of all settings that are enabled for a patient, based on their cohorts
- *
- * @param   req.cxId      The customer ID.
- * @return  The patient's definitive settings
- */
-router.get(
-  "/settings",
-  handleParams,
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const { cxId, id: patientId } = getPatientInfoOrFail(req);
-
-    const settings = await getPatientSettings({ cxId, patientId });
-
-    return res.status(status.OK).json({ settings });
   })
 );
 

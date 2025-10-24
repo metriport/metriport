@@ -14,7 +14,7 @@ export async function validateMonitoringSettingsForCx(
 ): Promise<void> {
   log(`Validating monitoring settings for cx: ${cxId}`);
 
-  if (monitoring?.adt) {
+  if (monitoring?.adt?.enabled) {
     const isAdtEnabled = true; //TODO: Check if the cx is subscribed to ADTs
     if (!isAdtEnabled) {
       throw new BadRequestError("ADT is not enabled for your account", undefined, {

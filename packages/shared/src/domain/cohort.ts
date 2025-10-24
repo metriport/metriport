@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { BaseDomain } from "./base-domain";
 import { createQueryMetaSchemaV2 } from "./pagination-v2";
+import { USState } from "./address/state";
 
 // ### Constants ###
 export const COHORT_COLORS = [
@@ -36,7 +37,10 @@ export const DEFAULT_NOTIFICATION_SCHEDULE: NotificationSchedule = {
   schedule: DEFAULT_SCHEDULE,
 };
 
-const DEFAULT_ADT = false;
+const DEFAULT_ADT: AdtSchema = {
+  enabled: false,
+  overrides: [],
+};
 
 const DEFAULT_MONITORING: MonitoringSettings = {
   adt: DEFAULT_ADT,
@@ -65,41 +69,40 @@ export const scheduleSchema = z.object({
   frequency: frequencySchema,
 });
 
-export const notificationScheduleSchema = z
-  .object({
-    notifications: z.boolean(),
-    schedule: scheduleSchema,
-  })
-  .transform((data, ctx) => {
-    if (data.notifications === true) {
-      if (data.schedule && data.schedule.enabled) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "When notifications are enabled, schedule must not be enabled",
-        });
-        return z.NEVER;
-      }
+export const notificationScheduleSchema = z.object({
+  notifications: z.boolean(),
+  schedule: scheduleSchema,
+});
+
+const adtOverrideSchema = z.array(
+  z.string().refine(
+    s => {
+      const parts = s.split("_");
+      if (parts.length !== 2) return false;
+      const [, stateCode] = parts;
+      return Object.values(USState).includes(stateCode as USState);
+    },
+    {
+      message:
+        "Invalid ADT override format. Must be 'HieName_STATE' where STATE is a valid 2-letter state code. Example: Bamboo_CA",
     }
-    return data;
-  });
+  )
+);
+
+const adtSchema = z.object({
+  enabled: z.boolean(),
+  overrides: adtOverrideSchema,
+});
 
 export const monitoringSchema = z
   .object({
-    adt: z.boolean(),
+    adt: adtSchema,
     hie: scheduleSchema,
     pharmacy: notificationScheduleSchema,
     laboratory: notificationScheduleSchema,
   })
   .strict();
-/**
- * !!!!WARNING WARNING WARNING WARNING WARNING!!!!
- *
- * CHANGING OR ADDING FIELDS TO THIS SCHEMA WILL BREAK THE MERGE FUNCTION IN THE API
- * IF YOU NEED TO ADD A NEW FIELD, DEFINE MERGING LOGIC IN THE API
- * @see packages/api/src/command/medical/patient/get-settings.ts
- *
- * !!!!WARNING WARNING WARNING WARNING WARNING!!!!
- */
+
 export const cohortSettingsSchema = z
   .object({
     monitoring: monitoringSchema,
@@ -131,7 +134,7 @@ export const FREQUENCY_PRIORITY: Record<CohortFrequency, number> = {
 // > Create Schemas
 // Want to use default values for create schema, but not for update schema so that we don't overwrite existing settings
 const monitoringSchemaWithDefaults = z.object({
-  adt: z.boolean().optional().default(DEFAULT_MONITORING.adt),
+  adt: adtSchema.default(DEFAULT_MONITORING.adt),
   hie: scheduleSchema.default(DEFAULT_MONITORING.hie),
   pharmacy: notificationScheduleSchema.default(DEFAULT_MONITORING.pharmacy),
   laboratory: notificationScheduleSchema.default(DEFAULT_MONITORING.laboratory),
@@ -142,7 +145,7 @@ const settingsSchemaWithDefaults = z.object({
 });
 
 export const cohortCreateSchema = baseCohortSchema.extend({
-  description: z.string().optional(),
+  description: z.string().optional().default(""),
   color: cohortColorsSchema.optional().default(DEFAULT_COLOR),
   settings: settingsSchemaWithDefaults.optional().default(DEFAULT_SETTINGS),
 });
@@ -162,7 +165,7 @@ const allOptionalNotificationScheduleSchema = z.object({
 
 const allOptionalMonitoringSchema = z
   .object({
-    adt: z.boolean().optional(),
+    adt: adtSchema.optional(),
     hie: allOptionalScheduleSchema.optional(),
     pharmacy: allOptionalNotificationScheduleSchema.optional(),
     laboratory: allOptionalNotificationScheduleSchema.optional(),
@@ -186,6 +189,7 @@ export const cohortUpdateSchema = z.object({
   eTag: z.string().optional(),
 });
 
+export type AdtSchema = z.infer<typeof adtSchema>;
 export type AllOptionalMonitoringSchema = z.infer<typeof allOptionalMonitoringSchema>;
 export type AllOptionalCohortSettings = z.infer<typeof allOptionalCohortSettingsSchema>;
 export type CohortUpdateRequest = z.infer<typeof cohortUpdateSchema>;

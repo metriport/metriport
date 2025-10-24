@@ -34,11 +34,15 @@ import { allOrSubsetPatientIdsSchema, patientIdsSchema } from "./schemas/shared"
 
 const router = Router();
 
-function applyCohortDtoToPayload(params: { cohort: Cohort }): { cohort: CohortDTO } {
-  return {
-    ...params,
-    cohort: dtoFromCohort(params.cohort),
-  };
+function applyCohortDtoToPayload({ cohort }: { cohort: Cohort }): { cohort: CohortDTO } {
+  const dto = dtoFromCohort(cohort);
+
+  // Remove override field when empty to now show random CXs about this.
+  if (!dto.settings.monitoring.adt.overrides?.length) {
+    delete (dto.settings.monitoring.adt as { overrides?: string[] }).overrides;
+  }
+
+  return { cohort: dto };
 }
 
 /** ---------------------------------------------------------------------------
