@@ -7,6 +7,7 @@ import { HL7_FILE_EXTENSION, JSON_FILE_EXTENSION } from "../../util/mime";
 import { S3Utils } from "../aws/s3";
 import { dedupeAdtEncounters, mergeBundles } from "./bundle/utils";
 import { validateFhirEntries } from "./validation/json-validator";
+import { isAdtsDataVisibleFeatureFlagEnabledForCx } from "../../command/feature-flags/domain-ffs";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 
@@ -179,6 +180,13 @@ export async function getAdtSourcedEncounter({
   const { log } = out(
     `getAdtSourcedEncounter - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
   );
+
+  const isCxAllowedToSeeData = await isAdtsDataVisibleFeatureFlagEnabledForCx(cxId);
+  if (!isCxAllowedToSeeData) {
+    log(`CX ${cxId} is not allowed to see ADT data, skipping`);
+    return undefined;
+  }
+
   const s3BucketName = Config.getHl7ConversionBucketName();
   if (!s3BucketName) {
     log(

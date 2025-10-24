@@ -201,8 +201,27 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     const clinicalInformation = this.extractClinicalInformation(newEncounterData);
 
-    // TODO: Send clinical information into a new S3 bucket (or re-use an existing one).
-    // so we can do data quality checks before sending it to the CX.
+    log(`Updating encounter bundle in S3...`);
+    const [, result] = await Promise.all([
+      saveAdtConversionBundle({
+        cxId,
+        patientId,
+        encounterId,
+        timestamp: timestamp,
+        messageId: getMessageUniqueIdentifier(message),
+        messageCode,
+        triggerEvent,
+        bundle: newEncounterData,
+        context: this.context,
+        s3Utils: this.s3Utils,
+      }),
+      mergeBundleIntoAdtSourcedEncounter({
+        cxId,
+        patientId,
+        encounterId,
+        newEncounterData,
+      }),
+    ]);
 
     // Putting it so late into the function so that we can still process the data and do data quality checks before showing the CX.
     const isCxAllowedToSeeData = await isAdtsDataVisibleFeatureFlagEnabledForCx(cxId);
@@ -225,28 +244,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       },
       triggerEvent
     );
-
-    log(`Updating encounter bundle in S3...`);
-    const [, result] = await Promise.all([
-      saveAdtConversionBundle({
-        cxId,
-        patientId,
-        encounterId,
-        timestamp: timestamp,
-        messageId: getMessageUniqueIdentifier(message),
-        messageCode,
-        triggerEvent,
-        bundle: newEncounterData,
-        context: this.context,
-        s3Utils: this.s3Utils,
-      }),
-      mergeBundleIntoAdtSourcedEncounter({
-        cxId,
-        patientId,
-        encounterId,
-        newEncounterData,
-      }),
-    ]);
 
     log(`Sending Discharge Requery kickoff...`);
     if (triggerEvent === dischargeEventCode) {
