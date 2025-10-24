@@ -46,6 +46,7 @@ import {
   SupportedTriggerEvent,
 } from "./utils";
 import { sendHeartbeatToMonitoringService } from "../../external/monitoring/heartbeat";
+import { isAdtsDataVisibleFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 
 type HieConfig = { timezone: string };
 
@@ -199,6 +200,16 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     log(`Conversion complete and patient entry added`);
 
     const clinicalInformation = this.extractClinicalInformation(newEncounterData);
+
+    // TODO: Send clinical information into a new S3 bucket (or re-use an existing one).
+    // so we can do data quality checks before sending it to the CX.
+
+    // Putting it so late into the function so that we can still process the data and do data quality checks before showing the CX.
+    const isCxAllowedToSeeData = await isAdtsDataVisibleFeatureFlagEnabledForCx(cxId);
+    if (!isCxAllowedToSeeData) {
+      log(`CX ${cxId} is not allowed to see data. Stopping data procesing...`);
+      return;
+    }
 
     log(`Writing TCM encounter to DB...`);
     await this.persistTcmEncounter(
