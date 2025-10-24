@@ -491,6 +491,7 @@ export class APIStack extends Stack {
       medicalDocumentsBucket,
       pharmacyBundleBucket: surescriptsStack?.getAssets()?.pharmacyConversionBucket,
       labBundleBucket: questStack?.getAssets()?.labConversionBucket,
+      structuredDataBucket: sdeStack?.getAssets()?.structuredDataBucket,
       hl7ConversionBucket,
       sandboxSeedDataBucket,
       alarmAction: slackNotification?.alarmAction,
