@@ -46,7 +46,6 @@ export async function getCqDirectoryEntriesByManagingOrganizationIds(
 ): Promise<string[]> {
   validateTableName(tableName);
 
-  // Build the WHERE clause for multiple managing organization IDs
   const whereConditions = managingOrganizationIds
     .map((_, index) => `managing_organization_id ilike :managingOrgId${index}`)
     .join(" OR ");
@@ -57,7 +56,6 @@ export async function getCqDirectoryEntriesByManagingOrganizationIds(
   WHERE ${whereConditions}
   `;
 
-  // Create replacements object with indexed parameters
   const replacements: Record<string, string> = {};
   managingOrganizationIds.forEach((id, index) => {
     replacements[`managingOrgId${index}`] = `${id}%`;
@@ -91,7 +89,6 @@ export async function getCqDirectoryEntriesBasicDetailsByIds(
     WHERE ${whereConditions}
   `;
 
-  // Create replacements object with indexed parameters
   const replacements: Record<string, string> = {};
   ids.forEach((id, index) => {
     replacements[`id${index}`] = id;
