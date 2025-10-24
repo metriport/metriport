@@ -64,6 +64,7 @@ import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
 import { SurescriptsNestedStack } from "./surescripts/surescripts-stack";
 import { QuestNestedStack } from "./quest/quest-stack";
+import { SDEStack } from "./sde/sde-stack";
 import {
   createUploadRosterScheduledLambda,
   createDownloadResponseScheduledLambda,
@@ -434,6 +435,16 @@ export class APIStack extends Stack {
       });
     }
 
+    let sdeStack: SDEStack | undefined = undefined;
+    if (props.config.structuredDataBucketName) {
+      sdeStack = new SDEStack(this, "SDEStack", {
+        config: props.config,
+        vpc: this.vpc,
+        alarmAction: slackNotification?.alarmAction,
+        lambdaLayers,
+      });
+    }
+
     //-------------------------------------------
     // Analytics Platform
     //-------------------------------------------
@@ -714,6 +725,7 @@ export class APIStack extends Stack {
       featureFlagsTable,
       surescriptsAssets: surescriptsStack?.getAssets(),
       questAssets: questStack?.getAssets(),
+      sdeAssets: sdeStack?.getAssets(),
       jobAssets: jobsStack.getAssets(),
       analyticsPlatformAssets: analyticsPlatformStack?.getAssets(),
     });
@@ -807,6 +819,7 @@ export class APIStack extends Stack {
       consolidatedIngestionLambda,
       ...(surescriptsStack?.getLambdas() ?? []),
       ...(questStack?.getLambdas() ?? []),
+      ...(sdeStack?.getLambdas() ?? []),
       jobsStack.getAssets().runPatientJobLambda,
       analyticsPlatformStack?.getAssets().fhirToCsvBulkLambda,
     ];

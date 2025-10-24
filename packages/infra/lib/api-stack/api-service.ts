@@ -44,6 +44,7 @@ import { provideAccessToQueue } from "../shared/sqs";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
 import { SurescriptsAssets } from "../surescripts/types";
+import { SDEAssets } from "../sde/types";
 
 interface ApiProps extends StackProps {
   config: EnvConfig;
@@ -147,6 +148,7 @@ export function createAPIService({
   featureFlagsTable,
   surescriptsAssets,
   questAssets,
+  sdeAssets,
   jobAssets,
   analyticsPlatformAssets,
 }: {
@@ -199,6 +201,7 @@ export function createAPIService({
   featureFlagsTable: dynamodb.Table;
   surescriptsAssets: SurescriptsAssets | undefined;
   questAssets: QuestAssets | undefined;
+  sdeAssets: SDEAssets | undefined;
   jobAssets: JobsAssets;
   analyticsPlatformAssets: AnalyticsPlatformsAssets | undefined;
 }): {
@@ -426,6 +429,9 @@ export function createAPIService({
             ...Object.fromEntries(
               questAssets.questQueues.map(({ envVarName, queue }) => [envVarName, queue.queueUrl])
             ),
+          }),
+          ...(sdeAssets && {
+            STRUCTURED_DATA_BUCKET_NAME: sdeAssets.structuredDataBucket.bucketName,
           }),
           RUN_PATIENT_JOB_QUEUE_URL: jobAssets.runPatientJobQueue.queueUrl,
           ...(props.config.hl7Notification?.dischargeNotificationSlackUrl && {
