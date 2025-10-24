@@ -1,4 +1,6 @@
 import axios from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import {
   defaultGetTimeToWait,
   defaultOptions as defaultRetryWithBackoffOptions,
@@ -6,10 +8,9 @@ import {
   ExecuteWithRetriesOptions,
   GetTimeToWaitParams,
 } from "../common/retry";
-import { NetworkError, networkTimeoutErrors } from "./error";
 import { isMetriportError } from "../error/metriport-error";
-import dayjs from "dayjs";
-import duration from "dayjs/plugin/duration";
+import { NetworkError, networkTimeoutErrors } from "./error";
+
 dayjs.extend(duration);
 
 export const tooManyRequestsStatus = 429;
@@ -31,6 +32,9 @@ export const defaultOptionsRequestNotAccepted: ExecuteWithNetworkRetriesOptions 
     // https://nodejs.org/docs/latest-v18.x/api/errors.html#common-system-errors
     "ECONNREFUSED", // (Connection refused): No connection could be made because the target machine actively refused it. This usually results from trying to connect to a service that is inactive on the foreign host.
     "ENOTFOUND", //  (DNS lookup failed): Indicates a DNS failure of either EAI_NODATA or EAI_NONAME. This is not a standard POSIX error.
+    "EAI_AGAIN",
+    "ENETUNREACH",
+    "EHOSTUNREACH",
   ],
   httpStatusCodesToRetry: [tooManyRequestsStatus],
 };

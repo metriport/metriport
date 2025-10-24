@@ -16,9 +16,11 @@ import {
   MetriportError,
   NotFoundError,
 } from "@metriport/shared";
+import { NodeHttpHandler } from "@smithy/node-http-handler";
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import * as https from "https";
 import * as stream from "stream";
 import * as util from "util";
 import { out } from "../../util/log";
@@ -32,7 +34,17 @@ const defaultS3RetriesConfig = {
   maxAttempts: 5,
   initialDelay: 500,
 };
+const maxSockets = 200;
 const protocolRegex = /^https?:\/\//;
+
+const retriableErrorCodes = [
+  "EPIPE",
+  "ECONNRESET",
+  "ECONNREFUSED",
+  "EAI_AGAIN",
+  "ENETUNREACH",
+  "EHOSTUNREACH",
+] as const;
 
 export type FileInfoExists = {
   exists: true;
@@ -137,7 +149,11 @@ export async function executeWithRetriesS3<T>(
  * @deprecated Use S3Utils instead, adding functions as needed
  */
 export function makeS3Client(region: string): AWS.S3 {
-  return new AWS.S3({ signatureVersion: "v4", region });
+  return new AWS.S3({
+    signatureVersion: "v4",
+    region,
+    httpOptions: { agent: new https.Agent({ keepAlive: true, maxSockets }) },
+  });
 }
 
 type FileExistsFilter = {
@@ -169,7 +185,15 @@ export class S3Utils {
 
   constructor(readonly region: string) {
     this._s3 = makeS3Client(region);
-    this._s3Client = new S3Client({ region });
+    this._s3Client = new S3Client({
+      region,
+      requestHandler: new NodeHttpHandler({
+        httpsAgent: new https.Agent({
+          keepAlive: true,
+          maxSockets,
+        }),
+      }),
+    });
   }
 
   /**
@@ -682,10 +706,10 @@ export function isNotFoundError(error: any): boolean {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isRetriableError(error: any): boolean {
-  const errorsToRetry = ["EPIPE", "ECONNRESET"];
   if (
-    (typeof error.code === "string" && errorsToRetry.includes(error.code)) ||
-    (typeof error.message === "string" && errorsToRetry.some(code => error.message.includes(code)))
+    (typeof error.code === "string" && retriableErrorCodes.includes(error.code)) ||
+    (typeof error.message === "string" &&
+      retriableErrorCodes.some(code => error.message.includes(code)))
   ) {
     return true;
   }
