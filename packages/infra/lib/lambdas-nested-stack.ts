@@ -842,8 +842,8 @@ export class LambdasNestedStack extends NestedStack {
     bundleBucket.grantReadWrite(theLambda);
     conversionsBucket.grantRead(theLambda);
     pharmacyBundleBucket?.grantRead(theLambda);
-    structuredDataBucket?.grantRead(theLambda);
     labBundleBucket?.grantRead(theLambda);
+    structuredDataBucket?.grantRead(theLambda);
     hl7ConversionBucket?.grantRead(theLambda);
     aiBriefBucket?.grantReadWrite(theLambda);
 
