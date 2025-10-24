@@ -10,7 +10,7 @@ The immunization resource is intended to cover the recording of current and hist
 **Reference Table:**
 
 The `immunization_references` table contains normalized references from the immunization to other entities. It supports the following reference properties:
-* **subject**: links to the patient who received the immunization
+* **patient** (required): links to the patient who received the immunization
 * **encounter**: links to the encounter where the immunization was administered
 * **location**: links to the location where the medication was dispensed
 * **performer.actor**: links to practitioners who performed the immunization

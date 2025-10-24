@@ -10,8 +10,8 @@ A medication dispense record represents the dispensing of a medication to a pati
 **Reference Table:**
 
 The `medication_dispense_references` table contains normalized references from the medication dispense to other entities. It supports the following reference properties:
-* **medication_reference**: links to the medication that was dispensed
-* **subject**: links to the patient who received the medication
+* **medication_reference** (required): links to the medication that was dispensed
+* **subject** (required): links to the patient who received the medication
 * **performer.actor**: links to practitioners who performed the dispensing
 * **location**: links to the location where the medication was dispensed
 

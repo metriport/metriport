@@ -10,7 +10,7 @@ A diagnostic report is the set of information that is typically provided by a di
 **Reference Table:**
 
 The `diagnostic_report_references` table contains normalized references from the diagnostic report to other entities. It supports the following reference properties:
-* **subject**: links to the patient who is the subject of the diagnostic report
+* **subject** (required): links to the patient who is the subject of the diagnostic report
 * **encounter**: links to the encounter where the diagnostic report was generated
 * **performer**: links to practitioners who performed the diagnostic procedure
 * **result**: links to observations or other diagnostic results referenced in the report

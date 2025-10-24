@@ -8,7 +8,6 @@ icon: "n/a"
 Reference tables are normalized tables that store FHIR resource references in a structured format. They provide a consistent way to link resources across the Metriport data model.
 
 **Reference Tables:**
-The reference tables provide a normalized structure for storing FHIR resource references, enabling consistent linking between different healthcare entities across the data model.
 
 Each reference table contains the following columns:
 
@@ -21,68 +20,69 @@ Each reference table contains the following columns:
 
 ## Reference Tables by Resource Type
 
+### [Condition References](/medical-api/handling-data/schema/condition)
+The `condition_references` table supports the following reference properties:
+- **subject** (required): links to the [patient](/medical-api/handling-data/schema/patient) who has the condition
+- **encounter**: links to the [encounter](/medical-api/handling-data/schema/encounter) where the condition was recorded
+- **recorder**: links to the [practitioner](/medical-api/handling-data/schema/practitioner) who recorded the condition
+
 ### [Diagnostic Report References](/medical-api/handling-data/schema/diagnostic-report)
 The `diagnostic_report_references` table supports the following reference properties:
-- **subject**: links to the [patient](/medical-api/handling-data/schema/patient) who is the subject of the diagnostic report
+- **subject** (required): links to the [patient](/medical-api/handling-data/schema/patient) who is the subject of the diagnostic report
 - **encounter**: links to the [encounter](/medical-api/handling-data/schema/encounter) where the diagnostic report was generated
 - **performer**: links to [practitioners](/medical-api/handling-data/schema/practitioner) who performed the diagnostic procedure
 - **result**: links to [observations](/medical-api/handling-data/schema/observation) or other diagnostic results referenced in the report
 
 ### [Encounter References](/medical-api/handling-data/schema/encounter)
 The `encounter_references` table supports the following reference properties:
-- **subject**: links to the [patient](/medical-api/handling-data/schema/patient) who is the subject of the encounter
+- **subject** (required): links to the [patient](/medical-api/handling-data/schema/patient) who is the subject of the encounter
 - **participant.individual**: links to [practitioners](/medical-api/handling-data/schema/practitioner) involved in the encounter
 - **location.location**: links to [locations](/medical-api/handling-data/schema/location) where the encounter occurred
 - **diagnosis.condition**: links to [conditions](/medical-api/handling-data/schema/condition) diagnosed during the encounter
 
-### [Condition References](/medical-api/handling-data/schema/condition)
-The `condition_references` table supports the following reference properties:
-- **subject**: links to the [patient](/medical-api/handling-data/schema/patient) who has the condition
-- **encounter**: links to the [encounter](/medical-api/handling-data/schema/encounter) where the condition was recorded
-- **recorder**: links to the [practitioner](/medical-api/handling-data/schema/practitioner) who recorded the condition
-
 ### [Immunization References](/medical-api/handling-data/schema/immunization)
 The `immunization_references` table supports the following reference properties:
-- **patient**: links to the [patient](/medical-api/handling-data/schema/patient) who received the immunization
+- **patient** (required): links to the [patient](/medical-api/handling-data/schema/patient) who received the immunization
 - **encounter**: links to the [encounter](/medical-api/handling-data/schema/encounter) where the immunization was given
+- **location**: links to the [location](/medical-api/handling-data/schema/location) where the immunization was given
 - **performer.actor**: links to [practitioners](/medical-api/handling-data/schema/practitioner) who administered the immunization
 
 ### [Observation References](/medical-api/handling-data/schema/observation)
 The `observation_references` table supports the following reference properties:
-- **subject**: links to the [patient](/medical-api/handling-data/schema/patient) who is the subject of the observation
+- **subject** (required): links to the [patient](/medical-api/handling-data/schema/patient) who is the subject of the observation
 - **encounter**: links to the [encounter](/medical-api/handling-data/schema/encounter) where the observation was made
 - **performer**: links to [practitioners](/medical-api/handling-data/schema/practitioner) who performed the observation
 
 ### [Procedure References](/medical-api/handling-data/schema/procedure)
 The `procedure_references` table supports the following reference properties:
-- **subject**: links to the [patient](/medical-api/handling-data/schema/patient) who is the subject of the procedure
+- **subject** (required): links to the [patient](/medical-api/handling-data/schema/patient) who is the subject of the procedure
 - **encounter**: links to the [encounter](/medical-api/handling-data/schema/encounter) where the procedure was performed
-- **location**: links to the [location](/medical-api/handling-data/schema/location) where the procedure was performed
 - **performer.actor**: links to [practitioners](/medical-api/handling-data/schema/practitioner) who performed the procedure
+- **location**: links to the [location](/medical-api/handling-data/schema/location) where the procedure was performed
 - **report**: links to [diagnostic reports](/medical-api/handling-data/schema/diagnostic-report) or other reports related to the procedure
 
 ### [Medication Administration References](/medical-api/handling-data/schema/medication-administration)
 The `medication_administration_references` table supports the following reference properties:
-- **medication_reference**: links to the [medication](/medical-api/handling-data/schema/medication) that was administered
-- **subject**: links to the [patient](/medical-api/handling-data/schema/patient) who received the medication
+- **medication_reference** (required): links to the [medication](/medical-api/handling-data/schema/medication) that was administered
+- **subject** (required): links to the [patient](/medical-api/handling-data/schema/patient) who received the medication
 - **performer.actor**: links to [practitioners](/medical-api/handling-data/schema/practitioner) who administered the medication
+
+### [Medication Dispense References](/medical-api/handling-data/schema/medication-dispense)
+The `medication_dispense_references` table supports the following reference properties:
+- **medication_reference** (required): links to the [medication](/medical-api/handling-data/schema/medication) that was dispensed
+- **subject** (required): links to the [patient](/medical-api/handling-data/schema/patient) who received the medication
+- **performer.actor**: links to [practitioners](/medical-api/handling-data/schema/practitioner) who dispensed the medication
+- **location**: links to the [location](/medical-api/handling-data/schema/location) where the medication was dispensed
 
 ### [Medication Request References](/medical-api/handling-data/schema/medication-request)
 The `medication_request_references` table supports the following reference properties:
-- **medication_reference**: links to the [medication](/medical-api/handling-data/schema/medication) that was requested
-- **subject**: links to the [patient](/medical-api/handling-data/schema/patient) for whom the medication was requested
+- **medication_reference** (required): links to the [medication](/medical-api/handling-data/schema/medication) that was requested
+- **subject** (required): links to the [patient](/medical-api/handling-data/schema/patient) for whom the medication was requested
 - **encounter**: links to the [encounter](/medical-api/handling-data/schema/encounter) where the medication was requested
 - **requester**: links to the [practitioner](/medical-api/handling-data/schema/practitioner) who requested the medication
 - **reason_reference**: links to [conditions](/medical-api/handling-data/schema/condition) or other reasons for the medication request
 
-### [Medication Dispense References](/medical-api/handling-data/schema/medication-dispense)
-The `medication_dispense_references` table supports the following reference properties:
-- **medication_reference**: links to the [medication](/medical-api/handling-data/schema/medication) that was dispensed
-- **subject**: links to the [patient](/medical-api/handling-data/schema/patient) who received the medication
-- **location**: links to the [location](/medical-api/handling-data/schema/location) where the medication was dispensed
-- **performer.actor**: links to [practitioners](/medical-api/handling-data/schema/practitioner) who dispensed the medication
-
 ### [Medication Statement References](/medical-api/handling-data/schema/medication-statement)
 The `medication_statement_references` table supports the following reference properties:
-- **medication_reference**: links to the [medication](/medical-api/handling-data/schema/medication) referenced in the statement
-- **subject**: links to the [patient](/medical-api/handling-data/schema/patient) who made the statement about the medication
+- **medication_reference** (required): links to the [medication](/medical-api/handling-data/schema/medication) referenced in the statement
+- **subject** (required): links to the [patient](/medical-api/handling-data/schema/patient) who made the statement about the medication

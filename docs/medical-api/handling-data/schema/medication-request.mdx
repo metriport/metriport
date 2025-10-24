@@ -10,8 +10,8 @@ A medication request record represents a request for a medication to be prescrib
 **Reference Table:**
 
 The `medication_request_references` table contains normalized references from the medication request to other entities. It supports the following reference properties:
-* **medication_reference**: links to the medication that was requested
-* **subject**: links to the patient for whom the medication was requested
+* **medication_reference** (required): links to the medication that was requested
+* **subject** (required): links to the patient for whom the medication was requested
 * **encounter**: links to the encounter where the request was made
 * **requester**: links to the practitioner who made the request
 * **reason_reference**: links to conditions or other reasons for the medication request

@@ -10,7 +10,7 @@ The procedure resource is used to record the details of current and historical p
 **Reference Table:**
 
 The `procedure_references` table contains normalized references from the procedure to other entities. It supports the following reference properties:
-* **subject**: links to the patient who underwent the procedure
+* **subject** (required): links to the patient who underwent the procedure
 * **encounter**: links to the encounter where the procedure was performed
 * **performer.actor**: links to practitioners who performed the procedure
 * **location**: links to the location where the procedure was performed
