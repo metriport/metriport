@@ -36,8 +36,6 @@ import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
-import { createCqDirectoryRebuilder } from "./api-stack/cq-directory-rebuilder";
-import { createCwDirectoryRebuilder } from "./api-stack/cw-directory-rebuilder";
 import { createScheduledDBMaintenance } from "./api-stack/db-maintenance";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
@@ -821,22 +819,6 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantRead(ehrWriteBackResourceDiffBundlesLambda);
 
     createDocQueryChecker({
-      lambdaLayers,
-      stack: this,
-      vpc: this.vpc,
-      apiAddress: apiDirectUrl,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
-
-    createCqDirectoryRebuilder({
-      lambdaLayers,
-      stack: this,
-      vpc: this.vpc,
-      apiAddress: apiDirectUrl,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
-
-    createCwDirectoryRebuilder({
       lambdaLayers,
       stack: this,
       vpc: this.vpc,

@@ -20,6 +20,8 @@ import {
   getConsolidatedIngestionConnectorSettings,
   getConsolidatedSearchConnectorSettings,
 } from "./lambdas-nested-stack-settings";
+import { createCqDirectoryRebuilder } from "./lambdas-nested-stack/cq-directory-rebuilder";
+import { createCwDirectoryRebuilder } from "./lambdas-nested-stack/cw-directory-rebuilder";
 import { getHieSftpPasswordSecretName } from "./secrets-stack";
 import { addBedrockPolicyToLambda } from "./shared/bedrock";
 import { createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
@@ -129,6 +131,8 @@ export class LambdasNestedStack extends NestedStack {
   readonly conversionResultNotifierLambda: Lambda;
   readonly reconversionKickoffLambda: Lambda;
   readonly reconversionKickoffQueue: Queue;
+  readonly cwDirectoryRebuilderLambda: Lambda | undefined;
+  readonly cqDirectoryRebuilderLambda: Lambda | undefined;
 
   constructor(scope: Construct, id: string, props: LambdasNestedStackProps) {
     super(scope, id, props);
@@ -388,6 +392,20 @@ export class LambdasNestedStack extends NestedStack {
       });
     this.reconversionKickoffLambda = reconversionKickoffLambda;
     this.reconversionKickoffQueue = reconversionKickoffQueue;
+
+    this.cwDirectoryRebuilderLambda = createCwDirectoryRebuilder({
+      lambdaLayers: props.lambdaLayers,
+      stack: this,
+      vpc: props.vpc,
+      alarmSnsAction: props.alarmAction,
+    });
+
+    this.cqDirectoryRebuilderLambda = createCqDirectoryRebuilder({
+      lambdaLayers: props.lambdaLayers,
+      stack: this,
+      vpc: props.vpc,
+      alarmSnsAction: props.alarmAction,
+    });
   }
 
   private setupCdaToVisualization(ownProps: {
