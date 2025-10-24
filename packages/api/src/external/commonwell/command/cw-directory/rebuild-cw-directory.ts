@@ -154,5 +154,5 @@ export async function rebuildCwDirectory(failGracefully = false): Promise<void> 
   log(`CW directory successfully rebuilt! :) Took ${Date.now() - startedAt}ms`);
 
   const heartbeatUrl = Config.getCwDirRebuildHeartbeatUrl();
-  if (heartbeatUrl) await sendHeartbeatToMonitoringServiceSafe(heartbeatUrl);
+  if (heartbeatUrl) await sendHeartbeatToMonitoringServiceSafe(heartbeatUrl, log);
 }
