@@ -58,10 +58,9 @@ export function createTextWithEmbedding(
 
 export function createTextWithIndexAndEmbedding(
   data: EmbeddingData,
-  textsWithIndex: TextWithIndex[],
-  index: number
+  textsWithIndex: TextWithIndex[]
 ): TextWithIndexAndEmbedding | undefined {
-  const textWithIndex = textsWithIndex[index];
+  const textWithIndex = textsWithIndex[data.index];
   if (!textWithIndex) return undefined;
   return {
     text: textWithIndex.text,

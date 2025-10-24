@@ -59,8 +59,8 @@ export class EmbeddingClient {
     textsWithIndex: TextWithIndex[]
   ): Promise<TextWithIndexAndEmbedding[]> {
     const response = await this.batchEmbed(textsWithIndex.map(({ text }) => text));
-    const textWithIndexAndEmbeddings = response.data.map((data, index) =>
-      createTextWithIndexAndEmbedding(data, textsWithIndex, index)
+    const textWithIndexAndEmbeddings = response.data.map(data =>
+      createTextWithIndexAndEmbedding(data, textsWithIndex)
     );
     return _.compact(textWithIndexAndEmbeddings);
   }
