@@ -7,7 +7,7 @@ export function getDataExtractionFileName({
   patientId: string;
   documentId: string;
 }): string {
-  return `cxId=${cxId}/patientId=${patientId}/documentId=${documentId}/bundle.json`;
+  return `${getDataExtractionFilePrefix({ cxId, patientId })}${documentId}/bundle.json`;
 }
 
 export function getDataExtractionFilePrefix({
@@ -17,5 +17,5 @@ export function getDataExtractionFilePrefix({
   cxId: string;
   patientId: string;
 }): string {
-  return `cxId=${cxId}/patientId=${patientId}/documentId=`;
+  return `cxid=${cxId}/patientid=${patientId}/documentid=`;
 }

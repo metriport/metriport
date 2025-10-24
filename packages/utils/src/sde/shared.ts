@@ -48,6 +48,9 @@ export function listLocalPatientIds(cxId: string): string[] {
 
 export function listLocalDocumentIds(cxId: string, patientId: string): string[] {
   const localDirectoryPath = getLocalDirectoryPath(`customer/${cxId}/${patientId}`);
+  if (!fs.statSync(localDirectoryPath).isDirectory()) {
+    return [];
+  }
   return fs.readdirSync(localDirectoryPath).map(fileName => path.basename(fileName, ".json"));
 }
 
