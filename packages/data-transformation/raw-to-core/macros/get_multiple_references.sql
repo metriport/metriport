@@ -24,7 +24,8 @@
             ''
         )                                                                                                   as reference_type
     from {{ref(stage_table_name)}}
-    where {{reference_id_field_prefix}}_{{formatted_index}}_{{reference_id_field_suffix}} != ''
+    where {{reference_id_field_prefix}}_{{formatted_index}}_{{reference_id_field_suffix}} != '' 
+        and {{reference_id_field_prefix}}_{{formatted_index}}_{{reference_id_field_suffix}} is not null
     {% if not loop.last %}union all{% endif %}
     {% endfor %}
 {% endmacro %}

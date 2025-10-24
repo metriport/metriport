@@ -17,5 +17,5 @@
             ''
         )                                           as reference_type
     from {{ref(stage_table_name)}}
-    where {{reference_id_field}} != ''
+    where {{reference_id_field}} != '' and {{reference_id_field}} is not null
 {% endmacro %}
