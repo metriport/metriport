@@ -183,7 +183,7 @@ export async function getAdtSourcedEncounter({
 
   const isCxAllowedToSeeData = await isAdtsDataVisibleFeatureFlagEnabledForCx(cxId);
   if (!isCxAllowedToSeeData) {
-    log(`CX ${cxId} is not allowed to see ADT data, skipping`);
+    log(`CX ${cxId} is not allowed to see ADT data, skipping getAdtSourcedEncounter`);
     return undefined;
   }
 
