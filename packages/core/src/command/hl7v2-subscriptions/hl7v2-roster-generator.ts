@@ -16,9 +16,10 @@ import _ from "lodash";
 import { stripInvalidCharactersFromPatientData } from "../../domain/character-sanitizer";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
-import { out } from "../../util";
+import { capture, out } from "../../util";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
+import { getCxsWithAdtsRosterUploadFeatureFlagEnabled } from "../feature-flags/domain-ffs";
 import { METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER } from "./constants";
 import {
   trackRosterSizePerCustomer,
@@ -75,8 +76,34 @@ export class Hl7v2RosterGenerator {
 
     const cxIds = new Set(patients.map(p => p.cxId));
 
+    const cxsAllowedToUploadRoster = await getCxsWithAdtsRosterUploadFeatureFlagEnabled();
+    const filteredCxs: string[] = [];
+    const filteredOutCxs: string[] = [];
+
+    cxIds.forEach(cxId => {
+      if (cxsAllowedToUploadRoster.includes(cxId)) {
+        filteredCxs.push(cxId);
+      } else {
+        filteredOutCxs.push(cxId);
+      }
+    });
+
+    if (filteredOutCxs.length > 0) {
+      const msg =
+        `Customer(s) without ADT roster upload feature flag enabled, tried to upload a roster. ` +
+        `Ask in slack if this is expected. Roster processing will continue for the allowed customers.`;
+      capture.error(msg, {
+        extra: {
+          filteredOutCxs,
+          totalCxIds: Array.from(cxIds),
+          allowedCxs: cxsAllowedToUploadRoster,
+          hieName,
+        },
+      });
+    }
+
     log(`Getting all organizations for patients...`);
-    const orgs = await simpleExecuteWithRetries(() => this.getOrganizations([...cxIds]), log);
+    const orgs = await simpleExecuteWithRetries(() => this.getOrganizations([...filteredCxs]), log);
     const orgsByCxId = _.keyBy(orgs, "cxId");
 
     const rosterRowInputs = patients.map(p => {

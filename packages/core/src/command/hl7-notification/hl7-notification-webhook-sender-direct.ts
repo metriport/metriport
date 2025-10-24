@@ -46,6 +46,7 @@ import {
   SupportedTriggerEvent,
 } from "./utils";
 import { sendHeartbeatToMonitoringService } from "../../external/monitoring/heartbeat";
+import { isAdtsDataVisibleFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
 
 type HieConfig = { timezone: string };
 
@@ -200,21 +201,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     const clinicalInformation = this.extractClinicalInformation(newEncounterData);
 
-    log(`Writing TCM encounter to DB...`);
-    await this.persistTcmEncounter(
-      {
-        id: encounterId,
-        cxId,
-        patientId,
-        class: encounterClass.display,
-        facilityName: facilityName,
-        admitTime: encounterPeriod?.start,
-        dischargeTime: encounterPeriod?.end,
-        clinicalInformation,
-      },
-      triggerEvent
-    );
-
     log(`Updating encounter bundle in S3...`);
     const [, result] = await Promise.all([
       saveAdtConversionBundle({
@@ -236,6 +222,28 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
         newEncounterData,
       }),
     ]);
+
+    // Putting it so late into the function so that we can still process the data and do data quality checks before showing the CX.
+    const isCxAllowedToSeeData = await isAdtsDataVisibleFeatureFlagEnabledForCx(cxId);
+    if (!isCxAllowedToSeeData) {
+      log(`CX ${cxId} is not allowed to see data. Stopping data procesing...`);
+      return;
+    }
+
+    log(`Writing TCM encounter to DB...`);
+    await this.persistTcmEncounter(
+      {
+        id: encounterId,
+        cxId,
+        patientId,
+        class: encounterClass.display,
+        facilityName: facilityName,
+        admitTime: encounterPeriod?.start,
+        dischargeTime: encounterPeriod?.end,
+        clinicalInformation,
+      },
+      triggerEvent
+    );
 
     log(`Sending Discharge Requery kickoff...`);
     if (triggerEvent === dischargeEventCode) {
