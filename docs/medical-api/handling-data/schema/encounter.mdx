@@ -11,8 +11,8 @@ An encounter encompasses the lifecycle from pre-admission, the actual encounter 
 
 The `encounter_references` table contains normalized references from the encounter to other entities. It supports the following reference properties:
 * **subject**: links to the patient involved in the encounter
-* **participant**: links to practitioners and other participants in the encounter
-* **location**: links to locations where the encounter occurred
+* **participant.individual**: links to practitioners and other participants in the encounter
+* **location.location**: links to locations where the encounter occurred
 * **diagnosis.condition**: links to condition outcomes from the encounter
 
 For detailed information about reference table structure and indexing, see the [Reference Tables documentation](/medical-api/handling-data/schema/reference-tables).

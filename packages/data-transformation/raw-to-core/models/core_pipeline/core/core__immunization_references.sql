@@ -14,6 +14,14 @@ encounter_reference as (
       'encounter_reference'
    ) }}
 ),
+location_reference as (
+   {{ get_single_reference(
+      'stage__immunization', 
+      'immunization_id', 
+      'location', 
+      'location_reference'
+   ) }}
+),
 performer_references as (
    {{ get_multiple_references(
       'stage__immunization', 
@@ -27,6 +35,8 @@ all_references as (
     select * from patient_reference
     union all
     select * from encounter_reference
+    union all
+    select * from location_reference
     union all
     select * from performer_references
 )
