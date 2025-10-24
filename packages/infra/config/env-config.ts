@@ -77,6 +77,7 @@ type EnvConfigBase = {
   labConversionBucketName?: string;
   questReplicaBucketName?: string;
   ehrResponsesBucketName?: string;
+  structuredDataBucketName?: string;
   ehrBundleBucketName: string;
   iheResponsesBucketName: string;
   iheParsedResponsesBucketName: string;
@@ -194,6 +195,10 @@ type EnvConfigBase = {
     scheduleExpressions: string | string[];
     heartbeatUrl?: string;
   };
+  cwDirectoryRebuilder?: {
+    scheduleExpressions: string | string[];
+    heartbeatUrl?: string;
+  };
   ehrIntegration?: {
     athenaHealth: {
       env: string;
@@ -245,6 +250,9 @@ type EnvConfigBase = {
     secrets: {
       QUEST_SFTP_PASSWORD: string;
     };
+  };
+  sde?: {
+    comprehendRegion?: "us-east-1" | "us-east-2" | "us-west-2";
   };
   jobs: {
     startScheduledPatientJobsScheduleExpression: string;

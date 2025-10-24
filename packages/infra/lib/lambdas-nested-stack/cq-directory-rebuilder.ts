@@ -12,21 +12,21 @@ export type CqDirectoryRebuilderProps = {
   stack: Construct;
   lambdaLayers: LambdaLayers;
   vpc: IVpc;
-  apiAddress: string;
   alarmSnsAction?: SnsAction;
 };
 
 function getSettings(
   props: CqDirectoryRebuilderProps,
-  config: NonNullable<EnvConfig["cqDirectoryRebuilder"]>
+  config: NonNullable<EnvConfig["cqDirectoryRebuilder"]>,
+  apiUrl: string
 ) {
   return {
     ...props,
-    name: "ScheduledCqDirectoryRebuilder",
-    lambdaMemory: 256,
-    lambdaTimeout: Duration.seconds(60), // How long can the lambda run for, max is 900 seconds (15 minutes)
+    name: "ScheduledCqDirectoryRebuilder_v2",
+    lambdaMemory: 128,
+    lambdaTimeout: Duration.seconds(30), // How long can the lambda run for, max is 900 seconds (15 minutes)
     scheduleExpression: config.scheduleExpressions, // See: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
-    url: `http://${props.apiAddress}/internal/carequality/directory/rebuild`,
+    url: `http://${apiUrl}/internal/carequality/directory/rebuild`,
     httpTimeout: Duration.seconds(5),
   };
 }
@@ -46,7 +46,7 @@ export function createCqDirectoryRebuilder(props: CqDirectoryRebuilderProps): La
     scheduleExpression,
     url,
     httpTimeout,
-  } = getSettings(props, config.cqDirectoryRebuilder);
+  } = getSettings(props, config.cqDirectoryRebuilder, config.loadBalancerDnsName);
 
   const lambda = createScheduledLambda({
     stack,

@@ -22,6 +22,8 @@
     "./domain/*": "./dist/domain/*.js",
     "./external": "./dist/external/index.js",
     "./external/*": "./dist/external/*.js",
+    "./sde": "./dist/sde/index.js",
+    "./sde/*": "./dist/sde/*.js",
     "./mpi": "./dist/mpi/index.js",
     "./mpi/*": "./dist/mpi/*.js",
     "./fhir-deduplication": "./dist/fhir-deduplication/index.js",
@@ -61,6 +63,12 @@
       ],
       "mpi/*": [
         "dist/mpi/*"
+      ],
+      "sde": [
+        "dist/sde/index.d.ts"
+      ],
+      "sde/*": [
+        "dist/sde/*"
       ],
       "fhir-deduplication": [
         "dist/fhir-deduplication/index.d.ts"
