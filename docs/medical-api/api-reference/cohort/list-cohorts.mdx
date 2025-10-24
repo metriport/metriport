@@ -9,9 +9,9 @@ For more information, see the [guide about Cohorts](/medical-api/handling-data/c
 ## Response
 
 <ResponseField name="cohorts" type="Cohort[]">
-  Array of cohorts with count of patients assigned to them.
+  Array of cohorts with count of patients assigned to them. Each cohort includes an additional `size` field.
   <Expandable title="Cohort properties">
-    <Snippet file="cohort-response.mdx" />
+    <Snippet file="cohort-list-response-properties.mdx" />
   </Expandable>
 </ResponseField>
 
@@ -26,4 +26,4 @@ const allCohorts = await metriport.listCohorts();
 ```
 </ResponseExample>
 
-<Snippet file="cohort-list-response.mdx" />
+<Snippet file="cohort-list-with-size-response.mdx" />
