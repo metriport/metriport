@@ -195,6 +195,10 @@ type EnvConfigBase = {
     scheduleExpressions: string | string[];
     heartbeatUrl?: string;
   };
+  cwDirectoryRebuilder?: {
+    scheduleExpressions: string | string[];
+    heartbeatUrl?: string;
+  };
   ehrIntegration?: {
     athenaHealth: {
       env: string;
