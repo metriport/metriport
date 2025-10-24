@@ -5,6 +5,7 @@ import { createDefaultCohorts } from "../../../api/src/command/medical/cohort/cr
 import initDB from "../../../api/src/models/db";
 import { sleep } from "@metriport/shared/common/sleep";
 import dayjs, { duration } from "dayjs";
+import { Config } from "../../../api/src/shared/config";
 dayjs.extend(duration);
 
 /**
@@ -17,15 +18,32 @@ dayjs.extend(duration);
  */
 
 const listOfCxIds: string[] = [];
-const waitBetweenCxs = dayjs.duration(50, "milliseconds");
+const dryRun = false;
 
+const waitBetweenCxs = dayjs.duration(50, "milliseconds");
 async function main() {
   await sleep(50); // Avoid mixing logs with Node's
   const failedCxIds: string[] = [];
 
+  console.log("================================================");
+  console.log(`Running in ${dryRun ? "dryRun" : "warning: WRITE"} mode`);
+  console.log(
+    `Environment: ${Config.isDev() ? "dev" : `${Config.isStaging() ? "staging" : "warning: PROD"}`}`
+  );
+  const region = Config.getAWSRegion();
+  console.log(
+    `AWS Region: ${
+      region === "us-east-1" ? "Staging" : region === "us-west-2" ? "warning: PROD" : "Other"
+    }`
+  );
+  console.log(`List of cxs: ${listOfCxIds.join(", ")}`);
+  console.log(`Waiting 8 seconds before running... (Press Ctrl+C to cancel)`);
+  console.log("================================================");
+  await sleep(8000);
   console.log(`Creating default cohorts for ${listOfCxIds.length} cxs...`);
-  await sleep(3000); // Give time for user to cancel if needed
+
   await initDB();
+  console.log(`Initialized DB`);
   for (const cxId of listOfCxIds) {
     try {
       await createDefaultCohorts({ cxId });
