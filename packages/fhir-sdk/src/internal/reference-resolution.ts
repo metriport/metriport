@@ -88,6 +88,7 @@ export function isArrayReferenceField(fieldName: string): boolean {
       "protocolApplied",
       "reaction",
       "ingredient",
+      "activity",
     ]);
 
     return arrayBaseFields.has(baseField ?? "");
