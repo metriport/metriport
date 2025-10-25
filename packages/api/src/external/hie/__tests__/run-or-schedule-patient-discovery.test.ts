@@ -29,12 +29,12 @@ beforeEach(() => {
   cqRunOrSchedule_mock = jest
     .spyOn(cqRunSchedule, "runOrScheduleCqPatientDiscovery")
     .mockImplementation(async () => {
-      return;
+      return "triggered";
     });
   cwRunOrSchedule_mock = jest
     .spyOn(cwRunOrSchedule, "runOrScheduleCwPatientDiscovery")
     .mockImplementation(async () => {
-      return;
+      return "triggered";
     });
 });
 

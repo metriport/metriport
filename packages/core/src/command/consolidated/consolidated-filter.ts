@@ -143,7 +143,7 @@ export function addMissingReferences(
       resultBundle,
       originalBundle,
       addMissingReferencesFn,
-      ++iteration
+      iteration + 1
     );
   }
   return resultBundle;
