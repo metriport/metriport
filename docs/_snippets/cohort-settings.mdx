@@ -1,0 +1,92 @@
+<ParamField body="monitoring" type="object" optional>
+  <Expandable title="monitoring object properties" defaultOpen={true}>
+    <ParamField body="hie" type="object" optional>
+      HIE-based document monitoring - subscribes patients to HIE-based 
+      document monitoring (non-ADT) / medical record refresh based on the cadence.
+      <Expandable title="hie object properties" defaultOpen={false}>
+          <ParamField body="enabled" type="boolean" optional>
+            Enable or disable scheduled data pulls for HIE monitoring. **Defaults to enabled**.
+            When disabled, no scheduled pulls will occur regardless of the frequency setting.
+          </ParamField>
+          
+          <ParamField body="frequency" type="string" optional>
+            How often scheduled data pulls should occur, can be one of `weekly` or `biweekly` or `monthly`. Defaults to `monthly`.
+          </ParamField>
+          
+          <Info>
+            See [scheduled queries](/medical-api/handling-data/scheduled-queries) 
+            for timing details.
+          </Info>
+      </Expandable>
+      <Info>
+        **HIE monitoring is coming soon!** While this feature is not yet live, you can configure 
+        your HIE monitoring settings now. These settings will automatically take effect when the feature launches.
+      </Info>
+    </ParamField>
+    <ParamField body="adt" type="object" optional>
+      ADT (Admission, Discharge, Transfer) monitoring - subscribes patients to ADT notifications
+      based on their [primary address](/medical-api/api-reference/patient/create-patient#param-address).
+      <Expandable title="adt object properties" defaultOpen={false}>
+        <ParamField body="enabled" type="boolean" optional>
+          Enable or disable ADT monitoring notifications. Defaults to disabled.
+        </ParamField>
+      </Expandable>
+    </ParamField>
+    <ParamField body="pharmacy" type="object" optional>
+      Pharmacy / medication history monitoring - enables retail fill data monitoring where available.  
+      <Expandable title="pharmacy object properties">
+        <ParamField body="notifications" type="boolean" optional>
+          Enable/disable pharmacy monitoring notifications. Defaults to disabled.
+        </ParamField>
+        <ParamField body="schedule" type="object" optional>
+          Enable pharmacy data pulls at scheduled dates.
+          <Expandable title="schedule object properties" defaultOpen={false}>
+            <ParamField body="enabled" type="boolean" optional>
+              Enable or disable scheduled data pulls for pharmacy monitoring. When disabled, no 
+              scheduled pulls will occur regardless of the frequency setting. Defaults to disabled.
+            </ParamField>
+            
+            <ParamField body="frequency" type="string" optional>
+              How often scheduled data pulls should occur, can be one of `weekly` or `biweekly` or `monthly`. Defaults to `monthly`.
+            </ParamField>
+            
+            <Info>
+              See [scheduled queries](/medical-api/handling-data/scheduled-queries) 
+              for timing details.
+            </Info>
+          </Expandable>
+        </ParamField>
+      </Expandable>
+      <Info>
+        **Pharmacy monitoring is coming soon!** While this feature is not yet live, you can configure 
+        your Pharmacy monitoring settings now. These settings will automatically take effect when the feature launches.
+      </Info>
+    </ParamField>
+    <ParamField body="laboratory" type="object" optional>
+      Laboratory / lab results monitoring - enables laboratory test results monitoring where available.  
+      <Expandable title="laboratory object properties">
+        <ParamField body="notifications" type="boolean" optional>
+          Enable/disable laboratory monitoring notifications. Defaults to disabled.
+        </ParamField>
+        <ParamField body="schedule" type="object" optional>
+          Enable laboratory data pulls at scheduled dates.
+          <Expandable title="schedule object properties" defaultOpen={false}>
+            <ParamField body="enabled" type="boolean" optional>
+              Enable or disable scheduled data pulls for laboratory monitoring. When disabled, no 
+              scheduled pulls will occur regardless of the frequency setting. Defaults to disabled.
+            </ParamField>
+            
+            <ParamField body="frequency" type="string" optional>
+              How often scheduled data pulls should occur, can be one of `weekly` or `biweekly` or `monthly`. Defaults to `monthly`.
+            </ParamField>
+            
+            <Info>
+              See [scheduled queries](/medical-api/handling-data/scheduled-queries) 
+              for timing details.
+            </Info>
+          </Expandable>
+        </ParamField>
+      </Expandable>
+    </ParamField>
+  </Expandable>
+</ParamField>

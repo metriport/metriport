@@ -1,0 +1,34 @@
+---
+title: "Patient Monitoring"
+sidebarTitle: "General"
+icon: "ocdIndent"
+description: "Automated monitoring of patient medical data."
+---
+
+# Overview
+Metriport supports two ways to access patient medical data:  
+ - **Adhoc**: you request data whenever you need it through various API endpoints (see [Start Document Query](/medical-api/api-reference/document/start-document-query) for an example)  
+ - **Automated**: you receive the data without initiating the request, either through [Realtime Patient Notifications](/medical-api/handling-data/patient-monitoring#real-time-patient-notifications) 
+ or [Scheduled Queries](/medical-api/handling-data/patient-monitoring#scheduled-queries).
+
+Patient Monitoring is the automated way to receive patient data.
+
+# Real-time Patient Notifications
+Metriport’s Realtime Patient Notifications allows you to subscribe your patients to certain types of notifications.
+
+These notifications include:  
+ - ADTs (Admission, Discharge, Transfer)  
+ - Pharmacy-related notifications  
+ - Laboratory-related notifications  
+
+For more information see [Real-time Patient Notifications](/medical-api/handling-data/realtime-patient-notifications).
+
+# Scheduled Queries
+This allows you to specify a schedule in which queries should be executed automatically.
+
+This is a scheduled version of adhoc data queries.
+
+You can choose one of the [supported frequencies](/medical-api/handling-data/scheduled-queries#overview) to automatically trigger a Query for each of the supported sources.
+
+For more details, see [Scheduled Queries](/medical-api/handling-data/scheduled-queries).
+
