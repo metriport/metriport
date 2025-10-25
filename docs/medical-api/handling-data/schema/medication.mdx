@@ -2,47 +2,26 @@
 title: "Medication"
 description: "Schema documentation for the Medication table in the Metriport data model"
 group: "Schema"
+icon: "n/a"
 ---
 
-The medication table contains information on medications ordered and/or administered during a patient encounter.
+A medication resource is used for the identification and definition of a medication for the purposes of prescribing, dispensing, and administering a medication as well as for making statements about medication use.
 
 **Primary Keys:**
 * medication_id
 
-**Foreign Keys:**
-* person_id
-* patient_id
-* encounter_id
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| medication_id | varchar | Unique identifier for the medication |
+| status | varchar | Status of the medication. Possible values:<br/>– <code>active</code>: The medication is currently in use.<br/>– <code>inactive</code>: The medication is not currently in use.<br/>– <code>entered-in-error</code>: The medication record was entered in error. Refer to <a href="https://hl7.org/fhir/R4/valueset-medication-status.html" target="_blank" rel="noopener noreferrer">HL7 FHIR Medication Status</a> for more details.|
+| rxnorm_code | varchar | RxNorm code for the medication |
+| rxnorm_display | varchar | Human-readable description from RxNorm |
+| ndc_code | varchar | National Drug Code for the medication |
+| ndc_display | varchar | Human-readable description from NDC |
+| data_source | varchar | Source of the medication data |
 
-| Column | Data Type | Description | Terminology |
-| ------ | --------- | ----------- | ----------- |
-| medication_id | string | Unique identifier for the medication | - |
-| person_id | string | Unique identifier for the person | - |
-| member_id | string | Unique identifier for the member | - |
-| patient_id | string | Unique identifier for the patient | - |
-| encounter_id | string | Unique identifier for the encounter | - |
-| practitioner_id | string | Unique identifier for the practitioner | - |
-| medication_code | string | Standardized medication code | RxNorm, NDC, SNOMED CT |
-| medication_code_type | string | Type of coding system used | rxnorm, ndc, snomed-ct |
-| medication_code_system | string | Coding system identifier | - |
-| medication_code_version | string | Version of the coding system | - |
-| medication_code_display | string | Human-readable description of the medication | - |
-| medication_name | string | Name of the medication | - |
-| medication_generic_name | string | Generic name of the medication | - |
-| medication_brand_name | string | Brand name of the medication | - |
-| medication_strength | string | Strength of the medication | - |
-| medication_form | string | Form of the medication | tablet, capsule, liquid, injection |
-| medication_route | string | Route of administration | oral, intravenous, intramuscular |
-| medication_frequency | string | Frequency of administration | daily, twice_daily, as_needed |
-| medication_dosage | string | Dosage instructions | - |
-| medication_start_date | date | Date when medication was started | - |
-| medication_end_date | date | Date when medication was discontinued | - |
-| medication_status | string | Status of the medication | active, discontinued, completed |
-| medication_type | string | Type of medication | prescription, over_the_counter, controlled |
-| data_source | string | Source of the medication data | claims, clinical, ehr |
-| source_code | string | Original code from the source system | - |
-| normalized_code | string | Standardized/normalized code | - |
-| source_system | string | System that provided the medication data | - |
-| source_table | string | Table in the source system | - |
-| source_id | string | Identifier from the source system | - |
-| ingestion_date | timestamp | Date when the data was ingested | - |
+**Related Tables:**
+* [Medication Administration](/medical-api/handling-data/schema/medication-administration) - Records of medication administration
+* [Medication Dispense](/medical-api/handling-data/schema/medication-dispense) - Records of medication dispensing
+* [Medication Request](/medical-api/handling-data/schema/medication-request) - Records of medication requests
+* [Medication Statement](/medical-api/handling-data/schema/medication-statement) - Records of medication statements

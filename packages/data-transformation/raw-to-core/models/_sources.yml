@@ -6,6 +6,7 @@ sources:
     schema: "{{ var('input_schema') }}"
     tables:
       - name: allergyintolerance_view
+      - name: careplan_view
       - name: condition_view
       - name: condition_code_coding_view
       - name: coverage_view

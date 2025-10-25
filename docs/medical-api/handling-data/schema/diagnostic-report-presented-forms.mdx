@@ -1,0 +1,25 @@
+---
+title: "Diagnostic Report Presented Forms"
+description: "Schema documentation for the Diagnostic Report Presented Forms table in the Metriport data model"
+group: "Schema"
+icon: "n/a"
+---
+
+The `diagnostic_report_presented_forms` table contains the actual content of diagnostic reports, including text, images, and other media. This table stores the attachments and presented forms associated with diagnostic reports.
+
+**Primary Keys:**
+* diagnostic_report_id
+
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| `diagnostic_report_id` | varchar | The ID of the parent diagnostic report |
+| `data` | varchar | The base64-encoded attachment data |
+| `content_type` | varchar | MIME type of the attachment (e.g., 'application/pdf', 'image/jpeg') |
+| `creation` | timestamp | Timestamp when the attachment was created |
+| `hash` | varchar | SHA-1 hash of the attachment content |
+| `language` | varchar | Language code of the attachment content |
+| `size` | integer | Size of the attachment in bytes |
+| `title` | varchar | Human-readable title of the attachment |
+| `url` | varchar | URL reference to the attachment (if applicable) |
+
+This table is linked to the main [Diagnostic Report](/medical-api/handling-data/schema/diagnostic-report) table through the `diagnostic_report_id` foreign key.

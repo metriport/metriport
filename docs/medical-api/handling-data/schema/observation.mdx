@@ -2,43 +2,46 @@
 title: "Observation"
 description: "Schema documentation for the Observation table in the Metriport data model"
 group: "Schema"
+icon: "n/a"
 ---
 
-The observation table contains information on measurements other than lab tests e.g. blood pressure, height, and weight.
+The observation resource is used to support diagnosis, monitor progress, determine baselines and patterns and even capture demographic characteristics.
+
+**Reference Table:**
+
+The `observation_references` table contains normalized references from the observation to other entities. It supports the following reference properties:
+* **subject** (required): links to the patient who is the subject of the observation
+* **encounter**: links to the encounter where the observation was made
+* **performer**: links to practitioners who performed the observation
+
+For detailed information about reference table structure and indexing, see the [Reference Tables documentation](/medical-api/handling-data/schema/reference-tables).
+
+**Observation Table:**
 
 **Primary Keys:**
 * observation_id
 
 **Foreign Keys:**
-* person_id
 * patient_id
-* encounter_id
 
-| Column | Data Type | Description | Terminology |
-| ------ | --------- | ----------- | ----------- |
-| observation_id | string | Unique identifier for the observation | - |
-| person_id | string | Unique identifier for the person | - |
-| member_id | string | Unique identifier for the member | - |
-| patient_id | string | Unique identifier for the patient | - |
-| encounter_id | string | Unique identifier for the encounter | - |
-| practitioner_id | string | Unique identifier for the practitioner | - |
-| observation_code | string | Standardized observation code | LOINC, SNOMED CT |
-| observation_code_type | string | Type of coding system used | loinc, snomed-ct |
-| observation_code_system | string | Coding system identifier | - |
-| observation_code_version | string | Version of the coding system | - |
-| observation_code_display | string | Human-readable description of the observation | - |
-| observation_date | date | Date when the observation was made | - |
-| observation_value | string | Value of the observation | - |
-| observation_value_type | string | Data type of the observation value | quantity, codeable-concept, string |
-| observation_unit | string | Unit of measurement for the observation | - |
-| observation_status | string | Status of the observation | final, preliminary, amended |
-| observation_category | string | Category of the observation | vital-signs, survey, imaging |
-| body_site | string | Anatomical location of the observation | - |
-| laterality | string | Side of the body for the observation | left, right, bilateral |
-| data_source | string | Source of the observation data | claims, clinical, ehr |
-| source_code | string | Original code from the source system | - |
-| normalized_code | string | Standardized/normalized code | - |
-| source_system | string | System that provided the observation data | - |
-| source_table | string | Table in the source system | - |
-| source_id | string | Identifier from the source system | - |
-| ingestion_date | timestamp | Date when the data was ingested | - |
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| observation_id | varchar | Unique identifier for the observation |
+| patient_id | varchar | Unique identifier for the patient |
+| status | varchar | Status of the observation. Possible values:<br/>– <code>registered</code>: The existence of the observation is registered, but there is no result yet available.<br/>– <code>preliminary</code>: This is an initial or interim observation: data may be incomplete or unverified.<br/>– <code>final</code>: The observation is complete and verified by an authorized person.<br/>– <code>amended</code>: Subsequent to being final, the observation has been modified; the current version is complete and verified.<br/>– <code>corrected</code>: Subsequent to being final, the observation has been modified to correct an error in the result.<br/>– <code>cancelled</code>: The observation is unavailable because the measurement was not started or not completed.<br/>– <code>entered-in-error</code>: The observation has been withdrawn following erroneous entry.<br/>– <code>unknown</code>: The authoring/source system does not know the current status of the observation. |
+| effective_date | date | Start date of the observation |
+| end_date | date | End date of the observation |
+| loinc_code | varchar | LOINC code for the observation |
+| loinc_display | varchar | Human-readable description of LOINC code |
+| value | varchar | Value of the observation |
+| units | varchar | Unit of measurement |
+| reference_range_low | varchar | Lower bound of the reference range |
+| reference_range_high | varchar | Upper bound of the reference range |
+| category_hl7_code | varchar | HL7 category code |
+| category_hl7_display | varchar | Human-readable description of HL7 category |
+| interpretation_hl7_code | varchar | HL7 interpretation code |
+| interpretation_hl7_display | varchar | Human-readable description of HL7 interpretation |
+| bodysite_snomed_ct_code | varchar | SNOMED CT body site code |
+| bodysite_snomed_ct_display | varchar | Human-readable description of SNOMED CT body site |
+| note_text | varchar | Additional notes about the observation |
+| data_source | varchar | Source of the observation data |

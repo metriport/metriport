@@ -1,0 +1,40 @@
+---
+title: "Medication Request"
+description: "Schema documentation for the Medication Request table in the Metriport data model"
+group: "Schema"
+icon: "n/a"
+---
+
+A medication request record represents a request for a medication to be prescribed or administered to a patient. This includes details about the medication requested, dosing, and the practitioner making the request.
+
+**Reference Table:**
+
+The `medication_request_references` table contains normalized references from the medication request to other entities. It supports the following reference properties:
+* **medication_reference** (required): links to the medication that was requested
+* **subject** (required): links to the patient for whom the medication was requested
+* **encounter**: links to the encounter where the request was made
+* **requester**: links to the practitioner who made the request
+* **reason_reference**: links to conditions or other reasons for the medication request
+
+For detailed information about reference table structure and indexing, see the [Reference Tables documentation](/medical-api/handling-data/schema/reference-tables).
+
+**Medication Request Table:**
+
+**Primary Keys:**
+* medication_request_id
+
+**Foreign Keys:**
+* patient_id
+* medication_id
+
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| medication_request_id | varchar | Unique identifier for the medication request |
+| patient_id | varchar | Unique identifier for the patient |
+| medication_id | varchar | Unique identifier for the medication |
+| status | varchar | Status of the medication request. Possible values:<br/>– <code>active</code>: The prescription is 'actionable', but not all actions that are implied by it have occurred yet.<br/>– <code>on-hold</code>: Actions implied by the prescription are to be temporarily halted, but are expected to continue later.<br/>– <code>cancelled</code>: The prescription has been withdrawn by the prescriber and is no longer 'actionable'.<br/>– <code>completed</code>: All actions that are implied by the prescription have occurred.<br/>– <code>entered-in-error</code>: The prescription was entered in error and should not be considered valid.<br/>– <code>stopped</code>: Actions implied by the prescription have been permanently halted, before all of them occurred.<br/>– <code>draft</code>: The prescription is not yet 'actionable', e.g., it is a work in progress.<br/>– <code>unknown</code>: The authoring system does not know which of the status values applies for this prescription. |
+| authored_on | date | Date when the medication request was authored |
+| dose_unit | varchar | Unit of measurement for the dose |
+| dose_amount | varchar | Amount of medication requested |
+| note_text | varchar | Additional notes about the request |
+| data_source | varchar | Source of the medication request data |

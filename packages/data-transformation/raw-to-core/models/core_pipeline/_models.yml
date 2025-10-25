@@ -1,0 +1,717 @@
+version: 2
+
+models:
+  - name: core__condition_references
+    config:
+      alias: condition_references
+    columns:
+      - name: condition_id
+        tests:
+          - relationships:
+              to: ref('core__condition')
+              field: condition_id
+              config:
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                where: property = 'subject'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__encounter')
+              field: encounter_id
+              config:
+                where: property = 'encounter'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__practitioner')
+              field: practitioner_id
+              config:
+                where: property = 'recorder'
+                severity: error
+  - name: core__condition
+    config:
+      alias: condition
+    columns:
+      - name: condition_id
+        tests:
+          - unique:
+              config:
+                severity: error
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+  - name: core__diagnostic_report_presented_forms
+    config:
+      alias: diagnostic_report_presented_forms
+    columns:
+      - name: diagnostic_report_id
+        tests:
+          - relationships:
+              to: ref('core__diagnostic_report')
+              field: diagnostic_report_id
+              config:
+                severity: error
+  - name: core__diagnostic_report_references
+    config:
+      alias: diagnostic_report_references
+    columns:
+      - name: diagnostic_report_id
+        tests:
+          - relationships:
+              to: ref('core__diagnostic_report')
+              field: diagnostic_report_id
+              config:
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                where: property = 'subject'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__encounter')
+              field: encounter_id
+              config:
+                where: property = 'encounter'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__practitioner')
+              field: practitioner_id
+              config:
+                where: property = 'performer' and reference_type = 'Practitioner'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: property = 'performer' and reference_type = 'Organization'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__observation')
+              field: observation_id
+              config:
+                where: property = 'result' and reference_type = 'Observation'
+                severity: error
+  - name: core__diagnostic_report
+    config:
+      alias: diagnostic_report
+    columns:
+      - name: diagnostic_report_id
+        tests:
+          - unique:
+              config:
+                severity: error
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+  - name: core__encounter_references
+    config:
+      alias: encounter_references
+    columns:
+      - name: encounter_id
+        tests:
+          - relationships:
+              to: ref('core__encounter')
+              field: encounter_id
+              config:
+                severity: warn
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                where: property = 'subject'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__practitioner')
+              field: practitioner_id
+              config:
+                where: property = 'participant.individual' and reference_type = 'Practitioner'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: property = 'participant.individual' and reference_type = 'Organization'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__location')
+              field: location_id
+              config:
+                where: property = 'location.location'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__condition')
+              field: condition_id
+              config:
+                where: property = 'diagnosis.condition' and reference_type = 'Condition'
+                severity: warn
+  - name: core__encounter
+    config:
+      alias: encounter
+    columns:
+      - name: encounter_id
+        tests:
+          - unique:
+              config:
+                severity: error
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+  - name: core__immunization_references
+    config:
+      alias: immunization_references
+    columns:
+      - name: immunization_id
+        tests:
+          - relationships:
+              to: ref('core__immunization')
+              field: immunization_id
+              config:
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                where: property = 'patient'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__encounter')
+              field: encounter_id
+              config:
+                where: property = 'encounter'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__practitioner')
+              field: practitioner_id
+              config:
+                where: property = 'performer.actor' and reference_type = 'Practitioner'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: property = 'performer.actor' and reference_type = 'Organization'
+                severity: error
+  - name: core__immunization
+    config:
+      alias: immunization
+    columns:
+      - name: immunization_id
+        tests:
+          - unique:
+              config:
+                severity: error
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+  - name: core__location
+    config:
+      alias: location
+    columns:
+      - name: location_id
+        tests:
+          - unique:
+              config:
+                severity: error
+      - name: managing_organization_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: managing_organization_id != ''
+                severity: error
+  - name: core__medication_administration_references
+    config:
+      alias: medication_administration_references
+    columns:
+      - name: medication_administration_id
+        tests:
+          - relationships:
+              to: ref('core__medication_administration')
+              field: medication_administration_id
+              config:
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__medication')
+              field: medication_id
+              config:
+                where: property = 'medication_reference'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                where: property = 'subject'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__practitioner')
+              field: practitioner_id
+              config:
+                where: property = 'performer.actor' and reference_type = 'Practitioner'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: property = 'performer.actor' and reference_type = 'Organization'
+                severity: error
+  - name: core__medication_administration
+    config:
+      alias: medication_administration
+    columns:
+      - name: medication_administration_id
+        tests:
+          - unique:
+              config:
+                severity: error
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+      - name: medication_id
+        tests:
+          - relationships:
+              to: ref('core__medication')
+              field: medication_id
+              config:
+                severity: error
+  - name: core__medication_dispense_references
+    config:
+      alias: medication_dispense_references
+    columns:
+      - name: medication_dispense_id
+        tests:
+          - relationships:
+              to: ref('core__medication_dispense')
+              field: medication_dispense_id
+              config:
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__medication')
+              field: medication_id
+              config:
+                where: property = 'medication_reference'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                where: property = 'subject'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__location')
+              field: location_id
+              config:
+                where: property = 'location'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__practitioner')
+              field: practitioner_id
+              config:
+                where: property = 'performer.actor' and reference_type = 'Practitioner'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: property = 'performer.actor' and reference_type = 'Organization'
+                severity: error
+  - name: core__medication_dispense
+    config:
+      alias: medication_dispense
+    columns:
+      - name: medication_dispense_id
+        tests:
+          - unique:
+              config:
+                severity: error
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+      - name: medication_id
+        tests:
+          - relationships:
+              to: ref('core__medication')
+              field: medication_id
+              config:
+                severity: error
+  - name: core__medication_request_references
+    config:
+      alias: medication_request_references
+    columns:
+      - name: medication_request_id
+        tests:
+          - relationships:
+              to: ref('core__medication_request')
+              field: medication_request_id
+              config:
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__medication')
+              field: medication_id
+              config:
+                where: property = 'medication_reference'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                where: property = 'subject'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__encounter')
+              field: encounter_id
+              config:
+                where: property = 'encounter'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__practitioner')
+              field: practitioner_id
+              config:
+                where: property = 'requester' and reference_type = 'Practitioner'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: property = 'requester' and reference_type = 'Organization'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__condition')
+              field: condition_id
+              config:
+                where: property = 'reason_reference' and reference_type = 'Condition'
+                severity: error
+  - name: core__medication_request
+    config:
+      alias: medication_request
+    columns:
+      - name: medication_request_id
+        tests:
+          - unique:
+              config:
+                severity: error
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+      - name: medication_id
+        tests:
+          - relationships:
+              to: ref('core__medication')
+              field: medication_id
+              config:
+                severity: error
+  - name: core__medication_statement_references
+    config:
+      alias: medication_statement_references
+    columns:
+      - name: medication_statement_id
+        tests:
+          - relationships:
+              to: ref('core__medication_statement')
+              field: medication_statement_id
+              config:
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__medication')
+              field: medication_id
+              config:
+                where: property = 'medication_reference'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                where: property = 'subject'
+                severity: error
+  - name: core__medication_statement
+    config:
+      alias: medication_statement
+    columns:
+      - name: medication_statement_id
+        tests:
+          - unique:
+              config:
+                severity: error
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+      - name: medication_id
+        tests:
+          - relationships:
+              to: ref('core__medication')
+              field: medication_id
+              config:
+                severity: error
+  - name: core__medication
+    config:
+      alias: medication
+    columns:
+      - name: medication_id
+        tests:
+          - unique:
+              config:
+                severity: error
+  - name: core__observation_references
+    config:
+      alias: observation_references
+    columns:
+      - name: observation_id
+        tests:
+          - relationships:
+              to: ref('core__observation')
+              field: observation_id
+              config:
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                where: property = 'subject'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__encounter')
+              field: encounter_id
+              config:
+                where: property = 'encounter'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__practitioner')
+              field: practitioner_id
+              config:
+                where: property = 'performer' and reference_type = 'Practitioner'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: property = 'performer' and reference_type = 'Organization'
+                severity: error
+  - name: core__observation
+    config:
+      alias: observation
+    columns:
+      - name: observation_id
+        tests:
+          - unique:
+              config:
+                severity: error
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
+  - name: core__organization
+    config:
+      alias: organization
+    columns:
+      - name: organization_id
+        tests:
+          - unique:
+              config:
+                severity: error
+  - name: core__patient
+    config:
+      alias: patient
+    columns:
+      - name: patient_id
+        tests:
+          - unique:
+              config:
+                severity: error
+  - name: core__practitioner
+    config:
+      alias: practitioner
+    columns:
+      - name: practitioner_id
+        tests:
+          - unique:
+              config:
+                severity: error
+  - name: core__procedure_references
+    config:
+      alias: procedure_references
+    columns:
+      - name: procedure_id
+        tests:
+          - relationships:
+              to: ref('core__procedure')
+              field: procedure_id
+              config:
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                where: property = 'subject'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__encounter')
+              field: encounter_id
+              config:
+                where: property = 'encounter'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__location')
+              field: location_id
+              config:
+                where: property = 'location'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__practitioner')
+              field: practitioner_id
+              config:
+                where: property = 'performer.actor' and reference_type = 'Practitioner'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: property = 'performer.actor' and reference_type = 'Organization'
+                severity: error
+      - name: reference_id
+        tests:
+          - relationships:
+              to: ref('core__diagnostic_report')
+              field: diagnostic_report_id
+              config:
+                where: property = 'report' and reference_type = 'DiagnosticReport'
+                severity: error
+  - name: core__procedure
+    config:
+      alias: procedure
+    columns:
+      - name: procedure_id
+        tests:
+          - unique:
+              config:
+                severity: error
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: error
