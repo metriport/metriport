@@ -25,6 +25,15 @@
                     "read": [],
                     "write": []
                 }
+            },
+            {
+                "class": "metriport_app.protocols.appointments_created:PatientCreatedProtocol",
+                "description": "Create patients asynchronously when patients are created in your Canvas instance.",
+                "data_access": {
+                    "event": "",
+                    "read": [],
+                    "write": []
+                }
             }
         ],
         "commands": [],
