@@ -183,4 +183,4 @@ SELECT
     type_text,
     filename,
     processed_date
-FROM {{ source("raw", "location_view") }}
+FROM {{ source("raw", "location_view" if target.name == "postgres" else "location") }}

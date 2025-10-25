@@ -168,4 +168,4 @@ SELECT
     telecom_9_value,
     filename,
     processed_date
-FROM {{ source("raw", "organization_view") }}
+FROM {{ source("raw", "organization_view" if target.name == "postgres" else "organization") }}

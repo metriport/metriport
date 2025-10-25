@@ -311,4 +311,4 @@ SELECT
     vaccinecode_text,
     filename,
     processed_date
-FROM {{ source("raw", "immunization_view") }}
+FROM {{ source("raw", "immunization_view" if target.name == "postgres" else "immunization") }}

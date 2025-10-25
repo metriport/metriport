@@ -8,4 +8,4 @@ SELECT
     state,
     filename,
     processed_date
-FROM {{ source("raw", "patient_address_view") }}
+FROM {{ source("raw", "patient_address_view" if target.name == "postgres" else "patient_address") }}

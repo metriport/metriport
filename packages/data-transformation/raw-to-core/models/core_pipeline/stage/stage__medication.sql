@@ -176,4 +176,4 @@ SELECT
     status,
     filename,
     processed_date
-FROM {{ source("raw", "medication_view") }}
+FROM {{ source("raw", "medication_view" if target.name == "postgres" else "medication") }}

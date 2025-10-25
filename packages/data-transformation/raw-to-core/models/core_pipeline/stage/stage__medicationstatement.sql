@@ -431,4 +431,4 @@ SELECT
     statusreason_1_text,
     filename,
     processed_date
-FROM {{ source("raw", "medicationstatement_view") }}
+FROM {{ source("raw", "medicationstatement_view" if target.name == "postgres" else "medicationstatement") }}

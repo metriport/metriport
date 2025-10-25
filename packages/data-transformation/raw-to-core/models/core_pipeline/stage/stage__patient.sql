@@ -144,4 +144,4 @@ SELECT
     telecom_4_value,
     filename,
     processed_date
-FROM {{ source("raw", "patient_view") }}
+FROM {{ source("raw", "patient_view" if target.name == "postgres" else "patient") }}

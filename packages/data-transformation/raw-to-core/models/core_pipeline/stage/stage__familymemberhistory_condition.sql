@@ -25,4 +25,4 @@ SELECT
     onsetage_value,
     filename,
     processed_date
-FROM {{ source("raw", "familymemberhistory_condition_view") }}
+FROM {{ source("raw", "familymemberhistory_condition_view" if target.name == "postgres" else "familymemberhistory_condition") }}

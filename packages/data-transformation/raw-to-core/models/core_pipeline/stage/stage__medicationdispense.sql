@@ -449,4 +449,4 @@ SELECT
     whenprepared,
     filename,
     processed_date
-FROM {{ source("raw", "medicationdispense_view") }}
+FROM {{ source("raw", "medicationdispense_view" if target.name == "postgres" else "medicationdispense") }}

@@ -503,4 +503,4 @@ SELECT
     valuetime,
     filename,
     processed_date
-FROM {{ source("raw", "observation_view") }}
+FROM {{ source("raw", "observation_view" if target.name == "postgres" else "observation") }}

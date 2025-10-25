@@ -397,4 +397,4 @@ SELECT
     title,
     filename,
     processed_date
-FROM {{ source('raw', 'careplan_view') }}
+FROM {{ source("raw", "careplan_view" if target.name == "postgres" else "careplan") }}

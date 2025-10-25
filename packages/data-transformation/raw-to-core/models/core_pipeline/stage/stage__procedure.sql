@@ -333,4 +333,4 @@ SELECT
     usedreference_2_reference,
     filename,
     processed_date
-FROM {{ source("raw", "procedure_view") }}
+FROM {{ source("raw", "procedure_view" if target.name == "postgres" else "procedure") }}

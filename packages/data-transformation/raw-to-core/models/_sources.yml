@@ -5,26 +5,26 @@ sources:
     database: "{{ var('input_database') }}"
     schema: "{{ var('input_schema') }}"
     tables:
-      - name: allergyintolerance_view
-      - name: careplan_view
-      - name: condition_view
-      - name: condition_code_coding_view
-      - name: coverage_view
-      - name: diagnosticreport_view
-      - name: documentreference_view
-      - name: encounter_view
-      - name: familymemberhistory_view
-      - name: familymemberhistory_condition_view
-      - name: immunization_view
-      - name: location_view
-      - name: medication_view
-      - name: medicationadministration_view
-      - name: medicationdispense_view
-      - name: medicationrequest_view
-      - name: medicationstatement_view
-      - name: observation_view
-      - name: organization_view
-      - name: patient_view
-      - name: patient_address_view
-      - name: practitioner_view
-      - name: procedure_view
+      - name: "{{ 'allergyintolerance_view' if target.name == 'postgres' else 'allergyintolerance' }}"
+      - name: "{{ 'careplan_view' if target.name == 'postgres' else 'careplan' }}"
+      - name: "{{ 'condition_view' if target.name == 'postgres' else 'condition' }}"
+      - name: "{{ 'condition_code_coding_view' if target.name == 'postgres' else 'condition_code_coding' }}"
+      - name: "{{ 'coverage_view' if target.name == 'postgres' else 'coverage' }}"
+      - name: "{{ 'diagnosticreport_view' if target.name == 'postgres' else 'diagnosticreport' }}"
+      - name: "{{ 'documentreference_view' if target.name == 'postgres' else 'documentreference' }}"
+      - name: "{{ 'encounter_view' if target.name == 'postgres' else 'encounter' }}"
+      - name: "{{ 'familymemberhistory_view' if target.name == 'postgres' else 'familymemberhistory' }}"
+      - name: "{{ 'familymemberhistory_condition_view' if target.name == 'postgres' else 'familymemberhistory_condition' }}"
+      - name: "{{ 'immunization_view' if target.name == 'postgres' else 'immunization' }}"
+      - name: "{{ 'location_view' if target.name == 'postgres' else 'location' }}"
+      - name: "{{ 'medication_view' if target.name == 'postgres' else 'medication' }}"
+      - name: "{{ 'medicationadministration_view' if target.name == 'postgres' else 'medicationadministration' }}"
+      - name: "{{ 'medicationdispense_view' if target.name == 'postgres' else 'medicationdispense' }}"
+      - name: "{{ 'medicationrequest_view' if target.name == 'postgres' else 'medicationrequest' }}"
+      - name: "{{ 'medicationstatement_view' if target.name == 'postgres' else 'medicationstatement' }}"
+      - name: "{{ 'observation_view' if target.name == 'postgres' else 'observation' }}"
+      - name: "{{ 'organization_view' if target.name == 'postgres' else 'organization' }}"
+      - name: "{{ 'patient_view' if target.name == 'postgres' else 'patient' }}"
+      - name: "{{ 'patient_address_view' if target.name == 'postgres' else 'patient_address' }}"
+      - name: "{{ 'practitioner_view' if target.name == 'postgres' else 'practitioner' }}"
+      - name: "{{ 'procedure_view' if target.name == 'postgres' else 'procedure' }}"

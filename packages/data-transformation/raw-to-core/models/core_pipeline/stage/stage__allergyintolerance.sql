@@ -201,4 +201,4 @@ SELECT
     recorder_reference,
     filename,
     processed_date
-FROM {{ source("raw", "allergyintolerance_view") }}
+FROM {{ source("raw", "allergyintolerance_view" if target.name == "postgres" else "allergyintolerance") }}

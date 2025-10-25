@@ -433,4 +433,4 @@ SELECT
     status,
     filename,
     processed_date
-FROM {{ source("raw", "diagnosticreport_view") }}
+FROM {{ source("raw", "diagnosticreport_view" if target.name == "postgres" else "diagnosticreport") }}

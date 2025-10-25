@@ -468,4 +468,4 @@ SELECT
     supportinginformation_2_reference,
     filename,
     processed_date
-FROM {{ source("raw", "medicationrequest_view") }}
+FROM {{ source("raw", "medicationrequest_view" if target.name == "postgres" else "medicationrequest") }}

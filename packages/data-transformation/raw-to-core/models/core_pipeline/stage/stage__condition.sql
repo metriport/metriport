@@ -278,4 +278,4 @@ SELECT
     verificationstatus_text,
     filename,
     processed_date
-FROM {{ source("raw", "condition_view") }}
+FROM {{ source("raw", "condition_view" if target.name == "postgres" else "condition") }}

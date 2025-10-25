@@ -600,4 +600,4 @@ SELECT
     type_1_text,
     filename,
     processed_date
-FROM {{ source("raw", "encounter_view") }}
+FROM {{ source("raw", "encounter_view" if target.name == "postgres" else "encounter") }}

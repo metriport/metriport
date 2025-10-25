@@ -153,4 +153,4 @@ SELECT
     type_coding_0_system,
     filename,
     processed_date
-FROM {{ source("raw", "documentreference_view") }}
+FROM {{ source("raw", "documentreference_view" if target.name == "postgres" else "documentreference") }}
