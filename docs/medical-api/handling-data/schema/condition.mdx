@@ -2,50 +2,50 @@
 title: "Condition"
 description: "Schema documentation for the Condition table in the Metriport data model"
 group: "Schema"
+icon: "n/a"
 ---
 
-A condition is any sort of symptom, problem, complaint, admitting diagnosis, or billing diagnosis as reported by the patient, a clinician, or as otherwise generated (e.g. by the billing process). Key ancillary data related to condition includes the date it was reported, it's rank (i.e. primary or secondary), and whether or not it was present during admission for an acute inpatient encounter.
+A condition is used to record detailed information about a condition, problem, diagnosis, or other event, situation, issue, or clinical concept that has risen to a level of concern. The condition could be a point in time diagnosis in context of an encounter, it could be an item on the practitioner’s Problem List, or it could be a concern that doesn’t exist on the practitioner’s Problem List. Often times, a condition is about a clinician's assessment and assertion of a particular aspect of a patient's state of health. It can be used to record information about a disease/illness identified from application of clinical reasoning over the pathologic and pathophysiologic findings (diagnosis), or identification of health issues/situations that a practitioner considers harmful, potentially harmful and may be investigated and managed (problem), or other health issue/situation that may require ongoing monitoring and/or management (health issue/concern).
 
-Conditions can only be generated during encounters (i.e. every condition must have an encounter_id).
+**Reference Table:**
+
+The `condition_references` table contains normalized references from the condition to other entities. It supports the following reference properties:
+* **subject** (required): links to the patient who has the condition
+* **encounter**: links to the encounter where the condition was recorded
+* **recorder**: links to the practitioner who recorded the condition
+
+For detailed information about reference table structure and indexing, see the [Reference Tables documentation](/medical-api/handling-data/schema/reference-tables).
+
+**Condition Table:**
 
 **Primary Keys:**
 * condition_id
 
 **Foreign Keys:**
-* person_id
-* member_id
 * patient_id
-* encounter_id
 
-| Column | Data Type | Description | Terminology |
-| ------ | --------- | ----------- | ----------- |
-| condition_id | string | Unique identifier for the condition | - |
-| person_id | string | Unique identifier for the person | - |
-| member_id | string | Unique identifier for the member | - |
-| patient_id | string | Unique identifier for the patient | - |
-| encounter_id | string | Unique identifier for the encounter | - |
-| condition_type | string | Type of condition (e.g., problem, symptom, diagnosis) | - |
-| condition_code | string | Standardized code for the condition | ICD-9-CM, ICD-10-CM, SNOMED CT |
-| condition_code_type | string | Type of coding system used | icd-9-cm, icd-10-cm, snomed-ct |
-| condition_code_system | string | Coding system identifier | - |
-| condition_code_version | string | Version of the coding system | - |
-| condition_code_display | string | Human-readable description of the condition | - |
-| condition_rank | integer | Rank/priority of the condition (1 = primary, 2 = secondary, etc.) | - |
-| recorded_date | date | Date when the condition was recorded | - |
-| onset_date | date | Date when the condition began | - |
-| abatement_date | date | Date when the condition resolved | - |
-| clinical_status | string | Clinical status of the condition | active, inactive, resolved |
-| verification_status | string | Verification status of the condition | confirmed, provisional, differential |
-| severity | string | Severity of the condition | mild, moderate, severe |
-| category | string | Category or classification of the condition | - |
-| body_site | string | Anatomical location of the condition | - |
-| laterality | string | Side of the body affected | left, right, bilateral |
-| encounter_class | string | Class of the associated encounter | inpatient, outpatient, emergency |
-| facility_type | string | Type of healthcare facility | hospital, clinic, urgent_care |
-| data_source | string | Source of the condition data | claims, clinical, ehr |
-| source_code | string | Original code from the source system | - |
-| normalized_code | string | Standardized/normalized code | - |
-| source_system | string | System that provided the condition data | - |
-| source_table | string | Table in the source system | - |
-| source_id | string | Identifier from the source system | - |
-| ingestion_date | timestamp | Date when the data was ingested | - |
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| condition_id | varchar | Unique identifier for the condition |
+| patient_id | varchar | Unique identifier for the patient |
+| recorded_date | date | Date when the condition was recorded |
+| onset_date | date | Date when the condition began |
+| end_date | date | Date when the condition ended |
+| icd_10_cm_code | varchar | ICD-10-CM code for the condition |
+| icd_10_cm_display | varchar | Human-readable description of ICD-10-CM code |
+| snomed_code | varchar | SNOMED CT code for the condition |
+| snomed_display | varchar | Human-readable description of SNOMED CT code |
+| icd_9_cm_code | varchar | ICD-9-CM code for the condition |
+| icd_9_cm_display | varchar | Human-readable description of ICD-9-CM code |
+| category_hl7_code | varchar | HL7 category code for the condition |
+| category_hl7_display | varchar | Human-readable description of HL7 category |
+| source_category_code | varchar | Original category code from source system |
+| source_category_display | varchar | Original category display from source system |
+| source_category_system | varchar | Original category system from source system |
+| clinical_status_hl7_code | varchar | HL7 clinical status code |
+| clinical_status_hl7_display | varchar | Human-readable description of clinical status |
+| source_clinical_status_code | varchar | Original clinical status code from source system |
+| source_clinical_status_display | varchar | Original clinical status display from source system |
+| source_clinical_status_system | varchar | Original clinical status system from source system |
+| note_text | varchar | Additional notes about the condition |
+| data_source | varchar | Source of the condition data |

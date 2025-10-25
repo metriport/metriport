@@ -1,8 +1,8 @@
-name: "metriport_connector"
+name: "core_transform"
 version: "1.0.0"
 config-version: 2
 
-profile: "postgres"
+profile: "core_transform"
 
 model-paths: ["models"]
 analysis-paths: ["analyses"]
@@ -19,21 +19,27 @@ clean-targets:
 vars:
   input_database: db
   input_schema: schema
-  clinical_enabled: true
-  cms_hcc_payment_year: 2023
-  quality_measures_period_end: "2023-12-31"
-  tuva_last_run: '{{ run_started_at.astimezone(modules.pytz.timezone("UTC")) }}'
+  custom_bucket_name: tuva-public-resources
 
 models:
-  metriport_connector:
-    +schema: input_layer
-    +materialized: table
-    stage:
-      +materialized: ephemeral
-    intermediate:
-      +schema: input_layer_stage
-      +materialized: table
+  core_transform:
+    core_pipeline:
+      stage:
+        +materialized: view
+      core:
+        +schema: core
+        +materialized: table
 
-seeds:
-  metriport_connector:
-    +schema: input_layer_stage
+    terminology:
+      terminology__cvx:
+        +post-hook: "{{ load_seed(var('custom_bucket_name','tuva-public-resources') ~ '/versioned_terminology/0.15.3','cvx.csv',compression=true,null_marker=true) }}"
+      terminology__hcpcs_level_2:
+        +post-hook: "{{ load_seed(var('custom_bucket_name','tuva-public-resources') ~ '/versioned_terminology/0.15.3','hcpcs_level_2.csv',compression=true,null_marker=true) }}"
+      terminology__icd_10_cm:
+        +post-hook: "{{ load_seed(var('custom_bucket_name','tuva-public-resources') ~ '/versioned_terminology/0.15.3','icd_10_cm.csv',compression=true,null_marker=true) }}"
+      terminology__icd_9_cm:
+        +post-hook: "{{ load_seed(var('custom_bucket_name','tuva-public-resources') ~ '/versioned_terminology/0.15.3','icd_9_cm.csv',compression=true,null_marker=true) }}"
+      terminology__loinc:
+        +post-hook: "{{ load_seed(var('custom_bucket_name','tuva-public-resources') ~ '/versioned_terminology/0.15.3','loinc.csv',compression=true,null_marker=true) }}"
+      terminology__snomed_ct:
+        +post-hook: "{{ load_seed(var('custom_bucket_name','tuva-public-resources') ~ '/versioned_terminology/0.15.3','snomed_ct.csv',compression=true,null_marker=true) }}"

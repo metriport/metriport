@@ -1,0 +1,39 @@
+---
+title: "Medication Administration"
+description: "Schema documentation for the Medication Administration table in the Metriport data model"
+group: "Schema"
+icon: "n/a"
+---
+
+A medication administration record represents the actual administration of a medication to a patient. This includes details about when, how, and by whom the medication was administered.
+
+**Reference Table:**
+
+The `medication_administration_references` table contains normalized references from the medication administration to other entities. It supports the following reference properties:
+* **medication_reference** (required): links to the medication that was administered
+* **subject** (required): links to the patient who received the medication
+* **performer.actor**: links to practitioners who performed the administration
+
+For detailed information about reference table structure and indexing, see the [Reference Tables documentation](/medical-api/handling-data/schema/reference-tables).
+
+**Medication Administration Table:**
+
+**Primary Keys:**
+* medication_administration_id
+
+**Foreign Keys:**
+* patient_id
+* medication_id
+
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| medication_administration_id | varchar | Unique identifier for the medication administration |
+| patient_id | varchar | Unique identifier for the patient |
+| medication_id | varchar | Unique identifier for the medication |
+| status | varchar | Status of the medication administration. Possible values:<br/>– <code>in-progress</code>: The administration has started but has not yet completed.<br/>– <code>not-done</code>: The administration was expected to happen but did not occur.<br/>– <code>on-hold</code>: The administration was paused but may be resumed.<br/>– <code>completed</code>: The administration has finished (either completely or with a dose that was not fully given).<br/>– <code>entered-in-error</code>: This administration record should not be considered (was created in error).<br/>– <code>stopped</code>: The administration was terminated prior to completion.<br/>– <code>unknown</code>: The current status is unknown. |
+| effective_date | date | Start date of the medication administration |
+| end_date | date | End date of the medication administration |
+| dose_unit | varchar | Unit of measurement for the dose |
+| dose_amount | varchar | Amount of medication administered |
+| note_text | varchar | Additional notes about the administration |
+| data_source | varchar | Source of the medication administration data |
