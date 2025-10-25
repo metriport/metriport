@@ -282,6 +282,7 @@ export async function queryDocsIfScheduled({
   const scheduledDocQueryRequestId = cqData?.scheduledDocQueryRequestId;
   const scheduledDocQueryRequestTriggerConsolidated =
     cqData?.scheduledDocQueryRequestTriggerConsolidated;
+  const scheduledDocQueryRequestForceDownload = cqData?.scheduledDocQueryRequestForceDownload;
   if (!scheduledDocQueryRequestId) {
     return;
   }
@@ -303,6 +304,7 @@ export async function queryDocsIfScheduled({
       patient,
       requestId: scheduledDocQueryRequestId,
       triggerConsolidated: scheduledDocQueryRequestTriggerConsolidated,
+      forceDownload: scheduledDocQueryRequestForceDownload,
     }).catch(processAsyncError("CQ getDocumentsFromCQ"));
   }
 }

@@ -56,7 +56,7 @@ const sqsUrl = getEnvVarOrFail("RECONVERSION_KICKOFF_QUEUE_URL");
 const sqsClient = new SQSClient({ region: getEnvVarOrFail("AWS_REGION") });
 
 /**
- * AWS SQS limit is 3000 messages/second, but we'll be safe and use 2000
+ * AWS SQS limit is 3000 messages/second, but we'll be safe and scale down a bit
  *
  * @see https://aws.amazon.com/sqs/faqs/#topic-3:~:text=What%20is%20the%20throughput%20quota%20for%20an%20Amazon%20SQS%20FIFO%20queue%3F
  */

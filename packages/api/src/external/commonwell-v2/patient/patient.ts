@@ -409,6 +409,7 @@ async function queryDocsIfScheduled({
   const scheduledDocQueryRequestId = cwData?.scheduledDocQueryRequestId;
   const scheduledDocQueryRequestTriggerConsolidated =
     cwData?.scheduledDocQueryRequestTriggerConsolidated;
+  const scheduledDocQueryRequestForceDownload = cwData?.scheduledDocQueryRequestForceDownload;
   if (!scheduledDocQueryRequestId) {
     return;
   }
@@ -430,6 +431,7 @@ async function queryDocsIfScheduled({
       patient,
       requestId: scheduledDocQueryRequestId,
       triggerConsolidated: scheduledDocQueryRequestTriggerConsolidated,
+      forceDownload: scheduledDocQueryRequestForceDownload,
       getOrgIdExcludeList,
     }).catch(processAsyncError("CW queryAndProcessDocuments"));
   }

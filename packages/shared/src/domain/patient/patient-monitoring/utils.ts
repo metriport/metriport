@@ -40,7 +40,7 @@ export function pickLargestRemainingAttempts(
   return Math.max(existingAttempts, newAttempts);
 }
 
-export function pickEarliestScheduledAt(existingDate: Date, newDate: Date): Date {
+export function earliest(existingDate: Date, newDate: Date): Date {
   const existingDateMs = existingDate.getTime();
   const newDateMs = newDate.getTime();
   return existingDateMs < newDateMs ? existingDate : newDate;
