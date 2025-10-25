@@ -3,6 +3,7 @@ import { Contact } from "@metriport/core/domain/contact";
 import { EhrPerPracticeParams } from "@metriport/core/external/ehr/environment";
 import { getSalesforceEnv } from "@metriport/core/external/ehr/salesforce/environment";
 import SalesforceApi from "@metriport/core/external/ehr/salesforce/index";
+import { SalesforcePatient } from "@metriport/core/external/ehr/salesforce/object-handlers";
 import {
   BadRequestError,
   normalizeCountrySafe,
@@ -13,7 +14,6 @@ import {
   normalizeZipCodeNewSafe,
   toTitleCase,
 } from "@metriport/shared";
-import { Patient as SalesforcePatient } from "@metriport/shared/interface/external/ehr/salesforce/patient";
 
 type SalesforcePerPracticeParams = EhrPerPracticeParams & {
   authToken: string;
@@ -33,16 +33,16 @@ export async function createSalesforceClient(
 }
 
 export function createAddresses(patient: SalesforcePatient): Address[] {
-  const addressLine1 = patient.MailingStreet?.trim();
+  const addressLine1 = patient.mailingStreet?.trim();
   if (!addressLine1) return [];
   const addressLine2 = undefined; // for now parsing only 1 line of address
-  const city = patient.MailingCity?.trim();
+  const city = patient.mailingCity?.trim();
   if (!city) return [];
   const country =
-    normalizeCountrySafe(patient.MailingCountry?.trim() ?? "") ?? normalizedCountryUsa;
-  const state = normalizeUSStateForAddressSafe(patient.MailingState ?? "");
+    normalizeCountrySafe(patient.mailingCountry?.trim() ?? "") ?? normalizedCountryUsa;
+  const state = normalizeUSStateForAddressSafe(patient.mailingState ?? "");
   if (!state) return [];
-  const zip = normalizeZipCodeNewSafe(patient.MailingPostalCode ?? "");
+  const zip = normalizeZipCodeNewSafe(patient.mailingPostalCode ?? "");
   if (!zip) return [];
   const addresses = [
     {
@@ -63,8 +63,8 @@ export function createAddresses(patient: SalesforcePatient): Address[] {
 }
 
 export function createContacts(patient: SalesforcePatient): Contact[] {
-  const email = patient.Email ? normalizeEmailNewSafe(patient.Email) : undefined;
-  const phone = patient.Phone ? normalizePhoneNumberSafe(patient.Phone) : undefined;
+  const email = patient.email ? normalizeEmailNewSafe(patient.email) : undefined;
+  const phone = patient.phone ? normalizePhoneNumberSafe(patient.phone) : undefined;
   return [
     {
       ...(email ? { email } : {}),
@@ -73,12 +73,15 @@ export function createContacts(patient: SalesforcePatient): Contact[] {
   ];
 }
 
-export function createNames(patient: SalesforcePatient): { firstName: string; lastName: string } {
-  if (!patient.FirstName) throw new BadRequestError("Patient first name is empty");
-  const firstName = toTitleCase(patient.FirstName.trim());
+export function createNames(patient: SalesforcePatient): {
+  firstName: string;
+  lastName: string;
+} {
+  if (!patient.firstName) throw new BadRequestError("Patient first name is empty");
+  const firstName = toTitleCase(patient.firstName.trim());
   if (firstName === "") throw new BadRequestError("Patient first name is empty");
-  if (!patient.LastName) throw new BadRequestError("Patient last name is empty");
-  const lastName = toTitleCase(patient.LastName.trim());
+  if (!patient.lastName) throw new BadRequestError("Patient last name is empty");
+  const lastName = toTitleCase(patient.lastName.trim());
   if (lastName === "") throw new BadRequestError("Patient last name is empty");
   return {
     firstName,

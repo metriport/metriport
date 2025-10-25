@@ -1,10 +1,10 @@
 import { PatientDemoData } from "@metriport/core/domain/patient";
 import SalesforceApi from "@metriport/core/external/ehr/salesforce/index";
+import { SalesforcePatient } from "@metriport/core/external/ehr/salesforce/object-handlers";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { BadRequestError, MetriportError, normalizeDob, normalizeGender } from "@metriport/shared";
 import { salesforceDashSource } from "@metriport/shared/interface/external/ehr/salesforce/jwt-token";
-import { Patient as SalesforcePatient } from "@metriport/shared/interface/external/ehr/salesforce/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getJwtTokenByIdOrFail } from "../../../../command/jwt-token";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
@@ -63,7 +63,7 @@ export async function syncSalesforcePatientIntoMetriport({
       instanceUrl: salesforceInstanceUrl,
       tokenId: salesforceTokenId,
     }));
-  const salesforcePatient = await salesforceApi.getPatientFromContact({
+  const salesforcePatient = await salesforceApi.getPatient({
     cxId,
     patientId: salesforcePatientId,
   });
@@ -102,10 +102,10 @@ export async function syncSalesforcePatientIntoMetriport({
 }
 
 function createMetriportPatientDemographics(patient: SalesforcePatient): PatientDemoData {
-  if (!patient.Birthdate) throw new BadRequestError("Patient has no dob");
-  if (!patient.GenderIdentity) throw new BadRequestError("Patient has no gender");
-  const dob = normalizeDob(patient.Birthdate);
-  const genderAtBirth = normalizeGender(patient.GenderIdentity);
+  if (!patient.birthdate) throw new BadRequestError("Patient has no dob");
+  if (!patient.genderIdentity) throw new BadRequestError("Patient has no gender");
+  const dob = normalizeDob(patient.birthdate);
+  const genderAtBirth = normalizeGender(patient.genderIdentity);
   const addressArray = createAddresses(patient);
   const contactArray = createContacts(patient);
   const names = createNames(patient);
