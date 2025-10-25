@@ -2,67 +2,73 @@
 {
   "cohorts": [
     {
-      "id": "00000000-0000-0000-0000-000000000000",
-      "eTag": "1",
-      "name": "High Risk",
-      "description": "Patients that need frequent and robust monitoring.",
-      "color": "red",
-      "settings": {
-        "monitoring": {
-          "hie": {
-            "enabled": true,
-            "frequency": "weekly"
-          },
-          "adt": {
-            "enabled": true
-          },
-          "pharmacy": {
-            "notifications": true,
-            "schedule": {
-              "enabled": false,
-              "frequency": "monthly"
-            }
-          },
-          "laboratory": {
-            "notifications": true,
-            "schedule": {
-              "enabled": false,
-              "frequency": "monthly"
+      "cohort": {
+        "id": "00000000-0000-0000-0000-000000000000",
+        "eTag": "1",
+        "name": "High Risk",
+        "description": "Patients that need frequent and robust monitoring.",
+        "color": "red",
+        "settings": {
+          "monitoring": {
+            "hie": {
+              "enabled": true,
+              "frequency": "weekly"
+            },
+            "adt": {
+              "enabled": true
+            },
+            "pharmacy": {
+              "notifications": true,
+              "schedule": {
+                "enabled": false,
+                "frequency": "monthly"
+              }
+            },
+            "laboratory": {
+              "notifications": true,
+              "schedule": {
+                "enabled": false,
+                "frequency": "monthly"
+              }
             }
           }
         }
-      }
+      },
+      "size": 150
     },
     {
-      "id": "11111111-1111-1111-1111-111111111111",
-      "eTag": "1",
-      "name": "Cardiac Care Cohort",
-      "description": "Patients receiving cardiac care and monitoring",
-      "settings": {
-        "monitoring": {
-          "hie": {
-            "enabled": true,
-            "frequency": "weekly"
-          },
-          "adt": {
-            "enabled": true
-          },
-          "pharmacy": {
-            "notifications": true,
-            "schedule": {
-              "enabled": false,
-              "frequency": "monthly"
-            }
-          },
-          "laboratory": {
-            "notifications": false,
-            "schedule": {
-              "enabled": false,
-              "frequency": "monthly"
+      "cohort": {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "eTag": "1",
+        "name": "Cardiac Care Cohort",
+        "description": "Patients receiving cardiac care and monitoring",
+        "settings": {
+          "monitoring": {
+            "hie": {
+              "enabled": true,
+              "frequency": "weekly"
+            },
+            "adt": {
+              "enabled": true
+            },
+            "pharmacy": {
+              "notifications": true,
+              "schedule": {
+                "enabled": false,
+                "frequency": "monthly"
+              }
+            },
+            "laboratory": {
+              "notifications": false,
+              "schedule": {
+                "enabled": false,
+                "frequency": "monthly"
+              }
             }
           }
         }
-      }
+      },
+      "size": 75
     }
   ]
 }

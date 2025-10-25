@@ -8,10 +8,18 @@ For more information, see the [guide about Cohorts](/medical-api/handling-data/c
 
 ## Response
 
-<ResponseField name="cohorts" type="Cohort[]">
-  Array of cohorts with count of patients assigned to them. Each cohort includes an additional `size` field.
-  <Expandable title="Cohort properties">
-    <Snippet file="cohort-list-response-properties.mdx" />
+<ResponseField name="cohorts" type="object[]">
+  Array of objects containing cohort details and patient count.
+  <Expandable title="Object properties">
+    <ResponseField name="cohort" type="object" required>
+      The cohort details.
+      <Expandable title="Cohort properties">
+        <Snippet file="cohort-response.mdx" />
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="size" type="number" required>
+      The number of patients assigned to this cohort.
+    </ResponseField>
   </Expandable>
 </ResponseField>
 

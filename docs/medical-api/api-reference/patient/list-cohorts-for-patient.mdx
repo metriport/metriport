@@ -1,7 +1,7 @@
 ---
 title: "List Patient Cohorts"
 description: "Returns a list of all cohorts the patient is a member of."
-api: "GET /medical/v1/patient/{id}/cohorts"
+api: "GET /medical/v1/patient/{id}/cohort"
 ---
 
 For more information, see the [guide about Cohorts](/medical-api/handling-data/cohorts)
@@ -14,10 +14,18 @@ For more information, see the [guide about Cohorts](/medical-api/handling-data/c
 
 ## Response
 
-<ResponseField name="cohorts" type="Cohort[]" required>
-  Array of cohorts the patient is assigned to.
-  <Expandable title="Cohort properties">
-    <Snippet file="cohort-response.mdx" />
+<ResponseField name="cohorts" type="object[]" required>
+  Array of objects containing cohort details and patient count.
+  <Expandable title="Object properties">
+    <ResponseField name="cohort" type="object" required>
+      The cohort details.
+      <Expandable title="Cohort properties">
+        <Snippet file="cohort-response.mdx" />
+      </Expandable>
+    </ResponseField>
+    <ResponseField name="size" type="number" required>
+      The number of patients assigned to this cohort.
+    </ResponseField>
   </Expandable>
 </ResponseField>
 
