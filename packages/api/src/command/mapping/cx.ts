@@ -167,8 +167,11 @@ export async function setSecondaryMappingsOnCxMappingById({
     });
   }
   const validatedSecondaryMappings = schema.parse(secondaryMappings);
-  const updated = await existing.update({ secondaryMappings: validatedSecondaryMappings });
-  return updated.dataValues;
+  await CxMappingModel.update(
+    { secondaryMappings: validatedSecondaryMappings },
+    { where: { cxId, id } }
+  );
+  return (await getCxMappingModelByIdOrFail({ cxId, id })).dataValues;
 }
 
 export async function deleteCxMapping({ cxId, id }: CxMappingLookupByIdParams): Promise<void> {
