@@ -140,7 +140,7 @@ models:
               to: ref('core__encounter')
               field: encounter_id
               config:
-                severity: warn
+                severity: error
       - name: reference_id
         tests:
           - relationships:
@@ -180,7 +180,7 @@ models:
               field: condition_id
               config:
                 where: property = 'diagnosis.condition' and reference_type = 'Condition'
-                severity: warn
+                severity: error
   - name: core__encounter
     config:
       alias: encounter
