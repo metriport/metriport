@@ -15,6 +15,7 @@ export { getClinicalDateRange, ResourceDateRange } from "./clinical-dates";
 export {
   AllergyIntolerance,
   Bundle,
+  CarePlan,
   Composition,
   Condition,
   Coverage,

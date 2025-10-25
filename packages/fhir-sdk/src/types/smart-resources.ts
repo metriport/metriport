@@ -27,6 +27,17 @@ import {
   Procedure,
   RiskAssessment,
   ServiceRequest,
+  CarePlan,
+  Goal,
+  Appointment,
+  CommunicationRequest,
+  DeviceRequest,
+  NutritionOrder,
+  Task,
+  VisionPrescription,
+  RequestGroup,
+  HealthcareService,
+  Substance,
 } from "@medplum/fhirtypes";
 
 /**
@@ -420,6 +431,71 @@ export interface ServiceRequestReferenceMethods {
 }
 
 /**
+ * Reference methods for CarePlan resources
+ */
+export interface CarePlanReferenceMethods {
+  getBasedOn(): Smart<CarePlan>[];
+  getReplaces(): Smart<CarePlan>[];
+  getPartOf(): Smart<CarePlan>[];
+  getSubject<T extends Patient | Group>(): Smart<T> | undefined;
+  getEncounter(): Smart<Encounter> | undefined;
+  getAuthor<
+    T extends
+      | Patient
+      | Practitioner
+      | PractitionerRole
+      | Device
+      | RelatedPerson
+      | Organization
+      | CareTeam
+  >(): Smart<T> | undefined;
+  getContributor<
+    T extends
+      | Patient
+      | Practitioner
+      | PractitionerRole
+      | Device
+      | RelatedPerson
+      | Organization
+      | CareTeam
+  >(): Smart<T>[];
+  getCareTeam(): Smart<CareTeam>[];
+  getAddresses(): Smart<Condition>[];
+  getSupportingInfo<T extends Resource>(): Smart<T>[];
+  getGoal(): Smart<Goal>[];
+  getActivityReference<
+    T extends
+      | Appointment
+      | CommunicationRequest
+      | DeviceRequest
+      | MedicationRequest
+      | NutritionOrder
+      | Task
+      | ServiceRequest
+      | VisionPrescription
+      | RequestGroup
+  >(): Smart<T>[];
+  getActivityOutcomeReference<T extends Resource>(): Smart<T>[];
+  getActivityDetailReasonReference<
+    T extends Condition | Observation | DiagnosticReport | DocumentReference
+  >(): Smart<T>[];
+  getActivityDetailGoal(): Smart<Goal>[];
+  getActivityDetailLocation(): Smart<Location>[];
+  getActivityDetailPerformer<
+    T extends
+      | Practitioner
+      | PractitionerRole
+      | Organization
+      | RelatedPerson
+      | Patient
+      | CareTeam
+      | HealthcareService
+      | Device
+  >(): Smart<T>[];
+  getActivityDetailProductReference<T extends Medication | Substance>(): Smart<T>[];
+}
+
+/**
  * Base reference methods for resources that don't have specific reference patterns
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -478,6 +554,8 @@ export type ReferenceMethodsFor<T extends Resource> = T extends Observation
   ? RiskAssessmentReferenceMethods
   : T extends ServiceRequest
   ? ServiceRequestReferenceMethods
+  : T extends CarePlan
+  ? CarePlanReferenceMethods
   : BaseReferenceMethods;
 
 /**
@@ -676,6 +754,26 @@ export const REFERENCE_METHOD_MAPPING: Record<string, Record<string, string>> = 
     getEncounter: "encounter",
     getRequester: "requester",
     getPerformers: "performer",
+  },
+  CarePlan: {
+    getBasedOn: "basedOn",
+    getReplaces: "replaces",
+    getPartOf: "partOf",
+    getSubject: "subject",
+    getEncounter: "encounter",
+    getAuthor: "author",
+    getContributor: "contributor",
+    getCareTeam: "careTeam",
+    getAddresses: "addresses",
+    getSupportingInfo: "supportingInfo",
+    getGoal: "goal",
+    getActivityReference: "activity.reference",
+    getActivityOutcomeReference: "activity.outcomeReference",
+    getActivityDetailReasonReference: "activity.detail.reasonReference",
+    getActivityDetailGoal: "activity.detail.goal",
+    getActivityDetailLocation: "activity.detail.location",
+    getActivityDetailPerformer: "activity.detail.performer",
+    getActivityDetailProductReference: "activity.detail.productReference",
   },
 };
 

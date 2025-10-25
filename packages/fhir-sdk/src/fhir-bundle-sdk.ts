@@ -3,6 +3,7 @@ import {
   AllergyIntolerance,
   Bundle,
   BundleEntry,
+  CarePlan,
   Composition,
   Condition,
   Coverage,
@@ -235,6 +236,11 @@ export class FhirBundleSdk {
       singleGetterMethodName: "getServiceRequestById",
       collectionGetterMethodName: "getServiceRequests",
     },
+    {
+      resourceType: "CarePlan",
+      singleGetterMethodName: "getCarePlanById",
+      collectionGetterMethodName: "getCarePlans",
+    },
   ] as const;
 
   // Static initialization block to generate methods
@@ -465,6 +471,7 @@ export class FhirBundleSdk {
   getRelatedPersons!: () => Smart<RelatedPerson>[];
   getRiskAssessments!: () => Smart<RiskAssessment>[];
   getServiceRequests!: () => Smart<ServiceRequest>[];
+  getCarePlans!: () => Smart<CarePlan>[];
 
   /**
    * FR-6.1: Export subset of resources by their IDs
