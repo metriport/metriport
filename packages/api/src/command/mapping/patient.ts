@@ -210,6 +210,9 @@ export async function setSecondaryMappingsOnPatientMappingById({
     });
   }
   const validatedSecondaryMappings = schema.parse(secondaryMappings);
-  const updated = await existing.update({ secondaryMappings: validatedSecondaryMappings });
-  return updated.dataValues;
+  await PatientMappingModel.update(
+    { secondaryMappings: validatedSecondaryMappings },
+    { where: { cxId, patientId, id } }
+  );
+  return (await getPatientMappingModelByIdOrFail({ cxId, patientId, id })).dataValues;
 }

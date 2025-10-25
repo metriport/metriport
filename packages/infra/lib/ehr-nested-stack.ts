@@ -193,7 +193,7 @@ function settings(): {
     eventSource: {
       batchSize: 1,
       reportBatchItemFailures: true,
-      maxConcurrency: 2,
+      maxConcurrency: 1,
     },
     waitTime: waitTimeWriteBackResourceDiffBundles,
   };
