@@ -633,7 +633,7 @@ router.get(
 );
 
 /** ---------------------------------------------------------------------------
- * GET /patient/:id/cohorts
+ * GET /patient/:id/cohort
  *
  * Returns a list of all cohorts the patient is a member of.
  *
@@ -641,7 +641,7 @@ router.get(
  * @return  The suspects for the patient.
  */
 router.get(
-  "/cohorts",
+  "/cohort",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id: patientId } = getPatientInfoOrFail(req);
@@ -662,7 +662,7 @@ router.get(
  * @returns 204 No Content
  */
 router.post(
-  "/cohorts",
+  "/cohort",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, id: patientId } = getPatientInfoOrFail(req);

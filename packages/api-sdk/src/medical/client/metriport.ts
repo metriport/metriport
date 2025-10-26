@@ -2,7 +2,6 @@ import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@m
 import {
   CohortCreateInput,
   CohortDTO,
-  CohortSettings,
   CohortUpdateRequest,
   CohortWithSizeDTO,
   PaginatedResponse,
@@ -829,7 +828,7 @@ export class MetriportMedicalApi {
    * @returns The list of cohorts assigned to the patient.
    */
   async listCohortsForPatient(patientId: string): Promise<{ cohorts: CohortDTO[] }> {
-    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/cohorts`);
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/cohort`);
     return resp.data;
   }
 
@@ -840,17 +839,7 @@ export class MetriportMedicalApi {
    * @returns void
    */
   async addPatientToCohorts(patientId: string, cohortIds: string[]): Promise<void> {
-    await this.api.post(`${PATIENT_URL}/${patientId}/cohorts`, { cohortIds });
-  }
-
-  /**
-   * Returns the settings for a patient.
-   * @param patientId The ID of the patient.
-   * @returns The settings for the patient.
-   */
-  async getPatientSettings(patientId: string): Promise<{ settings: CohortSettings }> {
-    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/settings`);
-    return resp.data;
+    await this.api.post(`${PATIENT_URL}/${patientId}/cohort`, { cohortIds });
   }
 
   /**
