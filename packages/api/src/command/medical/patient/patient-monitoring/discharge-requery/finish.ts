@@ -25,9 +25,9 @@ import { sendNotificationToSlack } from "./shared";
 type DischargeAssociationBreakdown = {
   discharge: DischargeData;
   status: "processing" | "completed";
-  reason?: string;
+  reason: string;
   encounterId?: string;
-  dischargeSummaryFilePath: string;
+  dischargeSummaryFilePath?: string;
 };
 
 /**
@@ -68,9 +68,7 @@ export async function finishDischargeRequery({
 
   log(`All processing discharge requery jobs: ${JSON.stringify(processingJobs)}`);
 
-  if (processingJobs.length === 0) {
-    return;
-  }
+  if (processingJobs.length === 0) return;
 
   const targetJobs = processingJobs.filter(job => {
     const runtimeData = dischargeRequeryRuntimeDataSchema.parse(job.runtimeData);
@@ -87,6 +85,7 @@ export async function finishDischargeRequery({
         patientId,
         pipelineRequestId,
       },
+      level: "warning",
     });
     return;
   }
@@ -95,7 +94,9 @@ export async function finishDischargeRequery({
 
   if (jobsToFail.length > 0) {
     const msg = `Found an unexpected number of discharge requery jobs`;
-    log(`${msg} for requestId ${pipelineRequestId}, expected 1, found ${targetJobs.length}`);
+    log(
+      `Unexpected state: ${msg} for requestId ${pipelineRequestId}, expected 1, found ${targetJobs.length}`
+    );
     capture.message(msg, {
       extra: {
         patientId,
@@ -213,7 +214,6 @@ export async function processDischargeSummaryAssociation({
         discharge,
         status: "processing" as const,
         reason: "No consolidated file found",
-        dischargeSummaryFilePath: "",
       })),
       completed: [],
     };
@@ -230,7 +230,6 @@ export async function processDischargeSummaryAssociation({
           discharge,
           status: "processing",
           reason: "No matching encounters found",
-          dischargeSummaryFilePath: "",
         };
       } else if (matchingEncounters.length === 1) {
         result = {
@@ -241,15 +240,11 @@ export async function processDischargeSummaryAssociation({
           dischargeSummaryFilePath: matchingEncounters[0].dischargeSummaryFilePath,
         };
       } else {
-        // Prefer an encounter with discharge disposition among the matches, else use the first
-        const encounterWithDisposition = encounters.find(
-          e =>
-            !!e.hospitalization?.dischargeDisposition && matchingEncounters.some(m => m.id === e.id)
+        const matchingEncounterWithDisposition = matchingEncounters.find(
+          e => !!e.encounter.hospitalization?.dischargeDisposition
         );
-        const matchingEncounter = encounterWithDisposition
-          ? matchingEncounters.find(m => m.id === encounterWithDisposition.id) ??
-            matchingEncounters[0]
-          : matchingEncounters[0];
+
+        const matchingEncounter = matchingEncounterWithDisposition ?? matchingEncounters[0];
 
         const msg = "Multiple discharge encounter matches found";
         await sendNotificationToSlack(
@@ -289,6 +284,7 @@ export async function processDischargeSummaryAssociation({
 
 type MatchingEncounter = {
   id: string;
+  encounter: Encounter;
   dischargeSummaryFilePath: string;
 };
 
@@ -304,24 +300,17 @@ export function getMatchingEncountersWithSummaryPath(
           ?.filter(isDocIdExtension)
           ?.some(e => e.valueString?.includes(`.${XML_FILE_EXTENSION}`))
     )
-    .map(encounter => {
+    .flatMap(encounter => {
       const dischargeSummaryFilePath = encounter.extension
         ?.filter(isDocIdExtension)
         ?.find(e => e.valueString?.includes(`.${XML_FILE_EXTENSION}`))?.valueString;
 
-      if (!dischargeSummaryFilePath) {
-        throw new Error(
-          `Encounter ${encounter.id} has doc ID extension but no discharge summary file path`
-        );
-      }
-
-      if (!encounter.id) {
-        throw new Error(`Encounter has no ID`);
-      }
+      if (!dischargeSummaryFilePath || !encounter.id) return [];
 
       return {
         id: encounter.id,
         dischargeSummaryFilePath,
+        encounter,
       };
     });
 }
@@ -342,36 +331,34 @@ async function updateTcmEncountersWithDischargeSummaryPaths(
   }
 
   // Update TCM encounters with discharge summary file paths
-  const updatePromises = completedAssociations
-    .filter(association => association.encounterId)
-    .map(async association => {
-      const tcmEncounterId = association.discharge.tcmEncounterId;
-      log(
-        `Updating TCM encounter ${tcmEncounterId} with ` +
-          `discharge summary path: ${association.dischargeSummaryFilePath}`
-      );
+  const updatePromises = completedAssociations.map(async association => {
+    const tcmEncounterId = association.discharge.tcmEncounterId;
+    log(
+      `Updating TCM encounter ${tcmEncounterId} with ` +
+        `discharge summary path: ${association.dischargeSummaryFilePath}`
+    );
 
-      try {
-        await updateTcmEncounter({
-          id: tcmEncounterId,
+    try {
+      await updateTcmEncounter({
+        id: tcmEncounterId,
+        cxId,
+        dischargeSummaryPath: association.dischargeSummaryFilePath,
+      });
+      log(`Successfully updated TCM encounter ${tcmEncounterId}`);
+    } catch (error) {
+      log(`Failed to update TCM encounter ${tcmEncounterId}: ${error}`);
+      capture.message("Failed to update TCM encounter with discharge summary path", {
+        extra: {
+          tcmEncounterId: tcmEncounterId,
           cxId,
+          patientId,
+          encounterId: association.encounterId,
           dischargeSummaryPath: association.dischargeSummaryFilePath,
-        });
-        log(`Successfully updated TCM encounter ${tcmEncounterId}`);
-      } catch (error) {
-        log(`Failed to update TCM encounter ${tcmEncounterId}: ${error}`);
-        capture.message("Failed to update TCM encounter with discharge summary path", {
-          extra: {
-            tcmEncounterId: tcmEncounterId,
-            cxId,
-            patientId,
-            encounterId: association.encounterId,
-            dischargeSummaryPath: association.dischargeSummaryFilePath,
-          },
-          level: "error",
-        });
-      }
-    });
+        },
+        level: "error",
+      });
+    }
+  });
 
   await Promise.all(updatePromises);
 }

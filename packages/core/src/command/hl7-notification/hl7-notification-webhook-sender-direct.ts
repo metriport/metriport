@@ -319,14 +319,15 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
   ): Promise<void> {
     if (triggerEvent !== dischargeEventCode) return;
 
-    const dischargeData: DischargeData[] = encounterPeriod?.end
-      ? [
-          {
-            encounterEndDate: encounterPeriod.end,
-            tcmEncounterId: encounterId,
-          },
-        ]
-      : [];
+    const dichargeTimestamp = encounterPeriod?.end;
+    if (!dichargeTimestamp) return;
+
+    const dischargeData: DischargeData[] = [
+      {
+        encounterEndDate: dichargeTimestamp,
+        tcmEncounterId: encounterId,
+      },
+    ];
 
     log(`Sending Discharge Requery kickoff...`);
     const createDischargeRequeryJobRouteUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${DISCHARGE_REQUERY_ENDPOINT}`;

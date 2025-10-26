@@ -85,7 +85,7 @@ export async function createDischargeRequeryJob(
 
   const paramsOps: DischargeRequeryParamsOps = {
     remainingAttempts,
-    dischargeData: _.uniqBy(dischargeData, "encounterEndDate"),
+    dischargeData: _.uniqBy(dischargeData, "tcmEncounterId"),
   };
   const newDischargeRequeryJob = await createPatientJob({
     cxId,
