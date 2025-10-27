@@ -15,10 +15,41 @@ interface MocaScoreObservationParams {
   subject: Reference<Patient>;
   performer: Reference<Practitioner>[];
   extractedFrom: Reference<DiagnosticReport>;
+  effectiveDateTime: string;
   mocaScore: number;
   mocaVersion?: string;
   originalText?: string;
-  effectiveDateTime: string;
+}
+
+export function getMocaScoreParamsFromDiagnosticReport(
+  diagnosticReport: DiagnosticReport
+):
+  | Pick<
+      MocaScoreObservationParams,
+      "subject" | "performer" | "effectiveDateTime" | "extractedFrom"
+    >
+  | undefined {
+  if (!diagnosticReport.subject || !diagnosticReport.subject.reference?.startsWith("Patient/")) {
+    return undefined;
+  }
+  const subject = diagnosticReport.subject as Reference<Patient>;
+  const performer = diagnosticReport.performer?.filter(p =>
+    p.reference?.startsWith("Practitioner/")
+  ) as Reference<Practitioner>[];
+  if (!performer || performer.length === 0) {
+    return undefined;
+  }
+  if (!diagnosticReport.effectiveDateTime) {
+    return undefined;
+  }
+  return {
+    subject,
+    performer,
+    effectiveDateTime: diagnosticReport.effectiveDateTime,
+    extractedFrom: {
+      reference: "DiagnosticReport/" + diagnosticReport.id,
+    },
+  };
 }
 
 /**
