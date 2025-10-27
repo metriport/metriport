@@ -1,6 +1,13 @@
 import { z } from "zod";
 import { Bundle, DiagnosticReport } from "@medplum/fhirtypes";
 
+export interface DocumentConversion {
+  cxId: string;
+  patientId: string;
+  documentId: string;
+  bundle: Bundle;
+}
+
 export interface ExtractionBundle {
   extractedFromDocumentId: string;
   extractedBundle: Bundle;

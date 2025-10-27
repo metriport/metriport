@@ -1,10 +1,6 @@
 import { Command } from "commander";
-import {
-  loadPatientIds,
-  listLocalPatientIds,
-  savePatientIds,
-  listPatientIdsWithDocuments,
-} from "./shared";
+import { loadPatientIds, listLocalPatientIds, savePatientIds } from "./shared";
+import { SurescriptsDataMapper as DataMapper } from "@metriport/core/external/surescripts/data-mapper";
 
 /**
  * List patients by CX ID
@@ -15,16 +11,27 @@ import {
 const command = new Command("list-patients");
 command.description("List patients by CX ID");
 command.requiredOption("--cx-id <cx-id>", "The CX ID");
+command.requiredOption("--facility-id <facility-id>", "The facility ID");
 command.option("--use-cache", "Use the cached patient IDs");
 command.action(listPatients);
 
-export async function listPatients({ cxId, useCache }: { cxId: string; useCache?: boolean }) {
+export async function listPatients({
+  cxId,
+  facilityId,
+  useCache,
+}: {
+  cxId: string;
+  facilityId: string;
+  useCache?: boolean;
+}) {
   console.log(`Listing patients by CX ID: ${cxId}`);
   let patientIds: string[] = [];
   if (useCache) {
     patientIds = loadPatientIds(cxId);
   } else {
-    patientIds = await listPatientIdsWithDocuments({ cxId });
+    // patientIds = await listPatientIdsWithDocuments({ cxId });
+    const dataMapper = new DataMapper();
+    patientIds = await dataMapper.getPatientIdsForFacility({ cxId, facilityId });
     savePatientIds(cxId, patientIds);
   }
   console.log(`Found ${patientIds.length} patients`);

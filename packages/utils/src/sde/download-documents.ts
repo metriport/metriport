@@ -1,13 +1,16 @@
 import { Command } from "commander";
-import { downloadAllDocumentConversions } from "./shared";
+
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { downloadDocumentConversion } from "@metriport/core/sde/command/document/download";
 import {
   loadPatientIds,
   saveConversionBundle,
-  saveConversionBundles,
   localPatientDirectoryExists,
+  localPatientSourcesExist,
 } from "./shared";
+import { downloadAllDocumentConversions, saveExtractionSources } from "./shared";
+import { ExtractionSource } from "@metriport/core/sde/types";
+import { extractFromConversionBundle } from "@metriport/core/sde/extract";
 
 /**
  * Utility script for downloading all documents for a specific customer.
@@ -31,13 +34,27 @@ async function downloadCustomerAction({ cxId }: { cxId: string }): Promise<void>
   await executeAsynchronously(
     patientIds,
     async patientId => {
-      if (localPatientDirectoryExists(cxId, patientId)) {
+      if (
+        localPatientDirectoryExists(cxId, patientId) ||
+        localPatientSourcesExist(cxId, patientId)
+      ) {
         console.log(`Patient ${patientId} already has downloaded documents`);
         return;
       }
-      const bundles = await downloadAllDocumentConversions({ cxId, patientId });
-      saveConversionBundles({ cxId, patientId, bundles });
-      console.log(`Downloaded ${bundles.length} documents for patient ${patientId}`);
+      const documentConversions = await downloadAllDocumentConversions({ cxId, patientId });
+      const allSources: ExtractionSource[] = [];
+      for (const { bundle, documentId } of documentConversions) {
+        const sources = extractFromConversionBundle({
+          bundle,
+          documentId,
+        });
+        allSources.push(...sources);
+      }
+      if (allSources.length > 0) {
+        saveExtractionSources({ cxId, patientId, sources: allSources });
+        console.log(`Downloaded ${documentConversions.length} documents for patient ${patientId}`);
+        console.log(`Extracted ${allSources.length} sources for patient ${patientId}`);
+      }
     },
     { numberOfParallelExecutions: 10 }
   );
@@ -58,9 +75,18 @@ downloadPatient.action(downloadPatientAction);
 command.addCommand(downloadPatient);
 
 async function downloadPatientAction({ cxId, patientId }: { cxId: string; patientId: string }) {
-  const bundles = await downloadAllDocumentConversions({ cxId, patientId });
-  saveConversionBundles({ cxId, patientId, bundles });
-  console.log(`Downloaded ${bundles.length} documents for patient ${patientId}`);
+  const documentConversions = await downloadAllDocumentConversions({ cxId, patientId });
+  const allSources: ExtractionSource[] = [];
+  for (const { bundle, documentId } of documentConversions) {
+    const sources = extractFromConversionBundle({
+      bundle,
+      documentId,
+    });
+    allSources.push(...sources);
+  }
+  saveExtractionSources({ cxId, patientId, sources: allSources });
+  console.log(`Downloaded ${documentConversions.length} documents for patient ${patientId}`);
+  console.log(`Extracted ${allSources.length} sources for patient ${patientId}`);
 }
 
 /**

@@ -8,6 +8,9 @@ import { createMocaScoreObservation } from "@metriport/core/sde/resource/observa
 import { getDiagnosticReportParams } from "@metriport/core/sde/resource/diagnostic-report";
 import { createBundle } from "@metriport/core/sde/resource/bundle";
 import { saveBundle } from "@metriport/core/sde/command/bundle/save-bundle";
+import { SurescriptsDataMapper as DataMapper } from "@metriport/core/external/surescripts/data-mapper";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { Observation } from "@medplum/fhirtypes";
 
 /**
  * Search all documents that have been retrieved locally for a particular phrase in the unstructured text.
@@ -34,13 +37,20 @@ async function buildMocaScoreObservationsAction({ cxId }: { cxId: string }): Pro
   const patientIds = listLocalPatientIds(cxId);
   let totalObservationsBuilt = 0;
   let totalPatientsExtracted = 0;
-  for (const patientId of patientIds) {
-    const observationsBuilt = await buildPatientMocaScoreObservations(automaton, cxId, patientId);
-    totalObservationsBuilt += observationsBuilt;
-    if (observationsBuilt > 0) {
-      totalPatientsExtracted++;
+
+  await executeAsynchronously(
+    patientIds,
+    async patientId => {
+      const observationsBuilt = await buildPatientMocaScoreObservations(automaton, cxId, patientId);
+      totalObservationsBuilt += observationsBuilt;
+      if (observationsBuilt > 0) {
+        totalPatientsExtracted++;
+      }
+    },
+    {
+      numberOfParallelExecutions: 10,
     }
-  }
+  );
 
   console.log(`Built ${totalObservationsBuilt} Moca Score Observations`);
   console.log(`Extracted for ${totalPatientsExtracted} patients`);
@@ -53,7 +63,7 @@ async function buildPatientMocaScoreObservations(
 ): Promise<number> {
   const sources = loadExtractionSources(cxId, patientId);
   const matches: SearchMatch[] = [];
-  let totalMatches = 0;
+  const observations: Record<string, Observation[]> = {};
 
   for (const source of sources) {
     const sourceMatches = automaton.findAll(source.textContent);
@@ -80,21 +90,37 @@ async function buildPatientMocaScoreObservations(
             mocaScore: score,
             originalText,
           });
-
-          console.log(`Saving observation for patient ${patientId}`);
-          const bundle = createBundle([observation]);
-          await saveBundle({
-            bundle,
-            cxId,
-            patientId,
-            documentId: source.documentId,
-          });
-          totalMatches++;
+          if (!observations[source.documentId]) {
+            observations[source.documentId] = [];
+          }
+          observations[source.documentId].push(observation);
         }
       }
     }
   }
-  return totalMatches;
+
+  let totalCreated = 0;
+  for (const documentId in observations) {
+    const documentObservations = observations[documentId];
+    console.log(`Saving ${documentObservations.length} observations for patient ${patientId}`);
+    const bundle = createBundle(documentObservations);
+    await saveBundle({
+      bundle,
+      cxId,
+      patientId,
+      documentId,
+    });
+    totalCreated += documentObservations.length;
+  }
+  try {
+    const dataMapper = new DataMapper();
+    await dataMapper.recreateConsolidatedBundle(cxId, patientId);
+    console.log(`Recreated consolidated bundle for patient ${patientId}`);
+    return totalCreated;
+  } catch (error) {
+    console.error(`Error recreating consolidated bundle for patient ${patientId}: ${error}`);
+    return 0;
+  }
 }
 
 export default command;
