@@ -1,0 +1,1205 @@
+version: 2
+
+seeds:
+  - name: terminology__act_site
+    description: 'This seed contains An anatomical location on a human which can be the focus of an act.'
+    config:
+      schema: terminology
+      enabled: false
+      alias: act_site
+      tags:
+        - terminology
+      column_types:
+        body_code: varchar(256)
+        description: varchar(256)
+    columns:
+      - name: body_code
+        description: 'The code representing the anatomical location.'
+      - name: description
+        description: 'A description of the anatomical location.'
+
+  - name: terminology__admit_source
+    description: 'NUBC Admit Sources'
+    config:
+      schema: terminology
+      enabled: false
+      alias: admit_source
+      tags:
+        - terminology
+        - claims_preprocessing
+        - data_profiling
+      column_types:
+        admit_source_code: varchar(256)
+        admit_source_description: varchar(256)
+        newborn_description: varchar(256)
+    columns:
+      - name: admit_source_code
+        description: 'The code representing the source of admission.'
+      - name: admit_source_description
+        description: 'A description of the admission source.'
+      - name: newborn_description
+        description: 'Description related to newborn admission. For use when admit type code = 4 (Newborn)'
+
+  - name: terminology__admit_type
+    description: 'Seed containing NUBC admission types and descriptions.'
+    config:
+      schema: terminology
+      enabled: false
+      alias: admit_type
+      tags:
+        - terminology
+        - claims_preprocessing
+        - data_profiling
+      column_types:
+        admit_type_code: varchar(256)
+        admit_type_description: varchar(256)
+    columns:
+      - name: admit_type_code
+        description: 'The code representing the type of admission.'
+      - name: admit_type_description
+        description: 'A description of the admission type.'
+
+  - name: terminology__appointment_cancellation_reason
+    description: 'The coded reason for the appointment being cancelled.'
+    config:
+      enabled: false
+      schema: terminology
+      alias: appointment_cancellation_reason
+      tags:
+        - terminology
+      column_types:
+        code: varchar(256)
+        description: varchar(256)
+    columns:
+      - name: code
+        description: 'The code for the cancellation reason.'
+      - name: description
+        description: 'The description of the cancellation reason code.'
+
+  - name: terminology__appointment_status
+    description: 'The coded status for the appointment.'
+    config:
+      enabled: false
+      schema: terminology
+      alias: appointment_status
+      tags:
+        - terminology
+      column_types:
+        code: varchar(256)
+    columns:
+      - name: code
+        description: 'The code for the appointment status.'
+
+  - name: terminology__appointment_type
+    description: 'Appointment type code.'
+    config:
+      enabled: false
+      schema: terminology
+      alias: appointment_type
+      tags:
+        - terminology
+      column_types:
+        code: varchar(256)
+        description: varchar(256)
+    columns:
+      - name: code
+        description: 'The code for the appointment type.'
+      - name: description
+        description: 'The description of the appointment type code.'
+
+  - name: terminology__apr_drg
+    description: 'Seed containing All Patient Refined Diagnosis Related Groups (APR-DRG) codes and descriptions.'
+    config:
+      enabled: false
+      schema: terminology
+      alias: apr_drg
+      tags:
+        - terminology
+        - data_profiling
+      column_types:
+        apr_drg_code: varchar(256)
+        medical_surgical: varchar(256)
+        mdc_code: varchar(256)
+        apr_drg_description: varchar(256)
+    columns:
+      - name: apr_drg_code
+        description: 'The All Patient Refined Diagnosis Related Group (APR-DRG) code.'
+      - name: medical_surgical
+        description: 'Indicates whether the DRG is medical or surgical.'
+      - name: mdc_code
+        description: 'The Major Diagnostic Category (MDC) code associated with the APR-DRG.'
+      - name: apr_drg_description
+        description: 'The description of the All Patient Refined Diagnosis Related Group (APR-DRG).'
+
+  - name: terminology__bill_type
+    description: 'Seed containing NUBC billing types and descriptions.'
+    config:
+      enabled: false
+      schema: terminology
+      alias: bill_type
+      tags:
+        - terminology
+        - data_profiling
+      column_types:
+        bill_type_code: varchar(256)
+        bill_type_description: varchar(256)
+        deprecated: integer
+        deprecated_date: date
+    columns:
+      - name: bill_type_code
+        description: 'The code representing the type of bill.'
+      - name: bill_type_description
+        description: 'A description of the billing type.'
+      - name: deprecated
+        description: 'Indicates if the billing type is deprecated.'
+      - name: deprecated_date
+        description: 'The date when the billing type code was deprecated.'
+
+  - name: terminology__claim_type
+    description: 'Seed containing claim types.'
+    config:
+      enabled: false
+      schema: terminology
+      alias: claim_type
+      tags:
+        - terminology
+        - data_profiling
+      column_types:
+        claim_type: varchar(256)
+    columns:
+      - name: claim_type
+        description: 'The type of the claim.'
+
+  - name: terminology__cvx
+    description: 'Seed containing cvx codes and descriptions.'
+    config:
+      schema: terminology
+      alias: cvx
+      tags:
+        - terminology
+        - data_profiling
+      column_types:
+        cvx: varchar(256)
+        short_description: varchar(256)
+        long_description: varchar(256)
+    columns:
+      - name: cvx
+        description: 'CVX code, which is a unique identifier for vaccines.'
+      - name: short_description
+        description: 'Short description of the vaccine.'
+      - name: long_description
+        description: 'Long description of the vaccine.'
+
+  - name: terminology__discharge_disposition
+    description: 'Seed containing NUBC discharge disposition codes and descriptions.'
+    config:
+      schema: terminology
+      enabled: false
+      alias: discharge_disposition
+      column_types:
+        discharge_disposition_code: varchar(256)
+        discharge_disposition_description: varchar(1024)
+    columns:
+      - name: discharge_disposition_code
+        description: 'The code representing the discharge disposition.'
+      - name: discharge_disposition_description
+        description: 'A description of the discharge disposition.'
+
+  - name: terminology__encounter_type
+    description: 'Seed containing Tuva maintained encounter types.'
+    config:
+      schema: terminology
+      enabled: false
+      alias: encounter_type
+      tags:
+        - terminology
+        - claims_preprocessing
+      column_types:
+        encounter_group: varchar(256)
+        encounter_type: varchar(256)
+    columns:
+      - name: encounter_group
+        description: 'The group of the encounter.'
+      - name: encounter_type
+        description: 'The type of the encounter.'
+
+  - name: terminology__ethnicity
+    description: 'Seed containing ethnicity codes and descriptions.'
+    config:
+      schema: terminology
+      enabled: false
+      alias: ethnicity
+      tags: terminology
+      column_types:
+        code: varchar(256)
+        description: varchar(256)
+    columns:
+      - name: code
+        description: 'The code representing the ethnicity.'
+      - name: description
+        description: 'A description of the ethnicity.'
+
+  - name: terminology__gender
+    description: 'Seed containing gender codes and descriptions.'
+    config:
+      schema: terminology
+      enabled: false
+      alias: gender
+      tags:
+        - terminology
+        - data_profiling
+      column_types:
+        gender: varchar(256)
+    columns:
+      - name: gender
+        description: 'The gender code.'
+
+  - name: terminology__hcpcs_level_2
+    description: 'Seed containing HCPCS Level II codes and descriptions.'
+    config:
+      schema: terminology
+      alias: hcpcs_level_2
+      tags: terminology
+      column_types:
+        hcpcs: varchar(256)
+        seqnum: varchar(256)
+        recid: varchar(256)
+        long_description: varchar(2000)
+        short_description: varchar(256)
+    columns:
+      - name: hcpcs
+        description: 'The HCPCS Level II code.'
+      - name: seqnum
+        description: 'The sequence number.'
+      - name: recid
+        description: 'The record identifier.'
+      - name: long_description
+        description: 'The long description of the HCPCS code.'
+      - name: short_description
+        description: 'The short description of the HCPCS code.'
+
+  - name: terminology__hcpcs_to_rbcs
+    description: HCPCS to RBCS crosswalk.
+    config:
+      enabled: false
+      schema: terminology
+      alias: hcpcs_to_rbcs
+      tags: terminology
+      column_types:
+        hcpcs_cd: varchar(256)
+        rbcs_id: varchar(256)
+        rbcs_cat: varchar(256)
+        rbcs_cat_desc: varchar(256)
+        rbcs_cat_subcat: varchar(256)
+        rbcs_subcat_desc: varchar(256)
+        rbcs_famnumb: numeric
+        rbcs_family_desc: varchar(256)
+        rbcs_major_ind: varchar(256)
+        hcpcs_cd_add_dt: date
+        hcpcs_cd_end_dt: date
+        rbcs_assignment_eff_dt: date
+        current_flag: numeric
+    columns:
+      - name: hcpcs_cd
+        description: HCPCS or CPT code.
+      - name: rbcs_id
+        description: |
+          RBCS identifier which is comprised of 6 characters. The first
+          character identifies the category; the second character identifies
+          the subcategory; the third, fourth, and fifth characters identify
+          the family, and the sixth character identifies whether the service
+          is a major procedure.
+      - name: rbcs_cat
+        description: First character for the RBCS taxonomy ID, which represents the RBCS ID category.
+      - name: rbcs_cat_desc
+        description: Category description.
+      - name: rbcs_cat_subcat
+        description: First 2 characters for the RBCS taxonomy ID, which represents the RBCS ID's category and subcategory.
+      - name: rbcs_subcat_desc
+        description: Subcategory description.
+      - name: rbcs_famnumb
+        description: Third, fourth, and fifth characters, which represents the RBCS family number.
+      - name: rbcs_family_desc
+        description: Family description.
+      - name: rbcs_major_ind
+        description: |
+          Sixth character for the RBCS taxonomy ID, which identifies whether
+          the HCPCS code is a Major procedure (M), Other (O), or non-procedure
+          code (N).
+      - name: hcpcs_cd_add_dt
+        description: HCPCS Code Effective Date.
+      - name: hcpcs_cd_end_dt
+        description: HCPCS Code End Date.
+      - name: rbcs_assignment_eff_dt
+        description: Provides users with the earliest date that the RBCS ID is effective.
+      - name: current_flag
+        description: Flag where 1 = the current version of the RBCS for that particular HCPCS_CD, 0 = old version.
+
+  - name: terminology__icd_9_cm
+    description: 'Seed containing ICD-9-CM codes and descriptions.'
+    config:
+      schema: terminology
+      alias: icd_9_cm
+      tags:
+        - terminology
+        - claims_preprocessing
+        - readmissions
+        - data_profiling
+      column_types:
+        icd_9_cm: varchar(256)
+        long_description: varchar(256)
+        short_description: varchar(256)
+    columns:
+      - name: icd_9_cm
+        description: 'The ICD-9-CM code.'
+      - name: long_description
+        description: 'The long description of the ICD-9-CM code.'
+      - name: short_description
+        description: 'The short description of the ICD-9-CM code.'
+
+  - name: terminology__icd_9_pcs
+    description: 'Seed containing ICD-9-PCS codes and descriptions.'
+    config:
+      schema: terminology
+      enabled: false
+      alias: icd_9_pcs
+      tags:
+        - terminology
+        - claims_preprocessing
+        - readmissions
+        - data_profiling
+      column_types:
+        icd_9_pcs: varchar(256)
+        long_description: varchar(256)
+        short_description: varchar(256)
+    columns:
+      - name: icd_9_pcs
+        description: 'The ICD-9-PCS code.'
+      - name: long_description
+        description: 'The long description of the ICD-9-PCS code.'
+      - name: short_description
+        description: 'The short description of the ICD-9-PCS code.'
+
+
+  - name: terminology__icd_10_cm
+    description: 'Seed containing ICD-10-CM codes and descriptions.'
+    config:
+      schema: terminology
+      alias: icd_10_cm
+      tags:
+        - terminology
+        - claims_preprocessing
+        - readmissions
+        - data_profiling
+      column_types:
+        icd_10_cm: varchar(256)
+        header_flag: varchar(256)
+        short_description: varchar(256)
+        long_description: varchar(256)
+    columns:
+      - name: icd_10_cm
+        description: 'Alpha-Numeric ICD-10-CM Code.'
+      - name: header_flag
+        description: 'Indicates a diagnosis "header" with a 1. A value of 1 means the code is NOT billable for HIPAA covered entities, and is just included in the ICD-10-CM listing for organizational purposes. A value of 0 indicates the code IS billable for HIPAA covered entities and is a valid diagnosis code. It should be uncommon for codes in claims or clinical data sources to contain header values, but if you want to ensure you are not capturing non-billable codes, filter out all codes from this table where header_flag = 1'
+      - name: short_description
+        description: 'The short description of the ICD-10-CM code.'
+      - name: long_description
+        description: 'The long description of the ICD-10-CM code.'
+
+  - name: terminology__icd_10_pcs
+    description: 'Seed containing ICD-10-PCS codes and descriptions.'
+    config:
+      schema: terminology
+      enabled: false
+      alias: icd_10_pcs
+      tags:
+        - terminology
+        - claims_preprocessing
+        - readmissions
+      column_types:
+        icd_10_pcs: varchar(256)
+        description: varchar(256)
+    columns:
+      - name: icd_10_pcs
+        description: 'The ICD-10-PCS code.'
+      - name: description
+        description: 'The description of the ICD-10-PCS code.'
+
+  - name: terminology__immunization_route_code
+    description: 'This seed contains the administrative routes used during vaccination.'
+    config:
+      schema: terminology
+      enabled: false
+      alias: immunization_route_code
+      tags:
+        - terminology
+      column_types:
+        route_code: varchar(256)
+        description: varchar(256)
+    columns:
+      - name: route_code
+        description: 'The code representing the route of administration for the immunization.'
+      - name: description
+        description: 'A description of the route of administration for the immunization.'
+
+  - name: terminology__immunization_status_reason
+    description: 'This seed describes the reason why a dose of vaccine was not administered.'
+    config:
+      schema: terminology
+      enabled: false
+      alias: immunization_status_reason
+      tags:
+        - terminology
+      column_types:
+        reason_code: varchar(256)
+        code_type: varchar(256)
+        description: varchar(256)
+    columns:
+      - name: reason_code
+        description: 'The code representing the immunization status reason.'
+      - name: code_type
+        description: 'The type of the code representing the immunization status reason.'
+      - name: description
+        description: 'A description of the immunization status reason.'
+
+  - name: terminology__immunization_status
+    description: 'This seed contains the current status of the administered dose of vaccine.'
+    config:
+      schema: terminology
+      enabled: false
+      alias: immunization_status
+      tags:
+        - terminology
+      column_types:
+        status_code: varchar(256)
+        status: varchar(256)
+    columns:
+      - name: status_code
+        description: 'The code representing the immunization status.'
+      - name: status
+        description: 'The display of the immunization status.'
+
+  - name: terminology__loinc
+    description: 'Seed containing LOINC codes and descriptions.'
+    config:
+      schema: terminology
+      alias: loinc
+      tags:
+        - terminology
+      column_types:
+        loinc: varchar(256)
+        short_name: varchar(256)
+        long_common_name: varchar(256)
+        component: varchar(256)
+        property: varchar(256)
+        time_aspect: varchar(256)
+        system: varchar(256)
+        scale_type: varchar(256)
+        method_type: varchar(256)
+        class_code: varchar(256)
+        class_description: varchar(256)
+        class_type_code: varchar(256)
+        class_type_description: varchar(256)
+        paneltype: varchar(256)
+        order_obs: varchar(256)
+        example_units: varchar(256)
+        external_copyright_notice: varchar(3000)
+        status: varchar(256)
+        version_first_released: varchar(256)
+        version_last_changed: varchar(256)
+    columns:
+      - name: loinc
+        description: 'The LOINC code.'
+      - name: short_name
+        description: 'If exists, the short human-readable version of the LOINC description.'
+      - name: long_common_name
+        description: 'Clinician-friendly full LOINC description.'
+      - name: component
+        description: 'The substance or entity being measured or observed. Also called the Analyte. The first of six LOINC parts.'
+      - name: property
+        description: 'The characteristic or attribute of the analyte. The second of six LOINC parts.'
+      - name: time_aspect
+        description: 'The interval of time over which an observation was made. The third of six LOINC parts.'
+      - name: system
+        description: 'The thing upon which the observation was made. Also called specimen for laboratory tests. The fourth of six LOINC parts.'
+      - name: scale_type
+        description: 'How the observation value is quantified or expressed (e.g. quantitative, ordinal, nominal, etc.). The fifth of six LOINC parts.'
+      - name: method_type
+        description: 'A high-level classification of how the observation was made. Optional; only needed when the technique affects the clinical interpretation of the results. The sixth of six LOINC parts.'
+      - name: class_code
+        description: 'A code representing the general category of the LOINC term.'
+      - name: class_description
+        description: 'The general category of the LOINC term.'
+      - name: class_type_code
+        description: 'A code representing the top-level category for the test.'
+      - name: class_type_description
+        description: 'The top-level category for the test; Laboratory, Clinical, Claims attachments, or Surveys.'
+      - name: external_copyright_notice
+        description: External copyright holder's copyright notice for this LOINC code.
+      - name: status
+        description: 'The status of the LOINC code concept. Active, Trial (experimental), Discouraged (not recommended), or Deprecated (should not be used).'
+      - name: version_first_released
+        description: 'The first release version of LOINC that included this code.'
+      - name: version_last_changed
+        description: 'The last LOINC version in which this record was changed.'
+
+  - name: terminology__loinc_deprecated_mapping
+    description: 'Seed containing deprecated LOINC codes and their replacements.'
+    config:
+      enabled: false
+      schema: terminology
+      alias: loinc_deprecated_mapping
+      tags:
+        - terminology
+      column_types:
+        loinc: varchar(256)
+        map_to: varchar(256)
+        comment: varchar(256)
+        final_map_to: varchar(256)
+        all_comments: varchar(256)
+        depth: varchar(256)
+    columns:
+      - name: loinc
+        description: 'The deprecated term to which the replacement term(s) apply.'
+      - name: map_to
+        description: 'A replacement term that is to be used in place of the deprecated or discouraged term.'
+      - name: comment
+        description: 'Narrative text that explains the rationale for using the recommended replacement term.'
+      - name: final_map_to
+        description: 'If there are multiple steps of deprecated codes, this is the final (active) code.'
+      - name: all_comments
+        description: 'An aggregation of comments for any mapping steps between the deprecated code and the active code.'
+      - name: depth
+        description: 'How many steps this mapping is to the active code.'
+
+  - name: terminology__mdc
+    description: 'Seed containing Major Diagnostic Categories (MDC) codes and descriptions.'
+    config:
+      enabled: false
+      schema: terminology
+      alias: mdc
+      tags: terminology
+      column_types:
+        mdc_code: varchar(256)
+        mdc_description: varchar(256)
+    columns:
+      - name: mdc_code
+        description: 'The Major Diagnostic Category (MDC) code.'
+      - name: mdc_description
+        description: 'The description of the Major Diagnostic Category (MDC).'
+
+  - name: terminology__medicare_dual_eligibility
+    description: 'Seed containing Medicare dual eligibility status codes and descriptions.'
+    config:
+      enabled: false
+      schema: terminology
+      alias: medicare_dual_eligibility
+      tags:
+        - terminology
+        - claims_preprocessing
+        - data_profiling
+      column_types:
+        dual_status_code: varchar(256)
+        dual_status_description: varchar(256)
+    columns:
+      - name: dual_status_code
+        description: 'The code representing dual eligibility status.'
+      - name: dual_status_description
+        description: 'A description of the dual eligibility status.'
+
+  - name: terminology__medicare_orec
+    description: 'Seed containing Medicare original reason for entitlement (OREC) codes and descriptions.'
+    config:
+      enabled: false
+      schema: terminology
+      alias: medicare_orec
+      tags:
+        - terminology
+        - claims_preprocessing
+        - data_profiling
+      column_types:
+        original_reason_entitlement_code: varchar(256)
+        original_reason_entitlement_description: varchar(256)
+    columns:
+      - name: original_reason_entitlement_code
+        description: 'The code representing the original reason for Medicare entitlement.'
+      - name: original_reason_entitlement_description
+        description: 'A description of the original reason for Medicare entitlement.'
+
+  - name: terminology__medicare_status
+    description: 'Seed containing Medicare status codes and descriptions.'
+    config:
+      enabled: false
+      schema: terminology
+      alias: medicare_status
+      tags:
+        - terminology
+        - claims_preprocessing
+        - data_profiling
+      column_types:
+        medicare_status_code: varchar(256)
+        medicare_status_description: varchar(256)
+    columns:
+      - name: medicare_status_code
+        description: 'The code representing the Medicare status.'
+      - name: medicare_status_description
+        description: 'A description of the Medicare status.'
+
+  - name: terminology__ms_drg_weights_los
+    description: 'Seed containing Medicare Severity Diagnosis Related Groups (MS-DRG) weights and benchmark length of stay values from CMS.'
+    config:
+      enabled: false
+      schema: terminology
+      alias: ms_drg_weights_los
+      tags:
+        - terminology
+        - data_profiling
+        - claims_preprocessing
+      column_types:
+        ms_drg: varchar(256)
+        fiscal_year: varchar(256)
+        final_post_acute_drg: varchar(256)
+        final_special_pay_drg: varchar(256)
+        mdc: varchar(256)
+        type: varchar(256)
+        ms_drg_title: varchar(256)
+        drg_weight_raw: varchar(256)
+        drg_weight: varchar(256)
+        geometric_mean_los: varchar(256)
+        arithmetic_mean_los: varchar(256)
+    columns:
+      - name: ms_drg
+        description: 'The Medicare Severity Diagnosis Related Group (MS-DRG) code.'
+      - name: fiscal_year
+        description: 'Fiscal year for the DRG weight and LOS values.'
+      - name: final_post_acute_drg
+        description: 'Indicates if this is a final post-acute DRG for the given year.'
+      - name: final_special_pay_drg
+        description: 'Indicates if this is a final special pay DRG for the given year.'
+      - name: mdc
+        description: 'The Major Diagnostic Category (MDC) code associated with the MS-DRG.'
+      - name: type
+        description: 'The type of the DRG.'
+      - name: ms_drg_title
+        description: 'The title of the Medicare Severity Diagnosis Related Group (MS-DRG).'
+      - name: drg_weight_raw
+        description: 'The raw DRG weight.'
+      - name: drg_weight
+        description: 'The adjusted DRG weight.'
+      - name: geometric_mean_los
+        description: 'The geometric mean length of stay for this DRG.'
+      - name: arithmetic_mean_los
+        description: 'The arithmetic mean length of stay for this DRG.'
+
+  - name: terminology__ms_drg
+    description: 'Seed containing Medicare Severity Diagnosis Related Groups (MS-DRG) codes and descriptions.'
+    config:
+      schema: terminology
+      enabled: false
+      alias: ms_drg
+      tags:
+        - terminology
+        - readmissions
+        - data_profiling
+        - claims_preprocessing
+      column_types:
+        ms_drg_code: varchar(256)
+        mdc_code: varchar(256)
+        medical_surgical: varchar(256)
+        ms_drg_description: varchar(256)
+        deprecated: integer
+        deprecated_date: date
+    columns:
+      - name: ms_drg_code
+        description: 'The Medicare Severity Diagnosis Related Group (MS-DRG) code.'
+      - name: mdc_code
+        description: 'The Major Diagnostic Category (MDC) code associated with the MS-DRG.'
+      - name: medical_surgical
+        description: 'Indicates whether the DRG is medical or surgical.'
+      - name: ms_drg_description
+        description: 'The description of the Medicare Severity Diagnosis Related Group (MS-DRG).'
+      - name: deprecated
+        description: 'Indicates if the MS-DRG code is deprecated (1) or not (0).'
+      - name: deprecated_date
+        description: 'The date when the MS-DRG code was deprecated.'
+
+  - name: terminology__ndc
+    description: 'This file collects all NDCs collected by the FDA and RxNorm, and compiles them into one list. The file is maintained by [CodeRX](https://coderx.io/) in partnership with Tuva Health.'
+    config:
+      schema: terminology
+      enabled: false
+      alias: ndc
+      tags:
+        - terminology
+      column_types:
+        ndc: varchar(256)
+        rxcui: varchar(256)
+        rxnorm_description: varchar(3000)
+        fda_description: varchar(3000)
+    columns:
+      - name: ndc
+        description: 'The National Drug Code (NDC).'
+      - name: rxcui
+        description: 'The RxCUI identifier associated with the NDC.'
+      - name: rxnorm_description
+        description: 'The description of the RxNorm concept.'
+      - name: fda_description
+        description: 'The FDA description of the drug.'
+
+  - name: terminology__observation_type
+    description: 'Seed containing observation types used by HEDIS/FHIR US Core, with an other category. https://terminology.hl7.org/1.0.0/CodeSystem-observation-category.html'
+    config:
+      schema: terminology
+      enabled: false
+      tags:
+        - terminology
+      column_types:
+        observation_type: varchar(256)
+    columns:
+      - name: observation_type
+        description: The type of observation.
+
+  - name: terminology__other_provider_taxonomy
+    description: 'Seed containing other provider taxonomy codes and descriptions.'
+    config:
+      enabled: false
+      schema: terminology
+      tags:
+        - terminology
+        - claims_preprocessing
+      alias: other_provider_taxonomy
+      column_types:
+        npi: varchar(35)
+        taxonomy_code: varchar(35)
+        medicare_specialty_code: varchar(173)
+        description: varchar(101)
+        primary_flag:  integer
+    columns:
+      - name: npi
+        description: 'The National Provider Identifier (NPI).'
+      - name: taxonomy_code
+        description: 'The provider taxonomy code.'
+      - name: medicare_specialty_code
+        description: 'The Medicare specialty code.'
+      - name: description
+        description: 'Description of the provider taxonomy.'
+      - name: primary_flag
+        description: 'Indicates if this is the primary taxonomy (1) or not (0).'
+
+  - name: terminology__payer_type
+    description: 'Seed containing payer types.'
+    config:
+      enabled: false
+      schema: terminology
+      alias: payer_type
+      tags:
+        - terminology
+        - data_profiling
+      column_types:
+        payer_type: varchar(256)
+    columns:
+      - name: payer_type
+        description: 'The type of payer.'
+
+  - name: terminology__place_of_service
+    description: 'Seed containing place of service codes and descriptions.'
+    config:
+      enabled: false
+      schema: terminology
+      alias: place_of_service
+      tags:
+        - terminology
+        - claims_preprocessing
+        - data_profiling
+      column_types:
+        place_of_service_code: varchar(256)
+        place_of_service_description: varchar(256)
+    columns:
+      - name: place_of_service_code
+        description: 'The code representing the place of service.'
+      - name: place_of_service_description
+        description: 'A description of the place of service.'
+
+  - name: terminology__present_on_admission
+    description: 'Seed containing present on admission (POA) indicator codes and descriptions.'
+    config:
+      schema: terminology
+      enabled: false
+      alias: present_on_admission
+      tags:
+        - terminology
+        - data_profiling
+        - claims_preprocessing
+      column_types:
+        present_on_admit_code: varchar(256)
+        present_on_admit_description: varchar(1024)
+    columns:
+      - name: present_on_admit_code
+        description: 'The code representing if the condition was present on admission.'
+      - name: present_on_admit_description
+        description: 'A description of the present on admission (POA) indicator.'
+
+  - name: terminology__provider
+    description: 'Seed containing provider information.'
+    config:
+      schema: terminology
+      enabled: false
+      tags:
+        - terminology
+        - claims_preprocessing
+      alias: provider
+      column_types:
+        npi: varchar(35)
+        entity_type_code: varchar(26)
+        entity_type_description: varchar(37)
+        primary_taxonomy_code: varchar(35)
+        primary_specialty_description: varchar(173)
+        provider_first_name: varchar(95)
+        provider_last_name: varchar(95)
+        provider_credential: varchar(95)
+        provider_organization_name: varchar(95)
+        provider_other_organization_name: varchar(95)
+        provider_other_organization_name_type_code: varchar(80)
+        provider_other_organization_name_type_description: varchar(95)
+        parent_organization_name: varchar(95)
+        practice_address_line_1: varchar(80)
+        practice_address_line_2: varchar(80)
+        practice_city: varchar(65)
+        practice_state: varchar(65)
+        practice_zip_code: varchar(42)
+        mailing_telephone_number: varchar(42)
+        location_telephone_number: varchar(42)
+        official_telephone_number: varchar(42)
+        last_updated: date
+        deactivation_date: date
+        deactivation_flag: varchar(80)
+    columns:
+      - name: npi
+        description: 'The National Provider Identifier (NPI).'
+      - name: entity_type_code
+        description: 'The entity type code of the provider.'
+      - name: entity_type_description
+        description: 'The entity type description of the provider.'
+      - name: primary_taxonomy_code
+        description: 'The primary taxonomy code of the provider.'
+      - name: primary_specialty_description
+        description: 'The primary specialty description of the provider.'
+      - name: provider_first_name
+        description: 'The first name of the provider.'
+      - name: provider_last_name
+        description: 'The last name of the provider.'
+      - name: provider_credential
+        description: 'The credential of the provider.'
+      - name: provider_organization_name
+        description: 'The organization name of the provider.'
+      - name: provider_other_organization_name
+        description: 'Other organization name of the provider (for Type 2 NPI).'
+      - name: provider_other_organization_name_type_code
+        description: 'The type code for the other organization name of the provider.'
+      - name: provider_other_organization_name_type_description
+        description: 'The type description for the other organization name of the provider.'
+      - name: parent_organization_name
+        description: 'The parent organization name of the provider.'
+      - name: practice_address_line_1
+        description: 'The first line of the practice address.'
+      - name: practice_address_line_2
+        description: 'The second line of the practice address.'
+      - name: practice_city
+        description: 'The city of the practice address.'
+      - name: practice_state
+        description: 'The state of the practice address.'
+      - name: practice_zip_code
+        description: 'The ZIP code of the practice address.'
+      - name: mailing_telephone_number
+        description: 'Provider Business Mailing Address Telephone Number.'
+      - name: location_telephone_number
+        description: 'Provider Business Practice Location Address Telephone Number.'
+      - name: official_telephone_number
+        description: 'Authorized Official Telephone Number'
+      - name: last_updated
+        description: 'The date when the provider information was last updated.'
+      - name: deactivation_date
+        description: 'The date when the provider was deactivated.'
+      - name: deactivation_flag
+        description: 'Flag indicating if the provider is deactivated.'
+
+  - name: terminology__race
+    description: 'Seed containing race codes and descriptions.'
+    config:
+      schema: terminology
+      enabled: false
+      alias: race
+      tags:
+        - terminology
+        - data_profiling
+      column_types:
+        code: varchar(256)
+        description: varchar(256)
+    columns:
+      - name: code
+        description: 'The code representing the race.'
+      - name: description
+        description: 'A description of the race.'
+
+  - name: terminology__revenue_center
+    description: 'Seed containing revenue center codes and descriptions.'
+    config:
+      enabled: false
+      schema: terminology
+      alias: revenue_center
+      tags:
+        - terminology
+        - claims_preprocessing
+        - data_profiling
+      column_types:
+        revenue_center_code: varchar(256)
+        revenue_center_description: varchar(256)
+    columns:
+      - name: revenue_center_code
+        description: 'The code representing the revenue center.'
+      - name: revenue_center_description
+        description: 'A description of the revenue center.'
+
+  - name: terminology__rxnorm_to_atc
+    description: 'This file maps ATC classes to RxCUI. The file is maintained by [CodeRX](https://coderx.io/) in partnership with Tuva Health.'
+    config:
+      schema: terminology
+      enabled: false
+      alias: rxnorm_to_atc
+      tags:
+        - terminology
+      column_types:
+        rxcui: varchar(256)
+        rxnorm_description: varchar(3000)
+        atc_1_code: varchar(256)
+        atc_1_name: varchar(256)
+        atc_2_code: varchar(256)
+        atc_2_name: varchar(256)
+        atc_3_code: varchar(256)
+        atc_3_name: varchar(256)
+        atc_4_code: varchar(256)
+        atc_4_name: varchar(256)
+    columns:
+      - name: rxcui
+        description: 'The RxNorm code.'
+      - name: rxnorm_description
+        description: 'Description of the RxNorm concept.'
+      - name: atc_1_code
+        description: 'The ATC level 1 code.'
+      - name: atc_1_name
+        description: 'The name of the ATC level 1 code.'
+      - name: atc_2_code
+        description: 'The ATC level 2 code.'
+      - name: atc_2_name
+        description: 'The name of the ATC level 2 code.'
+      - name: atc_3_code
+        description: 'The ATC level 3 code.'
+      - name: atc_3_name
+        description: 'The name of the ATC level 3 code.'
+      - name: atc_4_code
+        description: 'The ATC level 4 code.'
+      - name: atc_4_name
+        description: 'The name of the ATC level 4 code.'
+
+
+  - name: terminology__snomed_icd_10_map
+    description: 'Seed containing mappings between SNOMED CT and ICD-10 codes.'
+    config:
+      enabled: false
+      schema: terminology
+      alias: snomed_icd_10_map
+      tags:
+        - terminology
+        - hcc_suspecting
+      column_types:
+        id: varchar(256)
+        effective_time: varchar(256)
+        active: varchar(256)
+        module_id: varchar(256)
+        ref_set_id: varchar(256)
+        referenced_component_id: varchar(256)
+        referenced_component_name: varchar(256)
+        map_group: varchar(256)
+        map_priority: varchar(256)
+        map_rule: varchar(500)
+        map_advice: varchar(500)
+        map_target: varchar(256)
+        map_target_name: varchar(256)
+        correlation_id: varchar(256)
+        map_category_id: varchar(256)
+        map_category_name: varchar(256)
+    columns:
+      - name: id
+        description: 'The unique identifier for the mapping.'
+      - name: effective_time
+        description: 'The effective time of the mapping.'
+      - name: active
+        description: 'Indicates if the mapping is active.'
+      - name: module_id
+        description: 'The module ID associated with the mapping.'
+      - name: ref_set_id
+        description: 'The reference set ID associated with the mapping.'
+      - name: referenced_component_id
+        description: 'The referenced component ID.'
+      - name: referenced_component_name
+        description: 'The name of the referenced component.'
+      - name: map_group
+        description: 'The map group.'
+      - name: map_priority
+        description: 'The map priority.'
+      - name: map_rule
+        description: 'The map rule.'
+      - name: map_advice
+        description: 'Advice related to the map.'
+      - name: map_target
+        description: 'The map target.'
+      - name: map_target_name
+        description: 'The name of the map target.'
+      - name: correlation_id
+        description: 'The correlation ID associated with the mapping.'
+      - name: map_category_id
+        description: 'The map category ID.'
+      - name: map_category_name
+        description: 'The name of the map category.'
+
+  - name: terminology__snomed_ct
+    description: 'Seed containing SNOMED CT codes and descriptions.'
+    config:
+      schema: terminology
+      alias: snomed_ct
+      tags:
+        - terminology
+      column_types:
+        snomed_ct: varchar(256)
+        description: varchar(256)
+        is_active: varchar(256)
+        created: date
+        last_updated: date
+    columns:
+      - name: snomed_ct
+        description: 'The SNOMED CT code.'
+      - name: description
+        description: 'The description of the SNOMED CT code.'
+      - name: is_active
+        description: 'Indicates if the SNOMED CT code is active.'
+      - name: created
+        description: 'The date when the SNOMED CT code was created.'
+      - name: last_updated
+        description: 'The date when the SNOMED CT code was last updated.'
+
+
+  - name: terminology__snomed_ct_transitive_closures
+    description: 'Seed containing SNOMED CT transitive closures.'
+    config:
+      enabled: false
+      schema: terminology
+      alias: snomed_ct_transitive_closures
+      tags:
+        - terminology
+      column_types:
+        parent_snomed_code: varchar(256)
+        parent_description: varchar(256)
+        child_snomed_code: varchar(256)
+        child_description: varchar(256)
+    columns:
+      - name: parent_snomed_code
+        description: 'The SNOMED code of the parent concept.'
+      - name: parent_description
+        description: 'The description of the parent SNOMED concept.'
+      - name: child_snomed_code
+        description: 'The SNOMED code of the child concept.'
+      - name: child_description
+        description: 'The description of the child SNOMED concept.'
+
+
+  - name: terminology__rxnorm_brand_generic
+    config:
+      enabled: false
+      schema: terminology
+      alias: rxnorm_brand_generic
+      tags:
+        - terminology
+      column_types:
+        product_rxcui: varchar(256)
+        product_name: varchar(3000)
+        product_tty: varchar(256)
+        prescribable_name: varchar(3000)
+        brand_vs_generic: varchar(256)
+        brand_name: varchar(1000)
+        clinical_product_rxcui: varchar(256)
+        clinical_product_name: varchar(3000)
+        clinical_product_tty: varchar(256)
+        ingredient_name: varchar(3000)
+        dose_form_name: varchar(3000)
+        active: varchar(10)
+        prescribable: varchar(10)
+
+  - name: terminology__ccs_services_procedures
+    config:
+      enabled: false
+      schema: terminology
+      alias: ccs_services_procedures
+      tags:
+        - terminology
+      column_types:
+        hcpcs_code: varchar(5)
+        ccs_category: varchar(3)
+        ccs_category_description: varchar(256)
+        release_year: integer
+        start_valid_date: date
+        end_valid_date: date
+        code_range: varchar(256)
+        source_file: varchar(256)
+
+  - name: terminology__nitos
+    config:
+      enabled: false
+      schema: terminology
+      alias: nitos
+      tags:
+        - terminology
+      column_types:
+        hcpcs_code: varchar(5)
+        nitos_code: varchar(5)
+        nitos_description: varchar(1000)
+        invasive_non_invasive_flag: varchar(50)
+        modality: varchar(50)
+        body_region: varchar(50)
+        focus_area: varchar(50)
+  - name: terminology__icd10_pcs_cms_ontology
+    description: |
+      A table containing the broken out elements of the ontology associated with ICD-10-PCS codes. These codes are a positional ontology, 
+      where each character in the code contains information about the procedure, depending on its position. CMS posts files containing these codes in XML format,
+      which can be tabularized using Python.
+    config:
+      enabled: false
+      schema: terminology
+      alias: icd10_pcs_cms_ontology
+      tags:
+        - terminology
+      column_types:
+        icd10pcs_code: varchar(256)
+        section: varchar(256)
+        body_system: varchar(256)
+        operation: varchar(256)
+        body_part: varchar(256)
+        approach: varchar(256)
+        device: varchar(256)
+        qualifier: varchar(256)
+    columns:
+      - name: icd10pcs_code
+        description: ICD-10-PCS code
+      - name: section
+        description: The "section" is associated with the first character of the ICD-10-PCS code.
+      - name: body_system
+        description: Body system associated with the ICD-10-PCS code; corresponds to the second character of the code.
+      - name: operation
+        description: Root operation associated with the ICD-10-PCS code; corresponds to the third character of the code
+      - name: body_part
+        description: Body part associated with the ICD-10-PCS code; corresponds to the fourth character of the code
+      - name: approach
+        description: Approach associated with the ICD-10-PCS code; corresponds to the fifth character of the code
+      - name: device
+        description: Device associated with the ICD-10-PCS code; corresponds to the sixth character of the code
+      - name: qualifier
+        description: Qualifier associated with the ICD-10-PCS code; corresponds to the seventh character of the code

@@ -357,6 +357,10 @@ export class Config {
     return getEnvVar("LAB_CONVERSION_BUCKET_NAME");
   }
 
+  static getStructuredDataBucketName(): string | undefined {
+    return getEnvVar("STRUCTURED_DATA_BUCKET_NAME");
+  }
+
   static getAthenaHealthEnv(): string | undefined {
     return getEnvVar("EHR_ATHENA_ENVIRONMENT");
   }

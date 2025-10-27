@@ -96,8 +96,8 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
 
     iheParsedResponsesBucket.grantWrite(writeToS3LambdaOutboundPD);
 
-    this.createParsedReponseTables(iheParsedResponsesBucket);
-    this.createParsedReponseProjectionTables(iheParsedResponsesBucket);
+    this.createParsedResponseTables(iheParsedResponsesBucket);
+    this.createParsedResponseProjectionTables(iheParsedResponsesBucket);
 
     const patientDiscoveryLambda = this.setupIHEGatewayV2PatientDiscoveryLambda(
       props,
@@ -120,7 +120,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     documentRetrievalLambda.grantInvoke(props.apiTaskRole);
   }
 
-  private createParsedReponseTables(iheParsedResponsesBucket: s3.Bucket) {
+  private createParsedResponseTables(iheParsedResponsesBucket: s3.Bucket) {
     new glue.CfnTable(this, "iheParsedResponsesDebugTable", {
       catalogId: this.account,
       databaseName: "default",
@@ -163,7 +163,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     });
   }
 
-  private createParsedReponseProjectionTables(iheParsedResponsesBucket: s3.Bucket) {
+  private createParsedResponseProjectionTables(iheParsedResponsesBucket: s3.Bucket) {
     type PartitionKey = "date" | "cx_id" | "patient_id" | "stage";
     const partitionKeyMap: Record<
       PartitionKey,

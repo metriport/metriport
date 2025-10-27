@@ -2,51 +2,47 @@
 title: "Encounter"
 description: "Schema documentation for the Encounter table in the Metriport data model"
 group: "Schema"
+icon: "n/a"
 ---
 
-The encounter table is intended to store information that represents a unique patient interaction with the healthcare system. It's intended to be synonymous with a healthcare visit (e.g. hospital admission, office visit, etc.). All healthcare analytics use cases involving utilization require an encounter concept. Not only is it important to know about each unique encounter a patient has with the healthcare system, but it's also important to know the type of visit (e.g. acute inpatient, ED, office visit, inpatient rehab, etc.), the start and end dates for the visit, the total amount paid for the visit, and other pieces of information about the visit. The encounter table stores all of this important information in a single table.
+An encounter encompasses the lifecycle from pre-admission, the actual encounter (for ambulatory encounters), and admission, stay and discharge (for inpatient encounters). During the encounter the patient may move from practitioner to practitioner and location to location.
+
+**Reference Table:**
+
+The `encounter_references` table contains normalized references from the encounter to other entities. It supports the following reference properties:
+* **subject** (required): links to the patient involved in the encounter
+* **participant.individual**: links to practitioners and other participants in the encounter
+* **location.location**: links to locations where the encounter occurred
+* **diagnosis.condition**: links to condition outcomes from the encounter
+
+For detailed information about reference table structure and indexing, see the [Reference Tables documentation](/medical-api/handling-data/schema/reference-tables).
+
+**Encounter Table:**
 
 **Primary Keys:**
 * encounter_id
 
 **Foreign Keys:**
-* person_id
+* patient_id
 
-| Column | Data Type | Description | Terminology |
-| ------ | --------- | ----------- | ----------- |
-| encounter_id | string | Unique identifier for the encounter | - |
-| person_id | string | Unique identifier for the person | - |
-| member_id | string | Unique identifier for the member | - |
-| patient_id | string | Unique identifier for the patient | - |
-| encounter_type | string | Type of encounter (e.g., inpatient, outpatient, emergency) | - |
-| encounter_class | string | Classification of the encounter | inpatient, outpatient, emergency, urgent_care |
-| encounter_start_date | date | Start date/time of the encounter | - |
-| encounter_end_date | date | End date/time of the encounter | - |
-| admission_date | date | Date of admission for inpatient encounters | - |
-| discharge_date | date | Date of discharge for inpatient encounters | - |
-| facility_id | string | Identifier for the healthcare facility | - |
-| facility_name | string | Name of the healthcare facility | - |
-| facility_type | string | Type of healthcare facility | hospital, clinic, urgent_care |
-| provider_id | string | Identifier for the primary provider | - |
-| provider_name | string | Name of the primary provider | - |
-| provider_type | string | Type of provider | physician, nurse, specialist |
-| diagnosis_primary | string | Primary diagnosis code | ICD-9-CM, ICD-10-CM |
-| diagnosis_secondary | string | Secondary diagnosis codes | ICD-9-CM, ICD-10-CM |
-| procedure_primary | string | Primary procedure code | CPT, HCPCS, ICD-9-CM, ICD-10-CM |
-| procedure_secondary | string | Secondary procedure codes | CPT, HCPCS, ICD-9-CM, ICD-10-CM |
-| total_charge_amount | decimal | Total amount charged for the encounter | - |
-| total_paid_amount | decimal | Total amount paid for the encounter | - |
-| copay_amount | decimal | Copay amount for the encounter | - |
-| deductible_amount | decimal | Deductible amount for the encounter | - |
-| coinsurance_amount | decimal | Coinsurance amount for the encounter | - |
-| discharge_disposition | string | Discharge disposition | home, skilled_nursing, hospice |
-| length_of_stay | integer | Length of stay in days | - |
-| emergency_indicator | boolean | Whether this was an emergency encounter | - |
-| urgent_indicator | boolean | Whether this was an urgent encounter | - |
-| data_source | string | Source of the encounter data | claims, clinical, ehr |
-| source_code | string | Original code from the source system | - |
-| normalized_code | string | Standardized/normalized code | - |
-| source_system | string | System that provided the encounter data | - |
-| source_table | string | Table in the source system | - |
-| source_id | string | Identifier from the source system | - |
-| ingestion_date | timestamp | Date when the data was ingested | - |
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| encounter_id | varchar | Unique identifier for the encounter |
+| patient_id | varchar | Unique identifier for the patient |
+| status | varchar | Status of the encounter. Possible values:<br/>– <code>planned</code>: The encounter has not yet started.<br/>– <code>arrived</code>: The patient is present for the encounter, but the encounter has not yet begun.<br/>– <code>triaged</code>: The patient has been assessed for the priority of care.<br/>– <code>in-progress</code>: The encounter has begun and the patient is present.<br/>– <code>onleave</code>: The patient has temporarily left, but is expected to return.<br/>– <code>finished</code>: The encounter has ended.<br/>– <code>cancelled</code>: The encounter has been cancelled before it started.<br/>– <code>entered-in-error</code>: The encounter was entered in error and should not be considered valid.<br/>– <code>unknown</code>: The status of the encounter is unknown or cannot be determined.|
+| start_date | date | Start date of the encounter |
+| end_date | date | End date of the encounter |
+| length_of_stay | integer | Length of stay in days |
+| act_code | varchar | ACT code for encounter class |
+| act_display | varchar | Human-readable description of ACT code |
+| source_class_code | varchar | Source class code for encounter |
+| source_class_display | varchar | Human-readable description of source class |
+| source_class_system | varchar | Original class system from source system |
+| type_hl7_code | varchar | HL7 encounter type code |
+| type_hl7_display | varchar | Human-readable description of HL7 encounter type |
+| source_type_code | varchar | Original type code from source system |
+| source_type_display | varchar | Original type display from source system |
+| source_type_system | varchar | Original type system from source system |
+| discharge_disposition_hl7_code | varchar | HL7 discharge disposition code |
+| discharge_disposition_hl7_display | varchar | Human-readable description of discharge disposition |
+| data_source | varchar | Source of the encounter data |

@@ -17,11 +17,13 @@ import {
   dangerouslyAddEntriesToBundle,
 } from "../../external/fhir/bundle/bundle";
 import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
+import { normalize } from "../../external/fhir/consolidated/normalize";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
 import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
 import { getBundleResources as getPharmacyResources } from "../../external/surescripts/command/bundle/get-bundle";
 import { getBundleResources as getLabResources } from "../../external/quest/command/bundle/get-bundle";
+import { getBundleResources as getDataExtractionResources } from "../../sde/command/bundle/get-bundles";
 import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { processAsyncError } from "../../util/error/shared";
@@ -77,6 +79,7 @@ export async function createConsolidatedFromConversions({
     docRefs,
     pharmacyResources,
     labResources,
+    dataExtractionResources,
     adtSourcedResources,
     isAiBriefFeatureFlagEnabled,
   ] = await Promise.all([
@@ -84,6 +87,7 @@ export async function createConsolidatedFromConversions({
     getDocumentReferences({ cxId, patientId }),
     getPharmacyResources({ cxId, patientId }),
     getLabResources({ cxId, patientId }),
+    getDataExtractionResources({ cxId, patientId }),
     getAllAdtSourcedResources({ cxId, patientId }),
     isAiBriefFeatureFlagEnabledForCx(cxId),
   ]);
@@ -96,6 +100,7 @@ export async function createConsolidatedFromConversions({
     ...docRefsWithUpdatedMeta.map(buildBundleEntry),
     ...pharmacyResources,
     ...labResources,
+    ...dataExtractionResources,
     ...adtSourcedResources,
     patientEntry,
   ];
@@ -132,37 +137,26 @@ export async function createConsolidatedFromConversions({
   await dangerouslyDeduplicate({ cxId, patientId, bundle });
   log(`...done, from ${lengthWithDups} to ${bundle.entry?.length} resources`);
 
+  log(`Normalizing consolidated bundle...`);
+  const normalizedBundle = await normalize({ cxId, patientId, bundle });
+
   // TODO This whole section with AI-related logic should be moved to the `generateAiBriefBundleEntry`.
   log(
     `isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled} useCachedAiBrief: ${useCachedAiBrief}`
   );
   const shouldGenerateAiBrief =
-    isAiBriefFeatureFlagEnabled && !useCachedAiBrief && bundle.entry && bundle.entry.length > 0;
+    isAiBriefFeatureFlagEnabled &&
+    !useCachedAiBrief &&
+    normalizedBundle.entry &&
+    normalizedBundle.entry.length > 0;
 
   if (shouldGenerateAiBrief) {
     const aiBriefEntry = await generateAiBriefWithTimeout(
       controls =>
-        generateAiBriefBundleEntry({ bundle, cxId, patientId, log, aiBriefControls: controls }),
-      cxId,
-      patientId,
-      log
-    );
-    if (aiBriefEntry) {
-      bundle.entry?.push(aiBriefEntry);
-    }
-  }
-
-  const shouldUseCachedAiBrief =
-    isAiBriefFeatureFlagEnabled && useCachedAiBrief && bundle.entry && bundle.entry.length > 0;
-
-  //Generates AI brief if it doesn't exist in S3
-  if (shouldUseCachedAiBrief) {
-    const aiBriefEntry = await generateAiBriefWithTimeout(
-      controls =>
-        getCachedAiBriefOrGenerateNewOne({
+        generateAiBriefBundleEntry({
+          bundle: normalizedBundle,
           cxId,
           patientId,
-          bundle,
           log,
           aiBriefControls: controls,
         }),
@@ -171,7 +165,33 @@ export async function createConsolidatedFromConversions({
       log
     );
     if (aiBriefEntry) {
-      bundle.entry?.push(aiBriefEntry);
+      normalizedBundle.entry?.push(aiBriefEntry);
+    }
+  }
+
+  const shouldUseCachedAiBrief =
+    isAiBriefFeatureFlagEnabled &&
+    useCachedAiBrief &&
+    normalizedBundle.entry &&
+    normalizedBundle.entry.length > 0;
+
+  //Generates AI brief if it doesn't exist in S3
+  if (shouldUseCachedAiBrief) {
+    const aiBriefEntry = await generateAiBriefWithTimeout(
+      controls =>
+        getCachedAiBriefOrGenerateNewOne({
+          cxId,
+          patientId,
+          bundle: normalizedBundle,
+          log,
+          aiBriefControls: controls,
+        }),
+      cxId,
+      patientId,
+      log
+    );
+    if (aiBriefEntry) {
+      normalizedBundle.entry?.push(aiBriefEntry);
     }
   }
 
@@ -180,7 +200,7 @@ export async function createConsolidatedFromConversions({
   await s3Utils.uploadFile({
     bucket: destinationBucketName,
     key: dedupDestFileName,
-    file: Buffer.from(JSON.stringify(bundle)),
+    file: Buffer.from(JSON.stringify(normalizedBundle)),
     contentType: "application/json",
   });
 
@@ -199,7 +219,7 @@ export async function createConsolidatedFromConversions({
   );
 
   log(`Done`);
-  return bundle;
+  return normalizedBundle;
 }
 
 async function getConversions({
