@@ -22,12 +22,12 @@ For more information, see the [guide about Cohorts](/medical-api/handling-data/c
 `204` - No Content, upon successful delete.
 
 <ResponseExample>
-  ```javascript Metriport SDK
-  import { MetriportMedicalApi } from "@metriport/api-sdk";
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
 
-  const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-  const cohortId = "00000000-0000-0000-0000-000000000000";
-  await metriport.deleteCohort(cohortId);
-  ```
+const cohortId = "00000000-0000-0000-0000-000000000000";
+await metriport.deleteCohort(cohortId);
+```
 </ResponseExample>
