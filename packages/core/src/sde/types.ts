@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Bundle, Encounter, DiagnosticReport } from "@medplum/fhirtypes";
+import { Bundle, DiagnosticReport } from "@medplum/fhirtypes";
 
 export interface ExtractionBundle {
   extractedFromDocumentId: string;
@@ -16,6 +16,6 @@ export type StructuredDataExtractionRequest = z.infer<typeof structuredDataExtra
 
 export interface ExtractionSource {
   documentId: string;
-  resource: Encounter | DiagnosticReport;
+  resource: DiagnosticReport;
   textContent: string;
 }
