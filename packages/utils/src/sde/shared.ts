@@ -47,7 +47,7 @@ export function listLocalCustomerIds(): string[] {
 }
 
 export function listLocalPatientIds(cxId: string): string[] {
-  const localDirectoryPath = getLocalDirectoryPath(`customer/${cxId}`);
+  const localDirectoryPath = getLocalDirectoryPath(`source/${cxId}`);
   return fs.readdirSync(localDirectoryPath);
 }
 

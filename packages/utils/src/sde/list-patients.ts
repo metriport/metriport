@@ -37,9 +37,12 @@ export async function listPatients({
   console.log(`Found ${patientIds.length} patients`);
 
   const localPatientIds = listLocalPatientIds(cxId);
+  const patientIdSet = new Set(patientIds);
+
+  const existingPatientIds = localPatientIds.filter(id => patientIdSet.has(id));
   console.log(
-    `Found ${localPatientIds.length} local patients downloaded (${Math.round(
-      (localPatientIds.length / patientIds.length) * 100
+    `Found ${existingPatientIds.length} patients with source documents (${Math.round(
+      (existingPatientIds.length / patientIds.length) * 100
     )}%)`
   );
 }
