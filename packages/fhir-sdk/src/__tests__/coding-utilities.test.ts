@@ -332,6 +332,41 @@ describe("Coding System Utilities", () => {
         expect(obs?.code).toBeDefined();
         expect(obs!.code!.hasLoinc()).toBe(false);
       });
+
+      it("should not mistake Identifier for Coding", () => {
+        const identifierBundle: Bundle = {
+          resourceType: "Bundle",
+          type: "collection",
+          entry: [
+            {
+              resource: {
+                resourceType: "Patient",
+                id: "patient-with-identifier",
+                identifier: [
+                  {
+                    use: "official",
+                    system: "http://hospital.example.org",
+                    value: "12345",
+                  },
+                ],
+              },
+            },
+          ],
+        };
+        const identifierSdk = FhirBundleSdk.createSync(identifierBundle);
+        const patient = identifierSdk.getPatientById("patient-with-identifier");
+        expect(patient?.identifier).toBeDefined();
+
+        // Identifier should NOT have Coding methods
+        const identifier = patient!.identifier![0] as any;
+        expect(typeof identifier.isLoinc).toBe("undefined");
+        expect(typeof identifier.matchesCode).toBe("undefined");
+
+        // Identifier should keep its original properties
+        expect(identifier.system).toBe("http://hospital.example.org");
+        expect(identifier.value).toBe("12345");
+        expect(identifier.use).toBe("official");
+      });
     });
   });
 

@@ -1,5 +1,5 @@
 import { inspect } from "util";
-import { Resource, Coding, CodeableConcept } from "@medplum/fhirtypes";
+import { Resource } from "@medplum/fhirtypes";
 import {
   Smart,
   getReferenceField,
@@ -7,38 +7,13 @@ import {
   REFERENCE_METHOD_MAPPING,
 } from "../types/smart-resources";
 import { ReverseReferenceOptions } from "../types/sdk-types";
-import { createSmartCoding, createSmartCodeableConcept } from "./coding-utilities";
+import {
+  createSmartCoding,
+  createSmartCodeableConcept,
+  isCoding,
+  isCodeableConcept,
+} from "./coding-utilities";
 import { createTransparentProxy } from "./transparent-proxy";
-
-/**
- * Type guard to check if a value is a CodeableConcept object
- * Must check this BEFORE isCoding since both can have overlapping properties
- */
-function isCodeableConcept(value: unknown): value is CodeableConcept {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    !Array.isArray(value) &&
-    ("coding" in value || "text" in value) &&
-    // Exclude Reference objects which also have optional text
-    !("reference" in value)
-  );
-}
-
-/**
- * Type guard to check if a value is a Coding object
- * Check for Coding-specific properties and exclude CodeableConcept
- */
-function isCoding(value: unknown): value is Coding {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    !Array.isArray(value) &&
-    ("system" in value || "display" in value) &&
-    // Make sure it's not a CodeableConcept
-    !("coding" in value || "text" in value)
-  );
-}
 
 /**
  * Navigate through a nested path in a resource to get the value at that path.

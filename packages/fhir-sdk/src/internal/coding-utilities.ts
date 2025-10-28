@@ -14,6 +14,54 @@ const smartCodingCache = new WeakMap<Coding, SmartCoding>();
 const smartCodeableConceptCache = new WeakMap<CodeableConcept, SmartCodeableConcept>();
 
 /**
+ * Type guard to check if a value is an Identifier object
+ * Identifiers have system like Coding, but also have use/value/period/assigner
+ * We check for system AND at least one Identifier-specific property to avoid false positives
+ */
+export function isIdentifier(value: unknown): value is import("@medplum/fhirtypes").Identifier {
+  if (typeof value !== "object" || value === null || Array.isArray(value) || !("system" in value)) {
+    return false;
+  }
+
+  // Must have system (shared with Coding) AND at least one Identifier-specific property
+  return "use" in value || "assigner" in value || ("value" in value && "period" in value);
+}
+
+/**
+ * Type guard to check if a value is a CodeableConcept object
+ * Must check this BEFORE isCoding since both can have overlapping properties
+ */
+export function isCodeableConcept(value: unknown): value is CodeableConcept {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    ("coding" in value || "text" in value) &&
+    // Exclude Reference objects which also have optional text
+    !("reference" in value) &&
+    // Exclude Identifier objects
+    !isIdentifier(value)
+  );
+}
+
+/**
+ * Type guard to check if a value is a Coding object
+ * Check for Coding-specific properties and exclude CodeableConcept and Identifier
+ */
+export function isCoding(value: unknown): value is Coding {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    ("system" in value || "display" in value) &&
+    // Make sure it's not a CodeableConcept
+    !("coding" in value || "text" in value) &&
+    // Make sure it's not an Identifier (which also has system)
+    !isIdentifier(value)
+  );
+}
+
+/**
  * Helper function to check if a coding belongs to a specific system
  */
 function isSystem(coding: Coding, systemUrl: string): boolean {
