@@ -54,7 +54,9 @@ describe("validateMonitoringSettingsForCx", () => {
 
     it("validates successfully when ADT monitoring is enabled", async () => {
       const monitoring: Partial<MonitoringSettings> = {
-        adt: true,
+        adt: {
+          enabled: true,
+        },
       };
       await expect(
         validateMonitoringSettingsForCx(cxId, monitoring, mockLog)

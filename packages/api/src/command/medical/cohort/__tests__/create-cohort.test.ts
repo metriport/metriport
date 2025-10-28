@@ -68,7 +68,8 @@ describe("createCohort", () => {
         cxId,
         name: faker.word.noun(),
         color: DEFAULT_COLOR,
-        settings: DEFAULT_SETTINGS,
+        settings: DEFAULT_SETTINGS, 
+        description: "",
       };
 
       const result = await createCohort(cohortData);
@@ -109,6 +110,7 @@ describe("createCohort", () => {
         name: "existing-cohort",
         color: DEFAULT_COLOR,
         settings: DEFAULT_SETTINGS,
+        description: "",
       };
 
       await expect(createCohort(cohortData)).rejects.toThrow(
@@ -135,9 +137,10 @@ describe("createCohort", () => {
         cxId,
         name: faker.word.noun(),
         color: DEFAULT_COLOR,
+        description: "",
         settings: {
           monitoring: {
-            adt: false,
+            adt: { enabled: false },
             hie: { enabled: true, frequency: "monthly" },
             pharmacy: {
               notifications: true,
