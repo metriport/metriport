@@ -2,4 +2,9 @@
   Confirmation message indicating the operation was successful.
 </ResponseField>
 
-<Snippet file="cohort-with-details-response.mdx" />
+<ResponseField name="cohort" type="cohort" required>
+  The cohort details.
+  <Expandable title="Cohort properties">
+    <Snippet file="cohort-response.mdx" />
+  </Expandable>
+</ResponseField>
