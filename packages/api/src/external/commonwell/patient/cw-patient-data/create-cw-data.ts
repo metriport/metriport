@@ -1,8 +1,9 @@
+import { CwLinkV2 } from "@metriport/commonwell-sdk/models/patient";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { executeOnDBTx } from "../../../../models/transaction-wrapper";
 import { CwPatientDataModel } from "../../../commonwell/models/cw-patient-data";
 import { getCwPatientData } from "./get-cw-data";
-import { CwLink, CwPatientData, CwPatientDataCreate } from "./shared";
+import { CwPatientData, CwPatientDataCreateV2 } from "./shared";
 import { updateCwPatientDataWithinDBTx } from "./update-cw-data";
 
 export async function createOrUpdateCwPatientData({
@@ -13,13 +14,13 @@ export async function createOrUpdateCwPatientData({
 }: {
   id: string;
   cxId: string;
-  cwLinks: CwLink[];
+  cwLinks: CwLinkV2[];
   requestLinksDemographics?: {
     requestId: string;
     linksDemographics: LinkDemographics[];
   };
 }): Promise<CwPatientData> {
-  const cwPatientData: CwPatientDataCreate = {
+  const cwPatientData: CwPatientDataCreateV2 = {
     id,
     cxId,
     data: {

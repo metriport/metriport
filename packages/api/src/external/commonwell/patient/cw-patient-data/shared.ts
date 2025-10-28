@@ -19,6 +19,21 @@ export interface CwPatientDataCreatePartial extends BaseDomainCreate {
   data: Partial<CwData>;
 }
 
+export type CwDataV2 = {
+  links: CwLinkV2[];
+  linkDemographicsHistory?: LinkDemographicsHistory;
+};
+
+export interface CwPatientDataCreateV2 extends BaseDomainCreate {
+  cxId: string;
+  data: CwDataV2;
+}
+
+export interface CwPatientDataCreatePartialV2 extends BaseDomainCreate {
+  cxId: string;
+  data: Partial<CwDataV2>;
+}
+
 export interface CwPatientData extends BaseDomain, CwPatientDataCreate {}
 
 export type CwLinkV1 = LocalNetworkLink & {

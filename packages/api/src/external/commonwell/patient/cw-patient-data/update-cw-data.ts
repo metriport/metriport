@@ -1,3 +1,4 @@
+import { CwLinkV2 } from "@metriport/commonwell-sdk/models/patient";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { uniqBy } from "lodash";
 import { Transaction } from "sequelize";
@@ -6,19 +7,17 @@ import { executeOnDBTx } from "../../../../models/transaction-wrapper";
 import { CwPatientDataModel } from "../../../commonwell/models/cw-patient-data";
 import { getLinkOid } from "../../../commonwell/shared";
 import { getCwPatientDataOrFail } from "./get-cw-data";
-import { CwLink, CwPatientData, CwPatientDataCreatePartial, isCwLinkV1 } from "./shared";
-export type CwPatientDataUpdate = CwPatientDataCreatePartial & BaseUpdateCmdWithCustomer;
+import { CwData, CwLink, CwPatientData, CwPatientDataCreatePartialV2, isCwLinkV1 } from "./shared";
+export type CwPatientDataUpdate = CwPatientDataCreatePartialV2 & BaseUpdateCmdWithCustomer;
 
 export async function updateCwPatientData({
   id,
   cxId,
-  cwLinks,
   cwLinksToInvalidate,
   requestLinksDemographics,
 }: {
   id: string;
   cxId: string;
-  cwLinks?: CwLink[];
   cwLinksToInvalidate?: CwLink[];
   requestLinksDemographics?: {
     requestId: string;
@@ -29,7 +28,6 @@ export async function updateCwPatientData({
     id,
     cxId,
     data: {
-      ...(cwLinks && { links: cwLinks }),
       ...(requestLinksDemographics && {
         linkDemographicsHistory: {
           [requestLinksDemographics.requestId]: requestLinksDemographics.linksDemographics,
@@ -62,34 +60,47 @@ export async function updateCwPatientDataWithinDBTx(
   transaction: Transaction,
   linksToInvalidate?: CwLink[]
 ): Promise<CwPatientDataModel> {
-  const { data: newData } = update;
-  const updatedLinks = [...(newData.links ?? []), ...existing.data.links];
+  const updatePayload = prepareCwPatientDataUpdatePayload(update, existing, linksToInvalidate);
+
+  return existing.update(
+    {
+      data: updatePayload,
+    },
+    { transaction }
+  );
+}
+
+export function prepareCwPatientDataUpdatePayload(
+  update: CwPatientDataUpdate,
+  existing: CwPatientDataModel,
+  linksToInvalidate?: CwLink[]
+): CwData {
+  const { data: newLinks } = update;
+
+  // Remove all CW v1 links from existing data, keep only v2 links
+  const existingV2Links = existing.data.links.filter(link => !isCwLinkV1(link)) as CwLinkV2[];
+
+  // Merge new v2 links with existing v2 links only (newLinks.links should only contain v2 links)
+  const updatedLinks: CwLinkV2[] = [...(newLinks?.links ?? []), ...existingV2Links];
 
   const validLinks = linksToInvalidate
     ? updatedLinks.filter(link => !isContainedAt(link, linksToInvalidate))
     : updatedLinks;
 
-  const uniqueUpdatedLinks = uniqBy(validLinks, function (nl) {
-    if (isCwLinkV1(nl)) return nl.patient?.provider?.reference;
-    return nl.Patient?.managingOrganization?.identifier[0]?.system;
-  });
+  const uniqueUpdatedLinks = uniqBy(validLinks, getLinkOrganizationId);
   const updatedLinkDemographicsHistory = {
     ...existing.data.linkDemographicsHistory,
-    ...newData.linkDemographicsHistory,
+    ...(newLinks?.linkDemographicsHistory ?? {}),
   };
-  return existing.update(
-    {
-      data: {
-        ...existing.data,
-        ...newData,
-        links: uniqueUpdatedLinks,
-        ...(newData.linkDemographicsHistory && {
-          linkDemographicsHistory: updatedLinkDemographicsHistory,
-        }),
-      },
-    },
-    { transaction }
-  );
+
+  return {
+    ...existing.data,
+    ...newLinks,
+    links: uniqueUpdatedLinks,
+    ...(newLinks?.linkDemographicsHistory && {
+      linkDemographicsHistory: updatedLinkDemographicsHistory,
+    }),
+  };
 }
 
 function isContainedAt(link: CwLink, linksArray: CwLink[]): boolean {
@@ -100,4 +111,8 @@ function isContainedAt(link: CwLink, linksArray: CwLink[]): boolean {
   });
 
   return containsLink;
+}
+
+export function getLinkOrganizationId(link: CwLinkV2): string | undefined {
+  return link.Patient?.managingOrganization?.identifier[0]?.system;
 }
