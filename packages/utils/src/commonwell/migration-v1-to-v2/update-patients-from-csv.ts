@@ -9,6 +9,7 @@ import { Command } from "commander";
 import csvParser from "csv-parser";
 import { createReadStream } from "fs";
 import { elapsedTimeAsStr } from "../../shared/duration";
+import readline from "readline/promises";
 
 /**
  * This script reads a CSV file with patient data and calls the CommonWell update endpoint
@@ -114,6 +115,8 @@ async function main() {
       console.log(`  Customer ${cxId}: ${patientIds.length} patients`);
     }
 
+    await displayWarningAndConfirmation(customerPatients);
+
     // STEP 3: Call CommonWell update endpoint for each customer
     console.log("STEP 3: Calling CommonWell update endpoints...");
     const results = await executeAsynchronously(
@@ -203,6 +206,23 @@ async function updatePatientsForCustomer(
     log(errorMsg);
     throw new MetriportError(errorMsg, error);
   }
+}
+
+async function displayWarningAndConfirmation(customerPatients: CustomerPatients[]): Promise<void> {
+  const amountOfPatients = customerPatients.reduce((sum, cp) => sum + cp.patientIds.length, 0);
+  const msg = `You are about to update ${amountOfPatients} patients of ${customerPatients.length} customers!`;
+  console.log(msg);
+  console.log("Are you sure you want to proceed?");
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  const answer = await rl.question("Type 'yes' to proceed: ");
+  if (answer !== "yes") {
+    console.log("Aborting...");
+    process.exit(0);
+  }
+  rl.close();
 }
 
 if (require.main === module) {
