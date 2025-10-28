@@ -45,7 +45,7 @@ export function applyCohortDtoToPayload(data: CohortWithSize): CohortWithSizeDTO
 }
 
 /** ---------------------------------------------------------------------------
- * POST /medical/v1/cohort
+ * POST cohort
  *
  * Creates a new cohort.
  *
@@ -75,7 +75,7 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * PUT /medical/v1/cohort/:id
+ * PUT cohort/:id
  *
  * Updates the settings of an existing cohort. This endpoint will
  *
@@ -102,7 +102,7 @@ router.put(
 );
 
 /** ---------------------------------------------------------------------------
- * DELETE /medical/v1/cohort/:id
+ * DELETE cohort/:id
  *
  * Deletes a cohort. All associated patients must be removed first.
  *
@@ -127,7 +127,7 @@ router.delete(
 );
 
 /** ---------------------------------------------------------------------------
- * GET /medical/v1/cohort
+ * GET cohort
  *
  * Returns all cohorts defined by the CX.
  *
@@ -148,7 +148,7 @@ router.get(
 );
 
 /** ---------------------------------------------------------------------------
- * GET /medical/v1/cohort/:id
+ * GET cohort/:id
  *
  * Returns cohort with additional details; the count and IDs of the patients assigned to it.
  *
@@ -170,7 +170,7 @@ router.get(
 );
 
 /** ---------------------------------------------------------------------------
- * GET /medical/v1/cohort/:id/patient
+ * GET cohort/:id/patient
  *
  * Returns patients assigned to a cohort with pagination support.
  *
@@ -224,9 +224,9 @@ router.get(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /medical/v1/cohort/:id/patient
+ * POST cohort/:id/patient
  *
- * Add patients to a cohort.
+ * Adds patients to a cohort. If the allPatients flag is true, all patients will be added to the cohort. Returns the cohort.
  *
  * @param req.param.id The ID of the cohort to assign patients to.
  * @param req.body.patientIds The list of patient IDs to assign. Mutually exclusive with the all flag.
@@ -268,7 +268,7 @@ router.post(
 );
 
 /** ---------------------------------------------------------------------------
- * DELETE /medical/v1/cohort/:id/patient
+ * DELETE cohort/:id/patient
  *
  * Remove patients from a cohort.
  *

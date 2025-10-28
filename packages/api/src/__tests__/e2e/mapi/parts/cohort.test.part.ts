@@ -128,7 +128,7 @@ export function runCohortTestsPart2(e2e: E2eContext) {
     const cohort = e2e.cohort;
     if (!cohort) throw new Error("Missing cohort");
     await medicalApi.deleteCohort(cohort.id);
-    expect(async () => medicalApi.getCohort(cohort.id)).rejects.toThrow(
+    await expect(medicalApi.getCohort(cohort.id)).rejects.toThrow(
       "Request failed with status code 404"
     );
   });

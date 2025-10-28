@@ -50,7 +50,7 @@ export async function updateCohort({
 
   const [updatedCohort, size] = await Promise.all([
     oldCohort.update(newData),
-    getCohortSize({ cohortId: id, cxId }),
+    getCohortSize({ cohortId: id }),
   ]);
 
   log(`Done. Updated cohort: ${JSON.stringify(updatedCohort.dataValues)}`);

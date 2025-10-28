@@ -1,71 +1,109 @@
-import { DEFAULT_SETTINGS } from "@metriport/shared/domain/cohort";
-import { mergeCohortsSettings } from "../get-settings";
+import { mergeOldWithNewCohortSettings } from "../get-settings";
+import type { CohortSettings, AllOptionalCohortSettings } from "@metriport/shared/domain/cohort";
 
 beforeEach(() => {
   jest.restoreAllMocks();
 });
 
-describe("patient settings", () => {
-  describe("mergeCohortSettings", () => {
-    const settingsWithMostRecentScheduleEnabled = {
+describe("mergeOldWithNewCohortSettings", () => {
+  const old: CohortSettings = {
+    monitoring: {
+      adt: { enabled: false },
+      hie: { enabled: false, frequency: "monthly" },
+      pharmacy: {
+        notifications: false,
+        schedule: { enabled: false, frequency: "monthly" },
+      },
+      laboratory: {
+        notifications: false,
+        schedule: { enabled: false, frequency: "monthly" },
+      },
+    },
+  };
+
+  it("returns old when new is empty", () => {
+    const out = mergeOldWithNewCohortSettings(old, {} as AllOptionalCohortSettings);
+    expect(out).toEqual(old);
+  });
+
+  it("overrides provided new values and preserves others", () => {
+    const newVals: AllOptionalCohortSettings = {
       monitoring: {
-        adt: true,
-        hie: { enabled: true, frequency: "weekly" as const },
-        pharmacy: {
-          notifications: false,
-          schedule: { enabled: true, frequency: "weekly" as const },
-        },
-        laboratory: {
-          notifications: false,
-          schedule: { enabled: true, frequency: "weekly" as const },
-        },
+        pharmacy: { notifications: true },
       },
     };
 
-    const settingsWithNotificationsEnabled = {
+    const out = mergeOldWithNewCohortSettings(old, newVals);
+
+    expect(out).toEqual({
       monitoring: {
-        adt: true,
-        hie: { enabled: true, frequency: "monthly" as const },
+        ...old.monitoring,
         pharmacy: {
           notifications: true,
-          schedule: { enabled: false, frequency: "monthly" as const },
-        },
-        laboratory: {
-          notifications: true,
-          schedule: { enabled: false, frequency: "monthly" as const },
+          schedule: { ...old.monitoring.pharmacy.schedule },
         },
       },
-    };
-    it("Should take the most recent schedule", () => {
-      const settings = mergeCohortsSettings([
-        DEFAULT_SETTINGS,
-        settingsWithMostRecentScheduleEnabled,
-      ]);
-
-      expect(settings).toEqual(settingsWithMostRecentScheduleEnabled);
     });
+  });
 
-    it("Can't merge settings to have notifications and schedule at the same time", () => {
-      const settings = mergeCohortsSettings([
-        DEFAULT_SETTINGS,
-        settingsWithMostRecentScheduleEnabled,
-        settingsWithNotificationsEnabled,
-      ]);
+  it("deep-partial override keeps unspecified nested props", () => {
+    const newVals: AllOptionalCohortSettings = {
+      monitoring: {
+        laboratory: { schedule: { enabled: true } },
+      },
+    };
 
-      expect(settings).toEqual({
-        monitoring: {
-          adt: true,
-          hie: { enabled: true, frequency: "weekly" as const },
-          pharmacy: {
-            notifications: true,
-            schedule: { enabled: false, frequency: "weekly" as const },
-          },
-          laboratory: {
-            notifications: true,
-            schedule: { enabled: false, frequency: "weekly" as const },
+    const out = mergeOldWithNewCohortSettings(old, newVals);
+
+    expect(out).toEqual({
+      monitoring: {
+        ...old.monitoring,
+        laboratory: {
+          notifications: false,
+          schedule: {
+            enabled: true,
+            frequency: "monthly",
           },
         },
-      });
+      },
+    });
+  });
+
+  it("updates multiple fields at once (notifications and schedule can coexist)", () => {
+    const newVals: AllOptionalCohortSettings = {
+      monitoring: {
+        pharmacy: {
+          notifications: true,
+          schedule: { enabled: true, frequency: "weekly" },
+        },
+      },
+    };
+
+    const out = mergeOldWithNewCohortSettings(old, newVals);
+
+    expect(out).toEqual({
+      monitoring: {
+        ...old.monitoring,
+        pharmacy: {
+          notifications: true,
+          schedule: { enabled: true, frequency: "weekly" },
+        },
+      },
+    });
+  });
+
+  it("replaces values when new provides them (e.g., HIE frequency)", () => {
+    const newVals: AllOptionalCohortSettings = {
+      monitoring: { hie: { enabled: true, frequency: "weekly" } },
+    };
+
+    const out = mergeOldWithNewCohortSettings(old, newVals);
+
+    expect(out).toEqual({
+      monitoring: {
+        ...old.monitoring,
+        hie: { enabled: true, frequency: "weekly" },
+      },
     });
   });
 });

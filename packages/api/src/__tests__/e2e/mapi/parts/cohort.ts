@@ -14,5 +14,6 @@ export function validateCohort(cohort: CohortWithSizeDTO) {
   expect(cohort.description).toBeDefined();
   expect(cohort.settings).toBeTruthy();
   expect(cohort.size).toBeDefined();
+  expect(cohort.color).toBeDefined();
   expect(() => cohortSettingsSchema.parse(cohort.settings)).not.toThrow();
 }

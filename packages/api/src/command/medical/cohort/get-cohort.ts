@@ -25,7 +25,7 @@ export async function getCohortWithSizeOrFail({
 }: GetCohortProps): Promise<CohortWithSize> {
   const [cohort, size] = await Promise.all([
     getCohortOrFail({ id, cxId }),
-    getCohortSize({ cohortId: id, cxId }),
+    getCohortSize({ cohortId: id }),
   ]);
   if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id });
 
@@ -39,7 +39,7 @@ export async function getCohorts({ cxId }: { cxId: string }): Promise<CohortWith
 
   const cohortsWithSizes = await Promise.all(
     cohorts.map(async cohort => {
-      const size = await getCohortSize({ cohortId: cohort.id, cxId });
+      const size = await getCohortSize({ cohortId: cohort.id });
       return {
         ...cohort.dataValues,
         size,
@@ -72,7 +72,7 @@ export async function getCohortsForPatient({
   // Get sizes for all cohorts in parallel
   const cohortsWithSizes = await Promise.all(
     cohorts.map(async cohort => {
-      const size = await getCohortSize({ cohortId: cohort.id, cxId });
+      const size = await getCohortSize({ cohortId: cohort.id });
       return {
         ...cohort.dataValues,
         size,
