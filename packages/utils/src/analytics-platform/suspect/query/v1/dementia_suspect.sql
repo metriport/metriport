@@ -38,6 +38,7 @@ moca_raw AS (
     REGEXP_SUBSTR(o.VALUE, '[-+]?[0-9]*\\.?[0-9]+') AS value_token
   FROM CORE_V3.OBSERVATION o
   WHERE UPPER(o.LOINC_CODE) IN (
+    '72172-2',  -- Montreal Cognitive Assessment [MoCA]
     '72133-2',  -- Montreal Cognitive Assessment [MoCA]
     '72172-0'   -- Total score [MoCA]
   )
