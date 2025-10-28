@@ -95,10 +95,22 @@ describe("processDischargeSummaryAssociation", () => {
           {
             id: encounterId1,
             dischargeSummaryFilePath: dischargeSummaryPath1,
+            encounter: expect.objectContaining({
+              id: encounterId1,
+              period: expect.objectContaining({
+                end: encounterEndDate,
+              }),
+            }),
           },
           {
             id: encounterId2,
             dischargeSummaryFilePath: dischargeSummaryPath2,
+            encounter: expect.objectContaining({
+              id: encounterId2,
+              period: expect.objectContaining({
+                end: encounterEndDate,
+              }),
+            }),
           },
         ])
       );
@@ -147,7 +159,6 @@ describe("processDischargeSummaryAssociation", () => {
             discharge: dischargeData[0],
             status: "processing",
             reason: "No consolidated file found",
-            dischargeSummaryFilePath: "",
           },
         ],
         completed: [],
@@ -230,7 +241,6 @@ describe("processDischargeSummaryAssociation", () => {
             discharge: dischargeData[0],
             status: "processing",
             reason: "No matching encounters found",
-            dischargeSummaryFilePath: "",
           },
         ],
         completed: [],
