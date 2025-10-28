@@ -1,7 +1,6 @@
 import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@medplum/fhirtypes";
 import {
   CohortCreateInput,
-  CohortDTO,
   CohortUpdateRequest,
   CohortWithSizeDTO,
   PaginatedResponse,
@@ -723,11 +722,9 @@ export class MetriportMedicalApi {
   /**
    * Deletes an existing cohort.
    * @param id The ID of the cohort to delete.
-   * @returns The deleted cohort.
    */
   async deleteCohort(id: string): Promise<void> {
-    const resp = await this.api.delete(`${COHORT_URL}/${id}`);
-    return resp.data;
+    await this.api.delete(`${COHORT_URL}/${id}`);
   }
 
   /**
@@ -755,7 +752,7 @@ export class MetriportMedicalApi {
    * Returns all available cohorts.
    * @returns All available cohorts.
    */
-  async listCohorts(): Promise<{ cohorts: CohortDTO[] }> {
+  async listCohorts(): Promise<{ cohorts: CohortWithSizeDTO[] }> {
     const resp = await this.api.get(`${COHORT_URL}`);
     return resp.data;
   }
@@ -764,32 +761,42 @@ export class MetriportMedicalApi {
    * Add patients to a cohort.
    * @param cohortId The ID of the cohort to add patients to.
    * @param patientIds The IDs of the patients to add to the cohort.
+   * @param allPatients Property to confirm you want to assign all patients to the cohort.
    * @returns The updated cohort.
    */
   async addPatientsToCohort({
     cohortId,
     patientIds,
+    allPatients,
   }: {
     cohortId: string;
-    patientIds: string[];
-  }): Promise<void> {
-    await this.api.post(`${COHORT_URL}/${cohortId}/patient`, { patientIds });
+    patientIds?: string[];
+    allPatients?: boolean;
+  }): Promise<CohortWithSizeDTO> {
+    const body = allPatients ? { allPatients: true } : { patientIds };
+    const resp = await this.api.post(`${COHORT_URL}/${cohortId}/patient`, body);
+    return resp.data;
   }
 
   /**
    * Remove patients from a cohort.
    * @param cohortId The ID of the cohort to remove patients from.
    * @param patientIds The IDs of the patients to remove from the cohort.
+   * @param allPatients Property to confirm you want to remove all patients from the cohort.
    * @returns The updated cohort.
    */
   async removePatientsFromCohort({
     cohortId,
     patientIds,
+    allPatients,
   }: {
     cohortId: string;
-    patientIds: string[];
-  }): Promise<void> {
-    await this.api.delete(`${COHORT_URL}/${cohortId}/patient`, { data: { patientIds } });
+    patientIds?: string[];
+    allPatients?: boolean;
+  }): Promise<CohortWithSizeDTO> {
+    const body = allPatients ? { allPatients: true } : { patientIds };
+    const resp = await this.api.delete(`${COHORT_URL}/${cohortId}/patient`, { data: body });
+    return resp.data;
   }
 
   /**
@@ -801,7 +808,7 @@ export class MetriportMedicalApi {
    * - `patients` - A single page containing the patients in the cohort.
    * - `meta` - Pagination information, including how to get to the next page.
    */
-  async listPatientsInCohort({
+  async getCohortPatients({
     cohortId,
     pagination,
   }: {
@@ -817,7 +824,7 @@ export class MetriportMedicalApi {
     return resp.data;
   }
 
-  async listPatientsInCohortPage(url: string): Promise<PaginatedResponse<PatientDTO, "patients">> {
+  async getCohortPatientsPage(url: string): Promise<PaginatedResponse<PatientDTO, "patients">> {
     const resp = await this.api.get(url);
     return resp.data;
   }
@@ -827,7 +834,7 @@ export class MetriportMedicalApi {
    * @param patientId The ID of the patient.
    * @returns The list of cohorts assigned to the patient.
    */
-  async listCohortsForPatient(patientId: string): Promise<{ cohorts: CohortDTO[] }> {
+  async getCohortsForPatient(patientId: string): Promise<{ cohorts: CohortWithSizeDTO[] }> {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/cohort`);
     return resp.data;
   }
