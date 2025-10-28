@@ -299,6 +299,42 @@ const sdk2 = FhirBundleSdk.createSync(bundle); // Synchronous
 
 This is especially useful in REPL sessions where you want quick access to utility functions without creating a full SDK instance.
 
+### 8. Type Guards
+
+Filter mixed arrays of FHIR resources to specific types with full TypeScript type safety:
+
+```typescript
+import { Resource } from "@medplum/fhirtypes";
+import { isPatient, isObservation, isDiagnosticReport } from "@metriport/fhir-sdk";
+
+// Filter mixed resource arrays
+const resources: Resource[] = [
+  { resourceType: "Patient", id: "patient-1" },
+  { resourceType: "Observation", id: "obs-1", status: "final", code: { text: "test" } },
+  { resourceType: "DiagnosticReport", id: "report-1", status: "final", code: { text: "lab" } },
+];
+
+const patients = resources.filter(isPatient); // Patient[]
+const observations = resources.filter(isObservation); // Observation[]
+
+// TypeScript knows the exact type after filtering
+patients.forEach(patient => {
+  const name = patient.name; // ✅ Type-safe access to Patient fields
+});
+
+// Works with Smart resources too
+const allObs = sdk.getObservations();
+allObs.forEach(obs => {
+  if (isObservation(obs)) {
+    const subject = obs.getSubject(); // ✅ Smart methods available
+    const status = obs.status; // ✅ Observation fields available
+  }
+});
+```
+
+**Available type guards:**
+There is a type guard available for every existing FHIR resource type. If it has a medplum fhirtype, there is a type guard for it.
+
 ## Example Use Cases
 
 ### Patient Summary

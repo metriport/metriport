@@ -40,3 +40,5 @@ export {
   RiskAssessment,
   ServiceRequest,
 } from "@medplum/fhirtypes";
+
+export * from "./type-guards";
