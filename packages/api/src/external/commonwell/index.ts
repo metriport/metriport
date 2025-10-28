@@ -1,4 +1,4 @@
-import * as linkV2 from "../commonwell-v2/link";
+import * as link from "../commonwell-v2/link";
 import * as patient from "./patient/patient";
 
 const cwCommands = {
@@ -8,7 +8,8 @@ const cwCommands = {
     remove: patient.remove,
   },
   link: {
-    getV2: linkV2.get,
+    get: link.get,
+    unlink: link.unlink,
   },
 };
 
