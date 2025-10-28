@@ -435,13 +435,7 @@ describe("CarePlan Resource Support", () => {
       const carePlan = sdk.getResourceById<CarePlan>("careplan-main");
 
       expect(carePlan).toBeDefined();
-
-      // Debug: Check the raw data
-      console.log("Activity:", JSON.stringify(carePlan?.activity, null, 2));
-
       const goals = carePlan?.getActivityDetailGoal?.();
-      console.log("Goals from method:", goals);
-      console.log("Goals length:", goals?.length);
 
       expect(goals).toHaveLength(1);
       expect(goals?.[0]?.resourceType).toBe("Goal");

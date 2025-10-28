@@ -52,6 +52,10 @@ function isCoding(value: unknown): value is Coding {
  * - "hospitalization.origin" navigates to resource.hospitalization.origin
  * - Returns the single reference value
  *
+ * For deeply nested paths like "activity.detail.goal":
+ * - Flattens nested arrays that may result from navigating through multiple array levels
+ * - Returns a flat array of all references found
+ *
  * @param resource - The FHIR resource to navigate
  * @param path - Dot-separated path to the reference field
  * @returns The value at the path, which could be a reference, array of references, or undefined
@@ -74,6 +78,13 @@ function getNestedValue(resource: Resource, path: string): unknown {
     } else {
       current = current[part];
     }
+  }
+
+  // Flatten nested arrays that may result from navigating through multiple array levels
+  // For example, activity.detail.goal where activity is an array and goal is also an array
+  // This prevents [[reference]] and instead returns [reference]
+  if (Array.isArray(current) && current.some(item => Array.isArray(item))) {
+    current = current.flat();
   }
 
   return current;
