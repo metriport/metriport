@@ -46,6 +46,10 @@ export async function getCqDirectoryEntriesByManagingOrganizationIds(
 ): Promise<string[]> {
   validateTableName(tableName);
 
+  if (managingOrganizationIds.length === 0) {
+    return [];
+  }
+
   const whereConditions = managingOrganizationIds
     .map((_, index) => `managing_organization_id ilike :managingOrgId${index}`)
     .join(" OR ");
@@ -80,6 +84,10 @@ export async function getCqDirectoryEntriesBasicDetailsByIds(
   tableName: string
 ): Promise<Array<{ id: string; name: string; city: string; state: string }>> {
   validateTableName(tableName);
+
+  if (ids.length === 0) {
+    return [];
+  }
 
   const whereConditions = ids.map((_, index) => `id = :id${index}`).join(" OR ");
 

@@ -456,7 +456,15 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const tableName = getFrom("query").orFail("tableName", req);
-    const ids = getFrom("query").orFail("ids", req).split(",") as string[];
+    const ids = getFrom("query")
+      .orFail("ids", req)
+      .split(",")
+      .map(id => id.trim())
+      .filter(id => id.length > 0);
+
+    if (ids.length === 0) {
+      throw new BadRequestError("ids cannot be empty");
+    }
 
     const orgs = await getCqDirectoryEntriesBasicDetailsByIds(ids, tableName);
 
