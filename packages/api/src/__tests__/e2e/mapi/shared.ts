@@ -12,7 +12,7 @@ import {
 } from "@medplum/fhirtypes";
 import { Facility, MetriportMedicalApi, PatientDTO } from "@metriport/api-sdk";
 import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";
-import { CohortDTO } from "@metriport/shared/domain/cohort";
+import { CohortWithSizeDTO } from "@metriport/shared/domain/cohort";
 import { getCxIdFromApiKey } from "../../../routes/middlewares/auth";
 import { baseURL, testApiKey } from "../shared";
 
@@ -47,7 +47,7 @@ export type ContributedE2eContext = {
 
 export type E2eContext = {
   facility?: Facility | undefined;
-  cohort?: CohortDTO | undefined;
+  cohort?: CohortWithSizeDTO | undefined;
   patient?: PatientDTO | undefined;
   patientFhir?: PatientWithId | undefined;
   consolidated?: ConsolidatedE2eContext | undefined;
