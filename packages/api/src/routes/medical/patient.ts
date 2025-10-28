@@ -57,6 +57,7 @@ import {
 } from "./schemas/patient";
 import { setPatientFacilitiesSchema } from "./schemas/patient-facilities";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
+import { applyCohortDtoToPayload } from "./cohort";
 
 const router = Router();
 
@@ -653,7 +654,7 @@ router.get(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /patient/:id/cohorts
+ * POST /patient/:id/cohort
  *
  * Add a patient to multiple cohorts.
  *
@@ -674,7 +675,9 @@ router.post(
       cohortIds,
     });
 
-    return res.sendStatus(status.NO_CONTENT);
+    const cohortsWithSizes = await getCohortsForPatient({ cxId, patientId });
+
+    return res.status(status.OK).json({ cohorts: cohortsWithSizes.map(applyCohortDtoToPayload) });
   })
 );
 

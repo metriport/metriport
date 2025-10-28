@@ -1,10 +1,10 @@
 import {
-  Cohort,
   cohortCreateSchema,
-  CohortDTO,
   cohortPatientListQuerySchema,
   cohortPatientMaxPageSize,
   cohortUpdateSchema,
+  CohortWithSize,
+  CohortWithSizeDTO,
   dtoFromCohort,
 } from "@metriport/shared/domain/cohort";
 import { Request, Response } from "express";
@@ -21,7 +21,10 @@ import {
   getPatientsInCohort,
   getPatientsInCohortCount,
 } from "../../command/medical/cohort/patient-cohort/get-patients-in-cohort";
-import { removePatientsFromCohort } from "../../command/medical/cohort/patient-cohort/remove-patients-from-cohort";
+import {
+  removeAllPatientsFromCohort,
+  removePatientsFromCohort,
+} from "../../command/medical/cohort/patient-cohort/remove-patients-from-cohort";
 import { updateCohort } from "../../command/medical/cohort/update-cohort";
 import { getETag } from "../../shared/http";
 import { handleParams } from "../helpers/handle-params";
@@ -30,19 +33,15 @@ import { paginatedV2 } from "../pagination-v2";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
-import { allOrSubsetPatientIdsSchema, patientIdsSchema } from "./schemas/shared";
+import { allOrSubsetPatientIdsSchema } from "./schemas/shared";
 
 const router = Router();
 
-function applyCohortDtoToPayload({ cohort }: { cohort: Cohort }): { cohort: CohortDTO } {
-  const dto = dtoFromCohort(cohort);
+export function applyCohortDtoToPayload(data: CohortWithSize): CohortWithSizeDTO {
+  const { size, ...cohort } = data;
+  const cohortDto = dtoFromCohort(cohort);
 
-  // Remove override field when empty to now show random CXs about this.
-  if (!dto.settings.monitoring.adt.overrides?.length) {
-    delete (dto.settings.monitoring.adt as { overrides?: string[] }).overrides;
-  }
-
-  return { cohort: dto };
+  return { ...cohortDto, size };
 }
 
 /** ---------------------------------------------------------------------------
@@ -65,7 +64,13 @@ router.post(
       ...data,
     });
 
-    return res.status(status.CREATED).json({ cohort: dtoFromCohort(cohort), size: 0 });
+    // In the current implementation size will always be 0. But we'll keep the logic here for future use.
+    const size = await getPatientsInCohortCount({
+      cohortId: cohort.id,
+      cxId,
+    });
+
+    return res.status(status.CREATED).json(applyCohortDtoToPayload({ ...cohort, size }));
   })
 );
 
@@ -85,7 +90,6 @@ router.put(
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
     const data = cohortUpdateSchema.parse(req.body);
-
     const cohortWithSize = await updateCohort({
       ...getETag(req),
       ...data,
@@ -138,7 +142,7 @@ router.get(
     const cohorts = await getCohorts({ cxId });
 
     return res.status(status.OK).json({
-      cohorts: cohorts.map(dtoFromCohort),
+      cohorts: cohorts.map(applyCohortDtoToPayload),
     });
   })
 );
@@ -280,13 +284,20 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const cohortId = getUUIDFrom("params", req, "id").orFail();
-    const patientIds = patientIdsSchema.parse(req.body.patientIds);
+    const body = allOrSubsetPatientIdsSchema.parse(req.body);
 
-    await removePatientsFromCohort({
-      cohortId,
-      cxId,
-      patientIds,
-    });
+    if ("allPatients" in body) {
+      await removeAllPatientsFromCohort({
+        cohortId,
+        cxId,
+      });
+    } else {
+      await removePatientsFromCohort({
+        cohortId,
+        cxId,
+        patientIds: body.patientIds,
+      });
+    }
 
     const cohortWithSize = await getCohortWithSizeOrFail({
       id: cohortId,

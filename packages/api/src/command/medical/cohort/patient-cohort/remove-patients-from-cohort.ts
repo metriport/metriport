@@ -22,3 +22,18 @@ export async function removePatientsFromCohort({
 
   return;
 }
+
+export async function removeAllPatientsFromCohort({
+  cohortId,
+  cxId,
+}: {
+  cohortId: string;
+  cxId: string;
+}): Promise<void> {
+  const { log } = out(`removeAllPatientsFromCohort - cx ${cxId}, cohort ${cohortId}`);
+
+  const deletedCount = await PatientCohortModel.destroy({
+    where: { cohortId },
+  });
+  log(`Removed ${deletedCount} patients from cohort ${cohortId}`);
+}

@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { BaseDomain } from "./base-domain";
 import { createQueryMetaSchemaV2 } from "./pagination-v2";
-import { USState } from "./address/state";
 
 // ### Constants ###
 export const COHORT_COLORS = [
@@ -39,7 +38,6 @@ export const DEFAULT_NOTIFICATION_SCHEDULE: NotificationSchedule = {
 
 const DEFAULT_ADT: AdtSchema = {
   enabled: false,
-  overrides: [],
 };
 
 const DEFAULT_MONITORING: MonitoringSettings = {
@@ -74,24 +72,8 @@ export const notificationScheduleSchema = z.object({
   schedule: scheduleSchema,
 });
 
-const adtOverrideSchema = z.array(
-  z.string().refine(
-    s => {
-      const parts = s.split("_");
-      if (parts.length !== 2) return false;
-      const [, stateCode] = parts;
-      return Object.values(USState).includes(stateCode as USState);
-    },
-    {
-      message:
-        "Invalid ADT override format. Must be 'HieName_STATE' where STATE is a valid 2-letter state code. Example: Bamboo_CA",
-    }
-  )
-);
-
 const adtSchema = z.object({
   enabled: z.boolean(),
-  overrides: adtOverrideSchema,
 });
 
 export const monitoringSchema = z
@@ -153,39 +135,14 @@ export const cohortCreateSchema = baseCohortSchema.extend({
 export type CohortCreateInput = z.input<typeof cohortCreateSchema>;
 
 // > Update Schemas
-const allOptionalScheduleSchema = z.object({
-  enabled: z.boolean().optional(),
-  frequency: frequencySchema.optional(),
-});
-
-const allOptionalNotificationScheduleSchema = z.object({
-  notifications: z.boolean().optional(),
-  schedule: allOptionalScheduleSchema.optional(),
-});
-
-const allOptionalMonitoringSchema = z
-  .object({
-    adt: adtSchema.optional(),
-    hie: allOptionalScheduleSchema.optional(),
-    pharmacy: allOptionalNotificationScheduleSchema.optional(),
-    laboratory: allOptionalNotificationScheduleSchema.optional(),
-  })
-  .strict();
-
-const allOptionalCohortSettingsSchema = z
-  .object({
-    monitoring: allOptionalMonitoringSchema.optional(),
-  })
-  .strict();
+const allOptionalMonitoringSchema = monitoringSchema.deepPartial();
+const allOptionalCohortSettingsSchema = cohortSettingsSchema.deepPartial();
 
 export const cohortUpdateSchema = z.object({
-  name: z
-    .string()
-    .transform(name => normalizeCohortName(name))
-    .optional(),
+  name: z.string().transform(normalizeCohortName).optional(),
   color: cohortColorsSchema.optional(),
   description: z.string().optional(),
-  settings: allOptionalCohortSettingsSchema,
+  settings: allOptionalCohortSettingsSchema.optional(),
   eTag: z.string().optional(),
 });
 
@@ -222,13 +179,9 @@ export type CohortDTO = BaseDTO & {
   settings: CohortSettings;
 };
 
-export type CohortWithSize = {
-  cohort: Cohort;
-  size: number;
-};
+export type CohortWithSize = Cohort & { size: number };
 
-export type CohortWithSizeDTO = {
-  cohort: CohortDTO;
+export type CohortWithSizeDTO = CohortDTO & {
   size: number;
 };
 

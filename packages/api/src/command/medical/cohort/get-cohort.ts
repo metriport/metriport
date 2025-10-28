@@ -29,15 +29,25 @@ export async function getCohortWithSizeOrFail({
   ]);
   if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id });
 
-  return { cohort: cohort.dataValues, size };
+  return { ...cohort.dataValues, size };
 }
 
-export async function getCohorts({ cxId }: { cxId: string }): Promise<Cohort[]> {
+export async function getCohorts({ cxId }: { cxId: string }): Promise<CohortWithSize[]> {
   const cohorts = await CohortModel.findAll({
     where: { cxId },
   });
 
-  return cohorts.map(_ => _.dataValues);
+  const cohortsWithSizes = await Promise.all(
+    cohorts.map(async cohort => {
+      const size = await getCohortSize({ cohortId: cohort.id, cxId });
+      return {
+        ...cohort.dataValues,
+        size,
+      };
+    })
+  );
+
+  return cohortsWithSizes;
 }
 
 export async function getCohortsForPatient({
@@ -64,7 +74,7 @@ export async function getCohortsForPatient({
     cohorts.map(async cohort => {
       const size = await getCohortSize({ cohortId: cohort.id, cxId });
       return {
-        cohort: cohort.dataValues,
+        ...cohort.dataValues,
         size,
       };
     })

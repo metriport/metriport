@@ -1,12 +1,17 @@
 import { out } from "@metriport/core/util";
 import { BadRequestError, NotFoundError } from "@metriport/shared";
-import { CohortUpdateCmd, CohortWithSize } from "@metriport/shared/domain/cohort";
+import {
+  AllOptionalCohortSettings,
+  CohortSettings,
+  CohortUpdateCmd,
+  CohortWithSize,
+} from "@metriport/shared/domain/cohort";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { CohortModel } from "../../../models/medical/cohort";
 import { mergeOldWithNewCohortSettings } from "../../medical/patient/get-settings";
+import { getCohortByNameSafe } from "./get-cohort";
 import { getCohortSize } from "./patient-cohort/get-cohort-size";
 import { validateMonitoringSettingsForCx } from "./utils";
-import { getCohortByNameSafe } from "./get-cohort";
 
 export async function updateCohort({
   id,
@@ -33,20 +38,38 @@ export async function updateCohort({
     }
   }
 
-  const monitoringSettings = data.settings?.monitoring;
-  await validateMonitoringSettingsForCx(cxId, monitoringSettings, log);
-
-  const mergedSettings = mergeOldWithNewCohortSettings(oldCohort.settings, data.settings);
+  const newSettings = data.settings;
+  const mergedSettings = newSettings
+    ? await getMergedSettings({ cxId, oldSettings: oldCohort.settings, newSettings, log })
+    : oldCohort.settings;
 
   const newData = {
     ...data,
     settings: mergedSettings,
   };
+
   const [updatedCohort, size] = await Promise.all([
     oldCohort.update(newData),
     getCohortSize({ cohortId: id, cxId }),
   ]);
 
   log(`Done. Updated cohort: ${JSON.stringify(updatedCohort.dataValues)}`);
-  return { cohort: updatedCohort.dataValues, size };
+  return { ...updatedCohort.dataValues, size };
+}
+
+async function getMergedSettings({
+  cxId,
+  oldSettings,
+  newSettings,
+  log,
+}: {
+  cxId: string;
+  oldSettings: CohortSettings;
+  newSettings: AllOptionalCohortSettings;
+  log: typeof console.log;
+}): Promise<CohortSettings> {
+  if (newSettings) {
+    await validateMonitoringSettingsForCx(cxId, newSettings.monitoring, log);
+  }
+  return mergeOldWithNewCohortSettings(oldSettings, newSettings);
 }
