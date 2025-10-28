@@ -1,0 +1,19 @@
+<ParamField body="name" type="string" optional>
+  The name of the cohort. The name must be unique within your organization.
+</ParamField>
+
+<ParamField body="color" type="string" optional>
+  The color associated with the cohort. Must be one of: **`red`**, **`green`**, **`blue`**, **`yellow`**, **`purple`**, **`orange`**, **`pink`**, **`brown`**, **`gray`**, **`black`**, **`white`**. Defaults to **`white`** on creation if no color is given.
+</ParamField>
+
+<ParamField body="description" type="string" optional>
+  A description of the cohort and its purpose.
+</ParamField>
+
+<ParamField body="settings" type="object" optional>
+  Configuration settings for the cohort.
+  <Expandable title="Settings properties">
+    <Snippet file="cohort-settings.mdx" />
+  </Expandable>
+</ParamField>
+
