@@ -248,6 +248,6 @@ function objectErrorToParsingError(objectError: {
   code: string;
 }): ParsingError {
   const error = `${objectError.field} ${objectError.expected}`;
-  const errorSafeForCsv = error.replace(",", "").replace(",", " -");
+  const errorSafeForCsv = error.replace(",", "").replace(",", " -").replace(/[,]/g, "");
   return { field: objectError.field, error: errorSafeForCsv };
 }

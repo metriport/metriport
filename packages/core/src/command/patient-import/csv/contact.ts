@@ -52,7 +52,7 @@ function parseContact(
   let email: string | undefined = undefined;
   try {
     email = normalizeEmail(csvPatient[emailName], emailName);
-    const altEmailName = emailName.replace("-", "");
+    const altEmailName = emailName.replace(/[-_]/g, "");
     email = email ?? normalizeEmail(csvPatient[altEmailName], altEmailName);
   } catch (error) {
     errors.push({ field: emailName, error: errorToString(error) });
@@ -61,7 +61,7 @@ function parseContact(
   let phone: string | undefined = undefined;
   try {
     phone = normalizePhoneNumber(csvPatient[phoneName], phoneName);
-    const altPhoneName = phoneName.replace("-", "");
+    const altPhoneName = phoneName.replace(/[-_]/g, "");
     phone = phone ?? normalizePhoneNumber(csvPatient[altPhoneName], altPhoneName);
   } catch (error) {
     errors.push({ field: phoneName, error: errorToString(error) });

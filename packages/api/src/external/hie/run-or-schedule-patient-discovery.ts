@@ -1,5 +1,5 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { MedicalDataSource, AsyncOperationStatus } from "@metriport/core/external";
+import { AsyncOperationStatus, MedicalDataSource } from "@metriport/core/external";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -76,7 +76,7 @@ function getPostPdProcessor(
   source: MedicalDataSource,
   pdStateAcrossHies: PdStateAcrossHies
 ) {
-  return async (status: "triggered" | "disabled"): Promise<void> => {
+  return async (status: AsyncOperationStatus): Promise<void> => {
     pdStateAcrossHies[source] = { status };
     if (
       pdStateAcrossHies[MedicalDataSource.CAREQUALITY]?.status === "disabled" &&

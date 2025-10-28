@@ -74,6 +74,7 @@ export async function queryDocumentsAcrossHIEs({
   const { log } = out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
   let triggeredDocumentQuery = false;
+  let encounteredError = false;
   try {
     const [patient, commonwellEnabled, carequalityEnabled] = await Promise.all([
       getPatientOrFail({ id: patientId, cxId }),
@@ -181,6 +182,9 @@ export async function queryDocumentsAcrossHIEs({
     }
 
     return createQueryResponse("processing", updatedPatient);
+  } catch (error) {
+    encounteredError = true;
+    throw error;
   } finally {
     try {
       if (!triggeredDocumentQuery) {
@@ -188,8 +192,9 @@ export async function queryDocumentsAcrossHIEs({
         if (!requestId) {
           log("DQ not triggered and requestId not provided, skipping finishSinglePatientImport");
         } else {
-          log(`Finishing single patient import (status: successful)`);
-          finishSinglePatientImport({ cxId, patientId, requestId, status: "successful" }).catch(
+          const status = encounteredError ? "failed" : "successful";
+          log(`Finishing single patient import (status: ${status})`);
+          finishSinglePatientImport({ cxId, patientId, requestId, status }).catch(
             processAsyncError("Failed to finish single patient import")
           );
         }
