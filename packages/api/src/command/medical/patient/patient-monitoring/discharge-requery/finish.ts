@@ -12,7 +12,6 @@ import {
   dischargeRequeryRuntimeDataSchema,
   parseDischargeRequeryJob,
 } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
-import _ from "lodash";
 import { getPatientJobs } from "../../../../job/patient/get";
 import { completePatientJob } from "../../../../job/patient/status/complete";
 import { failPatientJob } from "../../../../job/patient/status/fail";
@@ -22,12 +21,18 @@ import { getPatientOrFail } from "../../get-patient";
 import { createDischargeRequeryJob, dischargeRequeryJobType } from "./create";
 import { sendNotificationToSlack } from "./shared";
 
-type DischargeAssociationBreakdown = {
+type DischargeAssociationSuccess = {
   discharge: DischargeData;
-  status: "processing" | "completed";
+  status: "completed";
   reason: string;
-  encounterId?: string;
-  dischargeSummaryFilePath?: string;
+  encounterId: string;
+  dischargeSummaryFilePath: string;
+};
+
+type DischargeAssociationProcessing = {
+  discharge: DischargeData;
+  status: "processing";
+  reason: string;
 };
 
 /**
@@ -68,7 +73,7 @@ export async function finishDischargeRequery({
 
   log(`All processing discharge requery jobs: ${JSON.stringify(processingJobs)}`);
 
-  if (processingJobs.length === 0) return;
+  if (processingJobs.length < 1) return;
 
   const targetJobs = processingJobs.filter(job => {
     const runtimeData = dischargeRequeryRuntimeDataSchema.parse(job.runtimeData);
@@ -83,6 +88,7 @@ export async function finishDischargeRequery({
       extra: {
         cxId,
         patientId,
+        jobType: dischargeRequeryJobType,
         pipelineRequestId,
       },
       level: "warning",
@@ -197,8 +203,8 @@ export async function processDischargeSummaryAssociation({
   cxId: string;
   patientId: string;
 }): Promise<{
-  processing: DischargeAssociationBreakdown[];
-  completed: DischargeAssociationBreakdown[];
+  processing: DischargeAssociationProcessing[];
+  completed: DischargeAssociationSuccess[];
 }> {
   const { log } = out(`processDischargeSummaryAssociation - cx ${cxId}, pt ${patientId}`);
   log(`Checking goals: ${JSON.stringify(dischargeData)}`);
@@ -224,7 +230,7 @@ export async function processDischargeSummaryAssociation({
     dischargeData.map(async discharge => {
       const matchingEncounters = getMatchingEncountersWithSummaryPath(encounters, discharge);
 
-      let result: DischargeAssociationBreakdown;
+      let result: DischargeAssociationProcessing | DischargeAssociationSuccess;
       if (matchingEncounters.length < 1) {
         result = {
           discharge,
@@ -274,12 +280,18 @@ export async function processDischargeSummaryAssociation({
     })
   );
 
-  const groupedByStatus = _.groupBy(matchingResults, "status");
+  const processing: DischargeAssociationProcessing[] = [];
+  const completed: DischargeAssociationSuccess[] = [];
 
-  return {
-    processing: groupedByStatus.processing ?? [],
-    completed: groupedByStatus.completed ?? [],
-  };
+  for (const result of matchingResults) {
+    if (result.status === "processing") {
+      processing.push(result);
+    } else {
+      completed.push(result);
+    }
+  }
+
+  return { processing, completed };
 }
 
 type MatchingEncounter = {
@@ -319,7 +331,7 @@ export function getMatchingEncountersWithSummaryPath(
  * Updates TCM encounters with discharge summary file paths for completed associations.
  */
 async function updateTcmEncountersWithDischargeSummaryPaths(
-  completedAssociations: DischargeAssociationBreakdown[],
+  completedAssociations: DischargeAssociationSuccess[],
   cxId: string,
   patientId: string
 ): Promise<void> {

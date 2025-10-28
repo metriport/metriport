@@ -319,12 +319,12 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
   ): Promise<void> {
     if (triggerEvent !== dischargeEventCode) return;
 
-    const dichargeTimestamp = encounterPeriod?.end;
-    if (!dichargeTimestamp) return;
+    const dischargeTimestamp = encounterPeriod?.end;
+    if (!dischargeTimestamp) return;
 
     const dischargeData: DischargeData[] = [
       {
-        encounterEndDate: dichargeTimestamp,
+        encounterEndDate: dischargeTimestamp,
         tcmEncounterId: encounterId,
       },
     ];
