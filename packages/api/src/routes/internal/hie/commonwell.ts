@@ -13,7 +13,6 @@ import {
   getOrganizationOrFail,
 } from "../../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import { cwOrgActiveSchema } from "../../../external/commonwell-v1/shared";
 import { getAndUpdateCWOrgAndMetriportOrgV2 } from "../../../external/commonwell-v2/command/organization/create-or-update-cw-organization";
 import { getParsedOrgOrFailV2 } from "../../../external/commonwell-v2/command/organization/organization";
 import { getCwDirectoryEntry } from "../../../external/commonwell/command/cw-directory/list-cw-directory";
@@ -24,8 +23,13 @@ import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../../util";
+import { z } from "zod";
 
 const router = Router();
+
+const cwOrgActiveSchema = z.object({
+  active: z.boolean(),
+});
 
 /**
  * GET /internal/commonwell/ops/organization/:oid

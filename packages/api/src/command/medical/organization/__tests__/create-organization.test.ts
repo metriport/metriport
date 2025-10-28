@@ -3,7 +3,6 @@ import { faker } from "@faker-js/faker";
 import { v4 as uuidv4 } from "uuid";
 import { makeOrganization } from "../../../../domain/medical/__tests__/organization";
 import * as address from "../../../../domain/medical/address";
-import * as cwCommands from "../../../../external/commonwell";
 import * as createTenant from "../../../../external/fhir/admin";
 import * as upsertOrgToFHIRServer from "../../../../external/fhir/organization/upsert-organization";
 import { OrganizationModel } from "../../../../models/medical/organization";
@@ -26,7 +25,6 @@ beforeAll(() => {
     .spyOn(createTenant, "createTenantIfNotExists")
     .mockImplementation(async () => {});
   jest.spyOn(upsertOrgToFHIRServer, "upsertOrgToFHIRServer").mockImplementation(async () => {});
-  jest.spyOn(cwCommands.default.organization, "createOrUpdate").mockResolvedValue();
   jest.spyOn(address, "getAddressWithCoordinates").mockResolvedValue(addressWithCoordinates);
 });
 beforeEach(() => {
