@@ -38,7 +38,96 @@ const encounters = sdk.getEncounters();
 const conditions = sdk.getConditions();
 ```
 
-### 2. Smart Reference Resolution
+### 2. Coding System Utilities
+
+All resources with CodeableConcept fields automatically have enhanced coding utilities for working with standard medical coding systems (LOINC, ICD-10, SNOMED, RxNorm, NDC).
+
+**Important:** Use the specific Smart type aliases (`SmartObservation`, `SmartCondition`, etc.) instead of the generic `Smart<T>` pattern to get full TypeScript support for coding utilities.
+
+```typescript
+import { SmartObservation, SmartCondition } from "@metriport/fhir-sdk";
+
+// ✅ GOOD - Use specific Smart type for full TypeScript support
+const obs: SmartObservation = sdk.getObservationById("obs-123")!;
+
+// Check if the observation uses LOINC coding
+if (obs.code?.hasLoinc()) {
+  const loincCode = obs.code.getLoincCode(); // Get first LOINC code
+  console.log("LOINC code:", loincCode);
+}
+
+// Check for specific codes
+if (obs.code?.hasLoincCode("2339-0")) {
+  console.log("Found glucose measurement!");
+}
+
+// Work with ICD-10 codes in conditions
+const condition: SmartCondition = sdk.getConditionById("cond-456")!;
+const icd10Code = condition.code?.getIcd10Code();
+const allIcd10 = condition.code?.getIcd10Codes(); // Get all ICD-10 codes
+
+// Check if condition has specific ICD-10 codes
+if (condition.code?.hasSomeIcd10(["E11.9", "E10.9"])) {
+  console.log("Patient has diabetes");
+}
+
+// Find specific coding with custom logic
+const diabetesCoding = condition.code?.findIcd10Coding(
+  code => code.startsWith("E11") || code.startsWith("E10")
+);
+```
+
+**Available Coding Systems:**
+
+Each `SmartCodeableConcept` provides methods for these coding systems:
+
+- **LOINC**: `hasLoinc()`, `getLoinc()`, `getLoincCode()`, `getLoincCodes()`, `hasLoincCode()`, `hasSomeLoinc()`, `findLoincCoding()`
+- **ICD-10**: `hasIcd10()`, `getIcd10()`, `getIcd10Code()`, `getIcd10Codes()`, `hasIcd10Code()`, `hasSomeIcd10()`, `findIcd10Coding()`
+- **SNOMED**: `hasSnomed()`, `getSnomed()`, `getSnomedCode()`, `getSnomedCodes()`, `hasSnomedCode()`, `hasSomeSnomed()`, `findSnomedCoding()`
+- **RxNorm**: `hasRxNorm()`, `getRxNorm()`, `getRxNormCode()`, `getRxNormCodes()`, `hasRxNormCode()`, `hasSomeRxNorm()`, `findRxNormCoding()`
+- **NDC**: `hasNdc()`, `getNdc()`, `getNdcCode()`, `getNdcCodes()`, `hasNdcCode()`, `hasSomeNdc()`, `findNdcCoding()`
+
+**Smart Resource Types with Coding Utilities:**
+
+```typescript
+import {
+  SmartObservation,
+  SmartCondition,
+  SmartProcedure,
+  SmartAllergyIntolerance,
+  SmartEncounter,
+  SmartDiagnosticReport,
+  SmartImmunization,
+  SmartMedication,
+  SmartMedicationRequest,
+  SmartMedicationAdministration,
+  SmartMedicationDispense,
+  SmartMedicationStatement,
+  SmartFamilyMemberHistory,
+  SmartRelatedPerson,
+  SmartRiskAssessment,
+  SmartServiceRequest,
+  SmartCarePlan,
+  SmartPatient,
+  SmartPractitioner,
+  SmartOrganization,
+  SmartLocation,
+  SmartComposition,
+  SmartCoverage,
+  SmartDocumentReference,
+} from "@metriport/fhir-sdk";
+```
+
+All SDK getter methods return the appropriate Smart type automatically:
+
+```typescript
+// These all return the specific Smart types with coding utilities
+const observations: SmartObservation[] = sdk.getObservations();
+const conditions: SmartCondition[] = sdk.getConditions();
+const procedures: SmartProcedure[] = sdk.getProcedures();
+```
+
+### 3. Smart Reference Resolution
 
 Resources include typed getter methods for convenient and type-safe reference traversal:
 
@@ -49,7 +138,7 @@ const observation = sdk.getObservationById("obs-123");
 const patient = observation.getSubject<Patient>();
 ```
 
-#### Smart Resource Methods
+**Smart Resource Methods:**
 
 All smart resources include these utility methods:
 
@@ -106,7 +195,7 @@ const refs = sdk.getResourcesReferencedBy(observation);
 
 This method automatically discovers and returns all resources referenced by the current resource based on the configured reference methods in `REFERENCE_METHOD_MAPPING`. It handles both single references and array references.
 
-### 3. Bundle Export
+### 4. Bundle Export
 
 You can export subsets of your bundle or export by resource type to quickly create custom bundles.
 
@@ -118,7 +207,7 @@ const subset = sdk.exportSubset(["patient-uuid-1", "obs-uuid-1"]);
 const observationBundle = sdk.exportByType("Observation");
 ```
 
-### 4. Validation
+### 5. Validation
 
 Validate your bundle to ensure there are no broken references. A broken reference is a reference that points to a resource that does not exist in the bundle.
 
@@ -128,7 +217,7 @@ console.log(result.hasBrokenReferences); // true if at least one broken referenc
 console.log(result.brokenReferences); // All broken references in bundle
 ```
 
-### 5. Reverse Reference Lookup
+### 6. Reverse Reference Lookup
 
 Find all resources that reference a given resource (reverse lookup). This is useful for discovering what refers to a specific resource.
 
@@ -164,7 +253,7 @@ const encounteredObs = patient.getReferencingResources({
 - **Smart resources** - returns fully functional Smart resources
 - **Bi-directional** - complements forward reference navigation
 
-### 6. Date Range Search
+### 7. Date Range Search
 
 Search for resources by date range using an interval tree index. This is useful for filtering resources by clinical dates efficiently.
 
@@ -225,7 +314,7 @@ The following resource types and date fields are automatically indexed:
 - **Coverage**: period
 - **AllergyIntolerance**: onsetDateTime, onsetPeriod, lastOccurrence, recordedDate
 
-### 7. Reference Walking (BFS Traversal)
+### 8. Reference Walking (BFS Traversal)
 
 Walk the reference graph starting from any resource using breadth-first search (BFS). This is useful for discovering all resources connected to a specific resource.
 
@@ -245,7 +334,7 @@ const limitedResult = sdk.walkReferences(observation, { maxDepth: 2 });
 const withoutStart = sdk.walkReferences(observation, { includeStartResource: false });
 ```
 
-### 7. LLM Context Generation
+### 9. LLM Context Generation
 
 Generate comprehensive, LLM-friendly context from a resource and its related resources. This automatically performs BFS traversal, strips non-clinical metadata, and formats the output for optimal LLM consumption.
 
@@ -299,7 +388,7 @@ const sdk2 = FhirBundleSdk.createSync(bundle); // Synchronous
 
 This is especially useful in REPL sessions where you want quick access to utility functions without creating a full SDK instance.
 
-### 8. Type Guards
+### 10. Type Guards
 
 Filter mixed arrays of FHIR resources to specific types with full TypeScript type safety:
 
@@ -336,6 +425,46 @@ allObs.forEach(obs => {
 Use the `is<ResourceType>` type guard to check if a resource is of a specific type. There is one for every fhir resource type. Use them whenever possible over writing your own type guards.
 
 ## Example Use Cases
+
+### Filter by Medical Codes
+
+```typescript
+import { SmartObservation, SmartCondition } from "@metriport/fhir-sdk";
+
+// Find all glucose observations using LOINC codes
+const glucoseObs = sdk.getObservations().filter(
+  obs =>
+    obs.code?.hasLoincCode("2339-0") || // Glucose [Mass/volume] in Blood
+    obs.code?.hasLoincCode("2345-7") // Glucose [Mass/volume] in Serum or Plasma
+);
+
+// Find all diabetes conditions using ICD-10 codes
+const diabetesConditions = sdk.getConditions().filter(cond =>
+  cond.code?.findIcd10Coding(
+    code =>
+      code.startsWith("E10") || // Type 1 diabetes
+      code.startsWith("E11") // Type 2 diabetes
+  )
+);
+
+// Find medications by RxNorm code
+const metforminMeds = sdk
+  .getMedicationRequests()
+  .filter(medReq => medReq.medicationCodeableConcept?.hasRxNormCode("6809"));
+
+// Complex filtering with multiple coding systems
+const labResults = sdk.getObservations().filter(obs => {
+  if (obs.code?.hasLoinc()) {
+    const loincCode = obs.code.getLoincCode();
+    // Filter for specific lab panels
+    return (
+      loincCode?.startsWith("24331") || // Lipid panel
+      loincCode?.startsWith("24362")
+    ); // Complete blood count
+  }
+  return false;
+});
+```
 
 ### Patient Summary
 

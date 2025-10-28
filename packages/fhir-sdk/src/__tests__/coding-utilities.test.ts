@@ -1,7 +1,14 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Bundle, Observation, Condition, Coding } from "@medplum/fhirtypes";
 import { FhirBundleSdk } from "../index";
+
+/**
+ * Tests for coding system utilities
+ * Note: Runtime proxies wrap CodeableConcept and Coding properties.
+ * Type assertions (as any) are used where TypeScript doesn't infer the wrapper.
+ */
 
 describe("Coding System Utilities", () => {
   describe("SmartCoding - Individual Coding Methods", () => {

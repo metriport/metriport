@@ -202,8 +202,11 @@ export interface SmartResourceBase {
 
 /**
  * Generic type that converts any Resource to a Smart resource
- * Note: Nested Coding/CodeableConcept wrapping happens at runtime via proxies,
- * not at the type level, to avoid TypeScript structural typing issues
+ *
+ * Note: CodeableConcept and Coding properties are wrapped at runtime via proxies.
+ * See coding-fields.ts for the complete list of transformed fields per resource type.
+ * TypeScript cannot enforce these transformations due to complexity limits,
+ * but the runtime behavior is fully functional.
  */
 export type Smart<T extends Resource> = T & SmartResourceBase & ReferenceMethodsFor<T>;
 
@@ -681,9 +684,21 @@ export type ReferenceMethodsFor<T extends Resource> = T extends Observation
   : BaseReferenceMethods;
 
 /**
- * Note: We only use the generic Smart<T> pattern for consistency.
- * Specific type aliases like SmartObservation are not needed since
- * Smart<Observation> provides the same functionality.
+ * IMPORTANT: For user-facing code, prefer specific Smart type aliases (SmartObservation,
+ * SmartCondition, etc.) defined in coding-fields.ts over the generic Smart<T> pattern.
+ *
+ * The specific types include CodeableConcept field overrides that enable coding system
+ * utilities (hasLoinc(), getIcd10Code(), etc.) to work correctly in TypeScript.
+ *
+ * @example
+ * // ✅ GOOD - Users get full TypeScript support for coding utilities
+ * getObservationById(id: string): SmartObservation | undefined
+ *
+ * // ❌ BAD - Users cannot access coding utilities without type assertions
+ * getObservationById(id: string): Smart<Observation> | undefined
+ *
+ * The generic Smart<T> should only be used internally or when the specific resource
+ * type is truly dynamic.
  */
 
 /**
