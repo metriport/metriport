@@ -3,7 +3,7 @@ import {
   buildDayjs,
   ISO_DATE,
   isValidISODate,
-  validateDateOfBirth,
+  validateDateOfBirthSafe,
   validateIsPastOrPresentSafe,
 } from "../../common/date";
 import { defaultStringSchema } from "./string";
@@ -36,7 +36,7 @@ export const pastOrTodayDateStringSchema = defaultDateStringSchema.refine(
   }
 );
 
-export const validDateOfBirthStringSchema = z.string().refine(validateDateOfBirth, {
+export const validDateOfBirthStringSchema = z.string().refine(validateDateOfBirthSafe, {
   message: `Invalid date of birth`,
 });
 
