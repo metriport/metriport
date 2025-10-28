@@ -1,6 +1,7 @@
-import { CwLinkV2, Patient } from "@metriport/commonwell-sdk/models/patient";
+import { CwLinkV2 } from "@metriport/commonwell-sdk/models/patient";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { CwPatientDataModel } from "../../../../commonwell/models/cw-patient-data";
+import { makeCwLink } from "../../../../hie/__tests__/patient-links-tests";
 import { CwData, CwLinkV1 } from "../shared";
 import { CwPatientDataUpdate, prepareCwPatientDataUpdatePayload } from "../update-cw-data";
 
@@ -8,8 +9,8 @@ describe("prepareCwPatientDataUpdatePayload", () => {
   describe("link filtering and merging", () => {
     it("should filter out v1 links from existing data and keep only v2 links", () => {
       const existingV1Link = createMockCwLinkV1();
-      const existingV2Link = createMockCwLinkV2("org-1");
-      const newV2Link = createMockCwLinkV2("org-2");
+      const existingV2Link = makeCwLink({ orgSystem: "org-1" });
+      const newV2Link = makeCwLink({ orgSystem: "org-2" });
 
       const existing = createMockCwPatientDataModel({
         links: [existingV1Link, existingV2Link],
@@ -32,8 +33,8 @@ describe("prepareCwPatientDataUpdatePayload", () => {
     });
 
     it("should merge new v2 links with existing v2 links", () => {
-      const existingV2Link = createMockCwLinkV2("org-1");
-      const newV2Link = createMockCwLinkV2("org-2");
+      const existingV2Link = makeCwLink({ orgSystem: "org-1" });
+      const newV2Link = makeCwLink({ orgSystem: "org-2" });
 
       const existing = createMockCwPatientDataModel({
         links: [existingV2Link],
@@ -55,7 +56,7 @@ describe("prepareCwPatientDataUpdatePayload", () => {
     });
 
     it("should handle empty new links array", () => {
-      const existingV2Link = createMockCwLinkV2("org-1");
+      const existingV2Link = makeCwLink({ orgSystem: "org-1" });
 
       const existing = createMockCwPatientDataModel({
         links: [existingV2Link],
@@ -76,7 +77,7 @@ describe("prepareCwPatientDataUpdatePayload", () => {
     });
 
     it("should handle undefined new links", () => {
-      const existingV2Link = createMockCwLinkV2("org-1");
+      const existingV2Link = makeCwLink({ orgSystem: "org-1" });
 
       const existing = createMockCwPatientDataModel({
         links: [existingV2Link],
@@ -109,7 +110,7 @@ describe("prepareCwPatientDataUpdatePayload", () => {
       ];
 
       // Create a v2 link from the same facility "facility-123"
-      const newV2Link = createMockCwLinkV2("facility-123");
+      const newV2Link = makeCwLink({ orgSystem: "facility-123" });
 
       const existing = createMockCwPatientDataModel({
         links: [existingV1Link],
@@ -142,9 +143,9 @@ describe("prepareCwPatientDataUpdatePayload", () => {
 
   describe("link invalidation", () => {
     it("should filter out invalidated links", () => {
-      const existingV2Link = createMockCwLinkV2("org-1");
-      const newV2Link = createMockCwLinkV2("org-2");
-      const linkToInvalidate = createMockCwLinkV2("org-1");
+      const existingV2Link = makeCwLink({ orgSystem: "org-1" });
+      const newV2Link = makeCwLink({ orgSystem: "org-2" });
+      const linkToInvalidate = makeCwLink({ orgSystem: "org-1" });
 
       const existing = createMockCwPatientDataModel({
         links: [existingV2Link],
@@ -166,8 +167,8 @@ describe("prepareCwPatientDataUpdatePayload", () => {
     });
 
     it("should not filter out links when no invalidation list provided", () => {
-      const existingV2Link = createMockCwLinkV2("org-1");
-      const newV2Link = createMockCwLinkV2("org-2");
+      const existingV2Link = makeCwLink({ orgSystem: "org-1" });
+      const newV2Link = makeCwLink({ orgSystem: "org-2" });
 
       const existing = createMockCwPatientDataModel({
         links: [existingV2Link],
@@ -189,8 +190,8 @@ describe("prepareCwPatientDataUpdatePayload", () => {
     });
 
     it("should handle empty invalidation list", () => {
-      const existingV2Link = createMockCwLinkV2("org-1");
-      const newV2Link = createMockCwLinkV2("org-2");
+      const existingV2Link = makeCwLink({ orgSystem: "org-1" });
+      const newV2Link = makeCwLink({ orgSystem: "org-2" });
 
       const existing = createMockCwPatientDataModel({
         links: [existingV2Link],
@@ -214,9 +215,9 @@ describe("prepareCwPatientDataUpdatePayload", () => {
 
   describe("link deduplication", () => {
     it("should deduplicate links by organization ID", () => {
-      const link1 = createMockCwLinkV2("org-1");
-      const link2 = createMockCwLinkV2("org-1"); // Same org ID
-      const link3 = createMockCwLinkV2("org-2");
+      const link1 = makeCwLink({ orgSystem: "org-1" });
+      const link2 = makeCwLink({ orgSystem: "org-1" }); // Same org ID
+      const link3 = makeCwLink({ orgSystem: "org-2" });
 
       const existing = createMockCwPatientDataModel({
         links: [link1],
@@ -421,8 +422,8 @@ describe("prepareCwPatientDataUpdatePayload", () => {
 
   describe("data merging", () => {
     it("should merge all existing data with new data", () => {
-      const existingV2Link = createMockCwLinkV2("org-1");
-      const newV2Link = createMockCwLinkV2("org-2");
+      const existingV2Link = makeCwLink({ orgSystem: "org-1" });
+      const newV2Link = makeCwLink({ orgSystem: "org-2" });
 
       const existingDemographics: LinkDemographics[] = [
         {
@@ -480,7 +481,7 @@ describe("prepareCwPatientDataUpdatePayload", () => {
     });
 
     it("should preserve existing data when new data is empty", () => {
-      const existingV2Link = createMockCwLinkV2("org-1");
+      const existingV2Link = makeCwLink({ orgSystem: "org-1" });
       const existingDemographics: LinkDemographics[] = [
         {
           dob: "1990-01-01",
@@ -519,7 +520,7 @@ describe("prepareCwPatientDataUpdatePayload", () => {
 
   describe("edge cases", () => {
     it("should handle empty existing data", () => {
-      const newV2Link = createMockCwLinkV2("org-1");
+      const newV2Link = makeCwLink({ orgSystem: "org-1" });
 
       const existing = createMockCwPatientDataModel({
         links: [],
@@ -600,50 +601,6 @@ function createMockCwPatientDataModel(data: CwData): CwPatientDataModel {
   return {
     data,
   } as CwPatientDataModel;
-}
-
-function createMockCwLinkV2(orgId: string): CwLinkV2 {
-  const patient: Patient = {
-    managingOrganization: {
-      identifier: [
-        {
-          system: orgId,
-        },
-      ],
-    },
-    name: [
-      {
-        family: ["Test"],
-        given: ["Patient"],
-      },
-    ],
-    birthDate: "1990-01-01",
-    identifier: [
-      {
-        value: "test-patient-id",
-        system: "test-system",
-      },
-    ],
-    address: [
-      {
-        line: ["123 Test St"],
-        city: "Test City",
-        state: "TS",
-        postalCode: "12345",
-        country: "US",
-      },
-    ],
-  };
-
-  const partialLinkV2: CwLinkV2 = {
-    version: 2,
-    Patient: patient,
-    Links: {
-      Self: "test-self-href",
-      Unlink: "test-unlink-href",
-    },
-  };
-  return partialLinkV2;
 }
 
 function createMockCwLinkV1(): CwLinkV1 {
