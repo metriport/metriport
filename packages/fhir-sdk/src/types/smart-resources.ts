@@ -38,6 +38,8 @@ import {
   RequestGroup,
   HealthcareService,
   Substance,
+  Coding,
+  CodeableConcept,
 } from "@medplum/fhirtypes";
 
 /**
@@ -48,6 +50,124 @@ export interface ReverseReferenceOptions {
   resourceType?: string;
   /** Filter by specific reference field */
   referenceField?: string;
+}
+
+/**
+ * Smart Coding type with enhanced methods for checking coding systems
+ */
+export interface SmartCoding extends Coding {
+  /** Check if this coding belongs to the LOINC system */
+  isLoinc(): boolean;
+  /** Check if this coding belongs to the ICD-10 system */
+  isIcd10(): boolean;
+  /** Check if this coding belongs to the SNOMED system */
+  isSnomed(): boolean;
+  /** Check if this coding belongs to the RxNorm system */
+  isRxNorm(): boolean;
+  /** Check if this coding belongs to the NDC system */
+  isNdc(): boolean;
+  /** Check if this coding's code matches a specific code value */
+  matchesCode(code: string): boolean;
+  /** Check if this coding's code matches any of the provided code values */
+  matchesCodes(codes: string[]): boolean;
+}
+
+/**
+ * Smart CodeableConcept type with enhanced methods for working with coding systems
+ */
+export interface SmartCodeableConcept extends Omit<CodeableConcept, "coding"> {
+  /** Array of smart codings */
+  coding?: SmartCoding[];
+
+  // LOINC methods
+  /** Get the first LOINC coding */
+  getLoinc(): SmartCoding | undefined;
+  /** Get all LOINC codings */
+  getLoincCodings(): SmartCoding[];
+  /** Get the first LOINC code value */
+  getLoincCode(): string | undefined;
+  /** Get all LOINC code values */
+  getLoincCodes(): string[];
+  /** Check if this CodeableConcept has any LOINC coding */
+  hasLoinc(): boolean;
+  /** Check if this CodeableConcept has a specific LOINC code */
+  hasLoincCode(code: string): boolean;
+  /** Check if this CodeableConcept has any of the provided LOINC codes */
+  hasSomeLoinc(codes: string[]): boolean;
+  /** Find a LOINC coding matching a predicate */
+  findLoincCoding(predicate: (code: string) => boolean): SmartCoding | undefined;
+
+  // ICD-10 methods
+  /** Get the first ICD-10 coding */
+  getIcd10(): SmartCoding | undefined;
+  /** Get all ICD-10 codings */
+  getIcd10Codings(): SmartCoding[];
+  /** Get the first ICD-10 code value */
+  getIcd10Code(): string | undefined;
+  /** Get all ICD-10 code values */
+  getIcd10Codes(): string[];
+  /** Check if this CodeableConcept has any ICD-10 coding */
+  hasIcd10(): boolean;
+  /** Check if this CodeableConcept has a specific ICD-10 code */
+  hasIcd10Code(code: string): boolean;
+  /** Check if this CodeableConcept has any of the provided ICD-10 codes */
+  hasSomeIcd10(codes: string[]): boolean;
+  /** Find an ICD-10 coding matching a predicate */
+  findIcd10Coding(predicate: (code: string) => boolean): SmartCoding | undefined;
+
+  // SNOMED methods
+  /** Get the first SNOMED coding */
+  getSnomed(): SmartCoding | undefined;
+  /** Get all SNOMED codings */
+  getSnomedCodings(): SmartCoding[];
+  /** Get the first SNOMED code value */
+  getSnomedCode(): string | undefined;
+  /** Get all SNOMED code values */
+  getSnomedCodes(): string[];
+  /** Check if this CodeableConcept has any SNOMED coding */
+  hasSnomed(): boolean;
+  /** Check if this CodeableConcept has a specific SNOMED code */
+  hasSnomedCode(code: string): boolean;
+  /** Check if this CodeableConcept has any of the provided SNOMED codes */
+  hasSomeSnomed(codes: string[]): boolean;
+  /** Find a SNOMED coding matching a predicate */
+  findSnomedCoding(predicate: (code: string) => boolean): SmartCoding | undefined;
+
+  // RxNorm methods
+  /** Get the first RxNorm coding */
+  getRxNorm(): SmartCoding | undefined;
+  /** Get all RxNorm codings */
+  getRxNormCodings(): SmartCoding[];
+  /** Get the first RxNorm code value */
+  getRxNormCode(): string | undefined;
+  /** Get all RxNorm code values */
+  getRxNormCodes(): string[];
+  /** Check if this CodeableConcept has any RxNorm coding */
+  hasRxNorm(): boolean;
+  /** Check if this CodeableConcept has a specific RxNorm code */
+  hasRxNormCode(code: string): boolean;
+  /** Check if this CodeableConcept has any of the provided RxNorm codes */
+  hasSomeRxNorm(codes: string[]): boolean;
+  /** Find a RxNorm coding matching a predicate */
+  findRxNormCoding(predicate: (code: string) => boolean): SmartCoding | undefined;
+
+  // NDC methods
+  /** Get the first NDC coding */
+  getNdc(): SmartCoding | undefined;
+  /** Get all NDC codings */
+  getNdcCodings(): SmartCoding[];
+  /** Get the first NDC code value */
+  getNdcCode(): string | undefined;
+  /** Get all NDC code values */
+  getNdcCodes(): string[];
+  /** Check if this CodeableConcept has any NDC coding */
+  hasNdc(): boolean;
+  /** Check if this CodeableConcept has a specific NDC code */
+  hasNdcCode(code: string): boolean;
+  /** Check if this CodeableConcept has any of the provided NDC codes */
+  hasSomeNdc(codes: string[]): boolean;
+  /** Find an NDC coding matching a predicate */
+  findNdcCoding(predicate: (code: string) => boolean): SmartCoding | undefined;
 }
 
 /**
@@ -82,6 +202,8 @@ export interface SmartResourceBase {
 
 /**
  * Generic type that converts any Resource to a Smart resource
+ * Note: Nested Coding/CodeableConcept wrapping happens at runtime via proxies,
+ * not at the type level, to avoid TypeScript structural typing issues
  */
 export type Smart<T extends Resource> = T & SmartResourceBase & ReferenceMethodsFor<T>;
 

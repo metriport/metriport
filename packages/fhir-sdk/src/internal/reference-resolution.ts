@@ -1,5 +1,5 @@
 import { inspect } from "util";
-import { Resource } from "@medplum/fhirtypes";
+import { Resource, Coding, CodeableConcept } from "@medplum/fhirtypes";
 import {
   Smart,
   getReferenceField,
@@ -7,6 +7,38 @@ import {
   REFERENCE_METHOD_MAPPING,
 } from "../types/smart-resources";
 import { ReverseReferenceOptions } from "../types/sdk-types";
+import { createSmartCoding, createSmartCodeableConcept } from "./coding-utilities";
+import { createTransparentProxy } from "./transparent-proxy";
+
+/**
+ * Type guard to check if a value is a CodeableConcept object
+ * Must check this BEFORE isCoding since both can have overlapping properties
+ */
+function isCodeableConcept(value: unknown): value is CodeableConcept {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    ("coding" in value || "text" in value) &&
+    // Exclude Reference objects which also have optional text
+    !("reference" in value)
+  );
+}
+
+/**
+ * Type guard to check if a value is a Coding object
+ * Check for Coding-specific properties and exclude CodeableConcept
+ */
+function isCoding(value: unknown): value is Coding {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    ("system" in value || "display" in value) &&
+    // Make sure it's not a CodeableConcept
+    !("coding" in value || "text" in value)
+  );
+}
 
 /**
  * Navigate through a nested path in a resource to get the value at that path.
@@ -283,6 +315,16 @@ export function createSmartResource<T extends Resource>(
         };
       }
 
+      // Handle Symbol.toStringTag for better console display
+      if (prop === Symbol.toStringTag) {
+        return `Smart<${target.resourceType}>`;
+      }
+
+      // Handle toJSON for serialization
+      if (prop === "toJSON") {
+        return () => target;
+      }
+
       // Check if this is a reference method call
       if (typeof prop === "string" && isReferenceMethod(prop, target.resourceType)) {
         return () =>
@@ -298,38 +340,117 @@ export function createSmartResource<T extends Resource>(
           );
       }
 
-      // Return original property
-      return Reflect.get(target, prop, receiver);
+      // Get the property value
+      const value = Reflect.get(target, prop, receiver);
+
+      // Don't wrap null or undefined
+      if (value === null || value === undefined) {
+        return value;
+      }
+
+      // Wrap CodeableConcept objects (check before Coding to avoid misidentification)
+      if (isCodeableConcept(value)) {
+        return createSmartCodeableConcept(value);
+      }
+
+      // Wrap Coding objects
+      if (isCoding(value)) {
+        return createSmartCoding(value);
+      }
+
+      // Handle arrays - wrap each element if needed
+      if (Array.isArray(value)) {
+        return value.map(item => {
+          if (item === null || item === undefined) {
+            return item;
+          }
+          // Check CodeableConcept before Coding
+          if (isCodeableConcept(item)) {
+            return createSmartCodeableConcept(item);
+          }
+          if (isCoding(item)) {
+            return createSmartCoding(item);
+          }
+          // Recursively wrap plain objects with transparent proxy
+          // Only wrap plain objects, not built-in types
+          if (typeof item === "object" && !Array.isArray(item) && item.constructor === Object) {
+            return createTransparentProxy(item);
+          }
+          return item;
+        });
+      }
+
+      // Recursively wrap plain objects with transparent proxy (but not primitives, dates, etc.)
+      // Only wrap plain objects, not built-in types like Date, RegExp, etc.
+      if (typeof value === "object" && !Array.isArray(value) && value.constructor === Object) {
+        return createTransparentProxy(value);
+      }
+
+      // Return original property for primitives and other types
+      return value;
     },
 
     // Ensure JSON serialization works correctly (FR-5.8)
     ownKeys: target => {
-      return Reflect.ownKeys(target).filter(
-        key =>
-          key !== "__isSmartResource" &&
-          key !== "getReferencingResources" &&
-          key !== "getReferencedResources" &&
-          key !== "toString" &&
-          key !== inspect.custom
-      );
+      const keys = Reflect.ownKeys(target);
+      const virtualMethods: (string | symbol)[] = [
+        "getReferencingResources",
+        "getReferencedResources",
+        "toString",
+      ];
+
+      // Add reference methods for this resource type
+      const referenceMethods = REFERENCE_METHOD_MAPPING[target.resourceType];
+      if (referenceMethods) {
+        virtualMethods.push(...Object.keys(referenceMethods));
+      }
+
+      // Filter out internal markers and add virtual methods for DevTools
+      return [...keys.filter(key => key !== "__isSmartResource"), ...virtualMethods] as ArrayLike<
+        string | symbol
+      >;
     },
 
     getOwnPropertyDescriptor: (target, prop) => {
+      // Hide internal markers from enumeration
       if (
         prop === "__isSmartResource" ||
-        prop === "getReferencingResources" ||
-        prop === "getReferencedResources" ||
-        prop === "toString" ||
+        prop === Symbol.toStringTag ||
+        prop === "toJSON" ||
         prop === inspect.custom
       ) {
         return undefined;
       }
+
+      // Make virtual methods enumerable for DevTools
+      if (
+        prop === "getReferencingResources" ||
+        prop === "getReferencedResources" ||
+        prop === "toString"
+      ) {
+        return {
+          enumerable: true,
+          configurable: true,
+          writable: false,
+        };
+      }
+
+      // Make reference methods enumerable for DevTools
+      const referenceMethods = REFERENCE_METHOD_MAPPING[target.resourceType];
+      if (referenceMethods && typeof prop === "string" && prop in referenceMethods) {
+        return {
+          enumerable: true,
+          configurable: true,
+          writable: false,
+        };
+      }
+
       return Reflect.getOwnPropertyDescriptor(target, prop);
     },
   }) as Smart<T>;
 
-  // Cache the smart resource
-  smartResourceCache.set(resource, smartResource);
+  // Cache the smart resource - cast to avoid type complexity issues
+  smartResourceCache.set(resource, smartResource as Smart<Resource>);
 
   return smartResource;
 }

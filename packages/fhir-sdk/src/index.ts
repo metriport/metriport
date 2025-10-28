@@ -1,5 +1,5 @@
 export { FhirBundleSdk } from "./fhir-bundle-sdk";
-export { Smart } from "./types/smart-resources";
+export { Smart, SmartCoding, SmartCodeableConcept } from "./types/smart-resources";
 export {
   ValidationResult,
   BrokenReference,
@@ -16,6 +16,8 @@ export {
   AllergyIntolerance,
   Bundle,
   CarePlan,
+  CodeableConcept,
+  Coding,
   Composition,
   Condition,
   Coverage,

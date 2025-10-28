@@ -485,9 +485,11 @@ export class FhirBundleSdk {
     for (const resourceId of resourceIds) {
       const resource = this.getResourceById(resourceId);
       if (resource) {
-        const originalEntry = findOriginalEntry(this.bundle, resource);
+        // Cast to Resource to satisfy type checker - Smart extends Resource
+        const plainResource = resource as unknown as Resource;
+        const originalEntry = findOriginalEntry(this.bundle, plainResource);
         if (originalEntry) {
-          exportEntries.push(createBundleEntry(originalEntry, resource));
+          exportEntries.push(createBundleEntry(originalEntry, plainResource));
         }
       }
       // FR-6.5: Silently skip resources that don't exist
@@ -508,6 +510,7 @@ export class FhirBundleSdk {
     for (const resource of resources) {
       const originalEntry = findOriginalEntry(this.bundle, resource);
       if (originalEntry) {
+        // Resource is already a plain Resource from our internal maps
         exportEntries.push(createBundleEntry(originalEntry, resource));
       }
     }

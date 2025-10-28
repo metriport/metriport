@@ -333,7 +333,7 @@ allObs.forEach(obs => {
 ```
 
 **Available type guards:**
-There is a type guard available for every existing FHIR resource type. If it has a medplum fhirtype, there is a type guard for it.
+Use the `is<ResourceType>` type guard to check if a resource is of a specific type. There is one for every fhir resource type. Use them whenever possible over writing your own type guards.
 
 ## Example Use Cases
 
