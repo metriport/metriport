@@ -32,7 +32,7 @@ describe("validateMonitoringSettingsForCx", () => {
     it("validates successfully when no monitoring settings provided", async () => {
       await expect(
         validateMonitoringSettingsForCx(cxId, undefined, mockLog)
-      ).resolves.not.toThrow();
+      ).resolves.toBeUndefined();
       expect(mockLog).toHaveBeenCalledWith(`Validating monitoring settings for cx: ${cxId}`);
       expect(mockLog).toHaveBeenCalledWith(`Monitoring settings are valid for cx: ${cxId}`);
       expect(mockIsQuestFeatureFlagEnabledForCx).not.toHaveBeenCalled();
@@ -44,7 +44,7 @@ describe("validateMonitoringSettingsForCx", () => {
       const monitoring: Partial<MonitoringSettings> = {};
       await expect(
         validateMonitoringSettingsForCx(cxId, monitoring, mockLog)
-      ).resolves.not.toThrow();
+      ).resolves.toBeUndefined();
       expect(mockLog).toHaveBeenCalledWith(`Validating monitoring settings for cx: ${cxId}`);
       expect(mockLog).toHaveBeenCalledWith(`Monitoring settings are valid for cx: ${cxId}`);
       expect(mockIsQuestFeatureFlagEnabledForCx).not.toHaveBeenCalled();
@@ -60,7 +60,7 @@ describe("validateMonitoringSettingsForCx", () => {
       };
       await expect(
         validateMonitoringSettingsForCx(cxId, monitoring, mockLog)
-      ).resolves.not.toThrow();
+      ).resolves.toBeUndefined();
       expect(mockLog).toHaveBeenCalledWith(`Validating monitoring settings for cx: ${cxId}`);
       expect(mockLog).toHaveBeenCalledWith(`Monitoring settings are valid for cx: ${cxId}`);
       expect(mockIsQuestFeatureFlagEnabledForCx).not.toHaveBeenCalled();
@@ -80,7 +80,7 @@ describe("validateMonitoringSettingsForCx", () => {
       };
       await expect(
         validateMonitoringSettingsForCx(cxId, monitoring, mockLog)
-      ).resolves.not.toThrow();
+      ).resolves.toBeUndefined();
       expect(mockIsSurescriptsNotificationsFeatureFlagEnabledForCx).toHaveBeenCalledWith(cxId);
 
       expect(mockLog).toHaveBeenCalledWith(`Validating monitoring settings for cx: ${cxId}`);
@@ -101,7 +101,7 @@ describe("validateMonitoringSettingsForCx", () => {
       };
       await expect(
         validateMonitoringSettingsForCx(cxId, monitoring, mockLog)
-      ).resolves.not.toThrow();
+      ).resolves.toBeUndefined();
       expect(mockIsSurescriptsFeatureFlagEnabledForCx).toHaveBeenCalledWith(cxId);
 
       expect(mockLog).toHaveBeenCalledWith(`Validating monitoring settings for cx: ${cxId}`);
@@ -122,7 +122,7 @@ describe("validateMonitoringSettingsForCx", () => {
       };
       await expect(
         validateMonitoringSettingsForCx(cxId, monitoring, mockLog)
-      ).resolves.not.toThrow();
+      ).resolves.toBeUndefined();
       expect(mockIsQuestFeatureFlagEnabledForCx).toHaveBeenCalledWith(cxId);
 
       expect(mockLog).toHaveBeenCalledWith(`Validating monitoring settings for cx: ${cxId}`);
@@ -143,7 +143,7 @@ describe("validateMonitoringSettingsForCx", () => {
       };
       await expect(
         validateMonitoringSettingsForCx(cxId, monitoring, mockLog)
-      ).resolves.not.toThrow();
+      ).resolves.toBeUndefined();
       expect(mockIsQuestFeatureFlagEnabledForCx).toHaveBeenCalledWith(cxId);
 
       expect(mockLog).toHaveBeenCalledWith(`Validating monitoring settings for cx: ${cxId}`);

@@ -110,8 +110,6 @@ export async function getPatientsInCohort({
 
   log(`Found ${rawPatients.length} patients in cohort`);
 
-  console.log("rawPatients", rawPatients);
-
   const patientsWithIdentifiers = rawPatients.map(p => {
     const { patient_mappings, ...data } = p.dataValues;
     return {

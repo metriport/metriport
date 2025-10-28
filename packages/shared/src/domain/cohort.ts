@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { BaseDomain } from "./base-domain";
 import { createQueryMetaSchemaV2 } from "./pagination-v2";
+import { BadRequestError } from "../error/bad-request";
 
 // ### Constants ###
 export const COHORT_COLORS = [
@@ -92,7 +93,7 @@ export const cohortSettingsSchema = z
   .strict();
 
 export const baseCohortSchema = z.object({
-  name: z.string().transform(name => normalizeCohortName(name)),
+  name: z.string().trim().min(1, "Name is required"),
   color: cohortColorsSchema,
   description: z.string(),
   settings: cohortSettingsSchema,
@@ -139,7 +140,7 @@ const allOptionalMonitoringSchema = monitoringSchema.deepPartial();
 const allOptionalCohortSettingsSchema = cohortSettingsSchema.deepPartial();
 
 export const cohortUpdateSchema = z.object({
-  name: z.string().transform(normalizeCohortName).optional(),
+  name: z.string().trim().min(1, "Name is required").optional(),
   color: cohortColorsSchema.optional(),
   description: z.string().optional(),
   settings: allOptionalCohortSettingsSchema.optional(),
@@ -203,5 +204,9 @@ export const cohortPatientListQuerySchema = createQueryMetaSchemaV2(cohortPatien
 export type CohortPatientListQuery = z.infer<typeof cohortPatientListQuerySchema>;
 
 export function normalizeCohortName(name: string): string {
-  return name.trim();
+  const trimmed = name.trim();
+  if (trimmed.length === 0) {
+    throw new BadRequestError("Cohort name cannot be empty");
+  }
+  return trimmed;
 }

@@ -1,6 +1,6 @@
 import { replacePathParams } from "../replace-path-params";
 
-describe("replaceUrlParams", () => {
+describe("replacePathParams", () => {
   it("replaces single parameter", () => {
     const result = replacePathParams("/medical/v1/cohort/:id/patient", {
       id: "01999943-5fab-7a11-8243-7443f9fa20cd",

@@ -97,10 +97,9 @@ describe("get-cohort functions", () => {
       });
       expect(mockGetCohortSize).toHaveBeenCalledWith({
         cohortId,
-        cxId,
       });
       expect(result).toEqual({
-        cohort: mockCohort.dataValues,
+        ...mockCohort.dataValues,
         size: cohortSize,
       });
     });

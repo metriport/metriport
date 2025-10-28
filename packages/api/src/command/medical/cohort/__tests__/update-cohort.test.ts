@@ -86,8 +86,8 @@ describe("updateCohort", () => {
         color: updateData.color,
         settings: DEFAULT_SETTINGS,
       });
-      expect(mockGetCohortSize).toHaveBeenCalledWith({ cohortId, cxId });
-      expect(result).toEqual({ cohort: mockCohort.dataValues, size: 5 });
+      expect(mockGetCohortSize).toHaveBeenCalledWith({ cohortId });
+      expect(result).toEqual({ ...mockCohort.dataValues, size: 5 });
     });
   });
 

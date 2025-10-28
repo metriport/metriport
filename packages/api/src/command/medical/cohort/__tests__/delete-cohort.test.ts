@@ -23,6 +23,7 @@ describe("deleteCohort", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockCohortModelDestroy.mockResolvedValue(1);
+    mockGetPatientIdsInCohort.mockResolvedValue([]);
   });
 
   describe("Happy path", () => {

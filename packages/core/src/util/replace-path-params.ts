@@ -6,7 +6,7 @@
  * @returns URL string with parameters replaced
  *
  * @example
- * replaceUrlParams('/medical/v1/cohort/:id/patient', { id: '123' })
+ * replacePathParams('/medical/v1/cohort/:id/patient', { id: '123' })
  * // Returns: '/medical/v1/cohort/123/patient'
  */
 export function replacePathParams(urlTemplate: string, params: Record<string, string>): string {

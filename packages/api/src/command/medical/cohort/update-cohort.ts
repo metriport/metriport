@@ -5,6 +5,7 @@ import {
   CohortSettings,
   CohortUpdateCmd,
   CohortWithSize,
+  normalizeCohortName,
 } from "@metriport/shared/domain/cohort";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { CohortModel } from "../../../models/medical/cohort";
@@ -28,8 +29,9 @@ export async function updateCohort({
   validateVersionForUpdate(oldCohort, eTag);
 
   const newName = data.name;
+  const normalizedName = newName ? normalizeCohortName(newName) : oldCohort.name;
   if (newName) {
-    const existingCohort = await getCohortByNameSafe({ cxId, name: newName });
+    const existingCohort = await getCohortByNameSafe({ cxId, name: normalizedName });
     if (existingCohort && existingCohort.id !== oldCohort.id) {
       throw new BadRequestError("A cohort with this name already exists", undefined, {
         existingCohortId: existingCohort.id,
@@ -45,6 +47,7 @@ export async function updateCohort({
 
   const newData = {
     ...data,
+    name: normalizedName,
     settings: mergedSettings,
   };
 

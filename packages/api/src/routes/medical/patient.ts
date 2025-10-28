@@ -639,7 +639,7 @@ router.get(
  * Returns a list of all cohorts the patient is a member of.
  *
  * @param   req.cxId      The customer ID.
- * @return  The suspects for the patient.
+ * @return  The cohorts for the patient.
  */
 router.get(
   "/cohort",

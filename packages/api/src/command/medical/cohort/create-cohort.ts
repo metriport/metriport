@@ -1,7 +1,7 @@
 import { out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError } from "@metriport/shared";
-import { Cohort, CohortCreateCmd } from "@metriport/shared/domain/cohort";
+import { Cohort, CohortCreateCmd, normalizeCohortName } from "@metriport/shared/domain/cohort";
 import { CohortModel } from "../../../models/medical/cohort";
 import { getCohortByNameSafe } from "./get-cohort";
 import { validateMonitoringSettingsForCx } from "./utils";
@@ -25,11 +25,11 @@ export async function createCohort({
 
   const monitoringSettings = settings?.monitoring;
   await validateMonitoringSettingsForCx(cxId, monitoringSettings, log);
-
+  const normalizedName = normalizeCohortName(name);
   const cohortCreate = {
     id: uuidv7(),
     cxId,
-    name,
+    name: normalizedName,
     description: description ?? "",
     color,
     settings,
