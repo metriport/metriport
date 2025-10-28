@@ -86,17 +86,24 @@ export const monitoringSchema = z
   })
   .strict();
 
-export const cohortSettingsSchema = z
-  .object({
-    monitoring: monitoringSchema,
+const overridesSchema = z.array(
+  z.object({
+    hieName: z.boolean(),
   })
-  .strict();
+);
+
+const fullCohortSettingsSchema = z.object({
+  monitoring: monitoringSchema,
+  overrides: overridesSchema,
+});
+
+const cohortSettingsNoOverrides = fullCohortSettingsSchema.omit({ overrides: true });
 
 export const baseCohortSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
   color: cohortColorsSchema,
   description: z.string(),
-  settings: cohortSettingsSchema,
+  settings: cohortSettingsNoOverrides,
 });
 
 export type NotificationSchedule = z.infer<typeof notificationScheduleSchema>;
@@ -104,8 +111,12 @@ export type CohortFrequency = z.infer<typeof frequencySchema>;
 export type MonitoringSettings = z.infer<typeof monitoringSchema>;
 export type Schedule = z.infer<typeof scheduleSchema>;
 export type CohortColors = z.infer<typeof cohortColorsSchema>;
-export type CohortSettings = z.infer<typeof cohortSettingsSchema>;
+export type CohortSettings = z.infer<typeof cohortSettingsNoOverrides>;
 export type BaseCohort = z.infer<typeof baseCohortSchema>;
+
+// Should only be used internally
+export type FullCohortSettings = z.infer<typeof fullCohortSettingsSchema>;
+export type CohortWithOverrides = BaseCohort & { settings: FullCohortSettings };
 
 // Frequency priority mapping for merging (lower number = more frequent)
 export const FREQUENCY_PRIORITY: Record<CohortFrequency, number> = {
@@ -137,7 +148,7 @@ export type CohortCreateInput = z.input<typeof cohortCreateSchema>;
 
 // > Update Schemas
 const allOptionalMonitoringSchema = monitoringSchema.deepPartial();
-const allOptionalCohortSettingsSchema = cohortSettingsSchema.deepPartial();
+const allOptionalCohortSettingsSchema = cohortSettingsNoOverrides.deepPartial();
 
 export const cohortUpdateSchema = z.object({
   name: z.string().trim().min(1, "Name is required").optional(),
