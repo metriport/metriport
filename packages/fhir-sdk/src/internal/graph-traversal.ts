@@ -21,8 +21,8 @@ export function walkReferences<T extends Resource>(
   const visited = new Set<string>();
   const queue: Array<{ resource: Smart<Resource>; depth: number }> = [];
 
-  // Initialize with start resource at depth 0
-  queue.push({ resource: startResource, depth: 0 });
+  // Initialize with start resource at depth 0 - cast to avoid type complexity
+  queue.push({ resource: startResource as Smart<Resource>, depth: 0 });
   if (startResource.id) {
     visited.add(startResource.id);
   }
