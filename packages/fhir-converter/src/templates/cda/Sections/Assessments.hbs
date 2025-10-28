@@ -37,7 +37,7 @@
                 {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                     {{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString assessment)) REF=(concat 'Patient/' patientId.Id)}},
                 {{/with}}
-            {{else if assessment.text.content}}
+            {{else if (and assessment.text.content (not (contains assessment.text.content "Not on file")))}}
                 {{>References/DiagnosticReport/assessment.hbs text=(extractTextFromNestedProperties assessment.text.content) diagReport=assessment ID=(generateUUID (toJsonString assessment))}},
                 {{#if @encompassingEncounterIds}} 
                     {{>References/DiagnosticReport/encounter.hbs ID=(generateUUID (toJsonString assessment)) REF=(concat 'Encounter/' @encompassingEncounterIds.newId)}}
