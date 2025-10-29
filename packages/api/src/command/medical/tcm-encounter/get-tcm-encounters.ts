@@ -4,8 +4,8 @@ import { omit } from "lodash";
 import { QueryTypes } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
-import { PaginationV2WithQueryClauses } from "../../pagination-v2";
 import { PatientMappingModel } from "../../../models/patient-mapping";
+import { PaginationV2WithQueryClauses } from "../../pagination-v2";
 
 /**
  * Add a default filter date far in the past to guarantee hitting the compound index

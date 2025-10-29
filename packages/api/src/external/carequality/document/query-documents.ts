@@ -102,6 +102,7 @@ export async function getDocumentsFromCQ({
         patient,
         source: MedicalDataSource.CAREQUALITY,
         triggerConsolidated,
+        forceDownload,
       });
 
       if ((forcePatientDiscovery || isStale) && !isProcessing) {
