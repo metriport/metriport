@@ -59,13 +59,19 @@ program
         facilityId,
         patientIds,
       });
-      const requests = dataMapper.convertBatchRequestToPatientRequests(batchRequestData);
-
-      log("Sending " + requests.length + " requests");
-      const identifiers = await client.sendBatchPatientRequest(requests);
-      log("Done writing batch patient requests");
-      writeSurescriptsIdentifiersFile(csvOutput, identifiers);
-      log(`Wrote ${identifiers.length} identifiers to ${csvOutput}.csv`);
+      const response = await client.sendBatchRequest(batchRequestData);
+      if (!response) {
+        log(`No patients requested for facility ${facilityId}`);
+        return;
+      }
+      writeSurescriptsIdentifiersFile(
+        csvOutput,
+        response.requestedPatientIds.map(patientId => ({
+          transmissionId: response.transmissionId,
+          populationId: patientId,
+        }))
+      );
+      log(`Wrote ${response.requestedPatientIds.length} identifiers to ${csvOutput}.csv`);
     }
   );
 
