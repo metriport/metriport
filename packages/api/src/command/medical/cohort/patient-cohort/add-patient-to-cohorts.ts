@@ -1,4 +1,3 @@
-import { out } from "@metriport/core/util";
 import { BadRequestError } from "@metriport/shared";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { PatientCohortModel } from "../../../../models/medical/patient-cohort";
@@ -14,8 +13,6 @@ export async function addPatientToCohorts({
   cxId,
   cohortIds,
 }: AddPatientToCohortsParams): Promise<void> {
-  const { log } = out(`addPatientToCohorts - cx ${cxId}, patient ${patientId}`);
-
   if (cohortIds.length === 0) {
     throw new BadRequestError("No cohort IDs provided in request.", undefined, { patientId });
   }
@@ -29,12 +26,9 @@ export async function addPatientToCohorts({
     cohortId,
   }));
 
-  const createdPatientCohortRows = await PatientCohortModel.bulkCreate(patientCohortRows, {
+  await PatientCohortModel.bulkCreate(patientCohortRows, {
     ignoreDuplicates: true,
   });
-  log(
-    `Assigned ${createdPatientCohortRows.length}/${uniqueCohortIds.length} cohorts to patient ${patientId}`
-  );
 
   return;
 }

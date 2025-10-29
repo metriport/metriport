@@ -1,7 +1,10 @@
+import { executeAsynchronously } from "@metriport/core/util";
 import { NotFoundError } from "@metriport/shared";
 import { Cohort, CohortWithSize, normalizeCohortName } from "@metriport/shared/domain/cohort";
 import { CohortModel } from "../../../models/medical/cohort";
 import { getCohortSize } from "./patient-cohort/get-cohort-size";
+
+const COHORT_SIZE_LOOKUP_CONCURRENCY = 10;
 
 export type GetCohortProps = {
   id: string;
@@ -26,7 +29,6 @@ export async function getCohortWithSizeOrFail({
     getCohortSize({ cohortId: id }),
   ]);
 
-
   return { ...cohort.dataValues, size };
 }
 
@@ -35,14 +37,19 @@ export async function getCohorts({ cxId }: { cxId: string }): Promise<CohortWith
     where: { cxId },
   });
 
-  const cohortsWithSizes = await Promise.all(
-    cohorts.map(async cohort => {
+  const cohortsWithSizes: CohortWithSize[] = [];
+  await executeAsynchronously(
+    cohorts,
+    async cohort => {
       const size = await getCohortSize({ cohortId: cohort.id });
-      return {
+      cohortsWithSizes.push({
         ...cohort.dataValues,
         size,
-      };
-    })
+      });
+    },
+    {
+      numberOfParallelExecutions: COHORT_SIZE_LOOKUP_CONCURRENCY,
+    }
   );
 
   return cohortsWithSizes;
@@ -67,16 +74,14 @@ export async function getCohortsForPatient({
     ],
   });
 
-  // Get sizes for all cohorts in parallel
-  const cohortsWithSizes = await Promise.all(
-    cohorts.map(async cohort => {
-      const size = await getCohortSize({ cohortId: cohort.id });
-      return {
-        ...cohort.dataValues,
-        size,
-      };
-    })
-  );
+  const cohortsWithSizes: CohortWithSize[] = [];
+  await executeAsynchronously(cohorts, async cohort => {
+    const size = await getCohortSize({ cohortId: cohort.id });
+    cohortsWithSizes.push({
+      ...cohort.dataValues,
+      size,
+    });
+  });
 
   return cohortsWithSizes;
 }

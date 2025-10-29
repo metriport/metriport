@@ -49,8 +49,6 @@ export async function addAllPatientsToCohort({
   cohortId,
   cxId,
 }: AssignAllPatientsToCohortParams): Promise<void> {
-  const { log } = out(`addAllPatientsToCohort - cx ${cxId}, cohort ${cohortId}`);
-
   const patientIds = await getPatientIds({ cxId });
 
   const patientCohortRows = patientIds.map(patientId => ({
@@ -63,8 +61,6 @@ export async function addAllPatientsToCohort({
   const createdPatientCohortRows = await PatientCohortModel.bulkCreate(patientCohortRows, {
     ignoreDuplicates: true,
   });
-  const successCount = createdPatientCohortRows.length;
-  log(`Assigned ${successCount}/${patientIds.length} patients to cohort ${cohortId}`);
-
+  createdPatientCohortRows.length;
   return;
 }
