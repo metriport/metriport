@@ -193,7 +193,7 @@ export function dtoFromCohort(cohort: Cohort & { eTag: string }): CohortDTO {
     name: cohort.name,
     color: cohort.color,
     description: cohort.description,
-    settings: cohort.settings || DEFAULT_SETTINGS,
+    settings: cohort.settings ?? DEFAULT_SETTINGS,
   };
 }
 

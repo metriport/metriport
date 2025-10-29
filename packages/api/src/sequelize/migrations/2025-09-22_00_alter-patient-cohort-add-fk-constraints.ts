@@ -11,7 +11,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
       transaction,
     });
 
-    // Add the foreign key constraint with ON DELETE CASCADE
+    // Add the foreign key constraint with ON DELETE RESTRICT
     await queryInterface.addConstraint(tableName, {
       fields: [cohortIdColumn],
       type: "foreign key",
@@ -20,7 +20,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
         table: cohortTableName,
         field: "id",
       },
-      onDelete: "CASCADE",
+      onDelete: "RESTRICT",
       onUpdate: "CASCADE",
       transaction,
     });

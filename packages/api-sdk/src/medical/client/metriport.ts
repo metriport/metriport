@@ -716,6 +716,7 @@ export class MetriportMedicalApi {
    */
   async createCohort(data: CohortCreateInput): Promise<CohortWithSizeDTO> {
     const resp = await this.api.post(`${COHORT_URL}`, data);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data;
   }
 
@@ -734,7 +735,10 @@ export class MetriportMedicalApi {
    * @returns The updated cohort.
    */
   async updateCohort(id: string, data: CohortUpdateRequest): Promise<CohortWithSizeDTO> {
-    const resp = await this.api.put(`${COHORT_URL}/${id}`, data);
+    const resp = await this.api.put(`${COHORT_URL}/${id}`, data, {
+      headers: { ...getETagHeader({ eTag: data.eTag }) },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data;
   }
 
@@ -745,6 +749,7 @@ export class MetriportMedicalApi {
    */
   async getCohort(id: string): Promise<CohortWithSizeDTO> {
     const resp = await this.api.get(`${COHORT_URL}/${id}`);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data;
   }
 
@@ -754,6 +759,7 @@ export class MetriportMedicalApi {
    */
   async listCohorts(): Promise<{ cohorts: CohortWithSizeDTO[] }> {
     const resp = await this.api.get(`${COHORT_URL}`);
+    if (!resp.data) return { cohorts: [] };
     return resp.data;
   }
 
@@ -775,6 +781,7 @@ export class MetriportMedicalApi {
   }): Promise<CohortWithSizeDTO> {
     const body = allPatients ? { allPatients: true } : { patientIds };
     const resp = await this.api.post(`${COHORT_URL}/${cohortId}/patient`, body);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data;
   }
 
@@ -796,6 +803,7 @@ export class MetriportMedicalApi {
   }): Promise<CohortWithSizeDTO> {
     const body = allPatients ? { allPatients: true } : { patientIds };
     const resp = await this.api.delete(`${COHORT_URL}/${cohortId}/patient`, { data: body });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data;
   }
 
@@ -826,6 +834,7 @@ export class MetriportMedicalApi {
 
   async getCohortPatientsPage(url: string): Promise<PaginatedResponse<PatientDTO, "patients">> {
     const resp = await this.api.get(url);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data;
   }
 
@@ -836,6 +845,7 @@ export class MetriportMedicalApi {
    */
   async getCohortsForPatient(patientId: string): Promise<{ cohorts: CohortWithSizeDTO[] }> {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/cohort`);
+    if (!resp.data) return { cohorts: [] };
     return resp.data;
   }
 

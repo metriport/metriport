@@ -232,7 +232,7 @@ router.get(
  * @param req.body.patientIds The list of patient IDs to assign. Mutually exclusive with the all flag.
  * @param req.body.all Flag to confirm we want to assign all patients to the cohort. Mutually exclusive with the patientIds list.
  *
- * @returns Cohort details with the updated patient IDs and count.
+ * @returns Cohort with the updated patient count.
  */
 router.post(
   "/:id/patient",

@@ -169,30 +169,25 @@ describe("get-cohort functions", () => {
   describe("getCohortByName", () => {
     it("returns cohort when exactly one found", async () => {
       const trimmedName = cohortName.trim();
-      mockCohortModelFindAll.mockResolvedValue([mockCohort]);
+      mockCohortModelFindOne.mockResolvedValue(mockCohort);
 
       const result = await getCohortByName({ cxId, name: cohortName });
 
-      expect(mockCohortModelFindAll).toHaveBeenCalledWith({
-        where: {
-          cxId,
-          name: trimmedName,
-        },
+      expect(mockCohortModelFindOne).toHaveBeenCalledWith({
+        where: { cxId, name: trimmedName },
       });
       expect(result).toEqual(mockCohort.dataValues);
     });
 
+
     it("trims whitespace from cohort name", async () => {
       const nameWithWhitespace = `  ${cohortName}  `;
-      mockCohortModelFindAll.mockResolvedValue([mockCohort]);
+      mockCohortModelFindOne.mockResolvedValue(mockCohort);
 
       await getCohortByName({ cxId, name: nameWithWhitespace });
 
-      expect(mockCohortModelFindAll).toHaveBeenCalledWith({
-        where: {
-          cxId,
-          name: cohortName,
-        },
+      expect(mockCohortModelFindOne).toHaveBeenCalledWith({
+        where: { cxId, name: cohortName },
       });
     });
 

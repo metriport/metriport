@@ -33,7 +33,7 @@ export async function removeAllPatientsFromCohort({
   const { log } = out(`removeAllPatientsFromCohort - cx ${cxId}, cohort ${cohortId}`);
 
   const deletedCount = await PatientCohortModel.destroy({
-    where: { cohortId },
+    where: { cohortId, cxId },
   });
   log(`Removed ${deletedCount} patients from cohort ${cohortId}`);
 }

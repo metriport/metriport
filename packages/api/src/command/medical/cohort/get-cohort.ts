@@ -1,9 +1,7 @@
-import { BadRequestError, NotFoundError } from "@metriport/shared";
+import { NotFoundError } from "@metriport/shared";
 import { Cohort, CohortWithSize, normalizeCohortName } from "@metriport/shared/domain/cohort";
 import { CohortModel } from "../../../models/medical/cohort";
 import { getCohortSize } from "./patient-cohort/get-cohort-size";
-
-export type CohortWithDetails = { cohort: Cohort; details: { size: number } };
 
 export type GetCohortProps = {
   id: string;
@@ -96,28 +94,20 @@ export async function getCohortByName({
   cxId: string;
   name: string;
 }): Promise<Cohort> {
-  const trimmedName = name.trim();
+  const normalizedName = normalizeCohortName(name);
 
-  const cohorts = await CohortModel.findAll({
-    where: {
-      cxId,
-      name: trimmedName,
-    },
+  const cohort = await CohortModel.findOne({
+    where: { cxId, name: normalizedName },
   });
 
-  if (cohorts.length === 0) {
-    throw new NotFoundError("No cohorts found with the specified name", undefined, {
+  if (!cohort) {
+    throw new NotFoundError("No cohort found with the specified name", undefined, {
       cxId,
-      name: trimmedName,
-    });
-  } else if (cohorts.length > 1) {
-    throw new BadRequestError("Multiple cohorts found with the specified name", undefined, {
-      cxId,
-      name: trimmedName,
+      name: normalizedName,
     });
   }
 
-  return cohorts[0].dataValues;
+  return cohort.dataValues;
 }
 
 /**
