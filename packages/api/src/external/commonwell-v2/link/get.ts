@@ -42,7 +42,7 @@ export async function get(
 
   const cwPatientId = getCommonwellPatientId(patient);
   if (!cwPatientId) {
-    log(`No CW patient ID for patient`, patient.id);
+    log(`No CW patient ID for patient: ${patient.id}`);
     return {
       existingLinks: [],
       probableLinks: [],

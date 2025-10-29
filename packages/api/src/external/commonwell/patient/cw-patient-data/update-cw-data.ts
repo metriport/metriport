@@ -71,7 +71,7 @@ export async function updateCwPatientDataWithinDBTx(
 }
 
 export function prepareCwPatientDataUpdatePayload(
-  update: CwPatientDataUpdate,
+  update: Pick<CwPatientDataUpdate, "data">,
   existing: CwPatientDataModel,
   linksToInvalidate?: CwLink[]
 ): CwData {
@@ -87,7 +87,10 @@ export function prepareCwPatientDataUpdatePayload(
     ? updatedLinks.filter(link => !isContainedAt(link, linksToInvalidate))
     : updatedLinks;
 
-  const uniqueUpdatedLinks = uniqBy(validLinks, getLinkOrganizationId);
+  const uniqueUpdatedLinks = uniqBy(
+    validLinks,
+    link => getLinkOrganizationId(link) ?? link.Links.Self
+  );
   const updatedLinkDemographicsHistory = {
     ...existing.data.linkDemographicsHistory,
     ...(newLinks?.linkDemographicsHistory ?? {}),

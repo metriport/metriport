@@ -39,23 +39,27 @@ export function makeCwLink({
       country: address.country ?? "US",
     })),
     telecom:
-      contact?.map(contact => {
-        if (contact.email) {
-          return {
-            use: "home",
-            value: `mailto:${contact.email}`,
-            system: "email",
-          };
-        }
-        if (contact.phone) {
-          return {
-            use: "home",
-            value: `tel:${contact.phone}`,
-            system: "phone",
-          };
-        }
-        return {};
-      }) ?? [],
+      contact
+        ?.map(contact => {
+          if (contact.email) {
+            return {
+              use: "home",
+              value: `mailto:${contact.email}`,
+              system: "email" as const,
+            };
+          }
+          if (contact.phone) {
+            return {
+              use: "home",
+              value: `tel:${contact.phone}`,
+              system: "phone" as const,
+            };
+          }
+          return undefined;
+        })
+        .filter(
+          (t): t is { use: "home"; system: "email" | "phone"; value: string } => t !== undefined
+        ) ?? [],
     managingOrganization: {
       identifier: [
         {
