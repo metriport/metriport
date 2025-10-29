@@ -44,7 +44,7 @@ import {
   GetSingleConsolidatedQueryProgressResponse,
   MedicalRecordUrlResponse,
   medicalRecordUrlResponseSchema,
-  PatientCreate,
+  PatientCreateInput,
   PatientHieOptOutResponse,
   PatientUpdate,
   StartConsolidatedQueryProgressResponse,
@@ -352,7 +352,7 @@ export class MetriportMedicalApi {
    * @return The newly created patient.
    */
   async createPatient(
-    data: PatientCreate,
+    data: PatientCreateInput,
     facilityId: string,
     additionalQueryParams: Record<string, string | number | boolean> = {}
   ): Promise<PatientDTO> {

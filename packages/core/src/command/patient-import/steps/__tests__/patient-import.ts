@@ -11,5 +11,6 @@ export function makePatientPayload(params: Partial<PatientPayload> = {}): Patien
   return {
     ...patient.data,
     externalId: externalId ?? patient.externalId ?? faker.string.uuid(),
+    cohorts: params.cohorts ?? [],
   };
 }
