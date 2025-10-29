@@ -419,8 +419,8 @@ router.post(
  * GET /internal/carequality/directory/ids-by-managing-organization-ids
  *
  * Retrieves the organization IDs for the given managing organization IDs.
- * @param req.query.tableName The name of the table to query.
- * Can be one of: "cq_directory_entry_view", "cq_directory_entry_backup1", "cq_directory_entry_backup2".
+ * @param req.query.tableAlias The alias of the table to query.
+ * Can be one of: "latest", "latest-1", "latest-2", "latest-3".
  * @param req.query.managingOrganizationIds The managing organization IDs to query.
  * @returns Returns the organization IDs for the given managing organization IDs.
  */
@@ -428,14 +428,14 @@ router.get(
   "/directory/ids-by-managing-organization-ids",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const tableName = getFrom("query").orFail("tableName", req);
+    const tableAlias = getFrom("query").orFail("tableAlias", req);
     const managingOrganizationIds = getFrom("query")
       .orFail("managingOrganizationIds", req)
       .split(",") as string[];
 
     const orgs = await getCqDirectoryEntriesByManagingOrganizationIds(
       managingOrganizationIds,
-      tableName
+      tableAlias
     );
 
     return res.status(httpStatus.OK).json({ orgs });
@@ -446,8 +446,8 @@ router.get(
  * GET /internal/carequality/directory/details-by-ids
  *
  * Retrieves the basic details for the given organization IDs.
- * @param req.query.tableName The name of the table to query.
- *   Can be one of: "cq_directory_entry_view", "cq_directory_entry_backup1", "cq_directory_entry_backup2".
+ * @param req.query.tableAlias The alias of the table to query.
+ *   Can be one of: "latest", "latest-1", "latest-2", "latest-3".
  * @param req.query.ids The IDs of the organizations to query. Comma separated list of IDs.
  * @returns Returns the id, name, city, and state for the given organization IDs.
  */
@@ -455,7 +455,7 @@ router.get(
   "/directory/details-by-ids",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const tableName = getFrom("query").orFail("tableName", req);
+    const tableAlias = getFrom("query").orFail("tableAlias", req);
     const ids = getFrom("query")
       .orFail("ids", req)
       .split(",")
@@ -466,7 +466,7 @@ router.get(
       throw new BadRequestError("ids cannot be empty");
     }
 
-    const orgs = await getCqDirectoryEntriesBasicDetailsByIds(ids, tableName);
+    const orgs = await getCqDirectoryEntriesBasicDetailsByIds(ids, tableAlias);
 
     return res.status(httpStatus.OK).json({ orgs });
   })
