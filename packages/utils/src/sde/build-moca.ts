@@ -102,7 +102,7 @@ async function buildPatientMocaScoreObservations(
             .trim();
           console.log(`Original text: ${originalText}`);
           const observation = createMocaScoreObservation({
-            ...diagnosticReportParams,
+            diagnosticReport: source.resource,
             mocaScore: score,
             originalText,
           });
