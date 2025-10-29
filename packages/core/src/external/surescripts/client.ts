@@ -267,6 +267,40 @@ export class SurescriptsSftpClient extends SftpClient {
   }
 
   /**
+   * Returns all new response files that have not yet been downloaded to the replica.
+   * @returns
+   */
+  async receiveAllNewResponses(): Promise<SftpFile[]> {
+    const newResponses: SftpFile[] = [];
+    try {
+      await this.connect();
+      const responseFileNames = await this.list("/from_surescripts");
+
+      for (const responseFileName of responseFileNames) {
+        const parsedFileName = parseResponseFileName(responseFileName);
+        if (!parsedFileName) continue;
+        const { transmissionId, populationId } = parsedFileName;
+
+        // If the response file is already in the replica,
+        const replicatedResponseFile = await this.findResponseFileInReplica({
+          transmissionId,
+          populationId,
+        });
+        if (replicatedResponseFile) {
+          this.log(`Already copied response file "${replicatedResponseFile}" to replica`);
+          continue;
+        }
+        const responseFile = await this.readFromSurescripts(responseFileName);
+        if (!responseFile) continue;
+        newResponses.push(responseFile);
+      }
+    } finally {
+      await this.disconnect();
+    }
+    return newResponses;
+  }
+
+  /**
    * @param transmissionId the original request transmission ID
    * @param populationId the original request population UUID (patient ID or facility ID)
    * @returns the response file name if it exists in the Surescripts directory, undefined otherwise
