@@ -20,6 +20,7 @@ export async function startDocumentQuery({
   triggerConsolidated,
   disableWebhooks,
   context,
+  forceDownload = false,
 }: {
   cxId: string;
   patientId: string;
@@ -27,9 +28,16 @@ export async function startDocumentQuery({
   triggerConsolidated: boolean;
   disableWebhooks: boolean;
   context: string;
+  forceDownload?: boolean;
 }): Promise<{ requestId: string }> {
   const api = axios.create({ baseURL: Config.getApiUrl() });
-  const dqUrl = buildDocumentQueryUrl({ cxId, patientId, requestId, triggerConsolidated });
+  const dqUrl = buildDocumentQueryUrl({
+    cxId,
+    patientId,
+    requestId,
+    triggerConsolidated,
+    forceDownload,
+  });
   const payload = disableWebhooks ? { metadata: disableWHMetadata } : {};
 
   const res = await withDefaultApiErrorHandling({
@@ -52,17 +60,20 @@ function buildDocumentQueryUrl({
   patientId,
   requestId,
   triggerConsolidated,
+  forceDownload,
 }: {
   cxId: string;
   patientId: string;
   requestId: string;
   triggerConsolidated: boolean;
+  forceDownload: boolean;
 }) {
   const urlParams = new URLSearchParams({
     cxId,
     patientId,
     requestId,
     triggerConsolidated: triggerConsolidated.toString(),
+    forceDownload: forceDownload.toString(),
   });
   return `/internal/docs/query?${urlParams.toString()}`;
 }
