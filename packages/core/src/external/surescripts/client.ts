@@ -397,8 +397,10 @@ export class SurescriptsSftpClient extends SftpClient {
     if (orgType === "healthcare_provider") {
       return true;
     }
-    // Fails for healthcare_it_vendor
-    return false;
+    // TODO: accurately tag healthcare_it_vendor, currently this is disallowing organizations
+    // that are managing multiple CW facilities. For now, operations should only enable Surescripts
+    // feature flags for allowed providers.
+    return true;
   }
 
   /**
