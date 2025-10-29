@@ -1,4 +1,4 @@
-import { genderAtBirthSchema, MedicalDataSource, patientCreateSchema } from "@metriport/api-sdk";
+import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { Patient } from "@metriport/core/domain/patient";
@@ -61,7 +61,6 @@ import {
 import { Pagination } from "../../../command/pagination";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import { PatientUpdaterCarequality } from "../../../external/carequality/patient-updater-carequality";
-import cwCommands from "../../../external/commonwell";
 import { PatientUpdaterCommonWell } from "../../../external/commonwell/patient/patient-updater-commonwell";
 import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
@@ -314,44 +313,6 @@ router.post(
       secondaryMappings: {},
     });
     return res.sendStatus(status.CREATED);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * DELETE /internal/patient/:patientId/link/:source
- *
- * Removes the specified HIE link from the specified patient.
- *
- * @param req.params.patientId Patient ID to remove link from.
- * @param req.params.source HIE to remove the link from. Currently only supports COMMONWELL.
- * @param req.query.linkOrganizationOid Organization OID to remove the link from.
- * @param req.query.cxId The customer ID.
- * @param req.query.facilityId The ID of the facility to provide the NPI to remove link from patient.
- * @returns 204 upon successful link delete.
- */
-router.delete(
-  "/:patientId/link/:source",
-  handleParams,
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getFromParamsOrFail("patientId", req);
-    const linkSource = getFromParamsOrFail("source", req);
-    const linkOrganizationOid = getFrom("query").orFail("linkOrganizationOid", req);
-    const facilityIdParam = getFrom("query").optional("facilityId", req);
-    const patient = await getPatientOrFail({ cxId, id: patientId });
-    const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
-
-    if (linkSource === MedicalDataSource.COMMONWELL) {
-      await cwCommands.link.unlink({
-        patient,
-        cxId,
-        facilityId,
-        linkSourceOid: linkOrganizationOid,
-      });
-    }
-
-    return res.sendStatus(status.NO_CONTENT);
   })
 );
 

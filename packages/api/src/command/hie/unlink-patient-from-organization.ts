@@ -130,25 +130,24 @@ function findCwLinkWithOid(cwPatientData: CwData | undefined, oid: string): CwLi
   if (!cwPatientData) return undefined;
 
   const cwLinks = cwPatientData.links;
+  if (cwLinks.some(isCwLinkV1)) {
+    throw new BadRequestError("Patient contains CW v1 links. Rerun PD to continue.", undefined, {
+      oid,
+      cwLink: cwLinks.map(link => link.toString()).join(", "),
+    });
+  }
 
-  for (const cwLink of cwLinks) {
-    if (isCwLinkV1(cwLink)) {
-      throw new BadRequestError("Patient contains CW v1 links. Rerun PD to continue.", undefined, {
-        oid,
-        cwLink: cwLink.toString(),
-      });
-    } else {
-      const patient = cwLink.Patient;
-      if (!patient) continue;
+  for (const cwLink of cwLinks as CwLinkV2[]) {
+    const patient = cwLink.Patient;
+    if (!patient) continue;
 
-      if (
-        patient.managingOrganization?.identifier?.some(identifier =>
-          identifier.system.includes(oid)
-        ) ||
-        patient.identifier?.some(identifier => identifier.system.includes(oid))
-      ) {
-        return cwLink;
-      }
+    if (
+      patient.managingOrganization?.identifier?.some(identifier =>
+        identifier.system.includes(oid)
+      ) ||
+      patient.identifier?.some(identifier => identifier.system.includes(oid))
+    ) {
+      return cwLink;
     }
   }
 

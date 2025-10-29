@@ -9,7 +9,6 @@ const cwCommands = {
   },
   link: {
     get: link.get,
-    unlink: link.unlink,
   },
 };
 
