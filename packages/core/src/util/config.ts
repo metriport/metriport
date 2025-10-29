@@ -291,6 +291,9 @@ export class Config {
   static getSurescriptsSftpActionLambdaName(): string {
     return getEnvVarOrFail("SURESCRIPTS_SFTP_ACTION_LAMBDA_NAME");
   }
+  static getSurescriptsReceiveAllLambdaName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_RECEIVE_ALL_LAMBDA_NAME");
+  }
   static getSurescriptsConvertPatientResponseLambdaName(): string {
     return getEnvVarOrFail("SURESCRIPTS_CONVERT_PATIENT_RESPONSE_LAMBDA_NAME");
   }

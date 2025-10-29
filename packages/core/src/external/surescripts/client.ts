@@ -13,7 +13,9 @@ import {
   SurescriptsFileIdentifier,
   SurescriptsPatientRequestData,
   SurescriptsRequesterData,
+  SurescriptsReceiveAllRequest,
   SurescriptsSftpConfig,
+  SurescriptsSftpFile,
 } from "./types";
 
 import {
@@ -270,8 +272,10 @@ export class SurescriptsSftpClient extends SftpClient {
    * Returns all new response files that have not yet been downloaded to the replica.
    * @returns
    */
-  async receiveAllNewResponses(): Promise<SftpFile[]> {
-    const newResponses: SftpFile[] = [];
+  async receiveAllNewResponses({
+    maxResponses,
+  }: SurescriptsReceiveAllRequest): Promise<SurescriptsSftpFile[]> {
+    const newResponses: SurescriptsSftpFile[] = [];
     try {
       await this.connect();
       const responseFileNames = await this.list("/from_surescripts");
@@ -290,9 +294,17 @@ export class SurescriptsSftpClient extends SftpClient {
           this.log(`Already copied response file "${replicatedResponseFile}" to replica`);
           continue;
         }
-        const responseFile = await this.readFromSurescripts(responseFileName);
-        if (!responseFile) continue;
-        newResponses.push(responseFile);
+        const sftpFile = await this.readFromSurescripts(responseFileName);
+        if (!sftpFile) continue;
+        newResponses.push({
+          ...sftpFile,
+          transmissionId,
+          populationId,
+        });
+
+        if (maxResponses != null && newResponses.length >= maxResponses) {
+          break;
+        }
       }
     } finally {
       await this.disconnect();
