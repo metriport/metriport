@@ -1,9 +1,10 @@
-import { DiagnosticReport, Reference } from "@medplum/fhirtypes";
+import { DiagnosticReport, Meta, Reference } from "@medplum/fhirtypes";
 
 export interface DiagnosticReportParams {
   subject: NonNullable<DiagnosticReport["subject"]>;
   performer: NonNullable<DiagnosticReport["performer"]>;
   extractedFrom: Reference<DiagnosticReport>;
+  meta?: Meta | undefined;
   effectiveDateTime: string;
 }
 
@@ -23,6 +24,7 @@ export function getDiagnosticReportParams(
     subject,
     performer,
     effectiveDateTime,
+    meta: diagnosticReport.meta,
     extractedFrom: createDiagnosticReportReference(diagnosticReport),
   };
 }

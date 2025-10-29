@@ -18,6 +18,7 @@ export function createMocaScoreObservation({
   mocaScore,
   mocaVersion,
   originalText,
+  meta,
   extractedFrom,
   effectiveDateTime,
 }: MocaScoreObservationParams): Observation {
@@ -25,6 +26,9 @@ export function createMocaScoreObservation({
   observation.category = [getObservationCategory("survey")];
   observation.code = MOCA_SCORE_CODEABLE_CONCEPT;
   observation.valueQuantity = createMocaScoreQuantity(mocaScore);
+  if (meta) {
+    observation.meta = meta;
+  }
   if (mocaVersion) {
     observation.component = [
       {
