@@ -46,7 +46,6 @@ import {
   persistHl7MessageError,
   SupportedTriggerEvent,
 } from "./utils";
-import { sendHeartbeatToMonitoringService } from "../../external/monitoring/heartbeat";
 
 type HieConfig = { timezone: string };
 
