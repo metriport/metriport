@@ -51,9 +51,10 @@ router.get(
  *
  * Unlinks a patient from a facility and removes all data associated with it.
  *
+ * @param req.query.cxId - The customer ID.
  * @param req.query.patientId - The patient's ID.
  * @param req.query.oid - The oid of the facility to unlink from.
- * @param req.query.dryRun - If true, will only simulate the unlink operation.
+ * @param req.query.dryRun - If true, will only simulate the unlink operation. Optional, default is false.
  */
 router.post(
   "/unlink",
@@ -74,7 +75,23 @@ router.post(
     }).catch(err => {
       const msg = `Error unlinking patient from organization`;
       log(`${msg}: ${errorToString(err)}`);
-      capture.error(msg, { extra: { cxId, patientId, oid, err } });
+      capture.error(msg, {
+        extra: {
+          cxId,
+          patientId,
+          oid,
+          error: errorToString(err),
+          context: "unlinkPatientFromOrganization",
+        },
+      });
+      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+        error: msg,
+        reason: errorToString(err),
+        cxId,
+        patientId,
+        oid,
+        dryRun,
+      });
     });
 
     return res.status(httpStatus.OK).json({

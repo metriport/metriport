@@ -71,7 +71,7 @@ export async function unlink({
   }
 
   const targetLinkInV1 = cwPatientData.data.links.find(
-    link => isCwLinkV1(link) && getLinkOrganizationIdV1(link) === linkSourceOid
+    link => isCwLinkV1(link) && getLinkOrganizationIdV1(link)?.includes(linkSourceOid)
   ) as CwLinkV1 | undefined;
 
   if (targetLinkInV1) {
