@@ -41,7 +41,7 @@ const DEFAULT_ADT: AdtSchema = {
   enabled: false,
 };
 
-const DEFAULT_MONITORING: MonitoringSettings = {
+export const DEFAULT_MONITORING: MonitoringSettings = {
   adt: DEFAULT_ADT,
   hie: DEFAULT_SCHEDULE_HIE,
   pharmacy: DEFAULT_NOTIFICATION_SCHEDULE,
@@ -86,17 +86,46 @@ export const monitoringSchema = z
   })
   .strict();
 
-const overridesSchema = z.array(
-  z.object({
-    hieName: z.boolean(),
-  })
-);
+export function createOverridesSchema<T extends string>(hieNames: T[]) {
+  if (hieNames.length === 0) {
+    return z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
+  }
 
-const fullCohortSettingsSchema = z.object({
-  monitoring: monitoringSchema,
-  overrides: overridesSchema,
-});
+  const shape = hieNames.reduce((acc, hieName) => {
+    acc[`Exclude_${hieName}`] = z.boolean().optional().default(false);
+    return acc;
+  }, {} as Record<`Exclude_${T}`, z.ZodBoolean | z.ZodDefault<z.ZodOptional<z.ZodBoolean>>>);
 
+  return z.object(shape).strict();
+}
+
+function createFullCohortSettingsSchema(overridesSchema: z.ZodTypeAny) {
+  return z.object({
+    monitoring: monitoringSchema,
+    overrides: overridesSchema.optional().default({}),
+  });
+}
+
+export function createFullCohortUpdateSchema(hieNames: string[]) {
+  const overridesSchema = createOverridesSchema(hieNames);
+  const fullCohortSettingsSchema = createFullCohortSettingsSchema(overridesSchema);
+  const allOptionalFullCohortSettingsSchema = fullCohortSettingsSchema.deepPartial();
+
+  return z.object({
+    name: z.string().trim().min(1, "Name is required").optional(),
+    color: cohortColorsSchema.optional(),
+    description: z.string().optional(),
+    settings: allOptionalFullCohortSettingsSchema.optional(),
+    eTag: z.string().optional(),
+  });
+}
+
+const defaultOverridesSchema = z
+  .record(z.string().regex(/^Exclude_/), z.boolean())
+  .default({})
+  .optional();
+
+const fullCohortSettingsSchema = createFullCohortSettingsSchema(defaultOverridesSchema);
 const cohortSettingsNoOverrides = fullCohortSettingsSchema.omit({ overrides: true });
 
 export const baseCohortSchema = z.object({
@@ -163,9 +192,27 @@ export type AllOptionalMonitoringSchema = z.infer<typeof allOptionalMonitoringSc
 export type AllOptionalCohortSettings = z.infer<typeof allOptionalCohortSettingsSchema>;
 export type CohortUpdateRequest = z.infer<typeof cohortUpdateSchema>;
 
+// Should only be used internally
+const allOptionalFullCohortSettingsSchema = fullCohortSettingsSchema.deepPartial();
+
+export const fullCohortUpdateSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").optional(),
+  color: cohortColorsSchema.optional(),
+  description: z.string().optional(),
+  settings: allOptionalFullCohortSettingsSchema.optional(),
+  eTag: z.string().optional(),
+});
+
+export type AllOptionalFullCohortSettings = z.infer<typeof allOptionalFullCohortSettingsSchema>;
+export type FullCohortUpdateRequest = z.infer<typeof fullCohortUpdateSchema>;
+
 // > Command schemas after parsing request body
 export type CohortCreateCmd = z.infer<typeof cohortCreateSchema> & { cxId: string };
 export type CohortUpdateCmd = z.infer<typeof cohortUpdateSchema> & { id: string; cxId: string };
+export type FullCohortUpdateCmd = z.infer<typeof fullCohortUpdateSchema> & {
+  id: string;
+  cxId: string;
+};
 // #########################
 
 // ### Output Interfaces ###
@@ -204,7 +251,7 @@ export function dtoFromCohort(cohort: Cohort & { eTag: string }): CohortDTO {
     name: cohort.name,
     color: cohort.color,
     description: cohort.description,
-    settings: cohort.settings ?? DEFAULT_SETTINGS,
+    settings: cohort.settings,
   };
 }
 

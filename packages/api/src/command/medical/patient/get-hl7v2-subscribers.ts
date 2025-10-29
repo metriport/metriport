@@ -4,17 +4,21 @@ import { MetriportError, errorToString } from "@metriport/shared";
 import { FindOptions, Op, Order, Sequelize, WhereOptions } from "sequelize";
 import { PatientModelReadOnly } from "../../../models/medical/patient-readonly";
 import { Pagination, getPaginationFilters, getPaginationLimits } from "../../pagination";
+import { getExcludeHieNameString } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 
 export type GetHl7v2SubscribersParams = {
+  hieName: string;
   hieStates: string[];
   pagination?: Pagination;
 };
 
 function getCommonQueryOptions({
+  hieName,
   hieStates,
   pagination,
 }: Omit<GetHl7v2SubscribersParams, "hieStates"> & { hieStates: string[] }) {
   const order: Order = [["id", "DESC"]];
+  const hieNameFilter = getExcludeHieNameString(hieName);
   return {
     where: {
       ...(pagination ? getPaginationFilters(pagination) : {}),
@@ -34,6 +38,7 @@ function getCommonQueryOptions({
                 WHERE pc.patient_id = "PatientModelReadOnly".id
                   AND jsonb_typeof(ch.settings->'monitoring'->'adt') = 'boolean'
                   AND (ch.settings->'monitoring'->>'adt')::boolean = true
+                  AND (ch.settings->'overrides'->>:hieNameFilter)::boolean = false
               )
             )
           )
@@ -42,6 +47,7 @@ function getCommonQueryOptions({
     } as WhereOptions,
     replacements: {
       hieStates,
+      hieNameFilter
     },
     ...(pagination ? getPaginationLimits(pagination) : {}),
     ...(pagination ? { order } : {}),
@@ -49,15 +55,16 @@ function getCommonQueryOptions({
 }
 
 export async function getHl7v2Subscribers({
+  hieName,
   hieStates,
   pagination,
 }: GetHl7v2SubscribersParams): Promise<PatientModelReadOnly[]> {
   const { log } = out(`Get HL7v2 subscribers`);
-  log(`HIE states: ${hieStates}, pagination params: ${JSON.stringify(pagination)}`);
+  log(`HIE name: ${hieName}, HIE states: ${hieStates}, pagination params: ${JSON.stringify(pagination)}`);
 
   try {
     const findOptions: FindOptions<PatientModelReadOnly> = {
-      ...getCommonQueryOptions({ hieStates, pagination }),
+      ...getCommonQueryOptions({ hieName, hieStates, pagination }),
     };
 
     const patients = await PatientModelReadOnly.findAll(findOptions);

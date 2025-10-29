@@ -1,16 +1,15 @@
 import { out } from "@metriport/core/util";
-import { BadRequestError, NotFoundError } from "@metriport/shared";
+import { BadRequestError } from "@metriport/shared";
 import {
-  AllOptionalCohortSettings,
-  CohortSettings,
-  CohortUpdateCmd,
+  AllOptionalFullCohortSettings,
+  FullCohortSettings,
   CohortWithSize,
+  FullCohortUpdateCmd,
   normalizeCohortName,
 } from "@metriport/shared/domain/cohort";
 import { validateVersionForUpdate } from "../../../models/_default";
-import { CohortModel } from "../../../models/medical/cohort";
-import { mergeOldWithNewCohortSettings } from "../../medical/patient/get-settings";
-import { getCohortByNameSafe } from "./get-cohort";
+import { applyCohortOverrides, mergeOldWithNewCohortSettings } from "../../medical/patient/get-settings";
+import { getCohortByNameSafe, getCohortModelOrFail } from "./get-cohort";
 import { getCohortSize } from "./patient-cohort/get-cohort-size";
 import { validateMonitoringSettingsForCx } from "./utils";
 
@@ -19,36 +18,31 @@ export async function updateCohort({
   eTag,
   cxId,
   ...data
-}: CohortUpdateCmd): Promise<CohortWithSize> {
+}: FullCohortUpdateCmd): Promise<CohortWithSize> {
   const { log } = out(`updateCohort - cx: ${cxId}, id: ${id}`);
-
-  const oldCohort = await CohortModel.findOne({
-    where: { id, cxId },
+  const oldCohort = await getCohortModelOrFail({
+    id,
+    cxId,
   });
-  if (!oldCohort) throw new NotFoundError(`Could not find cohort`, undefined, { cohortId: id });
   validateVersionForUpdate(oldCohort, eTag);
 
-  const newName = data.name;
-  const normalizedName = newName ? normalizeCohortName(newName) : oldCohort.name;
-  if (newName) {
-    const existingCohort = await getCohortByNameSafe({ cxId, name: normalizedName });
-    if (existingCohort && existingCohort.id !== oldCohort.id) {
-      throw new BadRequestError("A cohort with this name already exists", undefined, {
-        existingCohortId: existingCohort.id,
-        name: newName,
-      });
-    }
-  }
+  const name = await validateCohortName({
+    cxId,
+    cohortId: id,
+    oldName: oldCohort.name,
+    newName: data.name,
+  });
 
   const newSettings = data.settings;
   const mergedSettings = newSettings
     ? await getMergedSettings({ cxId, oldSettings: oldCohort.settings, newSettings, log })
     : oldCohort.settings;
+  const fullSettings = applyCohortOverrides(mergedSettings);
 
   const newData = {
     ...data,
-    name: normalizedName,
-    settings: mergedSettings,
+    name: name,
+    settings: fullSettings,
   };
 
   const [updatedCohort, size] = await Promise.all([
@@ -67,12 +61,36 @@ async function getMergedSettings({
   log,
 }: {
   cxId: string;
-  oldSettings: CohortSettings;
-  newSettings: AllOptionalCohortSettings;
+  oldSettings: FullCohortSettings;
+  newSettings: AllOptionalFullCohortSettings;
   log: typeof console.log;
-}): Promise<CohortSettings> {
+}): Promise<FullCohortSettings> {
   if (newSettings) {
     await validateMonitoringSettingsForCx(cxId, newSettings.monitoring, log);
   }
   return mergeOldWithNewCohortSettings(oldSettings, newSettings);
+}
+
+async function validateCohortName({
+  cxId,
+  cohortId,
+  oldName,
+  newName,
+}: {
+  cxId: string;
+  cohortId: string;
+  oldName: string;
+  newName?: string;
+}): Promise<string> {
+  const normalizedName = newName ? normalizeCohortName(newName) : oldName;
+  if (newName) {
+    const existingCohort = await getCohortByNameSafe({ cxId, name: normalizedName });
+    if (existingCohort && existingCohort.id !== cohortId) {
+      throw new BadRequestError("A cohort with this name already exists", undefined, {
+        existingCohortId: existingCohort.id,
+        name: newName,
+      });
+    }
+  }
+  return normalizedName;
 }

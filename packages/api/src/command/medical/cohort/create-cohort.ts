@@ -5,6 +5,7 @@ import { Cohort, CohortCreateCmd, normalizeCohortName } from "@metriport/shared/
 import { CohortModel } from "../../../models/medical/cohort";
 import { getCohortByNameSafe } from "./get-cohort";
 import { validateMonitoringSettingsForCx } from "./utils";
+import { applyCohortOverrides } from "../patient/get-settings";
 
 export async function createCohort({
   cxId,
@@ -25,14 +26,16 @@ export async function createCohort({
 
   const monitoringSettings = settings?.monitoring;
   await validateMonitoringSettingsForCx(cxId, monitoringSettings, log);
-  const normalizedName = normalizeCohortName(name);
+
+  const fullSettings = applyCohortOverrides(settings);
+
   const cohortCreate = {
     id: uuidv7(),
     cxId,
     name: normalizedName,
     description: description ?? "",
     color,
-    settings,
+    settings: fullSettings,
   };
 
   const newCohort = await CohortModel.create(cohortCreate);
