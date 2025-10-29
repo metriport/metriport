@@ -76,9 +76,9 @@ import {
 
 dayjs.extend(duration);
 
-const parallelRequests = 2;
+const parallelRequests = 1;
 const minJitter = dayjs.duration(0, "seconds");
-const maxJitter = dayjs.duration(5, "seconds");
+const maxJitter = dayjs.duration(2, "seconds");
 
 const displayToLoincCodeMap: Record<string, string> = {
   "comprehensive metabolic panel": "24322-0",

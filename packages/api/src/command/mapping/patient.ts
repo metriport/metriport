@@ -210,6 +210,20 @@ export async function setSecondaryMappingsOnPatientMappingById({
     });
   }
   const validatedSecondaryMappings = schema.parse(secondaryMappings);
-  const updated = await existing.update({ secondaryMappings: validatedSecondaryMappings });
-  return updated.dataValues;
+  const [affectedCount] = await PatientMappingModel.update(
+    { secondaryMappings: validatedSecondaryMappings },
+    { where: { cxId, patientId, id } }
+  );
+  if (affectedCount === 0) {
+    throw new MetriportError("Failed to update PatientMapping - no rows affected", undefined, {
+      cxId,
+      patientId,
+      id,
+    });
+  }
+  return await getPatientMappingOrFail({
+    cxId,
+    externalId: existing.externalId,
+    source: existing.source,
+  });
 }

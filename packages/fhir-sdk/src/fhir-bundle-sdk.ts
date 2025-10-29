@@ -1,32 +1,30 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
 import {
-  AllergyIntolerance,
-  Bundle,
-  BundleEntry,
-  Composition,
-  Condition,
-  Coverage,
-  DiagnosticReport,
-  DocumentReference,
-  Encounter,
-  FamilyMemberHistory,
-  Immunization,
-  Location,
-  Medication,
-  MedicationAdministration,
-  MedicationDispense,
-  MedicationRequest,
-  MedicationStatement,
-  Observation,
-  Organization,
-  Patient,
-  Practitioner,
-  Procedure,
-  RelatedPerson,
-  Resource,
-  RiskAssessment,
-  ServiceRequest,
-} from "@medplum/fhirtypes";
+  SmartAllergyIntolerance,
+  SmartCarePlan,
+  SmartComposition,
+  SmartCondition,
+  SmartCoverage,
+  SmartDiagnosticReport,
+  SmartDocumentReference,
+  SmartEncounter,
+  SmartFamilyMemberHistory,
+  SmartImmunization,
+  SmartLocation,
+  SmartMedication,
+  SmartMedicationAdministration,
+  SmartMedicationDispense,
+  SmartMedicationRequest,
+  SmartMedicationStatement,
+  SmartObservation,
+  SmartOrganization,
+  SmartPatient,
+  SmartPractitioner,
+  SmartProcedure,
+  SmartRelatedPerson,
+  SmartRiskAssessment,
+  SmartServiceRequest,
+} from "./types/coding-fields";
 
 import { Smart } from "./types/smart-resources";
 import {
@@ -235,6 +233,11 @@ export class FhirBundleSdk {
       singleGetterMethodName: "getServiceRequestById",
       collectionGetterMethodName: "getServiceRequests",
     },
+    {
+      resourceType: "CarePlan",
+      singleGetterMethodName: "getCarePlanById",
+      collectionGetterMethodName: "getCarePlans",
+    },
   ] as const;
 
   // Static initialization block to generate methods
@@ -395,29 +398,31 @@ export class FhirBundleSdk {
   }
 
   // Dynamically generated methods - see static initialization block below
-  getPatientById!: (id: string) => Smart<Patient> | undefined;
-  getObservationById!: (id: string) => Smart<Observation> | undefined;
-  getEncounterById!: (id: string) => Smart<Encounter> | undefined;
-  getAllergyIntoleranceById!: (id: string) => Smart<AllergyIntolerance> | undefined;
-  getConditionById!: (id: string) => Smart<Condition> | undefined;
-  getOrganizationById!: (id: string) => Smart<Organization> | undefined;
-  getLocationById!: (id: string) => Smart<Location> | undefined;
-  getPractitionerById!: (id: string) => Smart<Practitioner> | undefined;
-  getDiagnosticReportById!: (id: string) => Smart<DiagnosticReport> | undefined;
-  getCompositionById!: (id: string) => Smart<Composition> | undefined;
-  getCoverageById!: (id: string) => Smart<Coverage> | undefined;
-  getDocumentReferenceById!: (id: string) => Smart<DocumentReference> | undefined;
-  getImmunizationById!: (id: string) => Smart<Immunization> | undefined;
-  getMedicationById!: (id: string) => Smart<Medication> | undefined;
-  getMedicationRequestById!: (id: string) => Smart<MedicationRequest> | undefined;
-  getProcedureById!: (id: string) => Smart<Procedure> | undefined;
-  getFamilyMemberHistoryById!: (id: string) => Smart<FamilyMemberHistory> | undefined;
-  getMedicationAdministrationById!: (id: string) => Smart<MedicationAdministration> | undefined;
-  getMedicationDispenseById!: (id: string) => Smart<MedicationDispense> | undefined;
-  getMedicationStatementById!: (id: string) => Smart<MedicationStatement> | undefined;
-  getRelatedPersonById!: (id: string) => Smart<RelatedPerson> | undefined;
-  getRiskAssessmentById!: (id: string) => Smart<RiskAssessment> | undefined;
-  getServiceRequestById!: (id: string) => Smart<ServiceRequest> | undefined;
+  // Using specific Smart types for full TypeScript support with coding utilities
+  getPatientById!: (id: string) => SmartPatient | undefined;
+  getObservationById!: (id: string) => SmartObservation | undefined;
+  getEncounterById!: (id: string) => SmartEncounter | undefined;
+  getAllergyIntoleranceById!: (id: string) => SmartAllergyIntolerance | undefined;
+  getConditionById!: (id: string) => SmartCondition | undefined;
+  getOrganizationById!: (id: string) => SmartOrganization | undefined;
+  getLocationById!: (id: string) => SmartLocation | undefined;
+  getPractitionerById!: (id: string) => SmartPractitioner | undefined;
+  getDiagnosticReportById!: (id: string) => SmartDiagnosticReport | undefined;
+  getCompositionById!: (id: string) => SmartComposition | undefined;
+  getCoverageById!: (id: string) => SmartCoverage | undefined;
+  getDocumentReferenceById!: (id: string) => SmartDocumentReference | undefined;
+  getImmunizationById!: (id: string) => SmartImmunization | undefined;
+  getMedicationById!: (id: string) => SmartMedication | undefined;
+  getMedicationRequestById!: (id: string) => SmartMedicationRequest | undefined;
+  getProcedureById!: (id: string) => SmartProcedure | undefined;
+  getFamilyMemberHistoryById!: (id: string) => SmartFamilyMemberHistory | undefined;
+  getMedicationAdministrationById!: (id: string) => SmartMedicationAdministration | undefined;
+  getMedicationDispenseById!: (id: string) => SmartMedicationDispense | undefined;
+  getMedicationStatementById!: (id: string) => SmartMedicationStatement | undefined;
+  getRelatedPersonById!: (id: string) => SmartRelatedPerson | undefined;
+  getRiskAssessmentById!: (id: string) => SmartRiskAssessment | undefined;
+  getServiceRequestById!: (id: string) => SmartServiceRequest | undefined;
+  getCarePlanById!: (id: string) => SmartCarePlan | undefined;
 
   /**
    * Generic helper method to get all resources of a specific type
@@ -442,29 +447,31 @@ export class FhirBundleSdk {
   }
 
   // Dynamically generated array getter methods - see static initialization block below
-  getPatients!: () => Smart<Patient>[];
-  getObservations!: () => Smart<Observation>[];
-  getEncounters!: () => Smart<Encounter>[];
-  getPractitioners!: () => Smart<Practitioner>[];
-  getDiagnosticReports!: () => Smart<DiagnosticReport>[];
-  getAllergyIntolerances!: () => Smart<AllergyIntolerance>[];
-  getConditions!: () => Smart<Condition>[];
-  getOrganizations!: () => Smart<Organization>[];
-  getLocations!: () => Smart<Location>[];
-  getCompositions!: () => Smart<Composition>[];
-  getCoverages!: () => Smart<Coverage>[];
-  getDocumentReferences!: () => Smart<DocumentReference>[];
-  getImmunizations!: () => Smart<Immunization>[];
-  getMedications!: () => Smart<Medication>[];
-  getMedicationRequests!: () => Smart<MedicationRequest>[];
-  getProcedures!: () => Smart<Procedure>[];
-  getFamilyMemberHistories!: () => Smart<FamilyMemberHistory>[];
-  getMedicationAdministrations!: () => Smart<MedicationAdministration>[];
-  getMedicationDispenses!: () => Smart<MedicationDispense>[];
-  getMedicationStatements!: () => Smart<MedicationStatement>[];
-  getRelatedPersons!: () => Smart<RelatedPerson>[];
-  getRiskAssessments!: () => Smart<RiskAssessment>[];
-  getServiceRequests!: () => Smart<ServiceRequest>[];
+  // Using specific Smart types for full TypeScript support with coding utilities
+  getPatients!: () => SmartPatient[];
+  getObservations!: () => SmartObservation[];
+  getEncounters!: () => SmartEncounter[];
+  getPractitioners!: () => SmartPractitioner[];
+  getDiagnosticReports!: () => SmartDiagnosticReport[];
+  getAllergyIntolerances!: () => SmartAllergyIntolerance[];
+  getConditions!: () => SmartCondition[];
+  getOrganizations!: () => SmartOrganization[];
+  getLocations!: () => SmartLocation[];
+  getCompositions!: () => SmartComposition[];
+  getCoverages!: () => SmartCoverage[];
+  getDocumentReferences!: () => SmartDocumentReference[];
+  getImmunizations!: () => SmartImmunization[];
+  getMedications!: () => SmartMedication[];
+  getMedicationRequests!: () => SmartMedicationRequest[];
+  getProcedures!: () => SmartProcedure[];
+  getFamilyMemberHistories!: () => SmartFamilyMemberHistory[];
+  getMedicationAdministrations!: () => SmartMedicationAdministration[];
+  getMedicationDispenses!: () => SmartMedicationDispense[];
+  getMedicationStatements!: () => SmartMedicationStatement[];
+  getRelatedPersons!: () => SmartRelatedPerson[];
+  getRiskAssessments!: () => SmartRiskAssessment[];
+  getServiceRequests!: () => SmartServiceRequest[];
+  getCarePlans!: () => SmartCarePlan[];
 
   /**
    * FR-6.1: Export subset of resources by their IDs
@@ -478,9 +485,11 @@ export class FhirBundleSdk {
     for (const resourceId of resourceIds) {
       const resource = this.getResourceById(resourceId);
       if (resource) {
-        const originalEntry = findOriginalEntry(this.bundle, resource);
+        // Cast to Resource to satisfy type checker - Smart extends Resource
+        const plainResource = resource as unknown as Resource;
+        const originalEntry = findOriginalEntry(this.bundle, plainResource);
         if (originalEntry) {
-          exportEntries.push(createBundleEntry(originalEntry, resource));
+          exportEntries.push(createBundleEntry(originalEntry, plainResource));
         }
       }
       // FR-6.5: Silently skip resources that don't exist
@@ -501,6 +510,7 @@ export class FhirBundleSdk {
     for (const resource of resources) {
       const originalEntry = findOriginalEntry(this.bundle, resource);
       if (originalEntry) {
+        // Resource is already a plain Resource from our internal maps
         exportEntries.push(createBundleEntry(originalEntry, resource));
       }
     }

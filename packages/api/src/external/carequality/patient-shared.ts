@@ -16,6 +16,10 @@ export class PatientDataCarequality extends PatientExternalDataEntry {
      */
     public scheduledDocQueryRequestTriggerConsolidated?: boolean | undefined,
     /**
+     * The force download flag for the document query triggered while the patient discovery was processing.
+     */
+    public scheduledDocQueryRequestForceDownload?: boolean | undefined,
+    /**
      * The start time for document retrieval.
      */
     public documentRetrievalStartTime?: Date | undefined

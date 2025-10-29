@@ -235,7 +235,8 @@ export function generateLLMContext<T extends Resource>(
     }
     cleanedResourcesByDepth.set(
       depth,
-      resources.map(r => stripNonClinicalData(r))
+      // Cast to Resource to satisfy type checker - Smart extends Resource
+      resources.map(r => stripNonClinicalData(r as unknown as Resource))
     );
   }
 

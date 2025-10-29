@@ -7,6 +7,13 @@ import {
   REFERENCE_METHOD_MAPPING,
 } from "../types/smart-resources";
 import { ReverseReferenceOptions } from "../types/sdk-types";
+import {
+  createSmartCoding,
+  createSmartCodeableConcept,
+  isCoding,
+  isCodeableConcept,
+} from "./coding-utilities";
+import { createTransparentProxy } from "./transparent-proxy";
 
 /**
  * Navigate through a nested path in a resource to get the value at that path.
@@ -19,6 +26,10 @@ import { ReverseReferenceOptions } from "../types/sdk-types";
  * For nested paths where the intermediate level is an object:
  * - "hospitalization.origin" navigates to resource.hospitalization.origin
  * - Returns the single reference value
+ *
+ * For deeply nested paths like "activity.detail.goal":
+ * - Flattens nested arrays that may result from navigating through multiple array levels
+ * - Returns a flat array of all references found
  *
  * @param resource - The FHIR resource to navigate
  * @param path - Dot-separated path to the reference field
@@ -42,6 +53,13 @@ function getNestedValue(resource: Resource, path: string): unknown {
     } else {
       current = current[part];
     }
+  }
+
+  // Flatten nested arrays that may result from navigating through multiple array levels
+  // For example, activity.detail.goal where activity is an array and goal is also an array
+  // This prevents [[reference]] and instead returns [reference]
+  if (Array.isArray(current) && current.some(item => Array.isArray(item))) {
+    current = current.flat();
   }
 
   return current;
@@ -88,6 +106,7 @@ export function isArrayReferenceField(fieldName: string): boolean {
       "protocolApplied",
       "reaction",
       "ingredient",
+      "activity",
     ]);
 
     return arrayBaseFields.has(baseField ?? "");
@@ -282,6 +301,16 @@ export function createSmartResource<T extends Resource>(
         };
       }
 
+      // Handle Symbol.toStringTag for better console display
+      if (prop === Symbol.toStringTag) {
+        return `Smart<${target.resourceType}>`;
+      }
+
+      // Handle toJSON for serialization
+      if (prop === "toJSON") {
+        return () => target;
+      }
+
       // Check if this is a reference method call
       if (typeof prop === "string" && isReferenceMethod(prop, target.resourceType)) {
         return () =>
@@ -297,38 +326,117 @@ export function createSmartResource<T extends Resource>(
           );
       }
 
-      // Return original property
-      return Reflect.get(target, prop, receiver);
+      // Get the property value
+      const value = Reflect.get(target, prop, receiver);
+
+      // Don't wrap null or undefined
+      if (value === null || value === undefined) {
+        return value;
+      }
+
+      // Wrap CodeableConcept objects (check before Coding to avoid misidentification)
+      if (isCodeableConcept(value)) {
+        return createSmartCodeableConcept(value);
+      }
+
+      // Wrap Coding objects
+      if (isCoding(value)) {
+        return createSmartCoding(value);
+      }
+
+      // Handle arrays - wrap each element if needed
+      if (Array.isArray(value)) {
+        return value.map(item => {
+          if (item === null || item === undefined) {
+            return item;
+          }
+          // Check CodeableConcept before Coding
+          if (isCodeableConcept(item)) {
+            return createSmartCodeableConcept(item);
+          }
+          if (isCoding(item)) {
+            return createSmartCoding(item);
+          }
+          // Recursively wrap plain objects with transparent proxy
+          // Only wrap plain objects, not built-in types
+          if (typeof item === "object" && !Array.isArray(item) && item.constructor === Object) {
+            return createTransparentProxy(item);
+          }
+          return item;
+        });
+      }
+
+      // Recursively wrap plain objects with transparent proxy (but not primitives, dates, etc.)
+      // Only wrap plain objects, not built-in types like Date, RegExp, etc.
+      if (typeof value === "object" && !Array.isArray(value) && value.constructor === Object) {
+        return createTransparentProxy(value);
+      }
+
+      // Return original property for primitives and other types
+      return value;
     },
 
     // Ensure JSON serialization works correctly (FR-5.8)
     ownKeys: target => {
-      return Reflect.ownKeys(target).filter(
-        key =>
-          key !== "__isSmartResource" &&
-          key !== "getReferencingResources" &&
-          key !== "getReferencedResources" &&
-          key !== "toString" &&
-          key !== inspect.custom
-      );
+      const keys = Reflect.ownKeys(target);
+      const virtualMethods: (string | symbol)[] = [
+        "getReferencingResources",
+        "getReferencedResources",
+        "toString",
+      ];
+
+      // Add reference methods for this resource type
+      const referenceMethods = REFERENCE_METHOD_MAPPING[target.resourceType];
+      if (referenceMethods) {
+        virtualMethods.push(...Object.keys(referenceMethods));
+      }
+
+      // Filter out internal markers and add virtual methods for DevTools
+      return [...keys.filter(key => key !== "__isSmartResource"), ...virtualMethods] as ArrayLike<
+        string | symbol
+      >;
     },
 
     getOwnPropertyDescriptor: (target, prop) => {
+      // Hide internal markers from enumeration
       if (
         prop === "__isSmartResource" ||
-        prop === "getReferencingResources" ||
-        prop === "getReferencedResources" ||
-        prop === "toString" ||
+        prop === Symbol.toStringTag ||
+        prop === "toJSON" ||
         prop === inspect.custom
       ) {
         return undefined;
       }
+
+      // Make virtual methods enumerable for DevTools
+      if (
+        prop === "getReferencingResources" ||
+        prop === "getReferencedResources" ||
+        prop === "toString"
+      ) {
+        return {
+          enumerable: true,
+          configurable: true,
+          writable: false,
+        };
+      }
+
+      // Make reference methods enumerable for DevTools
+      const referenceMethods = REFERENCE_METHOD_MAPPING[target.resourceType];
+      if (referenceMethods && typeof prop === "string" && prop in referenceMethods) {
+        return {
+          enumerable: true,
+          configurable: true,
+          writable: false,
+        };
+      }
+
       return Reflect.getOwnPropertyDescriptor(target, prop);
     },
   }) as Smart<T>;
 
-  // Cache the smart resource
-  smartResourceCache.set(resource, smartResource);
+  // Cache the smart resource - cast to avoid type complexity issues
+  smartResourceCache.set(resource, smartResource as Smart<Resource>);
 
   return smartResource;
 }

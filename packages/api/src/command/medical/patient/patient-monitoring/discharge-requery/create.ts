@@ -1,4 +1,5 @@
 import { isDischargeRequeryFeatureFlagEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
+import { capture } from "@metriport/core/util";
 import { out } from "@metriport/core/util/log";
 import {
   CreateDischargeRequeryParams,
@@ -8,11 +9,11 @@ import {
 import {
   calculateScheduledAt,
   defaultRemainingAttempts,
-  pickEarliestScheduledAt,
+  earliest,
   pickLargestRemainingAttempts,
 } from "@metriport/shared/domain/patient/patient-monitoring/utils";
 import { uuidv7 } from "@metriport/shared/util/uuid-v7";
-import { capture } from "../../../../../shared/notifications";
+import _ from "lodash";
 import { createPatientJob } from "../../../../job/patient/create";
 import { getPatientJobs } from "../../../../job/patient/get";
 import { cancelPatientJob } from "../../../../job/patient/status/cancel";
@@ -38,7 +39,8 @@ export const dischargeRequeryJobType = "discharge-requery";
 export async function createDischargeRequeryJob(
   props: CreateDischargeRequeryParams
 ): Promise<void> {
-  const { cxId, patientId } = props;
+  const { cxId, patientId, dischargeData: dischargeDataParam } = props;
+  const dischargeData = [...dischargeDataParam];
   const { log } = out(`createDischargeRequeryJob - cx: ${cxId} pt: ${patientId}`);
 
   if (!(await isDischargeRequeryFeatureFlagEnabledForCx(cxId))) return;
@@ -54,36 +56,36 @@ export async function createDischargeRequeryJob(
     status: "waiting",
   });
 
-  if (existingJobs.length > 0) {
-    if (existingJobs.length > 1) {
-      const msg = `Found multiple waiting discharge-requery jobs`;
-      log(`${msg} - ${existingJobs.length} jobs!`);
-      capture.message(msg, {
-        extra: { patientId, cxId, jobIds: existingJobs.map(j => j.id) },
-        level: "warning",
-      });
-    }
+  if (existingJobs.length > 1) {
+    const msg = `Found multiple waiting discharge-requery jobs`;
+    log(`${msg} - ${existingJobs.length} jobs!`);
+    capture.message(msg, {
+      extra: { patientId, cxId, jobIds: existingJobs.map(j => j.id) },
+      level: "warning",
+    });
+  }
 
-    for (const existingJob of existingJobs) {
-      const existingRequeryJob = parseDischargeRequeryJob(existingJob);
+  for (const existingJob of existingJobs) {
+    const existingRequeryJob = parseDischargeRequeryJob(existingJob);
 
-      remainingAttempts = pickLargestRemainingAttempts(
-        existingRequeryJob.paramsOps.remainingAttempts,
-        remainingAttempts
-      );
-      scheduledAt = pickEarliestScheduledAt(existingRequeryJob.scheduledAt, scheduledAt);
+    remainingAttempts = pickLargestRemainingAttempts(
+      existingRequeryJob.paramsOps.remainingAttempts,
+      remainingAttempts
+    );
+    scheduledAt = earliest(existingRequeryJob.scheduledAt, scheduledAt);
+    dischargeData.push(...existingRequeryJob.paramsOps.dischargeData);
 
-      log(`cancelling existing job ${existingJob.id}`);
-      await cancelPatientJob({
-        cxId,
-        jobId: existingJob.id,
-        reason: "Deduplicated into a new job",
-      });
-    }
+    log(`cancelling existing job ${existingJob.id}`);
+    await cancelPatientJob({
+      cxId,
+      jobId: existingJob.id,
+      reason: "Deduplicated into a new job",
+    });
   }
 
   const paramsOps: DischargeRequeryParamsOps = {
     remainingAttempts,
+    dischargeData: _.uniqBy(dischargeData, "tcmEncounterId"),
   };
   const newDischargeRequeryJob = await createPatientJob({
     cxId,

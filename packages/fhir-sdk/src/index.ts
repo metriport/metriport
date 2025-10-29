@@ -1,5 +1,5 @@
 export { FhirBundleSdk } from "./fhir-bundle-sdk";
-export { Smart } from "./types/smart-resources";
+export { Smart, SmartCoding, SmartCodeableConcept } from "./types/smart-resources";
 export {
   ValidationResult,
   BrokenReference,
@@ -10,11 +10,66 @@ export {
   ReverseReferenceOptions,
   DateRangeSearchOptions,
 } from "./types/sdk-types";
+export type {
+  // Coding field interfaces
+  ObservationCodingFields,
+  ConditionCodingFields,
+  ProcedureCodingFields,
+  AllergyIntoleranceCodingFields,
+  EncounterCodingFields,
+  DiagnosticReportCodingFields,
+  ImmunizationCodingFields,
+  MedicationCodingFields,
+  MedicationRequestCodingFields,
+  MedicationAdministrationCodingFields,
+  MedicationDispenseCodingFields,
+  MedicationStatementCodingFields,
+  FamilyMemberHistoryCodingFields,
+  RelatedPersonCodingFields,
+  RiskAssessmentCodingFields,
+  ServiceRequestCodingFields,
+  CarePlanCodingFields,
+  PatientCodingFields,
+  PractitionerCodingFields,
+  OrganizationCodingFields,
+  LocationCodingFields,
+  CompositionCodingFields,
+  CoverageCodingFields,
+  DocumentReferenceCodingFields,
+  // Smart resource type aliases with coding fields
+  SmartObservation,
+  SmartCondition,
+  SmartProcedure,
+  SmartAllergyIntolerance,
+  SmartEncounter,
+  SmartDiagnosticReport,
+  SmartImmunization,
+  SmartMedication,
+  SmartMedicationRequest,
+  SmartMedicationAdministration,
+  SmartMedicationDispense,
+  SmartMedicationStatement,
+  SmartFamilyMemberHistory,
+  SmartRelatedPerson,
+  SmartRiskAssessment,
+  SmartServiceRequest,
+  SmartCarePlan,
+  SmartPatient,
+  SmartPractitioner,
+  SmartOrganization,
+  SmartLocation,
+  SmartComposition,
+  SmartCoverage,
+  SmartDocumentReference,
+} from "./types/coding-fields";
 export { getClinicalDateRange, ResourceDateRange } from "./clinical-dates";
 
 export {
   AllergyIntolerance,
   Bundle,
+  CarePlan,
+  CodeableConcept,
+  Coding,
   Composition,
   Condition,
   Coverage,
@@ -39,3 +94,5 @@ export {
   RiskAssessment,
   ServiceRequest,
 } from "@medplum/fhirtypes";
+
+export * from "./type-guards";

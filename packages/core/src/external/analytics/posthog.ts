@@ -69,6 +69,7 @@ export enum EventTypes {
   inboundDocumentQuery = "inbound.documentQuery",
   inboundDocumentRetrieval = "inbound.documentRetrieval",
   dischargeRequery = "dischargeRequery",
+  dischargeDataProcessed = "dischargeDataProcessed",
   rosterUploadPerCustomer = "rosterUploadPerCustomer",
 }
 
