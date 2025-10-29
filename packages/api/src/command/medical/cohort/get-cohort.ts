@@ -8,7 +8,7 @@ export type GetCohortProps = {
   cxId: string;
 };
 
-export async function getCohortOrFail({ id, cxId }: GetCohortProps): Promise<CohortModel> {
+export async function getCohortModelOrFail({ id, cxId }: GetCohortProps): Promise<CohortModel> {
   const cohort = await CohortModel.findOne({
     where: { id, cxId },
   });
@@ -22,10 +22,10 @@ export async function getCohortWithSizeOrFail({
   cxId,
 }: GetCohortProps): Promise<CohortWithSize> {
   const [cohort, size] = await Promise.all([
-    getCohortOrFail({ id, cxId }),
+    getCohortModelOrFail({ id, cxId }),
     getCohortSize({ cohortId: id }),
   ]);
-  if (!cohort) throw new NotFoundError(`Could not find cohort`, undefined, { id });
+
 
   return { ...cohort.dataValues, size };
 }

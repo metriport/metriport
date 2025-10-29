@@ -4,7 +4,7 @@ import * as CohortModel from "../../../../models/medical/cohort";
 import {
   getCohortByName,
   getCohortByNameSafe,
-  getCohortOrFail,
+  getCohortModelOrFail,
   getCohortWithSizeOrFail,
   getCohorts,
   getCohortsForPatient,
@@ -63,11 +63,11 @@ describe("get-cohort functions", () => {
     jest.clearAllMocks();
   });
 
-  describe("getCohortOrFail", () => {
+  describe("getCohortModelOrFail", () => {
     it("returns cohort when found", async () => {
       mockCohortModelFindOne.mockResolvedValue(mockCohort);
 
-      const result = await getCohortOrFail({ id: cohortId, cxId });
+      const result = await getCohortModelOrFail({ id: cohortId, cxId });
 
       expect(mockCohortModelFindOne).toHaveBeenCalledWith({
         where: { id: cohortId, cxId },
@@ -78,7 +78,7 @@ describe("get-cohort functions", () => {
     it("throws NotFoundError when cohort not found", async () => {
       mockCohortModelFindOne.mockResolvedValue(undefined);
 
-      await expect(getCohortOrFail({ id: cohortId, cxId })).rejects.toThrow(
+      await expect(getCohortModelOrFail({ id: cohortId, cxId })).rejects.toThrow(
         new NotFoundError("Could not find cohort", undefined, { id: cohortId, cxId })
       );
     });

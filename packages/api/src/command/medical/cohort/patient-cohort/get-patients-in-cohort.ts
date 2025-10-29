@@ -7,7 +7,7 @@ import { PatientMappingModel, rawToDomain } from "../../../../models/patient-map
 import { getSourceMapForPatient } from "../../../mapping/patient";
 import { PaginationV2WithQueryClauses } from "../../../pagination-v2";
 import { PatientWithIdentifiers } from "../../patient/get-patient";
-import { getCohortOrFail } from "../get-cohort";
+import { getCohortModelOrFail } from "../get-cohort";
 
 export type GetPatientsInCohortParams = {
   cohortId: string;
@@ -45,7 +45,7 @@ export async function getPatientsInCohort({
   const { log } = out(`getPatientsInCohort - cx ${cxId}, cohort ${cohortId}`);
 
   // Verify cohort exists and belongs to the customer
-  await getCohortOrFail({ id: cohortId, cxId });
+  await getCohortModelOrFail({ id: cohortId, cxId });
 
   const patientTable = PatientModel.tableName;
   const patientCohortTable = PatientCohortModel.tableName;
@@ -139,7 +139,7 @@ export async function getPatientsInCohortCount({
   if (!sequelize) throw new Error("Sequelize not found");
 
   // Verify cohort exists and belongs to the customer
-  await getCohortOrFail({ id: cohortId, cxId });
+  await getCohortModelOrFail({ id: cohortId, cxId });
 
   /**
    * ⚠️ Always change this query and the data query together.
