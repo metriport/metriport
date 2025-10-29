@@ -96,11 +96,12 @@ async function buildPatientMocaScoreObservations(
         const total = parseInt(matches[2]);
         const diagnosticReportParams = getDiagnosticReportParams(source.resource);
         if (score && total && diagnosticReportParams) {
-          console.log(`Found Moca Score: ${score} / ${total} for patient ${patientId}`);
           const originalText = source.textContent
             .substring(match.startIndex - 1, match.endIndex + matches[0].length)
             .trim();
-          console.log(`Original text: ${originalText}`);
+          console.log(
+            `Found Moca Score: ${score} / ${total} for patient ${patientId} ("${originalText}")`
+          );
           const observation = createMocaScoreObservation({
             diagnosticReport: source.resource,
             mocaScore: score,
