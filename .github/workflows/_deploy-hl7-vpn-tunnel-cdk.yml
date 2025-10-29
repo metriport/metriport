@@ -119,19 +119,27 @@ jobs:
 
       # TODO: This shouldn't be needed as a dependency, but it is.
       - name: Build fhir converter dependencies
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run prep-deploy
         working-directory: "metriport/packages/fhir-converter"
 
       - name: Lambdas build shared layer
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run prep-deploy
         working-directory: "metriport/packages/lambdas/"
         
       - name: Build relevant packages
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: |
           npm run build:cloud 
         working-directory: "metriport/"
 
       - name: Infra test
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run test
         working-directory: "metriport/packages/infra"
       # Secrets Stack

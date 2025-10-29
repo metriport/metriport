@@ -124,20 +124,28 @@ jobs:
         working-directory: "metriport/"
 
       - name: Build fhir converter dependencies
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run prep-deploy
         working-directory: "metriport/packages/fhir-converter"
 
       - name: Build lambdas shared layer
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run prep-deploy
         working-directory: "metriport/packages/lambdas/"
 
       - name: Build relevant packages
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: |
           npm run build:cloud 
         working-directory: "metriport/"
 
       # TESTS
       - name: Test relevant packages
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: |
           npm run test --workspace=packages/shared
           npm run test --workspace=packages/core

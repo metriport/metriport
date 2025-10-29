@@ -92,6 +92,8 @@ jobs:
 
       - name: Build/compile
         # build from root because of dependencies
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run build:cloud
         working-directory: "./"
 
@@ -105,6 +107,7 @@ jobs:
         run: npm run test:e2e
         working-directory: "./"
         env:
+          NODE_OPTIONS: --max_old_space_size=4096
           TEST_API_KEY: ${{ secrets.TEST_API_KEY }}
           TEST_PATIENT_ID: ${{ inputs.test_patient_id }}
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
