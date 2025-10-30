@@ -1,7 +1,7 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { Patient } from "@metriport/shared/domain/patient";
 import { FacilityData, OrganizationData } from "@metriport/shared/domain/customer";
-import { SftpConfig } from "../sftp/types";
+import { SftpConfig, SftpFile } from "../sftp/types";
 
 export type SurescriptsGender = "M" | "F" | "U";
 
@@ -58,3 +58,9 @@ export interface SurescriptsConversionBundle {
   patientId: string;
   bundle: Bundle;
 }
+
+export interface SurescriptsReceiveAllRequest {
+  maxResponses?: number | undefined;
+}
+
+export type SurescriptsSftpFile = SftpFile & SurescriptsFileIdentifier;

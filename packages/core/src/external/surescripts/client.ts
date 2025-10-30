@@ -13,7 +13,9 @@ import {
   SurescriptsFileIdentifier,
   SurescriptsPatientRequestData,
   SurescriptsRequesterData,
+  SurescriptsReceiveAllRequest,
   SurescriptsSftpConfig,
+  SurescriptsSftpFile,
 } from "./types";
 
 import {
@@ -267,6 +269,50 @@ export class SurescriptsSftpClient extends SftpClient {
   }
 
   /**
+   * Returns all new response files that have not yet been downloaded to the replica.
+   * @returns
+   */
+  async receiveAllNewResponses({
+    maxResponses,
+  }: SurescriptsReceiveAllRequest): Promise<SurescriptsSftpFile[]> {
+    const newResponses: SurescriptsSftpFile[] = [];
+    try {
+      await this.connect();
+      const responseFileNames = await this.list("/from_surescripts");
+
+      for (const responseFileName of responseFileNames) {
+        const parsedFileName = parseResponseFileName(responseFileName);
+        if (!parsedFileName) continue;
+        const { transmissionId, populationId } = parsedFileName;
+
+        // If the response file is already in the replica,
+        const replicatedResponseFile = await this.findResponseFileInReplica({
+          transmissionId,
+          populationId,
+        });
+        if (replicatedResponseFile) {
+          this.log(`Already copied response file "${replicatedResponseFile}" to replica`);
+          continue;
+        }
+        const sftpFile = await this.readFromSurescripts(responseFileName);
+        if (!sftpFile) continue;
+        newResponses.push({
+          ...sftpFile,
+          transmissionId,
+          populationId,
+        });
+
+        if (maxResponses != null && newResponses.length >= maxResponses) {
+          break;
+        }
+      }
+    } finally {
+      await this.disconnect();
+    }
+    return newResponses;
+  }
+
+  /**
    * @param transmissionId the original request transmission ID
    * @param populationId the original request population UUID (patient ID or facility ID)
    * @returns the response file name if it exists in the Surescripts directory, undefined otherwise
@@ -351,8 +397,10 @@ export class SurescriptsSftpClient extends SftpClient {
     if (orgType === "healthcare_provider") {
       return true;
     }
-    // Fails for healthcare_it_vendor
-    return false;
+    // TODO: accurately tag healthcare_it_vendor, currently this is disallowing organizations
+    // that are managing multiple CW facilities. For now, operations should only enable Surescripts
+    // feature flags for allowed providers.
+    return true;
   }
 
   /**
