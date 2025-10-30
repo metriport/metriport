@@ -76,6 +76,11 @@ export function convertHl7v2MessageToFhir({
   throw new MetriportError(msg, undefined, extraProps);
 }
 
+/**
+ * Any changes made to this function make sure to change the one in the backfill script.
+ * @metriport/utils/src/hl7v2-notifications/reprocess-adt-conversion-bundles/backfill-datasource-extension.ts
+ *
+ */
 export function appendExtensionToEachResource(
   bundle: Bundle<Resource>,
   newExtension: Extension
@@ -90,6 +95,7 @@ export function appendExtensionToEachResource(
       if (!resource) return e;
 
       const existing: Extension[] = (resource as ResourceWithExtension).extension ?? [];
+
       const extension = [...existing, newExtension];
 
       return {
