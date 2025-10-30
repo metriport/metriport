@@ -31,22 +31,36 @@
                 {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
 					{{>References/Observation/subject.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
 				{{/with}}
-                {{#if (toArray obsEntry.observation.author)}}
-                    {{#each (toArray obsEntry.observation.author) as |author|}}
-                        {{#if author.assignedAuthor}}
-                            {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=author.assignedAuthor) as |practitionerId|}}
-                                {{>Resources/Practitioner.hbs practitioner=author.assignedAuthor ID=practitionerId.Id}},
-                                {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
-                            {{/with}}
-                        {{/if}}
-                        {{#if author.assignedAuthor.representedOrganization}}
-                            {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=author.assignedAuthor.representedOrganization) as |orgId|}}
-                                {{>Resources/Organization.hbs org=author.assignedAuthor.representedOrganization ID=orgId.Id}},
-                                {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Organization/' orgId.Id)}},
-                            {{/with}}
-                        {{/if}}
-                    {{/each}}
-                {{/if}}
+                {{>Utils/ProcessObservationAuthors.hbs observation=obsEntry.observation observationJson=(toJsonString obsEntry.observation)}}
+
+                {{!-- LEVEL 2: Process first level of nested observations --}}
+                {{#each (toArray obsEntry.observation.entryRelationship) as |nestedEntry|}}
+                    {{#if nestedEntry.observation}}
+                        {{>Resources/Observation.hbs observationCategory="social-history" observationEntry=nestedEntry.observation ID=(generateUUID (toJsonString nestedEntry.observation))}},
+                        {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                            {{>References/Observation/subject.hbs ID=(generateUUID (toJsonString nestedEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                        {{/with}}
+                        {{>Utils/ProcessObservationAuthors.hbs observation=nestedEntry.observation observationJson=(toJsonString nestedEntry.observation)}}
+                        {{!-- Create bidirectional references between parent and this observation --}}
+                        {{>References/Observation/hasMember.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Observation/' (generateUUID (toJsonString nestedEntry.observation)))}},
+                        {{>References/Observation/derivedFrom.hbs ID=(generateUUID (toJsonString nestedEntry.observation)) REF=(concat 'Observation/' (generateUUID (toJsonString obsEntry.observation)))}},
+
+                        {{!-- LEVEL 3: Process second level of nested observations --}}
+                        {{#each (toArray nestedEntry.observation.entryRelationship) as |doubleNestedEntry|}}
+                            {{#if doubleNestedEntry.observation}}
+                                {{>Resources/Observation.hbs observationCategory="social-history" observationEntry=doubleNestedEntry.observation ID=(generateUUID (toJsonString doubleNestedEntry.observation))}},
+                                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                                    {{>References/Observation/subject.hbs ID=(generateUUID (toJsonString doubleNestedEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                                {{/with}}
+                                {{>Utils/ProcessObservationAuthors.hbs observation=doubleNestedEntry.observation observationJson=(toJsonString doubleNestedEntry.observation)}}
+
+                                {{!-- Create bidirectional references between parent and this observation --}}
+                                {{>References/Observation/hasMember.hbs ID=(generateUUID (toJsonString nestedEntry.observation)) REF=(concat 'Observation/' (generateUUID (toJsonString doubleNestedEntry.observation)))}},
+                                {{>References/Observation/derivedFrom.hbs ID=(generateUUID (toJsonString doubleNestedEntry.observation)) REF=(concat 'Observation/' (generateUUID (toJsonString nestedEntry.observation)))}},
+                            {{/if}}
+                        {{/each}}
+                    {{/if}}
+                {{/each}}
             {{/each}}
         {{/with}}
 {{/if}}
