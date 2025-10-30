@@ -77,6 +77,13 @@ async function main() {
   const startedAt = Date.now();
   console.log(`############## Started at ${buildDayjs().toISOString()} ##############`);
 
+  const cxIdPrefix = cxId.split("-")[0]?.toLowerCase();
+  const dbSuffix = database.split("_").at(-1)?.toLowerCase();
+  if (cxIdPrefix !== dbSuffix) {
+    console.error(`CX ID prefix ${cxIdPrefix} does not match database suffix ${dbSuffix}`);
+    return;
+  }
+
   try {
     initRunsFolder();
 
@@ -103,7 +110,7 @@ async function main() {
 }
 
 async function readQueryFiles(): Promise<QueryFile[]> {
-  const queryDir = path.join(__dirname, "query");
+  const queryDir = path.join(__dirname, "query/v1");
 
   if (!fs.existsSync(queryDir)) {
     console.log("Query directory does not exist, creating it...");
@@ -117,6 +124,7 @@ async function readQueryFiles(): Promise<QueryFile[]> {
   const queryFiles: QueryFile[] = [];
 
   for (const file of sqlFiles) {
+    if (file === "asthma_suspect.sql") continue;
     const filePath = path.join(queryDir, file);
     const content = fs.readFileSync(filePath, "utf-8");
     const name = path.basename(file, ".sql");
@@ -270,7 +278,7 @@ async function saveToSnowflakeTable(
   }>
 ): Promise<void> {
   const tableName = result.queryName.toUpperCase();
-  const fullTableName = `CORE.${tableName}`;
+  const fullTableName = `CORE_V3.${tableName}`;
 
   try {
     console.log(`>>> Creating/updating table ${fullTableName} in Snowflake...`);
