@@ -56,7 +56,7 @@ description: "A TerminologyCapabilities resource documents a set of capabilities
 | - op                | Yes      | code[]                                                            | Operations supported for the property                                                            |
 | - property          | No       | code[]                                                            | Properties supported for $lookup                                                                 |
 | - subsumption       | No       | boolean                                                           | Whether subsumption is supported                                                                 |
-| expansion           | No       | TerminologyCapabilitiesExpansion                                  | Information about the [ValueSet/$expand](valueset-operation-expand.html) operation               |
+| expansion           | No       | TerminologyCapabilitiesExpansion                                  | Information about the ValueSet/$expand operation                                                 |
 | - id                | No       | string                                                            | Unique id for inter-element referencing                                                          |
 | - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                    |
 | - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                           |
@@ -71,17 +71,17 @@ description: "A TerminologyCapabilities resource documents a set of capabilities
 | - documentation     | No       | string                                                            | Description of support for parameter                                                             |
 | - textFilter        | No       | markdown                                                          | Documentation about text searching works                                                         |
 | codeSearch          | No       | code                                                              | explicit / all                                                                                   |
-| validateCode        | No       | TerminologyCapabilitiesValidateCode                               | Information about the [ValueSet/$validate-code](valueset-operation-validate-code.html) operation |
+| validateCode        | No       | TerminologyCapabilitiesValidateCode                               | Information about the ValueSet/$validate-code operation                                          |
 | - id                | No       | string                                                            | Unique id for inter-element referencing                                                          |
 | - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                    |
 | - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                           |
 | - translations      | Yes      | boolean                                                           | Whether translations are validated                                                               |
-| translation         | No       | TerminologyCapabilitiesTranslation                                | Information about the [ConceptMap/$translate](conceptmap-operation-translate.html) operation     |
+| translation         | No       | TerminologyCapabilitiesTranslation                                | Information about the ConceptMap/$translate operation                                            |
 | - id                | No       | string                                                            | Unique id for inter-element referencing                                                          |
 | - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                    |
 | - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                           |
 | - needsMap          | Yes      | boolean                                                           | Whether the client must identify the map                                                         |
-| closure             | No       | TerminologyCapabilitiesClosure                                    | Information about the [ConceptMap/$closure](conceptmap-operation-closure.html) operation         |
+| closure             | No       | TerminologyCapabilitiesClosure                                    | Information about the ConceptMap/$closure operation                                              |
 | - id                | No       | string                                                            | Unique id for inter-element referencing                                                          |
 | - extension         | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Additional content defined by implementations                                                    |
 | - modifierExtension | No       | [Extension](/medical-api/fhir/data-types/extension)[]             | Extensions that cannot be ignored even if unrecognized                                           |

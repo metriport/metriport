@@ -1,0 +1,157 @@
+---
+title: "Update Cohort"
+description: "Updates the settings of an existing cohort."
+api: "PUT /medical/v1/cohort/{id}"
+---
+
+For more information, see the [guide about Cohorts](/medical-api/handling-data/cohorts)
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the cohort to update.
+</ParamField>
+
+## Headers
+
+<ParamField header="If-Match" type="string" optional>
+  The ETag value for optimistic concurrency control. If
+  provided, the update will only succeed if the current ETag
+  matches this value.
+</ParamField>
+
+## Body
+
+All fields are optional for updates. The API performs partial updates:
+
+- Omitted fields remain unchanged - only include fields you want to modify
+- To update a field - simply include the new value
+
+<Snippet file="cohort-update.mdx" />
+
+## Examples
+
+**Partial update example:**
+```json
+{
+  "name": "Updated Cohort Name",
+  "settings": {
+    "monitoring": {
+      "adt": {
+        "enabled": true
+      },
+      "pharmacy": {
+        "notifications": false,
+        "schedule": {
+          "enabled": false,
+          "frequency": "monthly"
+        }
+      }
+    }
+  }
+}
+```
+In this example, only `name`, `adt`, and `pharmacy` settings are updated. The `hie` and `laboratory`
+ settings remain unchanged.
+
+**Clearing fields example:**
+```json
+{
+  "settings": {
+    "monitoring": {
+      "adt": {
+        "enabled": false
+      },
+      "pharmacy": {
+        "notifications": false,
+        "schedule": {
+          "enabled": false,
+          "frequency": "monthly"
+        }
+      }
+    }
+  }
+}
+```
+This disables the `adt` and `pharmacy` monitoring settings while leaving other settings intact.
+
+## Response
+
+<Snippet file="cohort-response.mdx" />
+
+<ResponseExample>
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const cohort = await metriport.updateCohort(
+  "00000000-0000-0000-0000-000000000000",
+  {
+    name: "High Risk",
+    description: "Patients that need frequent and robust monitoring.",
+    "settings": {
+      "monitoring": {
+        "hie": {
+          "enabled": true,
+          "frequency": "weekly"
+        },
+        "adt": {
+          "enabled": true
+        },
+        "pharmacy": {
+          "notifications": true,
+          "schedule": {
+            "enabled": false,
+            "frequency": "monthly"
+          }
+        },
+        "laboratory": {
+          "notifications": true,
+          "schedule": {
+            "enabled": false,
+            "frequency": "monthly"
+          }
+        }
+      }
+    }
+  }
+);
+```
+</ResponseExample>
+
+```json
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "eTag": "2",
+  "name": "High Risk",
+  "description": "Patients that need frequent and robust monitoring.",
+  "color": "red",
+  "settings": {
+    "monitoring": {
+      "hie": {
+        "enabled": true,
+        "frequency": "weekly"
+      },
+      "adt": {
+        "enabled": true
+      },
+      "pharmacy": {
+        "notifications": true,
+        "schedule": {
+          "enabled": false,
+          "frequency": "monthly"
+        }
+      },
+      "laboratory": {
+        "notifications": true,
+        "schedule": {
+          "enabled": false,
+          "frequency": "monthly"
+        }
+      }
+    }
+  },
+  "size": 0
+}
+```

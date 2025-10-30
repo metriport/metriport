@@ -1,0 +1,36 @@
+---
+title: "List Patient Cohorts"
+description: "Returns a list of all cohorts the patient is a member of."
+api: "GET /medical/v1/patient/{id}/cohort"
+---
+
+For more information, see the [guide about Cohorts](/medical-api/handling-data/cohorts)
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the patient whose cohorts are to be returned.
+</ParamField>
+
+## Response
+
+<ResponseField name="cohorts" type="Cohort[]" required>
+  Array of cohorts.
+  <Expandable title="Cohort properties">
+    <Snippet file="cohort-response.mdx" />
+  </Expandable>
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+const patientId = "00000000-0000-0000-0000-000000000000";
+const patientCohorts = await metriport.getCohortsForPatient(patientId);
+```
+
+</ResponseExample>
+
+<Snippet file="cohort-list-response-json.mdx" />

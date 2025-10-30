@@ -1,0 +1,33 @@
+---
+title: "Delete Cohort"
+description: "Deletes a cohort if the cohort is empty."
+api: "DELETE /medical/v1/cohort/{id}"
+---
+
+For more information, see the [guide about Cohorts](/medical-api/handling-data/cohorts)
+
+<Warning>
+  **Prerequisites:** You must remove all patients from a cohort before deleting it. If there 
+  are still patients in the cohort, the API will return a 400 error.
+  
+  Use the [remove patients from cohort endpoint](/medical-api/api-reference/cohort/remove-patients-from-cohort) 
+  to clear all patients first.
+</Warning>
+## Path Params
+<ParamField path="id" type="string" required>
+  The ID of the cohort to delete.
+</ParamField>
+
+## Response
+`204` - No Content, upon successful delete.
+
+<ResponseExample>
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const cohortId = "00000000-0000-0000-0000-000000000000";
+await metriport.deleteCohort(cohortId);
+```
+</ResponseExample>

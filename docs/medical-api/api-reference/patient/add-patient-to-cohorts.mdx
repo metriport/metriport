@@ -1,0 +1,53 @@
+---
+title: "Add Patient to Cohorts"
+description: "Adds a single patient to multiple cohorts at once. Returns all cohorts the 
+patient is associated with."
+api: "POST /medical/v1/patient/{id}/cohort"
+---
+
+For more information, see the [guide about Cohorts](/medical-api/handling-data/cohorts)
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the patient to add to cohorts.
+</ParamField>
+
+## Body
+
+<ParamField body="cohortIds" type="string[]" required>
+  Array of cohort IDs to add the patient to.
+</ParamField>
+
+## Response
+
+<ResponseField name="cohorts" type="Cohort[]" required>
+  Array of cohorts the patient is currently associated with.
+  <Expandable title="Cohort properties">
+    <Snippet file="cohort-response.mdx" />
+  </Expandable>
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const patientId = "00000000-0000-0000-0000-000000000000";
+const result = await metriport.addPatientToCohorts(patientId, {
+  cohortIds: [
+    "00000000-0000-0000-0000-000000000000", 
+    "11111111-1111-1111-1111-111111111111"
+  ]
+});
+```
+
+</ResponseExample>
+
+<Snippet file="cohort-list-response-json.mdx" />
+
+## Notes
+
+- If the patient is already in some of the specified cohorts, those will be skipped (no error thrown)

@@ -1,0 +1,174 @@
+---
+title: "Cohorts"
+sidebarTitle: "Cohorts (patient groups)"
+icon: "people-group"
+description: "Group and enable settings for your patients."
+---
+
+# Overview
+
+Cohorts allow you to configure shared patient settings. 
+For example, you could create one cohort to monitor a group of 
+chronically-ill individuals with all features enabled (e.g., ADTs, pharmacies, laboratory, HIE), and another cohort 
+that monitors a less critical group of individuals with just HIE data enabled.
+
+<Warning>
+  Attempting to enable **ADT**, **pharmacy**, or **laboratory** monitoring settings 
+  for an account without the monitoring service activated will result in a 400 error.  
+  These are premium features - if you'd like access to them, contact us and let us know!
+</Warning>
+
+# Getting started
+
+Every cohort has a unique name and a collection of settings which apply to all patients within that cohort. 
+These settings control what data sources are monitored, how frequently queries are run, and what notifications are sent.
+
+A patient can be in multiple cohorts, which allows for flexible monitoring configurations. 
+If any cohort enables a particular monitoring feature, that feature will be active for the patient. 
+
+<Note>
+  All of this can be personalized based on your needs,
+  either during onboarding or self-serve, via our API (See
+  our API reference for documentation on how to [update an
+  existing
+  cohort](/medical-api/api-reference/cohort/update-cohort)
+  or [add existing patients to a
+  cohort](/medical-api/api-reference/cohort/add-patients-to-cohort)).
+</Note>
+
+# The Cohort Model
+
+In Metriport, a cohort is simply a label that can be given to any number of patients. You can 
+use that label to apply common settings across a group of patients,
+or retrieve the members of that cohort via API.
+
+```json
+{
+  "name": "High Risk",
+  "description": "Members of this cohort are opted-in to all available data sources.",
+  "color": "red",
+  "settings": {
+    "monitoring": {
+      "adt": {
+        "enabled": true
+      },
+      "hie": {
+        "enabled": true,
+        "frequency": "weekly"
+      },
+      "pharmacy": {
+        "notifications": true,
+        "schedule": {
+          "enabled": false,
+          "frequency": "monthly"
+        }
+      },
+      "laboratory": {
+        "notifications": true,
+        "schedule": {
+          "enabled": false,
+          "frequency": "monthly"
+        }
+      }
+    }
+  }
+}
+```
+See [Here](/medical-api/handling-data/cohorts#available-settings) for a detailed explanation of the available settings.
+
+# Monitoring patients with Cohorts
+
+Metriport allows you to monitor patients and receive notifications about them over time.
+
+To do this, create a cohort and specify the settings directly on the cohort. Then add patients that need to be monitored to the cohort. 
+The settings of the cohort are now applied to the patient (what monitoring is set, schedule, etc.).
+
+```typescript
+// 1. Create a cohort
+const cohort = await metriportApi.createCohort({
+  name: "My Custom Cohort",
+  description: "This is my first cohort",
+  color: "purple",
+  settings: {
+    monitoring: {
+      adt: {
+        enabled: true
+      }
+    }
+  }
+ });
+
+// 2. Add patients to the cohort
+const patientsInCohort = await metriportApi.addPatientsToCohort({
+  cohortId: cohort.id,
+  patientIds: [
+    "00000000-0000-0000-0000-000000000000",
+    "11111111-1111-1111-1111-111111111111",
+    "22222222-2222-2222-2222-222222222222",
+  ]
+});
+
+// 🎉 Your patients are now subscribed to ADT notifications!
+```
+
+<Tip>
+  Setting a patient's cohorts as you create them is the
+  easiest way + recommended way of enabling monitoring.
+</Tip>
+
+Alternatively, just create your patients as usual (via API call or bulk patient create) and specify the desired cohorts.
+
+```typescript
+// Create a patient and assign to existing cohorts
+const patient = await metriportApi.createPatient(
+  {
+    firstName: "John",
+    lastName: "Doe",
+    dob: "1990-01-01",
+    genderAtBirth: "M",
+    address: [
+      {
+        addressLine1: "123 Main St",
+        city: "Anytown",
+        state: "CA",
+        zip: "12345",
+        country: "USA",
+      },
+    ],
+    // Assign cohorts during creation
+    cohorts: [
+      "00000000-0000-0000-0000-000000000000", 
+      "11111111-1111-1111-1111-111111111111"
+    ], 
+  },
+  facilityId
+);
+
+// The patient is now automatically subscribed to the monitoring settings of the 2 cohorts
+```
+
+## Adding patients to cohorts
+
+Patients can be added to cohorts on creation, or added to and removed from different cohorts as needed.
+
+During creation:
+
+- In [Bulk Patient Create](/medical-api/api-reference/patient/bulk-create-patient) 
+there are `cohort1` and `cohort2` column headers for specifying the starting cohorts for a patient. See [here](/medical-api/api-reference/patient/bulk-create-patient#param-cohort1).
+- In [Create Patient](/medical-api/api-reference/patient/create-patient) 
+there is a `cohorts` array parameter to set any number of cohorts on a patient. See [here](/medical-api/api-reference/patient/create-patient#param-cohorts).
+
+As needed:
+
+- [Add Patients To Cohort](/medical-api/api-reference/cohort/add-patients-to-cohort)
+- [Remove Patients From Cohort](/medical-api/api-reference/cohort/remove-patients-from-cohort)
+
+
+## Available settings
+
+Use settings to enable monitoring for certain data sources.
+
+<Snippet file="cohort-settings.mdx" />
+
+# Additional information
+Click here for additional information related to [patient monitoring](/medical-api/handling-data/patient-monitoring).
