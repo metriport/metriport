@@ -1,6 +1,6 @@
 {
     "sdk_version": "0.21.0",
-    "plugin_version": "0.0.3",
+    "plugin_version": "0.0.4",
     "name": "metriport_app",
     "description": "Metriport App",
     "origins": {
@@ -20,6 +20,24 @@
             {
                 "class": "metriport_app.protocols.appointments_created:AppointmentCreatedProtocol",
                 "description": "Create patients asynchronously when appointments are scheduled in your Canvas instance.",
+                "data_access": {
+                    "event": "",
+                    "read": [],
+                    "write": []
+                }
+            },
+            {
+                "class": "metriport_app.protocols.patients_created:PatientAddressCreatedProtocol",
+                "description": "Create patients asynchronously when patients are created in your Canvas instance.",
+                "data_access": {
+                    "event": "",
+                    "read": [],
+                    "write": []
+                }
+            },
+            {
+                "class": "metriport_app.protocols.patients_created:PatientAddressUpdatedProtocol",
+                "description": "Create patients asynchronously when patients are created in your Canvas instance.",
                 "data_access": {
                     "event": "",
                     "read": [],

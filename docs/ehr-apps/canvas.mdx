@@ -19,12 +19,14 @@ To enable the Metriport Canvas embedded app in your instance, follow these steps
 
 ## How it Works
 
-Patients can be created in Metriport through two automated workflows:
+Patients can be created in Metriport through three automated workflows:
 
-1. **Manual Creation**: When an Canvas user opens the Metriport modal app on a patient's Chart for the first time, it triggers a one-time creation flow if the patient doesn't already exist in Metriport.
+1. **Manual Creation**: When a Canvas user opens the Metriport modal app on a patient's Chart for the first time, it triggers a one-time creation flow if the patient doesn't already exist in Metriport.
 
-2. **Appointment-Based Creation**: When an appointment is scheduled for a Canvas patient, Metriport will be sent a webhook that automatically creates the patient in the background.
+2. **Patient Creation**: When a new patient is created in Canvas, Metriport will be sent a webhook that automatically creates the patient in the background and initiates a Document Query.
 
-In both cases, a Document Query is automatically triggered after patient creation to begin gathering available health data.
+3. **Appointment-Based Creation**: When an appointment is scheduled for a Canvas patient, Metriport will be sent a webhook that automatically creates the patient in the background.
+
+In all cases, a Document Query is automatically triggered after patient creation to begin gathering available health data.
 
 Once a patient is created, you can access their comprehensive medical history by clicking the "Apps" button and selecting the Metriport app. This opens an iframe displaying the patient's complete Metriport record, including all available health data.
