@@ -131,12 +131,15 @@ router.get(
 
     const params: GetHl7v2SubscribersParams = {
       hieStates,
-      hieName
+      hieName,
     };
 
     const { meta, items } = await paginated({
       request: req,
-      additionalQueryParams: { hieStates: hieStates.join(",") },
+      additionalQueryParams: {
+        hieName,
+        hieStates: hieStates.join(","),
+      },
       getItems: (pagination: Pagination) => {
         return getHl7v2Subscribers({
           ...params,
