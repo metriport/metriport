@@ -6,6 +6,9 @@ with base_resource as (
         effectivedatetime,
         effectiveperiod_start,
         effectiveperiod_end,
+        code_coding_0_code,
+        code_coding_0_display,
+        code_coding_0_system,
         valuequantity_value,
         valuestring,
         valuecodeableconcept_text,
@@ -87,18 +90,11 @@ select
             {{ try_to_cast_date('obvs.effectiveperiod_start') }} 
         )                                                                                                   as effective_date
     ,   {{ try_to_cast_date('obvs.effectiveperiod_end') }}                                                  as end_date
-    ,   cast(
-            coalesce(
-                loinc.loinc,
-                tc_loinc.code
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as loinc_code
-    ,   cast(
-            coalesce(
-                loinc.long_common_name, 
-                tc_loinc.display
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as loinc_display
+    ,   cast(tc_loinc.code as {{ dbt.type_string() }} )                                                     as loinc_code
+    ,   cast(tc_loinc.display as {{ dbt.type_string() }} )                                                  as loinc_display
+    ,   cast(obvs.code_coding_0_code as {{ dbt.type_string() }} )                                           as source_code_code
+    ,   cast(obvs.code_coding_0_display as {{ dbt.type_string() }} )                                        as source_code_display
+    ,   cast(obvs.code_coding_0_system as {{ dbt.type_string() }} )                                         as source_code_system
     ,   cast(
             coalesce(
                 obvs.valuequantity_value, 
@@ -159,5 +155,3 @@ left join target_interpretation_codings interpretation_hl7
 left join target_bodysite_codings bodysite_snomed_ct
     on obvs.id = bodysite_snomed_ct.observation_id 
         and bodysite_snomed_ct.system = 'http://snomed.info/sct'
-left join {{ref('terminology__loinc')}} loinc
-    on tc_loinc.code = loinc.loinc

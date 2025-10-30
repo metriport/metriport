@@ -6,6 +6,9 @@ with base_resource as (
         performeddatetime,
         performedperiod_start,
         performedperiod_end,
+        code_coding_0_code,
+        code_coding_0_display,
+        code_coding_0_system,
         note_0_text,
         note_1_text,
         note_2_text,
@@ -61,30 +64,13 @@ select
             {{ try_to_cast_date('pro.performedperiod_start', 'YYYY-MM-DD') }}
         )                                                                                                           as performed_date
     ,   {{ try_to_cast_date('pro.performedperiod_end', 'YYYY-MM-DD') }}                                             as end_date
-    ,   cast(
-            coalesce(
-                hcpcs.hcpcs,
-                tc_cpt.code
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                           as cpt_code
-    ,   cast(
-            coalesce(
-                hcpcs.long_description,
-                tc_cpt.display
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                           as cpt_display
-    ,   cast(
-            coalesce(
-                snomed.snomed_ct,
-                tc_snomed_ct.code
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                           as snomed_code
-    ,   cast(
-            coalesce(
-                snomed.description,
-                tc_snomed_ct.display
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                           as snomed_display
+    ,   cast(tc_cpt.code as {{ dbt.type_string() }} )                                                               as cpt_code
+    ,   cast(tc_cpt.display as {{ dbt.type_string() }} )                                                            as cpt_display
+    ,   cast(tc_snomed_ct.code as {{ dbt.type_string() }} )                                                         as snomed_code
+    ,   cast(tc_snomed_ct.display as {{ dbt.type_string() }} )                                                      as snomed_display
+    ,   cast(pro.code_coding_0_code as {{ dbt.type_string() }} )                                                    as source_code_code
+    ,   cast(pro.code_coding_0_display as {{ dbt.type_string() }} )                                                 as source_code_display
+    ,   cast(pro.code_coding_0_system as {{ dbt.type_string() }} )                                                  as source_code_system
     ,   cast(bodysite_snomed_ct.code as {{ dbt.type_string() }} )                                                   as bodysite_snomed_code
     ,   cast(bodysite_snomed_ct.display as {{ dbt.type_string() }} )                                                as bodysite_snomed_display
     ,   cast(reason_snomed_ct.code as {{ dbt.type_string() }} )                                                     as reason_snomed_code
@@ -110,7 +96,3 @@ left join target_bodysite_codings bodysite_snomed_ct
 left join target_reason_codings reason_snomed_ct
     on pro.id = reason_snomed_ct.procedure_id 
         and reason_snomed_ct.system = 'http://snomed.info/sct'
-left join {{ref('terminology__hcpcs_level_2')}} hcpcs
-    on tc_cpt.code = hcpcs.hcpcs
-left join {{ref('terminology__snomed_ct')}} snomed
-    on tc_snomed_ct.code = snomed.snomed_ct

@@ -5,6 +5,9 @@ with base_resource as (
         status,
         occurrencedatetime,
         occurrencestring,
+        vaccinecode_coding_0_code,
+        vaccinecode_coding_0_display,
+        vaccinecode_coding_0_system,
         dosequantity_value,
         dosequantity_unit,
         note_0_text,
@@ -34,18 +37,11 @@ select
             {{ try_to_cast_date('i.occurrencedatetime') }},
             {{ try_to_cast_date('i.occurrencestring') }}
         )                                                                                                   as occurrence_date
-    ,   cast(
-            coalesce(
-                    cvx.cvx,
-                tc_cvx.code
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as cvx_code
-    ,   cast(
-            coalesce(
-                cvx.long_description,
-                tc_cvx.display
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as cvx_display
+    ,   cast(tc_cvx.code as {{ dbt.type_string() }} )                                                       as cvx_code
+    ,   cast(tc_cvx.display as {{ dbt.type_string() }} )                                                    as cvx_display
+    ,   cast(i.vaccinecode_coding_0_code as {{ dbt.type_string() }} )                                       as source_vaccine_code_code
+    ,   cast(i.vaccinecode_coding_0_display as {{ dbt.type_string() }} )                                    as source_vaccine_code_display
+    ,   cast(i.vaccinecode_coding_0_system as {{ dbt.type_string() }} )                                     as source_vaccine_code_system
     ,   cast(i.dosequantity_value as {{ dbt.type_string() }} )                                              as dose_amount
     ,   cast(i.dosequantity_unit as {{ dbt.type_string() }} )                                               as dose_unit
     ,   cast(
@@ -60,5 +56,3 @@ from base_resource i
 left join target_vaccine_code_codings tc_cvx
     on i.id = tc_cvx.immunization_id 
         and tc_cvx.system = 'http://hl7.org/fhir/sid/cvx'
-left join {{ref('terminology__cvx')}} cvx
-    on tc_cvx.code = cvx.cvx
