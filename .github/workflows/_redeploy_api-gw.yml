@@ -44,6 +44,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: If branch to staging, rebase against develop
+        uses: ./.github/actions/rebase-develop
+
       - name: Re-deploy API GW
         run: |
           ./packages/scripts/redeploy-api-gateway.sh

@@ -1,0 +1,28 @@
+name: 'If branch to staging, rebase against develop'
+description: 'Rebases feature branches against develop branch before deploying them'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Rebase against develop
+      run: |
+        CURRENT_BRANCH="${{ github.ref_name }}"
+        
+        # Skip rebasing for master and develop branches
+        if [[ "$CURRENT_BRANCH" == "master" || "$CURRENT_BRANCH" == "develop" ]]; then
+          echo "Skipping rebase - on $CURRENT_BRANCH branch"
+          exit 0
+        fi
+        
+        # If we get here, we should rebase
+        echo "Rebasing $CURRENT_BRANCH against develop..."
+        git fetch origin develop:develop
+        if ! git rebase develop; then
+          echo "❌ Rebase failed due to merge conflicts!"
+          echo "Please resolve conflicts locally and push again."
+          git rebase --abort
+          exit 1
+        fi
+        
+        echo "✅ Successfully rebased against develop"
+      shell: bash
