@@ -6,10 +6,10 @@ import { CQLink } from "../../../external/carequality/cq-patient-data";
 import { CQDirectoryEntryViewModel } from "../../../external/carequality/models/cq-directory-view";
 import { CQPatientDataModel } from "../../../external/carequality/models/cq-patient-data";
 import { patientResourceToNormalizedLinkDemographics as cqPatientResourceToNormalizedLinkDemographics } from "../../../external/carequality/patient-demographics";
-import { patientNetworkLinkToNormalizedLinkDemographics as cwPatientResourceToNormalizedLinkDemographics } from "../../../external/commonwell-v1/patient-demographics";
 import { orgDirectory } from "../../../external/commonwell-v2/command/directory/org-directory";
 import { networkLinkToLinkDemographics } from "../../../external/commonwell-v2/patient/patient-demographics";
 import { NetworkLink } from "../../../external/commonwell-v2/patient/types";
+import { patientNetworkLinkToNormalizedLinkDemographics as cwPatientResourceToNormalizedLinkDemographics } from "../../../external/commonwell/links/v1/patient-demographics";
 import { CwPatientDataModel } from "../../../external/commonwell/models/cw-patient-data";
 import {
   CwLink,

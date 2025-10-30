@@ -269,7 +269,7 @@ async function getCwData(
     return undefined;
   }
   const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
-  const cwLinks = await cwCommands.link.getV2(patient.id, patient.cxId, facilityId);
+  const cwLinks = await cwCommands.link.get(patient.id, patient.cxId, facilityId);
 
   return {
     existingLinks: cwLinks.existingLinks,

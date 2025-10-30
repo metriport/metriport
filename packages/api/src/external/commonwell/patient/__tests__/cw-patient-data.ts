@@ -2,17 +2,35 @@ import { faker } from "@faker-js/faker";
 import { LinkDemographicsHistory } from "@metriport/core/domain/patient-demographics";
 import { normalizeEmailNewSafe } from "@metriport/shared";
 import dayjs from "dayjs";
-import { makeBaseDomain } from "../../../domain/__tests__/base-domain";
-import { makeAddressStrict } from "../../../domain/medical/__tests__/location-address";
+import { makeBaseDomain } from "../../../../domain/__tests__/base-domain";
+import { makeAddressStrict } from "../../../../domain/medical/__tests__/location-address";
 import {
   normalizeAddress,
   normalizeAndStringifyNames,
   stringifyAddress,
-} from "../../../domain/medical/patient-demographics";
-import { ISO_DATE } from "../../../shared/date";
-import { CwData, CwLink, CwPatientData } from "../../commonwell/patient/cw-patient-data/shared";
+} from "../../../../domain/medical/patient-demographics";
+import { ISO_DATE } from "../../../../shared/date";
+import { CwData, CwLink, CwPatientData } from "../cw-patient-data/shared";
 
-export function makeCwDataLink(): CwLink {
+export function makeCwPatientData(
+  params: Partial<Omit<CwPatientData, "data"> & { data: Partial<CwData> }> = {}
+): CwPatientData {
+  return {
+    ...makeBaseDomain(),
+    ...(params.id ? { id: params.id } : {}),
+    cxId: params.cxId ?? faker.string.uuid(),
+    data: makeCwData(params.data),
+  };
+}
+
+function makeCwData(params: Partial<CwData> = {}): CwData {
+  return {
+    links: params.links ?? [makeCwDataLink()],
+    linkDemographicsHistory: params.linkDemographicsHistory ?? makeLinksHistory(),
+  };
+}
+
+function makeCwDataLink(): CwLink {
   const address = makeAddressStrict();
   const assuranceLevel = faker.helpers.arrayElement(["1", "2", "3"]);
   return {
@@ -90,7 +108,7 @@ export function makeCwDataLink(): CwLink {
   };
 }
 
-export function makeLinksHistory(): LinkDemographicsHistory {
+function makeLinksHistory(): LinkDemographicsHistory {
   const address = makeAddressStrict();
   const email = normalizeEmailNewSafe(faker.internet.email()) ?? "test@test.com";
   return {
@@ -121,23 +139,5 @@ export function makeLinksHistory(): LinkDemographicsHistory {
         ssns: [faker.string.numeric(9)],
       },
     ],
-  };
-}
-
-export function makeCwData(params: Partial<CwData> = {}): CwData {
-  return {
-    links: params.links ?? [makeCwDataLink()],
-    linkDemographicsHistory: params.linkDemographicsHistory ?? makeLinksHistory(),
-  };
-}
-
-export function makeCwPatientData(
-  params: Partial<Omit<CwPatientData, "data"> & { data: Partial<CwData> }> = {}
-): CwPatientData {
-  return {
-    ...makeBaseDomain(),
-    ...(params.id ? { id: params.id } : {}),
-    cxId: params.cxId ?? faker.string.uuid(),
-    data: makeCwData(params.data),
   };
 }

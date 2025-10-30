@@ -1,66 +1,104 @@
 import { faker } from "@faker-js/faker";
+import { CwLinkV2, Patient } from "@metriport/commonwell-sdk/models/patient";
 import { PatientData } from "@metriport/core/domain/patient";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { makeAddressStrict } from "../../../domain/medical/__tests__/location-address";
 import { CQLink } from "../../carequality/cq-patient-data";
-import { CwLinkV1 } from "../../commonwell/patient/cw-patient-data/shared";
+import { mapGenderAtBirthToCw } from "../../commonwell-v2/patient/patient-conversion";
+import { NetworkLink } from "../../commonwell-v2/patient/types";
 
-export function createCwLink({
-  firstName,
-  lastName,
-  dob,
-  genderAtBirth,
-  address,
-  contact,
-}: PatientData): CwLinkV1 {
-  return {
-    _links: {
-      downgrade: {
-        href: faker.internet.url(),
+export function makeCwLink({
+  patientData,
+  orgSystem,
+}: {
+  patientData?: PatientData;
+  orgSystem?: string;
+}): CwLinkV2 {
+  const { firstName, lastName, dob, genderAtBirth, address, contact } =
+    patientData ?? getDummyPatientData();
+  const patient: Patient = {
+    identifier: [
+      {
+        value: faker.string.uuid(),
+        system: "test-system",
       },
-    },
-    patient: {
-      details: {
-        name: [
-          {
-            use: "usual",
-            given: firstName.split(",").map(name => name.trim()),
-            family: lastName.split(",").map(name => name.trim()),
-          },
-        ],
-        gender: {
-          code: genderAtBirth,
+    ],
+    name: [
+      {
+        given: firstName.split(",").map(name => name.trim()),
+        family: lastName.split(",").map(name => name.trim()),
+      },
+    ],
+    gender: mapGenderAtBirthToCw(genderAtBirth),
+    birthDate: buildDayjs(dob).format("YYYY-MM-DD"),
+    address: address.map(address => ({
+      line: [address.addressLine1, address.addressLine2 ?? ""],
+      city: address.city,
+      state: address.state,
+      postalCode: address.zip,
+      country: address.country ?? "US",
+    })),
+    telecom:
+      contact
+        ?.map(contact => {
+          if (contact.email) {
+            return {
+              use: "home",
+              value: `mailto:${contact.email}`,
+              system: "email" as const,
+            };
+          }
+          if (contact.phone) {
+            return {
+              use: "home",
+              value: `tel:${contact.phone}`,
+              system: "phone" as const,
+            };
+          }
+          return undefined;
+        })
+        .filter(
+          (t): t is { use: "home"; system: "email" | "phone"; value: string } => t !== undefined
+        ) ?? [],
+    managingOrganization: {
+      identifier: [
+        {
+          system: orgSystem ?? "test-org-system",
         },
-        address: address.map(address => ({
-          use: "unspecified",
-          zip: address.zip,
-          city: address.city,
-          line: [address.addressLine1, address.addressLine2 ?? ""],
-          state: address.state,
-          country: address.country,
-        })),
-        telecom:
-          contact?.map(contact => {
-            if (contact.email) {
-              return {
-                use: "home",
-                value: `mailto:${contact.email}`,
-                system: "email",
-              };
-            }
-            if (contact.phone) {
-              return {
-                use: "home",
-                value: `tel:${contact.phone}`,
-                system: "phone",
-              };
-            }
-            return {};
-          }) ?? [],
-        birthDate: buildDayjs(dob).format("YYYYMMDD"),
-      },
+      ],
     },
-    assuranceLevel: "2",
   };
+
+  const networkLink: CwLinkV2 = {
+    version: 2,
+    Patient: patient,
+    Links: {
+      Self: faker.internet.url(),
+      Unlink: faker.internet.url(),
+    },
+  };
+  return networkLink;
+}
+
+export function makeCwNetworkLink({
+  patientData,
+  orgSystem,
+}: {
+  patientData?: PatientData;
+  orgSystem?: string;
+}): NetworkLink {
+  const cwLink = makeCwLink({ patientData, orgSystem });
+
+  const networkLink: NetworkLink = {
+    type: "probable",
+    Patient: cwLink.Patient,
+    Links: {
+      Self: cwLink.Links.Self,
+      Unlink: cwLink.Links.Unlink,
+      Link: faker.internet.url(),
+    },
+  };
+  return networkLink;
 }
 
 export function createCQLink({
@@ -110,5 +148,15 @@ export function createCQLink({
         }) ?? [],
       birthDate: buildDayjs(dob).format("YYYYMMDD"),
     },
+  };
+}
+
+function getDummyPatientData(): PatientData {
+  return {
+    firstName: faker.person.firstName(),
+    lastName: faker.person.lastName(),
+    dob: faker.date.past().toISOString(),
+    genderAtBirth: faker.helpers.arrayElement(["M", "F"]),
+    address: [makeAddressStrict()],
   };
 }

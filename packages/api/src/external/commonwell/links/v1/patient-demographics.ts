@@ -1,15 +1,15 @@
-import { normalizePhoneNumberSafe, normalizeEmailNewSafe } from "@metriport/shared";
+import { PatientNetworkLink } from "@metriport/commonwell-sdk-v1";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { mapStringMetriportGenderToFhir } from "@metriport/core/external/fhir/patient/conversion";
-import { PatientNetworkLink } from "@metriport/commonwell-sdk-v1";
+import { normalizeEmailNewSafe, normalizePhoneNumberSafe } from "@metriport/shared";
 import {
-  removeInvalidArrayValues,
-  normalizeDob,
-  normalizeAndStringifyNames,
   normalizeAddress,
+  normalizeAndStringifyNames,
+  normalizeDob,
+  removeInvalidArrayValues,
   stringifyAddress,
-} from "../../domain/medical/patient-demographics";
-import { CwLink, isCwLinkV1 } from "../commonwell/patient/cw-patient-data/shared";
+} from "../../../../domain/medical/patient-demographics";
+import { CwLink, isCwLinkV1 } from "../../patient/cw-patient-data/shared";
 
 export function patientNetworkLinkToNormalizedLinkDemographics(
   patientNetworkLink: PatientNetworkLink

@@ -467,7 +467,7 @@ async function validateAndStoreCwLinks(
   return { validLinks: finalValidLinks, invalidLinks: finalInvalidLinks };
 }
 
-function probableLinkToPatientData(networkLink: NetworkLink): PatientData {
+export function probableLinkToPatientData(networkLink: NetworkLink): PatientData {
   const patient = networkLink.Patient;
   if (!patient) throw new MetriportError("Patient data is missing");
 

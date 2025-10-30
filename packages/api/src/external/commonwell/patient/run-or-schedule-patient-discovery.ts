@@ -1,10 +1,9 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { schedulePatientDiscovery } from "../../hie/schedule-patient-discovery";
-import { getCWData } from "../../commonwell-v1/patient";
-import { update } from "./patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { schedulePatientDiscovery } from "../../hie/schedule-patient-discovery";
+import { getCWData, update } from "./patient";
 
 export async function runOrScheduleCwPatientDiscovery({
   patient,

@@ -3,12 +3,10 @@ import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolida
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { Patient } from "@metriport/core/domain/patient";
 import { hl7v2SubscribersQuerySchema } from "@metriport/core/domain/patient-settings";
-import { MedicalDataSource } from "@metriport/core/external/index";
 import { Config } from "@metriport/core/util/config";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import {
-  BadRequestError,
   errorToString,
   internalSendConsolidatedSchema,
   MetriportError,
@@ -63,7 +61,6 @@ import {
 import { Pagination } from "../../../command/pagination";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import { PatientUpdaterCarequality } from "../../../external/carequality/patient-updater-carequality";
-import cwCommands from "../../../external/commonwell";
 import { PatientUpdaterCommonWell } from "../../../external/commonwell/patient/patient-updater-commonwell";
 import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
@@ -75,7 +72,6 @@ import { requestLogger } from "../../helpers/request-logger";
 import { dtoFromModel } from "../../medical/dtos/patientDTO";
 import { getResourcesQueryParam } from "../../medical/schemas/fhir";
 import { hl7NotificationSchema } from "../../medical/schemas/hl7-notification";
-import { linkCreateSchema } from "../../medical/schemas/link";
 import { schemaCreateToPatientData } from "../../medical/schemas/patient";
 import { paginated } from "../../pagination";
 import { getUUIDFrom } from "../../schemas/uuid";
@@ -317,78 +313,6 @@ router.post(
       secondaryMappings: {},
     });
     return res.sendStatus(status.CREATED);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/patient/:patientId/link/:source
- *
- * TODO: ENG-554 - Remove this route when we migrate to CW v2
- *
- * Creates link to the specified entity.
- *
- * @param req.params.patientId Patient ID to link to a person.
- * @param req.params.source HIE from where the link is made to.
- * @param req.query.cxId The customer ID.
- * @param req.query.facilityId The ID of the facility to provide the NPI to remove link from patient.
- * @returns 201 upon success.
- */
-router.post(
-  "/:patientId/link/:source",
-  handleParams,
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getFromParamsOrFail("patientId", req);
-    const facilityIdParam = getFrom("query").optional("facilityId", req);
-    const linkSource = getFromParamsOrFail("source", req);
-    const linkCreate = linkCreateSchema.parse(req.body);
-
-    const patient = await getPatientOrFail({ cxId, id: patientId });
-    const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
-
-    if (linkSource === MedicalDataSource.COMMONWELL) {
-      await cwCommands.link.create(
-        linkCreate.entityId,
-        patientId,
-        cxId,
-        facilityId,
-        getCqOrgIdsToDenyOnCw
-      );
-      return res.sendStatus(status.CREATED);
-    }
-    throw new BadRequestError(`Unsupported link source: ${linkSource}`);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * DELETE /internal/patient/:patientId/link/:source
- *
- * Removes the specified HIE link from the specified patient.
- *
- * @param req.params.patientId Patient ID to remove link from.
- * @param req.params.linkSource HIE to remove the link from.
- * @param req.query.cxId The customer ID.
- * @param req.query.facilityId The ID of the facility to provide the NPI to remove link from patient.
- * @returns 204 upon successful link delete.
- */
-router.delete(
-  "/:patientId/link/:source",
-  handleParams,
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getFromParamsOrFail("patientId", req);
-    const facilityIdParam = getFrom("query").optional("facilityId", req);
-    const linkSource = req.params.source;
-    const patient = await getPatientOrFail({ cxId, id: patientId });
-    const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
-
-    if (linkSource === MedicalDataSource.COMMONWELL) {
-      await cwCommands.link.reset(patientId, cxId, facilityId);
-    }
-
-    return res.sendStatus(status.NO_CONTENT);
   })
 );
 
