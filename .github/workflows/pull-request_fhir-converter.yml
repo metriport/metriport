@@ -46,9 +46,13 @@ jobs:
         working-directory: ${{env.working-directory}}
 
       - name: Build (linters)
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run build
         working-directory: ${{env.working-directory}}
 
       - name: Run Tests
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run test
         working-directory: ${{env.working-directory}}
