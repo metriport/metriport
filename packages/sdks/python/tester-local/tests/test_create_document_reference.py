@@ -1,7 +1,7 @@
 import os
 
 from generated.client import Metriport
-from generated.resources.fhir import DocumentReference, CodeableConcept, Coding, DocumentReferenceContext, DocumentReferenceContent, Attachment
+from generated.fhir import DocumentReference, CodeableConcept, Coding, DocumentReferenceContext, DocumentReferenceContent, Attachment
 
 import os
 from dotenv import load_dotenv
@@ -43,16 +43,11 @@ def test_create_document_reference() -> None:
 
     document_reference_content = DocumentReferenceContent(attachment=Attachment())
 
-    uploadDocumentReference = DocumentReference(
-        resource_type="DocumentReference",
+    response = metriport.medical.document.create_document_reference(
+        patient_id=patient_id,
         content=[document_reference_content],
         description="Third degree wrist burn treatment",
         type=codeable_concept,
         context=document_reference_context
-    )
-
-    response = metriport.medical.document.create_document_reference(
-        patient_id=patient_id,
-        request=uploadDocumentReference
     )
     print(f"Response: {response}")

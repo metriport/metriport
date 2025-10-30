@@ -27,6 +27,6 @@ def test_get_specific_patient() -> None:
     The function `get_patient` retrieves a patient from a medical API and prints their
     ID.
     """
-    metriport = Metriport(api_key=api_key, base_url="http://localhost:8080")
+    metriport = Metriport(api_key=api_key, base_url=base_url)
     response = metriport.medical.patient.get(id=patient_id)
     print(f"Received specific patient with ID: {response.id}")
