@@ -347,3 +347,19 @@ export async function isNewSoapEnvelopeFeatureFlagEnabledForCx(cxId: string): Pr
   const cxIdsWithNewSoapEnvelopeEnabled = await getCxsWithNewSoapEnvelopeFeatureFlag();
   return cxIdsWithNewSoapEnvelopeEnabled.some(i => i === cxId);
 }
+
+export async function getCxsWithAdtsRosterUploadFeatureFlagEnabled(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithAdtsRosterUploadEnabledFeatureFlag");
+}
+export async function isAdtsRosterUploadFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithAdtsEnabled = await getCxsWithAdtsRosterUploadFeatureFlagEnabled();
+  return cxIdsWithAdtsEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithAdtsDataVisibleFeatureFlagEnabled(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithAdtsDataVisibleEnabledFeatureFlag");
+}
+export async function isAdtsDataVisibleFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithAdtsEnabled = await getCxsWithAdtsDataVisibleFeatureFlagEnabled();
+  return cxIdsWithAdtsEnabled.some(i => i === cxId);
+}

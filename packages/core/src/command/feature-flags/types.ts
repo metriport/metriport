@@ -48,6 +48,8 @@ export const cxBasedFFsSchema = z.object({
   cxsWithXmlRedownloadFeatureFlag: ffStringValuesSchema,
   analyticsIncrementalIngestion: ffStringValuesSchema,
   cxsWithNewSoapEnvelopeFeatureFlag: ffStringValuesSchema,
+  cxsWithAdtsRosterUploadEnabledFeatureFlag: ffStringValuesSchema,
+  cxsWithAdtsDataVisibleEnabledFeatureFlag: ffStringValuesSchema,
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 
