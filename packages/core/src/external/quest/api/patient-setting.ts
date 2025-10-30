@@ -23,7 +23,8 @@ export async function setPatientSetting(
 ): Promise<PatientSettingsResponse> {
   const { log } = out(`Quest setPatientSetting - cxId ${cxId} - patientId ${patientId}`);
   const api = axiosInstance ?? axios.create({ baseURL: Config.getApiUrl() });
-  const getPatientMappingUrl = `/internal/patient/settings/quest`;
+  const queryParams = new URLSearchParams({ cxId });
+  const getPatientMappingUrl = `/internal/patient/settings/quest?${queryParams.toString()}`;
   try {
     const response = await executeWithNetworkRetries(async () => {
       return api.post(getPatientMappingUrl, {
