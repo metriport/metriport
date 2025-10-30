@@ -6,6 +6,12 @@ import { CQDirectoryEntryViewModel } from "../../models/cq-directory-view";
 
 export const cqDirectoryTableAliases = z.enum(["latest", "latest-1", "latest-2", "latest-3"]);
 type CqDirectoryTableAliases = z.infer<typeof cqDirectoryTableAliases>;
+type BasicOrgDetails = {
+  id: string;
+  name: string;
+  city: string;
+  state: string;
+};
 
 const tableAliasToName: Record<CqDirectoryTableAliases, string> = {
   latest: "cq_directory_entry_new",
@@ -33,6 +39,9 @@ export async function getCQDirectoryEntryOrFail(
   return organization;
 }
 
+/**
+ * Used by internal routes for analytics on the internal repo.
+ */
 export async function getCqDirectoryEntriesByManagingOrganizationIds(
   managingOrganizationIds: string[],
   tableAlias: CqDirectoryTableAliases
@@ -65,13 +74,9 @@ export async function getCqDirectoryEntriesByManagingOrganizationIds(
   return result?.map((entry: { id: string }) => entry.id) ?? [];
 }
 
-type BasicOrgDetails = {
-  id: string;
-  name: string;
-  city: string;
-  state: string;
-};
-
+/**
+ * Used by internal routes for analytics on the internal repo.
+ */
 export async function getCqDirectoryEntriesBasicDetailsByIds(
   ids: string[],
   tableAlias: CqDirectoryTableAliases
