@@ -26,6 +26,7 @@ import {
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Facility } from "../../../domain/medical/facility";
 import {
+  cqDirectoryTableAliases,
   getCqDirectoryEntriesBasicDetailsByIds,
   getCqDirectoryEntriesByManagingOrganizationIds,
 } from "../../../external/carequality/command/cq-directory/get-cq-directory-entry";
@@ -420,7 +421,7 @@ router.post(
  *
  * Retrieves the organization IDs for the given managing organization IDs.
  * @param req.query.tableAlias The alias of the table to query.
- * Can be one of: "latest", "latest-1", "latest-2", "latest-3".
+ *   Must be one of: "latest", "latest-1", "latest-2", "latest-3".
  * @param req.query.managingOrganizationIds The managing organization IDs to query.
  * @returns Returns the organization IDs for the given managing organization IDs.
  */
@@ -428,7 +429,9 @@ router.get(
   "/directory/ids-by-managing-organization-ids",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const tableAlias = getFrom("query").orFail("tableAlias", req);
+    const tableAliasRaw = getFrom("query").orFail("tableAlias", req);
+    const tableAlias = cqDirectoryTableAliases.parse(tableAliasRaw);
+
     const managingOrganizationIds = getFrom("query")
       .orFail("managingOrganizationIds", req)
       .split(",") as string[];
@@ -447,7 +450,7 @@ router.get(
  *
  * Retrieves the basic details for the given organization IDs.
  * @param req.query.tableAlias The alias of the table to query.
- *   Can be one of: "latest", "latest-1", "latest-2", "latest-3".
+ *   Must be one of: "latest", "latest-1", "latest-2", "latest-3".
  * @param req.query.ids The IDs of the organizations to query. Comma separated list of IDs.
  * @returns Returns the id, name, city, and state for the given organization IDs.
  */
@@ -455,7 +458,9 @@ router.get(
   "/directory/details-by-ids",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const tableAlias = getFrom("query").orFail("tableAlias", req);
+    const tableAliasRaw = getFrom("query").orFail("tableAlias", req);
+    const tableAlias = cqDirectoryTableAliases.parse(tableAliasRaw);
+
     const ids = getFrom("query")
       .orFail("ids", req)
       .split(",")
