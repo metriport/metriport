@@ -1,0 +1,50 @@
+import { BaseSalesforceObjectHandler, SalesforcePatient, SalesforceObjectData } from ".";
+
+/**
+ * Handler for Salesforce Account objects
+ */
+export class AccountHandler extends BaseSalesforceObjectHandler {
+  private static readonly ACCOUNT_FIELDS = [
+    "Id",
+    "FirstName",
+    "LastName",
+    "PersonEmail",
+    "Phone",
+    "PersonMobilePhone",
+    "PersonOtherPhone",
+    "BillingStreet",
+    "BillingCity",
+    "BillingState",
+    "BillingPostalCode",
+    "BillingCountry",
+    "Birth_Date__c",
+    "GenderIdentity__c", // Custom field - adjust based on your Salesforce schema
+  ] as const;
+
+  getObjectType(): string {
+    return "Account";
+  }
+
+  getSOQLFields(): readonly string[] {
+    return AccountHandler.ACCOUNT_FIELDS;
+  }
+
+  normalizeData(rawData: SalesforceObjectData): SalesforcePatient {
+    return {
+      id: this.getString(rawData, "Id"),
+      firstName: this.getStringOrNull(rawData, "FirstName"),
+      lastName: this.getStringOrNull(rawData, "LastName"),
+      mailingStreet: this.getStringOrNull(rawData, "BillingStreet"),
+      mailingCity: this.getStringOrNull(rawData, "BillingCity"),
+      mailingState: this.getStringOrNull(rawData, "BillingState"),
+      mailingPostalCode: this.getStringOrNull(rawData, "BillingPostalCode"),
+      mailingCountry: this.getStringOrNull(rawData, "BillingCountry"),
+      phone: this.getStringOrNull(rawData, "Phone"),
+      mobilePhone: this.getStringOrNull(rawData, "PersonMobilePhone"),
+      otherPhone: this.getStringOrNull(rawData, "PersonOtherPhone"),
+      email: this.getStringOrNull(rawData, "PersonEmail"),
+      genderIdentity: this.getStringOrNull(rawData, "GenderIdentity__c"),
+      birthdate: this.getStringOrNull(rawData, "Birth_Date__c"),
+    };
+  }
+}
