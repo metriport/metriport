@@ -1,9 +1,10 @@
 import { Patient } from "@metriport/core/domain/patient";
+import { AsyncOperationStatus } from "@metriport/core/external";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { processAsyncError } from "@metriport/core/util/error/shared";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { schedulePatientDiscovery } from "../../hie/schedule-patient-discovery";
 import { discover, getCQData } from "../patient";
+import { isCqEnabled } from "../shared";
 
 export async function runOrScheduleCqPatientDiscovery({
   patient,
@@ -19,7 +20,7 @@ export async function runOrScheduleCqPatientDiscovery({
   // START TODO #1572 - remove
   forceCarequality?: boolean;
   // END TODO #1572 - remove
-}): Promise<void> {
+}): Promise<AsyncOperationStatus> {
   const existingPatient = await getPatientOrFail({
     id: patient.id,
     cxId: patient.cxId,
@@ -28,6 +29,15 @@ export async function runOrScheduleCqPatientDiscovery({
 
   const discoveryStatusCq = cqData?.discoveryStatus;
   const scheduledPdRequestCq = cqData?.scheduledPdRequest;
+
+  // Also checked in discover(), kept in both places to avoid b/c discover is used in other places
+  const enabledIHEGW = await isCqEnabled(
+    patient,
+    facilityId,
+    forceCarequality ?? false,
+    console.log
+  );
+  if (!enabledIHEGW) return "disabled";
 
   if (discoveryStatusCq === "processing" && !scheduledPdRequestCq) {
     await schedulePatientDiscovery({
@@ -39,12 +49,14 @@ export async function runOrScheduleCqPatientDiscovery({
       forceCarequality,
     });
   } else if (discoveryStatusCq !== "processing") {
-    discover({
+    await discover({
       patient: existingPatient,
       facilityId,
       requestId,
       forceEnabled: forceCarequality,
       rerunPdOnNewDemographics,
-    }).catch(processAsyncError("CQ discovery"));
+    });
   }
+
+  return "triggered";
 }

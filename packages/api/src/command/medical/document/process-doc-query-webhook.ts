@@ -112,6 +112,10 @@ async function handleConversionWebhook(
     // TODO 2330 The way we call this might need to be reviewed when we finish updating the data
     // pipeline to finish at the end of CONSOLIDATED (not conversion)
     // Intentionally async
+    const { log } = out(
+      `handleConversionWebhook - cx ${patient.cxId}, patient ${patient.id} req ${requestId}`
+    );
+    log(`Finishing single patient import for convert (status: ${convertIsCompleted})`);
     finishSinglePatientImport({
       cxId: patient.cxId,
       patientId: patient.id,

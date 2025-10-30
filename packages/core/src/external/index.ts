@@ -7,6 +7,8 @@ export enum MedicalDataSource {
   CAREQUALITY = "CAREQUALITY",
 }
 
+export type AsyncOperationStatus = "triggered" | "disabled";
+
 export function isMedicalDataSource(s?: string | null): s is MedicalDataSource {
   if (!s) return false;
   const list = Object.values(MedicalDataSource) as string[];

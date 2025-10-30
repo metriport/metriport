@@ -3,7 +3,7 @@ import {
   buildDayjs,
   ISO_DATE,
   isValidISODate,
-  validateDateIsAfter1900,
+  validateDateOfBirthSafe,
   validateIsPastOrPresentSafe,
 } from "../../common/date";
 import { defaultStringSchema } from "./string";
@@ -36,12 +36,9 @@ export const pastOrTodayDateStringSchema = defaultDateStringSchema.refine(
   }
 );
 
-export const validDateOfBirthStringSchema = pastOrTodayDateStringSchema.refine(
-  validateDateIsAfter1900,
-  {
-    message: `Date can't be before 1900`,
-  }
-);
+export const validDateOfBirthStringSchema = z.string().refine(validateDateOfBirthSafe, {
+  message: `Invalid date of birth`,
+});
 
 export function dateStringToIsoDateString(date: string): string {
   return buildDayjs(date).toISOString();

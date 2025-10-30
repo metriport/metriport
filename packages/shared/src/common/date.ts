@@ -53,6 +53,20 @@ export function validateDateOfBirth(
   );
 }
 
+export function validateDateOfBirthSafe(
+  date: string,
+  options?: {
+    validateDateIsAfter1900?: ValidateDobFn;
+    validateIsPastOrPresent?: ValidateDobFn;
+  }
+): boolean {
+  try {
+    return validateDateOfBirth(date, options);
+  } catch (error) {
+    return false;
+  }
+}
+
 export function validateIsPastOrPresent(date: string): true {
   if (!validateIsPastOrPresentSafe(date)) {
     throw new BadRequestError(`Date can't be in the future`, undefined, { date });
