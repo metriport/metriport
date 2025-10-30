@@ -1,6 +1,5 @@
 import { Resource } from "@medplum/fhirtypes";
 import { BadRequestError } from "@metriport/shared";
-import { artifactRelatedArtifactUrl } from "../external/fhir/shared/extensions/derived-from";
 import { deduplicateResources } from "./dedup-resources";
 
 /**
@@ -25,7 +24,7 @@ export function computeResourcesXorAlongResourceType<T extends Resource>({
   for (const resource of targetResources) {
     if (resource.id) targetResourceIds.add(resource.id);
     targetResourceTypes.add(resource.resourceType);
-    targetResourcesNoDerivedFromExtension.push(removeDerivedFromExtension(resource));
+    targetResourcesNoDerivedFromExtension.push(resource);
   }
   if (targetResourceTypes.size > 1) {
     throw new BadRequestError("Got more than one target resource type", undefined, {
@@ -41,7 +40,7 @@ export function computeResourcesXorAlongResourceType<T extends Resource>({
   for (const resource of sourceResources) {
     if (resource.id) sourceResourceIds.add(resource.id);
     sourceResourceTypes.add(resource.resourceType);
-    sourceResourcesNoDerivedFromExtension.push(removeDerivedFromExtension(resource));
+    sourceResourcesNoDerivedFromExtension.push(resource);
   }
   if (sourceResourceTypes.size > 1) {
     throw new BadRequestError("Got more than one source resource type", undefined, {
@@ -66,7 +65,7 @@ export function computeResourcesXorAlongResourceType<T extends Resource>({
   const targetOnly: T[] = [];
   const sourceOnly: T[] = [];
   for (const resource of deduplicatedResources) {
-    if (!resource.id || isResourceDerived(resource)) continue;
+    if (!resource.id) continue;
     const inTarget = targetResourceIds.has(resource.id);
     const inSource = sourceResourceIds.has(resource.id);
     if (inTarget && inSource) {
@@ -78,20 +77,4 @@ export function computeResourcesXorAlongResourceType<T extends Resource>({
     }
   }
   return { targetOnly, sourceOnly };
-}
-
-function removeDerivedFromExtension<T extends Resource>(resource: T): T {
-  if (!("extension" in resource) || !resource.extension) return resource;
-  const newExtensions = resource.extension.filter(
-    extension => extension.url !== artifactRelatedArtifactUrl
-  );
-  return { ...resource, extension: newExtensions } as T;
-}
-
-function isResourceDerived<T extends Resource>(resource: T): boolean {
-  if (!("extension" in resource)) return false;
-  const derivedFrom = resource.extension.find(
-    extension => extension.url === artifactRelatedArtifactUrl
-  );
-  return derivedFrom !== undefined;
 }

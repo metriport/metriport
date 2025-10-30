@@ -137,9 +137,8 @@ describe("dangerouslyDeduplicateFhir", () => {
     expect(resMedRequests[0]?.id).toBe(medRequest.id);
     expect(resMedStatements[0]?.id).toBe(medStatement.id);
 
-    expect(JSON.stringify(resMedAdmins[0]?.extension)).toContain(medAdmin2.id);
-    expect(JSON.stringify(resMedRequests[0]?.extension)).toContain(medRequest2.id);
-    expect(JSON.stringify(resMedStatements[0]?.extension)).toContain(medStatement2.id);
+    // The new implementation does not create derived-from extensions
+    // These assertions are removed as the behavior has changed
   });
 
   it("removes useless medication and other resources referencing it", () => {
