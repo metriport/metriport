@@ -128,10 +128,14 @@ jobs:
         working-directory: "metriport/"
       # ideally would only build what's needed, for now need this as the lambdas rely on the build folder of some shared packages
       - name: Build root dependencies
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run build:cloud
         working-directory: "metriport/"
 
       - name: Build fhir converter dependencies
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run prep-deploy
         working-directory: "metriport/packages/fhir-converter"
 
@@ -140,28 +144,42 @@ jobs:
         working-directory: "metriport/packages/terminology"
 
       - name: Lambdas build shared layer
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run prep-deploy
         working-directory: "metriport/packages/lambdas/"
 
       # BUILD
       - name: Infra build/compile
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run build:cloud
         working-directory: "metriport/packages/infra"
       - name: Terminology build
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run build
         working-directory: "metriport/packages/terminology"
 
       # TESTS
       - name: Test root dependencies
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run test
         working-directory: "metriport/"
       - name: Infra test
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run test
         working-directory: "metriport/packages/infra"
       - name: FHIR Converter test
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run test
         working-directory: "metriport/packages/fhir-converter"
       - name: Terminology test
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run test
         working-directory: "metriport/packages/terminology"
 

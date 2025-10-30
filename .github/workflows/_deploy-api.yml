@@ -86,10 +86,14 @@ jobs:
 
       - name: Build/compile
         # build from root because of dependencies
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run build:cloud
         working-directory: "./"
 
       - name: Run Tests
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
         run: npm run test
         working-directory: "./"
 
