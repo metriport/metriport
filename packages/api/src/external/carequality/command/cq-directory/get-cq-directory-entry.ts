@@ -1,4 +1,4 @@
-import { NotFoundError } from "@metriport/shared";
+import { BadRequestError, NotFoundError } from "@metriport/shared";
 import { QueryTypes } from "sequelize";
 import { z } from "zod";
 import { CQDirectoryEntry } from "../../cq-directory";
@@ -46,6 +46,7 @@ export async function getCqDirectoryEntriesByManagingOrganizationIds(
   managingOrganizationIds: string[],
   tableAlias: CqDirectoryTableAliases
 ): Promise<string[]> {
+  validateTableAlias(tableAlias);
   const tableName = tableAliasToName[tableAlias];
 
   if (managingOrganizationIds.length === 0) {
@@ -81,6 +82,7 @@ export async function getCqDirectoryEntriesBasicDetailsByIds(
   ids: string[],
   tableAlias: CqDirectoryTableAliases
 ): Promise<Array<BasicOrgDetails>> {
+  validateTableAlias(tableAlias);
   const tableName = tableAliasToName[tableAlias];
 
   if (ids.length === 0) {
@@ -106,4 +108,11 @@ export async function getCqDirectoryEntriesBasicDetailsByIds(
   });
 
   return result ?? [];
+}
+
+function validateTableAlias(tableAlias: string): asserts tableAlias is CqDirectoryTableAliases {
+  const validationResult = cqDirectoryTableAliases.safeParse(tableAlias);
+  if (!validationResult.success) {
+    throw new BadRequestError(`Invalid table alias: ${tableAlias}`);
+  }
 }
