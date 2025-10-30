@@ -25,6 +25,11 @@ import {
 } from "../../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Facility } from "../../../domain/medical/facility";
+import {
+  cqDirectoryTableAliases,
+  getCqDirectoryEntriesBasicDetailsByIds,
+  getCqDirectoryEntriesByManagingOrganizationIds,
+} from "../../../external/carequality/command/cq-directory/get-cq-directory-entry";
 import { listCQDirectory } from "../../../external/carequality/command/cq-directory/list-cq-directory";
 import { rebuildCQDirectory } from "../../../external/carequality/command/cq-directory/rebuild-cq-directory";
 import {
@@ -408,6 +413,67 @@ router.post(
     processOutboundDocumentRetrievalResps(req.body);
 
     return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * GET /internal/carequality/directory/ids-by-managing-organization-ids
+ *
+ * Retrieves the organization IDs for the given managing organization IDs.
+ * @param req.query.tableAlias The alias of the table to query.
+ *   Must be one of: "latest", "latest-1", "latest-2", "latest-3".
+ * @param req.query.managingOrganizationIds The managing organization IDs to query.
+ * @returns Returns the organization IDs for the given managing organization IDs.
+ */
+router.get(
+  "/directory/ids-by-managing-organization-ids",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const tableAliasRaw = getFrom("query").orFail("tableAlias", req);
+    const tableAlias = cqDirectoryTableAliases.parse(tableAliasRaw);
+
+    const managingOrganizationIds = getFrom("query")
+      .orFail("managingOrganizationIds", req)
+      .split(",") as string[];
+
+    const orgs = await getCqDirectoryEntriesByManagingOrganizationIds(
+      managingOrganizationIds,
+      tableAlias
+    );
+
+    return res.status(httpStatus.OK).json({ orgs });
+  })
+);
+
+/**
+ * GET /internal/carequality/directory/details-by-ids
+ *
+ * Retrieves the basic details for the given organization IDs.
+ * @param req.query.tableAlias The alias of the table to query.
+ *   Must be one of: "latest", "latest-1", "latest-2", "latest-3".
+ * @param req.query.ids The IDs of the organizations to query. Comma separated list of IDs.
+ * @returns Returns the id, name, city, and state for the given organization IDs.
+ */
+router.get(
+  "/directory/details-by-ids",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const tableAliasRaw = getFrom("query").orFail("tableAlias", req);
+    const tableAlias = cqDirectoryTableAliases.parse(tableAliasRaw);
+
+    const ids = getFrom("query")
+      .orFail("ids", req)
+      .split(",")
+      .map(id => id.trim())
+      .filter(id => id.length > 0);
+
+    if (ids.length === 0) {
+      throw new BadRequestError("ids cannot be empty");
+    }
+
+    const orgs = await getCqDirectoryEntriesBasicDetailsByIds(ids, tableAlias);
+
+    return res.status(httpStatus.OK).json({ orgs });
   })
 );
 
