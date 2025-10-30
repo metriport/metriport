@@ -125,7 +125,7 @@ const defaultOverridesSchema = z
   .default({})
   .optional();
 
-const fullCohortSettingsSchema = createFullCohortSettingsSchema(defaultOverridesSchema);
+export const fullCohortSettingsSchema = createFullCohortSettingsSchema(defaultOverridesSchema);
 const cohortSettingsNoOverrides = fullCohortSettingsSchema.omit({ overrides: true });
 
 export const baseCohortSchema = z.object({
