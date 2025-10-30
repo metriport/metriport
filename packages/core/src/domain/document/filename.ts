@@ -52,7 +52,7 @@ export function parseDocumentFileName(fileName: string): {
   ) {
     throw new MetriportError(`Invalid cda to fhir conversion file name`, undefined, { fileName });
   }
-  const docId = path.basename(documentIdWithExtension);
+  const docId = path.basename(documentIdWithExtension, ".json");
   const extension = path.extname(documentIdWithExtension);
   return { cxId, patientId, docId, extension };
 }

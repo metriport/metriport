@@ -6,7 +6,7 @@ import { initRunsFolder } from "../shared/folder";
 import { Config } from "@metriport/core/util/config";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { ExtractionBundle, ExtractionSource } from "@metriport/core/sde/types";
+import { DocumentConversion, ExtractionBundle, ExtractionSource } from "@metriport/core/sde/types";
 import { listDocumentIds } from "@metriport/core/sde/command/document/list-documents";
 import { downloadDocumentConversion } from "@metriport/core/sde/command/document/download";
 
@@ -36,13 +36,18 @@ export function localPatientDirectoryExists(cxId: string, patientId: string): bo
   return fs.existsSync(path.join(localDirectoryPath, patientId));
 }
 
+export function localPatientSourcesExist(cxId: string, patientId: string): boolean {
+  const localDirectoryPath = getLocalDirectoryPath(`source/${cxId}/${patientId}`);
+  return fs.existsSync(path.join(localDirectoryPath, "sources.json"));
+}
+
 export function listLocalCustomerIds(): string[] {
   const localDirectoryPath = getLocalDirectoryPath("customer");
   return fs.readdirSync(localDirectoryPath);
 }
 
 export function listLocalPatientIds(cxId: string): string[] {
-  const localDirectoryPath = getLocalDirectoryPath(`customer/${cxId}`);
+  const localDirectoryPath = getLocalDirectoryPath(`source/${cxId}`);
   return fs.readdirSync(localDirectoryPath);
 }
 
@@ -137,17 +142,17 @@ export async function downloadAllDocumentConversions({
   cxId: string;
   patientId: string;
   downloadInParallel?: number;
-}): Promise<ExtractionBundle[]> {
+}): Promise<DocumentConversion[]> {
   const documentIds = await listDocumentIds({ cxId, patientId });
   console.log(`Downloading ${documentIds.length} documents for patient ${patientId}`);
 
-  const extractionBundles: ExtractionBundle[] = [];
+  const documentConversions: DocumentConversion[] = [];
   await executeAsynchronously(
     documentIds,
     async documentId => {
       const bundle = await downloadDocumentConversion({ cxId, patientId, documentId });
       if (bundle) {
-        extractionBundles.push({ extractedFromDocumentId: documentId, extractedBundle: bundle });
+        documentConversions.push({ cxId, patientId, documentId, bundle });
       }
     },
     {
@@ -155,8 +160,8 @@ export async function downloadAllDocumentConversions({
     }
   );
 
-  console.log(`Downloaded ${extractionBundles.length} bundles for patient ${patientId}`);
-  return extractionBundles;
+  console.log(`Downloaded ${documentConversions.length} bundles for patient ${patientId}`);
+  return documentConversions;
 }
 
 export async function listPatientIdsWithDocuments({ cxId }: { cxId: string }): Promise<string[]> {

@@ -7,6 +7,7 @@ import extractSources from "./extract-sources";
 import listPatients from "./list-patients";
 import downloadDocuments from "./download-documents";
 import searchDocuments from "./search-documents";
+import buildMoca from "./build-moca";
 
 /**
  * This is the main command registry for the SDE CLI. You should add any new
@@ -18,4 +19,5 @@ program.addCommand(listPatients);
 program.addCommand(downloadDocuments);
 program.addCommand(extractSources);
 program.addCommand(searchDocuments);
+program.addCommand(buildMoca);
 program.parse(process.argv);
