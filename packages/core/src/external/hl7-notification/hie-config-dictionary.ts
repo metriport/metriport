@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Config } from "../../util/config";
+import { MetriportError } from "@metriport/shared";
 
 const cidrBlockRegex = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2}$/;
 
@@ -51,4 +52,16 @@ export function getHieNames(): string[] {
 export function throwOnInvalidHieName(name: string): string {
   const hieNameSchema = z.enum(getHieNames() as [string, ...string[]]);
   return hieNameSchema.parse(name);
+}
+
+export function getExcludeHieNameString(hieName: string): string {
+  const hieNames = getHieNames();
+  if (!hieNames.includes(hieName)) {
+    throw new MetriportError(`HIE name ${hieName} not found in config dictionary`, undefined, {
+      hieNameSent: hieName,
+      AvailableHieNames: hieNames.join(", "),
+    });
+  }
+  
+  return `Exclude_${hieName}`;
 }

@@ -41,6 +41,12 @@ export function applyCohortDtoToPayload(data: CohortWithSize): CohortWithSizeDTO
   const { size, ...cohort } = data;
   const cohortDto = dtoFromCohort(cohort);
 
+  // Remove overrides from the settings object to avoid showing the CX.
+  if (cohortDto.settings && "overrides" in cohortDto.settings) {
+    const { overrides: _remove, ...settingsWithoutOverrides } = cohortDto.settings;
+    cohortDto.settings = settingsWithoutOverrides;
+  }
+
   return { ...cohortDto, size };
 }
 

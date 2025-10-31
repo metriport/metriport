@@ -1,16 +1,15 @@
 import { Patient } from "@metriport/core/domain/patient";
+import { buildQuestExternalId } from "@metriport/core/external/quest/id-generator";
 import { capture, executeAsynchronously } from "@metriport/core/util";
-import { out, LogFunction } from "@metriport/core/util/log";
+import { LogFunction, out } from "@metriport/core/util/log";
 import { MetriportError, errorToString } from "@metriport/shared";
 import { questSource } from "@metriport/shared/interface/external/quest/source";
-import { buildQuestExternalId } from "@metriport/core/external/quest/id-generator";
 import { FindOptions, Op, Order, Sequelize, UniqueConstraintError, WhereOptions } from "sequelize";
 import {
-  findFirstPatientMappingForSource,
   createPatientMapping,
+  findFirstPatientMappingForSource,
 } from "../../../command/mapping/patient";
 import { PatientModelReadOnly } from "../../../models/medical/patient-readonly";
-import { PatientSettingsModel } from "../../../models/patient-settings";
 import { Pagination, getPaginationFilters, getPaginationLimits } from "../../pagination";
 
 export type GetQuestRosterParams = {
@@ -29,21 +28,16 @@ function getCommonQueryOptions({ pagination }: GetQuestRosterParams) {
       [Op.and]: [
         Sequelize.literal(`
           EXISTS (
-              SELECT 1
-              FROM patient_settings ps
-              WHERE ps.patient_id = "PatientModelReadOnly"."id"
-              AND ps.subscriptions->'quest' IS NOT NULL
+            SELECT 1
+            FROM patient_cohort pc
+            JOIN cohort ch ON ch.id = pc.cohort_id
+            WHERE pc.patient_id = "PatientModelReadOnly"."id"
+              AND jsonb_typeof(ch.settings->'monitoring'->'laboratory'->'notifications') = 'boolean'
+              AND (ch.settings->'monitoring'->'laboratory'->>'notifications')::boolean IS TRUE
           )
-          `),
+        `),
       ],
     } satisfies WhereOptions,
-    include: [
-      {
-        model: PatientSettingsModel,
-        attributes: [],
-        required: true,
-      },
-    ],
     ...(pagination ? getPaginationLimits(pagination) : {}),
     ...(pagination ? { order } : {}),
   };

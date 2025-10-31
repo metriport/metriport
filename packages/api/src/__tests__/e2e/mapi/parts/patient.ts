@@ -1,12 +1,13 @@
 import { faker } from "@faker-js/faker";
 import { Address, Patient as FhirPatient } from "@medplum/fhirtypes";
 import { PatientCreate, PatientDTO } from "@metriport/api-sdk";
+import { PatientCreateInput } from "@metriport/api-sdk/medical/models/patient";
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";
 import { mapMetriportGenderToFhirGender } from "@metriport/core/external/fhir/patient/conversion";
 import { USState } from "@metriport/shared";
 
-export const createPatient: PatientCreate = {
+export const createPatient: PatientCreateInput = {
   firstName: "Junhdjjdkksuyujebeb",
   lastName: "Xamuscaeyttyworo",
   dob: "1900-01-01",
@@ -22,9 +23,10 @@ export const createPatient: PatientCreate = {
     zip: "45485",
     country: "USA",
   },
+  cohorts: ["Test Cohort"],
 };
 
-export const createSecondaryPatient: PatientCreate = {
+export const createSecondaryPatient: PatientCreateInput = {
   firstName: "Somename",
   lastName: "Secondary",
   dob: "1970-01-01",
@@ -40,6 +42,7 @@ export const createSecondaryPatient: PatientCreate = {
     zip: "45485",
     country: "USA",
   },
+  cohorts: ["Test Cohort"],
 };
 
 export function validateLocalPatient(

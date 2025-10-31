@@ -1,8 +1,8 @@
 import { faker } from "@faker-js/faker";
 import {
   CohortCreateInput,
-  cohortSettingsSchema,
   CohortWithSizeDTO,
+  fullCohortSettingsSchema,
 } from "@metriport/shared/domain/cohort";
 
 export const createCohort: CohortCreateInput = {
@@ -15,5 +15,5 @@ export function validateCohort(cohort: CohortWithSizeDTO) {
   expect(cohort.settings).toBeTruthy();
   expect(cohort.size).toBeDefined();
   expect(cohort.color).toBeDefined();
-  expect(() => cohortSettingsSchema.parse(cohort.settings)).not.toThrow();
+  expect(() => fullCohortSettingsSchema.parse(cohort.settings)).not.toThrow();
 }

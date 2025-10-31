@@ -6,6 +6,7 @@ import {
   otherGender,
   simpleExecuteWithRetries,
   unknownGender,
+  USState,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { initTimer } from "@metriport/shared/common/timer";
@@ -56,6 +57,7 @@ export class Hl7v2RosterGenerator {
   async execute(config: HieConfig | VpnlessHieConfig): Promise<void> {
     const { log } = out("Hl7v2RosterGenerator");
     const { states } = config;
+    const hieStates = config.states;
     const hieName = config.name;
     const loggingDetails = {
       hieName,
@@ -66,7 +68,7 @@ export class Hl7v2RosterGenerator {
     log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
     log(`Getting all subscribed patients...`);
     const rawPatients = await simpleExecuteWithRetries(
-      () => this.getAllSubscribedPatients(hieName),
+      () => this.getAllSubscribedPatients(hieStates),
       log
     );
     log(`Found ${rawPatients.length} total patients`);
@@ -145,12 +147,12 @@ export class Hl7v2RosterGenerator {
     await trackRosterSizePerCustomer(trackRosterSizePerCustomerParams);
   }
 
-  private async getAllSubscribedPatients(hieName: string): Promise<Patient[]> {
-    const { log } = out(`getAllSubscribedPatients - hieName ${hieName}`);
+  private async getAllSubscribedPatients(hieStates: USState[]): Promise<Patient[]> {
+    const { log } = out(`getAllSubscribedPatients - states: ${hieStates.join(",")}`);
     const allSubscribers: Patient[] = [];
     let currentUrl: string | undefined = `${this.apiUrl}/${HL7V2_SUBSCRIBERS_ENDPOINT}`;
     let baseParams: Hl7v2SubscriberParams | undefined = {
-      hieName,
+      hieStates,
       count: NUMBER_OF_PATIENTS_PER_PAGE,
     };
 

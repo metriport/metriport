@@ -7,6 +7,7 @@ import * as cwCommands from "../../../../external/commonwell";
 import * as createTenant from "../../../../external/fhir/admin";
 import * as upsertOrgToFHIRServer from "../../../../external/fhir/organization/upsert-organization";
 import { OrganizationModel } from "../../../../models/medical/organization";
+import { CohortModel } from "../../../../models/medical/cohort";
 import { makeOrganizationOID } from "../../../../shared/oid";
 import * as createId from "../../customer-sequence/create-id";
 import { createOrganization } from "../create-organization";
@@ -28,6 +29,13 @@ beforeAll(() => {
   jest.spyOn(upsertOrgToFHIRServer, "upsertOrgToFHIRServer").mockImplementation(async () => {});
   jest.spyOn(cwCommands.default.organization, "createOrUpdate").mockResolvedValue();
   jest.spyOn(address, "getAddressWithCoordinates").mockResolvedValue(addressWithCoordinates);
+
+  CohortModel.findAll = jest.fn().mockResolvedValue([]);
+  CohortModel.create = jest
+    .fn()
+    .mockImplementation(data =>
+      Promise.resolve({ dataValues: { ...data, id: faker.string.uuid() } })
+    );
 });
 beforeEach(() => {
   jest.clearAllMocks();

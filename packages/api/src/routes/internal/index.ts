@@ -55,6 +55,7 @@ import organizationRoutes from "./medical/organization";
 import patientRoutes from "./medical/patient";
 import tcmEncounter from "./medical/tcm-encounter";
 import suspectRoutes from "./medical/suspect";
+import cohortRoutes from "./medical/cohort";
 
 const router = Router();
 
@@ -75,6 +76,7 @@ router.use("/tcm/encounter", tcmEncounter);
 router.use("/analytics-platform", analyticsPlatformRoutes);
 router.use("/quest", questRoutes);
 router.use("/suspect", suspectRoutes);
+router.use("/cohort", cohortRoutes);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/mapi-access

@@ -148,8 +148,7 @@ async function initDB(): Promise<void> {
     for (const setup of modelsReadOnly) setup(sequelizeReadOnly);
 
     // Set up model associations
-    PatientModelReadOnly.associate({ PatientSettingsModel });
-    PatientSettingsModel.associate({ PatientModelReadOnly });
+    PatientModelReadOnly.associate({ CohortModel, PatientCohortModel });
     CohortModel.associate({ PatientCohortModel });
     PatientCohortModel.associate({ CohortModel });
     PatientModel.associate({ PatientCohortModel, TcmEncounterModel });
