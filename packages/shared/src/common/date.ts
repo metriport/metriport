@@ -9,6 +9,7 @@ dayjs.extend(timezone);
 
 export const ISO_DATE = "YYYY-MM-DD";
 export const ISO_DATE_TIME = "YYYY-MM-DDTHH:mm:ss.SSSZ";
+export const ISO_WITH_TIMESTAMP_FORMAT = "YYYY-MM-DD hh:mm:ss A";
 
 /** @see https://day.js.org/docs/en/parse/is-valid  */
 export function isValidISODate(date: string): boolean {
