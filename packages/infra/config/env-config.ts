@@ -230,6 +230,9 @@ type EnvConfigBase = {
     salesforce: {
       env: string;
     };
+    epic: {
+      env: string;
+    };
   };
   surescripts?: {
     surescriptsSenderId: string;

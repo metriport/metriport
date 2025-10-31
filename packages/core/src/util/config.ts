@@ -397,6 +397,10 @@ export class Config {
     return getEnvVar("EHR_SALESFORCE_ENVIRONMENT");
   }
 
+  static getEpicEnv(): string | undefined {
+    return getEnvVar("EHR_EPIC_ENVIRONMENT");
+  }
+
   static getRunPatientJobQueueUrl(): string {
     return getEnvVarOrFail("RUN_PATIENT_JOB_QUEUE_URL");
   }

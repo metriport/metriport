@@ -17,6 +17,10 @@ import {
   salesforceDashSource,
 } from "@metriport/shared/interface/external/ehr/salesforce/jwt-token";
 import {
+  EpicDashJwtTokenData,
+  epicDashSource,
+} from "@metriport/shared/interface/external/ehr/epic/jwt-token";
+import {
   EClinicalWorksDashJwtTokenData,
   eclinicalworksDashSource,
 } from "@metriport/shared/interface/external/ehr/eclinicalworks/jwt-token";
@@ -40,6 +44,7 @@ export const ehrDashJwtTokenSources = [
   healthieDashSource,
   eclinicalworksDashSource,
   salesforceDashSource,
+  epicDashSource,
 ] as const;
 export type EhrDashJwtTokenSource = (typeof ehrDashJwtTokenSources)[number];
 export function isEhrDashJwtTokenSource(source: string): source is EhrDashJwtTokenSource {
@@ -52,7 +57,8 @@ export type EhrDashJwtTokenData =
   | ElationDashJwtTokenData
   | HealthieDashJwtTokenData
   | EClinicalWorksDashJwtTokenData
-  | SalesforceDashJwtTokenData;
+  | SalesforceDashJwtTokenData
+  | EpicDashJwtTokenData;
 
 export const ehrClientJwtTokenSources = [
   athenaClientSource,
