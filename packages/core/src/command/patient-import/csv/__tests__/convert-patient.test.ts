@@ -2,7 +2,12 @@ import { faker } from "@faker-js/faker";
 import { toTitleCase, USState } from "@metriport/shared";
 import * as normalizeDobFile from "@metriport/shared/domain/dob";
 import { DriversLicense } from "../../../../domain/patient";
-import { mapCsvDriversLicense, mapCsvPatientToMetriportPatient } from "../convert-patient";
+import {
+  mapCsvDriversLicense,
+  mapCsvPatientToMetriportPatient,
+  normalizeCohortName,
+} from "../convert-patient";
+import { compact } from "lodash";
 
 describe("convert-patient", () => {
   describe("mapCsvPatientToMetriportPatient", () => {
@@ -24,6 +29,8 @@ describe("convert-patient", () => {
         city: toTitleCase(faker.location.city()),
         state: faker.location.state({ abbreviated: true }),
         zip: faker.location.zipCode().slice(0, 5),
+        cohort1: faker.lorem.word(),
+        cohort2: `${faker.lorem.word()} ${faker.lorem.word()}`,
       };
     }
 
@@ -45,6 +52,7 @@ describe("convert-patient", () => {
               country: "USA",
             }),
           ],
+          cohorts: compact([csv.cohort1, csv.cohort2]).map(normalizeCohortName),
         })
       );
     });
@@ -71,6 +79,7 @@ describe("convert-patient", () => {
               country: "USA",
             }),
           ],
+          cohorts: compact([csv.cohort1, csv.cohort2]).map(normalizeCohortName),
         })
       );
     });

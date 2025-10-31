@@ -20,6 +20,7 @@ import { PatientPayload } from "../patient-import";
 import { mapCsvAddresses } from "./address";
 import { mapCsvContacts } from "./contact";
 import { ParsingError } from "./shared";
+import _ from "lodash";
 
 const firstNameFieldName = "firstName";
 const lastNameFieldName = "lastName";
@@ -28,6 +29,8 @@ const genderFieldName = "gender";
 const ssnFieldName = "ssn";
 const externalIdFieldName = "id";
 const externalId2FieldName = "externalId";
+const cohort1FieldName = "cohort1";
+const cohort2FieldName = "cohort2";
 const firstNameFieldNameLower = firstNameFieldName.toLowerCase();
 const lastNameFieldNameLower = lastNameFieldName.toLowerCase();
 const dobFieldNameLower = dobFieldName.toLowerCase();
@@ -35,6 +38,8 @@ const genderFieldNameLower = genderFieldName.toLowerCase();
 const ssnFieldNameLower = ssnFieldName.toLowerCase();
 const externalIdFieldNameLower = externalIdFieldName.toLowerCase();
 const externalId2FieldNameLower = externalId2FieldName.toLowerCase();
+const cohort1FieldNameLower = cohort1FieldName.toLowerCase();
+const cohort2FieldNameLower = cohort2FieldName.toLowerCase();
 
 const driversLicensePrefixUS = "driversLicense"; // licenSe
 const driversLicensePrefixGB = "driversLicence"; // licenCe
@@ -113,6 +118,11 @@ export function mapCsvPatientToMetriportPatient(
     normalizeExternalId(csvPatient[externalIdFieldNameLower]) ??
     normalizeExternalId(csvPatient[externalId2FieldNameLower]);
 
+  const cohorts = _.compact([
+    csvPatient[cohort1FieldNameLower],
+    csvPatient[cohort2FieldNameLower],
+  ]).map(normalizeCohortName);
+
   const { ssn, errors: ssnErrors } = mapCsvSsn(csvPatient);
   errors.push(...ssnErrors);
   const { driversLicense, errors: driversLicenseErrors } = mapCsvDriversLicense(csvPatient);
@@ -135,6 +145,7 @@ export function mapCsvPatientToMetriportPatient(
     address: addresses,
     contact: contacts,
     personalIdentifiers,
+    cohorts,
   };
   // TODO ENG-467 Enable this when we move the validate to packages/core
   // validate(ptCreate);
@@ -147,6 +158,10 @@ export function normalizeNameOrFail(name: string | undefined, propName: string):
     throw new BadRequestError(`Missing ` + propName);
   }
   return toTitleCaseIfNotMultiCase(trimmedName);
+}
+
+export function normalizeCohortName(cohortName: string): string {
+  return cohortName.trim().toUpperCase();
 }
 
 export function normalizeExternalId(id: string | undefined): string | undefined {

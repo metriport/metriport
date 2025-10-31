@@ -4,18 +4,15 @@ import { demographicsSchema } from "./demographics";
 import { ConsolidatedQuery } from "./fhir";
 import { patientSettingsSchema } from "@metriport/shared";
 
-export const patientCreateSchema = demographicsSchema
-  .merge(
-    z.object({
-      externalId: z.string().optional(),
-    })
-  )
-  .merge(
-    z.object({
-      settings: patientSettingsSchema.optional(),
-    })
-  );
+export const patientCreateSchema = demographicsSchema.merge(
+  z.object({
+    externalId: z.string().optional(),
+    settings: patientSettingsSchema.optional(),
+    cohorts: z.array(z.string()).optional().default([]),
+  })
+);
 
+export type PatientCreateInput = z.input<typeof patientCreateSchema>;
 export type PatientCreate = z.infer<typeof patientCreateSchema>;
 
 export const patientUpdateSchema = patientCreateSchema.merge(baseUpdateSchema);
