@@ -21,7 +21,7 @@ dbt-postgres==1.9.1
 dbt-protos==1.0.375
 dbt-semantic-interfaces==0.9.0
 deepdiff==8.6.1
-filelock==3.19.1
+filelock==3.20.3
 idna==3.10
 importlib_metadata==8.7.0
 isodate==0.6.1
@@ -45,7 +45,7 @@ packaging==25.0
 parsedatetime==2.6
 pathspec==0.12.1
 platformdirs==4.4.0
-protobuf==6.32.1
+protobuf==6.33.5
 psycopg2-binary==2.9.10
 pycparser==2.23
 pydantic==2.11.9
@@ -72,5 +72,5 @@ tomlkit==0.13.3
 typing-inspection==0.4.1
 typing_extensions==4.15.0
 tzdata==2025.2
-urllib3==2.5.0
+urllib3==2.6.3
 zipp==3.23.0
