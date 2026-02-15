@@ -1,0 +1,10 @@
+# VLayer HIPAA Compliance Configuration
+# Docs: https://app.vlayer.app/docs
+
+mode: shadow          # shadow = informational, enforce = block PRs on critical
+severity_threshold: high  # minimum severity to report: low, medium, high, critical
+ignore_paths:
+  - "node_modules/**"
+  - "dist/**"
+  - "**/*.test.*"
+  - "**/*.spec.*"
