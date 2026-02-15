@@ -24,6 +24,8 @@ jobs:
 
       - name: Run VLayer HIPAA Scanner
         id: scan
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
         run: |
           npx -y verification-layer@latest scan . -f json -o vlayer-results.json || true
           if [ -f vlayer-results.json ]; then
