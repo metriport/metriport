@@ -1,0 +1,52 @@
+name: VLayer HIPAA Compliance Scan
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  hipaa-scan:
+    name: HIPAA Compliance Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run VLayer HIPAA Scanner
+        id: scan
+        run: |
+          npx -y verification-layer@latest scan . -f json -o vlayer-results.json || true
+          if [ -f vlayer-results.json ]; then
+            echo "scan_completed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "scan_completed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::VLayer scan did not produce output"
+          fi
+
+      - name: Upload results to VLayer
+        if: steps.scan.outputs.scan_completed == 'true'
+        run: |
+          if [ -z "${{ secrets.VLAYER_API_KEY }}" ]; then
+            echo "::notice::VLAYER_API_KEY not configured. Skipping upload to VLayer dashboard."
+            echo "To enable dashboard integration, add VLAYER_API_KEY to your repository secrets."
+            echo "Get your key at https://app.vlayer.app"
+            exit 0
+          fi
+
+          curl -s -X POST "https://app.vlayer.app/api/webhook/scan-results" \
+            -H "Authorization: Bearer ${{ secrets.VLAYER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Repository: ${{ github.repository }}" \
+            -H "X-GitHub-PR: ${{ github.event.pull_request.number }}" \
+            -H "X-GitHub-SHA: ${{ github.event.pull_request.head.sha }}" \
+            -d @vlayer-results.json
