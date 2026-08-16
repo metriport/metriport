@@ -374,17 +374,23 @@ export class MetriportMedicalApi {
    *
    * @param externalId The external ID of the patient to be returned.
    * @param source The source of the external ID, if required.
-   * @return The patient.
+   * @return The patient, if found.
    */
   async getPatientByExternalId(
     externalId: string,
     source?: string
   ): Promise<PatientDTO | undefined> {
-    const resp = await this.api.get(`${PATIENT_URL}/external-id`, {
-      params: { externalId, source },
-    });
-    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
-    return resp.data as PatientDTO;
+    try {
+      const resp = await this.api.get(`${PATIENT_URL}/external-id`, {
+        params: { externalId, source },
+      });
+      if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+      return resp.data as PatientDTO;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      if (err.response?.status !== status.NOT_FOUND) throw err;
+      return undefined;
+    }
   }
 
   /**

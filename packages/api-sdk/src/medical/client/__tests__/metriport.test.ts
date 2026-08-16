@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
+import { faker } from "@faker-js/faker";
+import axios from "axios";
 import crypto from "crypto";
+import { mocked } from "jest-mock";
 import { MetriportMedicalApi } from "../metriport";
+
+jest.mock("axios");
 
 describe("api-sdk client", () => {
   describe("verifyWebhookSignature", () => {
@@ -120,6 +125,51 @@ describe("api-sdk client", () => {
         expect(mockTimingSafeEqual).toHaveBeenCalled();
         expect(result).toBe(false);
       });
+    });
+  });
+
+  describe("getPatientByExternalId", () => {
+    const apiKey = faker.string.uuid();
+    const mockedAxios = mocked(axios);
+
+    function newClientWithMockedApi(): MetriportMedicalApi {
+      const client = new MetriportMedicalApi(apiKey);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (client as any).api = mockedAxios;
+      return client;
+    }
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it("returns the patient when found", async () => {
+      const client = newClientWithMockedApi();
+      const patient = { id: faker.string.uuid() };
+      mockedAxios.get.mockResolvedValueOnce({ data: patient });
+
+      const result = await client.getPatientByExternalId("external-id-123");
+
+      expect(result).toEqual(patient);
+    });
+
+    it("returns undefined when the patient is not found (404)", async () => {
+      const client = newClientWithMockedApi();
+      mockedAxios.get.mockRejectedValueOnce({ response: { status: 404 } });
+
+      const result = await client.getPatientByExternalId("external-id-123");
+
+      expect(result).toBeUndefined();
+    });
+
+    it("rethrows non-404 errors", async () => {
+      const client = newClientWithMockedApi();
+      const serverError = { response: { status: 500 } };
+      mockedAxios.get.mockRejectedValueOnce(serverError);
+
+      await expect(client.getPatientByExternalId("external-id-123")).rejects.toEqual(
+        serverError
+      );
     });
   });
 });
