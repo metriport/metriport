@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
-import axios, { AxiosError, AxiosInstance } from "axios";
+import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import crypto from "crypto";
 import { mocked } from "jest-mock";
 import { MetriportMedicalApi } from "../metriport";
@@ -8,16 +8,22 @@ import { Demographics } from "../../models/demographics";
 
 jest.mock("axios");
 
-// jest.mock("axios") auto-mocks isAxiosError too; delegate it to the real
-// implementation so tests can distinguish real AxiosErrors from plain
-// error-shaped objects, same as the code under test does.
+/**
+ * jest.mock("axios") auto-mocks isAxiosError too. Delegate it to the real
+ * implementation so tests can distinguish real AxiosErrors from plain
+ * error-shaped objects, same as the code under test does.
+ */
 const actualAxios: typeof import("axios") = jest.requireActual("axios");
 
 function makeAxiosError(status: number): AxiosError {
-  const error = new actualAxios.AxiosError("Request failed");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  error.response = { status } as any;
-  return error;
+  const response: AxiosResponse<undefined, undefined> = {
+    data: undefined,
+    status,
+    statusText: "Request failed",
+    headers: {},
+    config: { headers: new actualAxios.AxiosHeaders() },
+  };
+  return new actualAxios.AxiosError("Request failed", undefined, undefined, undefined, response);
 }
 
 describe("api-sdk client", () => {
