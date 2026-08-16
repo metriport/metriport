@@ -381,15 +381,16 @@ export class MetriportMedicalApi {
     source?: string
   ): Promise<PatientDTO | undefined> {
     try {
-      const resp = await this.api.get(`${PATIENT_URL}/external-id`, {
+      const resp = await this.api.get<PatientDTO>(`${PATIENT_URL}/external-id`, {
         params: { externalId, source },
       });
       if (!resp.data) throw new Error(NO_DATA_MESSAGE);
-      return resp.data as PatientDTO;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      if (err.response?.status !== status.NOT_FOUND) throw err;
-      return undefined;
+      return resp.data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status === status.NOT_FOUND) {
+        return undefined;
+      }
+      throw error;
     }
   }
 
@@ -400,13 +401,14 @@ export class MetriportMedicalApi {
    */
   async matchPatient(data: Demographics): Promise<PatientDTO | undefined> {
     try {
-      const resp = await this.api.post(`${PATIENT_URL}/match`, data);
+      const resp = await this.api.post<PatientDTO>(`${PATIENT_URL}/match`, data);
       if (!resp.data) throw new Error(NO_DATA_MESSAGE);
-      return resp.data as PatientDTO;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      if (err.response?.status !== status.NOT_FOUND) throw err;
-      return undefined;
+      return resp.data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status === status.NOT_FOUND) {
+        return undefined;
+      }
+      throw error;
     }
   }
 
