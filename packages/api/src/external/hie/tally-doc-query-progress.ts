@@ -1,7 +1,7 @@
 import { DocumentQueryProgress, Progress } from "@metriport/core/domain/document-query";
 import { getStatusFromProgress } from "@metriport/core/domain/document-query";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { PatientExternalData } from "@metriport/core/domain//patient";
+import { PatientExternalData } from "@metriport/core/domain/patient";
 import { ProgressType } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../models/medical/patient";

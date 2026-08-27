@@ -1,70 +1,45 @@
+{{ config(unique_key='m_patient_id') }}
+{% set extension_max_index = 2 %}
+
 select
-      cast(id as {{ dbt.type_string() }} )                                          as location_id
-    , cast(name as {{ dbt.type_string() }} )                                        as name
-    , cast(
-        coalesce(
-          type_coding_0_display,
-          type_coding_1_display,
-          type_coding_2_display,
-          type_text
-        ) as {{ dbt.type_string() }} 
-      )                                                                             as type_display
-    , cast(
-        coalesce(
-          physicaltype_coding_0_display,
-          physicaltype_coding_1_display,
-          physicaltype_coding_2_display,
-          physicaltype_text
-        ) as {{ dbt.type_string() }} 
-      )                                                                             as physical_type_display
-    , cast(right(managingorganization_reference, 36) as {{ dbt.type_string() }} )   as managing_organization_id
-    , cast(
-        coalesce(
-          address_0_text,
-          address_1_text,
-          address_2_text
-        ) as {{ dbt.type_string() }} 
-      )                                                                             as address
-    , cast(
-        coalesce(
-          address_0_line_0 
-            || coalesce(' ' || address_0_line_1, '') 
-            || coalesce(' ' || address_0_line_2, ''),
-          address_1_line_0 
-            || coalesce(' ' || address_1_line_1, '') 
-            || coalesce(' ' || address_1_line_2, ''),
-          address_2_line_0 
-            || coalesce(' ' || address_2_line_1, '') 
-            || coalesce(' ' || address_2_line_2, '')
-        ) as {{ dbt.type_string() }} 
-      )                                                                             as address_line
-    , cast(
-        coalesce(
-          address_0_city, 
-          address_1_city, 
-          address_2_city
-        ) as {{ dbt.type_string() }} 
-      )                                                                             as city
-    , cast(
-        coalesce(
-          address_0_state, 
-          address_1_state, 
-          address_2_state
-        ) as {{ dbt.type_string() }}
-      )                                                                             as state
-    , cast(
-        coalesce(
-          address_0_country, 
-          address_1_country, 
-          address_2_country
-        ) as {{ dbt.type_string() }}
-      )                                                                             as country
-    , cast(
-        coalesce(
-          address_0_postalcode, 
-          address_1_postalcode, 
-          address_2_postalcode
-        ) as {{ dbt.type_string() }} 
-      )                                                                             as zip_code
-    , cast(meta_source as {{ dbt.type_string() }} )                                 as data_source
-from {{ref('stage__location')}}
+      {{ try_to_cast_string('loc.id') }}                                                          as location_id
+    , {{ try_to_cast_string('loc.name') }}                                                        as name
+    , {{ try_to_cast_string('loc.type_coding_0_display') }}                                       as type_display
+    , {{ try_to_cast_string('loc.physicaltype_coding_0_display') }}                               as physical_type_display
+    , {{ try_to_cast_string('right(loc.managingorganization_reference, 36)') }}                   as managing_organization_id
+    , {{ try_to_cast_string('loc.address_0_text') }}                                              as address
+    , trim(
+          coalesce(nullif({{ try_to_cast_string('loc.address_0_line_0') }}, ''), '')
+          || case 
+              when {{ try_to_cast_string('loc.address_0_line_1') }} is not null 
+                and {{ try_to_cast_string('loc.address_0_line_1') }} != ''
+                and coalesce(nullif({{ try_to_cast_string('loc.address_0_line_0') }}, ''), '') != ''
+              then ' ' || {{ try_to_cast_string('loc.address_0_line_1') }}
+              when {{ try_to_cast_string('loc.address_0_line_1') }} is not null 
+                and {{ try_to_cast_string('loc.address_0_line_1') }} != ''
+              then {{ try_to_cast_string('loc.address_0_line_1') }}
+              else ''
+          end
+      )                                                                                           as address_line
+    , {{ try_to_cast_string('loc.address_0_city') }}                                              as city
+    , {{ try_to_cast_string('loc.address_0_state') }}                                             as state
+    , {{ try_to_cast_string('loc.address_0_country') }}                                           as country
+    , {{ try_to_cast_string('loc.address_0_postalcode') }}                                        as zip_code
+    , {{ try_to_cast_string('loc.meta_source') }}                                                 as data_source
+    {#- Data source extension: extension with data-source URL -#}
+    , {{ try_to_cast_string(get_inline_extension(
+            'loc',
+            'https://public.metriport.com/fhir/StructureDefinition/data-source.json',
+            extension_max_index,
+            'valuecoding_code',
+            none,
+            none
+        )) }}                                                                                     as data_source_ext
+    , {{ try_to_cast_string('loc.meta_source') }}                                                 as meta_source
+    , loc.m_patient_id
+    , loc.m_job_id
+    , loc.m_created_at
+    , loc.m_updated_at
+    , loc.m_deleted_at
+    , loc.raw_to_core_job_id
+from {{ref('stage__location')}} loc

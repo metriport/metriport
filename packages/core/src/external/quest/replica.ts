@@ -1,57 +1,44 @@
-import path from "path";
-import { MetriportError } from "@metriport/shared";
+import { QuestRosterType } from "@metriport/shared/interface/external/quest/roster";
 import { Config } from "../../util/config";
 import { S3Replica } from "../sftp/replica/s3";
-import { QuestResponseFile, QuestSftpConfig } from "./types";
+import { QuestSftpConfig } from "./client";
+import { buildQuestPatientResponseFileName } from "./file/file-names";
 
-// S3 constants for response files and source documents
-const RESPONSE_FILE_PREFIX = "/Metriport_";
-export const SOURCE_DOCUMENT_DIRECTORY = "source_document";
+export const QUEST_PATIENT_RESPONSE_DIRECTORY = "quest_patient_response_files";
 
 export class QuestReplica extends S3Replica {
-  private readonly incomingResponseFilePrefix: string;
-
-  constructor(
-    config: Pick<
-      QuestSftpConfig,
-      "replicaBucket" | "replicaBucketRegion" | "incomingDirectory"
-    > = {}
-  ) {
+  constructor(config: Pick<QuestSftpConfig, "replicaBucket" | "replicaBucketRegion"> = {}) {
     super({
       bucketName: config.replicaBucket ?? Config.getQuestReplicaBucketName() ?? "",
       region: config.replicaBucketRegion ?? Config.getAWSRegion(),
     });
-
-    if (!this.bucketName) {
-      throw new MetriportError("Quest replica bucket name is not set");
-    }
-
-    const incomingDirectory = config.incomingDirectory ?? Config.getQuestSftpIncomingDirectory();
-    this.incomingResponseFilePrefix = this.getReplicaPath(incomingDirectory) + RESPONSE_FILE_PREFIX;
   }
 
-  async listAllResponseFiles(): Promise<QuestResponseFile[]> {
-    const responseFilePaths = await this.listFileNames(this.incomingResponseFilePrefix);
-    const responseFiles: QuestResponseFile[] = [];
-    for (const responseFilePath of responseFilePaths) {
-      const fileName = path.basename(responseFilePath);
-      const fileContent = await this.readFile(responseFilePath);
-      responseFiles.push({
-        fileName,
-        fileContent,
-      });
-    }
-    return responseFiles;
+  async uploadQuestPatientResponseFile({
+    externalId,
+    dateId,
+    rosterType,
+    fileContent,
+  }: {
+    externalId: string;
+    dateId: string;
+    rosterType: QuestRosterType;
+    fileContent: Buffer;
+  }): Promise<void> {
+    const fileName = buildQuestPatientResponseFileName({ externalId, dateId, rosterType });
+    await this.writeFile(`${QUEST_PATIENT_RESPONSE_DIRECTORY}/${fileName}`, fileContent);
   }
 
-  async uploadSourceDocument(sourceDocument: QuestResponseFile): Promise<void> {
-    await this.writeFile(
-      `${SOURCE_DOCUMENT_DIRECTORY}/${sourceDocument.fileName}`,
-      sourceDocument.fileContent
-    );
-  }
-
-  async listAllSourceDocumentKeys(): Promise<string[]> {
-    return await this.listFileNames(`${SOURCE_DOCUMENT_DIRECTORY}/`);
+  async getQuestPatientResponseFile({
+    externalId,
+    dateId,
+    rosterType,
+  }: {
+    externalId: string;
+    dateId: string;
+    rosterType: QuestRosterType;
+  }): Promise<Buffer> {
+    const fileName = buildQuestPatientResponseFileName({ externalId, dateId, rosterType });
+    return await this.readFile(`${QUEST_PATIENT_RESPONSE_DIRECTORY}/${fileName}`);
   }
 }

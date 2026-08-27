@@ -23,6 +23,10 @@ Patients in a single request.
 
 [comment]: # "source for the image above: ..."
 
+It performs a create or update based on each patient's demographics. If the demographics match an
+existing patient (same first/last name, date of birth, gender at birth, and at least one zip code),
+it will update the existing patient. Otherwise, a new patient will be created.
+
 The response to this endpoint contains a URL that you should use to upload a file containing the
 Patient demographics that will be used to create individual Patients. More on this
 [below](#uploading-the-csv).
@@ -33,7 +37,7 @@ The file with the patient demographics should be created as comma-separated valu
 access an example of the file
 [here](https://docs.google.com/spreadsheets/d/1cftXTyN2XFMGBwLHvPQuS5xkGXev1qZTXm49jslt6-4/edit?usp=sharing).
 
-We support up to 10 addresses, 10 email addresses, and 10 phone numbers. In order to provide those,
+We support up to 10 addresses, 10 email addresses, 10 phone numbers, and 10 cohorts. In order to provide those,
 just index each column with `-N` at the end of the column name, where `N` is the index (1-10).
 
 <Expandable title="CSV columns">
@@ -113,6 +117,14 @@ just index each column with `-N` at the end of the column name, where `N` is the
     The 2 letter state acronym, for example: `CA`. 
     Required if `driversLicenceNo` is provided.
   </ParamField>
+  
+  <ParamField body="cohort-N" type="string">
+    The UUID of a cohort you would like this patient to be added to. See [Working With Cohorts](/medical-api/handling-data/cohorts) for more info.
+  </ParamField>
+
+  <ParamField body="facilityId" type="string">
+    Specifies the facility where the patient receives care. If omitted, the system will use the default facility used to initiate the Bulk Patient Create.
+  </ParamField>
 </Expandable>
 
 **Example**
@@ -172,7 +184,7 @@ curl --location --request PUT '<UPLOAD-URL>' \
 
 Once the CSV file is uploaded, the Metriport API starts processing it and sends a
 [webhook message](/medical-api/handling-data/webhooks#bulk-patient-create) to your App
-indicating the status is `processing`. Once the patiets are created and their medical
+indicating the status is `processing`. Once the patients are created and their medical
 data is available, we send a new webhook message indicating the request is done, including
 a link to the resulting CSV file that contains the newly created Metriport IDs for the
 successfully created Patients.
@@ -199,10 +211,10 @@ below:
 ## Query Params
 
 <ParamField query="facilityId" type="string">
-  The ID of the Facility where the Patients receive care.
-  All patients in a single request/CSV will be associated
-  with the same Facility. It can be omitted if there's only
-  one Facility in your account.
+  The ID of the default Facility where the Patients receive care. 
+  All patients that don’t have a dedicated facility in the request/CSV will be associated with this default Facility 
+  (see the [facilityId](medical-api/api-reference/patient/bulk-create-patient#param-facility-id) column for more details). 
+  It can be omitted if there’s only one Facility in your account.
 </ParamField>
 
 <ParamField query="dryRun" type="boolean">

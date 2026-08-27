@@ -17,6 +17,7 @@ import {
   documentQueryFullResponseSchema,
   documentQueryResponseSchema,
   DocumentReference,
+  OperationOutcome,
 } from "../models/document";
 import {
   Patient,
@@ -135,8 +136,9 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
     const url = buildPatientEndpoint(this.oid);
     const normalizedPatient = normalizePatient(patient);
 
-    const resp = await this.executeWithRetriesOn500IfEnabled(() =>
-      this.api.post(url, normalizedPatient, { headers })
+    const resp = await this.executeWithRetriesOn500IfEnabled(
+      () => this.api.post(url, normalizedPatient, { headers }),
+      true
     );
     const parsed = patientResponseSchema.parse(resp.data);
     const links = parsed.Patients[0].Links;
@@ -618,20 +620,45 @@ export class CommonWell extends CommonWellBase implements CommonWellAPI {
   private getDescriptiveError(error: unknown, title: string): unknown {
     if (isAxiosError(error)) {
       const status = error.response?.status;
-      const data = error.response?.data;
-      const responseBody = data ? JSON.stringify(data) : undefined;
+      const data = isOperationOutcome(error.response?.data)
+        ? getPrimaryIssueDetails(error.response?.data.issue)
+        : undefined;
+
       const cwReference = this.lastTransactionId;
+      const additionalInfo = { status, cwReference, ...data };
 
       if (status === httpStatus.BAD_REQUEST) {
-        return new BadRequestError(title, error, { status, cwReference, responseBody });
+        return new BadRequestError(title, error, additionalInfo);
       }
       if (status === httpStatus.NOT_FOUND) {
-        return new NotFoundError(title, error, { status, cwReference, responseBody });
+        return new NotFoundError(title, error, additionalInfo);
       }
-      return new MetriportError(title, error, { status, cwReference, responseBody });
+      return new MetriportError(title, error, additionalInfo);
     }
     return error;
   }
+}
+
+function isOperationOutcome(data: unknown): data is OperationOutcome {
+  return (
+    typeof data === "object" &&
+    data != null &&
+    "resourceType" in data &&
+    data.resourceType === "OperationOutcome"
+  );
+}
+
+function getPrimaryIssueDetails(
+  issue: OperationOutcome["issue"] | undefined
+): Pick<OperationOutcome["issue"][number], "code" | "severity" | "diagnostics"> | undefined {
+  const primaryIssue = issue?.[0];
+  if (!primaryIssue) return undefined;
+
+  return {
+    code: primaryIssue.code,
+    severity: primaryIssue.severity ?? "error",
+    diagnostics: primaryIssue.diagnostics ?? primaryIssue.details?.text ?? "Unknown error",
+  };
 }
 
 function buildOrgEndpoint(orgId: string) {

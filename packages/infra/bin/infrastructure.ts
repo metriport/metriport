@@ -3,8 +3,10 @@ import * as cdk from "aws-cdk-lib";
 import "source-map-support/register";
 import { EnvConfig } from "../config/env-config";
 import { APIStack } from "../lib/api-stack";
+import { AuditLogStack } from "../lib/audit-log/audit-log-stack";
 import { BucketsStack } from "../lib/buckets-stack";
 import { ConnectWidgetStack } from "../lib/connect-widget-stack";
+import { EhexStack } from "../lib/ehex-stack";
 import { Hl7NotificationStack } from "../lib/hl7-notification-stack";
 import { VpnStack } from "../lib/hl7-notification-stack/vpn";
 import { IHEStack } from "../lib/ihe-stack";
@@ -29,19 +31,14 @@ async function deploy(config: EnvConfig) {
   const version = getEnvVar("METRIPORT_VERSION");
 
   //---------------------------------------------------------------------------------
-  // 1. Deploy the secrets stack to initialize all secrets.
-  //    Do this first, and then manually set the values in the AWS Secrets Manager.
+  // Do this first, and then manually set the values in the AWS Secrets Manager.
   //---------------------------------------------------------------------------------
   new SecretsStack(app, config.secretsStackName, { env, config });
 
-  //---------------------------------------------------------------------------------
-  // 2. Deploy the buckets stack to create shared buckets.
-  //---------------------------------------------------------------------------------
   new BucketsStack(app, "BucketsStack", { env, config });
 
-  //---------------------------------------------------------------------------------
-  // 3. Deploy the location services stack to initialize all geo services.
-  //---------------------------------------------------------------------------------
+  new AuditLogStack(app, "AuditLogStack", { env, config });
+
   if (config.locationService) {
     new LocationServicesStack(app, config.locationService.stackName, {
       env: { ...env, region: config.locationService.placeIndexRegion },
@@ -49,14 +46,8 @@ async function deploy(config: EnvConfig) {
     });
   }
 
-  //---------------------------------------------------------------------------------
-  // 4. Deploy the API stack once all secrets are defined.
-  //---------------------------------------------------------------------------------
   new APIStack(app, config.stackName, { env, config, version });
 
-  //---------------------------------------------------------------------------------
-  // 5. Deploy the HL7 Notification Webhook Sender stack.
-  //---------------------------------------------------------------------------------
   if (!isSandbox(config)) {
     const hl7NotificationStack = new Hl7NotificationStack(app, "Hl7NotificationStack", {
       env,
@@ -81,9 +72,6 @@ async function deploy(config: EnvConfig) {
     });
   }
 
-  //---------------------------------------------------------------------------------
-  // 6. Deploy the IHE stack. Lambdas for IHE Inbound, and IHE API Gateway.
-  //---------------------------------------------------------------------------------
   if (config.iheGateway) {
     new IHEStack(app, "IHEStack", {
       env,
@@ -92,9 +80,14 @@ async function deploy(config: EnvConfig) {
     });
   }
 
-  //---------------------------------------------------------------------------------
-  // 7. Deploy the Connect widget stack.
-  //---------------------------------------------------------------------------------
+  if (config.ehexGateway) {
+    new EhexStack(app, "EhexStack", {
+      env,
+      config,
+      version,
+    });
+  }
+
   if (!isSandbox(config)) {
     new ConnectWidgetStack(app, config.connectWidget.stackName, {
       env: { ...env, region: config.connectWidget.region },

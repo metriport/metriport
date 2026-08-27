@@ -3,13 +3,18 @@ dotenv.config();
 
 import { Hl7Server } from "@medplum/hl7";
 import { buildHl7NotificationWebhookSender } from "@metriport/core/command/hl7-notification/hl7-notification-webhook-sender-factory";
-import { S3Utils } from "@metriport/core/external/aws/s3";
 import {
   getHl7MessageTypeOrFail,
   getMessageUniqueIdentifier,
   getSendingApplication,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/msh";
 import { getCxIdAndPatientIdOrFail } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import {
+  getPccSourceHieNameByLocalPort,
+  isPccConnection,
+  SUPPORTED_MLLP_SERVER_PORTS,
+} from "@metriport/core/domain/hl7-notification/utils";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { getHieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
 import { capture } from "@metriport/core/util";
 import type { Logger } from "@metriport/core/util/log";
@@ -22,14 +27,13 @@ import {
   createRawHl7MessageFileKey,
   getCleanIpAddress,
   getHieConfig,
+  isImpersonationTestMessage,
   s3Utils,
   translateMessage,
   withErrorHandling,
 } from "./utils";
 
 initSentry();
-
-const MLLP_DEFAULT_PORT = 2575;
 
 async function createHl7Server(logger: Logger): Promise<Hl7Server> {
   const { log } = logger;
@@ -38,8 +42,15 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
     connection.addEventListener(
       "message",
       withErrorHandling(connection, logger, async ({ message: rawMessage }) => {
-        const clientIp = getCleanIpAddress(connection.socket.remoteAddress);
-        const rawFileKey = createRawHl7MessageFileKey(clientIp);
+        const remoteIp = getCleanIpAddress(connection.socket.remoteAddress);
+        const remotePort = connection.socket.remotePort;
+        const localPort = connection.socket.localPort;
+        if (!localPort) {
+          throw new Error("Local port is undefined");
+        }
+
+        log(`New message over connection ${remoteIp}:${remotePort}`);
+        const rawFileKey = createRawHl7MessageFileKey(remoteIp);
 
         const uploadResult = await uploadFileSafely(
           s3Utils,
@@ -51,14 +62,25 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           capture.error(uploadResult.error);
         }
 
-        const clientPort = connection.socket.remotePort;
-
-        log(`New message over connection ${clientIp}:${clientPort}`);
         const hieConfigDictionary = getHieConfigDictionary();
-        const { hieName, impersonationTimezone } = getHieConfig(
+        const { hieName: rawHieName, impersonationTimezone } = getHieConfig(
           hieConfigDictionary,
-          clientIp,
+          remoteIp,
           rawMessage
+        );
+
+        // For PCC connections, port determines the HIE
+        // port takes precedence over ZIT segment, ZIT is intended for testing this is the easiest way to test port PCC precendence.
+        // For non-PCC connections, ZIT segment can override IP-based detection
+        const isImpersonation = isImpersonationTestMessage(rawMessage);
+        const hieName = isPccConnection(rawHieName)
+          ? getPccSourceHieNameByLocalPort(localPort)
+          : rawHieName;
+
+        log(
+          `HIE detection: rawHieName=${rawHieName}, localPort=${localPort}, isImpersonation=${isImpersonation}, isPccConnection=${isPccConnection(
+            rawHieName
+          )}, finalHieName=${hieName}`
         );
 
         const newMessage = translateMessage(rawMessage, hieName);
@@ -71,6 +93,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
         log(
           `cx: ${cxId}, pt: ${patientId} Received ${triggerEvent} message from ${sendingApplication} at ${messageReceivedTimestamp} (messageId: ${messageId})`
         );
+
         capture.setExtra({
           cxId,
           patientId,
@@ -98,7 +121,7 @@ async function createHl7Server(logger: Logger): Promise<Hl7Server> {
           logger.log("Connection error:", error);
           capture.error(error);
         } else {
-          logger.log("Connection terminated by client");
+          logger.log("Connection terminated by remote");
         }
       })
     );
@@ -131,8 +154,11 @@ async function uploadFileSafely(
 async function main() {
   const logger = out("MLLP Server");
   try {
-    const server = await createHl7Server(logger);
-    server.start(MLLP_DEFAULT_PORT);
+    for (const port of SUPPORTED_MLLP_SERVER_PORTS) {
+      const server = await createHl7Server(logger);
+      server.start(port);
+      logger.log(`MLLP server started on port ${port}`);
+    }
   } catch (error) {
     logger.log("Error starting MLLP server", error);
     capture.error(error);

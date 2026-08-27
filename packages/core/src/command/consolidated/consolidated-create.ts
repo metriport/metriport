@@ -1,4 +1,4 @@
-import { Binary, Bundle, BundleEntry } from "@medplum/fhirtypes";
+import { Binary, Bundle, BundleEntry, Patient as FhirPatient } from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/shared";
 import { parseFhirBundle } from "@metriport/shared/medical";
 import dayjs from "dayjs";
@@ -11,29 +11,37 @@ import { createConsolidatedDataFilePath } from "../../domain/consolidated/filena
 import { createFolderName } from "../../domain/filename";
 import { Patient } from "../../domain/patient";
 import { executeWithRetriesS3, S3Utils } from "../../external/aws/s3";
+import { getAllAdtSourcedResources } from "../../external/fhir/adt-encounters";
 import {
   buildBundleEntry,
   buildCollectionBundle,
+  bundleToBuffer,
   dangerouslyAddEntriesToBundle,
 } from "../../external/fhir/bundle/bundle";
 import { dangerouslyDeduplicate } from "../../external/fhir/consolidated/deduplicate";
 import { normalize } from "../../external/fhir/consolidated/normalize";
 import { getDocuments as getDocumentReferences } from "../../external/fhir/document/get-documents";
 import { toFHIR as patientToFhir } from "../../external/fhir/patient/conversion";
+import { isPatient } from "../../external/fhir/shared";
 import { insertSourceDocumentToAllDocRefMeta } from "../../external/fhir/shared/meta";
-import { getBundleResources as getPharmacyResources } from "../../external/surescripts/command/bundle/get-bundle";
-import { getBundleResources as getLabResources } from "../../external/quest/command/bundle/get-bundle";
+import { getLatestConversionLabBundleResources as getLabResources } from "../../external/quest/command/bundle/get-latest-conversion-bundle";
+import { getLatestConversionPharmacyBundleResources as getPharmacyResources } from "../../external/surescripts/command/bundle/get-latest-conversion-bundle";
 import { getBundleResources as getDataExtractionResources } from "../../sde/command/bundle/get-bundles";
 import { capture, executeAsynchronously, out } from "../../util";
 import { Config } from "../../util/config";
 import { processAsyncError } from "../../util/error/shared";
 import { controlDuration } from "../../util/race-control";
 import { AiBriefControls } from "../ai-brief/shared";
-import { ingestPatientIntoAnalyticsPlatform } from "../analytics-platform/incremental-ingestion";
-import { isAiBriefFeatureFlagEnabledForCx } from "../feature-flags/domain-ffs";
+import { incrementalIngestPatient } from "../analytics-platform/incremental-ingest-patient";
+import {
+  isAdtsRosterUploadFeatureFlagEnabledForCx,
+  isAiBriefFeatureFlagEnabledForCx,
+  isAiBriefV2FeatureFlagEnabledForCx,
+  isEnrichedPatientDemographicsFeatureFlagEnabledForCx,
+} from "../feature-flags/domain-ffs";
 import { getConsolidatedLocation, getConsolidatedSourceLocation } from "./consolidated-shared";
+import { enrichPatientDemographics } from "./enrich-patient-demographics";
 import { makeIngestConsolidated } from "./search/fhir-resource/ingest-consolidated-factory";
-import { getAllAdtSourcedResources } from "../../external/fhir/adt-encounters";
 
 dayjs.extend(duration);
 
@@ -72,8 +80,8 @@ export async function createConsolidatedFromConversions({
   const { log } = out(`createConsolidatedFromConversions - cx ${cxId}, pat ${patientId}`);
 
   const fhirPatient = patientToFhir(patient);
-  const patientEntry = buildBundleEntry(fhirPatient);
 
+  const isCxAllowedToSeeAdtData = await isAdtsRosterUploadFeatureFlagEnabledForCx(cxId);
   const [
     conversions,
     docRefs,
@@ -82,16 +90,43 @@ export async function createConsolidatedFromConversions({
     dataExtractionResources,
     adtSourcedResources,
     isAiBriefFeatureFlagEnabled,
+    isAiBriefV2FeatureFlagEnabled,
+    isEnrichedPatientDemographicsEnabled,
   ] = await Promise.all([
     getConversions({ cxId, patient, sourceBucketName }),
     getDocumentReferences({ cxId, patientId }),
     getPharmacyResources({ cxId, patientId }),
     getLabResources({ cxId, patientId }),
     getDataExtractionResources({ cxId, patientId }),
-    getAllAdtSourcedResources({ cxId, patientId }),
+    isCxAllowedToSeeAdtData ? getAllAdtSourcedResources({ cxId, patientId }) : [],
     isAiBriefFeatureFlagEnabledForCx(cxId),
+    isAiBriefV2FeatureFlagEnabledForCx(cxId),
+    isEnrichedPatientDemographicsFeatureFlagEnabledForCx(cxId),
   ]);
+
   log(`Got ${conversions.length} resources from cdaConversions`);
+
+  let enrichedPatient = fhirPatient;
+  if (isEnrichedPatientDemographicsEnabled) {
+    try {
+      enrichedPatient = enrichPatientDemographics({
+        patient: fhirPatient,
+        ...(patient.data.consolidatedLinkDemographics && {
+          consolidatedLinkDemographics: patient.data.consolidatedLinkDemographics,
+        }),
+        conversionBundlePatients: conversions
+          .filter(entry => entry.resource && isPatient(entry.resource))
+          .map(entry => entry.resource as FhirPatient),
+      });
+    } catch (error) {
+      log(`Failed to enrich patient demographics: ${errorToString(error)}`);
+      capture.error("Failed to enrich patient demographics", {
+        extra: { cxId, patientId, error: errorToString(error) },
+      });
+    }
+  }
+
+  const patientEntry = buildBundleEntry(enrichedPatient);
 
   const bundle = buildCollectionBundle();
   const docRefsWithUpdatedMeta = insertSourceDocumentToAllDocRefMeta(docRefs);
@@ -121,7 +156,7 @@ export async function createConsolidatedFromConversions({
     await s3Utils.uploadFile({
       bucket: destinationBucketName,
       key: withDupsDestFileName,
-      file: Buffer.from(JSON.stringify(bundle)),
+      file: bundleToBuffer(bundle),
       contentType: "application/json",
     });
   } catch (e) {
@@ -142,10 +177,10 @@ export async function createConsolidatedFromConversions({
 
   // TODO This whole section with AI-related logic should be moved to the `generateAiBriefBundleEntry`.
   log(
-    `isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled} useCachedAiBrief: ${useCachedAiBrief}`
+    `isAiBriefFeatureFlagEnabled: ${isAiBriefFeatureFlagEnabled} useCachedAiBrief: ${useCachedAiBrief} V2: ${isAiBriefV2FeatureFlagEnabled}`
   );
   const shouldGenerateAiBrief =
-    isAiBriefFeatureFlagEnabled &&
+    (isAiBriefFeatureFlagEnabled || isAiBriefV2FeatureFlagEnabled) &&
     !useCachedAiBrief &&
     normalizedBundle.entry &&
     normalizedBundle.entry.length > 0;
@@ -200,7 +235,7 @@ export async function createConsolidatedFromConversions({
   await s3Utils.uploadFile({
     bucket: destinationBucketName,
     key: dedupDestFileName,
-    file: Buffer.from(JSON.stringify(normalizedBundle)),
+    file: bundleToBuffer(normalizedBundle),
     contentType: "application/json",
   });
 
@@ -214,9 +249,11 @@ export async function createConsolidatedFromConversions({
     );
   }
 
-  ingestPatientIntoAnalyticsPlatform({ cxId, patientId }).catch(
-    processAsyncError("createConsolidatedFromConversions.ingestPatientIntoAnalyticsPlatform")
-  );
+  try {
+    await incrementalIngestPatient({ cxId, patientId });
+  } catch (error) {
+    // intentionally not re-throwing
+  }
 
   log(`Done`);
   return normalizedBundle;
@@ -242,6 +279,7 @@ async function getConversions({
   }
 
   const mergedBundle = buildCollectionBundle();
+
   await executeAsynchronously(
     conversionBundles,
     async inputBundle => {
@@ -257,6 +295,7 @@ async function getConversions({
         log(`No valid bundle found in ${bucket}/${key}, skipping`);
         return;
       }
+
       dangerouslyAddEntriesToBundle(mergedBundle, singleConversion.entry);
     },
     { numberOfParallelExecutions }

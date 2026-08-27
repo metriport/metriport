@@ -1,0 +1,279 @@
+---
+title: "Patient Encounter Bundle"
+icon: "ocdIndent"
+description: "Understanding the FHIR Bundle structure for patient encounters"
+---
+
+# The Patient Encounter Bundle
+
+When you download clinical data from a Real-time Patient Notification URL, you receive a FHIR Bundle containing a comprehensive snapshot of a patient's encounter and all related resources.
+
+## What is a FHIR Bundle?
+
+A FHIR [Bundle](https://hl7.org/fhir/R4/bundle.html) is a container resource that packages multiple FHIR resources together. It ensures you receive a complete, standalone package of related clinical data.
+
+<Info>
+  For more information about FHIR, see our [FHIR Overview](medical-api/fhir/overview).
+</Info>
+
+## Structure of a Patient Encounter Bundle
+
+Each Patient Encounter Bundle follows this structure:
+
+1. **First entry**: The [Patient](https://hl7.org/fhir/R4/patient.html) resource
+1. **Second entry**: The core [Encounter](https://hl7.org/fhir/R4/encounter.html) resource
+2. **Subsequent entries**: All other resources directly or transitively referenced by the Encounter
+
+This means if the Encounter references a Location, Practitioner, or some other resource, those resources will be included in the bundle. Similarly, if the Encounter references a Condition that itself references an Observation, both the Condition and Observation will be included.
+
+## Example Patient Encounter Bundle
+
+Below is a complete example of a Patient Encounter Bundle. In this example bundle are the following:
+
+- **Patient**: Sarah Johnson's demographic information
+- **Encounter**: The root resource tying everything together, representing the cardiology visit
+- **Location**: Memorial Hospital where the encounter took place
+- **Practitioner**: Dr. Maria Rodriguez who attended the patient
+- **Condition**: A diagnosis of Stable Angina
+
+```json
+{
+  "resourceType": "Bundle",
+  "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+  "type": "collection",
+  "timestamp": "2025-03-15T16:45:10.000+00:00",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:78a4d9e5-f2b3-42c8-9a84-52f3e21c2b9d",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "78a4d9e5-f2b3-42c8-9a84-52f3e21c2b9d",
+        "name": [
+          {
+            "use": "official",
+            "family": "Johnson",
+            "given": ["Sarah"]
+          }
+        ],
+        "gender": "female",
+        "birthDate": "1975-06-15"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:uuid",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "uuid",
+        "meta": {
+          "extension": [
+            {
+              "url": "https://api.metriport.com/created-at",
+              "valueInstant": "2025-03-15T16:45:10.000+00:00"
+            }
+          ],
+          "versionId": "0.1.0"
+        },
+        "status": "finished",
+        "period": {
+          "start": "2024-03-15T14:20:00.000Z",
+          "end": "2024-03-15T16:45:00.000Z"
+        },
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "AMB",
+          "display": "Ambulatory"
+        },
+        "serviceType": {
+          "coding": [
+            {
+              "code": "394592004",
+              "display": "Cardiology"
+            }
+          ],
+          "text": "Cardiology"
+        },
+        "subject": {
+          "reference": "Patient/78a4d9e5-f2b3-42c8-9a84-52f3e21c2b9d",
+          "type": "Patient",
+          "display": "Sarah Johnson"
+        },
+        "location": [
+          {
+            "location": {
+              "reference": "Location/3ca5e8d2-7c84-45ab-91e7-834f8becde12",
+              "type": "Location",
+              "display": "Memorial Hospital"
+            }
+          }
+        ],
+        "participant": [
+          {
+            "type": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+                    "code": "ATND",
+                    "display": "attender"
+                  }
+                ]
+              }
+            ],
+            "individual": {
+              "reference": "Practitioner/49e3c8f1-d67a-47b8-b9a2-cf23e8d0e941",
+              "type": "Practitioner",
+              "display": "Dr. Maria Rodriguez"
+            }
+          }
+        ],
+        "reasonCode": [
+          {
+            "text": "Chest pain"
+          }
+        ],
+        "diagnosis": [
+          {
+            "condition": {
+              "reference": "Condition/8724f6e9-c531-48ba-9d34-7e2a81c05fb3",
+              "type": "Condition",
+              "display": "Stable Angina"
+            },
+            "use": {
+              "coding": [
+                {
+                  "system": "https://terminology.hl7.org/5.2.0/CodeSystem-v2-0052.html",
+                  "code": "AD",
+                  "display": "Final diagnosis"
+                }
+              ]
+            },
+            "rank": 1
+          }
+        ],
+        "identifier": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "VN",
+                  "display": "visit number"
+                }
+              ],
+              "text": "visit number"
+            },
+            "value": "987654321"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:3ca5e8d2-7c84-45ab-91e7-834f8becde12",
+      "resource": {
+        "resourceType": "Location",
+        "id": "3ca5e8d2-7c84-45ab-91e7-834f8becde12",
+        "status": "active",
+        "name": "Memorial Hospital",
+        "mode": "instance",
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-RoleCode",
+                "code": "HOSP",
+                "display": "Hospital"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:49e3c8f1-d67a-47b8-b9a2-cf23e8d0e941",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "49e3c8f1-d67a-47b8-b9a2-cf23e8d0e941",
+        "name": [
+          {
+            "use": "official",
+            "family": "Rodriguez",
+            "given": ["Maria"],
+            "prefix": ["Dr."]
+          }
+        ],
+        "qualification": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0360",
+                  "code": "MD",
+                  "display": "Doctor of Medicine"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:8724f6e9-c531-48ba-9d34-7e2a81c05fb3",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "8724f6e9-c531-48ba-9d34-7e2a81c05fb3",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed",
+              "display": "Confirmed"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "encounter-diagnosis",
+                "display": "Encounter Diagnosis"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "194828000",
+              "display": "Stable angina"
+            }
+          ],
+          "text": "Stable Angina"
+        },
+        "subject": {
+          "reference": "Patient/78a4d9e5-f2b3-42c8-9a84-52f3e21c2b9d",
+          "type": "Patient",
+          "display": "Sarah Johnson"
+        },
+        "encounter": {
+          "reference": "Encounter/uuid",
+          "type": "Encounter"
+        },
+        "onsetDateTime": "2024-03-15T14:20:00.000Z",
+        "recordedDate": "2024-03-15T16:45:00.000Z"
+      }
+    }
+  ]
+}
+```
+

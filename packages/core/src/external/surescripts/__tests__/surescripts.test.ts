@@ -8,6 +8,7 @@ describe("Surescripts SFTP Client", () => {
   it("should create a client", () => {
     const client = new SurescriptsSftpClient({
       host: "TestHost",
+      port: 22,
       senderId: "TestSenderId",
       receiverId: "TestReceiverId",
       senderPassword: "TestSenderPassword",

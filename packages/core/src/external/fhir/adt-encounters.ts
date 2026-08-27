@@ -179,6 +179,7 @@ export async function getAdtSourcedEncounter({
   const { log } = out(
     `getAdtSourcedEncounter - cx: ${cxId}, pt: ${patientId}, enc: ${encounterId}`
   );
+
   const s3BucketName = Config.getHl7ConversionBucketName();
   if (!s3BucketName) {
     log(

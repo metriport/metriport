@@ -7,7 +7,9 @@ import { makePatient } from "../../__tests__/patient";
 import {
   addEntriesToBundle,
   buildBundleEntry,
+  buildCollectionBundle,
   buildSearchSetBundle,
+  bundleToBuffer,
   replaceBundleEntries,
 } from "../bundle";
 
@@ -157,6 +159,48 @@ describe("Bundle", () => {
       const result = addEntriesToBundle(bundle, entries);
 
       expect(result).toEqual({ ...bundle, entry: entries });
+    });
+  });
+
+  describe("bundleToBuffer", () => {
+    it("produces valid JSON identical to JSON.stringify for a bundle with entries", () => {
+      const patient = makePatient();
+      const allergy = makeAllergyIntollerance({ patient });
+      const bundle = buildCollectionBundle([buildBundleEntry(patient), buildBundleEntry(allergy)]);
+
+      const result = JSON.parse(bundleToBuffer(bundle).toString("utf-8"));
+
+      expect(result).toEqual(JSON.parse(JSON.stringify(bundle)));
+    });
+
+    it("produces valid JSON for a bundle with no entries", () => {
+      const bundle = buildCollectionBundle();
+
+      const result = JSON.parse(bundleToBuffer(bundle).toString("utf-8"));
+
+      expect(result).toEqual(JSON.parse(JSON.stringify(bundle)));
+    });
+
+    it("produces valid JSON for a bundle with empty entries array", () => {
+      const bundle = buildCollectionBundle();
+      bundle.entry = [];
+
+      const result = JSON.parse(bundleToBuffer(bundle).toString("utf-8"));
+
+      expect(result).toEqual(JSON.parse(JSON.stringify(bundle)));
+    });
+
+    it("preserves bundle metadata fields", () => {
+      const bundle = buildCollectionBundle();
+      bundle.total = 42;
+      bundle.id = "test-id";
+
+      const result = JSON.parse(bundleToBuffer(bundle).toString("utf-8"));
+
+      expect(result.resourceType).toBe("Bundle");
+      expect(result.type).toBe("collection");
+      expect(result.total).toBe(42);
+      expect(result.id).toBe("test-id");
     });
   });
 });

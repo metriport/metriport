@@ -1,0 +1,599 @@
+---
+title: "Receiving Webhooks"
+icon: "paper-plane"
+description: "Receive status updates as soon as data becomes available."
+---
+
+## Overview
+
+Metriport sends webhook messages to your app as data becomes available in our system. This allows you to react to events in real-time rather than polling for updates.
+
+For information on how to set up webhooks, see [Implementing Webhooks](/medical-api/getting-started/webhooks).
+
+<Warning>
+  When you receive a webhook message, you should respond with a `200` status code within 4 seconds. 
+  We recommend processing the webhook request asynchronously.
+</Warning>
+
+## Webhook Categories
+
+Metriport webhooks are organized into three categories based on their event type prefix:
+
+| Category | Prefix | Purpose |
+|----------|--------|---------|
+| [Network Query](#network-query-events) | `network-query.*` | Data retrieval from health networks (HIEs, pharmacies, labs) |
+| [Medical Data](#medical-data-events) | `medical.*` | Consolidated data, bulk operations, and document downloads |
+| [Patient Notifications](#patient-notification-events) | `patient.*` | Real-time ADT events (admissions, transfers, discharges) |
+
+---
+
+## Network Query Events
+
+<Info>
+  **Prefix:** `network-query.*`
+</Info>
+
+Network Query events are emitted when you [start a Network Query](/medical-api/api-reference/network/start-network-query) to retrieve patient data from health networks. You receive one webhook per source as each completes.
+
+**Recommended flow:**
+1. Start a [Network Query](/medical-api/api-reference/network/start-network-query) for a patient
+2. Receive `network-query.*` webhooks as each source completes
+3. Download the patient record from the `consolidatedDataUrl` in the payload
+
+### Event Types
+
+| Event | Description |
+|-------|-------------|
+| `network-query.hie` | HIE data (documents from Health Information Exchanges) is ready |
+| `network-query.pharmacy` | Pharmacy data (medication prescription and pickup history) is ready |
+| `network-query.lab` | Laboratory data (lab results) is ready |
+
+<Tip>
+  Each webhook includes a `consolidatedDataUrl` - a presigned S3 URL to download the patient's 
+  aggregated record, i.e. their 'consolidated data'. This allows you to reingest the record as soon as any data source is ready.
+</Tip>
+
+<Accordion title="Example Payloads">
+
+**HIE Example:**
+
+```json
+{
+  "meta": {
+    "messageId": "11111111-1111-1111-1111-111111111111",
+    "requestId": "22222222-2222-2222-2222-222222222222",
+    "when": "2024-12-26T10:03:22.000Z",
+    "type": "network-query.hie",
+    "data": {
+      "youCan": "putAny",
+      "stringKeyValue": "pairsHere"
+    }
+  },
+  "payload": {
+    "patientId": "00000000-0000-0000-0000-000000000000",
+    "externalId": "1234567890",
+    "consolidatedDataUrl": "https://documents.s3.amazonaws.com/consolidated-abc123-Amz-SignedHeaders=host",
+    "source": {
+      "type": "hie",
+      "status": "completed",
+      "completedAt": "2024-12-26T10:03:20.000Z"
+    }
+  }
+}
+```
+
+**Pharmacy Example:**
+
+```json
+{
+  "meta": {
+    "messageId": "11111111-1111-1111-1111-111111111111",
+    "requestId": "22222222-2222-2222-2222-222222222222",
+    "when": "2024-12-26T10:04:15.000Z",
+    "type": "network-query.pharmacy",
+    "data": {
+      "youCan": "putAny",
+      "stringKeyValue": "pairsHere"
+    }
+  },
+  "payload": {
+    "patientId": "00000000-0000-0000-0000-000000000000",
+    "externalId": "1234567890",
+    "consolidatedDataUrl": "https://documents.s3.amazonaws.com/consolidated-abc123-Amz-SignedHeaders=host",
+    "source": {
+      "type": "pharmacy",
+      "source": "surescripts",
+      "status": "completed",
+      "completedAt": "2024-12-26T10:04:12.000Z"
+    }
+  }
+}
+```
+
+**Lab Example:**
+
+```json
+{
+  "meta": {
+    "messageId": "11111111-1111-1111-1111-111111111111",
+    "requestId": "22222222-2222-2222-2222-222222222222",
+    "when": "2024-12-26T10:05:30.000Z",
+    "type": "network-query.lab",
+    "data": {
+      "youCan": "putAny",
+      "stringKeyValue": "pairsHere"
+    }
+  },
+  "payload": {
+    "patientId": "00000000-0000-0000-0000-000000000000",
+    "externalId": "1234567890",
+    "consolidatedDataUrl": "https://documents.s3.amazonaws.com/consolidated-abc123-Amz-SignedHeaders=host",
+    "source": {
+      "type": "lab",
+      "source": "quest",
+      "status": "completed",
+      "completedAt": "2024-12-26T10:05:28.000Z"
+    }
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="Schema Reference">
+
+<ResponseField name="meta" required>
+  Metadata about the message. The full format is described [here](/medical-api/getting-started/webhooks#meta-data).
+
+  <Expandable title="meta properties">
+
+    <ResponseField name="type" type="string" required>
+      The type of the Network Query webhook message. Can be one of: `network-query.hie`, `network-query.pharmacy`, `network-query.lab`.
+    </ResponseField>
+
+    <ResponseField name="requestId" type="string" required>
+      The ID of the Network Query request that initiated this webhook. Use this to correlate webhooks with your original query.
+    </ResponseField>
+
+    <ResponseField name="data" type="object">
+      The metadata you passed when starting the Network Query.
+    </ResponseField>
+
+  </Expandable>
+
+</ResponseField>
+
+<ResponseField name="payload" type="NetworkQueryPayload" required>
+  The network query result payload for the patient.
+
+  <Expandable title="NetworkQueryPayload properties">
+
+    <ResponseField name="patientId" type="string" required>
+      The Patient ID.
+    </ResponseField>
+
+    <ResponseField name="externalId" type="string">
+      The external ID you provided when creating the patient.
+    </ResponseField>
+
+    <ResponseField name="consolidatedDataUrl" type="string" required>
+      A presigned S3 URL to download the patient's consolidated data. Valid for 3 minutes.
+    </ResponseField>
+
+    <ResponseField name="source" type="Source" required>
+      Information about the data source.
+      <Expandable title="Source properties">
+        <ResponseField name="type" type="string" required>
+          The type of source: `hie`, `pharmacy`, or `lab`.
+        </ResponseField>
+        <ResponseField name="source" type="string">
+          The specific source provider (e.g., `surescripts`, `quest`). Only present for pharmacy and lab sources.
+        </ResponseField>
+        <ResponseField name="status" type="string" required>
+          The status of this source: `completed` or `failed`.
+        </ResponseField>
+        <ResponseField name="completedAt" type="string" required>
+          ISO 8601 timestamp of when this source query completed.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+
+</Accordion>
+
+---
+
+## Medical Data Events
+
+<Info>
+  **Prefix:** `medical.*`
+</Info>
+
+Medical Data events are emitted for consolidated data queries, bulk operations, and document downloads. Unlike Network Query events which are triggered automatically after data retrieval, these events are triggered by explicit API calls.
+
+### Event Types
+
+| Event | Description |
+|-------|-------------|
+| `medical.consolidated-data` | Result of a [Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post) |
+| `medical.bulk-patient-create` | Status updates for [Bulk Patient Create](/medical-api/api-reference/patient/bulk-create-patient) |
+| `medical.document-bulk-download-urls` | Download URLs for [Bulk Document Download](/medical-api/api-reference/document/download-url-bulk) |
+
+---
+
+### `medical.consolidated-data`
+
+You'll receive this webhook after invoking a Consolidated Query via [POST Start Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post).
+The payload contains the patient's consolidated medical record as deduplicated, standardized FHIR data. This includes all converted documents from network queries plus any FHIR data your application has [inserted directly](/medical-api/api-reference/fhir/create-patient-consolidated).
+
+
+Note that inside the `Bundle` you'll find a `DocumentReference` resource with attachments in the `content` array:
+
+- The first item contains an attachment with a `url` which can be used to download the data.
+- If requested `conversionType` is `json`, an additional attachment with `contentType: "application/gzip"` provides a gzip-compressed copy for faster downloads.
+- Download URLs are valid for 3 minutes
+
+<Info>
+If there was no data available for the Patient, the Bundle will be empty (the entry array will have no elements).
+</Info>
+
+**Recommended flow:**
+1. Call [Start Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post) for a patient
+2. Receive this webhook
+3. Download the data from the presigned URLs in the bundle
+
+<Accordion title="Example Payload">
+
+```json
+{
+  "meta": {
+    "messageId": "11111111-1111-1111-1111-111111111111",
+    "requestId": "22222222-2222-2222-2222-222222222222",
+    "when": "2023-08-23T22:09:11.373Z",
+    "type": "medical.consolidated-data"
+  },
+  "patients": [
+    {
+      "patientId": "00000000-0000-0000-0000-000000000000",
+      "externalId": "1234567890",
+      "additionalIds": {
+        "athenahealth": ["99992"]
+      },
+      "status": "completed",
+      "filters": {
+        "resources": "Encounter,Observation"
+      },
+      "bundle": {
+        "resourceType": "Bundle",
+        "total": 1,
+        "type": "collection",
+        "entry": [
+          {
+            "resource": {
+              "resourceType": "DocumentReference",
+              "subject": {
+                "reference": "Patient/00000000-0000-0000-0000-000000000000"
+              },
+              "content": [
+                {
+                  "attachment": {
+                    "contentType": "application/json",
+                    "url": "https://documents.s3.amazonaws.com/abc123-Amz-SignedHeaders=host"
+                  }
+                },
+                {
+                  "attachment": {
+                    "contentType": "application/gzip",
+                    "url": "https://documents.s3.amazonaws.com/abc123.gz-Amz-SignedHeaders=host"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+</Accordion>
+
+<Accordion title="Schema Reference">
+
+<ResponseField name="meta" required>
+  Metadata about the message. The full format is described [here](/medical-api/getting-started/webhooks#meta-data).
+
+  <Expandable title="meta properties">
+    <ResponseField name="type" type="string" required>
+      Always `medical.consolidated-data`.
+    </ResponseField>
+    <ResponseField name="requestId" type="string" required>
+      The ID of the consolidated data query that initiated this webhook.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="patients" type="PatientConsolidatedData[]" required>
+  Array of consolidated data query results - one item per patient.
+
+  <Expandable title="PatientConsolidatedData properties">
+
+    <ResponseField name="patientId" type="string" required>
+      The Patient ID.
+    </ResponseField>
+
+    <ResponseField name="externalId" type="string">
+      The external ID you provided when creating the patient.
+    </ResponseField>
+
+    <ResponseField name="additionalIds" type="object">
+      Additional IDs for the patient from integrated EHR systems.
+    </ResponseField>
+
+    <ResponseField name="status" type="string" required>
+      The outcome: `completed` or `failed`.
+    </ResponseField>
+
+    <ResponseField name="filters" type="Filter" required>
+      The filters applied to the query.
+      <Expandable title="Filter properties">
+        <ResponseField name="resources" type="string">
+          Comma-separated list of FHIR resource types returned.
+        </ResponseField>
+        <ResponseField name="dateFrom" type="string">
+          Start date filter - formatted `YYYY-MM-DD`.
+        </ResponseField>
+        <ResponseField name="dateTo" type="string">
+          End date filter - formatted `YYYY-MM-DD`.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+
+    <ResponseField name="bundle" type="Bundle">
+      A FHIR [Bundle](/medical-api/fhir/resources/bundle) containing a `DocumentReference` with presigned download URLs.
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+
+</Accordion>
+
+---
+
+### `medical.bulk-patient-create`
+
+You'll receive this webhook after invoking a bulk patient creation via [POST Bulk Create Patient](/medical-api/api-reference/patient/bulk-create-patient).
+The payload reports the status of the bulk creation job, allowing you to process large CSV files of patient demographics asynchronously.
+
+Note that you'll receive multiple webhooks for a single bulk create request:
+
+- First, a webhook with `status: "processing"` confirming the job started
+- Then, a webhook with `status: "completed"` containing a presigned URL to download the results CSV with created patient IDs
+- Or, a webhook with `status: "failed"` containing a `reason` explaining what went wrong
+- Download URLs are valid for 3 minutes
+
+**Recommended flow:**
+1. Call [Bulk Create Patient](/medical-api/api-reference/patient/bulk-create-patient) with a CSV file
+2. Receive webhooks as the job progresses
+3. Download the results CSV from the presigned URL
+
+<Accordion title="Example Payload">
+
+```json
+{
+  "meta": {
+    "messageId": "11111111-1111-1111-1111-111111111111",
+    "requestId": "22222222-2222-2222-2222-222222222222",
+    "when": "2024-12-30T05:05:12.215Z",
+    "type": "medical.bulk-patient-create"
+  },
+  "bulkPatientCreate": {
+    "requestId": "22222222-2222-2222-2222-222222222222",
+    "status": "completed",
+    "result": "<presigned-download-url>"
+  }
+}
+```
+
+</Accordion>
+
+<Accordion title="Schema Reference">
+
+<ResponseField name="meta" required>
+  Metadata about the message. The full format is described [here](/medical-api/getting-started/webhooks#meta-data).
+
+  <Expandable title="meta properties">
+    <ResponseField name="type" type="string" required>
+      Always `medical.bulk-patient-create`.
+    </ResponseField>
+    <ResponseField name="requestId" type="string" required>
+      The ID of the bulk create request that initiated this webhook.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="bulkPatientCreate" type="BulkPatientCreate" required>
+  The bulk patient create job status.
+
+  <Expandable title="BulkPatientCreate properties">
+    <ResponseField name="requestId" type="string" required>
+      The ID of this bulk patient create job.
+    </ResponseField>
+    <ResponseField name="status" type="string" required>
+      One of `processing`, `completed`, or `failed`.
+    </ResponseField>
+    <ResponseField name="reason" type="string">
+      Reason for failure. Only present when status is `failed`.
+    </ResponseField>
+    <ResponseField name="result" type="string">
+      Presigned URL to download the results CSV. Valid for 3 minutes. Only present when status is `completed`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+</Accordion>
+
+---
+
+### `medical.document-bulk-download-urls`
+
+You'll receive this webhook after invoking a bulk document download via [POST Bulk Get Document URL](/medical-api/api-reference/document/download-url-bulk).
+The payload provides presigned download URLs for all documents belonging to the specified patients, allowing you to efficiently download multiple documents in bulk.
+
+Note that the payload contains a `patients` array with results for each patient:
+
+- Each patient entry includes a `status` (`completed` or `failed`) and a `documents` array
+- Each document includes metadata (id, fileName, mimeType, etc.) and a presigned `url`
+- Download URLs are valid for 10 minutes
+
+**Recommended flow:**
+1. Call [Bulk Get Document URL](/medical-api/api-reference/document/download-url-bulk) with patient IDs
+2. Receive this webhook
+3. Download documents using the presigned URLs before they expire
+
+<Accordion title="Example Payload">
+
+```json
+{
+  "meta": {
+    "messageId": "11111111-1111-1111-1111-111111111111",
+    "requestId": "22222222-2222-2222-2222-222222222222",
+    "when": "2023-11-30T05:05:12.215Z",
+    "type": "medical.document-bulk-download-urls"
+  },
+  "patients": [
+    {
+      "status": "completed",
+      "patientId": "00000000-0000-0000-0000-000000000000",
+      "externalId": "1234567890",
+      "additionalIds": {
+        "athenahealth": ["99992"]
+      },
+      "documents": [
+        {
+          "id": "33333333-3333-3333-3333-333333333333",
+          "size": 40670,
+          "fileName": "document.xml",
+          "description": "Patient Diagnoses",
+          "status": "current",
+          "indexed": "2019-09-07T15:50:00.000Z",
+          "mimeType": "application/xml",
+          "url": "<presigned-download-url>"
+        }
+      ]
+    }
+  ]
+}
+```
+
+</Accordion>
+
+<Accordion title="Schema Reference">
+
+<ResponseField name="meta" required>
+  Metadata about the message. The full format is described [here](/medical-api/getting-started/webhooks#meta-data).
+
+  <Expandable title="meta properties">
+    <ResponseField name="type" type="string" required>
+      Always `medical.document-bulk-download-urls`.
+    </ResponseField>
+    <ResponseField name="requestId" type="string" required>
+      The ID of the bulk download request that initiated this webhook.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="patients" type="DocumentBulkDownloadUrls[]" required>
+  Array of results per patient.
+
+  <Expandable title="DocumentBulkDownloadUrl properties">
+    <ResponseField name="patientId" type="string" required>
+      The Patient ID.
+    </ResponseField>
+    <ResponseField name="externalId" type="string">
+      The external ID you provided when creating the patient.
+    </ResponseField>
+    <ResponseField name="additionalIds" type="object">
+      Additional IDs for the patient from integrated EHR systems.
+    </ResponseField>
+    <ResponseField name="status" type="string" required>
+      `completed` or `failed`.
+    </ResponseField>
+    <ResponseField name="documents" type="DocumentReferenceWithURL[]">
+      Array of documents with download URLs. Valid for 10 minutes.
+      <Expandable title="DocumentReference properties">
+        <Snippet file="document-reference-bulk-document-response.mdx" />
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+</Accordion>
+
+---
+
+## Patient Notification Events
+
+<Info>
+  **Prefix:** `patient.*`
+</Info>
+
+Patient Notification events provide **real-time ADT (Admission, Discharge, Transfer)** updates as patients move through healthcare facilities. These are part of [Real-time Patient Notifications](/medical-api/handling-data/realtime-patient-notifications).
+
+### Event Types
+
+| Event | Description |
+|-------|-------------|
+| `patient.admit` | Patient has been admitted to a healthcare facility |
+| `patient.transfer` | Patient has been transferred between locations |
+| `patient.discharge` | Patient has been discharged from a healthcare facility |
+
+<Tip>
+  To enable patient notifications, configure them in a [Cohort](/medical-api/handling-data/cohorts) and associate the patients you want to monitor.
+</Tip>
+
+Each webhook includes a `url` to download a FHIR Bundle containing the complete encounter data.
+
+<Accordion title="Example Payload (patient.admit)">
+
+```json
+{
+  "meta": {
+    "messageId": "11111111-1111-1111-1111-111111111111",
+    "requestId": "22222222-2222-2222-2222-222222222222",
+    "when": "2025-01-30T23:00:01.000Z",
+    "type": "patient.admit"
+  },
+  "payload": {
+    "url": "<presigned-download-url>",
+    "patientId": "00000000-0000-0000-0000-000000000000",
+    "externalId": "1234567890",
+    "additionalIds": {
+      "athenahealth": ["99992"]
+    },
+    "admitTimestamp": "2025-01-28T23:00:00.000Z"
+  }
+}
+```
+
+</Accordion>
+
+<Card title="Full Documentation" icon="arrow-right" href="/medical-api/handling-data/realtime-patient-notifications">
+  See the complete Real-time Patient Notifications guide for detailed schemas, all event types, and the FHIR Encounter model.
+</Card>
+
+---
+
+## Passing Metadata
+
+You can pass metadata when calling endpoints that support webhooks. This metadata will be returned in the `meta.data` field of the webhook. You may use this to attach whatever metadata is relevant for your use-case - for example, external IDs.
+Below is an example payload you could send in the request body of one of those endpoints and how you would use the sdk:
+
+Note that the `metadata` param supports up to 50 custom string key-value pairs, with keys up to 40 chars, and values of up to 500 chars.
+
+<Snippet file="webhook-metadata-post-example.mdx" />
+
+<Snippet file="webhook-metadata-sdk-example.mdx" />

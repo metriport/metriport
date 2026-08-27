@@ -33,7 +33,6 @@ export async function runInitialPatientDiscoveryAcrossHies({
     patient: existingPatient,
     facilityId,
     requestId,
-    getOrgIdExcludeList: () => Promise.resolve([]),
     forceCWCreate: forceCommonwell,
     rerunPdOnNewDemographics,
   }).catch(processAsyncError("CW create"));

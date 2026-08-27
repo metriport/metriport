@@ -15,7 +15,7 @@ import {
   InboundDocumentRetrievalReq,
   InboundDocumentRetrievalResp,
 } from "@metriport/ihe-gateway-sdk";
-import { errorToString } from "@metriport/shared";
+import { errorToString, isClientError } from "@metriport/shared";
 import { APIGatewayProxyEventV2 } from "aws-lambda";
 import { getEnvOrFail } from "./shared/env";
 
@@ -40,6 +40,7 @@ export async function handler(event: APIGatewayProxyEventV2) {
       } else {
         mtomParts = convertSoapResponseToMtomResponse(bodyBuffer);
       }
+      log(`Amount of mtom parts: ${mtomParts.parts?.length}`);
       const soapData = mtomParts.parts[0]?.body || Buffer.from("");
 
       const drRequest: InboundDocumentRetrievalReq = await processInboundDrRequest(
@@ -69,8 +70,11 @@ export async function handler(event: APIGatewayProxyEventV2) {
 
       return buildResponse(200, xmlResponse);
     } catch (error) {
-      log(`Client error on ${lambdaName}: ${errorToString(error)}`);
-      return buildResponse(400, errorToString(error));
+      if (isClientError(error)) {
+        log(`Client error on ${lambdaName}: ${errorToString(error)}`);
+        return buildResponse(400, errorToString(error));
+      }
+      throw error;
     }
   } catch (error) {
     const msg = "Server error processing event on " + lambdaName;

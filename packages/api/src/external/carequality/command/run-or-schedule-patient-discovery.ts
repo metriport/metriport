@@ -10,12 +10,14 @@ export async function runOrScheduleCqPatientDiscovery({
   facilityId,
   requestId,
   rerunPdOnNewDemographics,
+  forcePd,
   forceCarequality,
 }: {
   patient: Patient;
   facilityId: string;
   requestId: string;
   rerunPdOnNewDemographics?: boolean;
+  forcePd?: boolean;
   // START TODO #1572 - remove
   forceCarequality?: boolean;
   // END TODO #1572 - remove
@@ -24,6 +26,16 @@ export async function runOrScheduleCqPatientDiscovery({
     id: patient.id,
     cxId: patient.cxId,
   });
+  if (forcePd) {
+    discover({
+      patient: existingPatient,
+      facilityId,
+      requestId,
+      forceEnabled: forceCarequality,
+      rerunPdOnNewDemographics,
+    }).catch(processAsyncError("CQ discovery"));
+    return;
+  }
   const cqData = getCQData(patient.data.externalData);
 
   const discoveryStatusCq = cqData?.discoveryStatus;

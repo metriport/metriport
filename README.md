@@ -421,6 +421,9 @@ evolves. It also uses Umzug for programatic migration execution and typing.
 When the application runs it automatically executes all migrations located under `src/sequelize/migrations` (in ascending order)
 before the code is atually executed.
 
+NOTE: migrations are run as `.js` on the cloud, and as `.ts` locally - see `packages/api/src/sequelize/index.ts`. This impacts
+how we handle migrations AND ROLLBACKS against local DB vs. cloud DB.
+
 If you need to undo/revert a migration manually, you can use the CLI, which is a wrapper to Umzug's CLI (still under heavy
 development at the time of this writing).
 
@@ -433,15 +436,11 @@ $ export DB_CREDS='{"username":"admin","password":"admin","dbname":"db","engine"
 Run the CLI with:
 
 ```shell
-$ npm i -g ts-node # only needs to be run once
 $ cd packages/api
-$ ts-node src/sequelize/cli
-```
-
-Alternatively, you can use a shortcut for migrations on local environment:
-
-```shell
-$ npm run db-local -- <cmd>
+$ npm run db:pending          # list pending migrations
+$ npm run db:up               # run all pending migrations
+$ npm run db -- down          # revert one migration at a time
+$ npm run db -- down --step 2 # revert 2 migrations at a time
 ```
 
 > Note: the double dash `--` is required so parameters after it go to sequelize cli; without it, parameters go to `npm`

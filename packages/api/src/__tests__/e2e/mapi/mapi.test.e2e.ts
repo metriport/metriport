@@ -9,6 +9,7 @@ import { runSetPatientFacilitiesTests } from "./parts/set-patient-facilities.tes
 import { runPatientTestsPart1, runPatientTestsPart2 } from "./parts/patient.test.part";
 import { runSettingsTests } from "./parts/settings.test.part";
 import { E2eContext } from "./shared";
+import { runCohortTestsPart1 } from "./parts/cohort.test.part";
 
 dayjs.extend(duration);
 
@@ -36,6 +37,10 @@ describe("MAPI E2E Tests", () => {
 
   describe("Patient", () => {
     runPatientTestsPart1(e2e);
+  });
+
+  describe("Cohort", () => {
+    runCohortTestsPart1(e2e);
   });
 
   describe("Set Patient Facilities", () => {

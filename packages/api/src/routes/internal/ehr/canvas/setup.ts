@@ -1,5 +1,6 @@
 import {
   canvasDashSource,
+  canvasPluginSource,
   canvasWebhookSource,
 } from "@metriport/shared/interface/external/ehr/canvas/jwt-token";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
@@ -34,7 +35,7 @@ function getDefaultExpiration(): number {
  * @param req.query.facilityId - The facility ID
  * @param req.query.externalId - The external ID
  * @param req.query.isTenant - Whether this is a tenant of the main Canvas cx (defaults to true)
- * @returns 200 OK with the dash and webhook tokens
+ * @returns 200 OK with the dash, webhook, and plugin tokens
  */
 router.post(
   "/",
@@ -64,6 +65,7 @@ router.post(
 
     const dashToken = generateToken();
     const webhookToken = generateToken();
+    const pluginToken = generateToken();
     const twoYearsFromNow = getDefaultExpiration();
 
     await Promise.all([
@@ -86,11 +88,21 @@ router.post(
           practiceId: externalId,
         },
       }),
+      saveJwtToken({
+        token: pluginToken,
+        source: canvasPluginSource,
+        exp: twoYearsFromNow,
+        data: {
+          cxId,
+          source: canvasPluginSource,
+          practiceId: externalId,
+        },
+      }),
     ]);
 
     // TODO: ENG-877 - Update AWS secrets within endpoint for Canvas cx setup
     // Place these tokens in a secure note in 1PW
-    return res.status(httpStatus.OK).json({ dashToken, webhookToken });
+    return res.status(httpStatus.OK).json({ dashToken, webhookToken, pluginToken });
   })
 );
 

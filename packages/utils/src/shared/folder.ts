@@ -38,14 +38,48 @@ export function initRunsFolder(subFolder?: string): string {
  */
 export function buildGetDirPathInside(folder?: string) {
   return function (orgName?: string, extension?: string): string {
-    const basePathName = `./${runsFolderName}`;
-    const pathName = basePathName + (folder ? `/${folder}` : "");
-    return `${pathName}/${getFileNameForOrg(orgName, extension)}`;
+    return `${buildPathInsideRunsFolder(folder)}/${getFileNameForOrgWithTimestamp({
+      orgName,
+      timestamp: new Date(),
+      extension,
+    })}`;
   };
 }
 
-export function getFileNameForOrg(orgName?: string, extension?: string): string {
-  const ext = extension ? `.${extension}` : "";
-  if (!orgName) return new Date().toISOString();
-  return `${orgName.replace(/[,.]/g, "").replaceAll(" ", "-")}_${new Date().toISOString()}${ext}`;
+export function buildGetDirPathInsideNoTimestamp(folder?: string) {
+  return function (orgName?: string, extension?: string): string {
+    return `${buildPathInsideRunsFolder(folder)}/${getFileNameForOrgWithTimestamp({
+      orgName,
+      extension,
+    })}`;
+  };
+}
+
+export function buildPathInsideRunsFolder(folder?: string): string {
+  const basePathName = `./${runsFolderName}`;
+  const pathName = basePathName + (folder ? `/${folder}` : "");
+  return pathName;
+}
+
+export function getPathNameForOrg(orgName: string): string {
+  return orgName.replace(/[,.]/g, "").replace(/_/g, "-");
+}
+
+export function getTimestampForFilename(timestamp = new Date()): string {
+  return new Date(timestamp).toISOString().replace(/[T]/g, "_").replace(/[:.]/g, "-");
+}
+
+export function getFileNameForOrgWithTimestamp({
+  orgName,
+  timestamp,
+  extension,
+}: {
+  orgName?: string;
+  timestamp?: Date;
+  extension?: string;
+}): string {
+  const timestampAsStr = timestamp ? `_${getTimestampForFilename(timestamp)}` : "";
+  const extensionAsStr = extension ? `.${extension}` : "";
+  const pathName = orgName ? getPathNameForOrg(orgName) : "";
+  return `${pathName}${timestampAsStr}${extensionAsStr}`;
 }

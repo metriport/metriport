@@ -47,7 +47,13 @@
               {{/each}}
             ]
         },
-        "code":{{>DataType/CodeableConcept.hbs code=conditionEntry.value text=conditionEntry.text._}},
+        {{#if (or conditionEntry.value.code conditionEntry.text._)}}
+            "code":{{>DataType/CodeableConcept.hbs code=conditionEntry.value text=conditionEntry.text._}},
+        {{else if backupDisplay}}
+            "code":{{>DataType/CodeableConcept.hbs text=backupDisplay}},
+        {{else}}
+            "code":{{>DataType/CodeableConcept.hbs code=conditionEntry.value text=conditionEntry.text._}},
+        {{/if}}
 
         {{#if (contains (toString (toJsonString conditionEntry)) '2.16.840.1.113883.10.20.22.4.31')}}
             {{#each (toArray conditionEntry.entryRelationship)}}
@@ -67,7 +73,9 @@
 
         {{! Missing meta}}
         {{! Missing extension}}
-        {{! Missing recordedDate}}
+        {{#if conditionEntry.author.time}}
+            "recordedDate":"{{formatAsDateTime conditionEntry.author.time.value}}",
+        {{/if}}
     },
     "request":{
         "method":"PUT",

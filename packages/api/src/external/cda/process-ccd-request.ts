@@ -1,5 +1,4 @@
 import { DocumentReference, Organization as FhirOrganization } from "@medplum/fhirtypes";
-import { CCD_SUFFIX } from "@metriport/core/shareback/file";
 import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
@@ -57,8 +56,8 @@ export async function processCcdRequest({
       medicalDocumentsBucket: medicalBucket,
       region: awsRegion,
       organization: fhirOrg,
-      docId: CCD_SUFFIX,
       docRef,
+      isCcd: true,
     });
     log(`CCD uploaded into ${medicalBucket} with key ${filePath}, metadata ${metadataFilePath}`);
   } catch (error) {
@@ -81,8 +80,8 @@ export async function processEmptyCcdRequest(patient: Patient, organization: Fhi
       medicalDocumentsBucket: medicalBucket,
       region: awsRegion,
       organization,
-      docId: CCD_SUFFIX,
       docRef,
+      isCcd: true,
     });
     log(
       `Empty CCD uploaded into ${medicalBucket} with key ${filePath}, metadata ${metadataFilePath}`

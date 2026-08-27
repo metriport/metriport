@@ -1,4 +1,5 @@
 import { Address, combineAddresses } from "@metriport/core/domain/address";
+import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { AddressGeocodingResult, geocodeAddress } from "../../../external/aws/address";
 import { Config } from "../../../shared/config";
@@ -79,7 +80,8 @@ async function addGeographicCoordinates(
         return result.address;
       } catch (error) {
         const msg = `Failed to geocode address`;
-        console.log(`${msg}. Cause: ${error}`);
+        const logForError = log ?? out("addGeographicCoordinates").log;
+        logForError(`${msg}. Cause: ${error}`);
         capture.error(msg, {
           extra: { context: `addGeographicCoordinates`, error, address },
         });

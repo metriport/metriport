@@ -1,22 +1,29 @@
+import { buildIngestAllResponsesHandler } from "@metriport/core/external/quest/command/ingest-all-responses/ingest-all-responses-factory";
+import { buildQuestUploadRosterHandler } from "@metriport/core/external/quest/command/upload-roster/upload-roster-factory";
 import { Config } from "@metriport/core/util/config";
-import { BadRequestError, PaginatedResponse } from "@metriport/shared";
+import { BadRequestError } from "@metriport/shared";
+import {
+  isValidQuestRosterType,
+  QuestRosterType,
+} from "@metriport/shared/interface/external/quest/roster";
+import { questSource } from "@metriport/shared/interface/external/quest/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { getQuestRoster } from "../../../command/medical/patient/get-quest-roster";
-import { QuestRosterType, rosterTypeSchema } from "@metriport/core/external/quest/types";
-import { QuestUploadRosterHandlerCloud } from "@metriport/core/external/quest/command/upload-roster/upload-roster-cloud";
-import { QuestDownloadResponseHandlerCloud } from "@metriport/core/external/quest/command/download-response/download-response-cloud";
-import { Pagination } from "../../../command/pagination";
-import { dtoFromModel as dtoFromPatientModel, PatientDTO } from "../../medical/dtos/patientDTO";
-import { dtoFromModel as dtoFromPatientMappingModel } from "../../medical/dtos/patient-mapping";
-import { requestLogger } from "../../helpers/request-logger";
-import { paginated } from "../../pagination";
-import { asyncHandler, getFromParamsOrFail, getFromQueryOrFail } from "../../util";
 import { findPatientWithExternalId } from "../../../command/mapping/patient";
-import { questSource } from "@metriport/shared/interface/external/quest/source";
+import {
+  getQuestBackfillRoster,
+  getQuestNotificationRoster,
+} from "../../../command/medical/patient/get-quest-roster";
+import { Pagination } from "../../../command/pagination";
+import { requestLogger } from "../../helpers/request-logger";
+import { dtoFromModel as dtoFromPatientMappingModel } from "../../medical/dtos/patient-mapping";
+import { dtoFromModel as dtoFromPatientModel } from "../../medical/dtos/patientDTO";
+import { paginated } from "../../pagination";
+import { getUUIDFrom } from "../../schemas/uuid";
+import { asyncHandler, getFromParamsOrFail, getFromQueryOrFail } from "../../util";
 
 dayjs.extend(duration);
 const router = Router();
@@ -26,21 +33,20 @@ const router = Router();
  */
 function getRosterTypeFromParamsOrFail(req: Request): QuestRosterType {
   const rosterTypeParam = getFromParamsOrFail("rosterType", req);
-  const rosterType = rosterTypeSchema.safeParse(rosterTypeParam);
-  if (!rosterType.success) {
+  if (!isValidQuestRosterType(rosterTypeParam)) {
     throw new BadRequestError("Invalid roster type", undefined, {
       rosterType: rosterTypeParam,
     });
   }
-  return rosterType.data;
+  return rosterTypeParam;
 }
 
 /** ---------------------------------------------------------------------------
- * GET /internal/quest/roster/:rosterType
+ * GET /internal/quest/roster/notifications
  *
  * This is a paginated route.
- * Gets all patients that are enrolled in Quest monitoring. The roster type can be "backfill" or "notifications", which
- * determines which setting to use in retrieving patients.
+ *
+ * Gets all patients that are enrolled in Quest monitoring for the notifications roster.
  *
  * @param req.query.fromItem The minimum item to be included in the response, inclusive.
  * @param req.query.toItem The maximum item to be included in the response, inclusive.
@@ -50,17 +56,15 @@ function getRosterTypeFromParamsOrFail(req: Request): QuestRosterType {
  * - `meta` - Pagination information, including how to get to the next page.
  */
 router.get(
-  "/roster/:rosterType",
+  "/roster/notifications",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const rosterType = getRosterTypeFromParamsOrFail(req);
     const { meta, items } = await paginated({
       request: req,
       additionalQueryParams: {},
       getItems: (pagination: Pagination) => {
-        return getQuestRoster({
+        return getQuestNotificationRoster({
           pagination,
-          rosterType,
         });
       },
       getTotalCount: () => {
@@ -69,12 +73,53 @@ router.get(
       },
       hostUrl: Config.getApiLoadBalancerAddress(),
     });
+    return res
+      .status(status.OK)
+      .json({ meta, patients: items.map(item => dtoFromPatientModel(item)) });
+  })
+);
 
-    const response: PaginatedResponse<PatientDTO, "patients"> = {
-      meta,
-      patients: items.map(item => dtoFromPatientModel(item)),
-    };
-    return res.status(status.OK).json(response);
+/** ---------------------------------------------------------------------------
+ * GET /internal/quest/roster/backfill
+ *
+ * This is a paginated route.
+ *
+ * Gets all patients that are enrolled in Quest monitoring for the backfill roster for a given customer and roster.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.query.rosterId The roster ID.
+ * @param req.query.fromItem The minimum item to be included in the response, inclusive.
+ * @param req.query.toItem The maximum item to be included in the response, inclusive.
+ * @param req.query.count The number of items to be included in the response.
+ * @returns An object containing:
+ * - `patients` - List of patients enrolled in Quest monitoring.
+ * - `meta` - Pagination information, including how to get to the next page.
+ */
+router.get(
+  "/roster/backfill",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const rosterId = getUUIDFrom("query", req, "rosterId").orFail();
+    const { meta, items } = await paginated({
+      request: req,
+      additionalQueryParams: { cxId, rosterId },
+      getItems: (pagination: Pagination) => {
+        return getQuestBackfillRoster({
+          cxId,
+          rosterId,
+          pagination,
+        });
+      },
+      getTotalCount: () => {
+        // There's no use for calculating the actual number of subscribers for this route
+        return Promise.resolve(-1);
+      },
+      hostUrl: Config.getApiLoadBalancerAddress(),
+    });
+    return res
+      .status(status.OK)
+      .json({ meta, patients: items.map(item => dtoFromPatientModel(item)) });
   })
 );
 
@@ -94,8 +139,17 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const rosterType = getRosterTypeFromParamsOrFail(req);
-    const handler = new QuestUploadRosterHandlerCloud();
-    await handler.generateAndUploadLatestQuestRoster({ rosterType });
+    const cxId = getUUIDFrom("query", req, "cxId").optional();
+    const rosterId = getUUIDFrom("query", req, "rosterId").optional();
+    if ((cxId && !rosterId) || (!cxId && rosterId)) {
+      throw new BadRequestError("Both cxId and rosterId must be provided together");
+    }
+
+    const handler = buildQuestUploadRosterHandler();
+    await handler.uploadRoster({
+      rosterType,
+      ...(cxId && rosterId ? { cxId, rosterId } : {}),
+    });
     return res.sendStatus(status.OK);
   })
 );
@@ -121,22 +175,22 @@ router.get(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /internal/quest/download-response
+ * POST /internal/quest/ingest-all-responses
  *
- * Downloads all available update files from Quest Diagnostics. This route is triggered by a scheduled Lambda
- * function to coincide with the daily updates, and can also be manually triggered by an internal user to download
- * all new responses. The download handler will automatically trigger the next steps of the data pipeline, which
- * convert the downloaded responses into FHIR bundles that make their way to the lab conversion bucket.
+ * Ingest all available update files from Quest Diagnostics. This route is triggered by a scheduled Lambda
+ * function to coincide with the daily updates, and can also be manually triggered by an internal user to ingest
+ * all new responses. The ingest handler will automatically trigger the next steps of the data pipeline, which
+ * convert the ingested responses into FHIR bundles that make their way to the lab conversion bucket.
  *
  * @see packages/infra/lib/quest/quest-stack.ts
  * @returns 200 OK
  */
 router.post(
-  "/download-response",
+  "/ingest-all-responses",
   requestLogger,
   asyncHandler(async (_: Request, res: Response) => {
-    const handler = new QuestDownloadResponseHandlerCloud();
-    await handler.downloadAllQuestResponses();
+    const handler = buildIngestAllResponsesHandler();
+    await handler.ingestAllResponses();
     return res.sendStatus(status.OK);
   })
 );

@@ -1,8 +1,14 @@
 ---
-title: "Receiving Webhooks"
+title: "Receiving Webhooks (Legacy)"
 icon: "paper-plane"
 description: "Receive status updates as soon as data becomes available."
 ---
+
+<Warning>
+  **Legacy Webhook Flow:** This page documents webhooks for the legacy [Document Query](/medical-api/legacy-api-reference/document/start-document-query) flow.
+  
+  We recommend migrating to the [Network Query](/medical-api/api-reference/network/start-network-query) flow, which provides a unified way to query all health data networks (HIEs, pharmacies, and laboratories) with improved webhook events. See the [updated webhooks guide](/medical-api/handling-data/webhooks-with-nq) for details.
+</Warning>
 
 ## Overview
 
@@ -10,7 +16,7 @@ When using the Medical API, Metriport will send Webhook messages to your app as 
 
 This is the usual flow to obtain Patient data:
 
-1. You trigger a [document query](/medical-api/api-reference/document/start-document-query) to retrieve a Patient's medical documents from HIEs;
+1. You trigger a [document query](/medical-api/legacy-api-reference/document/start-document-query) to retrieve a Patient's medical documents from HIEs;
    - XML C-CDA documents will be converted and stored on Metriport's FHIR storage;
    - as documents get downloaded and converted, you should get [patient document data](#patient-document-data) webhook messages;
 2. Once document conversion is completed, you can [query for patient consolidated data](/medical-api/api-reference/fhir/consolidated-data-query-post);
@@ -118,7 +124,7 @@ Below is an example payload you could send in the request body of one of those e
 
 These are messages you can expect to receive in the following scenarios:
 
-1. When [queried documents](/medical-api/api-reference/document/start-document-query) have completed
+1. When [queried documents](/medical-api/legacy-api-reference/document/start-document-query) have completed
    downloading, the message `type` will be `medical.document-download`, and at this point
    you'll be able to [download the raw files](/medical-api/api-reference/document/get-document);
 2. Then, if the downloaded documents contained C-CDA/XML files, when the conversion to FHIR has
@@ -137,10 +143,10 @@ These are messages you can expect to receive in the following scenarios:
     "messageId": "<message-id>",
     "requestId": "<request-id>",
     "when": "<date-time-in-utc>",
-    "type": "medical.document-download"
+    "type": "medical.document-download",
     "data": {
-        youCan: "putAny",
-        stringKeyValue: "pairsHere",
+        "youCan": "putAny",
+        "stringKeyValue": "pairsHere"
     }
   },
   "patients": [
@@ -383,7 +389,7 @@ The format follows:
         <li>Main attachment with the requested format (JSON, HTML, or PDF)</li>
         <li>Gzip-compressed attachment (JSON only) with `contentType: "application/gzip"` for faster downloads</li>
       </ul>
-      Each attachment has a `url` which is valid for 3 minutes.
+      Each attachment has a `url` which is valid for 10 minutes.
     </ResponseField>
 
   </Expandable>
@@ -405,7 +411,7 @@ being the main difference between each:
   - `failed`: the bulk create failed (likely due to the uploaded file being invalid).
 
 <Info>
-  The URL will only be valid for 180 seconds (3 minutes).
+  The URL will only be valid for 600 seconds (10 minutes).
 </Info>
 
 Example payload:
@@ -446,7 +452,7 @@ The format follows:
     <ResponseField name="requestId" type="string" required>
       The ID that represents this bulk patient create.
     </ResponseField>
-  
+
     <ResponseField name="status" type="string" required>
       The status of the bulk create. One of `processing`, `failed`, or `completed`.
       See all the possible values
@@ -460,7 +466,7 @@ The format follows:
 
     <ResponseField name="result" type="string">
       The URL to download the CSV file containing the result of
-      the Bulk Patient Create. It's valid for 3 minutes. Only present if the
+      the Bulk Patient Create. It's valid for 10 minutes. Only present if the
       status is `completed`.
     </ResponseField>
 
@@ -473,7 +479,7 @@ The message `medical.bulk-patient-create` with status `completed` includes a URL
 field, which you can use to download the result of the Bulk Patient Create.
 
 <Info>
-  The URL will only be valid for 180 seconds (3 minutes).
+  The URL will only be valid for 600 seconds (10 minutes).
 </Info>
 
 The file is based on the same format as the

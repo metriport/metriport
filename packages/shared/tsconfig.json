@@ -18,7 +18,8 @@
     "noPropertyAccessFromIndexSignature": true,
     "noUncheckedIndexedAccess": true,
     // END - From @tsconfig/strictest
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "resolveJsonModule": true
   },
   "include": ["./src"],
   "exclude": ["dist", "node_modules"]

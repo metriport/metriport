@@ -23,7 +23,6 @@ import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import httpStatus from "http-status";
-import { partition } from "lodash";
 import { createOrUpdateInvalidLinks } from "../../../command/medical/invalid-links/create-invalid-links";
 import { createOrUpdateCwPatientData } from "../../commonwell/patient/cw-patient-data/create-cw-data";
 import { cwGenderToPatientGender } from "../../commonwell/patient/patient-shared";
@@ -67,13 +66,11 @@ export async function runPatientLinkingWithRetries({
   patient,
   commonwellPatientId,
   context,
-  getOrgIdExcludeList,
 }: {
   commonWell: CommonWellAPI;
   patient: Patient;
   commonwellPatientId: string;
   context: string;
-  getOrgIdExcludeList: () => Promise<string[]>;
 }): Promise<{
   validLinks: NetworkLink[];
   invalidLinks: NetworkLink[];
@@ -113,11 +110,6 @@ export async function runPatientLinkingWithRetries({
         },
         {
           ...EXISTING_LINKS_RETRY_OPTIONS,
-          log: msg => log(`[getExistingLinks retry] ${msg}`),
-          onError: error => {
-            const cwRef = commonWell.lastTransactionId;
-            log(`Error in getExistingLinks retry. Cause: ${errorToString(error)}. cwRef: ${cwRef}`);
-          },
         }
       );
       existingLinksCount = existingLinks?.Patients?.length ?? 0;
@@ -180,7 +172,6 @@ export async function runPatientLinkingWithRetries({
         existingLinks,
         probableLinks,
         context,
-        getOrgIdExcludeList,
       });
 
       validLinks = result.validLinks;
@@ -250,7 +241,6 @@ async function tryToImproveLinks({
   probableLinks: probableLinksParam,
   context,
   patient,
-  getOrgIdExcludeList,
 }: {
   commonWell: CommonWellAPI;
   commonwellPatientId: string;
@@ -258,7 +248,6 @@ async function tryToImproveLinks({
   probableLinks: PatientProbableLinks;
   context: string;
   patient: Patient;
-  getOrgIdExcludeList: () => Promise<string[]>;
 }): Promise<{
   validLinks: NetworkLink[];
   invalidLinks: NetworkLink[];
@@ -274,7 +263,7 @@ async function tryToImproveLinks({
   let validLinks: NetworkLink[] = [];
   let invalidLinks: NetworkLink[] = [];
   if (networkLinks && networkLinks.length > 0) {
-    const resp = await validateAndStoreCwLinks(patient, networkLinks, getOrgIdExcludeList);
+    const resp = await validateAndStoreCwLinks(patient, networkLinks);
     validLinks = resp.validLinks;
     invalidLinks = resp.invalidLinks;
   }
@@ -285,7 +274,6 @@ async function tryToImproveLinks({
     invalidLinks,
     commonwellPatientId,
     executionContext: context,
-    getOrgIdExcludeList,
   });
 
   return { validLinks, invalidLinks: invalidLinks };
@@ -297,27 +285,19 @@ async function autoUpgradeProbableLinks({
   invalidLinks,
   commonwellPatientId,
   executionContext,
-  getOrgIdExcludeList,
 }: {
   commonWell: CommonWellAPI;
   validLinks: NetworkLink[];
   invalidLinks: NetworkLink[];
   commonwellPatientId: string;
   executionContext: string;
-  getOrgIdExcludeList: () => Promise<string[]>;
 }): Promise<void> {
   const { log } = out("CW.v2 autoUpgradeProbableLinks");
 
-  const orgIdExcludeList = await getOrgIdExcludeList();
-
   const validProbableLinks = validLinks.filter(l => l.type === "probable");
-  const validExistingLinks = validLinks.filter(l => l.type === "existing");
   const invalidExistingLinks = invalidLinks.filter(l => l.type === "existing");
 
-  const validExistingToDowngrade = validExistingLinks.filter(link =>
-    isInsideOrgExcludeList(link, orgIdExcludeList)
-  );
-  const existingToDowngrade = [...validExistingToDowngrade, ...invalidExistingLinks];
+  const existingToDowngrade = invalidExistingLinks;
   const downgradeRequests: Promise<StatusResponse>[] = [];
   const failedDowngradeRequests: {
     url?: string;
@@ -360,9 +340,7 @@ async function autoUpgradeProbableLinks({
   const totalDowngraded = existingToDowngrade.length - failedDowngradeRequests.length;
   log(`Downgraded ${totalDowngraded} links (out of ${existingToDowngrade.length})`);
 
-  const probableToUpgrade = validProbableLinks.filter(
-    link => !isInsideOrgExcludeList(link, orgIdExcludeList)
-  );
+  const probableToUpgrade = validProbableLinks;
   const failedUpgradeRequests: {
     url?: string;
     link?: string;
@@ -413,22 +391,9 @@ async function autoUpgradeProbableLinks({
   log(`Upgraded ${totalUpgraded} links (out of ${probableToUpgrade.length})`);
 }
 
-function isInsideOrgExcludeList(link: NetworkLink, orgIdExcludeList: string[]): boolean {
-  const urnOidRegex = /^urn:oid:/;
-  const identifiers = link.Patient?.identifier || [];
-  return identifiers.some(id => {
-    const idSystem = id.system?.replace(urnOidRegex, "");
-    if (idSystem && orgIdExcludeList.includes(idSystem)) {
-      return true;
-    }
-    return false;
-  });
-}
-
 async function validateAndStoreCwLinks(
   patient: Patient,
-  networkLinks: NetworkLink[],
-  getOrgIdExcludeList: () => Promise<string[]>
+  networkLinks: NetworkLink[]
 ): Promise<{
   validLinks: NetworkLink[];
   invalidLinks: NetworkLink[];
@@ -442,20 +407,12 @@ async function validateAndStoreCwLinks(
     probableLinkToPatientData
   );
 
-  const orgIdExcludeList = await getOrgIdExcludeList();
-  const [validLinksToDowngrade, validLinksToUpgrade] = partition(validLinks, (link: NetworkLink) =>
-    isInsideOrgExcludeList(link, orgIdExcludeList)
-  );
-
-  const finalValidLinks = validLinksToUpgrade;
-  const finalInvalidLinks = [...validLinksToDowngrade, ...invalidLinks];
-
-  const validLinksV2: CwLinkV2[] = finalValidLinks.map(patientCollectionItemToCwLinkV2);
+  const validLinksV2: CwLinkV2[] = validLinks.map(patientCollectionItemToCwLinkV2);
   if (validLinksV2.length > 0) {
     await createOrUpdateCwPatientData({ id, cxId, cwLinks: validLinksV2 });
   }
 
-  const invalidLinksV2: CwLinkV2[] = finalInvalidLinks.map(patientCollectionItemToCwLinkV2);
+  const invalidLinksV2: CwLinkV2[] = invalidLinks.map(patientCollectionItemToCwLinkV2);
   if (invalidLinksV2.length > 0) {
     await createOrUpdateInvalidLinks({
       id,
@@ -464,10 +421,10 @@ async function validateAndStoreCwLinks(
     });
   }
 
-  return { validLinks: finalValidLinks, invalidLinks: finalInvalidLinks };
+  return { validLinks, invalidLinks };
 }
 
-function probableLinkToPatientData(networkLink: NetworkLink): PatientData {
+export function probableLinkToPatientData(networkLink: NetworkLink): PatientData {
   const patient = networkLink.Patient;
   if (!patient) throw new MetriportError("Patient data is missing");
 

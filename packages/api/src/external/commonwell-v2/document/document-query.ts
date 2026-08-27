@@ -7,10 +7,14 @@ import {
   operationOutcomeResourceType,
 } from "@metriport/commonwell-sdk";
 import { ingestIntoSearchEngine } from "@metriport/core/command/consolidated/search/document-reference/ingest";
-import { isStalePatientUpdateEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { Patient } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { reportMetric } from "@metriport/core/external/aws/cloudwatch";
+import {
+  MetricAdditionalDimension,
+  MetricName,
+  reportCountMetric,
+  reportDurationMetric,
+} from "@metriport/core/external/aws/cloudwatch";
 import {
   Document,
   DownloadResult,
@@ -90,7 +94,6 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer,
   ignoreFhirConversionAndUpsert,
   requestId,
-  getOrgIdExcludeList,
   triggerConsolidated = false,
 }: {
   patient: Patient;
@@ -100,7 +103,6 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
-  getOrgIdExcludeList: () => Promise<string[]>;
   triggerConsolidated?: boolean;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
@@ -133,15 +135,12 @@ export async function queryAndProcessDocuments({
     const patientCWData = getCWData(currentPatient.data.externalData);
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
     const isProcessing = patientCWData?.status === "processing";
-    const updateStalePatients = await isStalePatientUpdateEnabledForCx(cxId);
     const now = buildDayjs(new Date());
     const patientCreatedAt = buildDayjs(patientParam.createdAt);
     const pdStartedAt = patientCWData?.discoveryParams?.startedAt
       ? buildDayjs(patientCWData.discoveryParams.startedAt)
       : undefined;
-    const isStale =
-      updateStalePatients &&
-      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackWeeks, "weeks");
+    const isStale = (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackWeeks, "weeks");
 
     if (hasNoCWStatus || isProcessing || forcePatientDiscovery || isStale) {
       log(
@@ -161,7 +160,6 @@ export async function queryAndProcessDocuments({
         update({
           patient: patientParam,
           facilityId: initiator.facilityId,
-          getOrgIdExcludeList,
           requestId,
         }).catch(processAsyncError("CW update"));
       }
@@ -261,18 +259,8 @@ async function internalGetDocuments({
   cwData: PatientDataCommonwell;
   initiator: HieInitiator;
 }): Promise<CwDocumentReference[]> {
-  const context = "cw.queryDocument";
   const { log, debug } = out(`CW internalGetDocuments - M patient ${patientId}`);
 
-  function reportDocQueryMetric(queryStart: number) {
-    const queryDuration = Date.now() - queryStart;
-    reportMetric({
-      name: context,
-      value: queryDuration,
-      unit: "Milliseconds",
-      additionalDimension: "CommonWell",
-    });
-  }
   const commonWell = makeCommonWellAPI(
     initiator.name,
     initiator.oid,
@@ -285,7 +273,11 @@ async function internalGetDocuments({
   const queryStart = Date.now();
   try {
     const queryResponse = await commonWell.queryDocumentsFull(cwData.patientId);
-    reportDocQueryMetric(queryStart);
+    reportDurationMetric({
+      name: MetricName.DOCUMENT_QUERY_DURATION,
+      queryStart,
+      additionalDimension: MetricAdditionalDimension.COMMONWELL,
+    });
     debug(`resp queryDocumentsFull: ${JSON.stringify(queryResponse)}`);
 
     for (const item of queryResponse.entry ?? []) {
@@ -306,6 +298,16 @@ async function internalGetDocuments({
         log,
       });
     }
+    reportCountMetric({
+      name: MetricName.DOCUMENT_QUERY_SUCCESS_COUNT,
+      count: docs.length,
+      additionalDimension: MetricAdditionalDimension.COMMONWELL,
+    });
+    reportCountMetric({
+      name: MetricName.DOCUMENT_QUERY_ERROR_COUNT,
+      count: cwErrs.length,
+      additionalDimension: MetricAdditionalDimension.COMMONWELL,
+    });
 
     log(`Document query got ${docs.length} documents${docs.length ? ", processing" : ""}...`);
     const documents: CwDocumentReference[] = docs.flatMap(d => {
@@ -323,7 +325,7 @@ async function internalGetDocuments({
   } catch (error) {
     throw new CommonwellError("Error querying documents from CommonWell", error, {
       cwReference: commonWell.lastTransactionId,
-      context,
+      context: "cw.internalGetDocuments",
     });
   }
 }
@@ -344,10 +346,11 @@ function reportCWErrors({
   const errorsByCategory = groupCWErrors(errors);
   for (const [category, errors] of Object.entries(errorsByCategory)) {
     const msg = `CW Document query error`;
-    log(`${msg} - Category: ${category}. Cause: ${JSON.stringify(errors)}`);
-    capture.error(msg, {
-      extra: { ...context, errors, category },
-    });
+    log(
+      `${msg} - Category: ${category}. Cause: ${JSON.stringify(errors)}, context: ${JSON.stringify(
+        context
+      )}`
+    );
   }
 }
 
@@ -534,10 +537,13 @@ async function downloadDocsAndUpsertFHIR({
   // TODO move to executeAsynchronously() from core
   // split the list in chunks
   const chunks = chunk(docsToDownload, DOC_DOWNLOAD_CHUNK_SIZE);
+
+  const drQueryStart = Date.now();
+  let drErrorCount = 0;
+  let drSuccessCount = 0;
   for (const docChunk of chunks) {
     const s3Refs = await Promise.allSettled(
       docChunk.map(async doc => {
-        let errorReported = false;
         let uploadToS3: () => Promise<File>;
         let file: Awaited<ReturnType<typeof uploadToS3>> | undefined = undefined;
         const isConvertibleDoc = isConvertible(
@@ -599,7 +605,6 @@ async function downloadDocsAndUpsertFHIR({
             const isZeroLength = doc.content?.[0]?.attachment.size === 0;
             if (isZeroLength || error instanceof NotFoundError) {
               // we don't want to report errors when the file was originally flagged as empty or not found
-              errorReported = true;
               throw error;
             }
             const msg = `Error downloading from CW and upserting to FHIR`;
@@ -673,7 +678,6 @@ async function downloadDocsAndUpsertFHIR({
                 };
 
                 reportFHIRError({ docId: doc.id, error, context, log, extra });
-                errorReported = true;
                 throw error;
               }),
               ingestIntoSearchEngine(
@@ -701,6 +705,7 @@ async function downloadDocsAndUpsertFHIR({
             source: MedicalDataSource.COMMONWELL,
           });
 
+          drSuccessCount++;
           return fhirDocRef;
         } catch (error) {
           await tallyDocQueryProgress({
@@ -716,17 +721,7 @@ async function downloadDocsAndUpsertFHIR({
           const msg = `Error processing doc from CW`;
           const docPrintDetails = getDocPrintableDetails(doc);
           log(`${msg}: ${error}; doc ${JSON.stringify(docPrintDetails)}`);
-          if (!errorReported && !(error instanceof NotFoundError)) {
-            capture.error(msg, {
-              extra: {
-                context: `cw.downloadDocsAndUpsertFHIR`,
-                patientId: patient.id,
-                document: docPrintDetails,
-                requestId,
-                error: errorToString(error),
-              },
-            });
-          }
+          drErrorCount++;
           throw error;
         }
       })
@@ -740,6 +735,24 @@ async function downloadDocsAndUpsertFHIR({
     // take some time to avoid throttling other servers
     await sleepBetweenChunks();
   }
+
+  reportCountMetric({
+    name: MetricName.DOCUMENT_RETRIEVAL_SUCCESS_COUNT,
+    count: drSuccessCount,
+    additionalDimension: MetricAdditionalDimension.COMMONWELL,
+  });
+
+  reportCountMetric({
+    name: MetricName.DOCUMENT_RETRIEVAL_ERROR_COUNT,
+    count: drErrorCount,
+    additionalDimension: MetricAdditionalDimension.COMMONWELL,
+  });
+
+  reportDurationMetric({
+    name: MetricName.DOCUMENT_RETRIEVAL_DURATION,
+    queryStart: drQueryStart,
+    additionalDimension: MetricAdditionalDimension.COMMONWELL,
+  });
 
   await setDocQueryProgress({
     patient: { id: patient.id, cxId: patient.cxId },

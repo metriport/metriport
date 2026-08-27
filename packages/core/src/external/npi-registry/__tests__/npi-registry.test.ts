@@ -1,12 +1,12 @@
+import { toTitleCase } from "@metriport/shared/common/title-case";
 import { USState } from "@metriport/shared/domain/address/state";
+import axios from "axios";
+import { FacilityInternalDetails, FacilityType } from "../../../domain/facility";
 import {
   AdditionalInformationInternalFacility,
   NpiRegistryFacility,
 } from "../../../domain/npi-facility";
-import { FacilityType, FacilityInternalDetails } from "../../../domain/facility";
-import { getFacilityByNpiOrFail, translateNpiFacilityToMetriportFacility } from "../npi-registry";
-import { toTitleCase } from "@metriport/shared/common/title-case";
-import axios from "axios";
+import { getFacilityByNpiOrFail, buildInternalFacilityFromNpiFacility } from "../npi-registry";
 jest.mock("axios");
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
@@ -35,6 +35,11 @@ describe("Npi Registry Validation", () => {
         state: "WA",
         postal_code: "981951802",
         telephone_number: "206-543-2100",
+      },
+    ],
+    other_names: [
+      {
+        organization_name: "Test Name",
       },
     ],
   };
@@ -80,53 +85,63 @@ describe("Npi Registry Validation", () => {
   });
 
   it("successfully translates npi registry facility to our internal create facility mapping", () => {
-    const validInternalNonObo: FacilityInternalDetails = {
+    const validInternalPrincipal: FacilityInternalDetails = {
       city: "Shoreline",
       state: USState.WA,
       nameInMetriport: "Test Name",
       npi: "1407380272",
-      cqType: FacilityType.initiatorAndResponder,
-      cwType: FacilityType.initiatorAndResponder,
+      type: FacilityType.initiatorAndResponder,
       addressLine1: toTitleCase("17020 AURORA AVE N UNIT C44"),
       zip: "98133",
       country: "USA",
+      cqActive: false,
+      cwActive: false,
+      cqApproved: false,
+      cwApproved: false,
     };
 
-    const additionalInfoNonObo: AdditionalInformationInternalFacility = {
+    const additionalInfoWithoutPrincipalOid: AdditionalInformationInternalFacility = {
       facilityName: "Test Name",
-      facilityType: "non-obo",
+      type: FacilityType.initiatorAndResponder,
+      cqActive: false,
+      cwActive: false,
     };
 
-    const internalNonObo = translateNpiFacilityToMetriportFacility(
-      validFacility,
-      additionalInfoNonObo
-    );
+    const internalNonObo = buildInternalFacilityFromNpiFacility({
+      npiFacility: validFacility,
+      additionalInfo: additionalInfoWithoutPrincipalOid,
+    });
 
-    expect(validInternalNonObo).toEqual(internalNonObo);
+    expect(validInternalPrincipal).toEqual(internalNonObo);
 
-    const validInternalObo: FacilityInternalDetails = {
+    const validInternalDelegate: FacilityInternalDetails = {
       city: "Shoreline",
       state: USState.WA,
       nameInMetriport: "Test Name",
       npi: "1407380272",
-      cqType: FacilityType.initiatorOnly,
-      cwType: FacilityType.initiatorOnly,
+      type: FacilityType.initiatorOnly,
       addressLine1: toTitleCase("17020 AURORA AVE N UNIT C44"),
       zip: "98133",
       country: "USA",
-      cqOboOid: "1.2.3.4.5.6.7.8.9",
-      cwOboOid: "1.2.3.4.5.6.7.8.9",
+      cqActive: false,
+      cwActive: false,
+      cqApproved: false,
+      cwApproved: false,
+      principalOid: "1.2.3.4.5.6.7.8.9",
     };
 
-    const additionalInfoObo: AdditionalInformationInternalFacility = {
+    const additionalInfoWithPrincipalOid: AdditionalInformationInternalFacility = {
       facilityName: "Test Name",
-      facilityType: "obo",
-      cqOboOid: "1.2.3.4.5.6.7.8.9",
-      cwOboOid: "1.2.3.4.5.6.7.8.9",
+      type: FacilityType.initiatorOnly,
+      principalOid: "1.2.3.4.5.6.7.8.9",
+      cqActive: false,
+      cwActive: false,
     };
 
-    const internalObo = translateNpiFacilityToMetriportFacility(validFacility, additionalInfoObo);
-
-    expect(validInternalObo).toEqual(internalObo);
+    const internalObo = buildInternalFacilityFromNpiFacility({
+      npiFacility: validFacility,
+      additionalInfo: additionalInfoWithPrincipalOid,
+    });
+    expect(validInternalDelegate).toEqual(internalObo);
   });
 });

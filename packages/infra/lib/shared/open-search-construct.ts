@@ -13,6 +13,7 @@ import {
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
+import { addAlarmToMetric } from "./alarm";
 
 const masterUserName = "admin";
 const MAX_AVAILABILITY_ZONES = 3;
@@ -20,7 +21,8 @@ const MAX_AVAILABILITY_ZONES = 3;
 export interface OpenSearchAlarmThresholds {
   statusRed?: boolean;
   statusYellow?: boolean;
-  freeStorageMB?: number;
+  alarmFreeStorageMB?: number;
+  alertFreeStorageMB?: number;
   masterCpuUtilization?: number;
   cpuUtilization?: number;
   jvmMemoryPressure?: number;
@@ -34,7 +36,8 @@ export interface OpenSearchConstructProps {
   ebs: EbsOptions;
   encryptionAtRest?: boolean;
   alarmThresholds?: OpenSearchAlarmThresholds;
-  alarmAction?: SnsAction | undefined;
+  alertSnsAction?: SnsAction | undefined;
+  alarmSnsAction: SnsAction;
 }
 
 export default class OpenSearchConstruct extends Construct {
@@ -121,7 +124,12 @@ export default class OpenSearchConstruct extends Construct {
       enableAutoSoftwareUpdate: true,
     });
 
-    this.createAlarms(id, props.alarmThresholds, props.alarmAction);
+    this.createAlertsAndAlarms(
+      id,
+      props.alarmThresholds,
+      props.alertSnsAction,
+      props.alarmSnsAction
+    );
 
     new CfnOutput(this, `${id}DomainID`, {
       description: `OpenSearch ${id} Domain ID`,
@@ -133,20 +141,22 @@ export default class OpenSearchConstruct extends Construct {
     });
   }
 
-  private createAlarms(
+  private createAlertsAndAlarms(
     id: string,
     {
       statusRed,
       statusYellow,
-      freeStorageMB,
+      alarmFreeStorageMB,
+      alertFreeStorageMB,
       masterCpuUtilization,
       cpuUtilization,
       jvmMemoryPressure,
       searchLatency,
     }: OpenSearchAlarmThresholds = {},
-    alarmAction?: SnsAction
+    alertAction: SnsAction | undefined,
+    alarmSnsAction: SnsAction
   ) {
-    const createAlarm = ({
+    const createAlert = ({
       metric,
       name,
       threshold,
@@ -165,53 +175,64 @@ export default class OpenSearchConstruct extends Construct {
         alarmName: `${id}${name}`,
         comparisonOperator,
       });
-      alarmAction && alarm.addAlarmAction(alarmAction);
-      alarmAction && alarm.addOkAction(alarmAction);
+      alertAction && alarm.addAlarmAction(alertAction);
+      alertAction && alarm.addOkAction(alertAction);
     };
 
     (statusRed == null || statusRed) &&
-      createAlarm({
+      createAlert({
         metric: this.domain.metricClusterStatusRed(),
         name: "ClusterStatusRed",
         threshold: 1,
         evaluationPeriods: 1,
       });
     (statusYellow == null || statusYellow) &&
-      createAlarm({
+      createAlert({
         metric: this.domain.metricClusterStatusYellow(),
         name: "ClusterStatusYellow",
         threshold: 1,
         evaluationPeriods: 3,
       });
 
-    createAlarm({
+    addAlarmToMetric({
+      scope: this,
       metric: this.domain.metricFreeStorageSpace(),
-      name: "FreeStorage",
-      threshold: freeStorageMB ?? 5_000,
+      name: `${id}FreeStorageCriticalAlarm`,
+      description: `OpenSearch ${id} free storage space is below threshold`,
+      threshold: alarmFreeStorageMB ?? 50_000,
+      evaluationPeriods: 3,
+      comparisonOperator: ComparisonOperator.LESS_THAN_THRESHOLD,
+      alarmSnsAction: alarmSnsAction,
+    });
+
+    createAlert({
+      metric: this.domain.metricFreeStorageSpace(),
+      name: `${id}FreeStorageAlert`,
+      threshold: alertFreeStorageMB ?? 100_000,
       evaluationPeriods: 3,
       comparisonOperator: ComparisonOperator.LESS_THAN_THRESHOLD,
     });
 
-    createAlarm({
+    createAlert({
       metric: this.domain.metricMasterCPUUtilization(),
       name: "MasterCPUUtilization",
       threshold: masterCpuUtilization ?? 90,
       evaluationPeriods: 3,
     });
-    createAlarm({
+    createAlert({
       metric: this.domain.metricCPUUtilization(),
       name: "CPUUtilization",
       threshold: cpuUtilization ?? 90,
       evaluationPeriods: 3,
     });
 
-    createAlarm({
+    createAlert({
       metric: this.domain.metricJVMMemoryPressure(),
       name: "JVMMemoryPressure",
       threshold: jvmMemoryPressure ?? 90,
       evaluationPeriods: 3,
     });
-    createAlarm({
+    createAlert({
       metric: this.domain.metricSearchLatency(),
       name: "SearchLatency",
       threshold: searchLatency ?? 300,

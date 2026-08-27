@@ -32,3 +32,50 @@ export async function sendHeartbeatToMonitoringServiceSafe(
     });
   }
 }
+
+const CHECKLY_API_URL = "https://api.checklyhq.com/v1";
+
+export async function updateHeartbeatMonitorThreshold({
+  checkId,
+  newThresholdInMinutes,
+  grace,
+  apiKey,
+  accountId,
+  log = console.log,
+}: {
+  checkId: string;
+  newThresholdInMinutes: number;
+  grace?: number;
+  apiKey: string;
+  accountId: string;
+  log?: typeof console.log;
+}): Promise<void> {
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    "x-checkly-account": accountId,
+    "Content-Type": "application/json",
+  };
+
+  const roundedThresholdInMinutes = Math.round(newThresholdInMinutes);
+
+  try {
+    await executeWithNetworkRetries(async () => {
+      const payload = {
+        script: "randomValue", // The only required field is script for this endpoint. We don't use it. Docs: https://www.checklyhq.com/docs/api-reference/heartbeats/update-a-heartbeat-check/#body-script
+        heartbeat: {
+          period: roundedThresholdInMinutes,
+          periodUnit: "minutes",
+          grace: grace ?? 0,
+          graceUnit: "minutes",
+        },
+      };
+
+      await axios.put(`${CHECKLY_API_URL}/checks/heartbeat/${checkId}`, payload, { headers });
+    });
+  } catch (error) {
+    console.log(error);
+    const msg = `Failed to update heartbeat monitor threshold`;
+    log?.(`${msg}. Cause: ${errorToString(error)}`);
+    capture.error(msg, { extra: { checkId, error: errorToString(error) } });
+  }
+}

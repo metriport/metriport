@@ -1,13 +1,12 @@
 import { Patient } from "@metriport/core/domain/patient";
+import { doesGatewayNeedDateRanges } from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
+import { defaultSubjectRole } from "@metriport/core/external/carequality/ihe-gateway-v2/shared";
 import { OutboundDocumentQueryReq } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { HieInitiator } from "../../hie/get-hie-initiator";
 import { CQLink } from "../cq-patient-data";
 import { createPurposeOfUse, getSystemUserName } from "../shared";
-import { doesGatewayNeedDateRanges } from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
 
-const SUBJECT_ROLE_CODE = "106331006";
-const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
 const maxLookbackYears = 25;
 
 function buildRequest({
@@ -37,10 +36,7 @@ function buildRequest({
     timestamp: now.toISOString(),
     samlAttributes: {
       subjectId: user,
-      subjectRole: {
-        code: SUBJECT_ROLE_CODE,
-        display: SUBJECT_ROLE_DISPLAY,
-      },
+      subjectRole: defaultSubjectRole,
       organization: initiator.name,
       organizationId: initiator.oid,
       homeCommunityId: initiator.oid,

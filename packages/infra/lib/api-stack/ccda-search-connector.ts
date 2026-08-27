@@ -46,6 +46,7 @@ export function setup({
   ccdaS3Bucket,
   lambdaLayers,
   envType,
+  alertSnsAction,
   alarmSnsAction,
 }: {
   stack: Construct;
@@ -54,7 +55,8 @@ export function setup({
   ccdaS3Bucket: s3.IBucket;
   lambdaLayers: LambdaLayers;
   envType: EnvType;
-  alarmSnsAction?: SnsAction;
+  alertSnsAction?: SnsAction;
+  alarmSnsAction: SnsAction;
 }): {
   ccdaIngestionQueue: IQueue;
   ccdaIngestionLambda: IFunction;
@@ -76,7 +78,8 @@ export function setup({
     region: config.region,
     vpc,
     ...openSearchConfig,
-    alarmAction: alarmSnsAction,
+    alertSnsAction,
+    alarmSnsAction,
   });
 
   // setup queue and lambda to process the ccda files
@@ -90,8 +93,8 @@ export function setup({
     maxReceiveCount,
     lambdaLayers: [lambdaLayers.shared],
     envType,
-    alarmSnsAction,
-    alarmMaxAgeOfOldestMessage: Duration.minutes(2),
+    alertSnsAction,
+    alertMaxApproximateAgeOfOldestMessage: Duration.minutes(2),
   });
 
   const dlq = ccdaIngestionQueue.deadLetterQueue;
@@ -116,7 +119,7 @@ export function setup({
     retryAttempts,
     timeout,
     isEnableInsights: true,
-    alarmSnsAction,
+    alertSnsAction,
   });
 
   ccdaS3Bucket.grantRead(ccdaIngestionLambda);

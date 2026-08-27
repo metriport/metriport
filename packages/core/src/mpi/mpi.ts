@@ -1,6 +1,6 @@
-import { PatientData } from "../domain/patient";
+import { PatientDataForMpiMatching } from "./normalize-patient";
 import { PatientMPI } from "./shared";
 
 export interface MPI {
-  findMatchingPatient(patient: PatientData): Promise<PatientMPI | undefined>;
+  findMatchingPatient(patient: PatientDataForMpiMatching): Promise<PatientMPI | undefined>;
 }

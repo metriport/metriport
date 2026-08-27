@@ -1,163 +1,117 @@
-with base_resource as (
-    select
-        id,
-        subject_reference,
-        status,
-        effectivedatetime,
-        effectiveperiod_start,
-        effectiveperiod_end,
-        valuequantity_value,
-        valuestring,
-        valuecodeableconcept_text,
-        valuecodeableconcept_coding_0_display,
-        valuecodeableconcept_coding_1_display,
-        valuequantity_unit,
-        referencerange_0_high_unit,
-        referencerange_0_low_unit,
-        referencerange_1_high_unit,
-        referencerange_1_low_unit,
-        referencerange_0_low_value,
-        referencerange_0_high_value,
-        referencerange_1_low_value,
-        referencerange_1_high_value,
-        note_0_text,
-        note_1_text,
-        note_2_text,
-        meta_source
-    from {{ref('stage__observation')}}
-),
-target_code_codings as (
-   {{   
-        get_target_codings(
-            get_observation_codings,
-            'observation_id', 
-            9, 
-            none,
-            (
-                'http://loinc.org',
-            )
-        ) 
-    }}
-),
-target_category_codings as (
-    {{ 
-        get_target_codings(
-            get_observation_category_codings, 
-            'observation_id', 
-            1, 
-            1, 
-            (
-                'http://terminology.hl7.org/CodeSystem/observation-category',
-            )
-        ) 
-    }}
-),
-target_interpretation_codings as (
-    {{ 
-        get_target_codings(
-            get_observation_interpretation_codings, 
-            'observation_id', 
-            1, 
-            1,
-            (
-                'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation',
-            )
-        ) 
-    }}
-),
-target_bodysite_codings as (
-    {{ 
-        get_target_codings(
-            get_observation_bodysite_codings, 
-            'observation_id', 
-            1, 
-            none,
-            [
-                'http://snomed.info/sct'
-            ]
-        ) 
-    }}
-)
+{{ config(unique_key='m_patient_id') }}
+{% set code_coding_max_index = 4 %}
+{% set category_coding_max_index = 1 %}
+{% set category_secondary_coding_max_index = 1 %}
+{% set interpretation_coding_max_index = 1 %}
+{% set interpretation_secondary_coding_max_index = 1 %}
+{% set bodysite_coding_max_index = 1 %}
+{% set extension_max_index = 2 %}
+
 select
-        cast(obvs.id  as {{ dbt.type_string() }} )                                                          as observation_id
-    ,   cast(right(obvs.subject_reference, 36)as {{ dbt.type_string() }} )                                  as patient_id
-    ,   cast(obvs.status as {{ dbt.type_string() }} )                                                       as status
+        {{ try_to_cast_string('obvs.id') }}                                                   as observation_id
+    ,   {{ try_to_cast_string('right(obvs.subject_reference, 36)') }}                         as patient_id
+    ,   {{ try_to_cast_string('obvs.status') }}                                               as status
     ,   coalesce(
-            {{ try_to_cast_date('obvs.effectivedatetime') }}, 
-            {{ try_to_cast_date('obvs.effectiveperiod_start') }} 
-        )                                                                                                   as effective_date
-    ,   {{ try_to_cast_date('obvs.effectiveperiod_end') }}                                                  as end_date
-    ,   cast(
-            coalesce(
-                loinc.loinc,
-                tc_loinc.code
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as loinc_code
-    ,   cast(
-            coalesce(
-                loinc.long_common_name, 
-                tc_loinc.display
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as loinc_display
-    ,   cast(
-            coalesce(
-                obvs.valuequantity_value, 
-                obvs.valuestring, 
-                obvs.valuecodeableconcept_text,
-                obvs.valuecodeableconcept_coding_0_display,
-                obvs.valuecodeableconcept_coding_1_display
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as value
-    ,   cast(
-            coalesce(
-                obvs.valuequantity_unit, 
-                obvs.referencerange_0_high_unit,
-                obvs.referencerange_0_low_unit,
-                obvs.referencerange_1_high_unit,
-                obvs.referencerange_1_low_unit
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as units
-    ,   cast(
-            coalesce(
-                obvs.referencerange_0_low_value,
-                obvs.referencerange_1_low_value
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as reference_range_low
-    ,   cast(
-            coalesce(
-                obvs.referencerange_0_high_value,
-                obvs.referencerange_1_high_value
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as reference_range_high
-    ,   cast(category_hl7.code as {{ dbt.type_string() }} )                                                 as category_hl7_code
-    ,   cast(category_hl7.display as {{ dbt.type_string() }} )                                              as category_hl7_display
-    ,   cast(interpretation_hl7.code as {{ dbt.type_string() }} )                                           as interpretation_hl7_code
-    ,   cast(interpretation_hl7.display as {{ dbt.type_string() }} )                                        as interpretation_hl7_display
-    ,   cast(bodysite_snomed_ct.code as {{ dbt.type_string() }} )                                           as bodysite_snomed_ct_code
-    ,   cast(bodysite_snomed_ct.display as {{ dbt.type_string() }} )                                        as bodysite_snomed_ct_display
-    ,   cast(
-            coalesce(
-                obvs.note_0_text,
-                obvs.note_1_text,
-                obvs.note_2_text
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as note_text
-    ,   cast(obvs.meta_source as {{ dbt.type_string() }} )                                                  as data_source
-from base_resource obvs
-left join target_code_codings tc_loinc
-    on obvs.id = tc_loinc.observation_id 
-        and tc_loinc.system = 'http://loinc.org'
-left join target_code_codings tc_snomed_ct
-    on obvs.id = tc_snomed_ct.observation_id 
-        and tc_snomed_ct.system = 'http://snomed.info/sct'
-left join target_category_codings category_hl7
-    on obvs.id = category_hl7.observation_id 
-        and category_hl7.system = 'http://terminology.hl7.org/CodeSystem/observation-category'
-left join target_interpretation_codings interpretation_hl7
-    on obvs.id = interpretation_hl7.observation_id 
-        and interpretation_hl7.system = 'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation'
-left join target_bodysite_codings bodysite_snomed_ct
-    on obvs.id = bodysite_snomed_ct.observation_id 
-        and bodysite_snomed_ct.system = 'http://snomed.info/sct'
-left join {{ref('terminology__loinc')}} loinc
-    on tc_loinc.code = loinc.loinc
+            {{ try_to_cast_datetime('obvs.effectivedatetime') }}, 
+            {{ try_to_cast_datetime('obvs.effectiveperiod_start') }} 
+        )                                                                                     as effective_date
+    ,   {{ try_to_cast_datetime('obvs.effectiveperiod_end') }}                                as end_date
+    {#- LOINC: Check each code_coding index 0-4 (5 values), normalize system -#}
+    ,   {{ try_to_cast_string(get_inline_coding_case(
+            'obvs',
+            'code_coding',
+            'http://loinc.org',
+            code_coding_max_index,
+            'code'
+        )) }} as loinc_code
+    ,   {{ try_to_cast_string(get_inline_coding_case(
+            'obvs',
+            'code_coding',
+            'http://loinc.org',
+            code_coding_max_index,
+            'display'
+        )) }} as loinc_display
+    ,   {{ try_to_cast_string('obvs.code_coding_0_code') }}                                   as source_code_code
+    ,   {{ try_to_cast_string('obvs.code_coding_0_display') }}                                as source_code_display
+    ,   {{ try_to_cast_string('obvs.code_coding_0_system') }}                                 as source_code_system
+    ,   coalesce(
+          {{ try_to_cast_string('obvs.valuequantity_value') }},
+          {{ try_to_cast_string('obvs.valuestring') }},
+          {{ try_to_cast_string('obvs.valuecodeableconcept_text') }},
+          {{ try_to_cast_string('obvs.valuecodeableconcept_coding_0_display') }}
+        )                                                                                     as value
+    ,   coalesce(
+          {{ try_to_cast_string('obvs.valuequantity_unit') }},
+          {{ try_to_cast_string('obvs.referencerange_0_high_unit') }},
+          {{ try_to_cast_string('obvs.referencerange_0_low_unit') }}
+        )                                                                                     as units
+    ,   {{ try_to_cast_string('obvs.referencerange_0_low_value') }}                           as reference_range_low
+    ,   {{ try_to_cast_string('obvs.referencerange_0_high_value') }}                          as reference_range_high
+    {#- Category HL7: Check nested category_i_coding_j structure -#}
+    ,   {{ try_to_cast_string(get_inline_nested_coding_case(
+            'obvs',
+            'category',
+            'http://terminology.hl7.org/CodeSystem/observation-category',
+            category_coding_max_index,
+            category_secondary_coding_max_index,
+            'code'
+        )) }} as category_hl7_code
+    ,   {{ try_to_cast_string(get_inline_nested_coding_case(
+            'obvs',
+            'category',
+            'http://terminology.hl7.org/CodeSystem/observation-category',
+            category_coding_max_index,
+            category_secondary_coding_max_index,
+            'display'
+        )) }} as category_hl7_display
+    {#- Interpretation HL7: Check nested interpretation_i_coding_j structure -#}
+    ,   {{ try_to_cast_string(get_inline_nested_coding_case(
+            'obvs',
+            'interpretation',
+            'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation',
+            interpretation_coding_max_index,
+            interpretation_secondary_coding_max_index,
+            'code'
+        )) }} as interpretation_hl7_code
+    ,   {{ try_to_cast_string(get_inline_nested_coding_case(
+            'obvs',
+            'interpretation',
+            'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation',
+            interpretation_coding_max_index,
+            interpretation_secondary_coding_max_index,
+            'display'
+        )) }} as interpretation_hl7_display
+    {#- Body site SNOMED: Check bodysite_coding indices 0-1 -#}
+    ,   {{ try_to_cast_string(get_inline_coding_case(
+            'obvs',
+            'bodysite_coding',
+            'http://snomed.info/sct',
+            bodysite_coding_max_index,
+            'code'
+        )) }} as bodysite_snomed_ct_code
+    ,   {{ try_to_cast_string(get_inline_coding_case(
+            'obvs',
+            'bodysite_coding',
+            'http://snomed.info/sct',
+            bodysite_coding_max_index,
+            'display'
+        )) }} as bodysite_snomed_ct_display
+    ,   {{ try_to_cast_string('obvs.note_0_text') }}                                          as note_text
+    ,   {{ try_to_cast_string('obvs.meta_source') }}                                          as data_source
+    {#- Data source extension: extension with data-source URL -#}
+    ,   {{ try_to_cast_string(get_inline_extension(
+            'obvs',
+            'https://public.metriport.com/fhir/StructureDefinition/data-source.json',
+            extension_max_index,
+            'valuecoding_code',
+            none,
+            none
+        )) }}                                                                                 as data_source_ext
+    ,   {{ try_to_cast_string('obvs.meta_source') }}                                          as meta_source
+    ,   obvs.m_patient_id
+    ,   obvs.m_job_id
+    ,   obvs.m_created_at
+    ,   obvs.m_updated_at
+    ,   obvs.m_deleted_at
+    ,   obvs.raw_to_core_job_id
+from {{ref('stage__observation')}} obvs

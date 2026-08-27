@@ -34,5 +34,8 @@
         "Id": "{{generateUUID (concatDefined location.addr location.playingEntity.name location.code)}}"
     {{else if location.playingEntity.name}}
         "Id": "{{generateUUID location.playingEntity.name}}"
+    {{else if location.location.name._}}
+        "Id": "{{generateUUID location.location.name._}}"
     {{/if}}
 }
+{{!-- @warning - If you are updating this, please also update the generateLocationId function in the handlebars-helpers.js file --}}

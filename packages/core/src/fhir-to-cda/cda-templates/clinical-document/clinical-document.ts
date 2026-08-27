@@ -1,4 +1,5 @@
 import { Composition } from "@medplum/fhirtypes";
+import { buildDocumentId } from "../../../shareback/document-id";
 import {
   CdaAuthor,
   CdaCodeCe,
@@ -14,7 +15,7 @@ import {
   withNullFlavor,
   withoutNullFlavorObject,
 } from "../commons";
-import { _xmlnsSdtcAttribute, _xmlnsXsiAttribute, clinicalDocumentConstants } from "../constants";
+import { clinicalDocumentConstants, _xmlnsSdtcAttribute, _xmlnsXsiAttribute } from "../constants";
 import { xmlBuilder } from "./shared";
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -39,14 +40,35 @@ export function removeEmptyFields(obj: any): unknown {
 /**
  * @see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ClinicalDocument.html
  */
-export function buildClinicalDocumentXml(
-  recordTarget: CdaRecordTarget,
-  author: CdaAuthor,
-  custodian: CdaCustodian,
-  encompassingEncounter: EncompassingEncounter | undefined,
-  structuredBody: unknown,
-  composition: Composition | undefined
-): string {
+export function buildClinicalDocumentXml({
+  cxId,
+  recordTarget,
+  author,
+  custodian,
+  encompassingEncounter,
+  structuredBody,
+  composition,
+  documentType = "ccd",
+  patientId,
+}: {
+  cxId: string;
+  recordTarget: CdaRecordTarget;
+  author: CdaAuthor;
+  custodian: CdaCustodian;
+  encompassingEncounter: EncompassingEncounter | undefined;
+  structuredBody: unknown;
+  composition: Composition | undefined;
+  documentType?: "ccd" | "progressNote";
+  patientId: string;
+}): string {
+  const isCcd = documentType === "ccd";
+
+  const documentTypeTemplateId = isCcd
+    ? clinicalDocumentConstants.templateIds.ccd
+    : clinicalDocumentConstants.templateIds.progressNote;
+
+  const documentId = buildDocumentId(cxId, patientId, isCcd);
+
   const jsonObj: ClinicalDocument = {
     ClinicalDocument: {
       _xmlns: "urn:hl7-org:v3",
@@ -58,15 +80,16 @@ export function buildClinicalDocumentXml(
         extension: clinicalDocumentConstants.typeIdExtension,
         root: clinicalDocumentConstants.typeIdRoot,
       }),
-      templateId: clinicalDocumentConstants.templateIds.map(tid =>
-        buildInstanceIdentifier({
-          root: tid.root,
-          extension: tid.extension,
-        })
+      templateId: [clinicalDocumentConstants.templateIds.usRealmHeader, documentTypeTemplateId].map(
+        tid =>
+          buildInstanceIdentifier({
+            root: tid.root,
+            extension: tid.extension,
+          })
       ),
       id: buildInstanceIdentifier({
         assigningAuthorityName: clinicalDocumentConstants.assigningAuthorityName,
-        root: clinicalDocumentConstants.rootOid,
+        root: documentId,
       }),
       code: getDocumentTypeCode(composition),
       title: getDocumentTitle(composition),

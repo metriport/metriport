@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { subscriptionResources } from "./subscription";
-import { writeBackFiltersSchema } from "../shared";
+import { documentQueryWebhookFiltersSchema, writeBackFiltersSchema } from "../shared";
 
 const webhookSchema = z.object({
   url: z.string(),
@@ -20,5 +20,6 @@ export const healthieSecondaryMappingsSchema = z
     backgroundAppointment48hrPatientProcessingDisabled: z.boolean().optional(),
     contributionDisabled: z.boolean().optional(),
   })
-  .merge(writeBackFiltersSchema);
+  .merge(writeBackFiltersSchema)
+  .merge(documentQueryWebhookFiltersSchema);
 export type HealthieSecondaryMappings = z.infer<typeof healthieSecondaryMappingsSchema>;

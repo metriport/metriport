@@ -1,4 +1,5 @@
 import { Patient } from "@metriport/core/domain/patient";
+import { DiscoveryParams } from "@metriport/core/domain/patient-discovery";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { OutboundPatientDiscoveryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -48,12 +49,13 @@ export async function processOutboundPatientDiscoveryResps({
   const patientIds = { id: patientId, cxId };
   const countStats = getOutboundPatientDiscoverySuccessFailureCount(results);
 
+  let discoveryParams: DiscoveryParams | undefined;
   try {
     const patient = await getPatientOrFail({ id: patientId, cxId });
     log(`Starting to handle patient discovery results`);
     const { validNetworkLinks, invalidLinks } = await validateAndCreateCqLinks(patient, results);
 
-    const discoveryParams = getCQData(patient.data.externalData)?.discoveryParams;
+    discoveryParams = getCQData(patient.data.externalData)?.discoveryParams;
     if (!discoveryParams) {
       const msg = `Failed to find discovery params @ CQ`;
       log(`${msg}. Patient ID: ${patient.id}.`);
@@ -92,7 +94,7 @@ export async function processOutboundPatientDiscoveryResps({
         ...countStats,
       },
     });
-    await queryDocsIfScheduled({ patientIds: patient });
+    await queryDocsIfScheduled({ patientIds: patient, facilityId: discoveryParams.facilityId });
     log("Completed.");
   } catch (error) {
     // TODO 1646 Move to a single hit to the DB
@@ -101,7 +103,13 @@ export async function processOutboundPatientDiscoveryResps({
       source: MedicalDataSource.CAREQUALITY,
     });
     await updatePatientDiscoveryStatus({ patient: patientIds, status: "failed" });
-    await queryDocsIfScheduled({ patientIds, isFailed: true });
+    if (discoveryParams) {
+      await queryDocsIfScheduled({
+        patientIds,
+        facilityId: discoveryParams.facilityId,
+        isFailed: true,
+      });
+    }
     const msg = `Error on Processing Outbound Patient Discovery Responses`;
     outerLog(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
@@ -271,9 +279,11 @@ export async function runNexPdIfScheduled({
 
 export async function queryDocsIfScheduled({
   patientIds,
+  facilityId,
   isFailed = false,
 }: {
   patientIds: Pick<Patient, "id" | "cxId">;
+  facilityId: string;
   isFailed?: boolean;
 }): Promise<void> {
   const patient = await getPatientOrFail(patientIds);
@@ -302,6 +312,7 @@ export async function queryDocsIfScheduled({
   } else {
     getDocumentsFromCQ({
       patient,
+      facilityId,
       requestId: scheduledDocQueryRequestId,
       triggerConsolidated: scheduledDocQueryRequestTriggerConsolidated,
       forceDownload: scheduledDocQueryRequestForceDownload,

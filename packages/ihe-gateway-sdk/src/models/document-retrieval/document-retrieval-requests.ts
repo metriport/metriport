@@ -9,7 +9,9 @@ const documentRetrievalReqDefaultSchema = baseRequestSchema.extend({
 export const outboundDocumentRetrievalReqSchema = documentRetrievalReqDefaultSchema.extend({
   gateway: xcaGatewaySchema,
   patientId: z.string(),
+  externalPatientId: z.string().nullish(),
   cxId: z.string(),
+  originalRequestId: z.string().nullish(),
 });
 
 export type OutboundDocumentRetrievalReq = z.infer<typeof outboundDocumentRetrievalReqSchema>;

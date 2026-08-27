@@ -21,7 +21,6 @@ import { isPatientAssociatedWithFacility } from "../../../domain/medical/patient
 import { processAsyncError } from "../../../errors";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
-import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
@@ -84,7 +83,6 @@ export async function queryDocumentsAcrossHIEs({
    * But because it touches a core flow and we don't have time to review/test it now, leaving as is.
    * The expected behavior is that we never pass `cqManagingOrgName`, so it should be null/undefined every
    * time this function is called - otherwise we can miss the opportunity to query CW for docs.
-   * @see https://metriport.slack.com/archives/C04DMKE9DME/p1745685924702559
    */
   const isQueryCommonwell = (commonwellEnabled || forceCommonwell) && !cqManagingOrgName;
 
@@ -155,7 +153,6 @@ export async function queryDocumentsAcrossHIEs({
       forceDownload: isForceRedownloadEnabled,
       forcePatientDiscovery,
       requestId,
-      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
     }).catch(emptyFunction);
     triggeredDocumentQuery = true;
   }

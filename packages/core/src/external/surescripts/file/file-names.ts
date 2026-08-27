@@ -1,5 +1,6 @@
-import dayjs from "dayjs";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { SurescriptsRosterType } from "@metriport/shared/interface/external/surescripts/roster";
+import dayjs from "dayjs";
 import { buildDayjsFromId } from "../id-generator";
 
 const REQUEST_FILE_NAME_PREFIX = "Metriport_PMA_";
@@ -15,20 +16,57 @@ export function buildResponseFileNamePrefix(transmissionId: string, populationId
   return `${transmissionId}_${populationId}_`;
 }
 
-export function buildLatestConversionBundleFileName(cxId: string, patientId: string): string {
-  return `surescripts/cxId=${cxId}/ptId=${patientId}/latest.json`;
-}
-
-export function buildConversionBundleFileNameForJob({
+export function buildPatientResponseFileName({
   cxId,
   patientId,
-  jobId,
+  transmissionId,
+  populationId,
+  rosterType,
 }: {
   cxId: string;
   patientId: string;
-  jobId: string;
+  transmissionId: string;
+  populationId: string;
+  rosterType: SurescriptsRosterType;
 }): string {
-  return `surescripts/cxId=${cxId}/ptId=${patientId}/jobId=${jobId}/conversion.json`;
+  return `cxId=${cxId}/patientId=${patientId}/populationId=${populationId}/transmissionId=${transmissionId}/${rosterType}.json`;
+}
+
+export function buildPatientPharmacyConversionPrefix({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}): string {
+  return `surescripts/cxId=${cxId}/patientId=${patientId}`;
+}
+
+export function buildPatientLatestPharmacyConversionFileName({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}): string {
+  return `${buildPatientPharmacyConversionPrefix({ cxId, patientId })}/latest.json`;
+}
+
+export function buildPatientPharmacyConversionFileName({
+  cxId,
+  patientId,
+  rosterId,
+  rosterType,
+}: {
+  cxId: string;
+  patientId: string;
+  rosterId: string;
+  rosterType: SurescriptsRosterType;
+}): string {
+  return `${buildPatientPharmacyConversionPrefix({
+    cxId,
+    patientId,
+  })}/rosterId=${rosterId}/${rosterType}.json`;
 }
 
 export function parseHistoryFileName(remoteFileName: string):

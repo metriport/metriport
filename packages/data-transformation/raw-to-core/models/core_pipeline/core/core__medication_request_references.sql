@@ -1,59 +1,57 @@
-with medication_reference as (
-    {{ get_single_reference(
-        'stage__medicationrequest', 
-        'medication_request_id', 
-        'medication_reference', 
-        'medicationreference_reference'
-    ) }}
-),
-subject_reference as (
-    {{ get_single_reference(
-        'stage__medicationrequest', 
-        'medication_request_id', 
-        'subject', 
-        'subject_reference'
-    ) }}
-),
-encounter_reference as (
-    {{ get_single_reference(
-        'stage__medicationrequest', 
-        'medication_request_id', 
-        'encounter', 
-        'encounter_reference'
-    ) }}
-),
-requester_reference as (
-    {{ get_single_reference(
-        'stage__medicationrequest', 
-        'medication_request_id', 
-        'requester', 
-        'requester_reference'
-    ) }}
-),
-reason_reference_references as (
-    {{ get_multiple_references(
-        'stage__medicationrequest', 
-        9, 
-        'medication_request_id', 
-        'reason_reference', 
-        'reasonreference', 
-        'reference'
-    ) }}
-),
-all_references as (
-    select * from medication_reference
-    union all
-    select * from subject_reference
-    union all
-    select * from encounter_reference
-    union all
-    select * from requester_reference
-    union all
-    select * from reason_reference_references
-)
+{{ config(unique_key='m_patient_id') }}
+
 select
-        medication_request_id
-    ,   property
-    ,   reference_id
-    ,   reference_type
-from all_references
+        s.id as medication_request_id
+    ,   t.property
+    ,   {{ get_reference_id('t.reference_value') }} as reference_id
+    ,   {{ get_reference_type('t.reference_value') }} as reference_type
+    ,   s.m_patient_id
+    ,   s.m_job_id
+    ,   s.m_created_at
+    ,   s.m_updated_at
+    ,   s.m_deleted_at
+    ,   s.raw_to_core_job_id
+from {{ref('stage__medicationrequest')}} s
+cross join lateral unnest(
+    array[
+        s.medicationreference_reference,
+        s.subject_reference,
+        s.encounter_reference,
+        s.requester_reference,
+        s.reasonreference_0_reference,
+        s.reasonreference_1_reference,
+        s.reasonreference_2_reference,
+        s.reasonreference_3_reference,
+        s.reasonreference_4_reference,
+        s.reasonreference_5_reference,
+        s.reasonreference_6_reference,
+        s.reasonreference_7_reference,
+        s.reasonreference_8_reference,
+        s.reasonreference_9_reference
+    ],
+    array[
+        'medication_reference',
+        'subject',
+        'encounter',
+        'requester',
+        'reason_reference',
+        'reason_reference',
+        'reason_reference',
+        'reason_reference',
+        'reason_reference',
+        'reason_reference',
+        'reason_reference',
+        'reason_reference',
+        'reason_reference',
+        'reason_reference'
+    ]
+) with ordinality as t(reference_value, property, reference_index)
+where t.reference_value is not null
+    and t.reference_value != ''
+    and (
+        s.medicationreference_reference is not null or s.subject_reference is not null or s.encounter_reference is not null or s.requester_reference is not null or
+        s.reasonreference_0_reference is not null or s.reasonreference_1_reference is not null or s.reasonreference_2_reference is not null or
+        s.reasonreference_3_reference is not null or s.reasonreference_4_reference is not null or s.reasonreference_5_reference is not null or
+        s.reasonreference_6_reference is not null or s.reasonreference_7_reference is not null or s.reasonreference_8_reference is not null or
+        s.reasonreference_9_reference is not null
+    )

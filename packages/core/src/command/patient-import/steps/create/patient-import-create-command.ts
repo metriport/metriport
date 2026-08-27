@@ -48,12 +48,17 @@ export async function processPatientCreate({
       });
     }
 
+    const effectiveFacilityId = patientRecord.patientCreate.facilityId ?? facilityId;
+    const patientPayload = {
+      ...patientRecord.patientCreate,
+      facilityId: effectiveFacilityId,
+    };
     const dataPipelineRequestId = uuidv7();
 
     const patientId = await createPatient({
       cxId,
-      facilityId,
-      patientPayload: patientRecord.patientCreate,
+      contextId: `job_${jobId}_row_${rowNumber}`,
+      patientPayload,
     });
 
     await Promise.all([

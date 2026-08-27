@@ -10,8 +10,18 @@ The following table outlines the current limits for certain operations on the Me
 
 If your request pattern needs higher limits, please reach out to `support@metriport.com`.
 
-| Operation                                                                                                                          | Max requests per minute |   Request rate    |
-| ---------------------------------------------------------------------------------------------------------------------------------- | :---------------------: | :---------------: |
-| [Patient Create](/medical-api/api-reference/patient/create-patient) or [Update](/medical-api/api-reference/patient/update-patient) |           15            | 1 every 4 seconds |
-| [Document Query Start](/medical-api/api-reference/document/start-document-query)                                                   |           20            | 1 every 3 seconds |
-| [Consolidated Data Query Start](/medical-api/api-reference/fhir/consolidated-data-query-post)                                      |           120           | 2 every 1 second  |
+### General Operations
+
+| Operation | Max requests per minute | Request rate |
+| :-------- | :---------------------: | :----------: |
+| [Patient Create](/medical-api/api-reference/patient/create-patient) or [Update](/medical-api/api-reference/patient/update-patient) | 15 | 1 every 4 seconds |
+| [Document Query Start](/medical-api/legacy-api-reference/document/start-document-query) (Legacy) | 20 | 1 every 3 seconds |
+| [Consolidated Data Query Start](/medical-api/api-reference/fhir/consolidated-data-query-post) | 120 | 2 every 1 second |
+
+### Network Query
+
+| Source | Max requests per minute | Request rate |
+| :----- | :---------------------: | :----------: |
+| [HIE](/medical-api/api-reference/network/start-network-query) | 20 | 1 every 3 seconds |
+| [Labs](/medical-api/api-reference/network/start-network-query) | 20 | 1 every 3 seconds |
+| [Pharmacy](/medical-api/api-reference/network/start-network-query) | 20 | 1 every 3 seconds |

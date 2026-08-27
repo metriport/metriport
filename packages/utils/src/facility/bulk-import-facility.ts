@@ -2,46 +2,44 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Facility } from "@metriport/api-sdk";
-import { FacilityInternalDetails } from "@metriport/core/domain/facility";
+import { FacilityInternalDetails, FacilityType } from "@metriport/core/domain/facility";
 import {
+  buildInternalFacilityFromNpiFacility,
   getFacilityByNpiOrFail,
-  translateNpiFacilityToMetriportFacility,
 } from "@metriport/core/external/npi-registry/npi-registry";
-import { errorToString, getEnvVarOrFail, MetriportError, sleep } from "@metriport/shared";
-import { buildDayjs } from "@metriport/shared/common/date";
+import { errorToString, getEnvVarOrFail, sleep } from "@metriport/shared";
 import axios from "axios";
 import { Command } from "commander";
 import csvParser from "csv-parser";
+import dayjs, { duration } from "dayjs";
 import fs from "fs/promises";
-import { createReadStream, constants as FS } from "node:fs";
-import { access } from "node:fs/promises";
-import { Writable } from "node:stream";
-import { pipeline } from "node:stream/promises";
 import path from "path";
 import { z } from "zod";
+import { endScript, startScript } from "../utils";
+import { createCsv, getInternalFacilityByNpi, readFileFromLocal, verifyFacilities } from "./utils";
+import { AdditionalInformationInternalFacility } from "@metriport/core/domain/npi-facility";
 
-/*
- * This script will read NPIs, Names, Type, CqOboOid, CwOboOid from a local csv.
+dayjs.extend(duration);
+/**
+ * Bulk creates facilities.
  *
- * Run this script from the package root. Not from src/facility/
+ * Reads facilities in bulk from a CSV file containing NPIs, facilityName, type, and principalOid.
+ * Creates the facilities in the internal API, CareQuality, and CommonWell, then verifies their creation.
  *
- * CqOboOid and CwOboOid are both optional if type is 'non-obo'
+ * Outputs the result of processing into runs/import-facility/timestamp with the name inputted and _result appended.
  *
- * It outputs the result of processing into runs/import-facility/timestamp with the name inputted and _result appended.
- * - facility-creates.json: is created under runs/import-facility/timestamp it contains the list of facilities that were sent (would have been sent if dryrun) for creation.
+ * Set the variables below to configure the script.
+ * Ask the team for approval before running.
  *
- * Format of the .csv file:
- * - first line contains column names
- * - minimum columns: npi,facilityName,facilityType,cqOboOid,cwOboOid
- *
- * Either set the env vars below on the OS or create a .env file in the root folder of this package.
- *
- * Execute this with:
+ * Usage:
  * $ ts-node src/facility/bulk-import-facility --input-path <inputpath> --cx-id <cxId> --dryrun
- * $ ts-node src/facility/bulk-import-facility --input-path <inputpath> --cx-id <cxId>
  */
 
 const internalUrl = getEnvVarOrFail("API_URL");
+const verifyNames = true;
+const useNpiDbName = false; // Needs to be opposite of useNameFromCsv and verifyNames must be false
+const useNameFromCsv = false; // Needs to be opposite of useNpiDbName and verifyNames must be false
+const waitTimeBetweenChecks = dayjs.duration(1, "seconds"); // Note that CW and CQ are notoriously slow. Sending too many requests will cause broken facilities.
 
 interface FacilityImportParams {
   cxId: string;
@@ -52,33 +50,27 @@ interface FacilityImportParams {
 export const InputRowSchema = z.object({
   npi: z.string(),
   facilityName: z.string(),
-  facilityType: z.enum(["obo", "non-obo"]),
-  cqOboOid: z.string().optional(),
-  cwOboOid: z.string().optional(),
+  type: z.nativeEnum(FacilityType),
+  principalOid: z.string().optional(),
 });
 export type InputRowFacilityImport = z.infer<typeof InputRowSchema>;
 
 const CSV_HEADER =
-  ["npi", "facilityName", "facilityType", "cqOboOid", "cwOboOid", "success", "reason"].join(",") +
-  "\n";
+  ["npi", "facilityName", "type", "principalOid", "success", "reason"].join(",") + "\n";
 
 async function main({ cxId, inputPath, dryrun }: FacilityImportParams) {
-  await sleep(50); // Give some time to avoid mixing logs w/ Node's
   const isDryRun = Boolean(dryrun);
-  const currentTime = buildDayjs(new Date());
-  const outputTimeStamp = currentTime.format("YYYY-MM-DD");
   const name = path.basename(inputPath, path.extname(inputPath));
 
-  console.log(
-    `############## STARTING AT: ${currentTime.toISOString()}  ${
-      isDryRun ? "[DRY RUN]" : ""
-    } ##############`
-  );
-
-  const parser = csvParser({
-    headers: ["npi", "facilityName", "facilityType", "cqOboOid", "cwOboOid"],
-    skipLines: 1,
+  const startedAt = await startScript({
+    nameOfScript: "bulk-import-facility",
+    dryRun: isDryRun,
+    optionalParams: {
+      cxId,
+      internalUrl,
+    },
   });
+  const outputTimeStamp = startedAt.toISOString();
 
   const logsFolder = `runs/import-facility/${outputTimeStamp}`;
   const resultFileName = `${name}_result${isDryRun ? "_dryrun" : ""}.csv`;
@@ -90,80 +82,135 @@ async function main({ cxId, inputPath, dryrun }: FacilityImportParams) {
 
   await createCsv(logsFilePath, CSV_HEADER);
 
+  const rows = await readCsvRows(inputPath);
   const createdFacilities: FacilityInternalDetails[] = [];
 
-  let success = true;
-  let errorMessage: string | undefined;
+  for (const row of rows) {
+    const facility = await processRow(row, cxId, isDryRun, logsFilePath);
+    if (facility) {
+      createdFacilities.push(facility);
+    }
+    await sleep(waitTimeBetweenChecks.asMilliseconds());
+  }
+  console.log(
+    `${isDryRun ? "Would have created" : "Successfully created"} ${
+      createdFacilities.length
+    } facilities`
+  );
 
-  const rowPromises: Promise<void>[] = [];
+  await fs.writeFile(payloadCreatesFilePath, JSON.stringify(createdFacilities, null, 2), "utf8");
+  console.log(`JSON of the facilities that would have been created: ${payloadCreatesFilePath}`);
+  console.log(`CSV of the results: ${logsFilePath}`);
 
-  parser.on("data", async (row: InputRowFacilityImport) => {
-    parser.pause();
-    const p = (async () => {
-      try {
-        const npiFacility = await getFacilityByNpiOrFail(row.npi);
-
-        const metriportFacility = translateNpiFacilityToMetriportFacility(npiFacility, row);
-
-        if (!isDryRun) {
-          await createFacility(metriportFacility, cxId);
-        }
-        createdFacilities.push(metriportFacility);
-        console.log(`Successfully created facility with npi: ${row.npi}`);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
-        success = false;
-        if (axios.isAxiosError(err) && err.response?.status === 400) {
-          // This is specifically for "Can't Create a new facility with the same NPI as ..."
-          const message = err.response.data?.detail ?? err.response.data?.title ?? err.message;
-          console.log(message);
-          errorMessage = message;
-        } else {
-          console.log(err);
-          const message = errorToString(err);
-          errorMessage = message;
-        }
-      } finally {
-        await writeToCsv(logsFilePath, success, errorMessage, row);
-        await sleep(60);
-        parser.resume();
-      }
-    })().catch(error => {
-      console.log("Unexpected error in row processing:", error);
-      parser.resume();
+  if (!isDryRun) {
+    console.log(`Verifying ${createdFacilities.length} facilities`);
+    await verifyFacilities({
+      npis: createdFacilities.map(facility => facility.npi),
+      cxId,
+      timeout: waitTimeBetweenChecks.asMilliseconds(),
     });
-    rowPromises.push(p);
+  }
+
+  await endScript({
+    nameOfScript: "bulk-import-facility",
+    startedAt,
+  });
+}
+
+async function readCsvRows(inputPath: string): Promise<InputRowFacilityImport[]> {
+  const rows: InputRowFacilityImport[] = [];
+  const parser = csvParser({
+    headers: ["npi", "facilityName", "type", "principalOid"],
+    skipLines: 1,
   });
 
   await new Promise<void>((resolve, reject) => {
+    parser.on("data", (row: InputRowFacilityImport) => {
+      rows.push(row);
+    });
     parser.once("end", resolve);
     parser.once("error", reject);
     readFileFromLocal(inputPath, parser).catch(reject);
   });
 
-  await Promise.all(rowPromises);
-
-  await fs.writeFile(payloadCreatesFilePath, JSON.stringify(createdFacilities, null, 2), "utf8");
-
-  console.log(
-    `############## FINISHED AT: ${new Date().toISOString()}  ${
-      isDryRun ? "[DRY RUN]" : ""
-    } ##############`
-  );
+  return rows;
 }
 
-export async function readFileFromLocal(inputPath: string, parser: Writable): Promise<void> {
-  const filePath = path.resolve(inputPath);
+async function processRow(
+  row: InputRowFacilityImport,
+  cxId: string,
+  isDryRun: boolean,
+  logsFilePath: string
+): Promise<FacilityInternalDetails | undefined> {
+  let rowSuccess = true;
+  let message: string | undefined = undefined;
+  let nameUsed = row.facilityName;
 
   try {
-    await access(filePath, FS.R_OK);
-  } catch {
-    throw new MetriportError("File does not exist or is not readable.", undefined, {
-      inputPath: filePath,
+    const npiFacility = await getFacilityByNpiOrFail(row.npi);
+
+    const params: AdditionalInformationInternalFacility = {
+      type: row.type,
+      facilityName: row.facilityName,
+      principalOid: row.principalOid,
+      cqActive: true, // CQ and CW should always be true when importing facilities.
+      cwActive: true,
+    };
+
+    const metriportFacility = buildInternalFacilityFromNpiFacility({
+      npiFacility,
+      additionalInfo: params,
+    });
+
+    const otherNames = npiFacility.other_names ?? [];
+    if ((verifyNames || useNpiDbName) && otherNames.length > 0 && !useNameFromCsv) {
+      const organizationName = otherNames[0].organization_name;
+      if (!organizationName) {
+        console.log(`Organization name was not returned from the NPI Registry for NPI: ${row.npi}`);
+      }
+
+      if (verifyNames && !facilityNamesMatch(organizationName, metriportFacility.nameInMetriport)) {
+        throw new Error(
+          `Name mismatch: Registry='${npiFacility.other_names[0].organization_name}', CSV='${metriportFacility.nameInMetriport}'`
+        );
+      }
+      if (useNpiDbName) {
+        metriportFacility.nameInMetriport = organizationName;
+      }
+    }
+    const existingFacility = await getInternalFacilityByNpi(cxId, row.npi);
+    if (existingFacility) {
+      throw new Error(
+        `Can't create a new facility with the same NPI as facility with ID: ${existingFacility.id} and name: ${existingFacility.name}`
+      );
+    }
+    nameUsed = metriportFacility.nameInMetriport;
+    if (!isDryRun) {
+      await createFacility(metriportFacility, cxId);
+    }
+    console.log(
+      `${isDryRun ? "Would have created" : "Successfully created"} facility with npi: ${row.npi}`
+    );
+    return metriportFacility;
+  } catch (err: unknown) {
+    rowSuccess = false;
+    if (axios.isAxiosError(err) && err.response?.status === 400) {
+      message = err.response.data?.detail ?? err.response.data?.title ?? err.message;
+      console.log(message);
+    } else {
+      console.log(err);
+      message = errorToString(err);
+    }
+    return undefined;
+  } finally {
+    const rowWithNameUsed = { ...row, facilityName: nameUsed };
+    await writeToCsv({
+      filePath: logsFilePath,
+      success: rowSuccess,
+      message,
+      row: rowWithNameUsed,
     });
   }
-
-  await pipeline(createReadStream(filePath), parser);
 }
 
 async function createFacility(
@@ -180,41 +227,52 @@ async function createFacility(
   return response.data;
 }
 
-export async function createCsv(filePath: string, csvHeader: string): Promise<void> {
-  const dir = path.dirname(filePath);
-  await fs.mkdir(dir, { recursive: true });
-
-  await fs.writeFile(filePath, csvHeader, "utf8");
-}
-
-async function writeToCsv(
-  filePath: string,
-  success: boolean,
-  message: string | undefined,
-  originalRow: InputRowFacilityImport
-): Promise<void> {
-  const rec = {
-    npi: originalRow.npi,
-    facilityName: originalRow.facilityName.replace(/"/g, '""'),
-    facilityType: originalRow.facilityType,
-    cqOboOid: originalRow.cqOboOid ?? "",
-    cwOboOid: originalRow.cwOboOid ?? "",
+async function writeToCsv({
+  filePath,
+  success,
+  message,
+  row,
+}: {
+  filePath: string;
+  success: boolean;
+  message: string | undefined;
+  row: InputRowFacilityImport;
+}): Promise<void> {
+  const newRow = {
+    npi: row.npi,
+    facilityName: row.facilityName.replace(/"/g, '""'),
+    type: row.type,
+    principalOid: row.principalOid ?? "",
     success: success ? "SUCCESS" : "FAILED",
     reason: success ? "" : (message ?? "").replace(/"/g, '""'),
   };
 
-  const line =
+  const formattedRow =
     [
-      rec.npi,
-      `"${rec.facilityName}"`,
-      rec.facilityType,
-      rec.cqOboOid,
-      rec.cwOboOid,
-      rec.success,
-      `"${rec.reason}"`,
+      newRow.npi,
+      `"${newRow.facilityName}"`,
+      newRow.type,
+      newRow.principalOid,
+      newRow.success,
+      `"${newRow.reason}"`,
     ].join(",") + "\n";
 
-  await fs.appendFile(filePath, line, "utf8");
+  await fs.appendFile(filePath, formattedRow, "utf8");
+}
+
+function normalizeFacilityName(name: string): string {
+  return name.toLowerCase().trim();
+}
+
+function facilityNamesMatch(registryName: string | undefined, csvName: string): boolean {
+  if (!registryName) {
+    return false;
+  }
+
+  const normalizedRegistry = normalizeFacilityName(registryName);
+  const normalizedCsv = normalizeFacilityName(csvName);
+
+  return normalizedRegistry.includes(normalizedCsv) || normalizedCsv.includes(normalizedRegistry);
 }
 
 const program = new Command();
@@ -228,7 +286,7 @@ program
     "Writes to a local JSON file all the facilities it would of tried to create. Does not upload to S3 or add Facilities to the DB"
   )
   .description(
-    "Creates facilities for the customer inputted based on NPIs, Names, Type, CqOboOid, CwOboOid from a a csv stored in S3."
+    "Creates facilities for the customer inputted based on NPIs, Names, Type, principalOid from a a csv stored in S3."
   )
   .showHelpAfterError()
   .version("1.0.0")

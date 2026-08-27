@@ -28,6 +28,7 @@ def transform_and_upload_data(
     cx_id: str,
     patient_id: str,
     output_file_prefix: str,
+    include_header: bool,
 ) -> list[tuple[str, str, str]]:
     bundle_key = create_consolidated_key(cx_id, patient_id)
     local_cx_path = f"/tmp/{transform_name}/output/{cx_id}"
@@ -56,16 +57,15 @@ def transform_and_upload_data(
         with open(local_ndjson_bundle_key, "w") as f:
             ndjson.dump(entries, f)
         print(f"Parsing bundle {local_ndjson_bundle_key} to {local_patient_path}")
-    local_output_files = parseNdjsonBundle.parse(local_ndjson_bundle_key, local_patient_path)
+    local_output_files = parseNdjsonBundle.parse(local_ndjson_bundle_key, local_patient_path, include_header)
 
     output_bucket_and_file_keys_and_table_names = []
-    pt_output_file_prefix = create_patient_output_prefix(output_file_prefix, patient_id)
     
     with ThreadPoolExecutor(max_workers=3) as executor:
         future_to_file = {}
         for file in local_output_files:
             file_name = file.replace("/", "_")
-            output_file_key = f"{pt_output_file_prefix}/{file_name}"
+            output_file_key = f"{output_file_prefix}/{file_name}"
             future = executor.submit(upload_file_to_s3, file, output_bucket, output_file_key)
             future_to_file[future] = file
         
@@ -91,6 +91,8 @@ def handler(event: dict, context: dict):
     output_bucket = event.get("OUTPUT_S3_BUCKET") or os.getenv("OUTPUT_S3_BUCKET")
     # Will append '/<table_name>.csv' to output_file_prefix
     output_file_prefix = event.get("OUTPUT_PREFIX") or os.getenv("OUTPUT_PREFIX")
+    include_header_str = event.get("INCLUDE_HEADER") or os.getenv("INCLUDE_HEADER")
+    include_header = (include_header_str or "false").lower() == "true"
     if not cx_id:
         raise ValueError("CX_ID is not set") 
     if not patient_id:
@@ -102,13 +104,19 @@ def handler(event: dict, context: dict):
     if not output_file_prefix:
         raise ValueError("OUTPUT_PREFIX is not set")
 
-    print(f">>> Parsing data and uploading it to S3 for Snowflake - {cx_id}, patient_id {patient_id}")
+    print(
+        f">>> Parsing data and uploading it to S3 for Snowflake - {cx_id}, "
+        f"patient_id {patient_id}, include_header {include_header}, "
+        f"input_bucket {input_bucket}, output_bucket {output_bucket}, "
+        f"output_file_prefix {output_file_prefix}"
+    )
     output_bucket_and_file_keys_and_table_names = transform_and_upload_data(
         input_bucket,
         output_bucket,
         cx_id,
         patient_id,
         output_file_prefix,
+        include_header,
     )
 
     if len(output_bucket_and_file_keys_and_table_names) < 1:

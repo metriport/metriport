@@ -1,8 +1,8 @@
 import {
   ContactPoint,
+  Patient as FHIRPatient,
   Identifier,
   Narrative,
-  Patient as FHIRPatient,
   Reference,
 } from "@medplum/fhirtypes";
 import { USStateForAddress } from "@metriport/shared";
@@ -16,11 +16,12 @@ import {
   Patient,
   splitName,
 } from "../../../domain/patient";
+import { externalIdIdentifierSystem } from "../shared/extensions/identifier";
 import { isContactType } from "./shared";
 
 export type FhirGender = NonNullable<FHIRPatient["gender"]>;
 
-export type PatientIdAndData = Pick<Patient, "id" | "data">;
+export type PatientIdAndData = Pick<Patient, "id" | "externalId" | "data">;
 
 const metriportGenderToFhir: Record<MetriportGender, FhirGender> = {
   F: "female",
@@ -36,6 +37,11 @@ const fhirGenderToMetriportGender: Record<FhirGender, MetriportGender> = {
   unknown: "U",
 };
 
+/**
+ * @see https://terminology.hl7.org/1.0.0/ValueSet-v3-AdministrativeGender.html
+ */
+type AdministrativeGenderCode = "F" | "M" | "UN";
+
 export function mapMetriportGenderToFhirGender(k: MetriportGender | undefined): FhirGender {
   if (k === undefined) {
     return "unknown";
@@ -46,6 +52,19 @@ export function mapMetriportGenderToFhirGender(k: MetriportGender | undefined): 
 
 export function mapFhirToMetriportGender(gender: FhirGender | undefined): MetriportGender {
   return gender ? fhirGenderToMetriportGender[gender] : "U";
+}
+
+export function mapFhirGenderToAdministrativeGenderCode(
+  gender: FhirGender | undefined
+): AdministrativeGenderCode {
+  switch (gender) {
+    case "female":
+      return "F";
+    case "male":
+      return "M";
+    default:
+      return "UN";
+  }
 }
 
 export function mapStringMetriportGenderToFhir(k: string | undefined): FhirGender {
@@ -109,12 +128,22 @@ export function toFHIR(patient: PatientIdAndData): FHIRPatient {
 }
 
 export function getFhirIdentifersFromPatient(patient: PatientIdAndData): Identifier[] {
-  return (patient.data.personalIdentifiers ?? []).map(id => {
+  const additionalIdentifiers: Identifier[] = [];
+  if (patient.externalId) {
+    additionalIdentifiers.push(externalIdToFhirIdentifier(patient.externalId));
+  }
+  (patient.data.personalIdentifiers ?? []).map(id => {
     if (id.type === "driversLicense") {
-      return driversLicenseToFhirIdentifier(id);
+      additionalIdentifiers.push(driversLicenseToFhirIdentifier(id));
+    } else {
+      additionalIdentifiers.push({ value: id.value, system: identifierSytemByType[id.type] });
     }
-    return { value: id.value, system: identifierSytemByType[id.type] };
   });
+  return additionalIdentifiers;
+}
+
+export function externalIdToFhirIdentifier(id: string): Identifier {
+  return { value: id, system: externalIdIdentifierSystem, use: "secondary" };
 }
 
 export function driversLicenseToFhirIdentifier(id: DriversLicense): Identifier {

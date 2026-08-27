@@ -3,6 +3,7 @@ import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { omit } from "lodash";
 import { QueryTypes } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
+import { PatientCohortModel } from "../../../models/medical/patient-cohort";
 import { TcmEncounterModel } from "../../../models/medical/tcm-encounter";
 import { PatientMappingModel } from "../../../models/patient-mapping";
 import { PaginationV2WithQueryClauses } from "../../pagination-v2";
@@ -38,6 +39,7 @@ export async function getTcmEncounters({
   cxId,
   after,
   facilityId,
+  cohortId,
   daysLookback,
   eventType,
   coding,
@@ -49,6 +51,7 @@ export async function getTcmEncounters({
   cxId: string;
   after?: string;
   facilityId?: string;
+  cohortId?: string;
   daysLookback?: string;
   eventType?: string;
   coding?: string;
@@ -60,6 +63,7 @@ export async function getTcmEncounters({
   const tcmEncounterTable = TcmEncounterModel.tableName;
   const patientTable = PatientModel.tableName;
   const patientMappingTable = PatientMappingModel.tableName;
+  const patientCohortTable = PatientCohortModel.tableName;
 
   const sequelize = TcmEncounterModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
@@ -93,6 +97,11 @@ export async function getTcmEncounters({
       ON tcm_encounter.patient_id = patient.id
       LEFT JOIN ${patientMappingTable} patient_mapping
       ON tcm_encounter.patient_id = patient_mapping.patient_id
+      ${
+        cohortId
+          ? `INNER JOIN ${patientCohortTable} patient_cohort ON patient.id = patient_cohort.patient_id AND patient_cohort.cohort_id = :cohortId`
+          : ""
+      }
       WHERE tcm_encounter.cx_id = :cxId
       AND tcm_encounter.admit_time > :admittedAfter
       ${
@@ -140,6 +149,7 @@ export async function getTcmEncounters({
       ...{ admittedAfter: after ? buildDayjs(after).toISOString() : DEFAULT_FILTER_DATE },
       ...{ dischargedAfter },
       ...{ facilityId },
+      ...{ cohortId },
       ...{ eventType },
       ...{ coding },
       ...{ status },
@@ -178,6 +188,7 @@ export async function getTcmEncountersCount({
   cxId,
   after,
   facilityId,
+  cohortId,
   daysLookback,
   eventType,
   coding,
@@ -188,6 +199,7 @@ export async function getTcmEncountersCount({
   cxId: string;
   after?: string;
   facilityId?: string;
+  cohortId?: string;
   daysLookback?: string;
   eventType?: string;
   coding?: string;
@@ -197,6 +209,7 @@ export async function getTcmEncountersCount({
 }): Promise<number> {
   const tcmEncounterTable = TcmEncounterModel.tableName;
   const patientTable = PatientModel.tableName;
+  const patientCohortTable = PatientCohortModel.tableName;
 
   const sequelize = TcmEncounterModel.sequelize;
   if (!sequelize) throw new Error("Sequelize not found");
@@ -213,6 +226,11 @@ export async function getTcmEncountersCount({
     FROM ${tcmEncounterTable} tcm_encounter
     INNER JOIN ${patientTable} patient 
     ON tcm_encounter.patient_id = patient.id
+    ${
+      cohortId
+        ? `INNER JOIN ${patientCohortTable} patient_cohort ON patient.id = patient_cohort.patient_id AND patient_cohort.cohort_id = :cohortId`
+        : ""
+    }
     WHERE tcm_encounter.cx_id = :cxId
     AND tcm_encounter.admit_time > :admittedAfter
     ${
@@ -249,6 +267,7 @@ export async function getTcmEncountersCount({
       ...{ admittedAfter: after ? buildDayjs(after).toDate() : DEFAULT_FILTER_DATE },
       ...{ dischargedAfter },
       ...{ facilityId },
+      ...{ cohortId },
       ...{ eventType },
       ...{ coding },
       ...{ status },

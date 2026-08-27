@@ -52,13 +52,28 @@ export type RDSConfig = {
 export type RDSConfigExtended = RDSConfig;
 
 export type RDSAlarmThresholds = {
+  /**
+   * This is an ALARM threshold for the ACU utilization percentage.
+   */
   acuUtilizationPct: number;
+  /**
+   * This is an alert threshold for the CPU utilization percentage.
+   */
   cpuUtilizationPct: number;
+  /**
+   * This is an alert threshold for the freeable memory in MB.
+   */
   freeableMemoryMb: number;
+  /**
+   * This is an alert threshold for the volume read IOPs.
+   */
   volumeReadIops: number;
+  /**
+   * This is an alert threshold for the volume write IOPs.
+   */
   volumeWriteIops: number;
   /**
-   * The amount of available storage in MB. Defaults to 10GB.
+   * This is an alert threshold for the amount of available storage in MB.
    */
   freeLocalStorageMb?: number;
 };

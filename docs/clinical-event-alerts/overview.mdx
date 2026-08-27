@@ -1,0 +1,181 @@
+---
+title: "Clinical Event Alerts"
+sidebarTitle: "Clinical Event Alerts"
+icon: "bell"
+description: "Automated clinical event detection from medical documents with real-time webhook notifications."
+---
+
+# Overview
+
+Clinical Event Alerts automatically detects clinical events from medical documents and delivers
+real-time notifications via webhooks. Events are detected using specialized agents, each designed
+to identify specific clinical scenarios like NICU admissions or lab anomalies.
+
+<Warning>
+  Clinical Event Alerts is a premium feature that requires
+  activation on your account. Contact us if you'd like to
+  enable it.
+</Warning>
+
+# Available Agents
+
+| Agent                    | ID                  | Description                                                                                 |
+| ------------------------ | ------------------- | ------------------------------------------------------------------------------------------- |
+| NICU Admission Detection | `nicu_detection_v2` | Detects neonatal intensive care unit admissions from discharge summaries and delivery notes |
+| Lab Anomaly Detection    | `lab_anomaly_v1`    | Detects abnormal laboratory values from clinical documents                                  |
+
+# Getting Started
+
+To receive Clinical Event Alerts, you need to have webhooks configured for your account.
+
+<Info>
+  For detailed instructions on setting up webhooks, see the
+  [Webhooks
+  documentation](/medical-api/getting-started/webhooks).
+</Info>
+
+Once webhooks are configured and Clinical Event Alerts is enabled, you'll start receiving
+event notifications as documents are processed for your patients.
+
+# The Event Model
+
+When a clinical event is detected, you'll receive a webhook notification following the standard
+Metriport webhook format with `meta` and `patients` properties.
+
+```json
+{
+  "meta": {
+    "messageId": "1e82424a-1220-473d-a0d1-6e5fde15159e",
+    "requestId": "00000000-0000-0000-0000-000000000000",
+    "when": "2025-12-05T14:30:15Z",
+    "type": "medical.clinical-event-alert"
+  },
+  "patients": [
+    {
+      "patientId": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
+      "externalId": "1234567890",
+      "type": "clinical-event-alert",
+      "status": "detected",
+      "events": [
+        {
+          "eventId": "evt_nicu_abc123",
+          "eventType": "nicu_admission",
+          "eventTimestamp": "2025-12-05T14:30:00Z",
+          "classification": {
+            "reasoning": "Document contains explicit past-tense admission language with specific medical details and unit identification"
+          },
+          "evidence": [
+            {
+              "source": "01964571-db3c-7953-9987-fe7b62cc278c/01964571-db3c-7953-9987-fe7cb3d109e4/01964571-db3c-7953-9987-fe7b62cc278c_01964571-db3c-7953-9987-fe7cb3d109e4_01964571-db3c-7953-9987-fe7d7dcb476d.xml",
+              "snippets": [
+                "Baby was admitted to NICU immediately after delivery for respiratory distress. Required CPAP support for 48 hours."
+              ]
+            }
+          ],
+          "agent": {
+            "agentId": "nicu_detection_v2",
+            "version": "2.0"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+<Tip>
+  The `source` field in the evidence follows the same format
+  as the `meta.source` property in FHIR resources. You can
+  use this value with the [Get Document URL
+  endpoint](/medical-api/api-reference/document/get-document)
+  to download the original source document.
+</Tip>
+
+## Field Descriptions
+
+<ResponseField name="meta" required>
+  Metadata about the message. The full format is described 
+  [here](/medical-api/getting-started/webhooks#meta-data).
+
+  <Expandable title="meta type property details">
+    <ResponseField name="type" type="string" required>
+      For Clinical Event Alerts this will always be `medical.clinical-event-alert`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="patients" type="PatientClinicalEventAlert[]" required>
+  Array of clinical event alert updates - where each item corresponds to a specific patient.
+
+  <Expandable title="PatientClinicalEventAlert properties">
+
+    <ResponseField name="patientId" type="string" required>
+      The Patient ID.
+    </ResponseField>
+
+    <ResponseField name="externalId" type="string">
+      The external ID you provided when creating the patient.
+    </ResponseField>
+
+    <ResponseField name="type" type="string" required>
+      Will be `clinical-event-alert`.
+    </ResponseField>
+
+    <ResponseField name="status" type="string" required>
+      The status of the alert - will be `detected`.
+    </ResponseField>
+
+    <ResponseField name="events" type="ClinicalEvent[]" required>
+      Array of clinical events detected for this patient.
+
+      <Expandable title="ClinicalEvent properties">
+
+        <ResponseField name="eventId" type="string" required>
+          Unique identifier for the event.
+        </ResponseField>
+
+        <ResponseField name="eventType" type="string" required>
+          Type of clinical event detected (e.g., `nicu_admission`, `lab_anomaly`).
+        </ResponseField>
+
+        <ResponseField name="eventTimestamp" type="datetime" required>
+          When the event was detected.
+        </ResponseField>
+
+        <ResponseField name="classification" type="object" required>
+          Classification result containing:
+          - `result` (boolean): Whether the event was detected
+          - `reasoning` (string): Explanation of why the agent made this determination
+        </ResponseField>
+
+        <ResponseField name="evidence" type="Evidence[]" required>
+          Document evidence supporting the classification.
+
+          <Expandable title="Evidence properties">
+
+            <ResponseField name="source" type="string" required>
+              Path to the source document in the format `cxId/patientId/cxId_patientId_docId.xml`.
+              Use this with the [Get Document URL endpoint](/medical-api/api-reference/document/get-document).
+            </ResponseField>
+
+            <ResponseField name="snippets" type="string[]" required>
+              Relevant text excerpts from the document.
+            </ResponseField>
+
+          </Expandable>
+        </ResponseField>
+
+        <ResponseField name="agent" type="object" required>
+          Information about the agent that detected the event, including `agentId` and `version`.
+        </ResponseField>
+
+      </Expandable>
+    </ResponseField>
+
+  </Expandable>
+</ResponseField>
+
+# Additional Information
+
+Click here for additional information related to [webhooks](/medical-api/handling-data/webhooks)
+and [patient monitoring](/medical-api/handling-data/patient-monitoring).

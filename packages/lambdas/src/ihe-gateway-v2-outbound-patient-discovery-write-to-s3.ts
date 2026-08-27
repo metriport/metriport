@@ -6,7 +6,6 @@ import { SQSEvent } from "aws-lambda";
 import { z } from "zod";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
-import { prefixedLog } from "./shared/log";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -16,14 +15,12 @@ const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
 
 // TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
-  const log = prefixedLog(`write-to-s3`);
   capture.setExtra({
     event,
     context: lambdaName,
   });
   const messages = event.Records;
   if (messages.length < 1) return;
-  log(`Running with unparsed bodies: ${messages.map(m => m.body).join(", ")}`);
   const parsedBodies = messages.map(m => parseBody(m.body));
 
   const services = new Set(parsedBodies.map(m => m.serviceId));

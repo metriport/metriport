@@ -14,6 +14,11 @@ export const patientCreateSchema = demographicsSchema
     z.object({
       settings: patientSettingsSchema.optional(),
     })
+  )
+  .merge(
+    z.object({
+      cohorts: z.array(z.string()).optional(),
+    })
   );
 
 export type PatientCreate = z.infer<typeof patientCreateSchema>;

@@ -27,6 +27,7 @@ import {
   AppointmentListResponse,
   appointmentListResponseSchema,
   canvasClientJwtTokenResponseSchema,
+  CreateExternalEventParams,
   Note,
   NoteListResponse,
   noteListResponseSchema,
@@ -82,6 +83,7 @@ import {
   saveEhrReferenceBundle,
 } from "../shared";
 import { convertCodeAndValue } from "../unit-conversion";
+import { isCanvasSupportedAdtEvent } from "./shared";
 
 dayjs.extend(duration);
 
@@ -90,6 +92,8 @@ const maxJitter = dayjs.duration(2, "seconds");
 
 interface CanvasApiConfig extends ApiConfig {
   environment: string;
+  /** Bearer token for authenticating with Canvas plugin endpoints */
+  pluginToken?: string;
 }
 
 const canvasDomainExtension = ".canvasmedical.com";
@@ -102,6 +106,7 @@ const FDB_CODE = "fdb";
 const utcToEstOffset = dayjs.duration(-5, "hours");
 const defaultCountOrLimit = 1000;
 export type CanvasEnv = string;
+const canvasAdtUrl = `/plugin-io/api/metriport_app/routes/adt`;
 
 export const supportedCanvasResources: ResourceType[] = [
   "AllergyIntolerance",
@@ -172,15 +177,19 @@ const observationResultStatuses = ["final", "unknown", "entered-in-error"];
 class CanvasApi {
   private axiosInstanceFhirApi: AxiosInstance;
   private axiosInstanceCustomApi: AxiosInstance;
+  private axiosInstancePluginApi: AxiosInstance;
   private twoLeggedAuthTokenInfo: JwtTokenInfo | undefined;
+  private pluginToken: string | undefined;
   private baseUrl: string;
   private practiceId: string;
 
   private constructor(private config: CanvasApiConfig) {
     this.twoLeggedAuthTokenInfo = config.twoLeggedAuthTokenInfo;
+    this.pluginToken = config.pluginToken;
     this.practiceId = config.practiceId;
     this.axiosInstanceFhirApi = axios.create({});
     this.axiosInstanceCustomApi = axios.create({});
+    this.axiosInstancePluginApi = axios.create({});
     this.baseUrl = `${config.environment}${canvasDomainExtension}`;
   }
 
@@ -243,6 +252,14 @@ class CanvasApi {
       headers: {
         Authorization: `Bearer ${this.twoLeggedAuthTokenInfo.access_token}`,
         "Content-Type": "application/json",
+      },
+    });
+
+    this.axiosInstancePluginApi = axios.create({
+      baseURL: `https://${this.baseUrl}`,
+      headers: {
+        "Content-Type": "application/json",
+        ...(this.pluginToken ? { Authorization: `Bearer ${this.pluginToken}` } : {}),
       },
     });
   }
@@ -1270,8 +1287,13 @@ class CanvasApi {
     debug,
     emptyResponse = false,
     useFhir = false,
-  }: MakeRequestParamsInEhr<T> & { useFhir?: boolean }): Promise<T> {
-    const axiosInstance = useFhir ? this.axiosInstanceFhirApi : this.axiosInstanceCustomApi;
+    usePlugin = false,
+  }: MakeRequestParamsInEhr<T> & { useFhir?: boolean; usePlugin?: boolean }): Promise<T> {
+    const axiosInstance = usePlugin
+      ? this.axiosInstancePluginApi
+      : useFhir
+      ? this.axiosInstanceFhirApi
+      : this.axiosInstanceCustomApi;
     return await makeRequest<T>({
       ehr: EhrSources.canvas,
       cxId,
@@ -1332,10 +1354,9 @@ class CanvasApi {
     };
     const startDate = getConditionStartDate(condition);
     const formattedStartDate = this.formatDate(startDate);
-    if (!formattedStartDate) {
-      throw new BadRequestError("No start date found for condition", undefined, additionalInfo);
+    if (formattedStartDate) {
+      formattedCondition.onsetDateTime = formattedStartDate;
     }
-    formattedCondition.onsetDateTime = formattedStartDate;
     const conditionStatus = getConditionStatus(condition);
     const problemStatus = conditionStatus
       ? problemStatusesMap.get(conditionStatus.toLowerCase())
@@ -1376,12 +1397,13 @@ class CanvasApi {
     };
     const startDate = getMedicationStatementStartDate(medicationStatement);
     const formattedStartDateTime = this.formatDateTime(startDate);
-    if (!formattedStartDateTime) return undefined;
-    const formattedEndDate = this.formatDateTime(medicationStatement.effectivePeriod?.end);
-    formattedMedicationStatement.effectivePeriod = {
-      start: formattedStartDateTime,
-      ...(formattedEndDate ? { end: formattedEndDate } : {}),
-    };
+    if (formattedStartDateTime) {
+      const formattedEndDate = this.formatDateTime(medicationStatement.effectivePeriod?.end);
+      formattedMedicationStatement.effectivePeriod = {
+        start: formattedStartDateTime,
+        ...(formattedEndDate ? { end: formattedEndDate } : {}),
+      };
+    }
     const status = medicationStatement.status;
     if (!status || !medicationStatementStatuses.includes(status)) return undefined;
     formattedMedicationStatement.status = status;
@@ -1409,12 +1431,13 @@ class CanvasApi {
     if (!cvxCoding.code) {
       throw new BadRequestError("No code found for CVX coding", undefined, additionalInfo);
     }
-    if (!cvxCoding.display) {
-      throw new BadRequestError("No display found for CVX coding", undefined, additionalInfo);
-    }
     formattedImmunization.vaccineCode = {
       coding: [
-        { code: cvxCoding.code, system: "http://hl7.org/fhir/sid/cvx", display: cvxCoding.display },
+        {
+          code: cvxCoding.code,
+          system: "http://hl7.org/fhir/sid/cvx",
+          ...(cvxCoding.display ? { display: cvxCoding.display } : {}),
+        },
       ],
     };
     const administerDate = getImmunizationAdministerDate(immunization);
@@ -1466,10 +1489,9 @@ class CanvasApi {
     };
     const onsetDate = getAllergyIntoleranceOnsetDate(allergyIntolerance);
     const formattedOnsetDate = this.formatDate(onsetDate);
-    if (!formattedOnsetDate) {
-      throw new BadRequestError("No onset date found for allergy", undefined, additionalInfo);
+    if (formattedOnsetDate) {
+      formattedAllergyIntolerance.onsetDateTime = formattedOnsetDate;
     }
-    formattedAllergyIntolerance.onsetDateTime = formattedOnsetDate;
     const clinicalStatus = allergyIntolerance.clinicalStatus;
     if (!clinicalStatus || !clinicalStatus.coding) {
       throw new BadRequestError(
@@ -1680,6 +1702,40 @@ class CanvasApi {
 
   private createReferencePath(referenceType: string, referenceId: string): string {
     return `reference/${referenceType}/${referenceId}`;
+  }
+
+  async createExternalEvent(cxId: string, params: CreateExternalEventParams): Promise<void> {
+    if (!this.pluginToken) {
+      throw new MetriportError("Canvas plugin token missing", undefined, {
+        cxId,
+        practiceId: this.practiceId,
+      });
+    }
+    if (!isCanvasSupportedAdtEvent(params.event_type)) {
+      throw new MetriportError("Canvas does not support this ADT event type", undefined, {
+        cxId,
+        practiceId: this.practiceId,
+        eventType: params.event_type,
+      });
+    }
+    const { patient_id, event_type } = params;
+    const { debug } = out(
+      `Canvas createExternalEvent - cxId ${cxId} practiceId ${this.practiceId} patientId ${patient_id} eventType ${event_type}`
+    );
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId: patient_id };
+    await this.makeRequest({
+      cxId,
+      patientId: patient_id,
+      s3Path: "create-external-event",
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      url: canvasAdtUrl,
+      data: params,
+      schema: z.object({ message: z.string() }),
+      additionalInfo,
+      debug,
+      usePlugin: true,
+    });
   }
 }
 

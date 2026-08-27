@@ -10,6 +10,8 @@ import {
   processCxId as processCxIdShared,
   processDocumentRoute as processDocumentRouteShared,
   processPatientRoute as processPatientRouteShared,
+  processInferenceRoute as processInferenceRouteShared,
+  processFeatureFlagsRoute as processFeatureFlagsRouteShared,
 } from "../../shared";
 
 function parseCanvasPracticeIdDash(tokenData: JwtTokenData): ParseResponse {
@@ -50,4 +52,12 @@ export function processPatientRoute(req: Request, res: Response, next: NextFunct
 
 export function processDocumentRoute(req: Request, res: Response, next: NextFunction) {
   processDocumentRouteShared(req, canvasDashSource).then(next).catch(next);
+}
+
+export function processInferenceRoute(req: Request, res: Response, next: NextFunction) {
+  processInferenceRouteShared(req).then(next).catch(next);
+}
+
+export function processFeatureFlagsRoute(req: Request, res: Response, next: NextFunction) {
+  processFeatureFlagsRouteShared(req).then(next).catch(next);
 }

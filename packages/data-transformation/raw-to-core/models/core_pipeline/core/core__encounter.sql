@@ -1,64 +1,17 @@
-with base_resource as (
-    select
-        id,
-        subject_reference,
-        status,
-        period_start,
-        period_end,
-        class_code,
-        class_display,
-        class_system,
-        type_0_coding_0_code,
-        type_0_coding_0_display,
-        type_0_coding_0_system,
-        meta_source
-    from {{ref('stage__encounter')}}
-),
-target_type_codings as (
-   {{   
-        get_target_codings(
-            get_encounter_type_codings,
-            'encounter_id', 
-            1, 
-            1, 
-            (
-                'http://terminology.hl7.org/CodeSystem/encounter-type',
-            )
-        ) 
-    }}
-),
-target_discharge_disposition_codings as (
-    {{ 
-        get_target_codings(
-            get_encounter_discharge_disposition_codings, 
-            'encounter_id', 
-            1, 
-            none, 
-            (
-                'http://terminology.hl7.org/CodeSystem/discharge-disposition',
-            )
-        ) 
-    }}
-),
-target_reason_codings as (
-    {{ 
-        get_target_codings(
-            get_encounter_reason_codings, 
-            'encounter_id', 
-            1, 
-            1,
-            (
-                'http://snomed.info/sct',
-            )
-        ) 
-    }}
-)
+{{ config(unique_key='m_patient_id') }}
+{% set type_coding_max_index = 1 %}
+{% set type_secondary_coding_max_index = 1 %}
+{% set hospitalization_dischargedisposition_coding_max_index = 1 %}
+{% set reasoncode_coding_max_index = 1 %}
+{% set reasoncode_secondary_coding_max_index = 1 %}
+{% set extension_max_index = 2 %}
+
 select
-        cast(enc.id as {{ dbt.type_string() }} )                                                as encounter_id      
-    ,   cast(right(enc.subject_reference, 36) as {{ dbt.type_string() }} )                      as patient_id
-    ,   cast(enc.status as {{ dbt.type_string() }} )                                            as status
-    ,   {{ try_to_cast_date('enc.period_start', 'YYYY-MM-DD') }}                                as start_date
-    ,   {{ try_to_cast_date('enc.period_end', 'YYYY-MM-DD') }}                                  as end_date
+        {{ try_to_cast_string('enc.id') }}                                                      as encounter_id      
+    ,   {{ try_to_cast_string('right(enc.subject_reference, 36)') }}                            as patient_id
+    ,   {{ try_to_cast_string('enc.status') }}                                                  as status
+    ,   {{ try_to_cast_datetime('enc.period_start') }}                                          as start_date
+    ,   {{ try_to_cast_datetime('enc.period_end') }}                                            as end_date
     ,   {{ 
             dbt.datediff(
                 try_to_cast_date('enc.period_start', 'YYYY-MM-DD'),
@@ -66,38 +19,87 @@ select
                 'day'
             )
         }}                                                                                      as length_of_stay
-    ,   cast(
-            case 
-                when enc.class_system ilike '%v3-ActCode%' then enc.class_code
-                else null
-            end as {{ dbt.type_string() }}
-        )                                                                                       as act_code
-    ,   cast(
-            case 
-                when enc.class_system ilike '%v3-ActCode%' then enc.class_display
-                else null
-            end as {{ dbt.type_string() }}
-        )                                                                                       as act_display
-    ,   cast(enc.class_code as {{ dbt.type_string() }} )                                        as source_class_code
-    ,   cast(enc.class_display as {{ dbt.type_string() }} )                                     as source_class_display
-    ,   cast(enc.class_system as {{ dbt.type_string() }} )                                      as source_class_system
-    ,   cast(type_hl7.code as {{ dbt.type_string() }} )                                         as type_hl7_code
-    ,   cast(type_hl7.display as {{ dbt.type_string() }} )                                      as type_hl7_display
-    ,   cast(enc.type_0_coding_0_code as {{ dbt.type_string() }} )                              as source_type_code
-    ,   cast(enc.type_0_coding_0_display as {{ dbt.type_string() }} )                           as source_type_display
-    ,   cast(enc.type_0_coding_0_system as {{ dbt.type_string() }} )                            as source_type_system
-    ,   cast(dd_hl7.code as {{ dbt.type_string() }} )                                           as discharge_disposition_hl7_code
-    ,   cast(dd_hl7.display as {{ dbt.type_string() }} )                                        as discharge_disposition_hl7_display
-    ,   cast(reason_snomed_ct.code as {{ dbt.type_string() }} )                                 as reason_snomed_code
-    ,   cast(reason_snomed_ct.display as {{ dbt.type_string() }} )                              as reason_snomed_display
-    ,   cast(enc.meta_source as {{ dbt.type_string() }} )                                       as data_source
-from base_resource as enc
-left join target_type_codings type_hl7
-    on enc.id = type_hl7.encounter_id 
-        and type_hl7.system = 'http://terminology.hl7.org/CodeSystem/encounter-type'
-left join target_discharge_disposition_codings dd_hl7
-    on enc.id = dd_hl7.encounter_id 
-        and dd_hl7.system = 'http://terminology.hl7.org/CodeSystem/discharge-disposition'
-left join target_reason_codings reason_snomed_ct
-    on enc.id = reason_snomed_ct.encounter_id 
-        and reason_snomed_ct.system = 'http://snomed.info/sct'
+    ,   case 
+            when enc.class_system ilike '%v3-ActCode%' then {{ try_to_cast_string('enc.class_code') }}
+            else null
+        end                                                                                     as act_code
+    ,   case 
+            when enc.class_system ilike '%v3-ActCode%' then {{ try_to_cast_string('enc.class_display') }}
+            else null
+        end                                                                                     as act_display
+    ,   {{ try_to_cast_string('enc.class_code') }}                                              as source_class_code
+    ,   {{ try_to_cast_string('enc.class_display') }}                                           as source_class_display
+    ,   {{ try_to_cast_string('enc.class_system') }}                                            as source_class_system
+    {#- Type HL7: Check nested type_i_coding_j structure -#}
+    ,   {{ try_to_cast_string(get_inline_nested_coding_case(
+            'enc',
+            'type',
+            'http://terminology.hl7.org/CodeSystem/encounter-type',
+            type_coding_max_index,
+            type_secondary_coding_max_index,
+            'code'
+        )) }} as type_hl7_code
+    ,   {{ try_to_cast_string(get_inline_nested_coding_case(
+            'enc',
+            'type',
+            'http://terminology.hl7.org/CodeSystem/encounter-type',
+            type_coding_max_index,
+            type_secondary_coding_max_index,
+            'display'
+        )) }} as type_hl7_display
+    ,   {{ try_to_cast_string('enc.type_0_coding_0_code') }}                                    as source_type_code
+    ,   {{ try_to_cast_string('enc.type_0_coding_0_display') }}                                 as source_type_display
+    ,   {{ try_to_cast_string('enc.type_0_coding_0_system') }}                                  as source_type_system
+    {#- Discharge Disposition HL7: Check hospitalization_dischargedisposition_coding indices 0-1 -#}
+    ,   {{ try_to_cast_string(get_inline_coding_case(
+            'enc',
+            'hospitalization_dischargedisposition_coding',
+            'http://terminology.hl7.org/CodeSystem/discharge-disposition',
+            hospitalization_dischargedisposition_coding_max_index,
+            'code'
+        )) }} as discharge_disposition_hl7_code
+    ,   {{ try_to_cast_string(get_inline_coding_case(
+            'enc',
+            'hospitalization_dischargedisposition_coding',
+            'http://terminology.hl7.org/CodeSystem/discharge-disposition',
+            hospitalization_dischargedisposition_coding_max_index,
+            'display'
+        )) }} as discharge_disposition_hl7_display
+    ,   {{ try_to_cast_string('enc.hospitalization_dischargedisposition_coding_0_code') }}      as source_discharge_disposition_code                           
+    ,   {{ try_to_cast_string('enc.hospitalization_dischargedisposition_coding_0_display') }}   as source_discharge_disposition_display                     
+    ,   {{ try_to_cast_string('enc.hospitalization_dischargedisposition_coding_0_system') }}    as source_discharge_disposition_system                         
+    {#- Reason SNOMED: Check nested reasoncode_i_coding_j structure -#}
+    ,   {{ try_to_cast_string(get_inline_nested_coding_case(
+            'enc',
+            'reasoncode',
+            'http://snomed.info/sct',
+            reasoncode_coding_max_index,
+            reasoncode_secondary_coding_max_index,
+            'code'
+        )) }} as reason_snomed_code
+    ,   {{ try_to_cast_string(get_inline_nested_coding_case(
+            'enc',
+            'reasoncode',
+            'http://snomed.info/sct',
+            reasoncode_coding_max_index,
+            reasoncode_secondary_coding_max_index,
+            'display'
+        )) }} as reason_snomed_display
+    ,   {{ try_to_cast_string('enc.meta_source') }}                                             as data_source
+    {#- Data source extension: extension with data-source URL -#}
+    ,   {{ try_to_cast_string(get_inline_extension(
+            'enc',
+            'https://public.metriport.com/fhir/StructureDefinition/data-source.json',
+            extension_max_index,
+            'valuecoding_code',
+            none,
+            none
+        )) }}                                                                                   as data_source_ext
+    ,   {{ try_to_cast_string('enc.meta_source') }}                                             as meta_source
+    ,   enc.m_patient_id
+    ,   enc.m_job_id
+    ,   enc.m_created_at
+    ,   enc.m_updated_at
+    ,   enc.m_deleted_at
+    ,   enc.raw_to_core_job_id
+from {{ref('stage__encounter')}} as enc

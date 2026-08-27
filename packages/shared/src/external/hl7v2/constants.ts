@@ -1,0 +1,9 @@
+export const BAMBOO_HIE_NAME = "Bamboo";
+export const KONZA_HIE_NAME = "Konza";
+export const HEALTH_CONNECT_TEXAS_HIE_NAME = "HealthConnectTexas";
+export const HIXNY_HIE_NAME = "Hixny";
+export const HIE_TEXAS_PCC = "HieTexasPcc";
+export const ALOHR_HIE_NAME = "Alohr";
+export const LAHIE_HIE_NAME = "Lahie";
+export const FLHIE_HIE_NAME = "Flhie";
+export const NUMBER_OF_HIEs = 8;

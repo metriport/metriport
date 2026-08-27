@@ -1058,10 +1058,10 @@ function cleanUpNote(note: string): string {
     .replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "")
     .replace(/<ID>.*?<\/ID>/g, "")
     .replace(/<styleCode>.*?<\/styleCode>/g, "")
-    .replace(/<width>.*?<\/width>/g, "") // https://metriport.slack.com/archives/C0616FCPAKZ/p1722627448791109?thread_ts=1722612577.018299&cid=C0616FCPAKZ
-    .replace(/(<paragraph>|<content>)/g, '<p class="p-line">') // https://metriport.slack.com/archives/C0616FCPAKZ/p1722625692474229?thread_ts=1722612577.018299&cid=C0616FCPAKZ
-    .replace(/(<paragraph\s?\/>|<content\s?\/>)/g, "<p>&nbsp;</p>") // https://metriport.slack.com/archives/C0616FCPAKZ/p1722625692474229?thread_ts=1722612577.018299&cid=C0616FCPAKZ
-    .replace(/(<\/paragraph>|<\/content>)/g, "</p>"); // https://metriport.slack.com/archives/C0616FCPAKZ/p1722625692474229?thread_ts=1722612577.018299&cid=C0616FCPAKZ
+    .replace(/<width>.*?<\/width>/g, "")
+    .replace(/(<paragraph>|<content>)/g, '<p class="p-line">')
+    .replace(/(<paragraph\s?\/>|<content\s?\/>)/g, "<p>&nbsp;</p>")
+    .replace(/(<\/paragraph>|<\/content>)/g, "</p>");
 }
 
 function removeEncodedStrings(valueString: string): string {

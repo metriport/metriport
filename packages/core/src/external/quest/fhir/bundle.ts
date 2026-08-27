@@ -1,20 +1,21 @@
-import _ from "lodash";
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
-import { buildBundle, buildBundleEntry } from "../../fhir/bundle/bundle";
+import _ from "lodash";
+import { isHydrateConditionCodeByDisplayFeatureFlagEnabledForCx } from "../../../command/feature-flags/domain-ffs";
+import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
 import { LogFunction } from "../../../util/log";
-import { IncomingData } from "../schema/shared";
+import { buildBundle, buildBundleEntry } from "../../fhir/bundle/bundle";
+import { hydrateFhir } from "../../fhir/hydration/hydrate-fhir";
 import { ResponseDetail } from "../schema/response";
+import { IncomingData } from "../schema/shared";
+import { getConditions } from "./condition";
+import { getDiagnosticReport } from "./diagnostic-report";
+import { getLocation } from "./location";
+import { getObservation } from "./observation";
+import { getOrganization } from "./organization";
 import { getPatient } from "./patient";
 import { getPractitioner, getPractitionerRole } from "./practitioner";
-import { getOrganization } from "./organization";
-import { getLocation } from "./location";
-import { getConditions } from "./condition";
-import { getServiceRequest, addSpecimenToServiceRequest } from "./service-request";
 import { getProcedure } from "./procedure";
-import { getObservation } from "./observation";
-import { getDiagnosticReport } from "./diagnostic-report";
-import { dangerouslyDeduplicateFhir } from "../../../fhir-deduplication/deduplicate-fhir";
-import { hydrateFhir } from "../../fhir/hydration/hydrate-fhir";
+import { addSpecimenToServiceRequest, getServiceRequest } from "./service-request";
 import { getSpecimen } from "./specimen";
 
 export async function convertTabularDataToFhirBundle({
@@ -31,7 +32,13 @@ export async function convertTabularDataToFhirBundle({
   const entries = rows.flatMap(row => getBundleEntries(row, { patientId }));
   const bundle = buildBundle({ type: "collection", entries });
   dangerouslyDeduplicateFhir(bundle, cxId, patientId);
-  const { data: hydratedBundle } = await hydrateFhir(bundle, log);
+  const isLookupConditionCodeByDisplayEnabled =
+    await isHydrateConditionCodeByDisplayFeatureFlagEnabledForCx(cxId);
+  const { data: hydratedBundle } = await hydrateFhir({
+    fhirBundle: bundle,
+    log,
+    options: { lookupConditionCodeByDisplay: isLookupConditionCodeByDisplayEnabled },
+  });
   return hydratedBundle;
 }
 

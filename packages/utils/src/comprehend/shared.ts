@@ -1,12 +1,18 @@
-import { ComprehendClient } from "@metriport/core/external/comprehend/client";
-import { Resource } from "@medplum/fhirtypes";
 import {
   InferICD10CMCommandOutput,
   InferRxNormCommandOutput,
   InferSNOMEDCTCommandOutput,
 } from "@aws-sdk/client-comprehendmedical";
+import { Bundle, Resource } from "@medplum/fhirtypes";
+import { createConsolidatedDataFileNameWithSuffix } from "@metriport/core/domain/consolidated/filename";
+import { S3Utils } from "@metriport/core/external/aws/s3";
+import { ComprehendClient } from "@metriport/core/external/comprehend/client";
+import { Config } from "@metriport/core/util/config";
+import { getEnvVarOrFail } from "@metriport/shared";
+import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
+const medicalDocsBucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 
 /**
  * Utility functions for building and caching the results of Comprehend Medical for use in automated testing.
@@ -112,4 +118,67 @@ export async function buildSnomedCTArtifact({
   const artifact = { inputText, response };
   buildArtifact("snomedct", name, artifact);
   return artifact;
+}
+
+/**
+ * Retrieves the consolidated bundle for a patient from S3.
+ *
+ * @param cxId - The customer ID
+ * @param patientId - The patient ID
+ * @returns The consolidated bundle, or undefined if not found
+ */
+export async function getConsolidatedBundle({
+  cxId,
+  patientId,
+}: {
+  cxId: string;
+  patientId: string;
+}): Promise<Bundle | undefined> {
+  const s3Utils = new S3Utils(Config.getAWSRegion());
+  const fileKey = createConsolidatedDataFileNameWithSuffix(cxId, patientId) + ".json";
+  if (!(await s3Utils.fileExists(medicalDocsBucketName, fileKey))) {
+    return undefined;
+  }
+  const fileContent = await s3Utils.downloadFile({ bucket: medicalDocsBucketName, key: fileKey });
+  return JSON.parse(fileContent.toString());
+}
+
+/**
+ * Opens a preview URL in the default browser using the macOS `open` command.
+ *
+ * @param url - The URL to open
+ */
+export function openPreviewUrl(url: string): void {
+  execSync(`open https://preview.metriport.com/?url=${encodeURIComponent(url)}`);
+}
+
+/**
+ * Writes a consolidated bundle preview to S3 and returns a signed URL.
+ * The preview file is named with a "-preview.json" suffix.
+ *
+ * @param cxId - The customer ID
+ * @param patientId - The patient ID
+ * @param bundle - The FHIR bundle to write
+ * @returns Promise resolving to a signed URL valid for 30 minutes
+ */
+export async function writeConsolidatedBundlePreview(
+  cxId: string,
+  patientId: string,
+  bundle: Bundle
+): Promise<string> {
+  const s3Utils = new S3Utils(Config.getAWSRegion());
+
+  const fileName = createConsolidatedDataFileNameWithSuffix(cxId, patientId) + "-preview.json";
+  const fileContent = JSON.stringify(bundle);
+  await s3Utils.uploadFile({
+    bucket: medicalDocsBucketName,
+    key: fileName,
+    file: Buffer.from(fileContent),
+    contentType: "application/json",
+  });
+  return await s3Utils.getSignedUrl({
+    bucketName: medicalDocsBucketName,
+    fileName,
+    durationSeconds: 60 * 30,
+  });
 }

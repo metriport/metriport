@@ -5,7 +5,12 @@ import { buildConsolidatedSnapshotConnector } from "@metriport/core/command/cons
 import { Patient } from "@metriport/core/domain/patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
+import {
+  DatasourceQueryStatus,
+  hieSpecificSource,
+} from "@metriport/shared/domain/network-query/source";
 import { startCreateResourceDiffBundlesJobsAcrossEhrs } from "../../../external/ehr/shared/job/bundle/create-resource-diff-bundles/start-jobs-across-ehrs";
+import { updateDatasourceQueryStatusByRequestId } from "../network-query/update-datasource-query-status";
 import { getConsolidated } from "../patient/consolidated-get";
 import { finishDischargeRequery } from "./patient-monitoring/discharge-requery/finish";
 
@@ -69,6 +74,14 @@ export async function recreateConsolidated({
       }).catch(processAsyncError("Post-DQ startCreateResourceDiffBundlesJobsAcrossEhrs"));
 
       if (requestId) {
+        updateDatasourceQueryStatusByRequestId({
+          cxId: patient.cxId,
+          requestId,
+          source: "hie",
+          specificSource: hieSpecificSource,
+          toStatus: DatasourceQueryStatus.Completed,
+        }).catch(processAsyncError("Post-DQ updateDatasourceQueryStatus"));
+
         finishDischargeRequery({
           cxId: patient.cxId,
           patientId: patient.id,
@@ -76,7 +89,9 @@ export async function recreateConsolidated({
           pipelineStatus: "successful",
         }).catch(processAsyncError("Post-DQ finishDischargeRequery"));
       } else {
-        log("No requestId provided, skipping finishDischargeRequery");
+        log(
+          "No requestId provided, skipping finishDischargeRequery and updateDatasourceQueryStatusByRequestId"
+        );
       }
     }
   } catch (err) {

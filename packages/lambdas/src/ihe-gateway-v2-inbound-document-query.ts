@@ -6,7 +6,7 @@ import { processInboundDqRequest } from "@metriport/core/external/carequality/ih
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
-import { errorToString } from "@metriport/shared";
+import { errorToString, isClientError } from "@metriport/shared";
 import { APIGatewayProxyEventV2 } from "aws-lambda";
 import { getEnvOrFail } from "./shared/env";
 
@@ -53,8 +53,11 @@ export async function handler(event: APIGatewayProxyEventV2) {
 
       return buildResponse(200, xmlResponse);
     } catch (error) {
-      log(`Client error on ${lambdaName}: ${errorToString(error)}`);
-      return buildResponse(400, errorToString(error));
+      if (isClientError(error)) {
+        log(`Client error on ${lambdaName}: ${errorToString(error)}`);
+        return buildResponse(400, errorToString(error));
+      }
+      throw error;
     }
   } catch (error) {
     const msg = "Server error processing event on " + lambdaName;

@@ -34,7 +34,7 @@ const s3Utils = new S3Utils(Config.getAWSRegion());
  * Keep this a couple seconds higher than the respective lambda's timeout.
  * @see {@link setupFhirToMedicalRecordLambda()} on the infra package for the lambda's timeout.
  */
-// TODO https://github.com/metriport/metriport-internal/issues/1319 to decrease this significantly
+// TODO to decrease this significantly
 export const TIMEOUT_CALLING_CONVERTER_LAMBDA = dayjs.duration(15, "minutes").add(2, "seconds");
 
 const region = Config.getAWSRegion();
@@ -155,7 +155,7 @@ async function convertFHIRBundleToMedicalRecord({
   conversionType: MedicalRecordFormat;
 }): Promise<ConversionOutput> {
   const { log } = out(`convertFHIRBundleToMedicalRecord - cx ${patient.cxId} pt ${patient.id}`);
-  const lambdaName = Config.getFHIRToMedicalRecordLambda2Name();
+  const lambdaName = Config.getFHIRToMedicalRecordLambdaName();
 
   if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
   log(`Using lambda name: ${lambdaName}`);

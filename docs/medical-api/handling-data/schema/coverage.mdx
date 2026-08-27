@@ -1,0 +1,51 @@
+---
+title: "Coverage"
+description: "Schema documentation for the Coverage table in the Metriport data model"
+group: "Schema"
+icon: "n/a"
+---
+
+Financial instrument which may be used to reimburse or pay for health care products and services. Includes both insurance and self-payment.
+
+**Reference Table:**
+
+The `coverage_references` table contains normalized references from the coverage to other entities. It supports the following reference properties:
+* **beneficiary** (required): links to the patient who is the beneficiary of the coverage
+* **payor**: links to the organization or patient responsible for payment
+* **policyHolder**: links to the owner of the insurance policy
+* **subscriber**: links to the subscriber to the insurance policy
+
+For detailed information about reference table structure and indexing, see the [Reference Tables documentation](/medical-api/handling-data/schema/reference-tables).
+
+**Coverage Table:**
+
+**Primary Keys:**
+* coverage_id
+
+**Foreign Keys:**
+* patient_id
+
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| coverage_id | varchar | Unique identifier for the coverage |
+| patient_id | varchar | Unique identifier for the patient (beneficiary) |
+| status | varchar | Status of the coverage. Possible values:<br/>– <code>active</code>: The coverage is currently in effect.<br/>– <code>cancelled</code>: The coverage has been cancelled.<br/>– <code>draft</code>: The coverage is in draft state.<br/>– <code>entered-in-error</code>: The coverage was entered in error. |
+| period_start | date | Start date of the coverage period |
+| period_end | date | End date of the coverage period |
+| type_code | varchar | Code for coverage type |
+| type_display | varchar | Human-readable description of coverage type |
+| type_system | varchar | Coding system for coverage type |
+| subscriber_member_id | varchar | Subscriber member identifier |
+| dependent | varchar | Dependent number |
+| relationship_code | varchar | Code for relationship |
+| relationship_display | varchar | Human-readable description of relationship |
+| relationship_system | varchar | Coding system for relationship |
+| class_group_code | varchar | Group class code |
+| class_group_display | varchar | Human-readable description of group class |
+| class_group_system | varchar | Coding system for group class |
+| class_plan_code | varchar | Plan class code |
+| class_plan_display | varchar | Human-readable description of plan class |
+| class_plan_system | varchar | Coding system for plan class |
+| meta_source | varchar | Source document filename from FHIR meta.source |
+| data_source | varchar | **Deprecated.** Use `meta_source` instead. |
+| data_source_ext | varchar | Integration source of the data, derived from FHIR extension |

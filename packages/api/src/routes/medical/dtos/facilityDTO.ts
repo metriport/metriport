@@ -1,4 +1,5 @@
-import { Facility, FacilityType } from "../../../domain/medical/facility";
+import { FacilityType } from "@metriport/core/domain/facility";
+import { Facility } from "../../../domain/medical/facility";
 import { BaseDTO, toBaseDTO } from "./baseDTO";
 import { AddressStrictDTO } from "./location-address-dto";
 
@@ -14,13 +15,13 @@ export type FacilityDTO = BaseDTO & {
 export type InternalFacilityDTO = BaseDTO &
   FacilityDTO & {
     cqApproved: boolean;
-    cqType: FacilityType;
     cqActive: boolean;
-    cqOboOid: string | null;
     cwApproved: boolean;
-    cwType: FacilityType;
     cwActive: boolean;
-    cwOboOid: string | null;
+    ehexApproved: boolean;
+    ehexActive: boolean;
+    type: FacilityType;
+    principalOid: string | null;
   };
 
 export function dtoFromModel(facility: Facility): FacilityDTO {
@@ -47,12 +48,12 @@ export function internalDtoFromModel(facility: Facility): InternalFacilityDTO {
     active,
     address,
     cqApproved: facility.cqApproved,
-    cqType: facility.cqType,
     cqActive: facility.cqActive,
-    cqOboOid: facility.cqOboOid,
     cwApproved: facility.cwApproved,
-    cwType: facility.cwType,
     cwActive: facility.cwActive,
-    cwOboOid: facility.cwOboOid,
+    ehexApproved: facility.ehexApproved,
+    ehexActive: facility.ehexActive,
+    type: facility.type,
+    principalOid: facility.principalOid,
   };
 }

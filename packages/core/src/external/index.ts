@@ -5,6 +5,7 @@ export enum MedicalDataSource {
   ALL = "ALL",
   COMMONWELL = "COMMONWELL",
   CAREQUALITY = "CAREQUALITY",
+  EHEX = "EHEX",
 }
 
 export function isMedicalDataSource(s?: string | null): s is MedicalDataSource {
@@ -17,7 +18,7 @@ export const HL7OID = "2.16.840.1.113883";
 
 type ValidMedicalDataSourceOid = Exclude<
   MedicalDataSource,
-  MedicalDataSource.ALL | MedicalDataSource.CAREQUALITY
+  MedicalDataSource.ALL | MedicalDataSource.CAREQUALITY | MedicalDataSource.EHEX
 >;
 
 export const MedicalDataSourceOid: Record<ValidMedicalDataSourceOid, string> = {

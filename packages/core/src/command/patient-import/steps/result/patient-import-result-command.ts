@@ -1,6 +1,7 @@
 import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { setS3UsePathStyle } from "../../../../external/aws/s3";
 import { executeAsynchronously } from "../../../../util/concurrency";
 import { out } from "../../../../util/log";
 import { updateJobAtApi } from "../../api/update-job-status";
@@ -25,6 +26,8 @@ export async function processPatientResult({
 }: ProcessPatientResultCommandRequest): Promise<void> {
   const { log } = out(`processJobResult cmd - cxId ${cxId} jobId ${jobId}`);
   try {
+    setS3UsePathStyle(true);
+
     const resultEntries = await getResultEntries({
       cxId,
       jobId,
@@ -62,32 +65,29 @@ export async function getResultEntries({
     jobId,
     bucketName: patientImportBucket,
   });
-  const records: PatientRecord[] = [];
+  const resultEntries: ResultEntry[] = [];
   await executeAsynchronously(
     patientRecordKeys,
     async key => {
       const patientRecord = await loadPatientRecord(key, patientImportBucket);
-      records.push(patientRecord);
+      resultEntries.push({
+        rowNumber: patientRecord.rowNumber,
+        rowCsv: patientRecord.rowCsv,
+        status: patientRecord.status,
+        patientId: patientRecord.patientId,
+        reasonForCx: patientRecord.status === "failed" ? patientRecord.reasonForCx : undefined,
+        reasonForDev: patientRecord.status === "failed" ? patientRecord.reasonForDev : undefined,
+      });
     },
     {
       numberOfParallelExecutions,
     }
   );
-  const resultEntries: ResultEntry[] = records.map(r => {
-    return {
-      rowNumber: r.rowNumber,
-      rowCsv: r.rowCsv,
-      status: r.status,
-      patientId: r.patientId,
-      reasonForCx: r.status === "failed" ? r.reasonForCx : undefined,
-      reasonForDev: r.status === "failed" ? r.reasonForDev : undefined,
-    };
-  });
   return resultEntries;
 }
 
 async function loadPatientRecord(key: string, bucketName: string): Promise<PatientRecord> {
   const s3Utils = getS3UtilsInstance();
-  const file = await s3Utils.getFileContentsAsString(bucketName, key);
-  return JSON.parse(file);
+  const contents = await s3Utils.getFileContentsAsStringV3({ bucketName, key });
+  return JSON.parse(contents);
 }

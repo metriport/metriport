@@ -1,11 +1,14 @@
 import { faker } from "@faker-js/faker";
+import { FacilityType } from "@metriport/core/domain/facility";
 import { FacilityModel } from "../../../models/medical/facility";
 import { makeBaseDomain } from "../../__tests__/base-domain";
-import { Facility, FacilityData, FacilityType, isOboFacility, makeFacilityOid } from "../facility";
+import { Facility, FacilityData, isInitiatorOnly, makeFacilityOid } from "../facility";
 import { makeAddressStrict } from "./location-address";
 import { makeOrgNumber } from "./organization";
 
-export const makeFacilityNumber = () => faker.number.int({ min: 0, max: 1_000_000 });
+export function makeFacilityNumber() {
+  return faker.number.int({ min: 0, max: 1_000_000 });
+}
 
 export function makeFacilityData(data: Partial<FacilityData> = {}): FacilityData {
   return {
@@ -27,18 +30,23 @@ export function makeFacility(params: Partial<Facility> = {}): Facility {
   const facilityNumber =
     params.facilityNumber ?? getNumberFromOid(params.oid) ?? makeFacilityNumber();
   const oid = params.oid ?? makeFacilityOid(makeOrgNumber(), facilityNumber);
-  const cqType = params.cqType ?? FacilityType.initiatorAndResponder;
-  const cwType = params.cwType ?? FacilityType.initiatorAndResponder;
+  const type = params.type ?? FacilityType.initiatorAndResponder;
   const cqActive =
     params.cqActive !== undefined
       ? params.cqActive
-      : isOboFacility(cqType)
+      : isInitiatorOnly(type)
       ? faker.datatype.boolean()
       : false;
   const cwActive =
     params.cwActive !== undefined
       ? params.cwActive
-      : isOboFacility(cwType)
+      : isInitiatorOnly(type)
+      ? faker.datatype.boolean()
+      : false;
+  const ehexActive =
+    params.ehexActive !== undefined
+      ? params.ehexActive
+      : isInitiatorOnly(type)
       ? faker.datatype.boolean()
       : false;
   return {
@@ -49,22 +57,17 @@ export function makeFacility(params: Partial<Facility> = {}): Facility {
     facilityNumber,
     cqActive,
     cwActive,
-    cqOboOid:
-      params.cqOboOid !== undefined
-        ? params.cqOboOid
-        : cqType === FacilityType.initiatorOnly
-        ? faker.string.uuid()
+    ehexActive,
+    principalOid:
+      params.principalOid !== undefined
+        ? params.principalOid
+        : type === FacilityType.initiatorOnly
+        ? makeFacilityOid(makeOrgNumber(), makeFacilityNumber())
         : null,
-    cwOboOid:
-      params.cwOboOid !== undefined
-        ? params.cwOboOid
-        : cqType === FacilityType.initiatorOnly
-        ? faker.string.uuid()
-        : null,
-    cqType,
-    cwType,
+    type,
     cqApproved: false,
     cwApproved: false,
+    ehexApproved: false,
     data: makeFacilityData(params.data),
   };
 }

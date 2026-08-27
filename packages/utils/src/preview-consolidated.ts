@@ -2,9 +2,22 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { getS3UtilsInstance } from "@metriport/core/external/ehr/bundle/bundle-shared";
-import { getEnvVarOrFail, MetriportError } from "../../shared/dist";
+import { getEnvVarOrFail, MetriportError } from "@metriport/shared";
+import { execSync } from "child_process";
 import { Command } from "commander";
-import { openPreviewUrl } from "./surescripts/shared";
+
+/**
+ * @fileoverview
+ * This script provides a command-line utility to generate a signed URL for a patient's consolidated
+ * data bundle (JSON) stored in S3, and opens it for preview in a browser via
+ * https://preview.metriport.com/. Usage requires the env vars DURATION_SECONDS and MEDICAL_BUCKET_NAME
+ * to be set, and requires --cx-id and --pt-id as arguments. Designed for local usage by engineers and
+ * operators for on-demand debugging, QA, and testing of consolidated patient data exports.
+ */
+
+export function openPreviewUrl(url: string): void {
+  execSync(`open https://preview.metriport.com/?url=${encodeURIComponent(url)}`);
+}
 
 type PreviewParams = {
   cxId: string;

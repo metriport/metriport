@@ -1,5 +1,9 @@
 import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@medplum/fhirtypes";
-import { PaginatedResponse } from "@metriport/shared";
+import {
+  CohortUpdateRequestWithoutSettings,
+  CohortWithSizeResponseWithoutOverrides,
+  PaginatedResponse,
+} from "@metriport/shared";
 import {
   WebhookRequest,
   WebhookRequestParsingFailure,
@@ -33,6 +37,12 @@ import {
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
 import { NetworkEntry } from "../models/network-entry";
+import {
+  GetNetworkQueryStatusRequest,
+  NetworkQueryStatusDtoParsed,
+  networkQueryStatusDtoSchema,
+  StartNetworkQueryRequest,
+} from "@metriport/shared/domain/network-query";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
 import {
   GetConsolidatedQueryProgressResponse,
@@ -46,14 +56,18 @@ import {
 } from "../models/patient";
 import { PatientDTO } from "../models/patientDTO";
 import { SettingsResponse } from "../models/settings-response";
+import { CreateEmbedTokenRequest, CreateEmbedTokenResponse } from "../models/embed-token";
 
 const NO_DATA_MESSAGE = "No data returned from API";
 const BASE_PATH = "/medical/v1";
 const ORGANIZATION_URL = `/organization`;
 const FACILITY_URL = `/facility`;
+const COHORT_URL = `/cohort`;
 const NETWORK_ENTRY_URL = `/network-entry`;
+const NETWORK_QUERY_URL = `/network/query`;
 const PATIENT_URL = `/patient`;
 const DOCUMENT_URL = `/document`;
+const TOKEN_URL = `/token`;
 const REQUEST_ID_HEADER_NAME = "x-metriport-request-id";
 
 export type Options = {
@@ -338,6 +352,52 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Starts a network query for the specified patient across available health data networks.
+   * This triggers an asynchronous query against various kinds of health data sources including
+   * HIEs, pharmacies, and laboratories.
+   *
+   * As data from each source is processed and merged into the patient's consolidated data,
+   * `network-query.*` webhook events are emitted.
+   *
+   * Note: This endpoint returns a 2XX status code even when one or more data sources fail
+   * to start. Source-level failures are reported in the `errors` array of the response body.
+   *
+   * @param request.patientId The ID of the patient for which to query health data.
+   * @param request.sources An array of data sources to query. Must contain at least one value.
+   *        Possible values: "hie", "pharmacy", "lab".
+   * @param request.metadata Optional custom metadata to include with the request.
+   *        This will be returned in webhook payloads.
+   * @returns The network query status including requestId, status, sources, and any errors.
+   */
+  async startNetworkQuery(request: StartNetworkQueryRequest): Promise<NetworkQueryStatusDtoParsed> {
+    const { patientId, sources, metadata } = request;
+    const resp = await this.api.post(
+      NETWORK_QUERY_URL,
+      { sources, metadata },
+      { params: { patientId } }
+    );
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return networkQueryStatusDtoSchema.parse(resp.data);
+  }
+
+  /**
+   * Returns the status of a specific network query request.
+   * Use this to check the progress of the query.
+   *
+   * @param request.requestId The ID of the network query request.
+   *        This is returned when you start a network query.
+   * @returns The network query status including requestId, status, sources, and any errors.
+   */
+  async getNetworkQueryStatus(
+    request: GetNetworkQueryStatusRequest
+  ): Promise<NetworkQueryStatusDtoParsed> {
+    const { requestId } = request;
+    const resp = await this.api.get(`${NETWORK_QUERY_URL}/${requestId}`);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return networkQueryStatusDtoSchema.parse(resp.data);
+  }
+
+  /**
    * Creates a new patient at Metriport and HIEs.
    *
    * @param data The data to be used to create a new patient.
@@ -537,7 +597,7 @@ export class MetriportMedicalApi {
    * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param conversionType Optional to indicate how the medical record should be rendered - one of:
    *      "pdf", "html", or "json" (defaults to "json"). The Webhook payload
-   *      will contain a signed URL to download the file, which is active for 3 minutes.
+   *      will contain a signed URL to download the file, which is active for 10 minutes.
    * @param fromDashboard Optional parameter to indicate that the request is coming from the dashboard.
    * @param metadata Optional metadata to be sent along the webhook request as response of this query.
    * @return The consolidated data query status.
@@ -694,12 +754,167 @@ export class MetriportMedicalApi {
         ...getPaginationParams(pagination),
       },
     });
-    if (!resp.data) return { meta: { itemsOnPage: 0 }, patients: [] };
+    if (!resp.data) return { patients: [], meta: { itemsOnPage: 0 } };
     return resp.data;
   }
 
   async listPatientsPage(url: string): Promise<PaginatedResponse<PatientDTO, "patients">> {
     const resp = await this.api.get(url);
+    return resp.data;
+  }
+
+  /**
+   * Deletes an existing cohort.
+   * @param id The ID of the cohort to delete.
+   */
+  async deleteCohort(id: string): Promise<void> {
+    await this.api.delete(`${COHORT_URL}/${id}`);
+  }
+
+  /**
+   * Update an existing cohort. This does a partial update of payload contents excluding settings.
+   * Please contact us if you need to update cohort settings.
+   * @param cohort The properties of the cohort to update, including the id.
+   * @returns The updated cohort.
+   */
+  async updateCohort(
+    cohort: CohortUpdateRequestWithoutSettings & { id: string }
+  ): Promise<CohortWithSizeResponseWithoutOverrides> {
+    const { id, ...cohortData } = cohort;
+    const resp = await this.api.patch(`${COHORT_URL}/${id}`, cohortData, {
+      headers: { ...getETagHeader({ eTag: cohort.eTag }) },
+    });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data;
+  }
+
+  /**
+   * Returns the cohort with the given ID.
+   * @param id The ID of the cohort to return.
+   * @returns The specified cohort.
+   */
+  async getCohort(id: string): Promise<CohortWithSizeResponseWithoutOverrides> {
+    const resp = await this.api.get(`${COHORT_URL}/${id}`);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data;
+  }
+
+  /**
+   * Returns all available cohorts.
+   * @returns All available cohorts.
+   */
+  async listCohorts(): Promise<{ cohorts: CohortWithSizeResponseWithoutOverrides[] }> {
+    const resp = await this.api.get(`${COHORT_URL}`);
+    if (!resp.data) return { cohorts: [] };
+    return resp.data;
+  }
+
+  /**
+   * Add patients to a cohort.
+   * @param cohortId The ID of the cohort to add patients to.
+   * @param patientIds The IDs of the patients to add to the cohort.
+   * @param allPatients Property to confirm you want to assign all patients to the cohort.
+   * @returns The updated cohort with a message.
+   */
+  async addPatientsToCohort({
+    cohortId,
+    patientIds,
+    allPatients,
+  }: {
+    cohortId: string;
+    patientIds?: string[];
+    allPatients?: boolean;
+  }): Promise<{ message: string; cohort: CohortWithSizeResponseWithoutOverrides }> {
+    const data = {
+      allPatients,
+      patientIds,
+    };
+    const resp = await this.api.post(`${COHORT_URL}/${cohortId}/patient`, data);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data;
+  }
+
+  /**
+   * Remove patients from a cohort.
+   * @param cohortId The ID of the cohort to remove patients from.
+   * @param patientIds The IDs of the patients to remove from the cohort.
+   * @param allPatients Property to confirm you want to remove all patients from the cohort.
+   * @returns The updated cohort with a message.
+   */
+  async removePatientsFromCohort({
+    cohortId,
+    patientIds,
+    allPatients,
+  }: {
+    cohortId: string;
+    patientIds?: string[];
+    allPatients?: boolean;
+  }): Promise<{ message: string; cohort: CohortWithSizeResponseWithoutOverrides }> {
+    const data = {
+      allPatients,
+      patientIds,
+    };
+    const resp = await this.api.delete(`${COHORT_URL}/${cohortId}/patient`, { data });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data;
+  }
+
+  /**
+   * Lists patients in a cohort.
+   * @param id The ID of the cohort to list patients from.
+   * @param pagination Pagination settings, optional. If not provided, the first page will be returned.
+   *                   See https://docs.metriport.com/medical-api/more-info/pagination
+   * @returns An object containing:
+   * - `patients` - A single page containing the patients in the cohort.
+   * - `meta` - Pagination information, including how to get to the next page.
+   */
+  async listPatientsInCohort({
+    id,
+    pagination,
+  }: {
+    id: string;
+    pagination?: Pagination | undefined;
+  }): Promise<PaginatedResponse<PatientDTO, "patients">> {
+    const resp = await this.api.get(`${COHORT_URL}/${id}/patient`, {
+      params: {
+        ...getPaginationParams(pagination),
+      },
+    });
+    if (!resp.data) return { patients: [], meta: { itemsOnPage: 0 } };
+    return resp.data;
+  }
+
+  async getCohortPatientsPage(url: string): Promise<PaginatedResponse<PatientDTO, "patients">> {
+    const resp = await this.api.get(url);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data;
+  }
+
+  /**
+   * Add a patient to multiple cohorts.
+   * @param patientId The ID of the patient to add to cohorts.
+   * @param cohortIds The IDs of the cohorts to add the patient to.
+   * @returns The list of cohorts the patient is a member of.
+   */
+  async addPatientToCohorts(
+    patientId: string,
+    cohortIds: string[]
+  ): Promise<{ cohorts: CohortWithSizeResponseWithoutOverrides[] }> {
+    const resp = await this.api.post(`${PATIENT_URL}/${patientId}/cohort`, { cohortIds });
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data;
+  }
+
+  /**
+   * Returns all cohorts assigned to a patient.
+   * @param id The ID of the patient.
+   * @returns The list of cohorts assigned to the patient.
+   */
+  async listCohortsForPatient(
+    id: string
+  ): Promise<{ cohorts: CohortWithSizeResponseWithoutOverrides[] }> {
+    const resp = await this.api.get(`${PATIENT_URL}/${id}/cohort`);
+    if (!resp.data) return { cohorts: [] };
     return resp.data;
   }
 
@@ -966,6 +1181,18 @@ export class MetriportMedicalApi {
     const parse = webhookRequestSchema.safeParse(reqBody);
     if (parse.success) return parse.data;
     return new WebhookRequestParsingFailure(parse.error, parse.error.format());
+  }
+
+  /**
+   * Creates an access token for embedding Metriport components in your application.
+   *
+   * @param data.expirationInSeconds - Optional expiration time in seconds (max 36000, default 36000).
+   * @returns The generated access token.
+   */
+  async createEmbedToken(data: CreateEmbedTokenRequest): Promise<CreateEmbedTokenResponse> {
+    const resp = await this.api.post<CreateEmbedTokenResponse>(`${TOKEN_URL}/embed`, data);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data;
   }
 }
 

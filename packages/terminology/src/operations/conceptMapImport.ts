@@ -1,9 +1,10 @@
 import { FhirRequest, FhirResponse } from "@medplum/fhir-router";
 import { ConceptMap } from "@medplum/fhirtypes";
 import { normalizeOperationOutcome } from "@medplum/core";
+import { errorToString } from "@metriport/shared";
 import { v4 as uuidv4 } from "uuid";
-
 import { getTermServerClient } from "../init-term-server";
+import { out } from "../log";
 
 function generateReverseConceptMaps(conceptMap: ConceptMap): ConceptMap[] {
   const reverseMaps: ConceptMap[] = [];
@@ -53,6 +54,7 @@ export async function conceptMapImportHandler(
   req: FhirRequest,
   isReversible: boolean
 ): Promise<FhirResponse | ConceptMap[]> {
+  const { log } = out("conceptMapImportHandler");
   try {
     const conceptMap = req.body as ConceptMap;
     const reverseMaps = isReversible ? generateReverseConceptMaps(conceptMap) : [];
@@ -84,11 +86,11 @@ export async function conceptMapImportHandler(
 
       return allMaps;
     } catch (error) {
-      console.log(`Operation failed: ${error}`);
+      log(`Operation failed: ${errorToString(error)}`);
       throw error;
     }
   } catch (error) {
-    console.log(`Error: ${error}`);
+    log(`Error: ${errorToString(error)}`);
     return [normalizeOperationOutcome(error)];
   }
 }

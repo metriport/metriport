@@ -13,7 +13,7 @@ FILE1=$1
 
 # Path to @develop-fhir-resource-count.json
 # Assuming the script is run from the directory containing the fhir-resource-counts folder
-FILE2="./src/fhir-converter/fhir-resource-counts/develop-fhir-resource-count.json"
+FILE2="./src/fhir/fhir-converter/fhir-resource-counts/develop-fhir-resource-count.json"
 
 # Check if FILE2 exists
 if [ ! -f "$FILE2" ]; then

@@ -13,6 +13,6 @@ export class FhirToCdaConverterDirect implements FhirToCdaConverter {
     const organization = await getOrganizationOrFail({ cxId });
     const isCustodian = await isCdaCustodianEnabledForCx(cxId);
     const bundles = splitCompositions ? splitBundleByCompositions(bundle) : bundle;
-    return convertFhirBundleToCda(bundles, organization.oid, isCustodian);
+    return convertFhirBundleToCda(cxId, bundles, organization.oid, isCustodian);
   }
 }

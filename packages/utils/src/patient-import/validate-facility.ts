@@ -2,21 +2,22 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 
-import fs from "fs";
-import path from "path";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { Config } from "@metriport/core/util/config";
+import { errorToString } from "@metriport/shared";
+import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
+import { Patient } from "@metriport/shared/domain/patient";
 import axios from "axios";
 import { Command } from "commander";
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { getEnvVarOrFail } from "@metriport/shared/common/env-var";
+import fs from "fs";
+import path from "path";
 import {
-  readCsv,
-  streamCsv,
-  startOutputCsv,
   appendToOutputCsv,
   getCsvRunsPath,
+  readCsv,
+  startOutputCsv,
+  streamCsv,
 } from "../shared/csv";
-import { buildExternalIdToPatientMap } from "./shared";
-import { errorToString } from "@metriport/shared";
 
 /**
  * This script reads a CSV roster and ensures that each patient is associated with the correct facility,
@@ -148,7 +149,6 @@ async function main({
   // Construct mappings of existing Metriport IDs
   console.log("Building facility and external ID to patient mapping...");
   const { facilityNameToId } = await buildFacilityMapping(csvFacility);
-  const externalIdToPatient = await buildExternalIdToPatientMap(cxId);
 
   // Write output CSV with changes
   startOutputCsv(csvOutput, [
@@ -163,14 +163,19 @@ async function main({
   const facilityChanges: FacilityChange[] = [];
 
   console.log("Processing roster to find facility changes...");
-  const { rowsProcessed, errorCount } = await streamCsv<CsvRosterRow>(csvRoster, row => {
+  const { rowsProcessed, errorCount } = await streamCsv<CsvRosterRow>(csvRoster, async row => {
     const { externalId, facilityName } = getExternalIdAndFacilityName(row);
-    const patient = externalIdToPatient[externalId];
+    const response = await axios.get(
+      `${Config.getApiUrl()}/patient/external-id?externalId=${externalId}&cxId=${cxId}`
+    );
+    let patient: Patient | undefined;
+    if (response.status === 200) {
+      patient = response.data;
+    }
     if (!patient) {
       totalPatientsNotFound++;
       return;
     }
-
     const currentFacilityId = patient.facilityIds[0];
     if (!currentFacilityId) {
       totalFacilityIdsNotFound++;

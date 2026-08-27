@@ -1,4 +1,3 @@
-import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import {
   CodeableConcept,
   DiagnosticReport,
@@ -8,15 +7,16 @@ import {
   ServiceRequest,
   Specimen,
 } from "@medplum/fhirtypes";
-import { LOINC_URL } from "@metriport/shared/medical";
-import { ResponseDetail } from "../schema/response";
-import { getPatientReference } from "./patient";
-import { getSpecimenReference } from "./specimen";
+import { GENERIC_LOINC_LAB_RESULT_CODE, LOINC_URL } from "@metriport/shared/medical";
+import { stringToBase64 } from "@metriport/shared/util/base64";
+import { uuidv7 } from "@metriport/shared/util/uuid-v7";
 import { getDiagnosticReportCategory } from "../../fhir/resources/diagnostic-report";
+import { ResponseDetail } from "../schema/response";
+import { getObservationReference } from "./observation";
+import { getPatientReference } from "./patient";
 import { getServiceRequestReference } from "./service-request";
 import { getQuestDataSourceExtension } from "./shared";
-import { getObservationReference } from "./observation";
-import { stringToBase64 } from "@metriport/shared/util/base64";
+import { getSpecimenReference } from "./specimen";
 
 export function getDiagnosticReport(
   detail: ResponseDetail,
@@ -67,13 +67,14 @@ function getPresentedForm(detail: ResponseDetail): DiagnosticReport["presentedFo
   return [{ contentType: "text/plain", data: stringToBase64(detail.resultComments) }];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function getDiagnosticReportCoding(detail: ResponseDetail): CodeableConcept | undefined {
-  if (!detail.loincCode) return undefined;
   return {
     coding: [
       {
         system: LOINC_URL,
-        code: detail.loincCode,
+        // TODO ENG-1780: Add proper mapping from STANDARD_PROFILE_CODE in the source data to a loinc code.
+        code: GENERIC_LOINC_LAB_RESULT_CODE,
       },
     ],
   };

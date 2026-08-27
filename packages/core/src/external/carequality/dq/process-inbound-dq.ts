@@ -1,4 +1,6 @@
 import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
+import { buildDayjs } from "@metriport/shared/common/date";
+import httpStatus from "http-status";
 import { ensureCcdExists } from "../../../shareback/ensure-ccd-exists";
 import { getMetadataDocumentContents } from "../../../shareback/metadata/get-metadata-xml";
 import { out } from "../../../util/log";
@@ -23,7 +25,8 @@ export async function processInboundDq(
       id: payload.id,
       patientId: payload.patientId,
       timestamp: payload.timestamp,
-      responseTimestamp: new Date().toISOString(),
+      responseTimestamp: buildDayjs().toISOString(),
+      responseHttpStatusCode: httpStatus.OK,
       extrinsicObjectXmls: metadataDocumentContents,
       signatureConfirmation: payload.signatureConfirmation,
     };

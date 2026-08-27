@@ -9,13 +9,17 @@ import {
   buildFhirParametersFromCoding,
   buildMultipleFhirParametersFromCodings,
   crosswalkCode,
-  lookupMultipleCodes,
+  lookupByCode,
 } from "../../term-server";
 import { findCodeableConcepts, isUsefulDisplay } from "../codeable-concept";
 import { findPatientResource, isCondition, isEncounter, isMedication } from "../shared";
 import { dangerouslyHydrateCondition } from "./resources/condition";
 
 const NUMBER_OF_PARALLEL_CROSSWALKS = 10;
+
+export type HydrationOptions = {
+  lookupConditionCodeByDisplay: boolean;
+};
 
 /**
  * This function first collects all of the different Coding elements from the Bundle,
@@ -32,10 +36,15 @@ const NUMBER_OF_PARALLEL_CROSSWALKS = 10;
  * Cons:
  * - This implementation doesn't allow us to obfuscate the Term Server-related logic outside of this function.
  */
-export async function hydrateFhir(
-  fhirBundle: Bundle<Resource>,
-  log: typeof console.log
-): Promise<{ metadata?: Record<string, string | number>; data: Bundle<Resource> }> {
+export async function hydrateFhir({
+  fhirBundle,
+  options,
+  log,
+}: {
+  fhirBundle: Bundle<Resource>;
+  options: HydrationOptions;
+  log: typeof console.log;
+}): Promise<{ metadata?: Record<string, string | number>; data: Bundle<Resource> }> {
   const hydratedBundle: Bundle = cloneDeep(fhirBundle);
 
   const crosswalkErrors: string[] = [];
@@ -56,7 +65,12 @@ export async function hydrateFhir(
         // TODO: ENG-1149 - Refactor to use batch crosswalk
         try {
           if (isCondition(res)) {
-            await dangerouslyHydrateCondition(res, encounters, patientId);
+            await dangerouslyHydrateCondition({
+              condition: res,
+              encounters,
+              patientId,
+              lookupCodeByDisplay: options.lookupConditionCodeByDisplay,
+            });
           } else if (isMedication(res)) {
             await dangerouslyHydrateMedication(res);
           }
@@ -84,7 +98,7 @@ export async function hydrateFhir(
   }
 
   const lookupParametersArray = Array.from(lookupParametersMap.values());
-  const result = await lookupMultipleCodes(lookupParametersArray, log);
+  const result = await lookupByCode(lookupParametersArray);
   if (!result) return { data: hydratedBundle };
 
   const codesMap = new Map<string, object>();

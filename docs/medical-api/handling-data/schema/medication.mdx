@@ -18,7 +18,9 @@ A medication resource is used for the identification and definition of a medicat
 | rxnorm_display | varchar | Human-readable description from RxNorm |
 | ndc_code | varchar | National Drug Code for the medication |
 | ndc_display | varchar | Human-readable description from NDC |
-| data_source | varchar | Source of the medication data |
+| meta_source | varchar | Source document filename from FHIR meta.source |
+| data_source | varchar | **Deprecated.** Use `meta_source` instead. |
+| data_source_ext | varchar | Integration source of the data, derived from FHIR extension |
 
 **Related Tables:**
 * [Medication Administration](/medical-api/handling-data/schema/medication-administration) - Records of medication administration

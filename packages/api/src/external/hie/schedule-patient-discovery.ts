@@ -13,20 +13,20 @@ export async function schedulePatientDiscovery({
   source,
   requestId,
   facilityId,
-  orgIdExcludeList,
   rerunPdOnNewDemographics,
   forceCarequality,
   forceCommonwell,
+  forceEhex,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
   source: MedicalDataSource;
   requestId: string;
   facilityId: string;
-  orgIdExcludeList?: string[];
   rerunPdOnNewDemographics?: boolean;
   // START TODO #1572 - remove
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
+  forceEhex?: boolean;
   // END TODO #1572 - remove
 }): Promise<void> {
   const { log } = out(`${source} PD - requestId ${requestId}, patient ${id}`);
@@ -50,10 +50,10 @@ export async function schedulePatientDiscovery({
         scheduledPdRequest: {
           requestId,
           facilityId,
-          orgIdExcludeList,
           rerunPdOnNewDemographics,
           forceCommonwell,
           forceCarequality,
+          forceEhex,
         },
       },
     };

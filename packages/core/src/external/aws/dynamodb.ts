@@ -102,3 +102,15 @@ export class DynamoDbUtils {
     };
   }
 }
+
+export function isConditionalCheckFailedError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  return (
+    ("name" in error && error.name === "ConditionalCheckFailedException") ||
+    ("code" in error && error.code === "ConditionalCheckFailedException") ||
+    ("Code" in error && error.Code === "ConditionalCheckFailedException")
+  );
+}

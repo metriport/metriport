@@ -1,0 +1,32 @@
+---
+title: "Allergy Intolerance Reaction"
+description: "Schema documentation for the Allergy Intolerance Reaction table in the Metriport data model"
+group: "Schema"
+icon: "n/a"
+---
+
+The `allergy_intolerance_reaction` table records individual reactions that have occurred for an allergy/intolerance. Each allergy/intolerance can have multiple reactions.
+
+**Primary Keys:**
+
+- allergy_intolerance_reaction_id
+
+**Foreign Keys:**
+
+- allergy_intolerance_id - links to the [allergy intolerance](/medical-api/handling-data/schema/allergy-intolerance/base) table
+
+| Column | Data Type | Description |
+| ------ | --------- | ----------- |
+| allergy_intolerance_reaction_id | varchar | Unique identifier for the allergy intolerance reaction |
+| allergy_intolerance_id | varchar | Unique identifier for the allergy intolerance |
+| snomed_code | varchar | SNOMED CT code for the specific substance or pharmaceutical product considered to be responsible for event |
+| snomed_display | varchar | Human-readable description of SNOMED CT code |
+| source_substance_code | varchar | Original code of the specific substance or pharmaceutical product considered to be responsible for event |
+| source_substance_display | varchar | Original display of the specific substance or pharmaceutical product considered to be responsible for event |
+| source_substance_system | varchar | Original system of the specific substance or pharmaceutical product considered to be responsible for event |
+| onset_datetime | datetime | Date when the allergy/intolerance reaction began |
+| severity | varchar | Severity of the reaction. Possible values:<br/>– <code>mild</code>: The reaction is mild in nature.<br/>– <code>moderate</code>: The reaction is moderate in nature.<br/>– <code>severe</code>: The reaction is severe in nature. |
+
+**Related Tables:**
+
+- [Allergy Intolerance Reaction Manifestation](/medical-api/handling-data/schema/allergy-intolerance/reaction-manifestation) - Records of specific manifestations of this reaction

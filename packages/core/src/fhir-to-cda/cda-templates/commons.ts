@@ -11,6 +11,7 @@ import {
 } from "@medplum/fhirtypes";
 import { normalizeOid, toArray } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { ICD_10_OID, ICD_10_URL, NDC_OID, NDC_URL } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import localizedFormat from "dayjs/plugin/localizedFormat";
 import utc from "dayjs/plugin/utc";
@@ -58,6 +59,7 @@ dayjs.extend(localizedFormat);
 dayjs.extend(utc);
 
 const CODING_MAP = new Map<string, string>();
+// TODO: Replace with constants from @metriport/shared/medical
 CODING_MAP.set("http://loinc.org", loincSystemCode);
 CODING_MAP.set("http://snomed.info/sct", snomedSystemCode);
 CODING_MAP.set("http://www.nlm.nih.gov/research/umls/rxnorm", nlmNihSystemCode);
@@ -66,7 +68,8 @@ CODING_MAP.set("http://fdasis.nlm.nih.gov", fdasisSystemCode);
 CODING_MAP.set("http://terminology.hl7.org/codesystem/v3-actcode", hl7ActCode);
 CODING_MAP.set("http://nucc.org/provider-taxonomy", providerTaxonomy);
 CODING_MAP.set("http://hl7.org/fhir/sid/cvx", vaccineAdministeredCodeSet);
-
+CODING_MAP.set(ICD_10_URL, ICD_10_OID);
+CODING_MAP.set(NDC_URL, NDC_OID);
 CODING_MAP.set("icd-10", icd10SystemCode);
 
 export const TIMESTAMP_CLEANUP_REGEX = /-|T|:|\.\d+Z$/g;
@@ -413,7 +416,8 @@ function mapAddressUse(use: string | undefined): CdaAddressUse | undefined {
       return "CONF";
     case "direct":
       return "DIR";
-    case "home" || "home address":
+    case "home":
+    case "home address":
       return "H";
     case "primary home":
       return "HP";
@@ -445,7 +449,8 @@ function mapTelecomUse(use: string | undefined): CdaTelecomUse | undefined {
       return "AS";
     case "emergency contact":
       return "EC";
-    case "home" || "primary home":
+    case "home":
+    case "primary home":
       return "HP";
     case "vacation home":
       return "HV";
@@ -453,7 +458,8 @@ function mapTelecomUse(use: string | undefined): CdaTelecomUse | undefined {
       return "MC";
     case "pager":
       return "PG";
-    case "work" || "work place":
+    case "work":
+    case "work place":
       return "WP";
     default:
       return "WP";
@@ -541,37 +547,40 @@ export function getDisplaysFromCodeableConcepts(
 export function buildPerformer(practitioners: Practitioner[] | undefined): AssignedEntity[] {
   return (
     practitioners?.flatMap(p => {
-      return (
-        {
-          assignedEntity: {
-            id: buildInstanceIdentifier({
-              root: placeholderOrgOid,
-              extension: p.id,
-            }),
-            code: p.qualification?.flatMap(
-              qualif => buildCodeCvFromCodeableConcept(qualif.code) || []
-            ),
-            addr: buildAddress(p.address),
-            telecom: buildTelecom(p.telecom),
-            assignedPerson: {
-              name: {
-                given: p.name
-                  ?.flatMap(n => `${n.given}${n.suffix ? `, ${n.suffix}` : ""}`)
-                  .join(", "),
-                family: p.name?.flatMap(n => n.family).join(", "),
-              },
-            },
-            representedOrganization: {
-              _classCode: "ORG",
-              name: {
-                "#text": "",
-              },
-              telecom: buildTelecom(p.telecom),
-              addr: buildAddress(p.address),
+      return {
+        assignedEntity: {
+          id: buildInstanceIdentifier({
+            root: placeholderOrgOid,
+            extension: p.id,
+          }),
+          code: p.qualification?.flatMap(
+            qualif => buildCodeCvFromCodeableConcept(qualif.code) || []
+          ),
+          addr: buildAddress(p.address),
+          telecom: buildTelecom(p.telecom),
+          assignedPerson: {
+            name: {
+              given: p.name
+                ?.flatMap(n => {
+                  const givenStr = n.given?.join(", ") ?? "";
+                  const suffixStr =
+                    n.suffix && n.suffix.length > 0 ? `, ${n.suffix.join(", ")}` : "";
+                  return `${givenStr}${suffixStr}`;
+                })
+                .join(", "),
+              family: p.name?.flatMap(n => n.family).join(", "),
             },
           },
-        } || []
-      );
+          representedOrganization: {
+            _classCode: "ORG",
+            name: {
+              "#text": "",
+            },
+            telecom: buildTelecom(p.telecom),
+            addr: buildAddress(p.address),
+          },
+        },
+      };
     }) || []
   );
 }

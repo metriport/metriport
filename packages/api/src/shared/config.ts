@@ -11,7 +11,7 @@ export class Config {
   static readonly SANDBOX_PATIENT_LIMIT = 20;
 
   static isCloudEnv(): boolean {
-    return process.env.NODE_ENV === this.PROD_ENV;
+    return process.env["NODE_ENV"] === this.PROD_ENV;
   }
   static getEnvType(): string {
     return getEnvVarOrFail("ENV_TYPE");
@@ -97,7 +97,6 @@ export class Config {
   static getCQOrgCertificate(): string {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE");
   }
-
   static getCQOrgUrls(): string | undefined {
     return getEnvVar("CQ_ORG_URLS");
   }
@@ -106,6 +105,44 @@ export class Config {
   }
   static getCqAdditionalOrgs(): string | undefined {
     return getEnvVar("CQ_ADDITIONAL_ORGS");
+  }
+  static getCQOrgCertificateIntermediate(): string {
+    return getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE");
+  }
+  static getCqDirRebuildHeartbeatUrl() {
+    return getEnvVar("CQ_DIR_REBUILD_HEARTBEAT_URL");
+  }
+
+  static getEhexManagementApiKey(): string {
+    return getEnvVarOrFail("EHEX_MANAGEMENT_API_KEY");
+  }
+  static getEhexOrgPrivateKey(): string {
+    return getEnvVarOrFail("EHEX_ORG_PRIVATE_KEY");
+  }
+  static getEhexOrgPrivateKeyPassword(): string {
+    return getEnvVarOrFail("EHEX_ORG_PRIVATE_KEY_PASSWORD");
+  }
+  static getEhexOrgCertificate(): string {
+    return getEnvVarOrFail("EHEX_ORG_CERTIFICATE");
+  }
+  // TODO ENG-1601 Duplicate of Config.getEhexServiceOwnUrls() on packages/core, remove this one and keep the one in packages/core.
+  static getEhexOrgUrls(): string | undefined {
+    return getEnvVar("EHEX_ORG_URLS");
+  }
+  static getEhexUrlsToExclude(): string | undefined {
+    return getEnvVar("EHEX_URLS_TO_EXCLUDE");
+  }
+  static getEhexAdditionalOrgs(): string | undefined {
+    return getEnvVar("EHEX_ADDITIONAL_ORGS");
+  }
+  static getEhexOrgCertificateIntermediate(): string {
+    return getEnvVarOrFail("EHEX_ORG_CERTIFICATE_INTERMEDIATE");
+  }
+  static getEhexDirRebuildHeartbeatUrl(): string | undefined {
+    return getEnvVar("EHEX_DIR_REBUILD_HEARTBEAT_URL");
+  }
+  static getEhexHubGroupedQueryUrl(): string | undefined {
+    return getEnvVar("EHEX_HUB_GROUPED_QUERY_URL");
   }
 
   static getPlaceIndexName(): string {
@@ -262,6 +299,10 @@ export class Config {
     return getEnvVar("SANDBOX_SEED_DATA_BUCKET_NAME");
   }
 
+  static getCohortSeedId(): string {
+    return getEnvVarOrFail("COHORT_SEED_ID");
+  }
+
   static getFHIRConverterQueueURL(): string | undefined {
     return getEnvVar("FHIR_CONVERTER_QUEUE_URL");
   }
@@ -281,8 +322,8 @@ export class Config {
     return getEnvVarOrFail("DOCUMENT_DOWNLOADER_LAMBDA_NAME");
   }
 
-  static getFHIRToMedicalRecordLambda2Name(): string | undefined {
-    return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA2_NAME");
+  static getFHIRToMedicalRecordLambdaName(): string | undefined {
+    return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
   }
 
   static getOutboundPatientDiscoveryLambdaName(): string | undefined {
@@ -305,13 +346,6 @@ export class Config {
     return getEnvVar("CW_CQ_PATIENT_LINK_QUEUE_URL");
   }
 
-  static getCQOrgCertificateIntermediate(): string {
-    return getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE");
-  }
-  static getOrgOidsWithIHEGatewayV2Enabled(): string {
-    return getEnvVarOrFail("OIDS_WITH_IHE_GATEWAY_V2_ENABLED");
-  }
-
   static getRateLimitTableName(): string | undefined {
     return getEnvVar("RATE_LIMIT_TABLE_NAME");
   }
@@ -320,11 +354,15 @@ export class Config {
     return getEnvVar("OUTBOUND_RATE_LIMIT_TABLE_NAME");
   }
 
-  static getCqDirRebuildHeartbeatUrl() {
-    return getEnvVar("CQ_DIR_REBUILD_HEARTBEAT_URL");
+  static getPatientStateTableName(): string {
+    return getEnvVarOrFail("PATIENT_STATE_TABLE_NAME");
   }
 
   static getCwDirRebuildHeartbeatUrl() {
     return getEnvVar("CW_DIR_REBUILD_HEARTBEAT_URL");
+  }
+
+  static getCwDirHeartbeatUrl() {
+    return getEnvVar("CW_DIR_HEARTBEAT_URL");
   }
 }

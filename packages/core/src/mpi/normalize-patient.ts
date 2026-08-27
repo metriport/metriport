@@ -2,6 +2,8 @@ import {
   errorToString,
   normalizePhoneNumber as normalizePhoneNumberFromShared,
   normalizeZipCodeNew,
+  normalizeZipCodeRelaxed,
+  USStateForAddress,
 } from "@metriport/shared";
 import { Address } from "../domain/address";
 import { PatientData } from "../domain/patient";
@@ -31,7 +33,7 @@ export function normalizePatient<T extends PatientData>(patient: T): T {
       email: contact.email ? normalizeEmail(contact.email) : contact.email,
       phone: contact.phone ? normalizePhoneNumber(contact.phone) : contact.phone,
     })),
-    address: (patient.address ?? []).map(addr => {
+    address: (patient.address ?? []).flatMap(addr => {
       try {
         const newAddress: Address = {
           addressLine1: normalizeAddress(addr.addressLine1),
@@ -41,26 +43,48 @@ export function normalizePatient<T extends PatientData>(patient: T): T {
           country: addr.country || "USA",
         };
         if (addr.addressLine2) {
-          newAddress.addressLine2 = normalizeAddress(addr.addressLine2);
+          newAddress.addressLine2 = normalizeString(addr.addressLine2);
         }
         return newAddress;
       } catch (err) {
         const msg = `Failed to parse the address for MPI`;
         log(`${msg} - error ${errorToString(err)}`);
       }
-      return undefined;
+      return [];
     }),
   };
   return normalizedPatient;
 }
 
-export function normalizePatientInboundMpi<T extends PatientData>(patient: T): T {
+export type RelaxedAddress = Omit<Address, "addressLine1" | "city" | "state" | "zip"> & {
+  addressLine1?: string | undefined;
+  city?: string | undefined;
+  state?: USStateForAddress | undefined;
+  zip?: string | undefined;
+};
+
+export type PatientDataForMpiMatching = Pick<
+  PatientData,
+  | "firstName"
+  | "lastName"
+  | "contact"
+  | "requestId"
+  | "dob"
+  | "genderAtBirth"
+  | "personalIdentifiers"
+> & {
+  address: RelaxedAddress[];
+};
+
+export function normalizePatientInboundMpi(
+  patient: PatientDataForMpiMatching
+): PatientDataForMpiMatching {
   const { log } = out(`MPI normalize patient, request id - ${patient.requestId}`);
 
   const firstName = normalizeString(patient.firstName);
   const lastName = normalizeString(patient.lastName);
 
-  const normalizedPatient: T = {
+  const normalizedPatient: PatientDataForMpiMatching = {
     ...patient,
     firstName,
     lastName,
@@ -69,26 +93,30 @@ export function normalizePatientInboundMpi<T extends PatientData>(patient: T): T
       email: contact.email ? normalizeEmail(contact.email) : contact.email,
       phone: contact.phone ? normalizePhoneNumber(contact.phone) : contact.phone,
     })),
-    address: (patient.address ?? []).map(addr => {
+    address: (patient.address ?? []).flatMap(addr => {
       try {
-        const newAddress: Address = {
+        const newAddress: RelaxedAddress = {
           // TODO 2368 address normalization needs improvements
-          // https://github.com/metriport/metriport-internal/issues/2368
-          addressLine1: normalizeAddress(addr.addressLine1),
-          city: normalizeString(addr.city),
-          zip: normalizeZipCodeNew(addr.zip),
+          addressLine1: normalizeAddressOptional(addr.addressLine1),
+          city: normalizeStringOptional(addr.city),
+          zip: normalizeZipCodeRelaxed(addr.zip),
           state: addr.state,
           country: addr.country || "USA",
         };
         if (addr.addressLine2) {
-          newAddress.addressLine2 = normalizeAddress(addr.addressLine2);
+          newAddress.addressLine2 = normalizeString(addr.addressLine2);
         }
+
+        const hasLocationData =
+          !!newAddress.addressLine1 || !!newAddress.city || !!newAddress.state || !!newAddress.zip;
+        if (!hasLocationData) return [];
+
         return newAddress;
       } catch (err) {
         const msg = `Failed to parse the address for MPI`;
         log(`${msg} - error ${errorToString(err)}`);
       }
-      return;
+      return [];
     }),
   };
   return normalizedPatient;
@@ -103,6 +131,11 @@ export function normalizePatientInboundMpi<T extends PatientData>(patient: T): T
  */
 export function normalizeString(str: string): string {
   return str.trim().toLowerCase(); //.replace(/['-]/g, "");
+}
+
+export function normalizeStringOptional(str?: string): string | undefined {
+  if (!str) return undefined;
+  return normalizeString(str);
 }
 
 /**
@@ -130,14 +163,12 @@ export function normalizePhoneNumber(phoneNumber: string): string {
 // TODO maybe want to have a rule that we will only normalize a single word in the address. If there are multiple, then
 // we will not normalize. This is because we don't want to normalize something like "123 boulevard rd" to "123 blvd rd"
 
-/**
- * The function `normalizeAddress` takes a string representing an address and replaces common street
- * suffixes with their abbreviated forms.
- * @param {string} address - The `address` parameter is a string that represents a street address.
- * @returns The function `normalizeAddress` returns a string.
- */
 export function normalizeAddress(address: string): string {
   return normalizeString(address);
+}
+
+export function normalizeAddressOptional(address?: string | undefined): string | undefined {
+  return normalizeStringOptional(address);
 }
 
 export function splitName(name: string): string[] {

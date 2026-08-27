@@ -8,7 +8,7 @@ This endpoint returns the URL to download the patient's Medical Record Summary i
 
 To create a Medical Record Summary, you need to use the [Start Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post).
 
-<Info>The URL will only be valid for 180 seconds before you need to request a new one.</Info>
+<Info>The URL will only be valid for 600 seconds (10 minutes) before you need to request a new one.</Info>
 
 ## Path Params
 
@@ -41,7 +41,7 @@ const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 const metriportPatientId = "018a80c4-292a-7486-a223-6dcbc636c44c";
 
 const url = await metriport.getMedicalRecordSummary(
-  metriportPatientId, 
+  metriportPatientId,
   "pdf"
 );
 ```

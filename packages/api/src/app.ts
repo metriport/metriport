@@ -84,13 +84,31 @@ app.all("*", ...notFoundHandlers);
 initEvents();
 
 const port = 8080;
-const server = app.listen(port, "0.0.0.0", async () => {
+async function startServer(): Promise<void> {
   try {
     // Initialize connection to the database and feature flags
     await Promise.all([initDB(), initFeatureFlags()]);
     // Initialize rate limiter after initDB
     initRateLimiter();
-    console.log(`[server]: API server is running on port ${port} :)`);
+
+    const server = app.listen(port, "0.0.0.0", async () => {
+      console.log(`[server]: API server is running on port ${port} :)`);
+    });
+
+    /**
+     * Make sure the server's keep alive is greater than the LB's timeout and the timeout is lower.
+     */
+    const loadbalancerTimeout =
+      Config.getLbTimeoutInMillis() ?? dayjs.duration({ minutes: 10 }).asMilliseconds();
+    const oneSecond = dayjs.duration({ seconds: 1 }).asMilliseconds();
+
+    const timeout = loadbalancerTimeout - oneSecond;
+    server.setTimeout(timeout);
+
+    const keepalive = loadbalancerTimeout + oneSecond;
+    server.keepAliveTimeout = keepalive;
+    // Just in case: https://github.com/nodejs/node/issues/27363#issuecomment-603489130
+    server.headersTimeout = keepalive + oneSecond;
   } catch (error) {
     const msg = "API server failed to start";
     console.error(msg, error);
@@ -99,20 +117,6 @@ const server = app.listen(port, "0.0.0.0", async () => {
     await sleep(200);
     process.exit(1);
   }
-});
+}
 
-/**
- * Make sure the server's keep alive is greater than the LB's timeout and the timeout is lower.
- * @see https://github.com/metriport/metriport-internal/issues/1973
- */
-const loadbalancerTimeout =
-  Config.getLbTimeoutInMillis() ?? dayjs.duration({ minutes: 10 }).asMilliseconds();
-const oneSecond = dayjs.duration({ seconds: 1 }).asMilliseconds();
-
-const timeout = loadbalancerTimeout - oneSecond;
-server.setTimeout(timeout);
-
-const keepalive = loadbalancerTimeout + oneSecond;
-server.keepAliveTimeout = keepalive;
-// Just in case: https://github.com/nodejs/node/issues/27363#issuecomment-603489130
-server.headersTimeout = keepalive + oneSecond;
+startServer();

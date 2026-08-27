@@ -1,13 +1,13 @@
 import { checkExpiringCertificates } from "@metriport/core/external/aws/acm-cert-monitor";
 import { sendHeartbeatToMonitoringService } from "@metriport/core/external/monitoring/heartbeat";
-import { getEnvVarOrFail } from "@metriport/shared";
+import { getEnvVarOrFail, getEnvVar } from "@metriport/shared";
 import * as Sentry from "@sentry/serverless";
 import { capture } from "./shared/capture";
 
 // Keep this as early on the file as possible
 capture.init();
 
-const heartbeatUrl = getEnvVarOrFail("HEARTBEAT_URL");
+const heartbeatUrl = getEnvVar("HEARTBEAT_URL");
 const notificationUrl = getEnvVarOrFail("SLACK_NOTIFICATION_URL");
 
 /**
@@ -20,7 +20,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async () => {
 
   await checkExpiringCertificates(notificationUrl);
 
-  await sendHeartbeatToMonitoringService(heartbeatUrl);
+  if (heartbeatUrl) await sendHeartbeatToMonitoringService(heartbeatUrl);
 
   console.log(`Done.`);
 });

@@ -105,7 +105,6 @@ export function getReferencesFromResources({
  * in different ways than the relative one "Patient/123". We should create a generic implementation
  * based on `getPatientReferencesFromFhirBundle` so we can get all references from a list of
  * resources (and update the patient's one to use it).
- * @see https://github.com/metriport/metriport-internal/issues/2355
  *
  * Return the references found in the given resources.
  *
@@ -541,4 +540,25 @@ export function extractFhirTypesFromBundle(bundle: Bundle): ExtractedFhirTypes {
     specimens,
     documentReferences,
   };
+}
+
+/**
+ * Converts a Bundle to a JSON Buffer, serializing one entry at a time to avoid
+ * exceeding Node's max string length on very large bundles.
+ */
+export function bundleToBuffer(bundle: Bundle): Buffer {
+  const { entry, ...rest } = bundle;
+  const restJson = JSON.stringify(rest);
+  const prefix = restJson.slice(0, -1);
+  const chunks: Buffer[] = [Buffer.from(prefix)];
+  if (entry) {
+    const comma = prefix.length > 1 ? "," : "";
+    chunks.push(Buffer.from(comma + '"entry":['));
+    for (let i = 0; i < entry.length; i++) {
+      chunks.push(Buffer.from((i > 0 ? "," : "") + JSON.stringify(entry[i])));
+    }
+    chunks.push(Buffer.from("]"));
+  }
+  chunks.push(Buffer.from("}"));
+  return Buffer.concat(chunks);
 }

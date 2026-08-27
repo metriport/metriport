@@ -5,6 +5,7 @@ import CanvasApi, { CanvasEnv } from "./canvas";
 import { EClinicalWorksEnv } from "./eclinicalworks";
 import ElationApi, { ElationEnv } from "./elation";
 import { HealthieEnv } from "./healthie";
+import { PracticeFusionEnv } from "./practicefusion";
 import { SalesforceEnv } from "./salesforce";
 
 export type EhrEnv =
@@ -13,7 +14,8 @@ export type EhrEnv =
   | CanvasEnv
   | HealthieEnv
   | EClinicalWorksEnv
-  | SalesforceEnv;
+  | SalesforceEnv
+  | PracticeFusionEnv;
 
 const ehrSourcesWithClientCredentials = [
   EhrSources.canvas,

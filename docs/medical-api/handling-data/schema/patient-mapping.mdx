@@ -1,0 +1,17 @@
+---
+title: "Patient Mapping"
+description: "Schema documentation for the Patient Mapping table in the Metriport data model"
+group: "Schema"
+icon: "n/a"
+---
+
+The patient mapping table provides a mapping between Metriport patient IDs and customer-provided external IDs. This table only contains entries for patients that have an external ID set.
+
+**Primary Keys:**
+
+* id
+
+| Column      | Data Type | Description                                     |
+| ----------- | --------- | ----------------------------------------------- |
+| id          | varchar   | Unique Metriport identifier for the patient     |
+| external_id | varchar   | Customer-provided external identifier           |

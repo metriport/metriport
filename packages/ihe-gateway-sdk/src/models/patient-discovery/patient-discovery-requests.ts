@@ -1,5 +1,5 @@
 import * as z from "zod";
-import { baseRequestSchema, XCPDGatewaySchema } from "../shared";
+import { baseRequestSchema, outboundSamlAttributesSchema, XCPDGatewaySchema } from "../shared";
 import { patientResourceSchema } from "./patient";
 
 const patientDiscoveryDefaultSchema = baseRequestSchema.extend({
@@ -7,12 +7,15 @@ const patientDiscoveryDefaultSchema = baseRequestSchema.extend({
 });
 
 // TO EXTERNAL GATEWAY
-export const outboundPatientDiscoveryReqSchema = patientDiscoveryDefaultSchema.extend({
-  gateways: z.array(XCPDGatewaySchema),
-  principalCareProviderIds: z.array(z.string()),
-  patientId: z.string(),
-  cxId: z.string(),
-});
+export const outboundPatientDiscoveryReqSchema = patientDiscoveryDefaultSchema
+  .omit({ samlAttributes: true })
+  .extend({
+    samlAttributes: outboundSamlAttributesSchema,
+    gateways: z.array(XCPDGatewaySchema),
+    principalCareProviderIds: z.array(z.string()),
+    patientId: z.string(),
+    cxId: z.string(),
+  });
 
 export type OutboundPatientDiscoveryReq = z.infer<typeof outboundPatientDiscoveryReqSchema>;
 

@@ -36,7 +36,8 @@ def transform_fhir_to_csv():
         "PATIENT_ID": "patient_id", 
         "INPUT_S3_BUCKET": "input_bucket",
         "OUTPUT_S3_BUCKET": "output_bucket", 
-        "OUTPUT_PREFIX": "output_prefix"
+        "OUTPUT_PREFIX": "output_prefix",
+        "INCLUDE_HEADER": "true"  // Optional: include CSV headers (defaults to false)
     }
     """
     try:

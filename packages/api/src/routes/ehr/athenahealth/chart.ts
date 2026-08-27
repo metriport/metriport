@@ -1,9 +1,11 @@
+import { isFamilyMemberHistory } from "@metriport/fhir-sdk";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { z } from "zod";
 import { writeAllergyToChart } from "../../../external/ehr/athenahealth/command/write-back/allergy";
 import { writeConditionToChart } from "../../../external/ehr/athenahealth/command/write-back/condition";
+import { writeFamilyHistoryToChart } from "../../../external/ehr/athenahealth/command/write-back/family-history";
 import { writeImmunizationToChart } from "../../../external/ehr/athenahealth/command/write-back/immunization";
 import { writeLabToChart } from "../../../external/ehr/athenahealth/command/write-back/lab";
 import { writeMedicationToChart } from "../../../external/ehr/athenahealth/command/write-back/medication";
@@ -35,7 +37,7 @@ router.post(
     const athenaPatientId = getFrom("params").orFail("id", req);
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
     const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
-    const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
+    const payload = req.body; // TODO Parse body
     const medicationDetails = await writeMedicationToChart({
       cxId,
       athenaPatientId,
@@ -66,7 +68,7 @@ router.post(
     const athenaPatientId = getFrom("params").orFail("id", req);
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
     const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
-    const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
+    const payload = req.body; // TODO Parse body
     const conditionDetails = await writeConditionToChart({
       cxId,
       athenaPatientId,
@@ -97,7 +99,7 @@ router.post(
     const athenaPatientId = getFrom("params").orFail("id", req);
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
     const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
-    const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
+    const payload = req.body; // TODO Parse body
     const vitalsDetails = await writeVitalsToChart({
       cxId,
       athenaPatientId,
@@ -128,7 +130,7 @@ router.post(
     const athenaPatientId = getFrom("params").orFail("id", req);
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
     const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
-    const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
+    const payload = req.body; // TODO Parse body
     const procedureDetails = await writeProcedureToChart({
       cxId,
       athenaPatientId,
@@ -159,7 +161,7 @@ router.post(
     const athenaPatientId = getFrom("params").orFail("id", req);
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
     const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
-    const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
+    const payload = req.body; // TODO Parse body
     const immunizationDetails = await writeImmunizationToChart({
       cxId,
       athenaPatientId,
@@ -190,7 +192,7 @@ router.post(
     const athenaPatientId = getFrom("params").orFail("id", req);
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
     const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
-    const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
+    const payload = req.body; // TODO Parse body
     const allergyDetails = await writeAllergyToChart({
       cxId,
       athenaPatientId,
@@ -221,7 +223,7 @@ router.post(
     const athenaPatientId = getFrom("params").orFail("id", req);
     const athenaPracticeId = getFromQueryOrFail("practiceId", req);
     const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
-    const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
+    const payload = req.body; // TODO Parse body
     const labDetails = await writeLabToChart({
       cxId,
       athenaPatientId,
@@ -267,6 +269,42 @@ router.post(
       date: note.date,
     });
     return res.status(httpStatus.OK).json(noteDetails);
+  })
+);
+
+/**
+ * POST /ehr/athenahealth/chart/:id/family-history
+ *
+ * Writes the family history to the patient's chart
+ * @param req.params.id The ID of AthenaHealth Patient.
+ * @param req.query.practiceId The ID of AthenaHealth Practice.
+ * @param req.query.departmentId The ID of AthenaHealth Department.
+ * @param req.body The FHIR FamilyMemberHistory resource
+ * @returns Athena API response
+ */
+router.post(
+  "/:id/family-history",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const athenaPatientId = getFrom("params").orFail("id", req);
+    const athenaPracticeId = getFromQueryOrFail("practiceId", req);
+    const athenaDepartmentId = getFromQueryOrFail("departmentId", req);
+    const payload = req.body;
+    if (!isFamilyMemberHistory(payload)) {
+      return res
+        .status(httpStatus.BAD_REQUEST)
+        .json({ error: "Invalid family history payload @ athenahealth" });
+    }
+    const familyHistoryDetails = await writeFamilyHistoryToChart({
+      cxId,
+      athenaPatientId,
+      athenaPracticeId,
+      athenaDepartmentId,
+      familyHistory: payload,
+    });
+    return res.status(httpStatus.OK).json(familyHistoryDetails);
   })
 );
 

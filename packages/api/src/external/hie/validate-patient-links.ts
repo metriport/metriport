@@ -2,8 +2,24 @@ import { isStrictMatchingAlgorithmEnabledForCx } from "@metriport/core/command/f
 import { PatientData } from "@metriport/core/domain/patient";
 import { filterPatientLinks } from "@metriport/core/mpi/filter-patients/filter-patients";
 import { strictMatchingAlgorithm } from "@metriport/core/mpi/match-patients";
+import { EhexLink } from "../ehex/ehex-patient-data";
+import { ehexLinkToPatientData } from "../ehex/shared";
 import { CQLink } from "../carequality/cq-patient-data";
 import { cqLinkToPatientData } from "../carequality/shared";
+
+// TODO: 1593 - Verify the logic for Ehex
+export async function validateEhexLinksBelongToPatient(
+  cxId: string,
+  ehexLinks: EhexLink[],
+  patientData: PatientData
+): Promise<{ validNetworkLinks: EhexLink[]; invalidLinks: EhexLink[] }> {
+  return validateLinksBelongToPatientGeneric<EhexLink>(
+    cxId,
+    ehexLinks,
+    patientData,
+    ehexLinkToPatientData
+  );
+}
 
 export async function validateCqLinksBelongToPatient(
   cxId: string,

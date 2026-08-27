@@ -1,6 +1,7 @@
-import { BadRequestError } from "@metriport/shared";
+import { validateDelegateFacility } from "@metriport/core/domain/facility";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { FacilityCreate, FacilityType, isOboFacility } from "../../../domain/medical/facility";
+import { BadRequestError } from "@metriport/shared";
+import { FacilityCreate } from "../../../domain/medical/facility";
 import { FacilityModel } from "../../../models/medical/facility";
 import { getFacilityByNpi } from "./get-facility";
 
@@ -9,29 +10,32 @@ export async function createFacility({
   data,
   cqApproved = false,
   cqActive = false,
-  cqType = FacilityType.initiatorAndResponder,
-  cqOboOid,
   cwApproved = false,
   cwActive = false,
-  cwType = FacilityType.initiatorAndResponder,
-  cwOboOid,
+  ehexApproved = false,
+  ehexActive = false,
+  type,
+  principalOid,
 }: FacilityCreate): Promise<FacilityModel> {
   const input = {
     id: uuidv7(),
     oid: "", // will be set when facility is created in hook
     facilityNumber: 0, // will be set when facility is created in hook
     cxId,
-    cqType,
-    cwType,
+    type,
     cqActive,
     cwActive,
-    cqOboOid: cqOboOid ?? null,
-    cwOboOid: cwOboOid ?? null,
+    ehexActive,
+    principalOid: principalOid ?? null,
     data,
     cqApproved,
     cwApproved,
+    ehexApproved,
   };
-  validateObo(input);
+  validateDelegateFacility({
+    type: input.type,
+    principalOid: input.principalOid,
+  });
   await validateNPI(cxId, input.data.npi);
   return await FacilityModel.create(input);
 }
@@ -48,19 +52,4 @@ export async function validateNPI(cxId: string, newNpi: string, existingNpi?: st
       );
     }
   }
-}
-
-export function validateObo(facility: FacilityCreate, throwOnError = true): boolean {
-  const { cwType, cqType, cqOboOid, cwOboOid } = facility;
-  if (isOboFacility(cwType) && !cwOboOid) {
-    if (!throwOnError) return false;
-    throw new BadRequestError("CW OBO facility must have CW OBO OID");
-  }
-
-  if (isOboFacility(cqType) && !cqOboOid) {
-    if (!throwOnError) return false;
-    throw new BadRequestError("CQ OBO facility must have CQ OBO OID");
-  }
-
-  return true;
 }

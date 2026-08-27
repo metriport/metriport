@@ -121,7 +121,10 @@ export class CommonWellBase {
     };
   }
 
-  protected async executeWithRetriesOn500IfEnabled<T>(fn: () => Promise<T>): Promise<T> {
+  protected async executeWithRetriesOn500IfEnabled<T>(
+    fn: () => Promise<T>,
+    retryOnTimeout = false
+  ): Promise<T> {
     return this.onError500.retry
       ? executeWithNetworkRetries(fn, {
           ...this.onError500,
@@ -132,6 +135,7 @@ export class CommonWellBase {
             httpStatus.BAD_GATEWAY,
             httpStatus.SERVICE_UNAVAILABLE,
           ],
+          ...(retryOnTimeout ? { retryOnTimeout: true } : {}),
         })
       : fn();
   }

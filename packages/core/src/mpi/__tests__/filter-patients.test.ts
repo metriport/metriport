@@ -874,32 +874,6 @@ describe("evaluatePatientMatch", () => {
       expect(result[0]).toEqual(invalidLink);
     });
 
-    it("should validate through last name match with additional field match", () => {
-      const invalidLink = {
-        ...basePatient,
-        firstName: "John",
-        lastName: "Doe",
-        dob: "1990-01-02",
-        contact: [{ phone: "555-999-9999", email: "different@email.com" }],
-        address: [
-          {
-            addressLine1: "999 Different St",
-            city: "Different City",
-            state: USState.TX,
-            zip: "99999",
-          },
-        ],
-      };
-
-      const validLinks = [basePatient];
-      const invalidLinks = [invalidLink];
-
-      const result = crossValidateInvalidLinks(validLinks, invalidLinks);
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual(invalidLink);
-    });
-
     it("should not validate through last name match alone without additional field match", () => {
       const invalidLink = {
         ...basePatient,

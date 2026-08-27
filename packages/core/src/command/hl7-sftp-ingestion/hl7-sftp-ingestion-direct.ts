@@ -3,15 +3,11 @@ import { S3Utils } from "../../external/aws/s3";
 import { Config } from "../../util/config";
 import { Hl7NotificationSenderParams } from "../hl7-notification/hl7-notification-webhook-sender";
 import { buildHl7NotificationWebhookSender } from "../hl7-notification/hl7-notification-webhook-sender-factory";
-import {
-  HIE_NAME,
-  Hl7LahieSftpIngestionParams,
-  Hl7LahieSftpIngestion,
-  log,
-} from "./hl7-sftp-ingestion";
+import { Hl7LahieSftpIngestionParams, Hl7LahieSftpIngestion, log } from "./hl7-sftp-ingestion";
 import { IdentifiedHl7Message, PsvToHl7Converter } from "./psv-to-hl7-converter";
 import { LahieSftpIngestionClient } from "./sftp-ingestion-client";
 import { asString } from "../hl7-notification/utils";
+import { LAHIE_HIE_NAME } from "@metriport/shared/external";
 
 export class Hl7LahieSftpIngestionDirect implements Hl7LahieSftpIngestion {
   private sftpClient: LahieSftpIngestionClient;
@@ -59,7 +55,7 @@ export class Hl7LahieSftpIngestionDirect implements Hl7LahieSftpIngestion {
         patientId: ptId,
         message: asString(hl7Message),
         messageReceivedTimestamp,
-        hieName: HIE_NAME,
+        hieName: LAHIE_HIE_NAME,
       };
       await buildHl7NotificationWebhookSender().execute(hl7NotificationParams);
     }

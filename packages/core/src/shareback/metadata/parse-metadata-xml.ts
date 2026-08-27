@@ -1,9 +1,11 @@
 import { Coding, DocumentReference, DocumentReferenceContent } from "@medplum/fhirtypes";
-import { parseStringPromise } from "xml2js";
-import { rebuildUploadsFilePath } from "../../shareback/file";
+import { decodeDocumentId } from "@metriport/shared";
+import { basicToExtendedIso8601, buildDayjs } from "@metriport/shared/common/date";
+import { isCommonwellNewDocumentIdFormatEnabled } from "../../command/feature-flags/domain-ffs";
 import { metriportDataSourceExtension } from "../../external/fhir/shared/extensions/metriport";
-import { base64ToString } from "../../util/base64";
+import { getFilePathFromDocumentId } from "../../shareback/file";
 import { Config } from "../../util/config";
+import { cleanupAndParseXmlString } from "../../util/xml";
 import {
   XDSDocumentEntryClassCode,
   XDSDocumentEntryHealthcareFacilityTypeCode,
@@ -27,14 +29,18 @@ interface ExtrinsicObjectXMLData {
   };
 }
 
-export async function parseExtrinsicObjectXmlToDocumentReference({
+export async function parseMetadataXmlToDocumentReference({
   patientId,
   xmlContents,
 }: {
   patientId: string;
   xmlContents: string;
 }): Promise<DocumentReference> {
-  const parsedXml: ExtrinsicObjectXMLData = await parseStringPromise(xmlContents);
+  /**
+   * TODO We should parse XMLs the same way as much as possible. Other places that work with XMLs
+   * are using createXMLParser(), which indexes XML properties differently.
+   */
+  const parsedXml: ExtrinsicObjectXMLData = await cleanupAndParseXmlString(xmlContents);
   const extrinsicObject = parsedXml.ExtrinsicObject;
 
   const docRefContent: DocumentReferenceContent = {
@@ -65,7 +71,14 @@ export async function parseExtrinsicObjectXmlToDocumentReference({
     if (slotValue) {
       switch (slotName) {
         case "creationTime":
-          documentReference.date = slotValue;
+          try {
+            const datetimeInExtended = basicToExtendedIso8601(slotValue);
+            // Needed because `basicToExtendedIso8601` returns datetime w/o TZ
+            const datetimeInIso = buildDayjs(datetimeInExtended).toISOString();
+            documentReference.date = datetimeInIso;
+          } catch (error) {
+            documentReference.date = slotValue;
+          }
           break;
         case "size":
           docRefContent.attachment = {
@@ -104,20 +117,30 @@ export async function parseExtrinsicObjectXmlToDocumentReference({
     }
   });
 
-  extrinsicObject.ExternalIdentifier.forEach(identifier => {
+  /**
+   * TODO Once we update this function to use createXMLParser() we can update the logic below
+   * to use getEncodedDocumentIdFromMetadataXml() from get-metadata-xml.ts (and move it here),
+   * instead of having two different ways to get the document ID from the XML/json object.
+   */
+  for (const identifier of extrinsicObject.ExternalIdentifier) {
     switch (identifier.$.identificationScheme) {
       case XDSDocumentEntryUniqueId: {
-        const stringValue = base64ToString(identifier.$.value);
-        const filePath = rebuildUploadsFilePath(stringValue);
+        const decodedDocumentId = decodeDocumentId(identifier.$.value);
+        const [filePath, isNewDocIdFormatEnabled] = await Promise.all([
+          getFilePathFromDocumentId(decodedDocumentId),
+          isCommonwellNewDocumentIdFormatEnabled(),
+        ]);
+        const docId = isNewDocIdFormatEnabled ? decodedDocumentId : filePath;
         docRefContent.attachment = {
           ...docRefContent.attachment,
-          url: `https://${Config.getMedicalDocumentsBucketName()}.s3.${Config.getAWSRegion()}.amazonaws.com/${filePath}`,
-          title: filePath,
+          // This is being replaced downstream on adjustAttachmentURLs() - consider merging those to avoid unnecessary code
+          url: `https://${Config.getMedicalDocumentsBucketName()}.s3.${Config.getAWSRegion()}.amazonaws.com/${docId}`,
+          title: docId,
         };
         break;
       }
     }
-  });
+  }
   documentReference.content = [docRefContent];
   return documentReference;
 }

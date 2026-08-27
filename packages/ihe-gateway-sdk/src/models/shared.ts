@@ -1,5 +1,5 @@
+import { normalizeOid, validateNPI } from "@metriport/shared";
 import { z } from "zod";
-import { validateNPI, normalizeOid } from "@metriport/shared";
 
 export const npiStringSchema = z
   .string()
@@ -16,13 +16,23 @@ export const oidStringSchema = z
   .string()
   .refine(oid => normalizeOid(oid), { message: "OID is not valid" });
 
+const subjectRoleSchema = z.object({
+  display: z.string(),
+  code: z.string(),
+  system: z.string(),
+});
+export type SubjectRole = z.infer<typeof subjectRoleSchema>;
+
 export const SamlAttributesSchema = z.object({
+  // TODO ENG-1601 Move this to the inbound and outbound schemas, it's not part of SAML, but SOAP
+  // TODO ENG-1601 Also, consider trying to parse "To" (wsaTo) and before falling back to the default server's config
+  /** WS-Addressing From address, "who (server/app) sent/initiated this request?" */
+  wsaFrom: z.string().nullish(),
+  replyTo: z.string().nullish(),
+  userId: z.string().nullish(),
   subjectId: z.string(),
   queryGrantorOid: z.string().optional(),
-  subjectRole: z.object({
-    display: z.string(),
-    code: z.string(),
-  }),
+  subjectRole: subjectRoleSchema,
   organization: z.string(),
   organizationId: z.string(),
   homeCommunityId: z.string(),
@@ -30,6 +40,9 @@ export const SamlAttributesSchema = z.object({
   principalOid: z.string().optional(),
 });
 export type SamlAttributes = z.infer<typeof SamlAttributesSchema>;
+
+export const outboundSamlAttributesSchema = SamlAttributesSchema;
+export type OutboundSamlAttributes = z.infer<typeof outboundSamlAttributesSchema>;
 
 export const baseRequestSchema = z.object({
   id: z.string(),
@@ -89,8 +102,10 @@ export const baseResponseSchema = z.object({
   duration: z.number().optional(),
   cxId: z.string().optional(),
   externalGatewayPatient: externalGatewayPatientSchema.optional(),
-  patientId: z.string().nullish(),
+  patientId: z.string().nullish(), // Usually b64 encoded with the cxId
+  decodedPatientId: z.string().nullish(), // Decoded patient ID, what we have on our end
   operationOutcome: operationOutcomeSchema.optional(),
+  responseHttpStatusCode: z.number().optional(),
   signatureConfirmation: z.string().optional(),
   retried: z.number().optional(),
   iheGatewayV2: z.boolean().optional(),
@@ -107,7 +122,14 @@ export function isBaseErrorResponse(obj: unknown): obj is BaseErrorResponse {
   return result.success;
 }
 
+/**
+ * TODO ENG-1601 FIX THIS
+ * - homeCommunityId is currently the OID of the gateway
+ * - actualHomeCommunityId is the homeCommunityId of the gateway
+ * See create-outbound-document-query-req.ts, buildRequest()
+ */
 export const xcaGatewaySchema = z.object({
+  actualHomeCommunityId: z.string().nullish(),
   homeCommunityId: z.string(),
   url: z.string(),
 });
@@ -116,6 +138,7 @@ export type XCAGateway = z.infer<typeof xcaGatewaySchema>;
 export const XCPDGatewaySchema = z.object({
   oid: z.string(),
   url: z.string(),
+  /** Being populated with the homeCommunityId of the gateway */
   id: z.string(),
 });
 export type XCPDGateway = z.infer<typeof XCPDGatewaySchema>;

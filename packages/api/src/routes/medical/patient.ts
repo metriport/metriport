@@ -19,6 +19,8 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { orderBy } from "lodash";
 import { z } from "zod";
+import { listCohortsWithSizesForPatient } from "../../command/medical/cohort/get-cohort";
+import { addPatientToCohorts } from "../../command/medical/cohort/patient-cohort/add-patient-to-cohorts";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
 import { startConsolidatedQuery } from "../../command/medical/patient/consolidated-get";
 import {
@@ -31,6 +33,8 @@ import { forceEhrPatientSync } from "../../command/medical/patient/force-ehr-pat
 import { getConsolidatedWebhook } from "../../command/medical/patient/get-consolidated-webhook";
 import { getPatientFacilities } from "../../command/medical/patient/get-patient-facilities";
 import { getPatientFacilityMatches } from "../../command/medical/patient/get-patient-facility-matches";
+import { getLatestSuspectsBySuspectGroup } from "../../command/medical/patient/get-suspect";
+import { getLatestCareGapsByMeasure } from "../../command/medical/patient/get-care-gaps";
 import { setPatientFacilities } from "../../command/medical/patient/set-patient-facilities";
 import { getHieOptOut, setHieOptOut } from "../../command/medical/patient/update-hie-opt-out";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
@@ -44,8 +48,10 @@ import { requestLogger } from "../helpers/request-logger";
 import { getPatientInfoOrFail } from "../middlewares/patient-authorization";
 import { checkRateLimit } from "../middlewares/rate-limiting";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
+import { applyCohortResponseDtoToPayload } from "./cohort";
 import { dtoFromModel as facilityDtoFromModel } from "./dtos/facilityDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
+import { cohortIdsSchema } from "./schemas/cohort";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
   PatientHieOptOutResponse,
@@ -54,7 +60,6 @@ import {
 } from "./schemas/patient";
 import { setPatientFacilitiesSchema } from "./schemas/patient-facilities";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { getLatestSuspectsBySuspectGroup } from "../../command/medical/patient/get-suspect";
 
 const router = Router();
 
@@ -82,6 +87,7 @@ router.put(
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientUpdateSchema.parse(req.body);
+    const { cohorts, ...patientUpdateProps } = payload;
 
     if (areDocumentsProcessing(patient)) {
       return res.status(status.LOCKED).json("Document querying currently in progress");
@@ -89,7 +95,7 @@ router.put(
 
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
     const patientUpdate: PatientUpdateCmd = {
-      ...schemaUpdateToPatientData(payload),
+      ...schemaUpdateToPatientData(patientUpdateProps),
       ...getETag(req),
       cxId,
       id,
@@ -101,6 +107,7 @@ router.put(
       rerunPdOnNewDemographics,
       forceCommonwell,
       forceCarequality,
+      cohortIds: cohorts,
     });
 
     return res.status(status.OK).json(dtoFromModel(updatedPatient));
@@ -291,7 +298,7 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  * @param req.param.id The ID of the patient whose data is to be returned.
  * @param req.query.conversionType Required to indicate the file format you get the document back in.
  *        Accepts "pdf", "html", and "json". The Webhook payload will contain a signed URL to download
- *        the file, which is active for 3 minutes.
+ *        the file, which is active for 10 minutes.
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
@@ -556,7 +563,7 @@ router.get(
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient to set facilities for.
  * @param req.body The facility IDs to set for the patient.
- * @return The updated patient.
+ * @return The facilities associated with the patient after the update.
  */
 router.post(
   "/facility",
@@ -627,6 +634,78 @@ router.get(
     const suspects = await getLatestSuspectsBySuspectGroup({ cxId, patientId });
 
     return res.status(status.OK).json({ suspects });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/care-gaps
+ *
+ * Returns the care gaps for a patient.
+ *
+ * @param   req.cxId      The customer ID.
+ * @param   req.param.id  The ID of the patient to be returned.
+ * @return  The care gaps for the patient.
+ */
+router.get(
+  "/care-gaps",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+
+    const careGaps = await getLatestCareGapsByMeasure({ cxId, patientId });
+
+    return res.status(status.OK).json({ careGaps });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /patient/:id/cohort
+ *
+ * Returns a list of all cohorts the patient is a member of.
+ *
+ * @param req.param.id The ID of the patient whose cohorts are to be returned.
+ * @param req.cxId The customer ID.
+ * @return The cohorts for the patient.
+ */
+router.get(
+  "/cohort",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+
+    const cohortsWithSizes = await listCohortsWithSizesForPatient({ cxId, patientId });
+
+    return res
+      .status(status.OK)
+      .json({ cohorts: cohortsWithSizes.map(applyCohortResponseDtoToPayload) });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /patient/:id/cohort
+ *
+ * Add a patient to multiple cohorts.
+ *
+ * @param req.param.id The ID of the patient to add to cohorts.
+ * @param req.body.cohortIds The list of cohort IDs to add the patient to.
+ * @returns The list of cohorts the patient is a member of.
+ */
+router.post(
+  "/cohort",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { cxId, id: patientId } = getPatientInfoOrFail(req);
+    const { cohortIds } = cohortIdsSchema.parse(req.body);
+
+    const cohortsWithSizes = await addPatientToCohorts({
+      cxId,
+      patientId,
+      cohortIds,
+    });
+
+    return res
+      .status(status.OK)
+      .json({ cohorts: cohortsWithSizes.map(applyCohortResponseDtoToPayload) });
   })
 );
 

@@ -302,6 +302,142 @@ describe("normalizeObservations", () => {
     });
   });
 
+  describe("normalizeUnitBasedOnSimilarity (no LOINC code)", () => {
+    it("normalizes definitive mL/min/1.73m2 variant", () => {
+      const observation = makeObservation({
+        valueQuantity: { value: 60, unit: "{ml/min/1.73m2}" },
+      });
+
+      const normalized = normalizeObservations([observation]);
+      const result = normalized[0];
+      expect(result).toBeTruthy();
+      if (!result) throw new Error("Expected result to be defined");
+
+      expect(result.valueQuantity?.unit).toBe("mL/min/1.73m2");
+      expect(result.valueQuantity?.value).toBe(60);
+    });
+
+    it("normalizes definitive mL/min/1.73m2 variant with encoding artifacts", () => {
+      const observation = makeObservation({
+        valueQuantity: { value: 45, unit: "ml/min/1.73m^2" },
+      });
+
+      const normalized = normalizeObservations([observation]);
+      const result = normalized[0];
+      expect(result).toBeTruthy();
+      if (!result) throw new Error("Expected result to be defined");
+
+      expect(result.valueQuantity?.unit).toBe("mL/min/1.73m2");
+      expect(result.valueQuantity?.value).toBe(45);
+    });
+
+    it("normalizes definitive percentage variant", () => {
+      const observation = makeObservation({
+        valueQuantity: { value: 5.7, unit: "%hgb" },
+      });
+
+      const normalized = normalizeObservations([observation]);
+      const result = normalized[0];
+      expect(result).toBeTruthy();
+      if (!result) throw new Error("Expected result to be defined");
+
+      expect(result.valueQuantity?.unit).toBe("%");
+      expect(result.valueQuantity?.value).toBe(5.7);
+    });
+
+    it("normalizes definitive kg/m2 variant", () => {
+      const observation = makeObservation({
+        valueQuantity: { value: 24.5, unit: "kg/m²" },
+      });
+
+      const normalized = normalizeObservations([observation]);
+      const result = normalized[0];
+      expect(result).toBeTruthy();
+      if (!result) throw new Error("Expected result to be defined");
+
+      expect(result.valueQuantity?.unit).toBe("kg/m2");
+      expect(result.valueQuantity?.value).toBe(24.5);
+    });
+
+    it("does not normalize ambiguous unit without LOINC code", () => {
+      const observation = makeObservation({
+        valueQuantity: { value: 60, unit: "0" },
+      });
+
+      const normalized = normalizeObservations([observation]);
+      const result = normalized[0];
+      expect(result).toBeTruthy();
+      if (!result) throw new Error("Expected result to be defined");
+
+      expect(result.valueQuantity?.unit).toBe("0");
+      expect(result.valueQuantity?.value).toBe(60);
+    });
+
+    it("does not normalize context-dependent unit without LOINC code", () => {
+      const observation = makeObservation({
+        valueQuantity: { value: 60, unit: "ml/min" },
+      });
+
+      const normalized = normalizeObservations([observation]);
+      const result = normalized[0];
+      expect(result).toBeTruthy();
+      if (!result) throw new Error("Expected result to be defined");
+
+      expect(result.valueQuantity?.unit).toBe("ml/min");
+      expect(result.valueQuantity?.value).toBe(60);
+    });
+
+    it("still converts convertible units without LOINC code", () => {
+      const observation = makeObservation({
+        valueQuantity: { value: 37, unit: "cel" },
+      });
+
+      const normalized = normalizeObservations([observation]);
+      const result = normalized[0];
+      expect(result).toBeTruthy();
+      if (!result) throw new Error("Expected result to be defined");
+
+      expect(result.valueQuantity?.unit).toBe("F");
+      expect(result.valueQuantity?.value).toBe(98.6);
+      expect(result.valueQuantity?.code).toBe("degF");
+    });
+
+    it("returns unit as-is when no match found without LOINC code", () => {
+      const observation = makeObservation({
+        valueQuantity: { value: 100, unit: "some_unknown_unit" },
+      });
+
+      const normalized = normalizeObservations([observation]);
+      const result = normalized[0];
+      expect(result).toBeTruthy();
+      if (!result) throw new Error("Expected result to be defined");
+
+      expect(result.valueQuantity?.unit).toBe("some_unknown_unit");
+      expect(result.valueQuantity?.value).toBe(100);
+    });
+
+    it("normalizes reference range units via similarity when no LOINC code", () => {
+      const observation = makeObservation({
+        valueQuantity: { value: 60, unit: "{ml/min/1.73m2}" },
+        referenceRange: [
+          {
+            low: { value: 30, unit: "{ml/min/1.73_m2}" },
+            high: { value: 90, unit: "ml/min/1.73m*2" },
+          },
+        ],
+      });
+
+      const normalized = normalizeObservations([observation]);
+      const result = normalized[0];
+      expect(result).toBeTruthy();
+      if (!result) throw new Error("Expected result to be defined");
+
+      expect(result.valueQuantity?.unit).toBe("mL/min/1.73m2");
+      expect(result.referenceRange?.[0]?.low?.unit).toBe("mL/min/1.73m2");
+      expect(result.referenceRange?.[0]?.high?.unit).toBe("mL/min/1.73m2");
+    });
+  });
+
   describe("normalizeReferenceRanges", () => {
     it("correctly normalizes reference range units", () => {
       const observation = makeObservation({

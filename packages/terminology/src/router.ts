@@ -5,6 +5,7 @@ import { codeSystemImportHandler } from "./operations/codeImport";
 import { bulkCodeSystemLookupHandler, codeSystemLookupHandler } from "./operations/codeLookup";
 import { conceptMapImportHandler } from "./operations/conceptMapImport";
 import { conceptMapTranslateHandler } from "./operations/conceptMapTranslate";
+import { lookupByDisplayHandler } from "./operations/lookupByDisplay";
 import { asyncHandler } from "./util";
 
 const fhirRouter = Router();
@@ -51,6 +52,15 @@ fhirRouter.post(
   asyncHandler(async (req: Request, res: Response) => {
     const fhirRequest = parseIntoFhirRequest(req);
     const response = await bulkCodeSystemLookupHandler(fhirRequest);
+    return res.status(response.status).json(response.data);
+  })
+);
+
+fhirRouter.post(
+  "/code-system/lookup-by-display",
+  asyncHandler(async (req: Request, res: Response) => {
+    const fhirRequest = parseIntoFhirRequest(req);
+    const response = await lookupByDisplayHandler(fhirRequest);
     return res.status(response.status).json(response.data);
   })
 );

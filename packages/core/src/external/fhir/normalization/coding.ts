@@ -1,5 +1,6 @@
 import { Bundle, CodeableConcept, Coding, Resource } from "@medplum/fhirtypes";
 import {
+  CONDITION_CCSR_CATEGORY_SYSTEM_URL,
   CPT_URL,
   CVX_URL,
   hl7FhirSystemUrls,
@@ -124,10 +125,12 @@ function rankCoding(coding: Coding): number {
       return 1;
     case ICD_9_URL:
       return 2;
-    case LOINC_URL:
+    case CONDITION_CCSR_CATEGORY_SYSTEM_URL:
       return 4;
+    case LOINC_URL:
+      return 9;
     case SNOMED_URL:
-      return 5;
+      return 10;
     default:
       return 99;
   }

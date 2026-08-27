@@ -6,6 +6,7 @@ import {
   CdaOriginalText,
   CdaValueEd,
   ConcernActEntryAct,
+  ObservationEntry,
   ObservationOrganizer,
 } from "../../fhir-to-cda/cda-types/shared-types";
 import { detectFileType } from "../../util/file-type";
@@ -18,8 +19,15 @@ const b64Representation = "B64";
 
 export type B64Attachments = {
   acts: ConcernActEntryAct[];
+  nonMediaObservations: ObservationEntry[];
   organizers: ObservationOrganizer[];
   total: number;
+};
+
+type B64NonMediaObservationValue = {
+  _representation?: string;
+  _mediaType?: string;
+  "#text"?: string;
 };
 
 export function removeBase64PdfEntries(payloadRaw: string): {
@@ -31,12 +39,14 @@ export function removeBase64PdfEntries(payloadRaw: string): {
   const b64Attachments: B64Attachments = {
     acts: [],
     organizers: [],
+    nonMediaObservations: [],
     total: 0,
   };
 
   if (json.ClinicalDocument?.component?.structuredBody?.component) {
+    const components = toArray(json.ClinicalDocument.component.structuredBody.component);
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    toArray(json.ClinicalDocument.component.structuredBody.component).forEach((comp: any) => {
+    components.forEach((comp: any) => {
       if (
         toArray(comp.section?.templateId).some(
           //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -62,12 +72,37 @@ export function removeBase64PdfEntries(payloadRaw: string): {
               const { mediaObservations, nonMediaObservations } = groupObservations(
                 entry.organizer
               );
-              // TODO: 2474: Apparently, some XML have B64 attachments in regular observations, so need to account for that as well
-              if (mediaObservations.length === 0) return true;
+
+              const filteredNonMediaObservations = nonMediaObservations.filter(obs => {
+                const val = obs.observation?.value;
+                if (Array.isArray(val)) {
+                  const remaining: (typeof val)[number][] = [];
+                  for (const item of val) {
+                    if (isRemovableB64SingleValueNonMediaObservation(item)) {
+                      b64Attachments.total++;
+                      const obsClone = cloneDeep(obs);
+                      obsClone.observation.value = item;
+                      b64Attachments.nonMediaObservations.push(obsClone);
+                    } else {
+                      remaining.push(item);
+                    }
+                  }
+                  if (remaining.length === 0) return false;
+                  // Cast needed: TS widens the manually accumulated array to a mixed element
+                  // type, but at runtime we're only removing items so the type is unchanged.
+                  obs.observation.value = remaining as typeof val;
+                  return true;
+                }
+                if (isRemovableB64SingleValueNonMediaObservation(val)) {
+                  b64Attachments.total++;
+                  b64Attachments.nonMediaObservations.push(cloneDeep(obs));
+                  return false;
+                }
+                return true;
+              });
 
               const filteredMediaComponents = mediaObservations.filter(obs => {
                 const val = obs.observationMedia.value;
-
                 if (
                   isBinaryMimeTypeOrUndefined(val?._mediaType) &&
                   isB64Representation(val?._representation) &&
@@ -80,7 +115,13 @@ export function removeBase64PdfEntries(payloadRaw: string): {
                 return true;
               });
 
-              const remainingComponents = [...nonMediaObservations, ...filteredMediaComponents];
+              const remainingComponents = [
+                ...filteredNonMediaObservations,
+                ...filteredMediaComponents,
+              ];
+              if (remainingComponents.length === 0) {
+                return false;
+              }
               entry.organizer.component = remainingComponents;
             }
             return true;
@@ -145,4 +186,22 @@ function getJsonFromXml(payloadRaw: string): any {
   });
 
   return parser.parse(payloadRaw);
+}
+
+/**
+ * Checks if the value is a removable B64 single value non media observation.
+ * @param val - The value to check.
+ * @returns True if the value is a removable B64 single value non media observation, false otherwise.
+ */
+function isRemovableB64SingleValueNonMediaObservation(val: unknown): boolean {
+  if (!val || typeof val !== "object") return false;
+
+  const v = val as B64NonMediaObservationValue;
+
+  // We do not check if the value is not a text attachment because it seems non media observations have large b64 text attachments.
+  return (
+    isB64Representation(v._representation) &&
+    typeof v["#text"] === "string" &&
+    isBinaryMimeTypeOrUndefined(v._mediaType)
+  );
 }

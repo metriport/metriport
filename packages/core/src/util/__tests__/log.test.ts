@@ -1,14 +1,25 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
 import { log as _log } from "../log";
 
+// Mock chalk to return passthrough functions so tests get plain text output
+jest.mock("chalk", () => ({
+  cyan: (s: string) => s,
+  yellow: (s: string) => s,
+  green: (s: string) => s,
+  magenta: (s: string) => s,
+  blue: (s: string) => s,
+  gray: (s: string) => s,
+  dim: (s: string) => s,
+  red: (s: string) => s,
+}));
+
 let consoleLog_mock: jest.SpyInstance;
+
 beforeAll(() => {
-  jest.restoreAllMocks();
   consoleLog_mock = jest.spyOn(global.console, "log");
 });
 beforeEach(() => {
-  jest.resetAllMocks();
+  consoleLog_mock.mockClear();
 });
 afterAll(() => {
   jest.restoreAllMocks();
@@ -71,7 +82,9 @@ describe("log", () => {
     const msg = faker.lorem.sentence();
     const log = _log(prefix);
     const paramStr = faker.lorem.word();
-    const param = () => paramStr;
+    function param() {
+      return paramStr;
+    }
     log(msg, param);
     expect(consoleLog_mock).toHaveBeenCalledWith(`[${prefix}] ${msg}`, param());
   });

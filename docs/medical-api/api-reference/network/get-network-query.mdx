@@ -1,0 +1,37 @@
+---
+title: "Get Network Query Status"
+description: "Returns the status of a specific network query request."
+api: "GET /medical/v1/network/query/{requestId}"
+---
+
+Returns the status of a specific network query request - use this to check the progress of the query.
+
+See more on [Start Network Query](/medical-api/api-reference/network/start-network-query).
+
+<Tip>
+  To get notified about network query progress and completions, check
+  out [Network Query Events](/medical-api/handling-data/webhooks-with-nq#network-query-events).
+</Tip>
+
+## Path Params
+
+<ParamField path="requestId" type="string" required>
+  The ID of the network query request. This is returned when you [start a network query](/medical-api/api-reference/network/start-network-query).
+</ParamField>
+
+## Response
+
+<Snippet file="network-query-response.mdx" />
+
+<ResponseExample>
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const status = await metriport.getNetworkQueryStatus({
+  requestId: "22222222-2222-2222-2222-222222222222",
+});
+
+```
+</ResponseExample>

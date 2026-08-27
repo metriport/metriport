@@ -104,6 +104,15 @@
                                         },
                                     {{/each}}
                                 {{/each}}
+                            {{else if (and (eq resObj.resourceType 'DiagnosticReport') (contains (toJsonString ../this.section.templateId) '2.16.840.1.113883.10.20.22.2.65' '1.3.6.1.4.1.19376.1.5.3.1.3.5' '2.16.840.1.113883.10.20.22.2.41'))}}
+                                {{#each (toArray ../this.section.entry)}}
+                                    {{#if this.act}}
+                                        {
+                                            "reference":"{{concat resObj.resourceType '/' (generateUUID (toJsonString this.act))}}",
+                                            {{>Utils/DisplayFromSectionEntry.hbs section=../../this.section entry=this}}
+                                        },
+                                    {{/if}}
+                                {{/each}}
                             {{else if resObj.resourceType}}
                                 {{#each (toArray ../this.section.entry)}}                           	
                                     {

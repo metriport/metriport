@@ -30,6 +30,14 @@ Instructions:
     Physician Team Only Indicators
     - [Indicator] ([MM/DD/YYYY])
 
+    Anti-obesity medication (AOM) information:
+    - AOM: [medication name]
+    - Date of initial AOM Rx: [MM/DD/YYYY]
+    - Weight at AOM Initiation (within 60 days of prescription): [value] lbs ([MM/DD/YYYY])
+    - BMI at AOM Initiation (within 60 days of prescription): [value] ([MM/DD/YYYY])
+    - Comorbidity (if applicable) at AOM initiation: [condition(s)]
+    - AOM appropriately prescribed? (Y/N/Unable to determine): [answer]
+
 For any condition found, provide the most recent diagnosis date from the patient's record.
 
 For the PCP visit:
@@ -60,7 +68,20 @@ List of qualifying conditions:
 List of disqualifying conditions:
 - Current pregnancy or currently breastfeeding
 - Active cancer or cancer treatment in the last 6 months
-- Active drug or alcohol abuse (not including marijuana use)
+- Active drug abuse (not including marijuana use)
+- Active alcohol abuse - Only include alcohol-related diagnoses if the ICD-10 code is one of the following:
+  F10.0: Alcohol use disorder, uncomplicated
+  F10.1: Alcohol abuse
+  F10.2: Alcohol dependence
+  F10.20: Alcohol dependence, uncomplicated
+  F10.22: Alcohol dependence with intoxication
+  F10.23: Alcohol dependence with withdrawal
+  F10.24: Alcohol dependence with alcohol-induced mood disorder
+  F10.25: Alcohol dependence with alcohol-induced psychotic disorder
+  F10.26: Alcohol dependence with alcohol-induced persisting amnestic disorder
+  F10.27: Alcohol dependence with alcohol-induced persisting dementia
+  F10.28: Alcohol dependence with other alcohol-induced disorders
+  F10.29: Alcohol dependence with unspecified alcohol-induced disorder
 - CKD Stage 4 or higher (eGFR <29) or kidney transplant
 - Active hepatitis or liver disease (fatty liver does not apply)
 - Heart attack / stroke / any heart condition that limits daily activity in last 6 months
@@ -73,6 +94,16 @@ For Physician Team Only Indicators, list these if present:
 - Adrenal insufficiency
 - Currently taking Warfarin or Coumadin
 - Cirrhosis
+
+List of Anti-obesity medications to search for (Find generic names and brand names):
+- Tirzepatide (Zepbound/Mounjaro)
+- Semaglutide (Wegovy/Ozempic)
+- Phentermine (Adipex-P/Lomaira)
+- Liraglutide (Saxenda/Victoza)
+- Naltrexone-Bupropion (Contrave)
+- Phentermine-Topiramate (Qsymia)
+- Orlistat (Xenical/Alli)
+- Lorcaserin (Belviq) - WITHDRAWN
 
 Note: Do not suggest or infer conditions based on lab values or other observations. Only include explicitly documented conditions.
 `;

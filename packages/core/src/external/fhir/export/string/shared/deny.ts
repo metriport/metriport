@@ -1,3 +1,5 @@
+import { trimWhitespace } from "@metriport/shared/common/string";
+
 export const denyTextExact = ["UNK", "NI", "Note", "History and physical note"];
 export const denyTextContains = ["Unknown", "Not Identified", "No data"].map(deny =>
   deny.toLowerCase()
@@ -8,10 +10,11 @@ export const denyTextContains = ["Unknown", "Not Identified", "No data"].map(den
  */
 export function emptyIfDenied(value: string | undefined): string | undefined {
   if (!value) return undefined;
-  const v = value.trim();
+  const v = trimWhitespace(value);
+  if (!v) return undefined;
   if (denyTextExact.includes(v)) return undefined;
   if (denyTextContains.some(deny => v.toLowerCase().includes(deny))) return undefined;
-  return value;
+  return v;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

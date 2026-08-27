@@ -1,5 +1,5 @@
 import z from "zod";
-import { EhrSources, clientSourceSuffix, webhookSourceSuffix } from "../source";
+import { clientSourceSuffix, EhrSources, pluginSourceSuffix, webhookSourceSuffix } from "../source";
 
 export const canvasDashSource = EhrSources.canvas as const;
 export const canvasDashJwtTokenDataSchema = z.object({
@@ -29,3 +29,11 @@ export const canvasClientJwtTokenResponseSchema = z.object({
   access_token: z.string(),
   expires_in: z.coerce.string(),
 });
+
+export const canvasPluginSource = `${EhrSources.canvas}${pluginSourceSuffix}` as const;
+export const canvasPluginJwtTokenDataSchema = z.object({
+  practiceId: z.string(),
+  cxId: z.string(),
+  source: z.literal(`${canvasPluginSource}`),
+});
+export type CanvasPluginJwtTokenData = z.infer<typeof canvasPluginJwtTokenDataSchema>;

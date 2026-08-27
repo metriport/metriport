@@ -120,7 +120,7 @@ export class PsvToHl7Converter {
               throw new Error("No 'MetriplexPatId' found for this hl7 message");
             }
             const { cxId, patientId } = unpackPidFieldOrFail(trimmedRow.MetriplexPatID);
-            capture.error(parseResult.error, {
+            capture.error(new Error("Invalid row data: " + JSON.stringify(parseResult.error)), {
               extra: {
                 cxId,
                 patientId,

@@ -33,6 +33,9 @@ For detailed information about reference table structure and indexing, see the [
 | end_date | date | End date of the observation |
 | loinc_code | varchar | LOINC code for the observation |
 | loinc_display | varchar | Human-readable description of LOINC code |
+| source_code_code | varchar | Original code from source system |
+| source_code_display | varchar | Original code display from source system |
+| source_code_system | varchar | Original code system from source system |
 | value | varchar | Value of the observation |
 | units | varchar | Unit of measurement |
 | reference_range_low | varchar | Lower bound of the reference range |
@@ -44,4 +47,6 @@ For detailed information about reference table structure and indexing, see the [
 | bodysite_snomed_ct_code | varchar | SNOMED CT body site code |
 | bodysite_snomed_ct_display | varchar | Human-readable description of SNOMED CT body site |
 | note_text | varchar | Additional notes about the observation |
-| data_source | varchar | Source of the observation data |
+| meta_source | varchar | Source document filename from FHIR meta.source |
+| data_source | varchar | **Deprecated.** Use `meta_source` instead. |
+| data_source_ext | varchar | Integration source of the data, derived from FHIR extension |

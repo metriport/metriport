@@ -15,8 +15,8 @@ export function getConsolidatedIngestionConnectorSettings(): Omit<
       fifo: true,
       createRetryLambda: false,
       maxReceiveCount: 1,
-      alarmMaxAgeOfOldestMessage: Duration.seconds(lambdaTimeout.toSeconds() * 3),
-      maxMessageCountAlarmThreshold: 5_000,
+      alertMaxApproximateAgeOfOldestMessage: Duration.seconds(lambdaTimeout.toSeconds() * 3),
+      alertMaxApproximateNumberOfMessagesVisible: 5_000,
       visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
       receiveMessageWaitTime: Duration.seconds(2),
     },
@@ -43,6 +43,40 @@ export function getConsolidatedSearchConnectorSettings(): { name: string; lambda
       memory: 4096,
       ephemeralStorageSize: Size.gibibytes(2),
       timeout: lambdaTimeout,
+    },
+  };
+}
+
+/**
+ * Settings for the queued FhirToBundle lambda used by oncall for bulk operations.
+ * The queue allows oncall to enqueue many requests without overwhelming the system.
+ * Throttling is controlled via maxConcurrency on the SQS event source.
+ */
+export function getFhirToBundleQueuedSettings(): Omit<
+  QueueAndLambdaSettingsFifo,
+  "entry" | "waitTime"
+> & { lambda: LambdaSettings } {
+  return {
+    name: "FhirToBundleQueued",
+    queue: {
+      fifo: true,
+      createRetryLambda: false,
+      maxReceiveCount: 3,
+      alertMaxApproximateAgeOfOldestMessage: Duration.hours(24),
+      alertMaxApproximateNumberOfMessagesVisible: 20_000,
+      visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
+      receiveMessageWaitTime: Duration.seconds(2),
+    },
+    lambda: {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      memory: 6144,
+      ephemeralStorageSize: Size.gibibytes(4),
+      timeout: lambdaTimeout,
+    },
+    eventSource: {
+      batchSize: 1,
+      maxConcurrency: 5,
+      reportBatchItemFailures: false,
     },
   };
 }

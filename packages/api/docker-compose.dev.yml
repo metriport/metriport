@@ -25,16 +25,14 @@ services:
         condition: service_healthy
     environment:
       - DB_CREDS={"password":"admin","dbname":"db","engine":"postgres","port":5432,"host":"postgres","username":"admin"}
-      - NODE_ENV=development
-      - ENV_TYPE=dev
-      - TOKEN_TABLE_NAME=token
       - DYNAMODB_ENDPOINT=http://dynamodb:8000
       - FHIR_SERVER_URL=http://host.docker.internal:8888
       - FHIR_CONVERTER_SERVER_URL=http://host.docker.internal:8777
       - INTERNAL_SERVER_BASE_URL=http://host.docker.internal:8090
-      - MEDICAL_DOCUMENTS_BUCKET_NAME=medical-documents-staging
-      - MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME=metriport-medical-document-uploads-staging
-      - LOCAL_ACCOUNT_CXID=cdb678ab-07e3-42c5-93f5-5541cf1f15a8
+      - FHIR_TO_CSV_TRANSFORM_HTTP_ENDPOINT=http://host.docker.internal:8001
+      - HEDIS_CLI_TRANSFORM_HTTP_ENDPOINT=http://host.docker.internal:8002
+      - RAW_TO_CORE_TRANSFORM_HTTP_ENDPOINT=http://host.docker.internal:8003
+      - CORE_TO_HEDIS_TRANSFORM_HTTP_ENDPOINT=http://host.docker.internal:8004
     networks:
       - metriportNetwork
     ports:
@@ -47,9 +45,11 @@ services:
       - ../commonwell-sdk/dist:/usr/src/app/packages/commonwell-sdk/dist
       - ../carequality-sdk/dist:/usr/src/app/packages/carequality-sdk/dist
       - ../ihe-gateway-sdk/dist:/usr/src/app/packages/ihe-gateway-sdk/dist
+      - ../ehex-sdk/dist:/usr/src/app/packages/ehex-sdk/dist
       - ../shared/dist:/usr/src/app/packages/shared/dist
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    tty: true
   # Config for dynamoDB table for auth token management
   # To access admin GUI:
   #   npm install -g dynamodb-admin
@@ -64,6 +64,16 @@ services:
     networks:
       - metriportNetwork
     command: "-jar DynamoDBLocal.jar -sharedDb"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s http://localhost:8000/ | grep -q 'MissingAuthenticationToken'",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
   # This is the configuration for our PostgreSQL database container
   # Note the `postgres` name is important, in our Node app when we refer
   # to  `host: "postgres"` that value is mapped on the network to the
@@ -85,6 +95,58 @@ services:
       - "5432:5432"
     networks:
       - metriportNetwork
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 2s
+      timeout: 2s
+      retries: 2
+  # SFTP server for Quest and Surescripts testing
+  sftp:
+    image: atmoz/sftp:latest
+    platform: linux/amd64
+    container_name: sftp
+    hostname: sftp
+    restart: always
+    ports:
+      - "2222:22"
+    networks:
+      - metriportNetwork
+    # The Quest and Surescripts clients will use the following usernames and passwords to authenticate with the SFTP server
+    # You may need to update these to match your environment.
+    command: quest_user:quest_password:1001:1001:Outgoing,Incoming Sender123456789:surescripts_password:1002:1002:from_surescripts,to_surescripts
+    volumes:
+      # These are the directories that the Quest and Surescripts clients will use to store their files
+      # You may need to update these to match your environment.
+      - ./quest-incoming:/home/quest_user/Incoming
+      - ./quest-outgoing:/home/quest_user/Outgoing
+      - ./surescripts-incoming:/home/Sender123456789/from_surescripts
+      - ./surescripts-outgoing:/home/Sender123456789/to_surescripts
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'sshd' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+  # This is the configuration for the Analytics postgres database container
+  postgres-analytics:
+    image: postgres:14.4-alpine
+    restart: always
+    command: -c 'max_connections=350'
+    environment:
+      # You can set the value of environment variables
+      # in your docker-compose.yml file
+      # Our Node app will use these to connect
+      # to the database
+      - POSTGRES_USER=analytics_admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=analytics
+    ports:
+      # Standard port for PostgreSQL databases
+      - "5434:5432"
+    networks:
+      - metriportNetwork
+    volumes:
+      - $HOME/postgres_data/analytics:/var/lib/postgresql/data
+      - $HOME/postgres_data/analytics_output_from_pg:/tmp/pg/output
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
       interval: 2s

@@ -1,12 +1,17 @@
 import {
+  defaultTemplateHandler,
+  templateHandlersByResourceType,
+} from "@metriport/core/command/llm/inference/prompts";
+import {
   summarizeContext,
   SummaryResult,
 } from "@metriport/core/command/llm/inference/resource-summary";
 import {
-  defaultTemplateHandler,
-  templateHandlersByResourceType,
-} from "@metriport/core/command/llm/inference/prompts";
-import { AdvancedMetric, reportAdvancedMetrics } from "@metriport/core/external/aws/cloudwatch";
+  AdvancedMetric,
+  reportAdvancedMetrics,
+  Service,
+} from "@metriport/core/external/aws/cloudwatch";
+import { out } from "@metriport/core/util/log";
 import { initTimer } from "@metriport/shared/common/timer";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -15,7 +20,6 @@ import { z } from "zod";
 import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail } from "../util";
-import { out } from "@metriport/core/util/log";
 
 const router = Router();
 
@@ -140,7 +144,7 @@ async function reportResourceSummaryMetrics({
   }
 
   await reportAdvancedMetrics({
-    service: "OSS API",
+    service: Service.OSS_API,
     metrics,
   });
 }

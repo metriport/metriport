@@ -1,64 +1,51 @@
-with base_resource as (
-    select
-        id,
-        patient_reference,
-        status,
-        occurrencedatetime,
-        occurrencestring,
-        dosequantity_value,
-        dosequantity_unit,
-        note_0_text,
-        note_1_text,
-        note_2_text,
-        meta_source
-    from {{ref('stage__immunization')}}
-),
-target_vaccine_code_codings as (
-   {{   
-        get_target_codings(
-            get_immunization_vaccine_codings,
-            'immunization_id', 
-            4, 
-            none, 
-            (
-                'http://hl7.org/fhir/sid/cvx',
-            )
-        ) 
-    }}
-)
+{{ config(unique_key='m_patient_id') }}
+{% set vaccinecode_coding_max_index = 4 %}
+{% set extension_max_index = 2 %}
+
 select
-        cast(i.id as {{ dbt.type_string() }} )                                                              as immunization_id
-    ,   cast(right(i.patient_reference, 36) as {{ dbt.type_string() }} )                                    as patient_id
-    ,   cast(i.status as {{ dbt.type_string() }} )                                                          as status
+        {{ try_to_cast_string('i.id') }}                                                                as immunization_id
+    ,   {{ try_to_cast_string('right(i.patient_reference, 36)') }}                                      as patient_id
+    ,   {{ try_to_cast_string('i.status') }}                                                            as status
     ,   coalesce(
-            {{ try_to_cast_date('i.occurrencedatetime') }},
-            {{ try_to_cast_date('i.occurrencestring') }}
-        )                                                                                                   as occurrence_date
-    ,   cast(
-            coalesce(
-                    cvx.cvx,
-                tc_cvx.code
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as cvx_code
-    ,   cast(
-            coalesce(
-                cvx.long_description,
-                tc_cvx.display
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as cvx_display
-    ,   cast(i.dosequantity_value as {{ dbt.type_string() }} )                                              as dose_amount
-    ,   cast(i.dosequantity_unit as {{ dbt.type_string() }} )                                               as dose_unit
-    ,   cast(
-            coalesce(
-                i.note_0_text,
-                i.note_1_text,
-                i.note_2_text
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                   as note_text
-    ,   cast(i.meta_source as {{ dbt.type_string() }} )                                                     as data_source
-from base_resource i
-left join target_vaccine_code_codings tc_cvx
-    on i.id = tc_cvx.immunization_id 
-        and tc_cvx.system = 'http://hl7.org/fhir/sid/cvx'
-left join {{ref('terminology__cvx')}} cvx
-    on tc_cvx.code = cvx.cvx
+            {{ try_to_cast_datetime('i.occurrencedatetime') }},
+            {{ try_to_cast_datetime('i.occurrencestring') }}
+        )                                                                                               as occurrence_date
+    {#- CVX: Check each vaccinecode_coding index 0-4 (5 values), normalize system -#}
+    ,   {{ try_to_cast_string(get_inline_coding_case(
+            'i',
+            'vaccinecode_coding',
+            'http://hl7.org/fhir/sid/cvx',
+            vaccinecode_coding_max_index,
+            'code'
+        )) }} as cvx_code
+    ,   {{ try_to_cast_string(get_inline_coding_case(
+            'i',
+            'vaccinecode_coding',
+            'http://hl7.org/fhir/sid/cvx',
+            vaccinecode_coding_max_index,
+            'display'
+        )) }} as cvx_display
+    ,   {{ try_to_cast_string('i.vaccinecode_coding_0_code') }}                                         as source_vaccine_code_code
+    ,   {{ try_to_cast_string('i.vaccinecode_coding_0_display') }}                                      as source_vaccine_code_display
+    ,   {{ try_to_cast_string('i.vaccinecode_coding_0_system') }}                                       as source_vaccine_code_system
+    ,   {{ try_to_cast_string('i.dosequantity_value') }}                                                as dose_amount
+    ,   {{ try_to_cast_string('i.dosequantity_unit') }}                                                 as dose_unit
+    ,   {{ try_to_cast_string('i.note_0_text') }}                                                       as note_text
+    ,   {{ try_to_cast_string('i.meta_source') }}                                                       as data_source
+    {#- Data source extension: extension with data-source URL -#}
+    ,   {{ try_to_cast_string(get_inline_extension(
+            'i',
+            'https://public.metriport.com/fhir/StructureDefinition/data-source.json',
+            extension_max_index,
+            'valuecoding_code',
+            none,
+            none
+        )) }}                                                                                           as data_source_ext
+    ,   {{ try_to_cast_string('i.meta_source') }}                                                       as meta_source
+    ,   i.m_patient_id
+    ,   i.m_job_id
+    ,   i.m_created_at
+    ,   i.m_updated_at
+    ,   i.m_deleted_at
+    ,   i.raw_to_core_job_id
+from {{ref('stage__immunization')}} i

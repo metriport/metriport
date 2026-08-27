@@ -337,7 +337,7 @@ function buildCwFacility({
       location: facility.address,
     },
     active: facility.cwActive ?? false,
-    isInitiatorAndResponder: isInitiatorAndResponder(facility.cwType),
+    isInitiatorAndResponder: isInitiatorAndResponder(facility.type),
   });
 }
 

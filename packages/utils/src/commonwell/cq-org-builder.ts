@@ -40,7 +40,6 @@ const sequoiaQueryURL = `https://wpapi.sequoiaproject.org/fhir-stu3/1.0.0/Organi
 const excludeGatewayNames = [
   // The Surescripts Record Locator Gateway is automatically included in every Outbound XCPD transaction,
   // so it does allow you to search through all Surescripts orgs.
-  // https://metriport.slack.com/archives/C04DMKE9DME/p1700501978325669?thread_ts=1700077189.772289&cid=C04DMKE9DME
   "Surescripts",
 ];
 

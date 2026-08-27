@@ -42,9 +42,11 @@ export async function updateInvalidLinksWithinDbTx(
   const updatedData = {
     carequality: [...(existing.data.carequality ?? []), ...(newData.carequality ?? [])],
     commonwell: [...(existing.data.commonwell ?? []), ...(newData.commonwell ?? [])],
+    ehex: [...(existing.data.ehex ?? []), ...(newData.ehex ?? [])],
   };
 
   const uniqueUpdatedData = {
+    ehex: uniqBy(updatedData.ehex, "oid"),
     carequality: uniqBy(updatedData.carequality, "oid"),
     commonwell: uniqBy(updatedData.commonwell, function (networkLink) {
       if (isCwLinkV1(networkLink)) {

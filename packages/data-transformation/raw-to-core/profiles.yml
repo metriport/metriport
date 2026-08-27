@@ -3,12 +3,12 @@ core_transform:
     postgres:
       type: postgres
       host: "{{ env_var('DBT_PG_HOST') }}"
-      port: 5432
+      port: "{{ env_var('DBT_PG_PORT', '5432') | as_number }}"
       user: "{{ env_var('DBT_PG_USER') }}"
       password: "{{ env_var('DBT_PG_PASSWORD') }}"
       dbname: "{{ env_var('DBT_PG_DATABASE') }}"
       schema: "{{ env_var('DBT_PG_SCHEMA') }}"
-      threads: 5
+      threads: "{{ env_var('DBT_PG_THREADS', '5') | as_number }}"
     snowflake:
       type: snowflake
       account: "{{ env_var('DBT_SNOWFLAKE_ACCOUNT') }}"

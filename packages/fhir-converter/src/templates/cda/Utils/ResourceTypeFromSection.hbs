@@ -37,6 +37,12 @@
             "Procedure"
         {{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.3.1"')}}
             "DiagnosticReport"
+        {{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.65"')}}
+            "DiagnosticReport"
+        {{else if (contains (toJsonString section.templateId) '"1.3.6.1.4.1.19376.1.5.3.1.3.5"')}}
+            "DiagnosticReport"
+        {{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.41"')}}
+            "DiagnosticReport"
         {{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.22"')}}
             "Encounter"
         {{else if (contains (toJsonString section.templateId) '"2.16.840.1.113883.10.20.22.2.22.1"')}}

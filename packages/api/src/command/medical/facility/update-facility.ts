@@ -1,8 +1,9 @@
+import { validateDelegateFacility } from "@metriport/core/domain/facility";
 import { FacilityCreate } from "../../../domain/medical/facility";
-import { FacilityModel } from "../../../models/medical/facility";
 import { validateVersionForUpdate } from "../../../models/_default";
+import { FacilityModel } from "../../../models/medical/facility";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
-import { validateObo, validateNPI } from "./create-facility";
+import { validateNPI } from "./create-facility";
 import { getFacilityOrFail } from "./get-facility";
 
 export type FacilityUpdateCmd = BaseUpdateCmdWithCustomer & Partial<FacilityCreate>;
@@ -14,21 +15,22 @@ export async function updateFacility({
   data,
   cqApproved,
   cqActive,
-  cqType,
-  cqOboOid,
   cwApproved,
   cwActive,
-  cwType,
-  cwOboOid,
+  ehexApproved,
+  ehexActive,
+  type,
+  principalOid,
 }: FacilityUpdateCmd): Promise<FacilityModel> {
   const facility = await getFacilityOrFail({ id, cxId });
   validateVersionForUpdate(facility, eTag);
-  validateObo({
-    ...facility,
-    cqType: cqType !== undefined ? cqType : facility.cqType,
-    cwType: cwType !== undefined ? cwType : facility.cwType,
-    cqOboOid: cqOboOid !== undefined ? cqOboOid : facility.cqOboOid,
-    cwOboOid: cwOboOid !== undefined ? cwOboOid : facility.cwOboOid,
+
+  const newType = type ?? facility.type;
+  const newPrincipalOid = principalOid === undefined ? facility.principalOid : principalOid;
+
+  validateDelegateFacility({
+    type: newType,
+    principalOid: newPrincipalOid,
   });
   if (data) await validateNPI(cxId, data.npi, facility.data.npi);
 
@@ -36,11 +38,11 @@ export async function updateFacility({
     data,
     cqActive,
     cwActive,
-    cqType,
-    cwType,
-    cqOboOid,
-    cwOboOid,
+    ehexActive,
+    type: newType,
+    principalOid: newPrincipalOid,
     cqApproved,
     cwApproved,
+    ehexApproved,
   });
 }

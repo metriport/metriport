@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
+import { makePatient } from "@metriport/core/domain/__tests__/patient";
+import { FacilityType } from "@metriport/core/domain/facility";
 import { Organization, OrganizationBizType } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
-import { makePatient } from "@metriport/core/domain/__tests__/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import * as getPatient from "../../../command/medical/patient/get-patient";
-import { Facility, FacilityType } from "../../../domain/medical/facility";
-import { makeFacility } from "../../../domain/medical/__tests__/facility";
-import { makeOrganization } from "../../../domain/medical/__tests__/organization";
+import { makeFacility, makeFacilityNumber } from "../../../domain/medical/__tests__/facility";
+import { makeOrganization, makeOrgNumber } from "../../../domain/medical/__tests__/organization";
+import { Facility, makeFacilityOid } from "../../../domain/medical/facility";
 import { getHieInitiator, getPatientsFacility, isHieEnabledToQuery } from "../get-hie-initiator";
 
 let defaultDeps: {
@@ -16,20 +17,21 @@ let defaultDeps: {
   patient: Patient;
 };
 
-const makeOboFacility = (params: Partial<Facility> = {}) =>
-  makeFacility({
-    cwType: FacilityType.initiatorOnly,
+function makeDelegateFacility(params: Partial<Facility> = {}) {
+  return makeFacility({
+    type: FacilityType.initiatorOnly,
     cwActive: true,
-    cwOboOid: faker.string.uuid(),
+    principalOid: faker.string.uuid(),
     ...params,
   });
+}
 
 let getPatientWithDependencies_mock: jest.SpyInstance;
 beforeEach(() => {
   jest.restoreAllMocks();
   defaultDeps = {
     organization: makeOrganization({ type: OrganizationBizType.healthcareITVendor }),
-    facilities: [makeOboFacility()],
+    facilities: [makeDelegateFacility()],
     patient: makePatient(),
   };
   getPatientWithDependencies_mock = jest.spyOn(getPatient, "getPatientWithDependencies");
@@ -46,7 +48,7 @@ describe("getHieInitiator", () => {
 
   it("returns the org when is Provider", async () => {
     const org = makeOrganization({ type: OrganizationBizType.healthcareProvider });
-    const facility = makeOboFacility();
+    const facility = makeDelegateFacility();
     getPatientWithDependencies_mock.mockResolvedValueOnce({
       ...defaultDeps,
       organization: org,
@@ -59,7 +61,7 @@ describe("getHieInitiator", () => {
   });
 
   it("returns the facility as initiator when is CI", async () => {
-    const facility = makeOboFacility();
+    const facility = makeDelegateFacility();
     getPatientWithDependencies_mock.mockResolvedValueOnce({
       ...defaultDeps,
       facilities: [facility],
@@ -72,11 +74,11 @@ describe("getHieInitiator", () => {
 });
 
 describe("isHieEnabledToQuery", () => {
-  it("returns true when is CI and OBO", async () => {
-    const facility = makeOboFacility({
-      cwType: FacilityType.initiatorOnly,
+  it("returns true when is CI and delegate", async () => {
+    const facility = makeDelegateFacility({
+      type: FacilityType.initiatorOnly,
       cwActive: true,
-      cwOboOid: faker.string.uuid(),
+      principalOid: faker.string.uuid(),
     });
     getPatientWithDependencies_mock.mockResolvedValueOnce({
       ...defaultDeps,
@@ -90,8 +92,11 @@ describe("isHieEnabledToQuery", () => {
     expect(resp).toBeTruthy();
   });
 
-  it("returns false when is CI and Obo not enabled", async () => {
-    const facility = makeOboFacility({ cwActive: false, cwOboOid: undefined });
+  it("returns false when is CI and delegate not enabled", async () => {
+    const facility = makeDelegateFacility({
+      cwActive: false,
+      principalOid: makeFacilityOid(makeOrgNumber(), makeFacilityNumber()),
+    });
     getPatientWithDependencies_mock.mockResolvedValueOnce({
       ...defaultDeps,
       facilities: [facility],
@@ -104,11 +109,11 @@ describe("isHieEnabledToQuery", () => {
     expect(resp).toBeFalsy();
   });
 
-  it("returns true when is CI and is non obo", async () => {
-    const facility = makeOboFacility({
-      cwType: FacilityType.initiatorAndResponder,
+  it("returns true when is CI and is a principal", async () => {
+    const facility = makeDelegateFacility({
+      type: FacilityType.initiatorAndResponder,
       cwActive: true,
-      cwOboOid: undefined,
+      principalOid: undefined,
     });
     getPatientWithDependencies_mock.mockResolvedValueOnce({
       ...defaultDeps,
@@ -126,7 +131,11 @@ describe("isHieEnabledToQuery", () => {
 describe("getPatientsFacility", () => {
   it("throws when no facility is provided and has more than one facility", async () => {
     expect(async () =>
-      getPatientsFacility(defaultDeps.patient.id, [makeOboFacility(), makeOboFacility()], undefined)
+      getPatientsFacility(
+        defaultDeps.patient.id,
+        [makeDelegateFacility(), makeDelegateFacility()],
+        undefined
+      )
     ).rejects.toThrow("Patient has more than one facility, facilityId is required");
   });
 

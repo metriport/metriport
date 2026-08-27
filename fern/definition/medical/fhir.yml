@@ -62,7 +62,7 @@ service:
           type: optional<map<string, string>>
 
       response:
-        type: StartConsolidatedQueryResponse
+        type: PatientConsolidatedDataStatus
         docs: Returns the filters used for this query, in addition to the identifier used by the system to uniquely identify this query (property `requestId`).
       examples:
         - name: Example1
@@ -71,7 +71,7 @@ service:
           query-parameters:
             conversionType: "json"
           response:
-            body: $StartConsolidatedQueryResponse.Example0
+            body: $PatientConsolidatedDataStatus.Example0
 
     getConsolidatedQueryStatus:
       display-name: Get Consolidated Data Query Status
@@ -84,7 +84,6 @@ service:
           docs: The ID of the Patient
       response:
         # TODO(lucas|2025-01-07): This response type is a subset of the fields _actually_ being returned by our implementation.
-        # See issue here: https://github.com/metriport/metriport-internal/issues/2565
         type: GetConsolidatedQueryStatusResponse
       examples:
         - name: Example1
@@ -106,7 +105,6 @@ service:
           type: string
           docs: The ID of the request to get the status of.
       # TODO(lucas|2025-01-07): This response type is a subset of the fields _actually_ being returned by our implementation.
-      # See issue here: https://github.com/metriport/metriport-internal/issues/2565
       response:
         type: PatientConsolidatedDataStatus
       examples:
@@ -191,15 +189,6 @@ service:
       response: ConsolidatedCountResponse
 
 types:
-  StartConsolidatedQueryResponse:
-    properties:
-      query: PatientConsolidatedDataStatus
-      message: optional<string>
-    examples:
-      - name: Example0
-        value:
-          query: $PatientConsolidatedDataStatus.Example0
-
   PatientConsolidatedDataStatus:
     properties:
       requestId:
@@ -211,7 +200,7 @@ types:
       dateTo:
         type: optional<string>
       conversionType:
-        type: ConversionTypeFHIR
+        type: optional<ConversionTypeFHIR>
       status:
         type: DocumentQueryStatusFHIR
     examples:

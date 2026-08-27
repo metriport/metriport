@@ -6,15 +6,15 @@ import {
   Telecom,
   XCPDGateway,
 } from "@metriport/ihe-gateway-sdk";
-import dayjs from "dayjs";
-import { XMLBuilder } from "fast-xml-parser";
-import { wrapIdInUrnUuid } from "../../../../../../util/urn";
 import {
-  mapFhirToIheGender,
   METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
   ORGANIZATION_NAME_DEFAULT as metriportOrganization,
   replyTo,
-} from "../../../../shared";
+} from "@metriport/shared";
+import dayjs from "dayjs";
+import { XMLBuilder } from "fast-xml-parser";
+import { wrapIdInUrnUuid } from "../../../../../../util/urn";
+import { mapFhirToIheGender } from "../../../../shared";
 import { expiresIn, namespaces } from "../../../constants";
 import { doesGatewayUseSha1, getHomeCommunityId, requiresUrnInSoapBody } from "../../../gateways";
 import { createSecurityHeader } from "../../../saml/security/security-header";
@@ -22,7 +22,6 @@ import { signFullSaml } from "../../../saml/security/sign";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { timestampToSoapBody } from "../../../utils";
 
-const DATE_DASHES_REGEX = /-/g;
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";
 export type SignedXcpdRequest = {
   gateway: XCPDGateway;
@@ -433,7 +432,7 @@ function createSoapBody({
   const providerId = bodyData.principalCareProviderIds[0];
   const homeCommunityId = getHomeCommunityId(gateway, bodyData.samlAttributes);
   const patientGender = mapFhirToIheGender(bodyData.patientResource.gender);
-  const patientBirthtime = bodyData.patientResource.birthDate?.replace(DATE_DASHES_REGEX, "");
+  const patientBirthtime = timestampToSoapBody(bodyData.patientResource.birthDate, "YYYYMMDD");
   const patientNames = bodyData.patientResource.name;
   const patientAddresses = bodyData.patientResource.address;
   const patientTelecoms = bodyData.patientResource.telecom;

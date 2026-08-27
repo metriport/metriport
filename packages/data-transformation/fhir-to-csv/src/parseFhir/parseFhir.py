@@ -91,7 +91,7 @@ def is_integer(n):
         return float(n).is_integer()
 
 
-def getJsonValue(lnjsn, ln,filename = ""):
+def getJsonValue(lnjsn, ln, filename="", array_index=None):
     retVal = ""
     for x in ln.split("."):
         if is_integer(x):
@@ -111,11 +111,13 @@ def getJsonValue(lnjsn, ln,filename = ""):
             lnjsn = filename
         elif x.startswith("GetDate:"):
             lnjsn = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        elif x.startswith("GetIndex:"):
+            lnjsn = str(array_index) if array_index is not None else ""
         elif x.startswith("ArrNotHave:"):
             x = x[11:]
             found = False
             for i in range(len(lnjsn)):
-                if getJsonValue(lnjsn[i], x.replace(",","."),filename) is None:
+                if getJsonValue(lnjsn[i], x.replace(",","."), filename, array_index) is None:
                     lnjsn = lnjsn[i]
                     found = True
                     break
@@ -126,7 +128,7 @@ def getJsonValue(lnjsn, ln,filename = ""):
             found = False
             for i in range(len(lnjsn)):
                 if getJsonValue(lnjsn[i], spl[0].replace(",",".")
-                                ,filename) == spl[1].replace(",","."):
+                                , filename, array_index) == spl[1].replace(",","."):
                     lnjsn = lnjsn[i]
                     found = True
                     break
@@ -174,10 +176,10 @@ def getJsonValue(lnjsn, ln,filename = ""):
     return lnjsn
 
 
-def combineValues(jsn, path, filename):
+def combineValues(jsn, path, filename, array_index=None):
     values = []
     for ln in path.splitlines():
-        value = getJsonValue(jsn, ln, filename)
+        value = getJsonValue(jsn, ln, filename, array_index)
         if value is not None and value != '':  # This will skip over both None and empty strings, preserves 0 and False
             values.append(str(value))
 
@@ -203,19 +205,19 @@ def parse_one_resource(anchor,paths,jsndict,leng,csvwriter,data,filename,outputF
     result_count = 0
     if anchor == False:
         for i in range(leng):
-            thisRow[i] = combineValues(jsndict, paths[i],filename)
+            thisRow[i] = combineValues(jsndict, paths[i], filename)
         writerow_flex(data,csvwriter,thisRow,outputFormat)
         return 1
     else:
         anchorArray = getJsonValue(jsndict, anchor, filename)
         if anchorArray is not None and isinstance(anchorArray, list):
-            for z in anchorArray:
+            for array_index, z in enumerate(anchorArray):
                 thisRow = [None] * leng
                 for i in range(leng):
                     if paths[i][:7] == 'Anchor:':
-                        thisRow[i] = combineValues(z, paths[i][7:],filename)
+                        thisRow[i] = combineValues(z, paths[i][7:], filename, array_index)
                     else:
-                        thisRow[i] = combineValues(jsndict, paths[i],filename)
+                        thisRow[i] = combineValues(jsndict, paths[i], filename, array_index)
                 result_count += 1
                 writerow_flex(data, csvwriter, thisRow, outputFormat)
             return result_count

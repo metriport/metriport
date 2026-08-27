@@ -2,6 +2,7 @@ import {
   commonwellOid,
   surescriptsOid,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { Op, Sequelize } from "sequelize";
 import { CQDirectoryEntry } from "../../cq-directory";
 import {
@@ -10,29 +11,7 @@ import {
   urlXcpdColumnName,
 } from "../../models/cq-directory-columns";
 import { CQDirectoryEntryViewModel } from "../../models/cq-directory-view";
-
-/**
- * Returns the ID of CQ directory entries that are not managed by the organizations provided as
- * parameter.
- *
- * @param managingOrgNames - An array of managing organization names
- * @returns IDs of the CQ directory entries not managed by the provided orgs
- */
-export async function getOrganizationIdsNotManagedBy(
-  managingOrgNames: string[]
-): Promise<string[]> {
-  const entries = await CQDirectoryEntryViewModel.findAll({
-    attributes: ["id"],
-    where: {
-      [Op.or]: [
-        { rootOrganization: { [Op.is]: null as unknown as undefined } },
-        { rootOrganization: { [Op.notIn]: managingOrgNames } },
-      ],
-    },
-  });
-  const ids = entries.map(entry => entry.id);
-  return ids;
-}
+import { reportCqDirectorySearchDuration } from "./metrics";
 
 function hasUrlXcpd() {
   return {
@@ -50,6 +29,7 @@ function doesNotHaveUrlXcpdRaw() {
 }
 
 export async function getRecordLocatorServiceOrganizations(): Promise<CQDirectoryEntry[]> {
+  const startedAt = buildDayjs().toDate();
   const rls = await CQDirectoryEntryViewModel.findAll({
     where: {
       ...hasUrlXcpd(),
@@ -71,11 +51,13 @@ export async function getRecordLocatorServiceOrganizations(): Promise<CQDirector
     },
   });
 
+  reportCqDirectorySearchDuration(startedAt, "getOrganizationsForXcpdRls");
   return [...rls, ...eHex].map(org => org.dataValues);
 }
 
 // TODO Add a TSDoc explaining what these orgs/entries are, and the diff between RLS and standalone.
 export async function getSublinkOrganizations(): Promise<CQDirectoryEntry[]> {
+  const startedAt = buildDayjs().toDate();
   const records = await CQDirectoryEntryViewModel.findAll({
     where: {
       ...hasUrlXcpd(),
@@ -100,10 +82,12 @@ export async function getSublinkOrganizations(): Promise<CQDirectoryEntry[]> {
       rootOrgColumnName,
     ],
   });
+  reportCqDirectorySearchDuration(startedAt, "getOrganizationsForXcpdSublinks");
   return records.map(org => org.dataValues);
 }
 
 export async function getStandaloneOrganizations(): Promise<CQDirectoryEntry[]> {
+  const startedAt = buildDayjs().toDate();
   const records = await CQDirectoryEntryViewModel.findAll({
     where: {
       ...hasUrlXcpd(),
@@ -135,5 +119,6 @@ export async function getStandaloneOrganizations(): Promise<CQDirectoryEntry[]> 
       },
     },
   });
+  reportCqDirectorySearchDuration(startedAt, "getOrganizationsForXcpdStandalone");
   return records.map(org => org.dataValues);
 }

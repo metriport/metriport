@@ -1,11 +1,11 @@
 import * as z from "zod";
 import {
+  baseErrorResponseSchema,
   BaseResponse,
   baseResponseSchema,
-  baseErrorResponseSchema,
-  xcaGatewaySchema,
-  documentReferenceSchema,
   DocumentReference,
+  documentReferenceSchema,
+  xcaGatewaySchema,
 } from "../shared";
 
 // TO EXTERNAL GATEWAY
@@ -45,11 +45,27 @@ export const outboundDocumentQueryRespSchema = z.union([
   documentQueryRespFromExternalSuccessfulSchema,
   documentQueryRespFromExternalFaultSchema,
 ]);
-
 export type OutboundDocumentQueryResp = z.infer<typeof outboundDocumentQueryRespSchema>;
 
+// TODO ENG-1692 Merge this and the same function from packages/api
 export function isSuccessfulOutboundDocQueryResponse(
   obj: BaseResponse
 ): obj is OutboundDocumentQueryResp & { documentReference: DocumentReference[] } {
   return "documentReference" in obj;
+}
+
+/** Safe context for logging/capture: no document content or patient identifiers. */
+export function toSafeCaptureContext(response: OutboundDocumentQueryResp): Record<string, unknown> {
+  const { gateway } = response;
+  return {
+    id: response.id,
+    requestChunkId: response.requestChunkId,
+    timestamp: response.timestamp,
+    responseTimestamp: response.responseTimestamp,
+    requestTimestamp: response.requestTimestamp,
+    duration: response.duration,
+    responseHttpStatusCode: response.responseHttpStatusCode,
+    documentReferenceCount: response.documentReference?.length ?? 0,
+    gatewayHomeCommunityId: gateway?.homeCommunityId,
+  };
 }

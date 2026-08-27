@@ -19,27 +19,19 @@ clean-targets:
 vars:
   input_database: db
   input_schema: schema
-  custom_bucket_name: tuva-public-resources
+  input_job_id: job_id
+  full_refresh: false
+  lookback_timestamp: "1970-01-01 00:00:00"
 
 models:
   core_transform:
     core_pipeline:
       stage:
+        +schema: stage
         +materialized: view
+
       core:
         +schema: core
-        +materialized: table
-
-    terminology:
-      terminology__cvx:
-        +post-hook: "{{ load_seed(var('custom_bucket_name','tuva-public-resources') ~ '/versioned_terminology/0.15.3','cvx.csv',compression=true,null_marker=true) }}"
-      terminology__hcpcs_level_2:
-        +post-hook: "{{ load_seed(var('custom_bucket_name','tuva-public-resources') ~ '/versioned_terminology/0.15.3','hcpcs_level_2.csv',compression=true,null_marker=true) }}"
-      terminology__icd_10_cm:
-        +post-hook: "{{ load_seed(var('custom_bucket_name','tuva-public-resources') ~ '/versioned_terminology/0.15.3','icd_10_cm.csv',compression=true,null_marker=true) }}"
-      terminology__icd_9_cm:
-        +post-hook: "{{ load_seed(var('custom_bucket_name','tuva-public-resources') ~ '/versioned_terminology/0.15.3','icd_9_cm.csv',compression=true,null_marker=true) }}"
-      terminology__loinc:
-        +post-hook: "{{ load_seed(var('custom_bucket_name','tuva-public-resources') ~ '/versioned_terminology/0.15.3','loinc.csv',compression=true,null_marker=true) }}"
-      terminology__snomed_ct:
-        +post-hook: "{{ load_seed(var('custom_bucket_name','tuva-public-resources') ~ '/versioned_terminology/0.15.3','snomed_ct.csv',compression=true,null_marker=true) }}"
+        +materialized: "{{ 'table' if (var('full_refresh', false) == true or (var('full_refresh', false) is string and var('full_refresh', false)|lower == 'true')) else 'incremental' }}"
+        +incremental_strategy: delete+insert
+        +on_schema_change: append_new_columns

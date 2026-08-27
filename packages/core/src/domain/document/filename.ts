@@ -32,27 +32,29 @@ export function createDocumentFilePathPrefix(cxId: string, patientId: string): s
   return createFilePath(cxId, patientId, "");
 }
 
-export function parseDocumentFileName(fileName: string): {
+export function parseDocumentFilePath(filePath: string): {
   cxId: string;
   patientId: string;
   docId: string;
   extension?: string | undefined;
 } {
-  const [cxId, patientId, documentFileName] = fileName.split("/");
-  if (!documentFileName) {
-    throw new MetriportError(`Invalid cda to fhir conversion file name`, undefined, { fileName });
+  const [cxId, patientId, documentIdWithExtension] = getCxIdAndPatientIdFromFilePath(filePath);
+  const parsed = path.parse(documentIdWithExtension);
+  return { cxId, patientId, docId: parsed.name, extension: parsed.ext };
+}
+
+function getCxIdAndPatientIdFromFilePath(fullPath: string): [string, string, string] {
+  const hasFolders = fullPath.includes("/");
+  const filePath = hasFolders ? fullPath.split("/").pop() : fullPath;
+  if (!filePath) {
+    throw new MetriportError(`Invalid cda to fhir conversion file name`, undefined, { fullPath });
   }
-  const [_cxId, _patientId, documentIdWithExtension] = documentFileName?.split("_") ?? [];
-  if (
-    !_cxId ||
-    cxId !== _cxId ||
-    !_patientId ||
-    patientId !== _patientId ||
-    !documentIdWithExtension
-  ) {
-    throw new MetriportError(`Invalid cda to fhir conversion file name`, undefined, { fileName });
+
+  const [cxId, patientId, documentIdWithExtension] = filePath.split("_");
+  if (!cxId || !patientId || !documentIdWithExtension) {
+    throw new MetriportError(`Invalid filename format - expected cxId_patientId_docId`, undefined, {
+      filePath,
+    });
   }
-  const docId = path.basename(documentIdWithExtension);
-  const extension = path.extname(documentIdWithExtension);
-  return { cxId, patientId, docId, extension };
+  return [cxId, patientId, documentIdWithExtension];
 }

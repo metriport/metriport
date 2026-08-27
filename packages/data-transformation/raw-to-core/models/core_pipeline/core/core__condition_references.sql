@@ -1,37 +1,31 @@
-with subject_reference as (
-   {{ get_single_reference(
-        'stage__condition', 
-        'condition_id', 
-        'subject', 
-        'subject_reference'
-    ) }}
-),
-encounter_reference as (
-   {{ get_single_reference(
-        'stage__condition', 
-        'condition_id', 
-        'encounter', 
-        'encounter_reference'
-    ) }}
-),
-recorder_reference as (
-   {{ get_single_reference(
-        'stage__condition', 
-        'condition_id', 
-        'recorder', 
-        'recorder_reference'
-    ) }}
-),
-all_references as (
-    select * from subject_reference
-    union all
-    select * from encounter_reference
-    union all
-    select * from recorder_reference
-)
+{{ config(unique_key='m_patient_id') }}
+
 select
-        condition_id
-    ,   property
-    ,   reference_id
-    ,   reference_type
-from all_references
+        s.id as condition_id
+    ,   t.property
+    ,   {{ get_reference_id('t.reference_value') }} as reference_id
+    ,   {{ get_reference_type('t.reference_value') }} as reference_type
+    ,   s.m_patient_id
+    ,   s.m_job_id
+    ,   s.m_created_at
+    ,   s.m_updated_at
+    ,   s.m_deleted_at
+    ,   s.raw_to_core_job_id
+from {{ref('stage__condition')}} s
+cross join lateral unnest(
+    array[
+        s.subject_reference,
+        s.encounter_reference,
+        s.recorder_reference
+    ],
+    array[
+        'subject',
+        'encounter',
+        'recorder'
+    ]
+) with ordinality as t(reference_value, property, reference_index)
+where t.reference_value is not null
+    and t.reference_value != ''
+    and (
+        s.subject_reference is not null or s.encounter_reference is not null or s.recorder_reference is not null
+    )

@@ -1,3 +1,5 @@
+import { out } from "@metriport/core/util/log";
+import { errorToString } from "@metriport/shared";
 import CloudWatch, { MetricData, MetricDatum } from "aws-sdk/clients/cloudwatch";
 import { capture } from "./capture";
 import { kbToMb, kbToMbString } from "./units";
@@ -12,6 +14,8 @@ export type Metrics = Record<string, DurationMetric | CountMetric>;
  *
  * Requires either a `metricsNamespace` to be passed to the constructor or
  * passed to the individual functions.
+ *
+ * @deprecated Use the functions in @metriport/core/external/aws/cloudwatch instead.
  */
 export class CloudWatchUtils {
   public readonly _cloudWatch: CloudWatch;
@@ -29,23 +33,23 @@ export class CloudWatchUtils {
   }
 
   async reportMetrics(metrics: Metrics, metricsNamespace?: string) {
-    const namespaceToUse = metricsNamespace ?? this.metricsNamespace;
-    if (!namespaceToUse) throw new Error(`Missing metricsNamespace`);
-    const durationMetric = (name: string, values: DurationMetric): MetricDatum => ({
-      MetricName: name,
-      Value: values.duration,
-      Unit: "Milliseconds",
-      Timestamp: values.timestamp,
-      Dimensions: [{ Name: "Service", Value: this.lambdaName }],
-    });
-    const countMetric = (name: string, values: CountMetric) => ({
-      MetricName: name,
-      Value: values.count,
-      Unit: "Count",
-      Timestamp: values.timestamp,
-      Dimensions: [{ Name: "Service", Value: this.lambdaName }],
-    });
     try {
+      const namespaceToUse = metricsNamespace ?? this.metricsNamespace;
+      if (!namespaceToUse) throw new Error(`Missing metricsNamespace`);
+      const durationMetric = (name: string, values: DurationMetric): MetricDatum => ({
+        MetricName: name,
+        Value: values.duration,
+        Unit: "Milliseconds",
+        Timestamp: values.timestamp,
+        Dimensions: [{ Name: "Service", Value: this.lambdaName }],
+      });
+      const countMetric = (name: string, values: CountMetric) => ({
+        MetricName: name,
+        Value: values.count,
+        Unit: "Count",
+        Timestamp: values.timestamp,
+        Dimensions: [{ Name: "Service", Value: this.lambdaName }],
+      });
       const metricData: MetricData = [];
       for (const [key, value] of Object.entries(metrics)) {
         if (value.duration) {
@@ -58,8 +62,13 @@ export class CloudWatchUtils {
         .putMetricData({ MetricData: metricData, Namespace: namespaceToUse })
         .promise();
     } catch (err) {
-      console.log(`Failed to report metrics, `, metrics, err);
-      capture.error(err, { extra: { metrics } });
+      const msg = "Failed to report metrics";
+      const errorAsStr = errorToString(err);
+      out("reportMetrics").log(`${msg}, `, metrics, errorAsStr);
+      capture.message(msg, {
+        extra: { metrics, error: errorAsStr, context: "lambdas.reportMetrics" },
+        level: "warning",
+      });
       // intentionally not rethrowing, don't want to fail the lambda
     }
   }
@@ -80,11 +89,11 @@ export class CloudWatchUtils {
     metricsNamespace?: string;
     metricName?: string;
   } = {}) {
-    const namespaceToUse = metricsNamespace ?? this.metricsNamespace;
-    if (!namespaceToUse) throw new Error(`Missing metricsNamespace`);
     const mem = process.memoryUsage();
     logMemoryUsage(mem);
     try {
+      const namespaceToUse = metricsNamespace ?? this.metricsNamespace;
+      if (!namespaceToUse) throw new Error(`Missing metricsNamespace`);
       await this._cloudWatch
         .putMetricData({
           MetricData: [
@@ -100,15 +109,20 @@ export class CloudWatchUtils {
         })
         .promise();
     } catch (err) {
-      console.log(`Failed to report memory usage, `, mem, err);
-      capture.error(err, { extra: { mem } });
+      const msg = "Failed to report memory usage";
+      const errorAsStr = errorToString(err);
+      out("reportMemoryUsage").log(`${msg}, `, mem, errorAsStr);
+      capture.message(msg, {
+        extra: { mem, error: errorAsStr, context: "lambdas.reportMemoryUsage" },
+        level: "warning",
+      });
       // intentionally not rethrowing, don't want to fail the lambda
     }
   }
 }
 
 export function logMemoryUsage(mem = process.memoryUsage()) {
-  console.log(
+  out("logMemoryUsage").log(
     `[MEM] rss:  ${kbToMbString(mem.rss)}, ` +
       `heap: ${kbToMbString(mem.heapUsed)}/${kbToMbString(mem.heapTotal)}, ` +
       `external: ${kbToMbString(mem.external)}, ` +

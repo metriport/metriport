@@ -1,0 +1,7 @@
+.env
+*.file
+*.scratch
+*test-cases
+node_modules
+lib
+dist

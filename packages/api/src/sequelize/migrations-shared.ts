@@ -20,40 +20,42 @@ class BaseModel extends Model<InferAttributes<BaseModel>, InferCreationAttribute
 }
 
 // default columns, don't change them here; if you need something different do it on the migration file
-export const defaultColumnsDef = ({
+export function defaultColumnsDef({
   version,
 }: {
   version: boolean | undefined;
-}): ModelAttributes<BaseModel, CreationAttributes<BaseModel>> => ({
-  createdAt: {
-    field: "created_at",
-    type: DataTypes.DATE(6),
-    allowNull: false,
-    defaultValue: literal("CURRENT_TIMESTAMP(6)"), // https://github.com/sequelize/sequelize/issues/4896
-  },
-  updatedAt: {
-    field: "updated_at",
-    type: DataTypes.DATE(6),
-    allowNull: false,
-    defaultValue: literal("CURRENT_TIMESTAMP(6)"), // https://github.com/sequelize/sequelize/issues/4896
-  },
-  ...(version
-    ? {
-        version: {
-          allowNull: false,
-          type: DataTypes.INTEGER,
-          defaultValue: 0,
-        },
-      }
-    : undefined),
-});
+}): ModelAttributes<BaseModel, CreationAttributes<BaseModel>> {
+  return {
+    createdAt: {
+      field: "created_at",
+      type: DataTypes.DATE(6),
+      allowNull: false,
+      defaultValue: literal("CURRENT_TIMESTAMP(6)"), // https://github.com/sequelize/sequelize/issues/4896
+    },
+    updatedAt: {
+      field: "updated_at",
+      type: DataTypes.DATE(6),
+      allowNull: false,
+      defaultValue: literal("CURRENT_TIMESTAMP(6)"), // https://github.com/sequelize/sequelize/issues/4896
+    },
+    ...(version
+      ? {
+          version: {
+            allowNull: false,
+            type: DataTypes.INTEGER,
+            defaultValue: 0,
+          },
+        }
+      : undefined),
+  };
+}
 
-export const addUpdatedAtTrigger = (
+export function addUpdatedAtTrigger(
   queryInterface: QueryInterface,
   transaction: Transaction,
   tableName: string
-) =>
-  queryInterface.createTrigger(
+) {
+  return queryInterface.createTrigger(
     tableName,
     `trg_update_${tableName}`,
     "before",
@@ -65,18 +67,19 @@ export const addUpdatedAtTrigger = (
     ["FOR EACH ROW"],
     { transaction }
   );
+}
 
 export type CreateTableOptions = Omit<QueryInterfaceCreateTableOptions, "transaction"> &
   DeepNonNullable<Required<Pick<QueryInterfaceCreateTableOptions, "transaction">>> & {
     addVersion?: boolean;
   };
 
-export const createTable = async (
+export async function createTable(
   queryInterface: QueryInterface,
   tableName: string,
   tableDefinitions: ModelAttributes,
   options: CreateTableOptions
-) => {
+) {
   await queryInterface.createTable(
     tableName,
     {
@@ -86,4 +89,7 @@ export const createTable = async (
     options
   );
   await addUpdatedAtTrigger(queryInterface, options.transaction, tableName);
-};
+}
+
+export type CxIdRow = { cx_id: string };
+export type PatientCohortRow = { patient_id: string; cohort_id: string };

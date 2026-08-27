@@ -1,7 +1,10 @@
 export { IHEGateway } from "./client/ihe-gateway";
+export { ON_DEMAND_DOCUMENT_TYPE_UUID, STABLE_DOCUMENT_TYPE_UUID } from "./common/constants";
 export {
   InboundDocumentQueryReq,
   inboundDocumentQueryReqSchema,
+  inboundSpecificDocumentQueryReqSchema,
+  InboundSpecificDocumentQueryReq,
   OutboundDocumentQueryReq,
   outboundDocumentQueryReqSchema,
 } from "./models/document-query/document-query-requests";
@@ -13,6 +16,7 @@ export {
   isSuccessfulOutboundDocQueryResponse,
   OutboundDocumentQueryResp,
   outboundDocumentQueryRespSchema,
+  toSafeCaptureContext as toSafeCaptureContextDocumentQuery,
 } from "./models/document-query/document-query-responses";
 export {
   InboundDocumentRetrievalReq,
@@ -25,10 +29,21 @@ export {
   InboundDocumentRetrievalRespFault,
   inboundDocumentRetrievalRespSchema,
   InboundDocumentRetrievalRespSuccessful,
+  isSuccessfulInboundDocRetrievalResponse,
   isSuccessfulOutboundDocRetrievalResponse,
   OutboundDocumentRetrievalResp,
   outboundDocumentRetrievalRespSchema,
+  toSafeCaptureContext as toSafeCaptureContextDocumentRetrieval,
 } from "./models/document-retrieval/document-retrieval-responses";
+export {
+  Address,
+  Gender,
+  Name,
+  PatientResource,
+  patientResourceSchema,
+  PersonalIdentifier,
+  Telecom,
+} from "./models/patient-discovery/patient";
 export {
   InboundPatientDiscoveryReq,
   inboundPatientDiscoveryReqSchema,
@@ -38,15 +53,16 @@ export {
 export {
   InboundPatientDiscoveryResp,
   inboundPatientDiscoveryRespSchema,
+  isNonErroringOutboundPatientDiscoveryResponse,
   isSuccessfulInboundPatientDiscoveryResponse,
   isSuccessfulOutboundPatientDiscoveryResponse,
-  isNonErroringOutboundPatientDiscoveryResponse,
-  outboundPatientDiscoveryRespSuccessfulSchema,
-  outboundPatientDiscoveryRespFaultSchema,
   OutboundPatientDiscoveryResp,
-  OutboundPatientDiscoveryRespSuccessfulSchema,
+  outboundPatientDiscoveryRespFaultSchema,
   OutboundPatientDiscoveryRespFaultSchema,
   outboundPatientDiscoveryRespSchema,
+  outboundPatientDiscoveryRespSuccessfulSchema,
+  OutboundPatientDiscoveryRespSuccessfulSchema,
+  toSafeCaptureContext,
 } from "./models/patient-discovery/patient-discovery-responses";
 export {
   BaseErrorResponse,
@@ -55,6 +71,7 @@ export {
   BaseResponse,
   Coding,
   DocumentReference,
+  Issue,
   isBaseErrorResponse,
   NPIString,
   NPIStringArray,
@@ -63,16 +80,8 @@ export {
   oidStringSchema,
   OperationOutcome,
   SamlAttributes,
+  SubjectRole,
   XCAGateway,
   XCPDGateway,
   XCPDPatientId,
 } from "./models/shared";
-export {
-  Name,
-  Address,
-  Telecom,
-  PatientResource,
-  patientResourceSchema,
-  PersonalIdentifier,
-  Gender,
-} from "./models/patient-discovery/patient";

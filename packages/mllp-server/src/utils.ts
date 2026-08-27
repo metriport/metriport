@@ -1,30 +1,42 @@
 import * as dotenv from "dotenv";
 dotenv.config();
-
-import { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent } from "@medplum/hl7";
-import { S3Utils } from "@metriport/core/external/aws/s3";
-import { Base64Scrambler } from "@metriport/core/util/base64-scrambler";
-import { Config } from "@metriport/core/util/config";
-import { Logger } from "@metriport/core/util/log";
-import { unpackUuid } from "@metriport/core/util/pack-uuid";
-
+// keep that ^ on top
 import { Hl7Message } from "@medplum/core";
+import { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent } from "@medplum/hl7";
 import {
   fromBambooId,
   remapMessageReplacingPid3,
 } from "@metriport/core/command/hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
-import { HieConfigDictionary } from "@metriport/core/external/hl7-notification/hie-config-dictionary";
-import { MetriportError } from "@metriport/shared";
+import {
+  getPccSourceHieNameByLocalPort,
+  isPccConnection,
+} from "@metriport/core/domain/hl7-notification/utils";
+import { S3Utils } from "@metriport/core/external/aws/s3";
+import {
+  getHieConfigDictionary,
+  HieConfigDictionary,
+} from "@metriport/core/external/hl7-notification/hie-config-dictionary";
+import { Base64Scrambler } from "@metriport/core/util/base64-scrambler";
+import { Config } from "@metriport/core/util/config";
+import { Logger } from "@metriport/core/util/log";
+import { HL7_FILE_EXTENSION } from "@metriport/core/util/mime";
+import { unpackUuid } from "@metriport/core/util/pack-uuid";
+import { BAMBOO_HIE_NAME, MetriportError } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import * as Sentry from "@sentry/node";
 import IPCIDR from "ip-cidr";
-import { buildDayjs } from "@metriport/shared/common/date";
-import { HL7_FILE_EXTENSION } from "@metriport/core/util/mime";
 
 const CUSTOM_SEGMENT_NAME = "ZIT";
 const CUSTOM_SEGMENT_HIE_NAME_INDEX = 1;
 const CUSTOM_SEGMENT_TIMEZONE_INDEX = 2;
 
+export function isImpersonationTestMessage(rawMessage: Hl7Message): boolean {
+  return rawMessage.getSegment(CUSTOM_SEGMENT_NAME) !== undefined;
+}
+
+/** @deprecated Instantiate objects that can hold state on local context, let's not reuse them. */
 const crypto = new Base64Scrambler(Config.getHl7Base64ScramblerSeed());
+/** @deprecated Instantiate objects that can hold state on local context, let's not reuse them. */
 export const s3Utils = new S3Utils(Config.getAWSRegion());
 export const bucketName = Config.getHl7RawMessageBucketName();
 
@@ -90,6 +102,27 @@ export function getCleanIpAddress(address: string | undefined): string {
  */
 export function asString(message: Hl7Message) {
   return message.segments.map(s => s.toString()).join("\n");
+}
+
+/**
+ * 💡 Gets the HIE name given the connection info.
+ *
+ * Most messages from simple HIE integrations can be identified by the sender's
+ * internalCidrBlocks. However, messages from PCC connections are sent to the MLLP
+ * server over a single tunnel. The PCC integration is set up to send each HIE's
+ * messages through the single tunnel to a unique port on the MLLP server.
+ * @param remoteIp The remote IP address - the IP address of the sender's internalCidrBlock.
+ * @param localPort The local port - the port the MLLP server is listening on.
+ * @returns The hie name for the message.
+ */
+export function getHieNameByConnectionInfo(remoteIp: string, localPort: number) {
+  const hieConfigDictionary = getHieConfigDictionary();
+  const hieVpnConfigRows = toVpnRows(hieConfigDictionary);
+  const { hieName: rawHieName } = lookupHieTzEntryForIp(hieVpnConfigRows, remoteIp);
+  const hieName = isPccConnection(rawHieName)
+    ? getPccSourceHieNameByLocalPort(localPort)
+    : rawHieName;
+  return hieName;
 }
 
 export type HieVpnConfigRow = { hieName: string; cidrBlocks: string[]; timezone: string };
@@ -165,7 +198,7 @@ function keepOnlyVpnConfigs([hieName, config]: [string, HieConfigDictionary[stri
 }
 
 export function translateMessage(rawMessage: Hl7Message, hieName: string): Hl7Message {
-  if (hieName === "Bamboo") {
+  if (hieName === BAMBOO_HIE_NAME) {
     const pid = rawMessage.getSegment("PID");
     if (!pid) {
       throw new MetriportError("PID segment not found in bamboo message", undefined, { hieName });

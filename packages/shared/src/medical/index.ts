@@ -4,5 +4,6 @@ export * from "./fhir/observations";
 export * from "./fhir/resources";
 export * from "./fhir/coding";
 export * from "./fhir/constants";
+export * from "./fhir/imaging-detection";
 export * from "./webhook/webhook-request";
 export * from "./webhook/webhook-status-response";

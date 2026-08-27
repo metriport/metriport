@@ -1,7 +1,7 @@
-import { FacilityType } from "../../../../domain/medical/facility";
-import { FacilityModel } from "../../../../models/medical/facility";
+import { FacilityType, validateDelegateFacility } from "@metriport/core/domain/facility";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
-import { createFacility, validateObo } from "../create-facility";
+import { FacilityModel } from "../../../../models/medical/facility";
+import { createFacility } from "../create-facility";
 import { makeFacilityCreate, makeFacilityCreateCmd } from "./create-facility";
 
 describe("createFacility", () => {
@@ -14,25 +14,21 @@ describe("createFacility", () => {
       facilityModel_create = jest.spyOn(FacilityModel, "create").mockImplementation(async f => f);
     });
 
-    it("creates facility when no OBO data is provided", async () => {
+    it("creates facility when no delegate data is provided", async () => {
       const facilityCreate = makeFacilityCreateCmd({
-        cwType: null,
-        cqType: null,
+        type: null,
         cqActive: null,
         cwActive: null,
-        cqOboOid: null,
-        cwOboOid: null,
+        principalOid: null,
       });
       await createFacility(facilityCreate);
       expect(facilityModel_create).toHaveBeenCalledWith(
         expect.objectContaining({
           ...facilityCreate,
-          cwType: FacilityType.initiatorAndResponder,
-          cqType: FacilityType.initiatorAndResponder,
+          type: FacilityType.initiatorAndResponder,
           cqActive: false,
           cwActive: false,
-          cqOboOid: null,
-          cwOboOid: null,
+          principalOid: null,
         })
       );
     });
@@ -43,16 +39,14 @@ describe("createFacility", () => {
       expect(facilityModel_create).toHaveBeenCalledWith(
         expect.objectContaining({
           ...facilityCreate,
-          cqOboOid: facilityCreate.cqOboOid ?? null,
-          cwOboOid: facilityCreate.cwOboOid ?? null,
+          principalOid: facilityCreate.principalOid ?? null,
         })
       );
     });
 
-    it("makeFacilityCreateCmd and OBO", async () => {
+    it("makeFacilityCreateCmd and delegate", async () => {
       const facilityCreate = makeFacilityCreateCmd({
-        cwType: FacilityType.initiatorOnly,
-        cqType: FacilityType.initiatorOnly,
+        type: FacilityType.initiatorOnly,
       });
       expect(facilityCreate).toEqual(
         expect.objectContaining({
@@ -60,26 +54,22 @@ describe("createFacility", () => {
           cwActive: true,
         })
       );
-      expect(facilityCreate.cqOboOid).toBeDefined();
-      expect(facilityCreate.cwOboOid).toBeDefined();
+      expect(facilityCreate.principalOid).toBeDefined();
     });
   });
 
-  describe("validateObo", () => {
-    it("throws when OBO, CW OBO is active and CW OID is null", async () => {
+  describe("validateDelegate", () => {
+    it("throws when delegate, but no delegate OID is provided", async () => {
       const facility = makeFacilityCreate({
-        cwType: FacilityType.initiatorOnly,
-        cwOboOid: null,
+        type: FacilityType.initiatorOnly,
+        principalOid: null,
       });
-      expect(() => validateObo(facility)).toThrow("CW OBO facility must have CW OBO OID");
-    });
-
-    it("throws when OBO, CQ OBO is active and CQ OID is null", async () => {
-      const facility = makeFacilityCreate({
-        cqType: FacilityType.initiatorOnly,
-        cqOboOid: null,
-      });
-      expect(() => validateObo(facility)).toThrow("CQ OBO facility must have CQ OBO OID");
+      expect(() =>
+        validateDelegateFacility({
+          type: facility.type,
+          principalOid: facility.principalOid,
+        })
+      ).toThrow("A delegate facility must have a principal OID");
     });
   });
 });

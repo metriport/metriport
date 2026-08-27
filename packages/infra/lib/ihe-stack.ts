@@ -4,6 +4,7 @@ import { CfnStage } from "aws-cdk-lib/aws-apigatewayv2";
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
@@ -14,6 +15,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
+import { getDocIdMappingTableName } from "./shareback-nested-stack/shareback-nested-stack";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { getSecrets, Secrets } from "./shared/secrets";
@@ -32,7 +34,7 @@ export class IHEStack extends Stack {
     if (!vpcId) throw new Error("Missing VPC ID for IHE stack");
     const vpc = ec2.Vpc.fromLookup(this, "APIVpc", { vpcId });
 
-    const alarmSnsAction = setupSlackNotifSnsTopic(this, props.config);
+    const alertSnsAction = setupSlackNotifSnsTopic(this, props.config);
 
     //-------------------------------------------
     // Secrets
@@ -96,7 +98,6 @@ export class IHEStack extends Stack {
         bucket: trustStoreBucket,
         key: props.config.iheGateway.trustStoreKey,
       },
-      // this ownsership cert is the whole point of this entire migration.
       ownershipCertificate: ownershipCertificate,
       securityPolicy: apigwv2.SecurityPolicy.TLS_1_2,
     });
@@ -174,13 +175,19 @@ export class IHEStack extends Stack {
       props.config.iheRequestsBucketName
     );
 
+    const docIdMappingTable = dynamodb.Table.fromTableName(
+      this,
+      "DocIdMappingTableForIhe",
+      getDocIdMappingTableName(props.config)
+    );
+
     const patientDiscoveryLambdaV2 = this.setupPatientDiscoveryLambda({
       props,
       lambdaLayers,
       vpc,
       secrets,
       posthogSecretName,
-      alarmSnsAction,
+      alertSnsAction,
       iheRequestsBucket,
       generalBucket,
     });
@@ -192,9 +199,10 @@ export class IHEStack extends Stack {
       secrets,
       medicalDocumentsBucket,
       posthogSecretName,
-      alarmSnsAction,
+      alertSnsAction,
       iheRequestsBucket,
       generalBucket,
+      docIdMappingTable,
     });
 
     const documentRetrievalLambdaV2 = this.setupDocumentRetrievalLambda({
@@ -204,9 +212,10 @@ export class IHEStack extends Stack {
       secrets,
       medicalDocumentsBucket,
       posthogSecretName,
-      alarmSnsAction,
+      alertSnsAction,
       iheRequestsBucket,
       generalBucket,
+      docIdMappingTable,
     });
 
     apigw2.addRoutes({
@@ -247,9 +256,10 @@ export class IHEStack extends Stack {
     secrets,
     medicalDocumentsBucket,
     posthogSecretName,
-    alarmSnsAction,
+    alertSnsAction,
     iheRequestsBucket,
     generalBucket,
+    docIdMappingTable,
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -257,9 +267,10 @@ export class IHEStack extends Stack {
     secrets: Secrets;
     medicalDocumentsBucket: s3.IBucket;
     posthogSecretName: string | undefined;
-    alarmSnsAction?: SnsAction | undefined;
+    alertSnsAction?: SnsAction | undefined;
     iheRequestsBucket: s3.IBucket;
     generalBucket: s3.IBucket;
+    docIdMappingTable: dynamodb.ITable;
   }): Lambda {
     const documentQueryLambda = createLambda({
       stack: this,
@@ -272,6 +283,7 @@ export class IHEStack extends Stack {
         MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
         IHE_REQUESTS_BUCKET_NAME: iheRequestsBucket.bucketName,
         API_LB_ADDRESS: props.config.loadBalancerDnsName,
+        DOC_ID_MAPPING_TABLE_NAME: docIdMappingTable.tableName,
         ...(props.config.engineeringCxId
           ? { ENGINEERING_CX_ID: props.config.engineeringCxId }
           : {}),
@@ -280,7 +292,7 @@ export class IHEStack extends Stack {
         GENERAL_BUCKET_NAME: props.config.generalBucketName,
       },
       vpc,
-      alarmSnsAction,
+      alertSnsAction,
       version: props.version,
     });
 
@@ -288,6 +300,7 @@ export class IHEStack extends Stack {
     secrets[posthogSecretKey]?.grantRead(documentQueryLambda);
     medicalDocumentsBucket.grantReadWrite(documentQueryLambda);
     generalBucket.grantRead(documentQueryLambda);
+    docIdMappingTable.grantReadWriteData(documentQueryLambda);
     return documentQueryLambda;
   }
 
@@ -298,9 +311,10 @@ export class IHEStack extends Stack {
     secrets,
     medicalDocumentsBucket,
     posthogSecretName,
-    alarmSnsAction,
+    alertSnsAction,
     iheRequestsBucket,
     generalBucket,
+    docIdMappingTable,
   }: {
     props: IHEStackProps;
     lambdaLayers: LambdaLayers;
@@ -308,9 +322,10 @@ export class IHEStack extends Stack {
     secrets: Secrets;
     medicalDocumentsBucket: s3.IBucket;
     posthogSecretName: string | undefined;
-    alarmSnsAction?: SnsAction | undefined;
+    alertSnsAction?: SnsAction | undefined;
     iheRequestsBucket: s3.IBucket;
     generalBucket: s3.IBucket;
+    docIdMappingTable: dynamodb.ITable;
   }): Lambda {
     const documentRetrievalLambda = createLambda({
       stack: this,
@@ -322,6 +337,7 @@ export class IHEStack extends Stack {
       envVars: {
         IHE_REQUESTS_BUCKET_NAME: iheRequestsBucket.bucketName,
         MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
+        DOC_ID_MAPPING_TABLE_NAME: docIdMappingTable.tableName,
         ...(props.config.engineeringCxId
           ? { ENGINEERING_CX_ID: props.config.engineeringCxId }
           : {}),
@@ -330,7 +346,7 @@ export class IHEStack extends Stack {
         GENERAL_BUCKET_NAME: props.config.generalBucketName,
       },
       vpc,
-      alarmSnsAction,
+      alertSnsAction,
       version: props.version,
     });
 
@@ -338,6 +354,7 @@ export class IHEStack extends Stack {
     secrets[posthogSecretKey]?.grantRead(documentRetrievalLambda);
     medicalDocumentsBucket.grantRead(documentRetrievalLambda);
     generalBucket.grantRead(documentRetrievalLambda);
+    docIdMappingTable.grantReadWriteData(documentRetrievalLambda);
     return documentRetrievalLambda;
   }
 
@@ -347,7 +364,7 @@ export class IHEStack extends Stack {
     vpc,
     secrets,
     posthogSecretName,
-    alarmSnsAction,
+    alertSnsAction,
     iheRequestsBucket,
     generalBucket,
   }: {
@@ -356,7 +373,7 @@ export class IHEStack extends Stack {
     vpc: ec2.IVpc;
     secrets: Secrets;
     posthogSecretName: string | undefined;
-    alarmSnsAction?: SnsAction | undefined;
+    alertSnsAction?: SnsAction | undefined;
     iheRequestsBucket: s3.IBucket;
     generalBucket: s3.IBucket;
   }): Lambda {
@@ -365,7 +382,7 @@ export class IHEStack extends Stack {
       name: "IHEInboundPatientDiscoveryV2",
       entry: "ihe-gateway-v2-inbound-patient-discovery",
       layers: [lambdaLayers.shared],
-      memory: 1024,
+      memory: 512,
       envType: props.config.environmentType,
       envVars: {
         IHE_REQUESTS_BUCKET_NAME: iheRequestsBucket.bucketName,
@@ -378,8 +395,9 @@ export class IHEStack extends Stack {
         GENERAL_BUCKET_NAME: props.config.generalBucketName,
       },
       vpc,
-      alarmSnsAction,
+      alertSnsAction,
       version: props.version,
+      isEnableInsights: true,
     });
 
     iheRequestsBucket.grantReadWrite(patientDiscoveryLambda);

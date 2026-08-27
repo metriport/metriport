@@ -2,14 +2,16 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 
+import { Config } from "@metriport/core/util/config";
+import axios from "axios";
 import { Command } from "commander";
-import { listBulkImportJobIds, getBulkImportRawInput, buildExternalIdToPatientMap } from "./shared";
 import {
   appendToOutputCsv,
   getCsvRunsPath,
   readCsvFromString,
   startOutputCsv,
 } from "../shared/csv";
+import { getBulkImportRawInput, listBulkImportJobIds } from "./shared";
 
 /**
  * This script finds missing patients from bulk imports, by searching for patients from recent
@@ -53,11 +55,6 @@ type BulkImportRow = Record<BulkImportHeader, string>;
 
 async function findMissingPatients({ cxId, csvOutput }: { cxId: string; csvOutput: string }) {
   console.log(`Finding missing patients for ${cxId}...`);
-  const externalIdToPatient = await buildExternalIdToPatientMap(cxId);
-  console.log(
-    `Found ${Object.keys(externalIdToPatient).length} externalId to patient mappings for ${cxId}`
-  );
-
   console.log(`Listing bulk import job IDs for ${cxId}...`);
   const bulkImports = await listBulkImportJobIds(cxId);
   console.log(`Found ${bulkImports.length} bulk import job IDs for ${cxId}`);
@@ -74,7 +71,10 @@ async function findMissingPatients({ cxId, csvOutput }: { cxId: string; csvOutpu
     let totalMissingFoundInBulkImport = 0;
     for (const inputRow of inputRows) {
       const externalId = inputRow.externalid;
-      if (externalIdToPatient[externalId] || missingExternalId.has(externalId)) {
+      const response = await axios.get(
+        `${Config.getApiUrl()}/patient/external-id?externalId=${externalId}&cxId=${cxId}`
+      );
+      if (response.status === 200) {
         continue;
       }
       missingExternalId.add(externalId);

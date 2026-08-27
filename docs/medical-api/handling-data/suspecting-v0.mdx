@@ -1,0 +1,192 @@
+---
+title: "Suspecting"
+sidebarTitle: "Suspecting"
+icon: "n/a"
+description: "Automated detection of potential conditions based on clinical evidence patterns."
+group: "Data Analytics"
+---
+
+# Overview
+
+Suspecting automatically detects potential conditions based on clinical evidence patterns
+from patient medical records. The system analyzes clinical data including laboratory results,
+medications, procedures, and documented conditions to identify patients who may have undiagnosed
+conditions.
+
+Suspecting runs at scheduled intervals and analyzes your patient population to identify potential
+conditions that may require clinical review or follow-up.
+
+# Available Conditions
+
+The following conditions are supported by the suspecting system:
+
+## Mental Health
+
+| Condition            |
+| -------------------- |
+| Bipolar Disorder     |
+| Depression           |
+| Dementia             |
+| Seizure Disorder     |
+| Anorexia and Bulimia |
+| Alcohol Use Disorder |
+
+## Cardiovascular
+
+| Condition                   |
+| --------------------------- |
+| Heart Failure               |
+| Hypertension                |
+| Coronary Artery Disease     |
+| Peripheral Arterial Disease |
+| Carotid Artery Stenosis     |
+| Angina                      |
+| Arrhythmia                  |
+| Aortic Aneurysm             |
+| History of CVA              |
+
+## Metabolic
+
+| Condition           |
+| ------------------- |
+| Morbid Obesity      |
+| Diabetes            |
+| Prediabetes         |
+| Hyperlipidemia      |
+| Hyperparathyroidism |
+| Hypothyroidism      |
+
+## Respiratory
+
+| Condition               |
+| ----------------------- |
+| COPD                    |
+| Asthma                  |
+| Obstructive Sleep Apnea |
+
+## Renal/Hepatic
+
+| Condition              |
+| ---------------------- |
+| Chronic Kidney Disease |
+| Cirrhosis              |
+| Chronic Hepatitis C    |
+
+## Other
+
+| Condition                        |
+| -------------------------------- |
+| Diabetic Retinopathy             |
+| Retinal Vein Occlusion           |
+| Age-Related Macular Degeneration |
+| Lung Nodule                      |
+| Thyroid Nodule                   |
+| Barrett's Esophagus              |
+| Benign Carcinoid                 |
+| Bone Density                     |
+| Amputation                       |
+| Ostomy                           |
+| History of Active Cancer         |
+
+# Getting Started
+
+Suspecting runs at scheduled intervals and analyzes your patient data to identify potential
+conditions. Once suspecting is enabled for your account, results will be available through an API.
+
+# Accessing via API
+
+You can retrieve suspect records using the `GET /medical/v1/suspect` endpoint. Each suspect record
+includes a `LAST_RUN` field that identifies the generation/run that produced the suspect,
+allowing you to track and filter results by specific analysis runs.
+
+# Accessing via Data Warehouse
+
+Suspect records are also available in the data warehouse under the `DATA_PRODUCTS.SUSPECT` table.
+This allows you to query and analyze suspect data using SQL alongside other patient data.
+
+## Table Schema
+
+| Column                          | Description                         |
+| ------------------------------- | ----------------------------------- |
+| PATIENT_ID                      | The patient identifier              |
+| SUSPECT_CONDITION               | The suspected condition             |
+| SUSPECT_GROUP                   | Suspect group identifier            |
+| SUSPECT_ICD10_CODE              | ICD-10 code                         |
+| SUSPECT_ICD10_SHORT_DESCRIPTION | ICD-10 description                  |
+| EVIDENCE                        | Supporting clinical evidence (JSON) |
+| LAST_RUN                        | Timestamp of last analysis          |
+
+## Example Query
+
+```sql
+SELECT * FROM DATA_PRODUCTS.SUSPECT
+WHERE SUSPECT_CONDITION like 'Prediabetes%'
+AND SUSPECT_GROUP = 'prediabetes_fpg'
+ORDER BY LAST_RUN DESC
+LIMIT 10;
+```
+
+# The Suspect Model
+
+When a suspect is identified, the API returns data in the following format:
+
+```json
+{
+  "suspects": [
+    {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "cxId": "11111111-1111-1111-1111-111111111111",
+      "patientId": "22222222-2222-2222-2222-222222222222",
+      "suspectGroup": {
+        "name": "bipolar_lithium_signal",
+        "displayName": "Bipolar (Lithium lab present)",
+        "description": "Flags a screening signal when a Lithium level is present in LAB_RESULT (LOINC 14334-7). Excludes patients already diagnosed with bipolar disorder (ICD-10 F31*) and those with substance/medication-induced mood disorder (F10.14, F15.24, F19.14). Emits a minimal Observation FHIR for the supporting lab. Not diagnostic on its own.",
+        "icd10Code": "F31.9",
+        "icd10ShortDescription": "Bipolar disorder, unspecified (screen signal)"
+      },
+      "evidence": [
+        {
+          "id": "33333333-3333-3333-3333-333333333333",
+          "resource_type": "Observation",
+          "data_source": "11111111-1111-1111-1111-111111111111/22222222-2222-2222-2222-222222222222/11111111-1111-1111-1111-111111111111_22222222-2222-2222-2222-222222222222_44444444-4444-4444-4444-444444444444.xml",
+          "resource": {
+            "resourceType": "Observation",
+            "id": "33333333-3333-3333-3333-333333333333",
+            "status": "final",
+            "code": {
+              "text": "Lithium, Blood [Moles/volume] in Serum or Plasma",
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "14334-7",
+                  "display": "Lithium, Blood [Moles/volume] in Serum or Plasma"
+                }
+              ]
+            },
+            "effectiveDateTime": "2024-12-21",
+            "valueQuantity": {
+              "value": 0.6,
+              "unit": "mmol/L"
+            }
+          }
+        }
+      ],
+      "lastRun": "2025-12-05T14:30:15Z"
+    }
+  ]
+}
+```
+
+<Tip>
+  The `data_source` field in the suspecting evidence follows
+  the same format as the `meta.source` property in FHIR
+  resources. You can use this value with the [Get Document
+  URL
+  endpoint](/medical-api/api-reference/document/get-document)
+  to download the original source document.
+</Tip>
+
+# Additional Information
+
+For more information about working with patient data, see the [data analytics](/medical-api/handling-data/data-analytics)
+documentation.

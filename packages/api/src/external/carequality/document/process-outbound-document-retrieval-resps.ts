@@ -1,4 +1,5 @@
 import { Bundle, BundleEntry, DocumentReference, Resource } from "@medplum/fhirtypes";
+import { ingestIntoSearchEngine } from "@metriport/core/command/consolidated/search/document-reference/ingest";
 import { EventTypes, analytics } from "@metriport/core/external/analytics/posthog";
 import { OutboundDocRetrievalRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
@@ -8,25 +9,23 @@ import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { ingestIntoSearchEngine } from "@metriport/core/command/consolidated/search/document-reference/ingest";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { DocumentReferenceWithId } from "../../fhir/document";
 import { upsertDocumentsToFHIRServer } from "../../fhir/document/save-document-reference";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
-import { formatDate } from "../shared";
 import {
   DocumentReferenceWithMetriportId,
   containsDuplicateMetriportId,
   containsMetriportId,
-  cqToFHIR,
-  dedupeContainedResources,
 } from "./shared";
 
 import { getDocuments } from "@metriport/core/external/fhir/document/get-documents";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { getOutboundDocRetrievalSuccessFailureCount } from "../../hie/carequality-analytics";
+import { dedupeContainedResources, iheToFhirDocumentReference } from "../../ihe-shared/ihe-to-fhir";
+import { formatDate } from "../../ihe-shared/utils";
 import { getCQData } from "../patient";
 
 export async function processOutboundDocumentRetrievalResps({
@@ -34,6 +33,7 @@ export async function processOutboundDocumentRetrievalResps({
   patientId,
   cxId,
   results,
+  forceDownload,
 }: OutboundDocRetrievalRespParam): Promise<void> {
   const { log } = out(
     `CQ processOutboundDocumentRetrievalResps - requestId ${requestId}, patient ${patientId}`
@@ -145,7 +145,8 @@ export async function processOutboundDocumentRetrievalResps({
             requestId,
             patientId,
             cxId,
-            docRetrievalResp.gateway.homeCommunityId
+            docRetrievalResp.gateway.homeCommunityId,
+            forceDownload
           );
         }
       })
@@ -209,7 +210,8 @@ async function handleDocReferences(
   requestId: string,
   patientId: string,
   cxId: string,
-  cqOrganizationId: string
+  cqOrganizationId: string,
+  forceDownload: boolean | undefined
 ) {
   let errorCountConvertible = 0;
   let adjustCountConvertible = 0;
@@ -233,7 +235,7 @@ async function handleDocReferences(
   for (const docRef of docRefs) {
     try {
       const isDocConvertible = isConvertible(docRef.contentType || undefined);
-      const shouldConvert = isDocConvertible && docRef.isNew;
+      const shouldConvert = isDocConvertible && (docRef.isNew || forceDownload);
 
       const docLocation = docRef.fileLocation;
       const docPath = docRef.fileName;
@@ -263,20 +265,21 @@ async function handleDocReferences(
         fhirDocRef => fhirDocRef.id === docRef.metriportId
       );
 
-      const fhirDocRef = cqToFHIR(
-        docRef.metriportId,
+      const fhirDocRef = iheToFhirDocumentReference({
+        docId: docRef.metriportId,
         docRef,
-        "final",
+        docStatus: "final",
         patientId,
-        metriportDataSourceExtension,
-        cqOrganization.name
-      );
+        source: MedicalDataSource.CAREQUALITY,
+        contentExtension: metriportDataSourceExtension,
+        orgName: cqOrganization.name,
+      });
       const mergedFHIRDocRef: DocumentReferenceWithId = {
         ...fhirDocRef,
         description: fhirDocRef.description ?? draftFHIRDocRef?.description,
         content: [...(draftFHIRDocRef?.content ?? []), ...(fhirDocRef.content ?? [])],
         contained: combineAndDedupeContainedResources(draftFHIRDocRef, fhirDocRef),
-        date: formatDate(fhirDocRef.date) ?? formatDate(draftFHIRDocRef?.date),
+        date: fhirDocRef.date ?? formatDate(draftFHIRDocRef?.date),
       };
 
       if (!docRef.contentType) {

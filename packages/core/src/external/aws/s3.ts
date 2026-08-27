@@ -2,10 +2,13 @@ import {
   CommonPrefix,
   CopyObjectCommand,
   DeleteObjectCommand,
+  DeleteObjectsCommand,
+  GetObjectCommand,
   HeadObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
+  _Object,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl as getPresignedUrl } from "@aws-sdk/s3-request-presigner";
 import {
@@ -13,12 +16,15 @@ import {
   errorToString,
   executeWithRetries,
   ExecuteWithRetriesOptions,
+  getEnvVar,
   MetriportError,
   NotFoundError,
 } from "@metriport/shared";
+import { NodeHttpHandler } from "@smithy/node-http-handler";
 import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import * as https from "https";
 import * as stream from "stream";
 import * as util from "util";
 import { out } from "../../util/log";
@@ -27,12 +33,25 @@ import { capture } from "../../util/notifications";
 dayjs.extend(duration);
 
 const pipeline = util.promisify(stream.pipeline);
-const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
+const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ hours: 4 }).asSeconds();
 const defaultS3RetriesConfig = {
   maxAttempts: 5,
   initialDelay: 500,
 };
+const maxSockets = 200;
 const protocolRegex = /^https?:\/\//;
+
+const retriableErrorCodes = [
+  "EPIPE",
+  "ECONNRESET",
+  "ECONNREFUSED",
+  "EAI_AGAIN",
+  "ENETUNREACH",
+  "EHOSTUNREACH",
+] as const;
+
+export const S3_INTELLIGENT_TIERING_STORAGE_CLASS = "INTELLIGENT_TIERING";
+const S3_FORCE_PATH_STYLE_ENV_VAR = "S3_FORCE_PATH_STYLE";
 
 export type FileInfoExists = {
   exists: true;
@@ -41,7 +60,9 @@ export type FileInfoExists = {
   sizeInBytes: number; // TODO Enable this when testing something that uses this code
   contentType: string;
   eTag?: string;
+  /** @deprecated Use `updatedAt` instead - S3 doesn't have a createdAt field, only updatedAt */
   createdAt: Date | undefined;
+  updatedAt: Date | undefined;
   metadata: Record<string, string> | undefined;
 };
 
@@ -52,7 +73,22 @@ export type FileInfoNotExists = {
   contentType?: never;
   eTag?: never;
   createdAt?: never;
+  updatedAt?: never;
   metadata?: never;
+};
+
+export type S3Object = {
+  key: string;
+  lastModified?: Date | undefined;
+  eTag?: string | undefined;
+  size?: number | undefined;
+  storageClass?: string | undefined;
+  owner?:
+    | {
+        displayName?: string | undefined;
+        id?: string | undefined;
+      }
+    | undefined;
 };
 
 export type GetSignedUrlWithBucketAndKey = {
@@ -97,6 +133,8 @@ export type UploadParams = {
   file: Buffer;
   contentType?: string;
   metadata?: Record<string, string>;
+  storageClass?: string;
+  log?: typeof console.log;
 };
 
 export type StoreInS3Params = {
@@ -106,6 +144,7 @@ export type StoreInS3Params = {
   fileName: string;
   contentType: string;
   log: typeof console.log;
+  storageClass?: string;
   errorConfig?: {
     errorMessage: string;
     context: string;
@@ -137,7 +176,13 @@ export async function executeWithRetriesS3<T>(
  * @deprecated Use S3Utils instead, adding functions as needed
  */
 export function makeS3Client(region: string): AWS.S3 {
-  return new AWS.S3({ signatureVersion: "v4", region });
+  const usePathStyle = isS3UsePathStyle();
+  return new AWS.S3({
+    signatureVersion: "v4",
+    region,
+    httpOptions: { agent: new https.Agent({ keepAlive: true, maxSockets }) },
+    ...(usePathStyle ? { s3ForcePathStyle: true } : {}),
+  });
 }
 
 type FileExistsFilter = {
@@ -169,7 +214,15 @@ export class S3Utils {
 
   constructor(readonly region: string) {
     this._s3 = makeS3Client(region);
-    this._s3Client = new S3Client({ region });
+    this._s3Client = new S3Client({
+      region,
+      requestHandler: new NodeHttpHandler({
+        httpsAgent: new https.Agent({
+          keepAlive: true,
+          maxSockets,
+        }),
+      }),
+    });
   }
 
   /**
@@ -192,6 +245,7 @@ export class S3Utils {
     return await pipeline(readStream, writeStream);
   }
 
+  /** @deprecated Use `getFileContentsAsStringV3` instead */
   async getFileContentsAsString(
     s3BucketName: string,
     s3FileName: string,
@@ -200,13 +254,61 @@ export class S3Utils {
     return hydrateErrors(
       async () => {
         const stream = this.getReadStream(s3BucketName, s3FileName);
-        return await this.streamToString(stream, encoding);
+        try {
+          return await this.streamToString(stream, encoding);
+        } finally {
+          stream.destroy();
+        }
       },
       {
         bucket: s3BucketName,
         key: s3FileName,
       },
       `getFileContentsAsString`
+    );
+  }
+
+  async getFileContentsAsStringV3({
+    bucketName,
+    key,
+    encoding = "utf-8",
+  }: {
+    bucketName: string;
+    key: string;
+    encoding?: BufferEncoding;
+  }): Promise<string> {
+    return hydrateErrors(
+      async () => {
+        const resp = await this._s3Client.send(
+          new GetObjectCommand({ Bucket: bucketName, Key: key })
+        );
+        if (!resp.Body) {
+          throw new MetriportError(`Failed to read file body from S3`, undefined, {
+            bucket: bucketName,
+            key,
+          });
+        }
+        return resp.Body.transformToString(encoding);
+      },
+      { bucket: bucketName, key },
+      `getFileContentsAsStringV3`
+    );
+  }
+
+  async getFileContentsAsReadableStream(
+    s3BucketName: string,
+    s3FileName: string
+  ): Promise<stream.Readable> {
+    return hydrateErrors(
+      async () => {
+        const stream = this.getReadStream(s3BucketName, s3FileName);
+        return stream;
+      },
+      {
+        bucket: s3BucketName,
+        key: s3FileName,
+      },
+      `getFileContentsAsReadableStream`
     );
   }
 
@@ -249,6 +351,7 @@ export class S3Utils {
         contentType: head.ContentType ?? "",
         eTag: head.ETag ?? "",
         createdAt: head.LastModified,
+        updatedAt: head.LastModified,
         metadata: head.Metadata,
       };
     } catch (err) {
@@ -483,19 +586,23 @@ export class S3Utils {
     file,
     contentType,
     metadata,
+    storageClass = S3_INTELLIGENT_TIERING_STORAGE_CLASS,
+    log,
   }: UploadParams): Promise<UploadFileResult> {
     const uploadParams: AWS.S3.PutObjectRequest = {
       Bucket: bucket,
       Key: key,
       Body: file,
+      StorageClass: storageClass,
       ...(metadata ? { Metadata: metadata } : undefined),
     };
     if (contentType) {
       uploadParams.ContentType = contentType;
     }
     try {
-      const resp = (await executeWithRetriesS3(() =>
-        this._s3.upload(uploadParams).promise()
+      const resp = (await executeWithRetriesS3(
+        () => this._s3.upload(uploadParams).promise(),
+        log ? { log } : {}
       )) as AWS.S3.ManagedUpload.SendData & { VersionId?: string };
 
       return {
@@ -522,18 +629,20 @@ export class S3Utils {
       return resp.Body as Buffer;
     } catch (error) {
       const { log } = out("downloadFile");
-      log(`Error during download: ${errorToString(error)}`);
+      log(`Error during download: ${errorToString(error)} - bucket: ${bucket} - key: ${key}`);
       throw error;
     }
   }
 
   async deleteFile({ bucket, key }: { bucket: string; key: string }): Promise<void> {
-    const deleteParams = {
+    const deleteParams = new DeleteObjectCommand({
       Bucket: bucket,
       Key: key,
-    };
+    });
     try {
-      await executeWithRetriesS3(() => this._s3.deleteObject(deleteParams).promise());
+      await executeWithRetriesS3(async () => {
+        await this.s3Client.send(deleteParams);
+      });
     } catch (error) {
       const { log } = out("deleteFile");
       log(`Error during file deletion: ${errorToString(error)}`);
@@ -542,14 +651,37 @@ export class S3Utils {
   }
 
   async deleteFiles({ bucket, keys }: { bucket: string; keys: string[] }): Promise<void> {
-    const deleteParams = {
+    const deleteParams = new DeleteObjectsCommand({
       Bucket: bucket,
       Delete: {
         Objects: keys.map(key => ({ Key: key })),
+        Quiet: false, // Set to false to surface partial failures
       },
-    };
+    });
     try {
-      await executeWithRetriesS3(() => this._s3.deleteObjects(deleteParams).promise());
+      const result = await executeWithRetriesS3(async () => {
+        return await this.s3Client.send(deleteParams);
+      });
+      if (result.Errors && result.Errors.length > 0) {
+        const { log } = out("deleteFiles");
+        const failedKeys = result.Errors.map(
+          error => `${error.Key}: ${error.Code} - ${error.Message}`
+        ).join(", ");
+        log(`Partial failure during files deletion. Failed keys: ${failedKeys}`);
+        throw new MetriportError(`Partial failure during S3 multi-object delete`, undefined, {
+          bucket,
+          totalKeys: keys.length,
+          failedKeys: result.Errors.length,
+          successfulKeys: result.Deleted?.length ?? 0,
+          errorDetails: JSON.stringify(
+            result.Errors.map(error => ({
+              key: error.Key,
+              code: error.Code,
+              message: error.Message,
+            }))
+          ),
+        });
+      }
     } catch (error) {
       const { log } = out("deleteFiles");
       log(`Error during files deletion: ${errorToString(error)}`);
@@ -557,6 +689,7 @@ export class S3Utils {
     }
   }
 
+  /** @deprecated Use `listObjectsV3` instead */
   async listObjects(
     bucket: string,
     prefix: string,
@@ -565,23 +698,80 @@ export class S3Utils {
     const allObjects: AWS.S3.Object[] = [];
     let continuationToken: string | undefined;
     do {
-      const res = await executeWithRetriesS3(
-        () =>
-          this._s3
-            .listObjectsV2({
-              Bucket: bucket,
-              Prefix: prefix,
-              ...(continuationToken ? { ContinuationToken: continuationToken } : {}),
-            })
-            .promise(),
-        options
-      );
-      if (res.Contents) {
-        allObjects.push(...res.Contents);
-      }
-      continuationToken = res.NextContinuationToken;
+      const res = await this.listObjectsPage(bucket, prefix, continuationToken, options);
+      if (res.contents.length > 0) allObjects.push(...res.contents);
+      continuationToken = res.nextContinuationToken;
     } while (continuationToken);
     return allObjects;
+  }
+
+  async listObjectsPage(
+    bucket: string,
+    prefix: string,
+    continuationToken: string | undefined,
+    options: { maxAttempts?: number } = {}
+  ): Promise<{ contents: AWS.S3.Object[]; nextContinuationToken: string | undefined }> {
+    const res = await executeWithRetriesS3(
+      () =>
+        this._s3
+          .listObjectsV2({
+            Bucket: bucket,
+            Prefix: prefix,
+            ...(continuationToken ? { ContinuationToken: continuationToken } : {}),
+          })
+          .promise(),
+      options
+    );
+    return { contents: res.Contents ?? [], nextContinuationToken: res.NextContinuationToken };
+  }
+
+  async listObjectsV3(
+    bucket: string,
+    prefix: string,
+    options: { maxAttempts?: number } = {}
+  ): Promise<_Object[]> {
+    const allObjects: _Object[] = [];
+    let continuationToken: string | undefined;
+    do {
+      const res = await this.listObjectsPageV3(bucket, prefix, continuationToken, options);
+      if (res.contents.length > 0) allObjects.push(...res.contents);
+      continuationToken = res.nextContinuationToken;
+    } while (continuationToken);
+    return allObjects;
+  }
+
+  async listObjectsPageV3(
+    bucket: string,
+    prefix: string,
+    continuationToken: string | undefined,
+    options: { maxAttempts?: number } = {}
+  ): Promise<{ contents: _Object[]; nextContinuationToken: string | undefined }> {
+    const res = await executeWithRetriesS3(
+      () =>
+        this._s3Client.send(
+          new ListObjectsV2Command({
+            Bucket: bucket,
+            Prefix: prefix,
+            ...(continuationToken ? { ContinuationToken: continuationToken } : {}),
+          })
+        ),
+      options
+    );
+    return { contents: res.Contents ?? [], nextContinuationToken: res.NextContinuationToken };
+  }
+
+  async processObjects(
+    bucket: string,
+    prefix: string,
+    processPaginatedResult: (objects: AWS.S3.Object[]) => Promise<void>,
+    options: { maxAttempts?: number } = {}
+  ): Promise<void> {
+    let continuationToken: string | undefined;
+    do {
+      const res = await this.listObjectsPage(bucket, prefix, continuationToken, options);
+      if (res.contents.length > 0) await processPaginatedResult(res.contents);
+      continuationToken = res.nextContinuationToken;
+    } while (continuationToken);
   }
 
   /**
@@ -682,10 +872,10 @@ export function isNotFoundError(error: any): boolean {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isRetriableError(error: any): boolean {
-  const errorsToRetry = ["EPIPE", "ECONNRESET"];
   if (
-    (typeof error.code === "string" && errorsToRetry.includes(error.code)) ||
-    (typeof error.message === "string" && errorsToRetry.some(code => error.message.includes(code)))
+    (typeof error.code === "string" && retriableErrorCodes.includes(error.code)) ||
+    (typeof error.message === "string" &&
+      retriableErrorCodes.some(code => error.message.includes(code)))
   ) {
     return true;
   }
@@ -699,6 +889,7 @@ export async function storeInS3WithRetries({
   fileName,
   contentType,
   log,
+  storageClass = S3_INTELLIGENT_TIERING_STORAGE_CLASS,
   errorConfig,
 }: StoreInS3Params): Promise<void> {
   try {
@@ -710,6 +901,7 @@ export async function storeInS3WithRetries({
             Key: fileName,
             Body: payload,
             ContentType: contentType,
+            StorageClass: storageClass,
           })
           .promise(),
       {
@@ -734,4 +926,18 @@ export async function storeInS3WithRetries({
     }
     throw error;
   }
+}
+
+/**
+ * Companion of `setS3UsePathStyle` to check if the S3 use path style is enabled.
+ * @see setS3UsePathStyle
+ */
+export function isS3UsePathStyle(): boolean {
+  return getEnvVar(S3_FORCE_PATH_STYLE_ENV_VAR) === "true";
+}
+/**
+ * Workaround while we don't upgrade to aws-sdk v3.
+ */
+export function setS3UsePathStyle(usePathStyle: boolean): void {
+  process.env[S3_FORCE_PATH_STYLE_ENV_VAR] = usePathStyle ? "true" : "false";
 }

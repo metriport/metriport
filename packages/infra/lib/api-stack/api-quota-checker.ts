@@ -1,4 +1,5 @@
 import { Duration } from "aws-cdk-lib";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { IFunction } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
@@ -11,12 +12,13 @@ type ApiQuotaCheckerConnectorProps = {
   lambdaLayers: LambdaLayers;
   vpc: IVpc;
   apiAddress: string;
+  alertSnsAction?: SnsAction;
 };
 
 function getSettings(props: ApiQuotaCheckerConnectorProps) {
   return {
     ...props,
-    name: "ScheduledAPIQuotaChecker",
+    name: "ScheduledAPIQuotaCheckerV2",
     /**
      * UTC-based: "Minutes Hours Day-of-month Month Day-of-week Year"
      * @see: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
@@ -31,8 +33,17 @@ function getSettings(props: ApiQuotaCheckerConnectorProps) {
 
 export function createScheduledAPIQuotaChecker(props: ApiQuotaCheckerConnectorProps): IFunction {
   const config = getConfig();
-  const { stack, lambdaLayers, vpc, name, lambdaTimeout, scheduleExpression, url, httpTimeout } =
-    getSettings(props);
+  const {
+    stack,
+    lambdaLayers,
+    vpc,
+    name,
+    lambdaTimeout,
+    scheduleExpression,
+    url,
+    httpTimeout,
+    alertSnsAction,
+  } = getSettings(props);
 
   const lambda = createScheduledLambda({
     stack,
@@ -47,6 +58,7 @@ export function createScheduledAPIQuotaChecker(props: ApiQuotaCheckerConnectorPr
       TIMEOUT_MILLIS: String(httpTimeout.toMilliseconds()),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
     },
+    alertSnsAction,
   });
 
   return lambda;

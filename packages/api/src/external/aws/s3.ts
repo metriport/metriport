@@ -4,24 +4,8 @@ import duration from "dayjs/plugin/duration";
 import { Config } from "../../shared/config";
 
 dayjs.extend(duration);
-const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
 
+/** @deprecated Use S3Utils from @metriport/core/external/aws/s3 instead */
 export function makeS3Client() {
   return coreMakeS3Client(Config.getAWSRegion());
-}
-
-export async function getSignedUrl({
-  bucketName,
-  fileName,
-  durationSeconds,
-}: {
-  bucketName: string;
-  fileName: string;
-  durationSeconds?: number;
-}): Promise<string> {
-  return makeS3Client().getSignedUrl("getObject", {
-    Bucket: bucketName,
-    Key: fileName,
-    Expires: durationSeconds ?? DEFAULT_SIGNED_URL_DURATION,
-  });
 }

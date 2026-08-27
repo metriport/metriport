@@ -10,13 +10,18 @@ import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64"
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { TXT_MIME_TYPE } from "@metriport/core/util/mime";
-import { errorToString, executeWithNetworkRetries, getEnvVarOrFail } from "@metriport/shared";
+import {
+  errorToString,
+  executeWithNetworkRetries,
+  getEnvVarOrFail,
+  uuidv4,
+} from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import axios, { AxiosError } from "axios";
 import * as fs from "fs";
 import * as path from "path";
-import { v4 as uuidv4 } from "uuid";
 import { elapsedTimeAsStr } from "../shared/duration";
+import { parseFileName } from "@metriport/core/domain/filename";
 
 /**
  * Script to process the DLQ XMLs and convert them to FHIR.
@@ -91,13 +96,6 @@ function getXmlFiles(directory: string): string[] {
     .map(file => path.join(directory, file));
   const filteredFiles = filesOnFolder.filter(file => !filesToExclude.includes(file));
   return filteredFiles;
-}
-
-function getPatientIdFromFileName(fileName: string): string {
-  // e.g., 'cx_pt_cx_pt_doc.xml'
-  const baseName = path.basename(fileName, ".xml");
-  const parts = baseName.split("_");
-  return parts[1] || `unknown_${uuidv4()}`;
 }
 
 /**
@@ -199,11 +197,14 @@ async function processXmlFile(
     }
 
     const partitionedPayloads = partitionPayload(payloadClean);
-    const patientId = getPatientIdFromFileName(fileName);
+    const parsedFileName = parseFileName(fileName);
+    const cxId = parsedFileName ? parsedFileName.cxId : `unknown_${uuidv4()}`;
+    const patientId = parsedFileName ? parsedFileName.patientId : `unknown_${uuidv4()}`;
 
     const parts = fileName.split("_");
     const reconstructedFileName = `${parts[0]}/${parts[1]}/${parts.slice(2).join("_")}`;
     const converterParams: FhirConverterParams = {
+      cxId,
       patientId,
       fileName: reconstructedFileName,
       unusedSegments: `false`,
@@ -236,8 +237,8 @@ async function processXmlFile(
     const processingTime = Date.now() - startTime;
     const errorMessage =
       error instanceof AxiosError
-        ? error.response?.data?.error?.message ?? String(error)
-        : String(error);
+        ? error.response?.data?.error?.message ?? errorToString(error)
+        : errorToString(error);
 
     const statusCode = error instanceof AxiosError ? error.response?.status : 500;
     log(`Failed to convert ${fileName}: ${errorMessage}`);
@@ -250,7 +251,7 @@ async function processXmlFile(
     const errorData = {
       error: errorMessage,
       fileName,
-      timestamp: new Date().toISOString(),
+      timestamp: buildDayjs().toISOString(),
     };
     fs.writeFileSync(errorPath, JSON.stringify(errorData, null, 2));
 
@@ -314,7 +315,7 @@ async function processDlqXmls(): Promise<void> {
       failedConversions,
       totalProcessingTimeMs: totalProcessingTime,
       results,
-      processedAt: new Date().toISOString(),
+      processedAt: buildDayjs().toISOString(),
     };
 
     // Save summary

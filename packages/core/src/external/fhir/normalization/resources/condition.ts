@@ -1,8 +1,7 @@
 import { Condition } from "@medplum/fhirtypes";
-import { cloneDeep } from "lodash";
 import { ICD_10_URL } from "@metriport/shared/medical";
+import { cloneDeep } from "lodash";
 import { chronicityMap } from "../../shared/chronicity-map";
-import { getHccForIcd10Code } from "../../shared/hcc-map";
 import {
   buildChronicityExtension,
   ChronicityExtension,
@@ -10,9 +9,10 @@ import {
 } from "../../shared/extensions/chronicity-extension";
 import {
   buildHccExtensions,
-  HccExtension,
   findHccExtension,
+  HccExtension,
 } from "../../shared/extensions/hcc-extension";
+import { getHccForIcd10Code } from "../../shared/hcc-map";
 
 export function normalizeConditions(conditions: Condition[]): Condition[] {
   return conditions.map(condition => {
@@ -58,7 +58,6 @@ export function normalizeConditions(conditions: Condition[]): Condition[] {
         updCondition.extension = [...updCondition.extension, ...hccExtensions];
       }
     }
-
     return updCondition;
   });
 }

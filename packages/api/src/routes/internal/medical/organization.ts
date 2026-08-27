@@ -48,15 +48,19 @@ router.put(
       },
       cqActive: orgDetails.cqActive,
       cwActive: orgDetails.cwActive,
+      ehexActive: orgDetails.ehexActive,
       cqApproved: orgDetails.cqApproved,
       cwApproved: orgDetails.cwApproved,
+      ehexApproved: orgDetails.ehexApproved,
+      principalOid: orgDetails.principalOid,
+      delegateOids: orgDetails.delegateOids,
     };
     const org: Organization = orgDetails.id
       ? await updateOrganization({ id: orgDetails.id, ...organizationCreate })
       : await createOrganization(organizationCreate);
 
     const syncInHie = skipProviderCheck || isProvider(org);
-    // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
+    // TODO Move to external/hie
     // CAREQUALITY
     if (syncInHie && org.cqApproved) {
       cqCreateOrUpdateOrganization({ org }).catch(processAsyncError("cq.internal.organization"));

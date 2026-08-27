@@ -35,7 +35,11 @@ export type PatientRecord = {
   patientId?: string | undefined;
 } & (FailedPatientRecord | ParsedPatientRecord);
 
-export type PatientPayload = PatientDemoData & { externalId: string | undefined };
+export type PatientPayload = PatientDemoData & {
+  externalId: string | undefined;
+  cohortIds: string[] | undefined;
+  facilityId: string | undefined;
+};
 
 export type ParsedPatientBase = { rowNumber: number; raw: string };
 

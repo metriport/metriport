@@ -1,7 +1,7 @@
-import { errorToString } from "@metriport/shared";
+import { errorToString, MetriportError } from "@metriport/shared";
 import { out } from "../../util/log";
 import { capture } from "../../util/notifications";
-import { getFeatureFlags } from "./ffs-on-dynamodb";
+import { FeatureFlags, FeatureFlagsRecordUpdate, getFeatureFlags } from "./ffs-on-dynamodb";
 import {
   BooleanFeatureFlags,
   CxFeatureFlagStatus,
@@ -49,6 +49,43 @@ export async function getFeatureFlagValueStringArray<T extends keyof StringValue
     capture.error(msg, { extra: { ...extra, error } });
     return { enabled: false, values: [] };
   }
+}
+
+export async function addCxToFeatureFlag<T extends keyof StringValueFeatureFlags>({
+  featureFlagName,
+  cxId,
+  updatedBy,
+}: {
+  featureFlagName: T;
+  cxId: string;
+  updatedBy?: string | undefined;
+}): Promise<void> {
+  const { log } = out(`addCxToFeatureFlag - ${featureFlagName} - ${cxId}`);
+
+  const existingRecord = await FeatureFlags.getFeatureFlagsRecord();
+  if (!existingRecord) throw new MetriportError("Feature flags record not found");
+
+  const featureFlag = existingRecord?.featureFlags[featureFlagName];
+  if (featureFlag?.values.includes(cxId)) {
+    log(`CX already exists in feature flag`);
+    return;
+  }
+
+  const newRecord: FeatureFlagsRecordUpdate = {
+    ...existingRecord,
+    featureFlags: {
+      ...existingRecord?.featureFlags,
+      [featureFlagName]: {
+        enabled: featureFlag?.enabled ?? false,
+        values: [...(featureFlag?.values ?? []), cxId],
+      },
+    },
+    existingVersion: existingRecord.version,
+    updatedBy: updatedBy ?? "system",
+  };
+
+  await FeatureFlags.updateFeatureFlagsRecord({ newRecordData: newRecord });
+  log(`CX added to feature flag`);
 }
 
 export async function getFeatureFlagValueBoolean<T extends keyof BooleanFeatureFlags>(
@@ -108,9 +145,20 @@ export async function isDebugFeatureFlagEnabled(): Promise<boolean> {
 export async function isCommonwellEnabled(): Promise<boolean> {
   return isFeatureFlagEnabled("commonwellFeatureFlag");
 }
+export async function isCommonwellLogsEnabled(): Promise<boolean> {
+  return isFeatureFlagEnabled("commonwellLogsEnabled");
+}
+
+export async function isCommonwellNewDocumentIdFormatEnabled(): Promise<boolean> {
+  return isFeatureFlagEnabled("commonwellNewDocumentIdFormatEnabled");
+}
 
 export async function isCarequalityEnabled(): Promise<boolean> {
   return isFeatureFlagEnabled("carequalityFeatureFlag");
+}
+
+export async function isEhexEnabled(): Promise<boolean> {
+  return isFeatureFlagEnabled("ehexEnabled");
 }
 
 export async function getCxsWithAiBriefFeatureFlag(): Promise<string[]> {
@@ -118,6 +166,14 @@ export async function getCxsWithAiBriefFeatureFlag(): Promise<string[]> {
 }
 export async function isAiBriefFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
   const cxsWithFeatureFlagValue = await getCxsWithAiBriefFeatureFlag();
+  return cxsWithFeatureFlagValue.includes(cxId);
+}
+
+export async function getCxsWithAiBriefV2FeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithAiBriefV2FeatureFlag");
+}
+export async function isAiBriefV2FeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxsWithFeatureFlagValue = await getCxsWithAiBriefV2FeatureFlag();
   return cxsWithFeatureFlagValue.includes(cxId);
 }
 
@@ -137,12 +193,44 @@ export async function isAthenaCustomFieldsEnabledForCx(cxId: string): Promise<bo
   return cxsWithAthenaCustomFieldsEnabled.includes(cxId);
 }
 
+export async function getCxsWithEnrichedPatientDemographicsFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithEnrichedPatientDemographicsFeatureFlag");
+}
+export async function isEnrichedPatientDemographicsFeatureFlagEnabledForCx(
+  cxId: string
+): Promise<boolean> {
+  const cxsWithFeatureFlagValue = await getCxsWithEnrichedPatientDemographicsFeatureFlag();
+  return cxsWithFeatureFlagValue.includes(cxId);
+}
+
 export async function getCxsWithCQDirectFeatureFlagValue(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithCQDirectFeatureFlag");
 }
 export async function isCQDirectEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithCQDirectEnabled = await getCxsWithCQDirectFeatureFlagValue();
   return cxIdsWithCQDirectEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithEhexEnabled(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithEhexEnabled");
+}
+export async function isEhexEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithEhexEnabled = await getCxsWithEhexEnabled();
+  return cxIdsWithEhexEnabled.some(i => i === cxId);
+}
+
+export async function isEhexTargetedQueriesEnabled(): Promise<boolean> {
+  return isFeatureFlagEnabled("ehexTargetedQueriesEnabled");
+}
+
+export async function getCxsWithMaxParticipantCountBypassEnabled(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithEhexMaxParticipantCountBypassEnabled");
+}
+
+export async function isMaxParticipantCountBypassEnabledForCx(cxId: string): Promise<boolean> {
+  const cxsWithMaxParticipantCountBypassEnabled =
+    await getCxsWithMaxParticipantCountBypassEnabled();
+  return cxsWithMaxParticipantCountBypassEnabled.some(i => i === cxId);
 }
 
 export async function getCxsWithCWFeatureFlagValue(): Promise<string[]> {
@@ -179,14 +267,6 @@ export async function getCxsWitDemoAugEnabled(): Promise<string[]> {
 export async function isDemoAugEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithDemoAugEnabled = await getCxsWitDemoAugEnabled();
   return cxIdsWithDemoAugEnabled.some(i => i === cxId);
-}
-
-export async function getCxsWitStalePatientUpdateEnabled(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsWithStalePatientUpdateEnabled");
-}
-export async function isStalePatientUpdateEnabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithStalePatientUpdateEnabled = await getCxsWitStalePatientUpdateEnabled();
-  return cxIdsWithStalePatientUpdateEnabled.some(i => i === cxId);
 }
 
 export async function getCxsWithEpicEnabled(): Promise<string[]> {
@@ -327,11 +407,27 @@ export async function isQuestFeatureFlagEnabledForCx(cxId: string): Promise<bool
 }
 
 export async function getCxsEnabledForAnalyticsIncrementalIngestion(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("analyticsIncrementalIngestion");
+  return getCxsWithFeatureFlagEnabled("cxsWithAnalyticsIncrementalIngestion");
 }
 export async function isAnalyticsIncrementalIngestionEnabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithCommonwellV2Enabled = await getCxsEnabledForAnalyticsIncrementalIngestion();
-  return cxIdsWithCommonwellV2Enabled.some(i => i === cxId);
+  const cxIdsWithFFEnabled = await getCxsEnabledForAnalyticsIncrementalIngestion();
+  return cxIdsWithFFEnabled.some(i => i === cxId);
+}
+
+export async function getCxsEnabledForAnalyticsIncrementalRawToCore(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithAnalyticsIncrementalRawToCore");
+}
+export async function isAnalyticsIncrementalRawToCoreEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithFFEnabled = await getCxsEnabledForAnalyticsIncrementalRawToCore();
+  return cxIdsWithFFEnabled.some(i => i === cxId);
+}
+
+export async function getCxsEnabledForDatawarehouseSnowflake(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithDatawarehouseSnowflake");
+}
+export async function isDatawarehouseSnowflakeEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithFFEnabled = await getCxsEnabledForDatawarehouseSnowflake();
+  return cxIdsWithFFEnabled.some(i => i === cxId);
 }
 
 // TODO: ENG-1089 - Remove this once we fully migrate to the new DOA flow on CQ.
@@ -346,4 +442,67 @@ export async function getCxsWithNewSoapEnvelopeFeatureFlag(): Promise<string[]> 
 export async function isNewSoapEnvelopeFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithNewSoapEnvelopeEnabled = await getCxsWithNewSoapEnvelopeFeatureFlag();
   return cxIdsWithNewSoapEnvelopeEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithAdtsRosterUploadFeatureFlagEnabled(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithAdtsRosterUploadEnabledFeatureFlag");
+}
+export async function isAdtsRosterUploadFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithAdtsEnabled = await getCxsWithAdtsRosterUploadFeatureFlagEnabled();
+  return cxIdsWithAdtsEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithAdtsDataVisibleFeatureFlagEnabled(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithAdtsDataVisibleEnabledFeatureFlag");
+}
+export async function isAdtsDataVisibleFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithAdtsEnabled = await getCxsWithAdtsDataVisibleFeatureFlagEnabled();
+  return cxIdsWithAdtsEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithDashV2FeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithDashV2FeatureFlag");
+}
+export async function isDashV2FeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxsWithDashV2Enabled = await getCxsWithDashV2FeatureFlag();
+  return cxsWithDashV2Enabled.some(i => i === cxId);
+}
+
+export async function getCxsWithLegacyDashV1FeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithLegacyDashV1FeatureFlag");
+}
+export async function isLegacyDashV1FeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithLegacyDashV1Enabled = await getCxsWithLegacyDashV1FeatureFlag();
+  return cxIdsWithLegacyDashV1Enabled.some(i => i === cxId);
+}
+
+export async function getCxsWithCardiacCareV2AiSummaryFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithCardiacCareV2AiSummary");
+}
+export async function isCardiacCareV2AiSummaryFeatureFlagEnabledForCx(
+  cxId: string
+): Promise<boolean> {
+  const cxIdsWithCardiacCareV2AiSummaryEnabled =
+    await getCxsWithCardiacCareV2AiSummaryFeatureFlag();
+  return cxIdsWithCardiacCareV2AiSummaryEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithSendAdtToCanvasFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithSendAdtToCanvasFeatureFlag");
+}
+export async function isSendAdtToCanvasFeatureFlagEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithSendAdtToCanvasEnabled = await getCxsWithSendAdtToCanvasFeatureFlag();
+  return cxIdsWithSendAdtToCanvasEnabled.some(i => i === cxId);
+}
+
+export async function getCxsWithHydrateConditionCodeByDisplayFeatureFlag(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithHydrateConditionCodeByDisplayFeatureFlag");
+}
+
+export async function isHydrateConditionCodeByDisplayFeatureFlagEnabledForCx(
+  cxId: string
+): Promise<boolean> {
+  const cxIdsWithHydrateConditionCodeByDisplayEnabled =
+    await getCxsWithHydrateConditionCodeByDisplayFeatureFlag();
+  return cxIdsWithHydrateConditionCodeByDisplayEnabled.some(i => i === cxId);
 }

@@ -38,6 +38,7 @@ export type FeatureFlagsRecord = z.infer<typeof featureFlagsRecordSchema>;
 // TODO 2840 Consider removing this, or just making all FFs optional by default.
 export const initialFeatureFlags: FeatureFlagDatastore = {
   cxsWithCQDirectFeatureFlag: { enabled: false, values: [] },
+  cxsWithEhexEnabled: { enabled: false, values: [] },
   cxsWithCWFeatureFlag: { enabled: false, values: [] },
   cxsWithADHDMRFeatureFlag: { enabled: false, values: [] },
   cxsWithNoMrLogoFeatureFlag: { enabled: false, values: [] },
@@ -45,22 +46,28 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   cxsWithSimpleMrFeatureFlag: { enabled: false, values: [] },
   cxsWithDermMrFeatureFlag: { enabled: false, values: [] },
   cxsWithAiBriefFeatureFlag: { enabled: false, values: [] },
+  cxsWithAiBriefV2FeatureFlag: { enabled: false, values: [] },
   getCxsWithCdaCustodianFeatureFlag: { enabled: false, values: [] },
   cxsWithNoWebhookPongFeatureFlag: { enabled: false, values: [] },
   cxsWithIncreasedSandboxLimitFeatureFlag: { enabled: false, values: [] },
   cxsWithEpicEnabled: { enabled: false, values: [] },
   cxsWithDemoAugEnabled: { enabled: false, values: [] },
-  cxsWithStalePatientUpdateEnabled: { enabled: false, values: [] },
   cxsWithStrictMatchingAlgorithm: { enabled: false, values: [] },
   cxsWithAthenaCustomFieldsEnabled: { enabled: false, values: [] },
-  oidsWithIHEGatewayV2Enabled: { enabled: false, values: [] },
+  cxsWithEnrichedPatientDemographicsFeatureFlag: { enabled: false, values: [] },
   e2eCxIds: { enabled: false, values: [] },
   commonwellFeatureFlag: { enabled: false },
+  commonwellLogsEnabled: { enabled: false },
+  commonwellNewDocumentIdFormatEnabled: { enabled: false },
   carequalityFeatureFlag: { enabled: false },
+  ehexEnabled: { enabled: false },
+  ehexTargetedQueriesEnabled: { enabled: false },
+  cxsWithEhexMaxParticipantCountBypassEnabled: { enabled: false, values: [] },
   debugFeatureFlag: { enabled: false },
   cxsWithPcpVisitAiSummaryFeatureFlag: { enabled: false, values: [] },
   cxsWithRecentVisitAiSummary: { enabled: false, values: [] },
   cxsWithCardiacCareAiSummary: { enabled: false, values: [] },
+  cxsWithCardiacCareV2AiSummary: { enabled: false, values: [] },
   cxsWithNitratesAndConditionsAiSummary: { enabled: false, values: [] },
   cxsWithDischargeRequeryFeatureFlag: { enabled: false, values: [] },
   cxsWithDischargeSlackNotificationFeatureFlag: { enabled: false, values: [] },
@@ -68,9 +75,17 @@ export const initialFeatureFlags: FeatureFlagDatastore = {
   cxsWithSurescriptsFeatureFlag: { enabled: false, values: [] },
   cxsWithSurescriptsNotificationsFeatureFlag: { enabled: false, values: [] },
   cxsWithQuestFeatureFlag: { enabled: false, values: [] },
-  analyticsIncrementalIngestion: { enabled: false, values: [] },
+  cxsWithAnalyticsIncrementalIngestion: { enabled: false, values: [] },
+  cxsWithAnalyticsIncrementalRawToCore: { enabled: false, values: [] },
+  cxsWithDatawarehouseSnowflake: { enabled: false, values: [] },
   cqDoaFeatureFlag: { enabled: false },
   cxsWithNewSoapEnvelopeFeatureFlag: { enabled: false, values: [] },
+  cxsWithAdtsRosterUploadEnabledFeatureFlag: { enabled: false, values: [] },
+  cxsWithAdtsDataVisibleEnabledFeatureFlag: { enabled: false, values: [] },
+  cxsWithDashV2FeatureFlag: { enabled: false, values: [] },
+  cxsWithLegacyDashV1FeatureFlag: { enabled: false, values: [] },
+  cxsWithSendAdtToCanvasFeatureFlag: { enabled: false, values: [] },
+  cxsWithHydrateConditionCodeByDisplayFeatureFlag: { enabled: false, values: [] },
 };
 
 /**
@@ -120,6 +135,15 @@ export class FeatureFlags {
   } = {}): Promise<FeatureFlagsRecord | undefined> {
     if (skipCache) return await FeatureFlags._getFeatureFlagsRecord();
     return await FeatureFlags.instance.cache.get(recordId);
+  }
+
+  /**
+   * Sync the feature flags cache with a record from an external source (e.g., API).
+   * This only updates the cache, it does not write to DynamoDB.
+   * Useful for local scripts that want to use the same feature flags as the API.
+   */
+  public static async syncCache(record: FeatureFlagsRecord): Promise<void> {
+    await FeatureFlags.instance.cache.set(recordId, record);
   }
 
   public static async updateFeatureFlagsRecord({

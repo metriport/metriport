@@ -1,0 +1,284 @@
+import {
+  DocumentReference,
+  OutboundDocumentRetrievalReq,
+  OutboundDocumentRetrievalResp,
+  XCAGateway,
+} from "@metriport/ihe-gateway-sdk";
+import { errorToString, MetriportError, toArray } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
+import { createXMLParser } from "@metriport/shared/common/xml-parser";
+import {
+  createDocumentFilePath,
+  createDocumentRenderFilePaths,
+} from "../../../../../../domain/document/filename";
+import { Config } from "../../../../../../util/config";
+import { out } from "../../../../../../util/log";
+import { capture } from "../../../../../../util/notifications";
+import { stripBrackets, stripUrnPrefix } from "../../../../../../util/urn";
+import { S3Utils } from "../../../../../aws/s3";
+import { getCidReference } from "../mtom/cid";
+import { MtomAttachments, MtomPart } from "../mtom/parser";
+import { DrSamlClientResponse } from "../send/dr-requests";
+import { partialSuccessStatus, successStatus } from "./constants";
+import {
+  handleEmptyResponse,
+  handleHttpErrorResponse,
+  handleRegistryErrorResponse,
+  handleSchemaErrorResponse,
+} from "./error";
+import { parseFileFromBuffer, parseFileFromString } from "./parse-file-from-string";
+import { DocumentResponse, iti39Schema } from "./schema";
+
+const { log } = out("DR Processing");
+
+const region = Config.getAWSRegion();
+const bucket = Config.getMedicalDocumentsBucketName();
+
+let s3UtilsInstance = new S3Utils(region);
+function getS3UtilsInstance(): S3Utils {
+  return s3UtilsInstance;
+}
+export function setS3UtilsInstance(s3Utils: S3Utils): void {
+  s3UtilsInstance = s3Utils;
+}
+
+function documentResponseContainsMultipartCidReferenceToDocument(
+  documentResponse: DocumentResponse
+): documentResponse is DocumentResponse & { Document: { Include: { _href: string } } } {
+  return (
+    typeof documentResponse.Document !== "string" && !!documentResponse.Document?.Include?._href
+  );
+}
+
+function documentResponseContainsDocumentInSoapMessage(
+  documentResponse: DocumentResponse
+): documentResponse is DocumentResponse & { Document: string } {
+  return typeof documentResponse.Document === "string";
+}
+
+function getMtomAttachment(cid: string, mtomResponse: MtomAttachments): MtomPart {
+  const attachment = mtomResponse.parts.find(part => part.headers["content-id"] === cid);
+  if (!attachment) {
+    throw new MetriportError(`Attachment with CID ${cid} not found`);
+  }
+  return attachment;
+}
+
+function getMtomBytesAndMimeType(
+  documentResponse: DocumentResponse,
+  mtomResponse: MtomAttachments
+): { mimeType: string; decodedBytes: Buffer } {
+  if (documentResponseContainsMultipartCidReferenceToDocument(documentResponse)) {
+    const cid = getCidReference(documentResponse.Document.Include._href);
+    const attachment = getMtomAttachment(cid, mtomResponse);
+    const { mimeType, decodedBytes } = parseFileFromBuffer(attachment.body);
+    return { mimeType, decodedBytes };
+  } else if (documentResponseContainsDocumentInSoapMessage(documentResponse)) {
+    const { mimeType, decodedBytes } = parseFileFromString(documentResponse.Document);
+    return { mimeType, decodedBytes };
+  }
+  throw new MetriportError("Invalid document response");
+}
+
+async function processDocumentReference({
+  documentResponse,
+  outboundRequest,
+  idMapping,
+  mtomResponse,
+}: {
+  documentResponse: DocumentResponse;
+  outboundRequest: OutboundDocumentRetrievalReq;
+  idMapping: Record<string, string>;
+  mtomResponse: MtomAttachments;
+}): Promise<DocumentReference> {
+  try {
+    const s3Utils = getS3UtilsInstance();
+    const { mimeType, decodedBytes } = getMtomBytesAndMimeType(documentResponse, mtomResponse);
+    const strippedDocUniqueId = stripBrackets(stripUrnPrefix(documentResponse.DocumentUniqueId));
+    const metriportId = idMapping[strippedDocUniqueId];
+    if (!metriportId) {
+      throw new MetriportError("MetriportId not found for document");
+    }
+
+    const filePath = createDocumentFilePath(
+      outboundRequest.cxId,
+      outboundRequest.patientId,
+      metriportId,
+      mimeType
+    );
+    const fileInfo = await s3Utils.getFileInfoFromS3(filePath, bucket);
+
+    const newFileSize = decodedBytes.length;
+    if (fileInfo.size && fileInfo.size !== newFileSize) {
+      log(
+        `Size mismatch for file ${filePath}. Was - ${fileInfo.size}, now - ${newFileSize}. Deleting rendered files`
+      );
+
+      const renderFilePaths = createDocumentRenderFilePaths(filePath);
+      await s3Utils.deleteFiles({ bucket, keys: renderFilePaths });
+    }
+
+    await s3Utils.uploadFile({
+      bucket,
+      key: filePath,
+      file: decodedBytes,
+      contentType: mimeType,
+    });
+
+    log(
+      `Downloaded a document with mime type: ${mimeType} for patient: ${outboundRequest.patientId} and request: ${outboundRequest.id}`
+    );
+
+    return {
+      url: s3Utils.buildFileUrl(bucket, filePath),
+      size: documentResponse.size ? parseInt(documentResponse.size) : undefined,
+      title: documentResponse.title,
+      fileName: filePath,
+      creation: documentResponse.creation,
+      language: documentResponse.language,
+      contentType: mimeType,
+      docUniqueId: documentResponse.DocumentUniqueId.toString(),
+      metriportId: metriportId,
+      fileLocation: bucket,
+      homeCommunityId: documentResponse.HomeCommunityId
+        ? stripUrnPrefix(documentResponse.HomeCommunityId)
+        : outboundRequest.gateway.homeCommunityId,
+      repositoryUniqueId: documentResponse.RepositoryUniqueId
+        ? stripUrnPrefix(documentResponse.RepositoryUniqueId)
+        : outboundRequest.gateway.homeCommunityId,
+      newDocumentUniqueId: documentResponse.NewDocumentUniqueId,
+      newRepositoryUniqueId: documentResponse.NewRepositoryUniqueId,
+      isNew: !fileInfo.exists,
+    };
+  } catch (error) {
+    const msg = "Error processing Document Reference";
+    log(`${msg}: ${errorToString(error)}`);
+    capture.error(msg, {
+      extra: {
+        error,
+        outboundRequest,
+        documentResponse,
+      },
+    });
+    throw new MetriportError(`Error Processing Document Reference`, error);
+  }
+}
+
+function generateIdMapping(documentReferences: DocumentReference[]): Record<string, string> {
+  return documentReferences.reduce((acc: Record<string, string>, entry) => {
+    if (entry.docUniqueId && entry.metriportId) {
+      acc[stripUrnPrefix(entry.docUniqueId)] = entry.metriportId;
+    }
+    return acc;
+  }, {});
+}
+
+async function handleSuccessResponse({
+  documentResponses,
+  outboundRequest,
+  gateway,
+  mtomResponse,
+}: {
+  documentResponses: DocumentResponse[];
+  outboundRequest: OutboundDocumentRetrievalReq;
+  gateway: XCAGateway;
+  mtomResponse: MtomAttachments;
+}): Promise<OutboundDocumentRetrievalResp> {
+  try {
+    const idMapping = generateIdMapping(outboundRequest.documentReference);
+    const documentReferencesResults = await Promise.allSettled(
+      documentResponses.map((documentResponse: DocumentResponse) =>
+        processDocumentReference({ documentResponse, outboundRequest, idMapping, mtomResponse })
+      )
+    );
+
+    const documentReferences = documentReferencesResults
+      .filter(
+        (result): result is PromiseFulfilledResult<DocumentReference> =>
+          result.status === "fulfilled"
+      )
+      .map(result => result.value);
+
+    const response: OutboundDocumentRetrievalResp = {
+      id: outboundRequest.id,
+      originalRequestId: outboundRequest.originalRequestId,
+      requestChunkId: outboundRequest.requestChunkId,
+      patientId: outboundRequest.patientId,
+      cxId: outboundRequest.cxId,
+      timestamp: outboundRequest.timestamp,
+      requestTimestamp: outboundRequest.timestamp,
+      responseTimestamp: buildDayjs().toISOString(),
+      gateway,
+      documentReference: documentReferences,
+    };
+    return response;
+  } catch (error) {
+    throw new MetriportError(`Error Processing Success Response`, error);
+  }
+}
+
+export async function processDrResponse({
+  response: { errorResponse, mtomResponse, gateway, outboundRequest },
+}: {
+  response: DrSamlClientResponse;
+}): Promise<OutboundDocumentRetrievalResp> {
+  if (!gateway || !outboundRequest) throw new MetriportError("Missing gateway or outboundRequest");
+  if (errorResponse) {
+    return handleHttpErrorResponse({
+      httpError: errorResponse,
+      outboundRequest,
+      gateway,
+    });
+  }
+  if (!mtomResponse) {
+    throw new MetriportError("No mtom response found");
+  }
+  const soapData: Buffer = mtomResponse.parts[0]?.body || Buffer.from("");
+  const parser = createXMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "_",
+    textNodeName: "_text",
+    parseAttributeValue: false,
+    removeNSPrefix: true,
+  });
+  const jsonObj = parser.parse(soapData.toString());
+
+  try {
+    const iti39Response = iti39Schema.parse(jsonObj);
+
+    const status = iti39Response.Envelope.Body.RetrieveDocumentSetResponse.RegistryResponse._status
+      ?.split(":")
+      .pop();
+    const registryErrorList =
+      iti39Response.Envelope.Body.RetrieveDocumentSetResponse.RegistryResponse.RegistryErrorList;
+    const documentResponses =
+      iti39Response.Envelope.Body.RetrieveDocumentSetResponse.DocumentResponse;
+
+    if ((status === successStatus || status === partialSuccessStatus) && documentResponses) {
+      return await handleSuccessResponse({
+        documentResponses: toArray(documentResponses),
+        outboundRequest,
+        gateway,
+        mtomResponse,
+      });
+    } else if (registryErrorList) {
+      return handleRegistryErrorResponse({
+        registryErrorList,
+        outboundRequest,
+        gateway,
+      });
+    } else {
+      return handleEmptyResponse({
+        outboundRequest,
+        gateway,
+      });
+    }
+  } catch (error) {
+    log(`Error processing DR response ${JSON.stringify(error)}`);
+    return handleSchemaErrorResponse({
+      outboundRequest,
+      gateway,
+      text: errorToString(error),
+    });
+  }
+}

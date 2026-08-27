@@ -1,32 +1,35 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { v4 as uuidv4 } from "uuid";
-import { initDbPool } from "@metriport/core/util/sequelize";
-import { QueryTypes } from "sequelize";
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import {
-  OutboundPatientDiscoveryReq,
-  OutboundPatientDiscoveryResp,
-  OutboundPatientDiscoveryRespSuccessfulSchema,
-  OutboundDocumentQueryResp,
-  OutboundDocumentQueryReq,
-  OutboundDocumentRetrievalReq,
-  OutboundDocumentRetrievalResp,
-} from "@metriport/ihe-gateway-sdk";
-import { createAndSignBulkXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/create/iti55-envelope";
-import { createAndSignBulkDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti38-envelope";
-import { sendSignedDqRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dq-requests";
-import { processDqResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dq-response";
-import { createAndSignBulkDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti39-envelope";
+import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
 import {
   sendProcessRetryDrRequest,
   sendProcessXcpdRequest,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/ihe-gateway-v2-logic";
+import { createAndSignBulkDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti38-envelope";
+import { createAndSignBulkDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti39-envelope";
+import { processDqResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dq-response";
 import { setS3UtilsInstance as setS3UtilsInstanceForStoringDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
-import { setS3UtilsInstance as setS3UtilsInstanceForStoringIheResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/monitor/store";
-import { Config } from "@metriport/core/util/config";
+import { sendSignedDqRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dq-requests";
+import { createAndSignBulkXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/create/iti55-envelope";
 import { setRejectUnauthorized } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
+import { isEhexSuccessfulOutboundPatientDiscoveryResponse } from "@metriport/core/external/ehex/ehex-gateway/outbound/xcpd/process/types";
+import { Config } from "@metriport/core/util/config";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { initDbPool } from "@metriport/core/util/sequelize";
+import {
+  OutboundDocumentQueryReq,
+  OutboundDocumentQueryResp,
+  OutboundDocumentRetrievalReq,
+  OutboundDocumentRetrievalResp,
+  OutboundPatientDiscoveryReq,
+  OutboundPatientDiscoveryResp,
+  OutboundPatientDiscoveryRespSuccessfulSchema,
+  PatientResource,
+} from "@metriport/ihe-gateway-sdk";
+import { OutboundSamlAttributes } from "@metriport/ihe-gateway-sdk/models/shared";
+import { QueryTypes } from "sequelize";
+import { v4 as uuidv4 } from "uuid";
 import { MockS3Utils } from "./mock-s3";
 
 /** 
@@ -42,16 +45,18 @@ setS3UtilsInstanceForStoringIheResponse(s3utils);
 
 const athenaOid = "2.16.840.1.113883.3.564.1";
 
-const samlAttributes = {
+const samlAttributes: OutboundSamlAttributes = {
   subjectId: "System User",
   subjectRole: {
     code: "106331006",
     display: "Administrative AND/OR managerial worker",
+    system: "2.16.840.1.113883.6.96",
   },
   organization: "Metriport",
   organizationId: "2.16.840.1.113883.3.9621",
   homeCommunityId: "2.16.840.1.113883.3.9621",
   purposeOfUse: "TREATMENT",
+  wsaFrom: "https://mock.com/soap/iti55",
 };
 
 type QueryResult = {
@@ -78,7 +83,7 @@ async function queryDatabaseForXcpds() {
     console.error("Error executing SQL query:", error);
     throw error;
   } finally {
-    sequelize.close();
+    await sequelize.close();
   }
 }
 
@@ -102,7 +107,7 @@ async function queryDatabaseForDQs() {
     console.error("Error executing SQL query:", error);
     throw error;
   } finally {
-    sequelize.close();
+    await sequelize.close();
   }
 }
 
@@ -129,7 +134,7 @@ export async function queryDatabaseForDqsFromFailedDrs() {
     console.error("Error executing SQL query:", error);
     throw error;
   } finally {
-    sequelize.close();
+    await sequelize.close();
   }
 }
 
@@ -151,14 +156,33 @@ async function getDrUrl(id: string): Promise<string> {
     console.log("Error executing SQL query:", error);
     throw error;
   } finally {
-    sequelize.close();
+    await sequelize.close();
   }
 }
 
 function isSuccessfulResponse(
   response: OutboundPatientDiscoveryResp
 ): response is OutboundPatientDiscoveryRespSuccessfulSchema {
-  return response.patientMatch === true;
+  return response.patientMatch === true && "patientResource" in response;
+}
+
+const DEFAULT_PATIENT_RESOURCE: PatientResource = {
+  name: [],
+  birthDate: "",
+  gender: "unknown",
+};
+
+function extractPatientResource(xcpdResult: OutboundPatientDiscoveryResp): PatientResource {
+  if (isEhexSuccessfulOutboundPatientDiscoveryResponse(xcpdResult)) {
+    return xcpdResult.patientMatches[0]?.patientResource ?? DEFAULT_PATIENT_RESOURCE;
+  }
+  if (isSuccessfulResponse(xcpdResult)) {
+    if ("patientResources" in xcpdResult && Array.isArray(xcpdResult.patientResources)) {
+      return xcpdResult.patientResources[0] ?? DEFAULT_PATIENT_RESOURCE;
+    }
+    return xcpdResult.patientResource;
+  }
+  return DEFAULT_PATIENT_RESOURCE;
 }
 
 async function XcpdIntegrationTest() {
@@ -172,10 +196,13 @@ async function XcpdIntegrationTest() {
   const promises = results.map(async result => {
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     const xcpdResult = (result as any).data as OutboundPatientDiscoveryResp;
-    if (!xcpdResult.cxId || !xcpdResult.patientId || !xcpdResult.externalGatewayPatient) {
+    if (!xcpdResult.cxId || !xcpdResult.patientId) {
       console.log("Skipping: ", xcpdResult.id);
       return undefined;
     }
+
+    const patientResource = extractPatientResource(xcpdResult);
+
     const xcpdRequest: OutboundPatientDiscoveryReq = {
       id: xcpdResult.id,
       cxId: xcpdResult.cxId,
@@ -183,9 +210,7 @@ async function XcpdIntegrationTest() {
       timestamp: xcpdResult.timestamp,
       patientId: xcpdResult.patientId,
       samlAttributes: samlAttributes,
-      patientResource: isSuccessfulResponse(xcpdResult)
-        ? xcpdResult.patientResource
-        : { name: [], birthDate: "", gender: "unknown" },
+      patientResource,
       principalCareProviderIds: [""],
     };
     try {

@@ -9,7 +9,7 @@ networks:
 
 services:
   fhir-to-csv-transform:
-    container_name: server
+    container_name: fhir-to-csv-transform-server
     build:
       dockerfile: ./Dockerfile.dev
     ports:

@@ -1,0 +1,269 @@
+import {
+  ON_DEMAND_DOCUMENT_TYPE_UUID,
+  OutboundDocumentQueryReq,
+  STABLE_DOCUMENT_TYPE_UUID,
+  XCAGateway,
+} from "@metriport/ihe-gateway-sdk";
+import { METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX, MetriportError, replyTo } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
+import { XMLBuilder } from "fast-xml-parser";
+import { wrapIdInUrnUuid } from "../../../../../../util/urn";
+import { expiresIn, namespaces } from "../../../constants";
+import { doesGatewayUseSha1, getInitiatorOid } from "../../../gateways";
+import { createSecurityHeader } from "../../../saml/security/security-header";
+import { signFullSaml } from "../../../saml/security/sign";
+import { SamlCertsAndKeys } from "../../../saml/security/types";
+
+const action = "urn:ihe:iti:2007:CrossGatewayQuery";
+export const iheFindDocumentOperationId = "14d4debf-8f97-4251-9a74-a90016b0af0d";
+const dateFormat = "YYYYMMDDHHmmss";
+
+export type SignedDqRequest = {
+  gateway: XCAGateway;
+  signedRequest: string;
+  xmlBody: string;
+  outboundRequest: OutboundDocumentQueryReq;
+};
+
+function formatDate(date?: string, format: string = dateFormat): string | undefined {
+  return date ? buildDayjs(date).format(format) : undefined;
+}
+function createSoapBody(bodyData: OutboundDocumentQueryReq): object {
+  if (!bodyData.gateway) {
+    throw new MetriportError("Gateway must be provided");
+  }
+  const messageId = wrapIdInUrnUuid(bodyData.id);
+  const classCode = bodyData.classCode;
+  const practiceSettingCode = bodyData.practiceSettingCode;
+  const facilityTypeCode = bodyData.facilityTypeCode;
+  const serviceDateFrom = formatDate(bodyData.serviceDate?.dateFrom);
+  const serviceDateTo = formatDate(bodyData.serviceDate?.dateTo);
+  const documentCreationDateFrom = formatDate(bodyData.documentCreationDate?.dateFrom);
+  const documentCreationDateTo = formatDate(bodyData.documentCreationDate?.dateTo);
+  const gatewayHomeCommunityId = bodyData.gateway.homeCommunityId;
+  const externalGatewayPatientId = bodyData.externalGatewayPatient.id;
+  const externalGatewayPatientSystem = bodyData.externalGatewayPatient.system;
+
+  const soapBody = {
+    "soap:Body": {
+      "urn:AdhocQueryRequest": {
+        "@_federated": "false",
+        "@_id": messageId,
+        "@_maxResults": "-1",
+        "@_startIndex": "0",
+        "urn:ResponseOption": {
+          "@_returnType": "LeafClass",
+        },
+        "urn2:AdhocQuery": {
+          "@_home": gatewayHomeCommunityId,
+          "@_id": wrapIdInUrnUuid(iheFindDocumentOperationId),
+          "@_lid": "urn:oasis:names:tc:ebxml-regrep:query:AdhocQueryRequest",
+          "@_objectType": namespaces.urn2,
+          "@_status": namespaces.urn2,
+          "urn2:Slot": [
+            {
+              "@_name": "$XDSDocumentEntryPatientId",
+              "@_slotType": "rim:StringValueType",
+              "urn2:ValueList": {
+                "urn2:Value": `'${externalGatewayPatientId}^^^&${externalGatewayPatientSystem}&ISO'`,
+              },
+            },
+            {
+              "@_name": "$XDSDocumentEntryStatus",
+              "urn2:ValueList": {
+                "urn2:Value": "('urn:oasis:names:tc:ebxml-regrep:StatusType:Approved')",
+              },
+            },
+            ...(classCode?.code && classCode?.system
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryClassCode",
+                    "urn2:ValueList": {
+                      "urn2:Value": `('${classCode.code}^^${classCode.system}')`,
+                    },
+                  },
+                ]
+              : []),
+            ...(practiceSettingCode?.code && practiceSettingCode?.system
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryPracticeSettingCode",
+                    "urn2:ValueList": {
+                      "urn2:Value": `('${practiceSettingCode.code}^^${practiceSettingCode.system}')`,
+                    },
+                  },
+                ]
+              : []),
+            ...(facilityTypeCode?.code && facilityTypeCode?.system
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryHealthcareFacilityTypeCode",
+                    "urn2:ValueList": {
+                      "urn2:Value": `('${facilityTypeCode.code}^^${facilityTypeCode.system}')`,
+                    },
+                  },
+                ]
+              : []),
+            ...(serviceDateFrom
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryServiceStartTimeFrom",
+                    "urn2:ValueList": {
+                      "urn2:Value": serviceDateFrom,
+                    },
+                  },
+                ]
+              : []),
+            ...(serviceDateTo
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryServiceStartTimeTo",
+                    "urn2:ValueList": {
+                      "urn2:Value": serviceDateTo,
+                    },
+                  },
+                ]
+              : []),
+            ...(documentCreationDateFrom
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryCreationTimeFrom",
+                    "urn2:ValueList": {
+                      "urn2:Value": documentCreationDateFrom,
+                    },
+                  },
+                ]
+              : []),
+            ...(documentCreationDateTo
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryCreationTimeTo",
+                    "urn2:ValueList": {
+                      "urn2:Value": documentCreationDateTo,
+                    },
+                  },
+                ]
+              : []),
+            {
+              "@_name": "$XDSDocumentEntryType",
+              "urn2:ValueList": {
+                "urn2:Value": [
+                  `('${wrapIdInUrnUuid(STABLE_DOCUMENT_TYPE_UUID)}','${wrapIdInUrnUuid(
+                    ON_DEMAND_DOCUMENT_TYPE_UUID
+                  )}')`,
+                ],
+              },
+            },
+          ],
+        },
+      },
+    },
+  };
+  return soapBody;
+}
+
+export function createITI38SoapEnvelope({
+  bodyData,
+  publicCert,
+}: {
+  bodyData: OutboundDocumentQueryReq;
+  publicCert: string;
+}): { xmlEnvelope: string; xmlBody: string } {
+  const messageId = wrapIdInUrnUuid(bodyData.id);
+  const toUrl = bodyData.gateway.url;
+
+  const initiatorOid = getInitiatorOid(bodyData.gateway, bodyData.samlAttributes);
+  const homeCommunityId = METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX;
+  const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
+  const createdTimestamp = buildDayjs().toISOString();
+  const expiresTimestamp = buildDayjs(createdTimestamp).add(expiresIn, "minute").toISOString();
+
+  const securityHeader = createSecurityHeader({
+    publicCert,
+    createdTimestamp,
+    expiresTimestamp,
+    toUrl,
+    purposeOfUse,
+    homeCommunityId,
+    initiatorOid,
+    initiatorName: bodyData.samlAttributes.organization,
+  });
+
+  const soapBody = createSoapBody(bodyData);
+
+  const soapEnvelope = {
+    "soap:Envelope": {
+      "@_xmlns:soap": namespaces.soap,
+      "@_xmlns:wsa": namespaces.wsa,
+      "@_xmlns:urn": namespaces.urn,
+      "@_xmlns:urn2": namespaces.urn2,
+      "soap:Header": {
+        "wsa:To": {
+          "#text": toUrl,
+          "@_soap:mustUnderstand": "1",
+        },
+        "wsa:Action": {
+          "#text": action,
+          "@_soap:mustUnderstand": "1",
+        },
+        "wsa:MessageID": messageId,
+        "wsa:ReplyTo": {
+          "wsa:Address": replyTo,
+        },
+        ...securityHeader,
+      },
+      ...soapBody,
+    },
+  };
+
+  const options = {
+    format: false,
+    ignoreAttributes: false,
+    suppressEmptyNode: true,
+    declaration: {
+      include: true,
+      encoding: "UTF-8",
+      version: "1.0",
+    },
+  };
+
+  const builder = new XMLBuilder(options);
+  const xmlBody = builder.build(soapBody);
+  const xmlEnvelope = builder.build(soapEnvelope);
+  return { xmlEnvelope, xmlBody };
+}
+
+export function createAndSignDQRequest(
+  bodyData: OutboundDocumentQueryReq,
+  samlCertsAndKeys: SamlCertsAndKeys
+): { signedRequest: string; xmlBody: string } {
+  const { xmlEnvelope: xmlString, xmlBody } = createITI38SoapEnvelope({
+    bodyData,
+    publicCert: samlCertsAndKeys.publicCert,
+  });
+  const useSha1 = doesGatewayUseSha1(bodyData.gateway.homeCommunityId);
+  const fullySignedSaml = signFullSaml({ xmlString, samlCertsAndKeys, useSha1 });
+  return { signedRequest: fullySignedSaml, xmlBody };
+}
+
+export function createAndSignBulkDQRequests({
+  bulkBodyData,
+  samlCertsAndKeys,
+}: {
+  bulkBodyData: OutboundDocumentQueryReq[];
+  samlCertsAndKeys: SamlCertsAndKeys;
+}): SignedDqRequest[] {
+  const signedRequests: SignedDqRequest[] = [];
+
+  for (const bodyData of bulkBodyData) {
+    const { signedRequest, xmlBody } = createAndSignDQRequest(bodyData, samlCertsAndKeys);
+    signedRequests.push({
+      gateway: bodyData.gateway,
+      signedRequest,
+      xmlBody,
+      outboundRequest: bodyData,
+    });
+  }
+
+  return signedRequests;
+}

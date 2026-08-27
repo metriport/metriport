@@ -16,7 +16,7 @@ const router = Router();
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of Elation Patient.
  * @param req.query.practiceId The ID of Elation Practice.
- * @returns Metriport Patient if found.
+ * @returns Metriport Patient ID if found.
  */
 router.get(
   "/:id",
@@ -42,7 +42,7 @@ router.get(
  * Tries to retrieve the matching Metriport patient
  * @param req.params.id The ID of Elation Patient.
  * @param req.query.practiceId The ID of Elation Practice.
- * @returns Metriport Patient if found.
+ * @returns Metriport Patient ID if found.
  */
 router.post(
   "/:id",

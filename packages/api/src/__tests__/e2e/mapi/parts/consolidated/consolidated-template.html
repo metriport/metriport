@@ -62,6 +62,7 @@
             width: 100%;
             border: 1px solid black;
             border-radius: 5px;
+            table-layout: fixed;
           }
 
           thead tr,
@@ -81,6 +82,12 @@
 
           tbody tr td {
             padding: 8px 5px;
+          }
+
+          .note-cell {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 0;
           }
 
           .section {
@@ -235,6 +242,39 @@
             -webkit-box-orient: vertical;
           }
 
+          .encounter-box {
+            border: 1px solid #000;
+            border-radius: 5px;
+            padding: 16px;
+            margin-bottom: 18px;
+          }
+
+          .encounter-header {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
+            justify-content: space-between;
+            margin-bottom: 12px;
+          }
+
+          .encounter-header .title {
+            margin: 0;
+            font-size: 1.1rem;
+            text-align: left;
+          }
+
+          .report-card {
+            background-color: #f2f2f2;
+            border-radius: 5px;
+            padding: 12px;
+            margin: 15px 0;
+            page-break-inside: avoid;
+            border-left: 3px solid #ccc;
+          }
+
+
         </style>
       </head>
 
@@ -278,7 +318,7 @@
       <td>
         <span class="header-label">DOB</span>
         <span>
-          1900-01-01
+          1930-01-01
         </span>
       </td>
     </tr>
@@ -327,59 +367,66 @@
         <div class="header-table">
           <h4>Table of Contents</h4>
           <table><tbody><tr><td>
-            <ul id="nav">
+           <ul id="nav">
               <div class='half'>
                 <li>
-                  <a href="#awe">Annual Wellness Exams</a>
+                  <a href="#awe-anchor">Annual Wellness Exams</a>
                 </li>
                 <li>
-                  <a href="#reports">Reports</a>
+                  <a href="#clinical-notes-anchor">Clinical Notes</a>
                 </li>
                 <li>
-                  <a href="#medications">Medications</a>
+                  <a href="#imaging-reports-anchor">Imaging Reports</a>
                 </li>
                 <li>
-                  <a href="#conditions">Conditions</a>
+                  <a href="#medications-anchor">Medications</a>
                 </li>
                 <li>
-                  <a href="#allergies">Allergies</a>
+                  <a href="#conditions-anchor">Conditions</a>
                 </li>
                 <li>
-                  <a href="#procedures"
-                    >Procedures</a
-                  >
+                  <a href="#allergies-anchor">Allergies</a>
                 </li>
                 <li>
-                  <a href="#social-history">Social History</a>
+                  <a href="#procedures-anchor">Procedures</a>
                 </li>
                 <li>
-                  <a href="#vitals">Vitals</a>
+                  <a href="#social-history-anchor">Social History</a>
+                </li>
+                <li>
+                  <a href="#vitals-anchor">Vitals</a>
                 </li>
               </div>
               <div class='half'>
                 <li>
-                  <a href="#laboratory">Laboratory</a>
+                  <a href="#laboratory-anchor">Laboratory</a>
                 </li>
                 <li>
-                  <a href="#other-observations">Other Observations</a>
+                  <a href="#surveys-anchor">Surveys</a>
                 </li>
                 <li>
-                  <a href="#immunizations">Immunizations</a>
+                  <a href="#other-observations-anchor">Other Observations</a>
                 </li>
                 <li>
-                  <a href="#family-member-history">Family Member History</a>
+                  <a href="#immunizations-anchor">Immunizations</a>
                 </li>
                 <li>
-                  <a href="#related-persons">Related Persons</a>
+                  <a href="#family-member-history-anchor">Family Member History</a>
                 </li>
                 <li>
-                  <a href="#tasks">Tasks</a>
+                  <a href="#related-persons-anchor">Related Persons</a>
                 </li>
                 <li>
-                  <a href="#coverage">Coverage</a>
+                  <a href="#coverage-anchor">Coverage</a>
                 </li>
                 <li>
-                  <a href="#encounters">Encounters</a>
+                  <a href="#encounters-anchor">Encounters</a>
+                </li>
+                <li>
+                  <a href="#care-plans-anchor">Care Plans</a>
+                </li>
+                <li>
+                  <a href="#care-team-anchor">Care Team</a>
                 </li>
               </div>
             </ul>
@@ -394,7 +441,7 @@
           
     <div id="awe" class="section">
       <div class="section-title">
-        <h3 id="awe" title="reports">&#x276F; Annual Wellness Exams</h3>
+        <h3 id="awe-anchor" title="reports">&#x276F; Annual Wellness Exams</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
@@ -403,9 +450,31 @@
     </div>
   
           
+    <div id="clinical-notes" class="section">
+      <div class="section-title">
+        <h3 id="clinical-notes-anchor" title="Clinical Notes">&#x276F; Clinical Notes</h3>
+        <a href="#mr-header">&#x25B2; Back to Top</a>
+      </div>
+      <div class="section-content">
+        <table><tbody><tr><td>No clinical notes found</td></tr></tbody></table>
+      </div>
+    </div>
+  
+          
+      <div id="imaging-reports" class="section">
+        <div class="section-title">
+          <h3 id="imaging-reports-anchor" title="Imaging Reports">&#x276F; Imaging Reports</h3>
+          <a href="#mr-header">&#x25B2; Back to Top</a>
+        </div>
+        <div class="section-content">
+          <table><tbody><tr><td>No imaging reports found</td></tr></tbody></table>
+        </div>
+      </div>
+    
+          
     <div id="medications" class="section">
       <div class="section-title">
-        <h3 id="Medications" title="Medications">&#x276F; Medications</h3>
+        <h3 id="medications-anchor" title="Medications">&#x276F; Medications</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
@@ -418,20 +487,9 @@
     </div>
   
           
-    <div id="reports" class="section">
-      <div class="section-title">
-        <h3 id="reports" title="reports">&#x276F; Reports</h3>
-        <a href="#mr-header">&#x25B2; Back to Top</a>
-      </div>
-      <div class="section-content">
-        <table><tbody><tr><td>No reports found</td></tr></tbody></table>
-      </div>
-    </div>
-  
-          
     <div id="conditions" class="section">
       <div class="section-title">
-        <h3 id="Conditions" title="Conditions">&#x276F; Conditions</h3>
+        <h3 id="conditions-anchor" title="Conditions">&#x276F; Conditions</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
@@ -440,12 +498,13 @@
 
     <thead>
       <tr>
-        <th style="width: 30%">Condition</th>
-        <th style="width: 25%">Code</th>
-        <th style="width: 10%">Chronic</th>
-        <th style="width: 12%">First seen</th>
-        <th style="width: 12%">Last seen</th>
-        <th style="width: 11%">Status</th>
+        <th style="width: 28%">Condition</th>
+        <th style="width: 22%">Code</th>
+        <th style="width: 8%">Chronic</th>
+        <th style="width: 8%">Enc Dx</th>
+        <th style="width: 11%">First seen</th>
+        <th style="width: 11%">Last seen</th>
+        <th style="width: 12%">Status</th>
       </tr>
     </thead>
     <tbody>
@@ -453,6 +512,7 @@
             <tr>
               <td></td>
               <td>SNOMED: 422338006</td>
+              <td>No</td>
               <td>No</td>
               <td>2012-01-01</td>
               <td>2013-08-22</td>
@@ -469,7 +529,7 @@
           
     <div id="allergies" class="section">
       <div class="section-title">
-        <h3 id="Allergies" title="Allergies">&#x276F; Allergies</h3>
+        <h3 id="allergies-anchor" title="Allergies">&#x276F; Allergies</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
@@ -482,7 +542,7 @@
           
     <div id="procedures" class="section">
       <div class="section-title">
-        <h3 id="Procedures" title="Procedures">&#x276F; Procedures</h3>
+        <h3 id="procedures-anchor" title="Procedures">&#x276F; Procedures</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
@@ -495,7 +555,7 @@
           
     <div id="social-history" class="section">
       <div class="section-title">
-        <h3 id="Social History" title="Social History">&#x276F; Social History</h3>
+        <h3 id="social-history-anchor" title="Social History">&#x276F; Social History</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
@@ -508,7 +568,7 @@
           
     <div id="vitals" class="section">
       <div class="section-title">
-        <h3 id="Vitals" title="Vitals">&#x276F; Vitals</h3>
+        <h3 id="vitals-anchor" title="Vitals">&#x276F; Vitals</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
@@ -521,7 +581,7 @@
           
     <div id="laboratory" class="section">
       <div class="section-title">
-        <h3 id="Laboratory" title="Laboratory">&#x276F; Laboratory</h3>
+        <h3 id="laboratory-anchor" title="Laboratory">&#x276F; Laboratory</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
@@ -532,9 +592,20 @@
     </div>
   
           
+    <div id="surveys" class="section">
+      <div class="section-title">
+        <h3 id="surveys-anchor" title="Surveys">&#x276F; Surveys</h3>
+        <a href="#mr-header">&#x25B2; Back to Top</a>
+      </div>
+      <div class="section-content">
+          <table><tbody><tr><td>No survey info found</td></tr></tbody></table>
+      </div>
+    </div>
+  
+          
     <div id="other-observations" class="section">
       <div class="section-title">
-        <h3 id="Other Observations" title="Other Observations">&#x276F; Other Observations</h3>
+        <h3 id="other-observations-anchor" title="Other Observations">&#x276F; Other Observations</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
@@ -547,7 +618,7 @@
           
     <div id="immunizations" class="section">
       <div class="section-title">
-        <h3 id="Immunizations" title="Immunizations">&#x276F; Immunizations</h3>
+        <h3 id="immunizations-anchor" title="Immunizations">&#x276F; Immunizations</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
@@ -558,9 +629,20 @@
     </div>
   
           
+    <div id="care-plans" class="section">
+      <div class="section-title">
+        <h3 id="care-plans-anchor" title="Care Plans">&#x276F; Care Plans</h3>
+        <a href="#mr-header">&#x25B2; Back to Top</a>
+      </div>
+      <div class="section-content">
+          <table><tbody><tr><td>No care plan info found</td></tr></tbody></table>
+      </div>
+    </div>
+  
+          
     <div id="family-member-history" class="section">
       <div class="section-title">
-        <h3 id="Family Member History" title="Family Member History">&#x276F; Family Member History</h3>
+        <h3 id="family-member-history-anchor" title="Family Member History">&#x276F; Family Member History</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
@@ -574,7 +656,7 @@
           
     <div id="related-persons" class="section">
       <div class="section-title">
-        <h3 id="Related Persons" title="Related Persons">&#x276F; Related Persons</h3>
+        <h3 id="related-persons-anchor" title="Related Persons">&#x276F; Related Persons</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
@@ -585,22 +667,9 @@
     </div>
   
           
-    <div id="tasks" class="section">
-      <div class="section-title">
-        <h3 id="Tasks" title="Tasks">&#x276F; Tasks</h3>
-        <a href="#mr-header">&#x25B2; Back to Top</a>
-      </div>
-      <div class="section-content">
-                  <table>
-      <tbody><tr><td>No task info found</td></tr></tbody>        </table>
-      
-      </div>
-    </div>
-  
-          
     <div id="coverage" class="section">
       <div class="section-title">
-        <h3 id="Coverage" title="Coverage">&#x276F; Coverage</h3>
+        <h3 id="coverage-anchor" title="Coverage">&#x276F; Coverage</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
@@ -613,7 +682,7 @@
           
     <div id="encounters" class="section">
       <div class="section-title">
-        <h3 id="Encounters" title="Encounters">&#x276F; Encounters</h3>
+        <h3 id="encounters-anchor" title="Encounters">&#x276F; Encounters</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
@@ -643,6 +712,17 @@
     </table>
 
   
+      </div>
+    </div>
+  
+          
+    <div id="care-team" class="section">
+      <div class="section-title">
+        <h3 id="care-team-anchor" title="Care Team">&#x276F; Care Team</h3>
+        <a href="#mr-header">&#x25B2; Back to Top</a>
+      </div>
+      <div class="section-content">
+          <table><tbody><tr><td>No care team info found</td></tr></tbody></table>
       </div>
     </div>
   

@@ -23,11 +23,12 @@ type QueueAndLambdaSettingsBase = {
     timeout: Duration;
     reservedConcurrentExecutions?: number;
     ephemeralStorageSize?: Size;
+    runtime?: LambdaSettings["runtime"];
   };
   queue: {
     fifo?: boolean;
-    alarmMaxAgeOfOldestMessage: Duration;
-    maxMessageCountAlarmThreshold?: number;
+    alertMaxApproximateAgeOfOldestMessage: Duration;
+    alertMaxApproximateNumberOfMessagesVisible?: number;
     /** The number of times a message can be unsuccesfully dequeued before being moved to the dead-letter queue. */
     maxReceiveCount: number;
     receiveMessageWaitTime?: Duration;
@@ -61,3 +62,11 @@ export type LambdaSettingsWithNameAndEntry = Pick<
   QueueAndLambdaSettings,
   "name" | "entry" | "lambda"
 >;
+
+export type LambdaSettingsV2 = LambdaSettings & {
+  entry: string;
+};
+export type LambdaSetup = {
+  name: string;
+  lambda: LambdaSettingsV2;
+};

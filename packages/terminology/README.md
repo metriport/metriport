@@ -82,19 +82,25 @@ npm run seed-ndc-lookup <path-to-rxnorm-zip>
 Once you have the database file (either uploaded on S3 or seeded locally):
 
 ```bash
+npm run build
 npm run start
 ```
 
-The server will look for `terminology.db` in the local directory. If you're a Metriport dev and the file isn't found locally, it will automatically download from S3.
+This compiles TypeScript to `dist/` and runs with plain `node`. The server defaults to port 8080.
 
-## Testing with Docker
+The server will look for `terminology_v2.2.db` in the local directory. If you're a Metriport dev and the file isn't found locally, it will automatically download from S3.
 
-To test the server locally using Docker, run:
+### Running with Docker
+
+Make sure the database file (`terminology_v2.2.db`) exists in the terminology directory, then run:
 
 ```bash
-docker-compose build
-docker-compose up -d
+docker compose up -d --build
 ```
+
+The `docker-compose.yml` mounts the local DB file into the container, so no AWS credentials are needed. The server will be available at `http://localhost:8666`.
+
+**Note:** If the DB file doesn't exist locally, first run `npm run dev` or `npm run start` (with `.env` configured) to download it from S3, then use Docker.
 
 ## Supported Systems
 
@@ -211,6 +217,42 @@ A JSON response, containing an array of codes with their original IDs and their 
         ]
     }
 ]
+```
+
+### POST /code-system/lookup-by-display
+
+Send a `POST` request to look up a code by display text within a target system. For example, send a condition name like "hyperlipidemia" to get the best matching ICD-10 code.
+
+#### Body
+
+A JSON payload, containing a single FHIR Parameters object with `display` (the text to search for) and `system` (the target code system URL).
+
+```
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    {
+      "name": "display",
+      "valueString": "hyperlipidemia"
+    },
+    {
+      "name": "system",
+      "valueUri": "http://hl7.org/fhir/sid/icd-10-cm"
+    }
+  ]
+}
+```
+
+#### Response
+
+A JSON response containing the best matching code and its display.
+
+```
+{
+  "name": "ICD10CM",
+  "code": "E78.5",
+  "display": "Hyperlipidemia, unspecified"
+}
 ```
 
 ### POST /concept-map/translate

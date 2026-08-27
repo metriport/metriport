@@ -18,7 +18,13 @@ export const patientSchema = z.object({
       zip: z.string(),
     })
   ),
-  phoneNumber: z.string().optional(),
+  contact: z
+    .object({
+      phone: z.string().optional(),
+      email: z.string().optional(),
+    })
+    .array()
+    .optional(),
 });
 export type Patient = z.infer<typeof patientSchema>;
 

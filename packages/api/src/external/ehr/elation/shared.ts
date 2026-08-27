@@ -85,7 +85,7 @@ function getCxIdAndPracticeIdFromElationApplicationId(applicationId: string): {
 } {
   const clientMap = getClientMap();
   const entry = Object.entries(clientMap).find(([, v]) => v === applicationId);
-  if (!entry) throw new MetriportError("Elation application id not found");
+  if (!entry) throw new NotFoundError("Elation application id not found");
   const key = entry[0];
   const keySplit = key.split("_");
   if (keySplit.length !== 3) throw new MetriportError("Elation key for application id malformed");

@@ -6,6 +6,7 @@ const ehrSourcesWithDynamicSecrets = [
   EhrSources.athena,
   EhrSources.elation,
   EhrSources.healthie,
+  EhrSources.practicefusion,
 ] as const;
 export type EhrSourceWithDynamicSecrets = (typeof ehrSourcesWithDynamicSecrets)[number];
 export function isEhrSourceWithDynamicSecrets(ehr: string): ehr is EhrSourceWithDynamicSecrets {

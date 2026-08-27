@@ -1,5 +1,5 @@
 import { FhirToCsvBulkDirect } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/bulk/fhir-to-csv-bulk-direct";
-import { doesConsolidatedDataExist } from "@metriport/core/command/consolidated/consolidated-get";
+import { doesConsolidatedDataExist } from "@metriport/core/command/consolidated/consolidated-exists";
 import { MetriportError } from "@metriport/shared";
 import { Context, SQSEvent } from "aws-lambda";
 import { z } from "zod";
@@ -22,7 +22,7 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
   if (!message) return;
 
   const parsedBody = parseBody(fhirToCsvSchema, message.body);
-  const { cxId, patientId } = parsedBody;
+  const { cxId, patientId, outputPrefix } = parsedBody;
 
   const log = prefixedLog(`cxId ${cxId}, patientId ${patientId}`);
   log(`Parsed: ${JSON.stringify(parsedBody)}`);
@@ -36,13 +36,22 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
 
   const timeoutForCsvTransform = Math.max(0, context.getRemainingTimeInMillis() - 200);
 
-  log(`Invoking lambda ${lambdaName}... it has ${timeoutForCsvTransform}ms to run`);
+  log(`Calling processFhirToCsvBulk... it has ${timeoutForCsvTransform}ms to run`);
   const startedAt = Date.now();
   const fhirToCsvHandler = new FhirToCsvBulkDirect();
-  await fhirToCsvHandler.processFhirToCsvBulk({
-    ...parsedBody,
+  const failedPatientIds = await fhirToCsvHandler.processFhirToCsvBulk({
+    cxId,
+    patientIds: [patientId],
+    outputPrefix,
     timeoutInMillis: timeoutForCsvTransform,
   });
+  if (failedPatientIds.length > 0) {
+    throw new MetriportError(`Failed to convert FHIR to CSV`, undefined, {
+      cxId,
+      patientId,
+      failedPatientIds: failedPatientIds.join(","),
+    });
+  }
   log(`Done in ${Date.now() - startedAt}ms`);
 });
 

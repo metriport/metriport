@@ -7,6 +7,5 @@ export function buildConvertBatchResponseHandler(): SurescriptsConvertBatchRespo
   if (Config.isDev()) {
     return new SurescriptsConvertBatchResponseHandlerDirect();
   }
-  const lambdaName = Config.getSurescriptsConvertBatchResponseLambdaName();
-  return new SurescriptsConvertBatchResponseHandlerCloud(lambdaName);
+  return new SurescriptsConvertBatchResponseHandlerCloud();
 }

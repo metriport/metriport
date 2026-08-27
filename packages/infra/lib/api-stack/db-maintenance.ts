@@ -1,4 +1,5 @@
 import { Duration } from "aws-cdk-lib";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
 import { IFunction } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
@@ -11,12 +12,13 @@ type DbMaintenanceConnectorProps = {
   lambdaLayers: LambdaLayers;
   vpc: IVpc;
   apiAddress: string;
+  alertSnsAction?: SnsAction;
 };
 
 function getSettings(props: DbMaintenanceConnectorProps) {
   return {
     ...props,
-    name: "ScheduledDBMaintenance",
+    name: "ScheduledDBMaintenanceV2",
     /**
      * UTC-based: "Minutes Hours Day-of-month Month Day-of-week Year"
      * @see: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
@@ -30,7 +32,7 @@ function getSettings(props: DbMaintenanceConnectorProps) {
 
 export function createScheduledDBMaintenance(props: DbMaintenanceConnectorProps): IFunction {
   const config = getConfig();
-  const { stack, lambdaLayers, vpc, name, lambdaTimeout, scheduleExpression, url } =
+  const { stack, lambdaLayers, vpc, name, lambdaTimeout, scheduleExpression, url, alertSnsAction } =
     getSettings(props);
 
   const lambda = createScheduledLambda({
@@ -45,6 +47,7 @@ export function createScheduledDBMaintenance(props: DbMaintenanceConnectorProps)
     envVars: {
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
     },
+    alertSnsAction,
   });
 
   return lambda;

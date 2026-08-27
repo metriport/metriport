@@ -1,0 +1,118 @@
+---
+title: "Embedding Metriport"
+icon: "window-restore"
+description: "Embed the Metriport app directly into your application."
+---
+
+## Overview
+
+Metriport provides embeddable views that you can integrate directly into your application. This allows your users to interact with Metriport functionality without leaving your app.
+
+**Available embedded views:**
+
+- **Patient View**: Display a patient's medical data
+- **Transitions of Care (TCM)**: Monitor patient admissions, transfers, and discharges
+
+## Getting Started
+
+1. Generate an embed token using the [Create Embed Token](/medical-api/api-reference/token/create-embed-token) endpoint.
+2. Redirect or embed the user to the appropriate Metriport URL with the token.
+
+<Tip>
+  Embed tokens have a maximum expiration of 10 hours (36000
+  seconds). For security, consider using shorter expiration
+  times.
+</Tip>
+
+---
+
+## Generate Embed Token
+
+<CodeGroup>
+
+```bash curl
+curl -X POST "https://api.metriport.com/medical/v1/token/embed" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "expirationInSeconds": 3600
+  }'
+```
+
+```javascript SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const response = await metriport.createEmbedToken({
+  expirationInSeconds: 3600,
+});
+
+console.log(response.token);
+```
+
+</CodeGroup>
+
+---
+
+## Patient View
+
+Display a patient's medical data within your application.
+
+```
+https://ehr.metriport.com/embed/app/patient/{patientId}#access_token={token}
+```
+
+```javascript Redirect
+const token = "11111111-1111-1111-1111-111111111111";
+const patientId = "00000000-0000-0000-0000-000000000000";
+
+const embedUrl = `https://ehr.metriport.com/embed/app/patient/${patientId}#access_token=${token}`;
+
+window.location.href = embedUrl;
+```
+
+```html Iframe
+<iframe
+  src="https://ehr.metriport.com/embed/app/patient/00000000-0000-0000-0000-000000000000#access_token=11111111-1111-1111-1111-111111111111"
+  width="100%"
+  height="100%"
+></iframe>
+```
+
+---
+
+## Transitions of Care (TCM)
+
+Display the Transitions of Care viewer for monitoring patient admissions, transfers, and discharges.
+
+```
+https://ehr.metriport.com/embed/app/transitions-of-care#access_token={token}
+```
+
+```javascript Redirect
+const token = "11111111-1111-1111-1111-111111111111";
+
+const embedUrl = `https://ehr.metriport.com/embed/app/transitions-of-care#access_token=${token}`;
+
+window.location.href = embedUrl;
+```
+
+```html Iframe
+<iframe
+  src="https://ehr.metriport.com/embed/app/transitions-of-care#access_token=11111111-1111-1111-1111-111111111111"
+  width="100%"
+  height="100%"
+></iframe>
+```
+
+---
+
+## Security Considerations
+
+- **Token Expiration**: Tokens expire after the specified duration (default/max: 10 hours).
+- **Server-Side Generation**: Generate tokens server-side to avoid exposing your API key.
+
+## Related Resources
+
+- [Create Embed Token API Reference](/medical-api/api-reference/token/create-embed-token)

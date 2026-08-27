@@ -1,9 +1,5 @@
 import { Command } from "commander";
-import {
-  getConsolidatedBundle,
-  openPreviewUrl,
-  writeConsolidatedBundlePreview,
-} from "../surescripts/shared";
+import { getConsolidatedBundle, openPreviewUrl, writeConsolidatedBundlePreview } from "./shared";
 
 /**
  * Runs structured data extraction on a patient, and displays a preview of the generated bundle.
@@ -18,7 +14,7 @@ command.showHelpAfterError();
 command.action(previewPatient);
 
 async function previewPatient({ cxId, ptId }: { cxId: string; ptId: string }) {
-  const bundle = await getConsolidatedBundle(cxId, ptId);
+  const bundle = await getConsolidatedBundle({ cxId, patientId: ptId });
   if (!bundle) {
     throw new Error(`Bundle not found for patient ${ptId}`);
   }

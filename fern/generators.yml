@@ -13,18 +13,15 @@ groups:
   python-sdk:
     generators:
       - name: fernapi/fern-python-sdk
-        version: 0.11.2
+        version: 4.7.0
         output:
-          location: pypi
-          package-name: metriport
-          token: ${PYPI_TOKEN}
+          location: local-file-system
+          path: "../packages/sdks/python/tester-local/generated"
         config:
           client_class_name: Metriport
           pydantic_config:
             require_optional_fields: false
           improved_imports: true
-        github:
-          repository: metriport/metriport-python
   java-sdk:
     generators:
       - name: fernapi/fern-java-sdk
@@ -51,10 +48,11 @@ groups:
           noSerdeLayer: true
         github:
           repository: metriport/metriport-node
-  test: # fern generate --group test will locally generate the SDKs for testing
+  test:
+    # fern generate --group test will locally generate the SDKs for testing
     generators:
       - name: fernapi/fern-python-sdk
-        version: 0.7.5
+        version: 4.7.0
         output:
           location: local-file-system
           path: ../packages/sdks/python/tester-local/generated

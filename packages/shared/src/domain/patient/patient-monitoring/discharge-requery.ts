@@ -3,9 +3,19 @@ import { PatientJob } from "../../../domain/job/patient-job";
 import { defaultRemainingAttempts } from "./utils";
 
 export const remainingAttemptsSchema = z.number().max(defaultRemainingAttempts);
+
+export const fallbackMatchSchema = z.object({
+  encounterId: z.string(),
+  dischargeSummaryFilePath: z.string(),
+});
+export type FallbackMatch = z.infer<typeof fallbackMatchSchema>;
+
 export const dischargeDataSchema = z.object({
   encounterEndDate: z.string(),
   tcmEncounterId: z.string(),
+  dispositionRetryAttemptsRemaining: z.number().optional(), // TODO: Remove once we confirm this is no longer used
+  dischargeRequeriesRemaining: z.number().optional(),
+  fallbackMatch: fallbackMatchSchema.optional(),
 });
 export type DischargeData = z.infer<typeof dischargeDataSchema>;
 export const multipleDischargeDataSchema = z.array(dischargeDataSchema);
@@ -52,3 +62,5 @@ export function parseDischargeRequeryJob(job: PatientJob): DischargeRequeryJob {
     scheduledAt: scheduledAtSchema.parse(job.scheduledAt),
   };
 }
+
+export { defaultDischargeRequeryRetryAttempts as defaultDischargeRequeryAttempts } from "./utils";

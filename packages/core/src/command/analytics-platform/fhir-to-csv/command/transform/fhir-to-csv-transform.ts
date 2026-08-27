@@ -13,7 +13,7 @@ export type StartFhirToCsvTransformRequest = {
 /**
  * Represents the request body for the transform lambda.
  *
- * Careful when editing this, there's no shared type with the Pyhon code.
+ * Careful when editing this, there's no shared type with the Python code.
  * See packages/data-transformation/fhir-to-csv/main.py
  */
 export type FhirToCsvTransformServiceRequest = {
@@ -25,5 +25,5 @@ export type FhirToCsvTransformServiceRequest = {
 };
 
 export interface FhirToCsvTransformHandler {
-  startFhirToCsvTransform(request: StartFhirToCsvTransformRequest): Promise<void>;
+  runFhirToCsvTransform(request: StartFhirToCsvTransformRequest): Promise<void>;
 }

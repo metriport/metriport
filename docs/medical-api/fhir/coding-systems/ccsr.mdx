@@ -1,0 +1,106 @@
+---
+title: "CCSR"
+description: "Learn about Clinical Classifications Software Refined (CCSR) for ICD-10-CM Diagnoses."
+---
+
+## Overview
+
+The **Clinical Classifications Software Refined (CCSR) for ICD-10-CM Diagnoses** is a classification system developed by the Agency for Healthcare Research and Quality (AHRQ) — see the official [documentation](https://hcup-us.ahrq.gov/toolssoftware/ccsr/dxccsr.jsp). It groups more than **70,000 ICD-10-CM diagnosis codes** into **550+ clinically meaningful categories** across **22 body systems**.
+
+This allows diagnoses to be organized into two hierarchical levels of CCSR categorization that are easier to interpret, analyze, and visualize — for example, grouping all tumor-related diagnosis codes under a single _neoplasms_ category.
+
+## Applications
+
+Metriport enriches FHIR Conditions by including both descriptive CCSR categories and broader body systems, maximizing flexibility for categorization and analytics.
+
+## Key Considerations
+
+A single ICD-10-CM code may map to **multiple CCSR categories** when it represents more than one clinical concept.
+
+Each CCSR code consists of:
+
+- A **three-letter prefix** representing a body system or condition category (e.g., `END` for endocrine disorders).
+- A **three-digit numeric suffix** representing a specific category within that body system (e.g., `END002` → _Diabetes mellitus without complication_).
+
+## CCSR Body System Categories
+
+Taken from the CCSR [User Guide](https://hcup-us.ahrq.gov/toolssoftware/ccsr/DXCCSR-User-Guide-v2025-1.pdf).
+
+| Three-character Abbreviation | ICD-10-CM Body System (largely aligned with chapters in the ICD- 10-CM Code Book)                   |
+| :--------------------------- | :-------------------------------------------------------------------------------------------------- |
+| `BLD`                        | Diseases of the blood and blood-forming organs and certain disorders involving the immune mechanism |
+| `CIR`                        | Diseases of the circulatory system                                                                  |
+| `DEN`                        | Dental diseases                                                                                     |
+| `DIG`                        | Diseases of the digestive system                                                                    |
+| `EAR`                        | Diseases of the ear and mastoid process                                                             |
+| `END`                        | Endocrine, nutritional, and metabolic diseases                                                      |
+| `EXT`                        | External causes of morbidity                                                                        |
+| `EYE`                        | Diseases of the eye and adnexa                                                                      |
+| `FAC`                        | Factors influencing health status and contact with health services                                  |
+| `GEN`                        | Diseases of the genitourinary system                                                                |
+| `INF`                        | Certain infectious and parasitic diseases                                                           |
+| `INJ`                        | Injury, poisoning and certain other consequences of external causes                                 |
+| `MAL`                        | Congenital malformations, deformations and chromosomal abnormalities                                |
+| `MBD`                        | Mental, behavioral, and neurodevelopmental disorders                                                |
+| `MUS`                        | Diseases of the musculoskeletal system and connective tissue                                        |
+| `NEO`                        | Neoplasms                                                                                           |
+| `NVS`                        | Diseases of the nervous system                                                                      |
+| `PNL`                        | Certain conditions originating in the perinatal period                                              |
+| `PRG`                        | Pregnancy, childbirth, and the puerperium                                                           |
+| `RSP`                        | Diseases of the respiratory system                                                                  |
+| `SKN`                        | Diseases of the skin and subcutaneous tissue                                                        |
+| `SYM`                        | Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified             |
+
+## Where can I find it in Metriport’s patient record?
+
+CCSR codes are found in Condition resources under the `code.coding` array. CCSR body systems are found in Condition resources under the `category` array.
+
+```json
+{
+    ...,
+    "resourceType": "Condition",
+    "code": {
+        "text": "Type 2 diabetes mellitus with mild nonproliferative diabetic retinopathy without macular edema, bilateral",
+        "coding": [
+            {
+                "system": "https://hcup-us.ahrq.gov/toolssoftware/ccsr/ccs_refined.jsp",
+                "code": "END003",
+                "display": "Diabetes mellitus with complication"
+            },
+            {
+                "system": "https://hcup-us.ahrq.gov/toolssoftware/ccsr/ccs_refined.jsp",
+                "code": "END005",
+                "display": "Diabetes mellitus, Type 2"
+            },
+            {
+                "system": "https://hcup-us.ahrq.gov/toolssoftware/ccsr/ccs_refined.jsp",
+                "code": "EYE005",
+                "display": "Retinal and vitreous conditions"
+            },
+            ...
+        ]
+    },
+    "category": [
+        {
+            "coding": [
+                {
+                    "system": "https://hcup-us.ahrq.gov/toolssoftware/ccsr/ccs_refined.jsp",
+                    "code": "END",
+                    "display": "Endocrine, nutritional, and metabolic diseases"
+                }
+            ],
+        },
+        {
+            "coding": [
+                {
+                    "system": "https://hcup-us.ahrq.gov/toolssoftware/ccsr/ccs_refined.jsp",
+                    "code": "EYE",
+                    "display": "Diseases of the eye and adnexa"
+                }
+            ],
+        },
+        ...
+    ],
+    ...
+}
+```

@@ -58,7 +58,6 @@ export const toDurations = (gSleep: GarminSleep): SleepDurations | undefined => 
   return Object.keys(res).length > 0 ? res : undefined;
 };
 
-// https://github.com/metriport/metriport-internal/issues/161
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const toBiometrics = (gSleep: GarminSleep): SleepBiometrics | undefined => {
   /*

@@ -1,6 +1,6 @@
 {
   "name": "@metriport/fhir-sdk",
-  "version": "1.4.1",
+  "version": "1.11.3",
   "description": "FHIR Bundle SDK for parsing, querying, and manipulating FHIR bundles with reference resolution",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -49,7 +49,8 @@
     "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
   },
   "dependencies": {
-    "@medplum/fhirtypes": "^2.2.10"
+    "@medplum/fhirtypes": "^2.2.10",
+    "@metriport/shared": "^0.32.1"
   },
   "devDependencies": {
     "@metriport/eslint-rules": "file:packages/eslint-rules",

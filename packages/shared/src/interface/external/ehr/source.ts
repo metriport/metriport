@@ -7,8 +7,13 @@ export enum EhrSources {
   healthie = "healthie",
   eclinicalworks = "eclinicalworks",
   salesforce = "salesforce",
+  practicefusion = "practicefusion",
+}
+export enum EmbedSources {
+  embed = "embed",
 }
 export const ehrSources = [...Object.values(EhrSources)] as const;
+export const embedSource = EmbedSources.embed as const;
 export type EhrSource = (typeof ehrSources)[number];
 export function isEhrSource(source: string): source is EhrSource {
   return ehrSources.includes(source as EhrSource);
@@ -26,6 +31,8 @@ export function parseEhrSourceOrFail(source: string | undefined): EhrSource | un
 
 export const clientSourceSuffix = "-client";
 export const webhookSourceSuffix = "-webhook";
+export const refreshSourceSuffix = "-refresh";
+export const pluginSourceSuffix = "-plugin";
 
 export function removeClientSource(source: string): EhrSource {
   return source.replace(clientSourceSuffix, "") as EhrSource;
@@ -33,4 +40,12 @@ export function removeClientSource(source: string): EhrSource {
 
 export function removeWebhookSource(source: string): EhrSource {
   return source.replace(webhookSourceSuffix, "") as EhrSource;
+}
+
+export function removeRefreshSource(source: string): EhrSource {
+  return source.replace(refreshSourceSuffix, "") as EhrSource;
+}
+
+export function removePluginSource(source: string): EhrSource {
+  return source.replace(pluginSourceSuffix, "") as EhrSource;
 }

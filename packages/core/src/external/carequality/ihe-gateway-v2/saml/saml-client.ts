@@ -1,4 +1,4 @@
-import { executeWithNetworkRetries, NetworkError } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, NetworkError } from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import axios from "axios";
 import { constants } from "crypto";
@@ -75,7 +75,7 @@ async function loadTrustedKeyStore(): Promise<string> {
     return trustBundle;
   } catch (error) {
     const msg = `Error getting trust bundle`;
-    log(`${msg}. Error: ${error}`);
+    log(`${msg}. Error: ${errorToString(error)}`);
     throw new MetriportError(msg, error);
   }
 }
@@ -90,7 +90,7 @@ export async function sendSignedXml({
   url: string;
   samlCertsAndKeys: SamlCertsAndKeys;
   isDq: boolean;
-}): Promise<{ response: string; contentType: string }> {
+}): Promise<{ response: string; responseStatus: number; contentType: string }> {
   const trustedKeyStore = await getTrustedKeyStore();
   const agent = new https.Agent({
     rejectUnauthorized: getRejectUnauthorized(),
@@ -130,7 +130,11 @@ export async function sendSignedXml({
 
   const response = isDq ? await sendWithRetries() : await sendRequest();
 
-  return { response: response.data, contentType: response.headers["content-type"] };
+  return {
+    response: response.data,
+    responseStatus: response.status,
+    contentType: response.headers["content-type"],
+  };
 }
 
 export async function sendSignedXmlMtom({

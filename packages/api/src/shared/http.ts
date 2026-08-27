@@ -2,16 +2,20 @@ import { Request } from "express";
 import httpStatus from "http-status";
 import { ZodError } from "zod";
 
+/** @deprecated Use the version from @metriport/shared instead */
 export function isHttpOK(statusCode: number): boolean {
   return httpStatus[`${statusCode}_CLASS`] === httpStatus.classes.SUCCESSFUL;
 }
 
+/** @deprecated Use the version from @metriport/shared instead */
 export function isHttpClientError(statusCode: number): boolean {
   return httpStatus[`${statusCode}_CLASS`] === httpStatus.classes.CLIENT_ERROR;
 }
 
+/** @deprecated Use the version from @metriport/shared instead */
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isClientError(error: any): boolean {
+  if (!error || typeof error !== "object") return false;
   if (error.status) return isHttpClientError(error.status);
   if (error.statusCode) return isHttpClientError(error.statusCode);
   if (error instanceof ZodError) return true;
@@ -29,6 +33,7 @@ export function getETag(req: Request): {
 }
 
 /**
+ * @deprecated Use the version from @metriport/shared instead
  * Returns the HTTP status of an error. This is based on Axios error object.
  *
  * @param error error instance
@@ -40,6 +45,7 @@ export function getHttpStatusFromAxiosError(error: unknown): number {
 }
 
 /**
+ * @deprecated Use the version from @metriport/shared instead
  * Returns the HTTP status of an error. This is based on Axios error object.
  *
  * @param error error instance
@@ -63,6 +69,7 @@ export function getHttpStatusFromAxiosErrorOptional(err: unknown): number | unde
 }
 
 /**
+ * @deprecated Use the version from @metriport/shared instead
  * Returns true if the error is a timeout error. This is based on Axios error object.
  *
  * @param error error instance

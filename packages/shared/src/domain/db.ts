@@ -1,8 +1,10 @@
 import { z } from "zod";
 import { Dialect } from "sequelize";
+import { DeepNonNullable, DeepRequired } from "ts-essentials";
 
 export const dbCredsSchema = z.object({
   dbname: z.string(),
+  schemaName: z.string().optional(),
   username: z.string(),
   password: z.string(),
   host: z.string(),
@@ -18,6 +20,7 @@ export const dbCredsSchemaReadOnly = dbCredsSchema.omit({
 });
 
 export type DbCreds = z.infer<typeof dbCredsSchema>;
+export type DbCredsWithSchema = DeepRequired<DeepNonNullable<DbCreds>>;
 export type DbCredsReadOnly = z.infer<typeof dbCredsSchemaReadOnly>;
 
 export const dbPoolSettingsSchema = z.object({

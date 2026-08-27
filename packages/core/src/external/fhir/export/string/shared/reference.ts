@@ -1,6 +1,7 @@
 import { Reference } from "@medplum/fhirtypes";
 import { defaultIsDebug } from "./debug";
 import { FIELD_SEPARATOR } from "./separator";
+import { trimWhitespace } from "@metriport/shared/common/string";
 
 /**
  * Formats a FHIR reference into a string representation
@@ -34,7 +35,7 @@ export function formatReference({
   label?: string;
   isDebug?: boolean | undefined;
 }): string | undefined {
-  const formattedRef = [reference?.reference?.trim(), reference?.display?.trim()]
+  const formattedRef = [trimWhitespace(reference?.reference), trimWhitespace(reference?.display)]
     .filter(Boolean)
     .join(" ");
   if (formattedRef.length < 1) return undefined;

@@ -10,7 +10,7 @@ import { createScheduledLambda } from "../shared/lambda-scheduled";
 export type ScheduledLambdaProps = {
   stack: Construct;
   lambdaLayers: LambdaLayers;
-  alarmSnsAction?: SnsAction | undefined;
+  alertSnsAction?: SnsAction;
   vpc: IVpc;
   apiAddress: string;
 };
@@ -27,7 +27,7 @@ const httpTimeout = Duration.seconds(50);
 export function createDownloadResponseScheduledLambda(props: ScheduledLambdaProps): Lambda {
   return createQuestScheduledLambda({
     ...props,
-    name: "QuestScheduledResponseDownload",
+    name: "QuestScheduledIngestAllResponses",
     /**
      * UTC-based: "Minutes Hours Day-of-month Month Day-of-week Year"
      * @see: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
@@ -36,14 +36,14 @@ export function createDownloadResponseScheduledLambda(props: ScheduledLambdaProp
     scheduleExpression: [
       "0 1 * * ? *", // Every day at 6:00pm PST (1:00am UTC)
     ],
-    url: `http://${props.apiAddress}/internal/quest/download-response`,
+    url: `http://${props.apiAddress}/internal/quest/ingest-all-responses`,
   });
 }
 
-export function createUploadRosterScheduledLambda(props: ScheduledLambdaProps): Lambda {
+export function createUploadRosterScheduledLambdaBackfill(props: ScheduledLambdaProps): Lambda {
   return createQuestScheduledLambda({
     ...props,
-    name: "QuestScheduledRosterUpload",
+    name: "QuestScheduledRosterUploadBackfill",
     /**
      * UTC-based: "Minutes Hours Day-of-month Month Day-of-week Year"
      * @see: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
@@ -52,13 +52,31 @@ export function createUploadRosterScheduledLambda(props: ScheduledLambdaProps): 
     scheduleExpression: [
       "0 12 ? * 1 *", // Every Monday at 12:00pm UTC (5:00am PST)
     ],
-    url: `http://${props.apiAddress}/internal/quest/upload-roster`,
+    url: `http://${props.apiAddress}/internal/quest/upload-roster/backfill`,
+  });
+}
+
+export function createUploadRosterScheduledLambdaNotifications(
+  props: ScheduledLambdaProps
+): Lambda {
+  return createQuestScheduledLambda({
+    ...props,
+    name: "QuestScheduledRosterUploadNotifications",
+    /**
+     * UTC-based: "Minutes Hours Day-of-month Month Day-of-week Year"
+     * @see: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
+     * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
+     */
+    scheduleExpression: [
+      "0 12 ? * 1 *", // Every Monday at 12:00pm UTC (5:00am PST)
+    ],
+    url: `http://${props.apiAddress}/internal/quest/upload-roster/notifications`,
   });
 }
 
 function createQuestScheduledLambda(props: ScheduledLambdaConfig): Lambda {
   const config = getConfig();
-  const { stack, lambdaLayers, vpc, name, scheduleExpression, url } = props;
+  const { stack, lambdaLayers, vpc, name, scheduleExpression, url, alertSnsAction } = props;
 
   const lambda = createScheduledLambda({
     stack,
@@ -73,6 +91,7 @@ function createQuestScheduledLambda(props: ScheduledLambdaConfig): Lambda {
       TIMEOUT_MILLIS: String(httpTimeout.toMilliseconds()),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
     },
+    alertSnsAction,
   });
 
   return lambda;

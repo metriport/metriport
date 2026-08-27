@@ -3,6 +3,7 @@ import { buildDayjs } from "@metriport/shared/common/date";
 import { EhrSource } from "@metriport/shared/interface/external/ehr/source";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { getCxMappingOrFail } from "../../../../command/mapping/cx";
 import { getFacilityMapping, getFacilityMappingOrFail } from "../../../../command/mapping/facility";
 import { createPatient } from "../../../../command/medical/patient/create-patient";
 import { PatientWithIdentifiers } from "../../../../command/medical/patient/get-patient";
@@ -27,12 +28,16 @@ export async function handleMetriportSync({
   externalId,
 }: HandleMetriportSyncParams): Promise<PatientWithIdentifiers> {
   const state = demographics.address?.[0]?.state;
-  const facilityId = await getFacilityId({
-    cxId,
-    source,
-    practiceId,
-    state,
-  });
+  const [facilityId, defaultCohortId] = await Promise.all([
+    getFacilityId({
+      cxId,
+      source,
+      practiceId,
+      state,
+    }),
+    getDefaultCohortId({ source, practiceId }),
+  ]);
+  const cohortIds = defaultCohortId ? [defaultCohortId] : undefined;
   return await createPatient({
     patient: {
       cxId,
@@ -40,7 +45,19 @@ export async function handleMetriportSync({
       externalId,
       ...demographics,
     },
+    cohortIds,
   });
+}
+
+async function getDefaultCohortId({
+  source,
+  practiceId,
+}: {
+  source: EhrSource;
+  practiceId: string;
+}): Promise<string | undefined> {
+  const cxMapping = await getCxMappingOrFail({ source, externalId: practiceId });
+  return cxMapping.defaultCohortId ?? undefined;
 }
 
 async function getFacilityId({
@@ -70,7 +87,7 @@ async function getFacilityId({
   return facilityMapping.facilityId;
 }
 
-function createFacilityStateExternalId(practiceId: string, state: string): string {
+export function createFacilityStateExternalId(practiceId: string, state: string): string {
   return `${practiceId}-${state}`;
 }
 

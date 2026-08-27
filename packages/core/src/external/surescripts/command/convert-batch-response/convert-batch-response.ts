@@ -1,5 +1,13 @@
-import { SurescriptsConversionBundle, SurescriptsJob } from "../../types";
+import { z } from "zod";
+
+export const surescriptsBatchResponseSchema = z.object({
+  cxId: z.string(),
+  transmissionId: z.string(),
+  populationId: z.string(),
+});
+
+export type SurescriptsBatchResponse = z.infer<typeof surescriptsBatchResponseSchema>;
 
 export interface SurescriptsConvertBatchResponseHandler {
-  convertBatchResponse(job: SurescriptsJob): Promise<SurescriptsConversionBundle[]>;
+  convertBatchResponse(response: SurescriptsBatchResponse): Promise<void>;
 }

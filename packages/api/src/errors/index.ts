@@ -15,6 +15,8 @@ export function processAsyncError(msg: string, useMsgAsTitle = false) {
   return (error: unknown) => {
     if (Config.isDev()) log(`${msg}:`, error);
     else log(`${msg}: ${getErrorMessage(error)}`);
-    capture.error(useMsgAsTitle ? msg : error, { extra: { message: msg, error } });
+    capture.error(useMsgAsTitle ? msg : error, {
+      extra: { message: msg, error: errorToString(error) },
+    });
   };
 }

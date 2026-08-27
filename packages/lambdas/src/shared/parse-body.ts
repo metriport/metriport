@@ -40,7 +40,7 @@ export function parseCxIdAndJob(bodyAsJson: any) {
   return { cxIdRaw, jobIdRaw };
 }
 
-export function parseBody<T>(schema: z.Schema<T>, body?: unknown): T {
+export function parseBody<T extends z.ZodTypeAny>(schema: T, body?: unknown): z.infer<T> {
   if (!body) throw new MetriportError(`Missing message body`);
 
   const bodyString = typeof body === "string" ? (body as string) : undefined;

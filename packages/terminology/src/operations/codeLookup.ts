@@ -8,6 +8,7 @@ import {
   Parameters,
 } from "@medplum/fhirtypes";
 import { getTermServerClient } from "../init-term-server";
+import { out } from "../log";
 import { normalizeNdcCode } from "../util";
 import { codeLookupOperationDefinition } from "./definitions/codeLookupOperation";
 import { ndcCodeSystem } from "./definitions/codeSystem";
@@ -97,7 +98,6 @@ export async function bulkCodeSystemLookupHandler(request: FhirRequest): Promise
   const inputParams = request.body as Parameters[];
   const params = parseBulkInputParameters(operation, inputParams);
 
-  const startedAt = Date.now();
   const results = await Promise.allSettled(
     params.map(async param => {
       if (!param.system) {
@@ -128,9 +128,6 @@ export async function bulkCodeSystemLookupHandler(request: FhirRequest): Promise
     })
   );
 
-  const duration = Date.now() - startedAt;
-  console.log(`Done code lookup. Duration: ${duration} ms`);
-
   const successful = results
     .filter((result): result is PromiseFulfilledResult<CodeSystemLookupOutput> => {
       return result.status === "fulfilled" && !("resourceType" in result.value);
@@ -147,6 +144,7 @@ export async function lookupPartialCoding(
   codeSystem: CodeSystem,
   coding: Coding
 ): Promise<CodeSystemLookupOutput[] | FhirResponse> {
+  const { log } = out("lookupPartialCoding");
   const { code, system } = coding;
   if (!code || !system) return [notFound];
 
@@ -176,7 +174,7 @@ export async function lookupPartialCoding(
   const result = await dbClient.select(query, params);
 
   if (result.length === 0) {
-    console.log(`No codes found: system=${codeSystem.url}, partial code=${coding.code}`);
+    log(`No codes found: system=${codeSystem.url}, partial code=${coding.code}`);
     return [notFound];
   }
 

@@ -157,6 +157,68 @@ async function createOutboundRateLimitTable(ddb: AWS.DynamoDB): Promise<void> {
   await ddb.createTable(params).promise();
 }
 
+async function createPatientStateTable(ddb: AWS.DynamoDB): Promise<void> {
+  if (!docTableNames.ehexPatientState) return;
+  const doesTableExist = await tableExists(docTableNames.ehexPatientState, ddb);
+  if (doesTableExist) return;
+
+  const params: AWS.DynamoDB.CreateTableInput = {
+    AttributeDefinitions: [
+      {
+        AttributeName: "PK",
+        AttributeType: "S",
+      },
+      {
+        AttributeName: "SK",
+        AttributeType: "S",
+      },
+    ],
+    KeySchema: [
+      {
+        AttributeName: "PK",
+        KeyType: "HASH",
+      },
+      {
+        AttributeName: "SK",
+        KeyType: "RANGE",
+      },
+    ],
+    // TODO: 1665 - Double check these values are correct. It's suspicious that these are numbers of reads and writes per second
+    ProvisionedThroughput: {
+      ReadCapacityUnits: 1,
+      WriteCapacityUnits: 1,
+    },
+    TableName: docTableNames.ehexPatientState,
+  };
+  await ddb.createTable(params).promise();
+}
+
+async function createDocIdToFilepathMappingTable(ddb: AWS.DynamoDB): Promise<void> {
+  const doesTableExist = await tableExists(docTableNames.docIdToFilepathMapping, ddb);
+  if (doesTableExist) return;
+
+  const params: AWS.DynamoDB.CreateTableInput = {
+    AttributeDefinitions: [
+      {
+        AttributeName: "docId",
+        AttributeType: "S",
+      },
+    ],
+    KeySchema: [
+      {
+        AttributeName: "docId",
+        KeyType: "HASH",
+      },
+    ],
+    ProvisionedThroughput: {
+      ReadCapacityUnits: 1,
+      WriteCapacityUnits: 1,
+    },
+    TableName: docTableNames.docIdToFilepathMapping,
+  };
+  await ddb.createTable(params).promise();
+}
+
 export async function initDDBDev(): Promise<AWS.DynamoDB.DocumentClient> {
   const doc = new AWS.DynamoDB.DocumentClient({
     apiVersion: "2012-08-10",
@@ -170,6 +232,8 @@ export async function initDDBDev(): Promise<AWS.DynamoDB.DocumentClient> {
   await createRateLimitTable(ddb);
   await createFeatureFlagsTable(ddb);
   await createOutboundRateLimitTable(ddb);
+  await createPatientStateTable(ddb);
+  await createDocIdToFilepathMappingTable(ddb);
   return doc;
 }
 

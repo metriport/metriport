@@ -1,15 +1,23 @@
 import { Hl7Message } from "@medplum/core";
 import { Bundle, CodeableConcept, Period, Resource } from "@medplum/fhirtypes";
-import { executeWithNetworkRetries, MetriportError } from "@metriport/shared";
+import {
+  BAMBOO_HIE_NAME,
+  errorToString,
+  executeWithNetworkRetries,
+  KONZA_HIE_NAME,
+  MetriportError,
+} from "@metriport/shared";
 import { basicToExtendedIso8601 } from "@metriport/shared/common/date";
 import { DischargeData } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import { TcmEncounterUpsertInput } from "@metriport/shared/domain/tcm-encounter";
+import { ExternalEventData } from "@metriport/shared/interface/external/ehr/canvas/external-event";
 import axios from "axios";
 import dayjs from "dayjs";
 import { analytics, EventTypes } from "../../external/analytics/posthog";
-import { reportAdvancedMetrics } from "../../external/aws/cloudwatch";
+import { reportAdvancedMetrics, Service } from "../../external/aws/cloudwatch";
 import { S3Utils } from "../../external/aws/s3";
 import { getSecretValueOrFail } from "../../external/aws/secret-manager";
+import { isCanvasSupportedAdtEvent } from "../../external/ehr/canvas/shared";
 import {
   mergeBundleIntoAdtSourcedEncounter,
   saveAdtConversionBundle,
@@ -18,6 +26,10 @@ import { toFHIR as toFhirPatient } from "../../external/fhir/patient/conversion"
 import { getHieConfigDictionary } from "../../external/hl7-notification/hie-config-dictionary";
 import { capture, out } from "../../util";
 import { Config } from "../../util/config";
+import {
+  isAdtsDataVisibleFeatureFlagEnabledForCx,
+  isSendAdtToCanvasFeatureFlagEnabledForCx,
+} from "../feature-flags/domain-ffs";
 import { convertHl7v2MessageToFhir } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion";
 import { getEncounterClass } from "../hl7v2-subscriptions/hl7v2-to-fhir-conversion/adt/encounter";
 import {
@@ -49,15 +61,29 @@ import {
 
 type HieConfig = { timezone: string };
 
+type SendAdtToCanvasParams = {
+  cxId: string;
+  patientId: string;
+  encounterId: string;
+  messageControlId: string;
+  triggerEvent: SupportedTriggerEvent;
+  encounterPeriod: Period | undefined;
+  messageReceivedTimestamp: string;
+  hieName: string;
+  facilityName: string | undefined;
+  rawMessage: string;
+  log: typeof console.log;
+};
+
 function getTimezoneFromHieName(
   hieName: string,
   hl7Message: Hl7Message,
   log: typeof console.log
 ): string {
-  if (hieName === "Bamboo") {
+  if (hieName === BAMBOO_HIE_NAME) {
     log("HIE is Bamboo, getting timezone based off state in the custom ZFA segment");
     return getBambooTimezone(hl7Message);
-  } else if (hieName === "Konza") {
+  } else if (hieName === KONZA_HIE_NAME) {
     log("HIE is Konza, getting timezone based off state in PV1.39");
     return getKonzaTimezone(hl7Message);
   } else {
@@ -107,7 +133,9 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
   async execute(params: Hl7NotificationSenderParams): Promise<void> {
     const s3Utils = new S3Utils(Config.getAWSRegion());
     const bucketName = Config.getHl7IncomingMessageBucketName();
-    const { log } = out(`${this.context}, cx: ${params.cxId}, pt: ${params.patientId}`);
+    const { log } = out(
+      `${this.context}, cx: ${params.cxId}, pt: ${params.patientId}, hie: ${params.hieName}`
+    );
 
     const hl7Message = Hl7Message.parse(params.message);
     let parsedData: ParsedHl7Data;
@@ -175,6 +203,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
       facilityName,
       encounterClass,
       encounterPeriod,
+      isSendWebhook: params.isSendWebhook,
     });
 
     const internalHl7RouteUrl = `${this.apiUrl}/${INTERNAL_PATIENT_ENDPOINT}/${patientId}/${INTERNAL_HL7_ENDPOINT}`;
@@ -199,21 +228,6 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
 
     const clinicalInformation = this.extractClinicalInformation(newEncounterData);
 
-    log(`Writing TCM encounter to DB...`);
-    await this.persistTcmEncounter(
-      {
-        id: encounterId,
-        cxId,
-        patientId,
-        class: encounterClass.display,
-        facilityName: facilityName,
-        admitTime: encounterPeriod?.start,
-        dischargeTime: encounterPeriod?.end,
-        clinicalInformation,
-      },
-      triggerEvent
-    );
-
     log(`Updating encounter bundle in S3...`);
     const [, result] = await Promise.all([
       saveAdtConversionBundle({
@@ -235,6 +249,28 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
         newEncounterData,
       }),
     ]);
+
+    // Putting it so late into the function so that we can still process the data and do data quality checks before showing the CX.
+    const isCxAllowedToSeeData = await isAdtsDataVisibleFeatureFlagEnabledForCx(cxId);
+    if (!isCxAllowedToSeeData) {
+      log(`CX ${cxId} is not allowed to see data. Stopping data processing...`);
+      return;
+    }
+
+    log(`Writing TCM encounter to DB...`);
+    await this.persistTcmEncounter(
+      {
+        id: encounterId,
+        cxId,
+        patientId,
+        class: encounterClass.display,
+        facilityName: facilityName,
+        admitTime: encounterPeriod?.start,
+        dischargeTime: encounterPeriod?.end,
+        clinicalInformation,
+      },
+      triggerEvent
+    );
 
     await this.createDischargeRequeryJob(
       cxId,
@@ -263,12 +299,27 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
             ...(encounterPeriod?.start ? { admitTimestamp: encounterPeriod.start } : undefined),
             ...(encounterPeriod?.end ? { dischargeTimestamp: encounterPeriod.end } : undefined),
             whenSourceSent: params.messageReceivedTimestamp,
+            isSendWebhook: params.isSendWebhook,
           },
         })
     );
 
     log(`Calling refresh consolidated callback endpoint in API...`);
     await this.refreshConsolidated(triggerEvent, cxId, patientId);
+
+    await this.sendAdtToCanvas({
+      cxId,
+      patientId,
+      encounterId,
+      messageControlId: getMessageUniqueIdentifier(message),
+      triggerEvent,
+      encounterPeriod,
+      messageReceivedTimestamp: params.messageReceivedTimestamp,
+      hieName: params.hieName,
+      facilityName,
+      rawMessage: params.message,
+      log,
+    });
 
     log(`Done. API notified...`);
   }
@@ -409,7 +460,7 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
     try {
       await Promise.all([
         reportAdvancedMetrics({
-          service: "Hl7NotificationWebhookSender",
+          service: Service.Hl7NotificationWebhookSender,
           metrics: [
             {
               name: "HL7.Notification.ByCustomer",
@@ -463,6 +514,45 @@ export class Hl7NotificationWebhookSenderDirect implements Hl7NotificationWebhoo
           extra: { cxId, patientId, messageCode, triggerEvent, hieName, error },
         }
       );
+    }
+  }
+
+  private async sendAdtToCanvas(params: SendAdtToCanvasParams): Promise<void> {
+    const {
+      cxId,
+      patientId,
+      encounterId,
+      messageControlId,
+      triggerEvent,
+      encounterPeriod,
+      messageReceivedTimestamp,
+      hieName,
+      facilityName,
+      rawMessage,
+      log,
+    } = params;
+    try {
+      if (!(await isSendAdtToCanvasFeatureFlagEnabledForCx(cxId))) return;
+      const eventType = triggerEvent.startsWith("ADT^") ? triggerEvent : `ADT^${triggerEvent}`;
+      if (!isCanvasSupportedAdtEvent(eventType)) return;
+      const canvasAdtUrl = `${this.apiUrl}/internal/ehr/canvas/patient/adt`;
+      const eventDatetime = triggerEvent === "A01" ? encounterPeriod?.start : encounterPeriod?.end;
+      log(`Sending ADT to Canvas, cx: ${cxId}, pt: ${patientId}, event: ${eventType}`);
+      const body: ExternalEventData = {
+        visitIdentifier: encounterId,
+        messageControlId,
+        eventType,
+        eventDatetime,
+        messageDatetime: messageReceivedTimestamp,
+        informationSource: hieName,
+        facilityName,
+        rawMessage,
+      };
+      await executeWithNetworkRetries(async () =>
+        axios.post(canvasAdtUrl, body, { params: { cxId, patientId } })
+      );
+    } catch (err) {
+      log(`Failed to send ADT to Canvas: ${errorToString(err)}`);
     }
   }
 }

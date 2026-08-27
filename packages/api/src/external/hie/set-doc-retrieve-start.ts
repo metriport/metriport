@@ -1,4 +1,4 @@
-import { PatientExternalData } from "@metriport/core/domain//patient";
+import { PatientExternalData } from "@metriport/core/domain/patient";
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";

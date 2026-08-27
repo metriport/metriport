@@ -1,87 +1,78 @@
+import {
+  CohortWithSize,
+  CohortWithSizeResponseWithoutOverrides,
+  cohortPatientMaxPageSize,
+  responseDtoFromCohort,
+} from "@metriport/shared/domain/cohort";
+import { allOrSubsetPatientIdsSchema } from "@metriport/shared/domain/patient-or-all";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { createCohort } from "../../command/medical/cohort/create-cohort";
 import { deleteCohort } from "../../command/medical/cohort/delete-cohort";
+import { getCohortWithSize, listCohortsWithSizes } from "../../command/medical/cohort/get-cohort";
 import {
-  CohortWithCount,
-  getCohorts,
-  getCohortWithCountOrFail,
-} from "../../command/medical/cohort/get-cohort";
-import { bulkAssignPatientsToCohort } from "../../command/medical/cohort/patient-cohort/bulk-assign";
-import { bulkRemovePatientsFromCohort } from "../../command/medical/cohort/patient-cohort/bulk-remove";
+  addAllPatientsToCohort,
+  addPatientsToCohort,
+} from "../../command/medical/cohort/patient-cohort/add-patients-to-cohort";
+import { getCohortSize } from "../../command/medical/cohort/patient-cohort/get-cohort-size";
+import { getPatientsInCohort } from "../../command/medical/cohort/patient-cohort/get-patients-in-cohort";
+import {
+  removeAllPatientsFromCohort,
+  removePatientsFromCohort,
+} from "../../command/medical/cohort/patient-cohort/remove-patients-from-cohort";
 import { updateCohort } from "../../command/medical/cohort/update-cohort";
 import { getETag } from "../../shared/http";
 import { handleParams } from "../helpers/handle-params";
 import { requestLogger } from "../helpers/request-logger";
+import { paginatedV2 } from "../pagination-v2";
 import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
-import {
-  CohortWithCountDTO,
-  CohortWithPatientIdsAndCountDTO,
-  dtoFromCohort,
-} from "./dtos/cohortDTO";
-import { cohortCreateSchema, cohortUpdateSchema } from "./schemas/cohort";
-import { allOrSelectPatientIdsSchema } from "./schemas/shared";
+import { asyncHandler, getCxIdOrFail } from "../util";
+import { cohortPatientListQuerySchema, cohortUpdateSchemaWithoutSettings } from "./schemas/cohort";
 
 const router = Router();
 
-/** ---------------------------------------------------------------------------
- * POST /cohort
- *
- * Creates a new cohort.
- *
- * @param req.body The data to create the cohort.
- * @returns The newly created cohort.
- */
-router.post(
-  "/",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getCxIdOrFail(req);
-    const data = cohortCreateSchema.parse(req.body);
+export function applyCohortResponseDtoToPayload(
+  data: CohortWithSize
+): CohortWithSizeResponseWithoutOverrides {
+  const { size, ...cohort } = data;
+  const cohortResponse = responseDtoFromCohort(cohort);
+  return { ...cohortResponse, size };
+}
 
-    const cohort = await createCohort({
-      cxId,
-      ...data,
-    });
-
-    return res.status(status.CREATED).json(dtoFromCohort(cohort));
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * PUT /cohort/:id
+/**
+ * PATCH /cohort/:id
  *
- * Updates the settings of an existing cohort.
+ * Updates basic fields of an existing cohort (name, description, etc.).
+ * This endpoint does NOT allow updating cohort settings.
+ * Please contact us if you need to update cohort settings.
  *
- * @param req.body The data to update the cohort.
+ * @param req.param.id The ID of the cohort to update.
+ * @param req.body The partial cohort fields to update (excluding settings).
  * @returns The updated cohort.
  */
-router.put(
+router.patch(
   "/:id",
   handleParams,
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const id = getFromParamsOrFail("id", req);
-    const data = cohortUpdateSchema.parse(req.body);
-
-    const cohort = await updateCohort({
+    const id = getUUIDFrom("params", req, "id").orFail();
+    const data = cohortUpdateSchemaWithoutSettings.parse(req.body);
+    const cohortWithSize = await updateCohort({
       ...getETag(req),
-      id,
-      cxId,
       ...data,
+      cxId,
+      id,
     });
 
-    return res.status(status.OK).json(dtoFromCohort(cohort));
+    return res.status(status.OK).json(applyCohortResponseDtoToPayload(cohortWithSize));
   })
 );
 
 /** ---------------------------------------------------------------------------
  * DELETE /cohort/:id
  *
- * Deletes a cohort. All associated patients must be unassigned first.
+ * Deletes a cohort. All associated patients must be removed first.
  *
  * @param req.param.id The ID of the cohort to delete.
  * @returns 204 No Content
@@ -92,10 +83,10 @@ router.delete(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const id = getFromParamsOrFail("id", req);
+    const id = getUUIDFrom("params", req, "id").orFail();
 
     await deleteCohort({
-      id,
+      cohortId: id,
       cxId,
     });
 
@@ -116,17 +107,10 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
 
-    const cohortsWithCounts = await getCohorts({ cxId });
-
-    const buildCohortWithCountDTO = (cohortWithCount: CohortWithCount): CohortWithCountDTO => {
-      return {
-        cohort: dtoFromCohort(cohortWithCount.cohort),
-        patientCount: cohortWithCount.count,
-      };
-    };
+    const cohortsWithSizes = await listCohortsWithSizes({ cxId });
 
     return res.status(status.OK).json({
-      cohorts: cohortsWithCounts.map(buildCohortWithCountDTO),
+      cohorts: cohortsWithSizes.map(applyCohortResponseDtoToPayload),
     });
   })
 );
@@ -134,10 +118,10 @@ router.get(
 /** ---------------------------------------------------------------------------
  * GET /cohort/:id
  *
- * Returns cohort details, count and IDs of the patients assigned to it.
+ * Returns cohort with additional details and the count of patients assigned to it.
  *
  * @param req.param.id The ID of the cohort to get.
- * @returns Cohort details, count and IDs of the patients assigned to it.
+ * @returns Cohort with additional details and the count of patients assigned to it.
  */
 router.get(
   "/:id",
@@ -145,30 +129,74 @@ router.get(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const id = getFromParamsOrFail("id", req);
+    const id = getUUIDFrom("params", req, "id").orFail();
+    const cohortWithSize = await getCohortWithSize({ cohortId: id, cxId });
 
-    const cohortDetails = await getCohortWithCountOrFail({ id, cxId });
+    return res.status(status.OK).json(applyCohortResponseDtoToPayload(cohortWithSize));
+  })
+);
 
-    const cohortWithPatientIdsAndCountDTO: CohortWithPatientIdsAndCountDTO = {
-      cohort: dtoFromCohort(cohortDetails.cohort),
-      patientCount: cohortDetails.count,
-      patientIds: cohortDetails.patientIds,
-    };
+/** ---------------------------------------------------------------------------
+ * GET /cohort/:id/patient
+ *
+ * Returns patients assigned to a cohort with pagination support.
+ *
+ * @param req.param.id The ID of the cohort to get patients from.
+ * @param req.query.fromItem Optional pagination parameter to start from a specific item.
+ * @param req.query.toItem Optional pagination parameter to end at a specific item.
+ * @param req.query.count Optional number of items per page (max 100).
+ * @param req.query.sort Optional sort parameter (e.g., "id=asc,createdAt=desc").
+ * @returns A paginated list of patients in the cohort.
+ */
+router.get(
+  "/:id/patient",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const cohortId = getUUIDFrom("params", req, "id").orFail();
 
-    return res.status(status.OK).json(cohortWithPatientIdsAndCountDTO);
+    cohortPatientListQuerySchema.parse(req.query);
+
+    const result = await paginatedV2({
+      request: req,
+      additionalQueryParams: undefined,
+      getItems: async pagination => {
+        const patients = await getPatientsInCohort({
+          cohortId,
+          cxId,
+          pagination,
+        });
+        return patients.map(p => ({
+          ...p,
+        }));
+      },
+      getTotalCount: () => getCohortSize({ cohortId, cxId }),
+      allowedSortColumns: {
+        id: { table: "patient", column: "id", type: "regular" },
+        createdAt: { table: "patient", column: "created_at", type: "regular" },
+        updatedAt: { table: "patient", column: "updated_at", type: "regular" },
+      },
+      maxItemsPerPage: cohortPatientMaxPageSize,
+    });
+
+    return res.status(status.OK).json({
+      meta: result.meta,
+      patients: result.items,
+    });
   })
 );
 
 /** ---------------------------------------------------------------------------
  * POST /cohort/:id/patient
  *
- * Bulk assign multiple patients to a cohort.
+ * Adds patients to a cohort. If the allPatients flag is true, all patients will be added to the cohort. Returns the cohort.
  *
  * @param req.param.id The ID of the cohort to assign patients to.
- * @param req.body.patientIds The list of patient IDs to assign. Mutually exclusive with the all flag.
- * @param req.body.all Flag to confirm we want to assign all patients to the cohort. Mutually exclusive with the patientIds list.
+ * @param req.body.patientIds The list of patient IDs to assign. Mutually exclusive with the allPatients flag.
+ * @param req.body.allPatients Flag to confirm we want to assign all patients to the cohort. Mutually exclusive with the patientIds list.
  *
- * @returns Cohort details with the updated patient IDs and count.
+ * @returns Cohort with the updated patient count.
  */
 router.post(
   "/:id/patient",
@@ -177,33 +205,41 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const cohortId = getUUIDFrom("params", req, "id").orFail();
-    const { patientIds, all: isAssignAll } = allOrSelectPatientIdsSchema.parse(req.body);
+    const body = allOrSubsetPatientIdsSchema.parse(req.body);
 
-    const cohortDetails = await bulkAssignPatientsToCohort({
+    if ("allPatients" in body) {
+      await addAllPatientsToCohort({
+        cohortId,
+        cxId,
+      });
+    } else {
+      await addPatientsToCohort({
+        cohortId,
+        cxId,
+        patientIds: body.patientIds,
+      });
+    }
+
+    const cohortWithSize = await getCohortWithSize({
       cohortId,
       cxId,
-      patientIds,
-      isAssignAll,
     });
 
-    const cohortWithPatientIdsAndCountDTO: CohortWithPatientIdsAndCountDTO = {
-      cohort: dtoFromCohort(cohortDetails.cohort),
-      patientCount: cohortDetails.count,
-      patientIds: cohortDetails.patientIds,
-    };
-
-    return res.status(status.CREATED).json(cohortWithPatientIdsAndCountDTO);
+    return res.status(status.CREATED).json({
+      message: "Patient(s) added to cohort",
+      cohort: applyCohortResponseDtoToPayload(cohortWithSize),
+    });
   })
 );
 
 /** ---------------------------------------------------------------------------
  * DELETE /cohort/:id/patient
  *
- * Bulk remove patients from a cohort.
+ * Remove patients from a cohort.
  *
  * @param req.param.id The ID of the cohort to remove patients from.
- * @param req.body.patientIds The list of patient IDs to remove. Mutually exclusive with the all flag.
- * @param req.body.all Flag to confirm we want to remove all patients from the cohort. Mutually exclusive with the patientIds list.
+ * @param req.body.patientIds The list of patient IDs to remove. Mutually exclusive with the allPatients flag.
+ * @param req.body.allPatients Flag to confirm we want to remove all patients from the cohort. Mutually exclusive with the patientIds list.
  * @returns 204 No Content
  */
 router.delete(
@@ -213,18 +249,30 @@ router.delete(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const cohortId = getUUIDFrom("params", req, "id").orFail();
-    const { patientIds, all: isRemoveAll } = allOrSelectPatientIdsSchema.parse(req.body);
+    const body = allOrSubsetPatientIdsSchema.parse(req.body);
 
-    const unassignedCount = await bulkRemovePatientsFromCohort({
+    if ("allPatients" in body) {
+      await removeAllPatientsFromCohort({
+        cohortId,
+        cxId,
+      });
+    } else {
+      await removePatientsFromCohort({
+        cohortId,
+        cxId,
+        patientIds: body.patientIds,
+      });
+    }
+
+    const cohortWithSize = await getCohortWithSize({
       cohortId,
       cxId,
-      patientIds,
-      isRemoveAll,
     });
 
-    return res
-      .status(status.OK)
-      .json({ message: "Patient(s) unassigned from cohort", unassignedCount });
+    return res.status(status.OK).json({
+      message: "Patient(s) removed from cohort",
+      cohort: applyCohortResponseDtoToPayload(cohortWithSize),
+    });
   })
 );
 

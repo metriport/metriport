@@ -2,6 +2,8 @@ import { BadRequestError } from "@metriport/shared";
 import { Request } from "express";
 
 export const idRegex = "([a-zA-Z0-9\\_\\-\\.])+";
+export const strictUUIDpattern =
+  "^/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
 
 export type PathDetails = {
   pathRegex: RegExp;

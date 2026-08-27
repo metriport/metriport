@@ -1,0 +1,31 @@
+{
+  "patients": 51,
+  "total": 185642,
+  "countPerType": {
+    "CarePlan": 869,
+    "Communication": 492,
+    "Composition": 8576,
+    "Condition": 9340,
+    "Consent": 192,
+    "Coverage": 2828,
+    "DiagnosticReport": 38306,
+    "Encounter": 43859,
+    "FamilyMemberHistory": 218,
+    "Immunization": 772,
+    "Location": 1019,
+    "Medication": 2629,
+    "MedicationAdministration": 1946,
+    "MedicationRequest": 2324,
+    "MedicationStatement": 5228,
+    "Observation": 43287,
+    "Organization": 1563,
+    "Patient": 51,
+    "Practitioner": 5379,
+    "Procedure": 13576,
+    "RelatedPerson": 182,
+    "ServiceRequest": 579,
+    "AllergyIntolerance": 206,
+    "MedicationDispense": 19,
+    "Goal": 2202
+  }
+}

@@ -1,0 +1,25 @@
+---
+title: "Binary"
+description: "Schema documentation for the Binary table in the Metriport data model"
+group: "Schema"
+icon: "n/a"
+---
+
+The binary table contains binary data resources, such as AI-generated briefs or other document content stored as base64-encoded data.
+
+**Primary Keys:**
+
+* binary_id
+
+**Foreign Keys:**
+
+* patient_id - links to the [patient](/medical-api/handling-data/schema/patient) table
+
+| Column            | Data Type | Description                                      |
+| ----------------- | --------- | ------------------------------------------------ |
+| binary_id         | varchar   | Unique identifier for the binary resource        |
+| patient_id        | varchar   | Unique identifier for the patient                |
+| content_type      | varchar   | MIME type of the binary data (e.g., text/plain)  |
+| data              | varchar   | Base64-encoded binary data                       |
+| meta_source       | varchar   | Data source (e.g., metriport:ai-generated-brief) |
+| meta_last_updated | timestamp | Last update timestamp from FHIR meta             |

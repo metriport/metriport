@@ -10,8 +10,11 @@ export type FhirExtension = {
 };
 
 export type FhirConverterParams = {
+  cxId: string;
   patientId: string;
   fileName: string;
+  s3Key?: string;
+  s3Bucket?: string;
   unusedSegments: string | undefined;
   invalidAccess: string | undefined;
 };

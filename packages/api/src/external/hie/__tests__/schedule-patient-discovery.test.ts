@@ -1,13 +1,12 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
 import { ScheduledPatientDiscovery } from "@metriport/core/domain/patient-discovery";
+import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { PatientModel } from "../../../models/medical/patient";
 import { PatientMappingModel } from "../../../models/patient-mapping";
+import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { CQDirectoryEntryViewModel } from "../../carequality/models/cq-directory-view";
 import { PatientDataCommonwell } from "../../commonwell/patient/patient-shared";
-import { getCqOrgIdsToDenyOnCw } from "../cross-hie-ids";
 import { resetScheduledPatientDiscovery } from "../reset-scheduled-patient-discovery-request";
 import { schedulePatientDiscovery } from "../schedule-patient-discovery";
 
@@ -46,7 +45,6 @@ describe("update patient discovery schedule", () => {
     const newParams = {
       requestId: "new",
       facilityId: "new",
-      orgIdExcludeList: await getCqOrgIdsToDenyOnCw(),
       rerunPdOnNewDemographics: false,
       forceCommonwell: undefined,
       forceCarequality: undefined,
@@ -64,7 +62,6 @@ describe("update patient discovery schedule", () => {
     const newParams = {
       requestId: "new",
       facilityId: "new",
-      orgIdExcludeList: await getCqOrgIdsToDenyOnCw(),
       rerunPdOnNewDemographics: false,
       forceCommonwell: undefined,
       forceCarequality: undefined,
@@ -74,7 +71,6 @@ describe("update patient discovery schedule", () => {
       scheduledPdRequest: {
         requestId: "existing",
         facilityId: "existing",
-        orgIdExcludeList: await getCqOrgIdsToDenyOnCw(),
         rerunPdOnNewDemographics: true,
         forceCommonwell: false,
       },
@@ -111,7 +107,6 @@ describe("reset patient discovery schedule", () => {
       scheduledPdRequest: {
         requestId: "existing",
         facilityId: "existing",
-        orgIdExcludeList: await getCqOrgIdsToDenyOnCw(),
         rerunPdOnNewDemographics: true,
         forceCommonwell: false,
       },

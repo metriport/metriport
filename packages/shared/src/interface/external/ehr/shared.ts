@@ -64,6 +64,11 @@ export const writeBackFiltersPerResourceTypeSchema = z.object({
       disabled: z.boolean().optional(),
     })
     .optional(),
+  familyMemberHistory: z
+    .object({
+      disabled: z.boolean().optional(),
+    })
+    .optional(),
 });
 export type WriteBackFiltersPerResourceType = z.infer<typeof writeBackFiltersPerResourceTypeSchema>;
 
@@ -78,3 +83,8 @@ export const patientMappingSecondaryMappingsSchema = z.object({
   practiceId: z.string().optional(),
 });
 export type PatientMappingSecondaryMappings = z.infer<typeof patientMappingSecondaryMappingsSchema>;
+
+export const documentQueryWebhookFiltersSchema = z.object({
+  sendDocumentQueryWebhookEnabled: z.boolean().optional(),
+});
+export type DocumentQueryWebhookFilters = z.infer<typeof documentQueryWebhookFiltersSchema>;

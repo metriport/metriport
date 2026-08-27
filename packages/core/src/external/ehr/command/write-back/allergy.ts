@@ -2,6 +2,7 @@ import { AllergyIntolerance } from "@medplum/fhirtypes";
 import { BadRequestError, JwtTokenInfo } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { writeBackAllergy as writeBackAllergyAthena } from "../../athenahealth/command/write-back/allergy";
+import { writeBackAllergyHealthie } from "../../healthie/command/write-back/allergy";
 
 export type WriteBackAllergyRequest = {
   ehr: EhrSource;
@@ -27,9 +28,10 @@ const ehrWriteBackAllergyMap: WriteBackAllergyFnMap = {
   [EhrSources.canvas]: undefined,
   [EhrSources.athena]: writeBackAllergyAthena,
   [EhrSources.elation]: undefined,
-  [EhrSources.healthie]: undefined,
+  [EhrSources.healthie]: writeBackAllergyHealthie,
   [EhrSources.eclinicalworks]: undefined,
   [EhrSources.salesforce]: undefined,
+  [EhrSources.practicefusion]: undefined,
 };
 
 function getEhrWriteBackAllergyHandler(ehr: EhrSource): WriteBackAllergyFn {

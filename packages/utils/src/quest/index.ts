@@ -2,28 +2,22 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
+import { Config } from "@metriport/core/util/config";
 import { Command } from "commander";
-import { QuestSftpClient } from "@metriport/core/external/quest/client";
-import { buildSftpAction } from "../shared/sftp-action";
+import convertPatientResponse from "./convert-patient-response";
+import ingestAllResponses from "./ingest-all-responses";
+import sftpAction from "./sftp-action";
 import uploadRoster from "./upload-roster";
-import downloadResponse from "./download-response";
-import createSourceDocuments from "./create-source-documents";
-import fhirConvertAll from "./fhir-convert-all";
-import convertToCsv from "./convert-to-csv";
 
 /**
  * This is the main Quest CLI, which registers all Quest utility commands.
  */
 const program = new Command();
-const sftpAction = buildSftpAction(
-  new QuestSftpClient({
-    logLevel: "debug",
-  })
-);
+FeatureFlags.init(Config.getAWSRegion(), Config.getFeatureFlagsTableName());
+
 program.addCommand(sftpAction);
 program.addCommand(uploadRoster);
-program.addCommand(downloadResponse);
-program.addCommand(createSourceDocuments);
-program.addCommand(fhirConvertAll);
-program.addCommand(convertToCsv);
+program.addCommand(ingestAllResponses);
+program.addCommand(convertPatientResponse);
 program.parse();

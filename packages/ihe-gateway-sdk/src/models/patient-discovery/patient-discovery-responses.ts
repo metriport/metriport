@@ -91,3 +91,24 @@ export function isNonErroringOutboundPatientDiscoveryResponse(
 ): response is OutboundPatientDiscoveryResp {
   return response.patientMatch != null;
 }
+
+/** Safe context for logging/capture: no PHI (no patientResource, no patient identifiers). */
+export function toSafeCaptureContext(
+  response: OutboundPatientDiscoveryResp
+): Record<string, unknown> {
+  const { gateway, patientMatch } = response;
+  const gatewayHomeCommunityId =
+    "gatewayHomeCommunityId" in response ? response.gatewayHomeCommunityId : undefined;
+  return {
+    id: response.id,
+    requestChunkId: response.requestChunkId,
+    timestamp: response.timestamp,
+    responseTimestamp: response.responseTimestamp,
+    requestTimestamp: response.requestTimestamp,
+    duration: response.duration,
+    responseHttpStatusCode: response.responseHttpStatusCode,
+    patientMatch,
+    gatewayHomeCommunityId,
+    gateway: gateway ? { oid: gateway.oid, url: gateway.url, id: gateway.id } : undefined,
+  };
+}

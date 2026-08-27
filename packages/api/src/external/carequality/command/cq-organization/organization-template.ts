@@ -9,6 +9,7 @@ import {
 import { normalizeState } from "@metriport/shared/domain/address/state";
 import { CQOrgDetailsWithUrls } from "../../shared";
 import { metriportOid } from "./constants";
+import { DOA_EXTENSION_URL } from "@metriport/core/external/carequality/extension";
 
 export const transactionUrl =
   "https://sequoiaproject.org/fhir/sphd/StructureDefinition/Transaction";
@@ -51,7 +52,6 @@ async function getFhirOrganization(
     lat,
     lon,
     parentOrgOid,
-    oboName,
   } = orgDetails;
 
   const state = normalizeState(stateRaw);
@@ -132,6 +132,12 @@ async function getFhirOrganization(
           reference: `Organization/${metriportOid}`,
         },
       },
+      ...(orgDetails.delegateOids ?? []).map(delegateOid => ({
+        url: DOA_EXTENSION_URL,
+        valueReference: {
+          reference: `Organization/${delegateOid}`,
+        },
+      })),
     ],
     address: [
       {
@@ -184,7 +190,7 @@ async function getFhirOrganization(
       }),
     ],
     text: {
-      div: `<div xmlns="http://www.w3.org/1999/xhtml">${oboName ?? name}</div>`,
+      div: `<div xmlns="http://www.w3.org/1999/xhtml">${name}</div>`,
       status: "generated",
     },
   };

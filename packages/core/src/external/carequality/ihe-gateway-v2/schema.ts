@@ -88,6 +88,7 @@ export type Slot = z.infer<typeof slot>;
 const codeSchema = z.object({
   _code: z.string(),
   _displayName: z.string(),
+  _codeSystem: z.string().optional(),
 });
 export type Code = z.infer<typeof codeSchema>;
 
@@ -107,6 +108,12 @@ export type AttributeValue = z.infer<typeof AttributeSchema>;
 
 export const samlHeaderSchema = z.object({
   MessageID: textSchema,
+  // TODO Implement this - need to validate the inbound shape from CQ; add some logs for a while before building the zod schema
+  // From: z
+  //   .object({
+  //     Address: z.string().nullish(),
+  //   })
+  //   .nullish(),
   Security: z.object({
     Timestamp: z.object({
       Created: z.string(),

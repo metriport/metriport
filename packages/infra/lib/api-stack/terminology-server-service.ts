@@ -38,7 +38,7 @@ interface TerminologyServerNestedStackProps extends NestedStackProps {
   version: string | undefined;
   generalBucket: Bucket;
   vpc: ec2.IVpc;
-  alarmAction: SnsAction | undefined;
+  alertAction: SnsAction | undefined;
 }
 
 interface TermServerServiceProps {
@@ -61,7 +61,7 @@ export class TerminologyServerNestedStack extends NestedStack {
         generalBucket: props.generalBucket,
       },
       props.vpc,
-      props.alarmAction
+      props.alertAction
     );
 
     this.serviceAddress = address;
@@ -72,7 +72,7 @@ export function createTermServerService(
   stack: Construct,
   props: TermServerServiceProps,
   vpc: ec2.IVpc,
-  alarmAction: SnsAction | undefined
+  alertAction: SnsAction | undefined
 ): { service: FargateService; address: string } {
   const { cpu, memoryLimitMiB, taskCountMin, taskCountMax, maxExecutionTimeout } = settings();
 
@@ -106,6 +106,11 @@ export function createTermServerService(
       idleTimeout: maxExecutionTimeout,
     }
   );
+
+  // Enable Availability Zone rebalancing for the underlying ECS service
+  (fargateService.service.node.defaultChild as ecs.CfnService).availabilityZoneRebalancing =
+    "ENABLED";
+
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
 
   props.generalBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
@@ -124,8 +129,8 @@ export function createTermServerService(
       datapointsToAlarm: 2,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-  alarmAction && fargateCpuAlarm.addAlarmAction(alarmAction);
-  alarmAction && fargateCpuAlarm.addOkAction(alarmAction);
+  alertAction && fargateCpuAlarm.addAlarmAction(alertAction);
+  alertAction && fargateCpuAlarm.addOkAction(alertAction);
 
   const fargateMemoryAlarm = fargateService.service
     .metricMemoryUtilization()
@@ -135,8 +140,8 @@ export function createTermServerService(
       datapointsToAlarm: 2,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-  alarmAction && fargateMemoryAlarm.addAlarmAction(alarmAction);
-  alarmAction && fargateMemoryAlarm.addOkAction(alarmAction);
+  alertAction && fargateMemoryAlarm.addAlarmAction(alertAction);
+  alertAction && fargateMemoryAlarm.addOkAction(alertAction);
 
   fargateService.service.connections.allowFrom(
     ec2.Peer.ipv4(vpc.vpcCidrBlock),
@@ -173,7 +178,7 @@ export function createTermServerService(
     targetGroup,
     scope: stack,
     id: "TermServer",
-    alarmAction,
+    alertAction,
   });
 
   return { service: fargateService.service, address: serverAddress };

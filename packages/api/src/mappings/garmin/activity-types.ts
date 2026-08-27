@@ -8,7 +8,7 @@ export function activityTypeReadable(activityType: string): string {
   return capitalize(stringToUse).trim();
 }
 
-// see https://github.com/metriport/metriport-internal/issues/865 for context...
+// see for context...
 // these enums are current as of the Garmin API @ 1.0.3, and are out-of-date at the time of writing
 // this @ 1.0.5 - keeping for backwards compatibility
 export const activityTypeMapping: Record<string, string> = {

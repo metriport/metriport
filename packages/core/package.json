@@ -1,6 +1,6 @@
 {
   "name": "@metriport/core",
-  "version": "1.26.11",
+  "version": "1.30.1",
   "private": true,
   "description": "Metriport helps you access and manage health and medical data, through a single open source API. Common code shared across packages.",
   "author": "Metriport Inc. <contact@metriport.com>",
@@ -17,6 +17,7 @@
   "exports": {
     ".": "./dist/index.js",
     "./command": "./dist/command/index.js",
+    "./command/network-query": "./dist/command/network-query/index.js",
     "./command/*": "./dist/command/*.js",
     "./domain": "./dist/domain/index.js",
     "./domain/*": "./dist/domain/*.js",
@@ -33,7 +34,9 @@
     "./shareback": "./dist/shareback/index.js",
     "./shareback/*": "./dist/shareback/*.js",
     "./util": "./dist/util/index.js",
-    "./util/*": "./dist/util/*.js"
+    "./util/*": "./dist/util/*.js",
+    "./audit-log": "./dist/audit-log/index.js",
+    "./audit-log/*": "./dist/audit-log/*.js"
   },
   "typesVersions": {
     "*": {
@@ -42,6 +45,9 @@
       ],
       "command": [
         "dist/command/index.d.ts"
+      ],
+      "command/network-query": [
+        "dist/command/network-query/index.d.ts"
       ],
       "command/*": [
         "dist/command/*"
@@ -93,6 +99,12 @@
       ],
       "util/*": [
         "dist/util/*"
+      ],
+      "audit-log": [
+        "dist/audit-log/index.d.ts"
+      ],
+      "audit-log/*": [
+        "dist/audit-log/*"
       ]
     }
   },
@@ -145,6 +157,7 @@
     "csv-stringify": "^6.5.2",
     "dayjs": "^1.11.9",
     "express-rate-limit": "^7.4.1",
+    "fast-xml-parser": "^4.4.1",
     "formidable": "^3.5.1",
     "groq-sdk": "^0.33.0",
     "http-status": "~1.7.0",
@@ -158,6 +171,7 @@
     "nanoid": "^3.3.6",
     "openpgp": "^5.10.1",
     "pg": "^8.11.3",
+    "pg-copy-streams": "^7.0.0",
     "pkijs": "^3.0.16",
     "playwright": "1.39.0",
     "posthog-node": "^4.0.1",
@@ -166,6 +180,7 @@
     "sequelize": "^6.37.1",
     "snowflake-sdk": "^2.2.0",
     "ssh2-sftp-client": "^9.0.4",
+    "uuid": "^9.0.0",
     "whatwg-mimetype": "^4.0.0",
     "xml-crypto": "^6.0.1",
     "xml2js": "^0.6.2",
@@ -180,8 +195,10 @@
     "@types/ini": "^4.1.1",
     "@types/jest": "29.5.3",
     "@types/json-stringify-safe": "^5.0.0",
+    "@types/pg-copy-streams": "^1.2.5",
     "@types/snowflake-sdk": "^1.6.24",
     "@types/ssh2-sftp-client": "^9.0.4",
+    "@types/uuid": "^9.0.2",
     "@types/whatwg-mimetype": "^3.0.2",
     "@types/xml2js": "^0.4.14",
     "@types/xmldom": "^0.1.32",

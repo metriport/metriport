@@ -8,6 +8,7 @@ import { MetriportCompositeStack } from "../shared/metriport-composite-stack";
 import { HL7_NOTIFICATION_VPC_CIDR } from "./constants";
 import { MllpStack } from "./mllp";
 import { NetworkStack } from "./network";
+import { createBucket } from "../shared/bucket";
 
 export interface Hl7NotificationStackProps extends cdk.StackProps {
   config: EnvConfigNonSandbox;
@@ -20,18 +21,20 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
   constructor(scope: Construct, id: string, props: Hl7NotificationStackProps) {
     super(scope, id, props);
 
-    const rawHl7MessageBucket = new s3.Bucket(this, "RawHl7MessageBucket", {
-      bucketName: props.config.hl7Notification.rawIncomingMessageBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-      cors: [
-        {
-          allowedOrigins: ["*"],
-          allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
-        },
-      ],
-    });
+    const rawHl7MessageBucket = createBucket(
+      this,
+      {
+        bucketName: props.config.hl7Notification.rawIncomingMessageBucketName,
+        versioned: true,
+        cors: [
+          {
+            allowedOrigins: ["*"],
+            allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
+          },
+        ],
+      },
+      "RawHl7MessageBucket"
+    );
 
     const ecrRepo = new Repository(this, "MllpServerRepo", {
       repositoryName: "metriport/mllp-server",
@@ -62,6 +65,46 @@ export class Hl7NotificationStack extends MetriportCompositeStack {
       service: ec2.InterfaceVpcEndpointAwsService.SQS,
       privateDnsEnabled: true,
     });
+    vpc.addGatewayEndpoint("S3Endpoint", {
+      service: ec2.GatewayVpcEndpointAwsService.S3,
+    });
+    new ec2.InterfaceVpcEndpoint(this, "EcrApiEndpoint", {
+      vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.ECR,
+      privateDnsEnabled: true,
+    });
+    new ec2.InterfaceVpcEndpoint(this, "EcrDockerEndpoint", {
+      vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.ECR_DOCKER,
+      privateDnsEnabled: true,
+    });
+    new ec2.InterfaceVpcEndpoint(this, "CloudWatchLogsEndpoint", {
+      vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH_LOGS,
+      privateDnsEnabled: true,
+    });
+    new ec2.InterfaceVpcEndpoint(this, "SecretsManagerEndpoint", {
+      vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
+      privateDnsEnabled: true,
+    });
+    // TODO ENG-1926: Add or remove these, ECS endpoints are NOT enabled yet - validate with VPC
+    // Flow Logs that ECS traffic exceeds 480 GB/month before adding (~$648/month cost).
+    // new ec2.InterfaceVpcEndpoint(this, "EcsEndpoint", {
+    //   vpc: this.vpc,
+    //   service: ec2.InterfaceVpcEndpointAwsService.ECS,
+    //   privateDnsEnabled: true,
+    // });
+    // new ec2.InterfaceVpcEndpoint(this, "EcsAgentEndpoint", {
+    //   vpc: this.vpc,
+    //   service: ec2.InterfaceVpcEndpointAwsService.ECS_AGENT,
+    //   privateDnsEnabled: true,
+    // });
+    // new ec2.InterfaceVpcEndpoint(this, "EcsTelemetryEndpoint", {
+    //   vpc: this.vpc,
+    //   service: ec2.InterfaceVpcEndpointAwsService.ECS_TELEMETRY,
+    //   privateDnsEnabled: true,
+    // });
 
     new MllpStack(this, "NestedMllpStack", {
       stackName: "NestedMllpStack",

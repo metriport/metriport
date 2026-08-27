@@ -1,18 +1,18 @@
 ---
-title: "Realtime Patient Notifications"
-icon: "person"
+title: "Real-time Patient Notifications"
+icon: "ocdIndent"
 description: "Monitor your patient's journey through health systems in real-time"
 ---
 
 # Overview
 
-Metriport's **Realtime Patient Notifications** are your way to receive realtime updates on a patient's journey through a health system. You can trigger a workflow once a patient is admitted to a health system, check their diagnosis within moments of them being discharged, and so much more.
+Metriport's **Real-time Patient Notifications** are your way to receive real-time updates on a patient's journey through a health system. You can trigger a workflow once a patient is admitted to a health system, check their diagnosis within moments of them being discharged, and so much more.
 
-## Working with Realtime Patient Notifications
+## Working with Real-time Patient Notifications
 
 ### Webhook schema [(Event Reference)](#event-reference)
 
-Each realtime notification we send via webhook has a payload that includes key information about the event, and a url field to JSON containing robust clinical data for the encounter.
+Each real-time notification we send via webhook has a payload that includes key information about the event, and a url field to a [Patient Encounter Bundle](/medical-api/handling-data/patient-encounter-bundle) containing robust clinical data for the encounter.
 
 ```json
 {
@@ -34,7 +34,7 @@ Each realtime notification we send via webhook has a payload that includes key i
 }
 ```
 
-If you want to access the clinical data, you need only download the json from the url. To work with the data, we recommend you understand [The Encounter Model](#the-encounter-model) below.
+If you want to access the clinical data, you need only download the [Patient Encounter Bundle](/medical-api/handling-data/patient-encounter-bundle) from the url. To work with the data, we recommend you understand [The Encounter Model](#the-encounter-model) below.
 
 <Info>
   The URL remains valid and available for download for 600
@@ -43,7 +43,7 @@ If you want to access the clinical data, you need only download the json from th
 
 ### The Encounter Model
 
-For each patient you intend to receive realtime notifications for, Metriport maintains the real-time state of their journey through the health system.
+For each patient you intend to receive real-time notifications for, Metriport maintains the real-time state of their journey through the health system.
 Each of these patient journeys is represented via FHIR data - a FHIR [Encounter](https://hl7.org/fhir/R4/encounter.html).
 
 ```json
@@ -74,7 +74,7 @@ Each of these patient journeys is represented via FHIR data - a FHIR [Encounter]
 
 But FHIR data relies on references to function. An Encounter might reference a subject, a practitioner, or a location - as the example above does (see the `reference` field in location.). Each root unit of data in FHIR is called a 'Resource' and each of type of resource has its own corresponding schema. It's common for resources to include references to one another.
 
-To provide comprehensive data about the Encounter, we serve a FHIR [Bundle](https://hl7.org/fhir/R4/bundle.html) via the `url` in the patient notification.
+To provide comprehensive data about the Encounter, we serve a [Patient Encounter Bundle](/medical-api/handling-data/patient-encounter-bundle) (a FHIR [Bundle](https://hl7.org/fhir/R4/bundle.html)) via the `url` in the patient notification.
 
 ```json
 {
@@ -83,6 +83,7 @@ To provide comprehensive data about the Encounter, we serve a FHIR [Bundle](http
     "timestamp": "2020-05-08T13:10:15Z",
     "id": "message-uuid",
     "entry": [
+      { /* the FHIR Patient */ },
       { /* a FHIR Encounter */ },
       // Other resources that are directly or transitively referenced via the FHIR encounter
       { /* Another resource */ },
@@ -93,9 +94,9 @@ To provide comprehensive data about the Encounter, we serve a FHIR [Bundle](http
 }
 ```
 
-The first item in every bundle for a Metriport's Patient Notification is the root Encounter. Every item thereafter is a resource referenced by the Encounter. The bundle acts as a container for all resources, ensuring you have a standalone package of clinical data.
+The first two items in every bundle for a Metriport's Patient Notification are the applicable patient & root Encounter. Every item thereafter is a resource referenced by the Encounter.
 
-If you're unfamiliar with FHIR, please read our [FHIR Overview](medical-api/fhir/overview).
+If you're unfamiliar with FHIR, read our [FHIR Overview](medical-api/fhir/overview).
 
 ### Handling Patient Notifications
 
@@ -122,6 +123,14 @@ if (event.meta.type === "patient.discharge") {
   // process discharge message
 }
 ```
+
+## How to enable real-time notifications 
+To enable real-time notifications for:
+  - ADTs (Admission, Discharge, Transfer): Networks that transmit live patient status updates as they move through healthcare facilities.  
+  - pharmacy: Networks that provide medication-specific information.  
+  - laboratory: Networks that provide information specific to tests/results and other laboratory-related data.
+
+Use this feature by [setting it up in one or more Cohorts](/medical-api/handling-data/cohorts) and associating the patients you want to have notifications enabled.
 
 ## Event Reference
 
@@ -153,7 +162,7 @@ A Patient Admit event is emitted when a patient undergoes the admission process,
 <ResponseField name="payload" type="PatientAdmitPayload" required>
   <Expandable title="payload properties">
     <ResponseField name="url" type="string" required>
-      The URL to download the FHIR bundle containing the FHIR data representing the comprehensive. It's valid for 10 minutes.
+      The URL to download the [Patient Encounter Bundle](/medical-api/handling-data/patient-encounter-bundle) containing the FHIR data representing the comprehensive encounter. It's valid for 10 minutes.
     </ResponseField>
 
     <ResponseField name="patientId" type="string" required>
@@ -251,7 +260,7 @@ A Patient Transfer event indicates that a patient has been moved from one locati
 <ResponseField name="payload" type="PatientTransferPayload" required>
   <Expandable title="payload properties">
     <ResponseField name="url" type="string" required>
-      The URL to download the FHIR bundle containing the FHIR data representing the comprehensive encounter. It's valid for 10 minutes.
+      The URL to download the [Patient Encounter Bundle](/medical-api/handling-data/patient-encounter-bundle) containing the FHIR data representing the comprehensive encounter. It's valid for 10 minutes.
     </ResponseField>
 
     <ResponseField name="patientId" type="string" required>
@@ -409,7 +418,7 @@ A Patient Discharge event indicates the end of a patient's stay in a healthcare 
 <ResponseField name="payload" type="PatientDischargePayload" required>
   <Expandable title="payload properties">
     <ResponseField name="url" type="string" required>
-      The URL to download the FHIR bundle containing the FHIR data representing the comprehensive. It's valid for 10 minutes.
+      The URL to download the [Patient Encounter Bundle](/medical-api/handling-data/patient-encounter-bundle) containing the FHIR data representing the comprehensive encounter. It's valid for 10 minutes.
     </ResponseField>
     
     <ResponseField name="patientId" type="string" required>
@@ -482,12 +491,12 @@ A Patient Discharge event indicates the end of a patient's stay in a healthcare 
     "dischargeTimestamp": "2025-01-30T23:00:00.000Z"
   }
 }
-```
+```  
 
 ## Additional Resources
 
-### Full FHIR Encounter
+### FHIR Encounter
 
-The below is an example of a full FHIR encounter
+The Encounter is the core resource in a [Patient Encounter Bundle](/medical-api/handling-data/patient-encounter-bundle). Below is an example of a FHIR Encounter resource - one piece of the data you'll receive when downloading from the URL you receive in the notification.
 
 <Snippet file="example-adt-encounter-json.mdx" />

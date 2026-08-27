@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
+import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
 import {
   DiscoveryParams,
   ScheduledPatientDiscovery,
 } from "@metriport/core/domain/patient-discovery";
-import { makePatient, makePatientData } from "@metriport/core/domain/__tests__/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import { PatientModel } from "../../../models/medical/patient";
 import { PatientMappingModel } from "../../../models/patient-mapping";
-import { mockStartTransaction } from "../../../models/__tests__/transaction";
 import * as schedulePatientDiscovery from "../../hie/schedule-patient-discovery";
 import { runOrScheduleCqPatientDiscovery } from "../command/run-or-schedule-patient-discovery";
 import * as cqPatient from "../patient";

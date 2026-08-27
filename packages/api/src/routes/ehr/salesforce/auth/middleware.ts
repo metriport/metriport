@@ -7,6 +7,8 @@ import {
   processCxId as processCxIdShared,
   processDocumentRoute as processDocumentRouteShared,
   processPatientRoute as processPatientRouteShared,
+  processInferenceRoute as processInferenceRouteShared,
+  processFeatureFlagsRoute as processFeatureFlagsRouteShared,
 } from "../../shared";
 
 export const tokenEhrPatientIdQueryParam = "salesforcePatientIdFromToken";
@@ -42,4 +44,12 @@ export function processPatientRoute(req: Request, res: Response, next: NextFunct
 
 export function processDocumentRoute(req: Request, res: Response, next: NextFunction) {
   processDocumentRouteShared(req, salesforceDashSource).then(next).catch(next);
+}
+
+export function processInferenceRoute(req: Request, res: Response, next: NextFunction) {
+  processInferenceRouteShared(req).then(next).catch(next);
+}
+
+export function processFeatureFlagsRoute(req: Request, res: Response, next: NextFunction) {
+  processFeatureFlagsRouteShared(req).then(next).catch(next);
 }

@@ -24,8 +24,8 @@
   //     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  
   // -------------------------------------------------------------------------------------------------
 --}}
-{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.65' '1.3.6.1.4.1.19376.1.5.3.1.3.5')}}
-    {{#with (getAllCdaSectionsWithoutTemplateId msg '2.16.840.1.113883.10.20.22.2.65' '1.3.6.1.4.1.19376.1.5.3.1.3.5') as |notesSections|}}
+{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.65' '1.3.6.1.4.1.19376.1.5.3.1.3.5' '2.16.840.1.113883.10.20.22.2.41')}}
+    {{#with (getAllCdaSectionsWithoutTemplateId msg '2.16.840.1.113883.10.20.22.2.65' '1.3.6.1.4.1.19376.1.5.3.1.3.5' '2.16.840.1.113883.10.20.22.2.41') as |notesSections|}}
         {{#each notesSections as |notesSection|}} 
             {{#if (and (not notesSection.entry) notesSection.text)}}
                 {{#each (toArray notesSection.text) as |noteText|}}

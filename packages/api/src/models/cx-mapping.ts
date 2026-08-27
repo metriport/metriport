@@ -8,6 +8,7 @@ export class CxMappingModel extends BaseModel<CxMappingModel> implements CxMappi
   declare secondaryMappings: CxMappingSecondaryMappings;
   declare cxId: string;
   declare source: CxMappingSource;
+  declare defaultCohortId: string | null;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     CxMappingModel.init(
@@ -24,6 +25,10 @@ export class CxMappingModel extends BaseModel<CxMappingModel> implements CxMappi
         },
         secondaryMappings: {
           type: DataTypes.JSONB,
+        },
+        defaultCohortId: {
+          type: DataTypes.UUID,
+          allowNull: true,
         },
       },
       {

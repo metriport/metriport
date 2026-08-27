@@ -1,38 +1,29 @@
 import { faker } from "@faker-js/faker";
+import { FacilityType } from "@metriport/core/domain/facility";
 import { DeepNullable } from "ts-essentials";
-import { FacilityCreate, FacilityType, isOboFacility } from "../../../../domain/medical/facility";
-import { makeFacilityData } from "../../../../domain/medical/__tests__/facility";
 import { makeBaseDomain } from "../../../../domain/__tests__/base-domain";
+import { makeFacilityData } from "../../../../domain/medical/__tests__/facility";
+import { FacilityCreate, isInitiatorOnly } from "../../../../domain/medical/facility";
 
 export function makeFacilityCreateCmd(
   params: Partial<DeepNullable<FacilityCreate>> & Partial<Pick<FacilityCreate, "data">> = {}
 ): FacilityCreate {
-  const cqType = params.cqType !== undefined ? params.cqType : FacilityType.initiatorAndResponder;
-  const cwType = params.cwType !== undefined ? params.cwType : FacilityType.initiatorAndResponder;
-  const cqActive =
-    params.cqActive !== undefined
-      ? params.cqActive
-      : cqType && isOboFacility(cqType)
-      ? true
-      : false;
-  const cwActive =
-    params.cwActive !== undefined
-      ? params.cwActive
-      : cwType && isOboFacility(cwType)
-      ? true
-      : false;
+  const type = params.type ?? FacilityType.initiatorAndResponder;
+  const cqActive = params.cqActive ?? (type && isInitiatorOnly(type) ? true : false);
+  const cwActive = params.cwActive ?? (type && isInitiatorOnly(type) ? true : false);
 
   const preResponse = {
     ...makeBaseDomain(),
     cxId: params.cxId ?? faker.string.uuid(),
     cqActive: cqActive ?? undefined,
     cwActive: cwActive ?? undefined,
-    cqOboOid:
-      params.cqOboOid != undefined ? params.cqOboOid : cqActive ? faker.string.uuid() : undefined,
-    cwOboOid:
-      params.cwOboOid != undefined ? params.cwOboOid : cwActive ? faker.string.uuid() : undefined,
-    cwType: cwType ?? undefined,
-    cqType: cqType ?? undefined,
+    principalOid:
+      params.principalOid != undefined
+        ? params.principalOid
+        : cqActive
+        ? faker.string.uuid()
+        : undefined,
+    type,
     data: makeFacilityData(params.data),
   };
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -43,18 +34,17 @@ export function makeFacilityCreateCmd(
 export function makeFacilityCreate(
   params: Partial<DeepNullable<FacilityCreate>> & Partial<Pick<FacilityCreate, "data">> = {}
 ): FacilityCreate {
-  const cqType = params.cqType ?? FacilityType.initiatorAndResponder;
-  const cwType = params.cwType ?? FacilityType.initiatorAndResponder;
+  const type = params.type ?? FacilityType.initiatorAndResponder;
   const cqActive =
     params.cqActive != undefined
       ? params.cqActive
-      : cqType && isOboFacility(cqType)
+      : type && isInitiatorOnly(type)
       ? faker.datatype.boolean()
       : false;
   const cwActive =
     params.cwActive != undefined
       ? params.cwActive
-      : cwType && isOboFacility(cwType)
+      : type && isInitiatorOnly(type)
       ? faker.datatype.boolean()
       : false;
   return {
@@ -62,12 +52,13 @@ export function makeFacilityCreate(
     cxId: params.cxId ?? faker.string.uuid(),
     cqActive: cqActive,
     cwActive: cwActive,
-    cqOboOid:
-      params.cqOboOid !== undefined ? params.cqOboOid : cqActive ? faker.string.uuid() : null,
-    cwOboOid:
-      params.cwOboOid !== undefined ? params.cwOboOid : cwActive ? faker.string.uuid() : null,
-    cwType,
-    cqType,
+    principalOid:
+      params.principalOid !== undefined
+        ? params.principalOid
+        : cqActive
+        ? faker.string.uuid()
+        : null,
+    type,
     data: makeFacilityData(params.data),
   };
 }

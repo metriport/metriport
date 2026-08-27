@@ -1,8 +1,13 @@
-import { OutboundDocumentQueryReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
+import {
+  ON_DEMAND_DOCUMENT_TYPE_UUID,
+  OutboundDocumentQueryReq,
+  STABLE_DOCUMENT_TYPE_UUID,
+  XCAGateway,
+} from "@metriport/ihe-gateway-sdk";
+import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "@metriport/shared";
 import dayjs from "dayjs";
 import { XMLBuilder } from "fast-xml-parser";
 import { wrapIdInUrnUuid } from "../../../../../../util/urn";
-import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
 import { expiresIn, namespaces } from "../../../constants";
 import { doesGatewayUseSha1, getHomeCommunityId } from "../../../gateways";
 import { createSecurityHeader } from "../../../saml/security/security-header";
@@ -10,9 +15,9 @@ import { signFullSaml } from "../../../saml/security/sign";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
-const findDocumentId = "14d4debf-8f97-4251-9a74-a90016b0af0d";
-const stableDocumentType = "7edca82f-054d-47f2-a032-9b2a5b5186c1";
-const onDemandDocumentType = "34268e47-fdf5-41a6-ba33-82133c465248";
+const iheFindDocumentOperationId = "14d4debf-8f97-4251-9a74-a90016b0af0d";
+const stableDocumentType = STABLE_DOCUMENT_TYPE_UUID;
+const onDemandDocumentType = ON_DEMAND_DOCUMENT_TYPE_UUID;
 const dateFormat = "YYYYMMDDHHmmss";
 
 export type SignedDqRequest = {
@@ -52,7 +57,7 @@ function createSoapBody(bodyData: OutboundDocumentQueryReq): object {
         },
         "urn2:AdhocQuery": {
           "@_home": gatewayHomeCommunityId,
-          "@_id": wrapIdInUrnUuid(findDocumentId),
+          "@_id": wrapIdInUrnUuid(iheFindDocumentOperationId),
           "@_lid": "urn:oasis:names:tc:ebxml-regrep:query:AdhocQueryRequest",
           "@_objectType": namespaces.urn2,
           "@_status": namespaces.urn2,

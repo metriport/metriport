@@ -1,6 +1,13 @@
+import { Address } from "@metriport/core/domain/address";
 import { Organization } from "@metriport/core/domain/organization";
-import { getStatesFromAddresses, Patient, PatientDemoData } from "@metriport/core/domain/patient";
+import {
+  getStatesFromAddresses,
+  Patient,
+  PatientDemoData,
+  PatientDemoDataStrict,
+} from "@metriport/core/domain/patient";
 import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
+import { capture } from "@metriport/core/util";
 import { BadRequestError, NotFoundError, USStateForAddress } from "@metriport/shared";
 import { uniq } from "lodash";
 import { QueryTypes, Transaction } from "sequelize";
@@ -250,6 +257,65 @@ export async function getPatientByDemo({
   const patientLoader = new PatientLoaderLocal();
   const patient = await getPatientByDemoMPI({ cxId, demo, patientLoader });
   return patient ? await attachPatientIdentifiers(patient) : undefined;
+}
+
+/**
+ * Retrieves a patient based on their demographic information. Performs a strict match on the
+ * patient's demographic information (firstName, lastName, dob, genderAtBirth, and zip code
+ * from address).
+ *
+ * If multiple patients match the strict demographic criteria, a warning is logged to the error
+ * tracking system and the first matching patient is returned.
+ *
+ * @param cxId - The ID of the patient in the external system.
+ * @param demo - The demographic information of the patient.
+ * @param contextId - The ID of the context in which the patient is being searched for. Useful
+ *                    for error reporting since we don't have a patient ID to use and can't
+ *                    log PHI or send it to external error tracking system.
+ * @returns The matched patient object if found, otherwise undefined. If multiple patients match,
+ *          returns the first matching patient and logs a warning.
+ */
+export async function getPatientByDemoStrict({
+  cxId,
+  demo,
+  contextId,
+}: {
+  cxId: string;
+  demo: PatientDemoDataStrict;
+  contextId?: string;
+}): Promise<Patient | undefined> {
+  const { firstName, lastName, dob, genderAtBirth, address } = demo;
+  const patients = await PatientModel.findAll({
+    where: { cxId, data: { firstName, lastName, dob, genderAtBirth } },
+  });
+  const filteredByZip = filterPatientsByZip(
+    patients.map(p => p.dataValues),
+    address
+  );
+  if (filteredByZip.length > 1) {
+    const msg = `Found multiple patients with demo data strict, defaulting to first`;
+    capture.message(msg, {
+      level: "warning",
+      extra: {
+        cxId,
+        contextId,
+        patientCount: filteredByZip.length,
+      },
+    });
+  }
+  const patient = filteredByZip[0];
+  if (!patient) return undefined;
+  return patient;
+}
+
+function filterPatientsByZip(patients: Patient[], address: Address[]): Patient[] {
+  if (!address || address.length < 1) return patients;
+  return patients.filter(patient => {
+    return (
+      patient.data.address.length < 1 ||
+      patient.data.address.some(addr => address.some(a => a.zip === addr.zip))
+    );
+  });
 }
 
 export type GetPatient = {

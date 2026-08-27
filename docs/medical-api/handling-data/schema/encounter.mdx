@@ -45,4 +45,11 @@ For detailed information about reference table structure and indexing, see the [
 | source_type_system | varchar | Original type system from source system |
 | discharge_disposition_hl7_code | varchar | HL7 discharge disposition code |
 | discharge_disposition_hl7_display | varchar | Human-readable description of discharge disposition |
-| data_source | varchar | Source of the encounter data |
+| source_discharge_disposition_code | varchar | Original discharge disposition code from source system |
+| source_discharge_disposition_display | varchar | Original discharge disposition display from source system |
+| source_discharge_disposition_system | varchar | Original discharge disposition system from source system |
+| reason_snomed_code | varchar | SNOMED CT reason code |
+| reason_snomed_display | varchar | Human-readable description of SNOMED CT reason |
+| meta_source | varchar | Source document filename from FHIR meta.source |
+| data_source | varchar | **Deprecated.** Use `meta_source` instead. |
+| data_source_ext | varchar | Integration source of the data, derived from FHIR extension |

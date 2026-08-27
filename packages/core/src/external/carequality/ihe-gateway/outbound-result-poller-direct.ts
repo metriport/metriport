@@ -34,6 +34,7 @@ export type OutboundDocRetrievalRespParam = {
   cxId: string;
   requestId: string;
   results: OutboundDocumentRetrievalResp[];
+  forceDownload?: boolean | undefined;
 };
 
 /**
@@ -120,13 +121,14 @@ export class OutboundResultPollerDirect extends OutboundResultPoller {
       ...params,
       dbCreds: this.dbCreds,
     });
-    const { requestId, patientId, cxId } = params;
+    const { requestId, patientId, cxId, forceDownload } = params;
 
     const payload: OutboundDocRetrievalRespParam = {
       requestId,
       patientId,
       cxId,
       results,
+      forceDownload,
     };
 
     // TODO not sure if should retry on timeout

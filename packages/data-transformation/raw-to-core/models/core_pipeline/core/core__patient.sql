@@ -1,26 +1,86 @@
-with address_with_relative_rank as (
-    select 
-            *
-        ,   row_number() over(partition by patient_id order by processed_date) as relative_rank
-    from {{ref('stage__patient_address')}}
-),
-target_address as (
+{{ config(unique_key='m_patient_id') }}
+{% set extension_max_index = 2 %}
+
+with first_address as (
     select
-        *
-    from address_with_relative_rank
-    where relative_rank = 1
+        patient_id,
+        address,
+        city,
+        state,
+        zip_code
+    from (
+        select
+            a.patient_id,
+            a.address,
+            a.city,
+            a.state,
+            a.zip_code,
+            row_number() over (partition by a.patient_id order by a.address_rank) as rn
+        from {{ ref('core__patient_address') }} a
+    ) as t
+    where rn = 1
+),
+first_email as (
+    select
+        patient_id,
+        value as email
+    from (
+        select
+            t.patient_id,
+            t.value,
+            row_number() over (partition by t.patient_id order by t.telecom_rank) as rn
+        from {{ ref('core__patient_telecom') }} t
+        where t.system = 'email'
+    ) as t
+    where rn = 1
+),
+first_phone as (
+    select
+        patient_id,
+        value as phone
+    from (
+        select
+            t.patient_id,
+            t.value,
+            row_number() over (partition by t.patient_id order by t.telecom_rank) as rn
+        from {{ ref('core__patient_telecom') }} t
+        where t.system = 'phone'
+    ) as t
+    where rn = 1
 )
 select 
-        cast(pat.id as {{ dbt.type_string() }} )                                                  as patient_id
-    ,   cast(pat.name_0_given_0 as {{ dbt.type_string() }} )                                      as first_name
-    ,   cast(pat.name_0_family as {{ dbt.type_string() }} )                                       as last_name
-    ,   cast(pat.gender as {{ dbt.type_string() }} )                                              as gender
-    ,   {{ try_to_cast_date('pat.birthdate') }}                                                   as birth_date
-    ,   cast(ta.line_0 || coalesce(' ' || ta.line_1, '') as {{ dbt.type_string() }} )             as address
-    ,   cast(ta.city as {{ dbt.type_string() }} )                                                 as city
-    ,   cast(ta.state as {{ dbt.type_string() }} )                                                as state
-    ,   cast(ta.postalcode as {{ dbt.type_string() }} )                                           as zip_code
-    ,   cast('metriport' as {{ dbt.type_string() }} )                                             as data_source
+        {{ try_to_cast_string('pat.id') }}                                              as patient_id
+    ,   {{ try_to_cast_string('pat.name_0_given_0') }}                                  as first_name
+    ,   {{ try_to_cast_string('pat.name_0_family') }}                                   as last_name
+    ,   {{ try_to_cast_string('pat.gender') }}                                          as gender
+    ,   {{ try_to_cast_date('pat.birthdate') }}                                         as birth_date
+    ,   {{ try_to_cast_string('fa.address') }}                                          as address
+    ,   {{ try_to_cast_string('fa.city') }}                                             as city
+    ,   {{ try_to_cast_string('fa.state') }}                                            as state
+    ,   {{ try_to_cast_string('fa.zip_code') }}                                         as zip_code
+    ,   {{ try_to_cast_string('fe.email') }}                                            as email
+    ,   {{ try_to_cast_string('fp.phone') }}                                            as phone
+    ,   {{ try_to_cast_string('pat.meta_source') }}                                     as data_source
+    {#- Data source extension: extension with data-source URL -#}
+    ,   {{ try_to_cast_string(get_inline_extension(
+            'pat',
+            'https://public.metriport.com/fhir/StructureDefinition/data-source.json',
+            extension_max_index,
+            'valuecoding_code',
+            none,
+            none
+        )) }}                                                                           as data_source_ext
+    ,   {{ try_to_cast_string('pat.meta_source') }}                                     as meta_source
+    ,   pat.m_patient_id
+    ,   pat.m_job_id
+    ,   pat.m_created_at
+    ,   pat.m_updated_at
+    ,   pat.m_deleted_at
+    ,   pat.raw_to_core_job_id
 from {{ref('stage__patient')}} pat
-left join target_address ta
-    on pat.id = ta.patient_id
+left join first_address fa
+    on pat.id = fa.patient_id
+left join first_email fe
+    on pat.id = fe.patient_id
+left join first_phone fp
+    on pat.id = fp.patient_id

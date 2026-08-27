@@ -1,8 +1,4 @@
-import { buildDayjs } from "@metriport/shared/common/date";
-import { customAlphabet } from "nanoid";
-
-const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";
-const nanoid = customAlphabet(alphabet, 10);
+import { generateJobId } from "../../../utils";
 
 export type ProcessFhirToCsvIncrementalRequest = {
   cxId: string;
@@ -17,10 +13,6 @@ export abstract class FhirToCsvIncrementalHandler {
   ): Promise<string>;
 
   generateJobId(): string {
-    return (
-      buildDayjs().toISOString().replace(/[-:.]/g, "").replace("T", "-").substring(0, 18) +
-      "-" +
-      nanoid()
-    );
+    return generateJobId();
   }
 }

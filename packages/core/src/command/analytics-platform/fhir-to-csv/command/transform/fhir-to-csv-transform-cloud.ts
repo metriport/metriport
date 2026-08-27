@@ -20,7 +20,7 @@ export class FhirToCsvTransformCloud implements FhirToCsvTransformHandler {
     private readonly region: string = Config.getAWSRegion()
   ) {}
 
-  async startFhirToCsvTransform(
+  async runFhirToCsvTransform(
     params: StartFhirToCsvTransformRequest,
     lambdaClientParam?: LambdaClient
   ): Promise<void> {

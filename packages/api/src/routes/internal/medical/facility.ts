@@ -1,3 +1,4 @@
+import { facilityInternalDetailsSchema } from "@metriport/core/domain/facility";
 import { isHealthcareItVendor } from "@metriport/core/domain/organization";
 import { Config } from "@metriport/core/util/config";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -12,7 +13,6 @@ import { createOrUpdateFacility as cqCreateOrUpdateFacility } from "../../../ext
 import { createOrUpdateFacilityInCwV2 } from "../../../external/commonwell-v2/command/facility/create-or-update-cw-facility";
 import { requestLogger } from "../../helpers/request-logger";
 import { internalDtoFromModel } from "../../medical/dtos/facilityDTO";
-import { facilityInternalDetailsSchema } from "../../medical/schemas/facility";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFromQueryAsBoolean } from "../../util";
 
@@ -24,7 +24,7 @@ const router = Router();
  *
  * Creates or updates a facility and registers it within HIEs if new.
  *
- * TODO: Search existing facility by NPI, cqOboOid, and cwOboOid (individually), and fail if it exists?
+ * TODO: Search existing facility by NPI, principalOid, and fail if it exists?
  *
  * @return The updated facility.
  */
@@ -35,6 +35,7 @@ router.put(
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const skipItVendorCheck = getFromQueryAsBoolean("skipItVendorCheck", req);
+    const org = await getOrganizationOrFail({ cxId });
 
     const facilityDetails = facilityInternalDetailsSchema.parse(req.body);
     const facilityCreate: FacilityCreate = {
@@ -51,22 +52,21 @@ router.put(
           country: facilityDetails.country,
         },
       },
-      cqType: facilityDetails.cqType,
-      cwType: facilityDetails.cwType,
+      type: facilityDetails.type,
       cqActive: facilityDetails.cqActive,
       cwActive: facilityDetails.cwActive,
-      cqOboOid: facilityDetails.cqOboOid,
-      cwOboOid: facilityDetails.cwOboOid,
+      ehexActive: facilityDetails.ehexActive,
+      principalOid: facilityDetails.principalOid,
       cqApproved: facilityDetails.cqApproved,
       cwApproved: facilityDetails.cwApproved,
+      ehexApproved: facilityDetails.ehexApproved,
     };
     const facility: Facility = facilityDetails.id
       ? await updateFacility({ id: facilityDetails.id, ...facilityCreate })
       : await createFacility(facilityCreate);
 
-    const org = await getOrganizationOrFail({ cxId });
     const syncInHie = skipItVendorCheck || isHealthcareItVendor(org);
-    // TODO Move to external/hie https://github.com/metriport/metriport-internal/issues/1940
+    // TODO Move to external/hie
     // CAREQUALITY
     if (syncInHie && facility.cqApproved) {
       cqCreateOrUpdateFacility({ org, facility }).catch(processAsyncError("cq.internal.facility"));

@@ -29,6 +29,7 @@ export const internalOrganizationDTOSchema = z.object({
     zip: z.string(),
     country: z.string(),
   }),
+  principalOid: z.string().nullish(),
   businessType: z.nativeEnum(OrganizationBizType),
   cqApproved: z.boolean(),
   cqActive: z.boolean(),

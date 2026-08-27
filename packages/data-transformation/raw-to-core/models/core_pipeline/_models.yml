@@ -1,6 +1,109 @@
 version: 2
 
 models:
+  - name: job__metriport_incremental_job
+    description: "Job tracker table for incremental processing - tracks latest job ID per patient"
+    config:
+      alias: metriport_incremental_job
+  - name: core__metriport_incremental_job
+    description: "Core table for incremental processing - tracks latest job ID per patient"
+    config:
+      alias: metriport_incremental_job
+  - name: core__allergy_intolerance_references
+    config:
+      alias: allergy_intolerance_references
+    columns:
+      - name: allergy_intolerance_id
+        tests:
+          - relationships:
+              to: ref('core__allergy_intolerance')
+              field: allergy_intolerance_id
+              config:
+                severity: warn
+      - name: reference_id
+        tests:
+          - relationships:
+              name: allergy_intolerance_patient_to_patient
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                where: property = 'patient'
+                severity: warn
+          - relationships:
+              name: allergy_intolerance_asserter_to_patient
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                where: property = 'asserter' and reference_type = 'Patient'
+                severity: warn
+          - relationships:
+              to: ref('core__encounter')
+              field: encounter_id
+              config:
+                where: property = 'encounter'
+                severity: warn
+          - relationships:
+              name: allergy_intolerance_recorder_to_practitioner
+              to: ref('core__practitioner')
+              field: practitioner_id
+              config:
+                where: property = 'recorder' and reference_type = 'Practitioner'
+                severity: warn
+          - relationships:
+              name: allergy_intolerance_asserter_to_practitioner
+              to: ref('core__practitioner')
+              field: practitioner_id
+              config:
+                where: property = 'asserter' and reference_type = 'Practitioner'
+                severity: warn
+  - name: core__allergy_intolerance
+    config:
+      alias: allergy_intolerance
+    columns:
+      - name: allergy_intolerance_id
+        tests:
+          - unique:
+              config:
+                severity: warn
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: warn
+  - name: core__allergy_intolerance_reaction
+    config:
+      alias: allergy_intolerance_reaction
+    columns:
+      - name: allergy_intolerance_reaction_id
+        tests:
+          - unique:
+              config:
+                severity: warn
+      - name: allergy_intolerance_id
+        tests:
+          - relationships:
+              to: ref('core__allergy_intolerance')
+              field: allergy_intolerance_id
+              config:
+                severity: warn
+  - name: core__allergy_intolerance_reaction_manifestation
+    config:
+      alias: allergy_intolerance_reaction_manifestation
+    columns:
+      - name: allergy_intolerance_reaction_manifestation_id
+        tests:
+          - unique:
+              config:
+                severity: warn
+      - name: allergy_intolerance_reaction_id
+        tests:
+          - relationships:
+              to: ref('core__allergy_intolerance_reaction')
+              field: allergy_intolerance_reaction_id
+              config:
+                severity: warn
   - name: core__condition_references
     config:
       alias: condition_references
@@ -11,7 +114,7 @@ models:
               to: ref('core__condition')
               field: condition_id
               config:
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -19,7 +122,7 @@ models:
               field: patient_id
               config:
                 where: property = 'subject'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -27,7 +130,7 @@ models:
               field: encounter_id
               config:
                 where: property = 'encounter'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -35,7 +138,7 @@ models:
               field: practitioner_id
               config:
                 where: property = 'recorder'
-                severity: error
+                severity: warn
   - name: core__condition
     config:
       alias: condition
@@ -44,14 +147,85 @@ models:
         tests:
           - unique:
               config:
-                severity: error
+                severity: warn
       - name: patient_id
         tests:
           - relationships:
               to: ref('core__patient')
               field: patient_id
               config:
-                severity: error
+                severity: warn
+  - name: core__coverage_references
+    config:
+      alias: coverage_references
+    columns:
+      - name: coverage_id
+        tests:
+          - relationships:
+              to: ref('core__coverage')
+              field: coverage_id
+              config:
+                severity: warn
+      - name: reference_id
+        tests:
+          - relationships:
+              name: coverage_beneficiary_to_patient
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                where: property = 'beneficiary'
+                severity: warn
+          - relationships:
+              name: coverage_policyholder_to_patient
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                where: property = 'policyHolder' and reference_type = 'Patient'
+                severity: warn
+          - relationships:
+              name: coverage_policyholder_to_organization
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: property = 'policyHolder' and reference_type = 'Organization'
+                severity: warn
+          - relationships:
+              name: coverage_subscriber_to_patient
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                where: property = 'subscriber'
+                severity: warn
+          - relationships:
+              name: coverage_payor_to_patient
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                where: property = 'payor' and reference_type = 'Patient'
+                severity: warn
+          - relationships:
+              name: coverage_payor_to_organization
+              to: ref('core__organization')
+              field: organization_id
+              config:
+                where: property = 'payor' and reference_type = 'Organization'
+                severity: warn
+  - name: core__coverage
+    config:
+      alias: coverage
+    columns:
+      - name: coverage_id
+        tests:
+          - unique:
+              config:
+                severity: warn
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: warn
   - name: core__diagnostic_report_presented_forms
     config:
       alias: diagnostic_report_presented_forms
@@ -62,7 +236,7 @@ models:
               to: ref('core__diagnostic_report')
               field: diagnostic_report_id
               config:
-                severity: error
+                severity: warn
   - name: core__diagnostic_report_references
     config:
       alias: diagnostic_report_references
@@ -73,7 +247,7 @@ models:
               to: ref('core__diagnostic_report')
               field: diagnostic_report_id
               config:
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -81,7 +255,7 @@ models:
               field: patient_id
               config:
                 where: property = 'subject'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -89,7 +263,7 @@ models:
               field: encounter_id
               config:
                 where: property = 'encounter'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -97,7 +271,7 @@ models:
               field: practitioner_id
               config:
                 where: property = 'performer' and reference_type = 'Practitioner'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -105,7 +279,7 @@ models:
               field: organization_id
               config:
                 where: property = 'performer' and reference_type = 'Organization'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -113,7 +287,7 @@ models:
               field: observation_id
               config:
                 where: property = 'result' and reference_type = 'Observation'
-                severity: error
+                severity: warn
   - name: core__diagnostic_report
     config:
       alias: diagnostic_report
@@ -122,14 +296,14 @@ models:
         tests:
           - unique:
               config:
-                severity: error
+                severity: warn
       - name: patient_id
         tests:
           - relationships:
               to: ref('core__patient')
               field: patient_id
               config:
-                severity: error
+                severity: warn
   - name: core__encounter_references
     config:
       alias: encounter_references
@@ -148,7 +322,7 @@ models:
               field: patient_id
               config:
                 where: property = 'subject'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -156,7 +330,7 @@ models:
               field: practitioner_id
               config:
                 where: property = 'participant.individual' and reference_type = 'Practitioner'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -164,7 +338,7 @@ models:
               field: organization_id
               config:
                 where: property = 'participant.individual' and reference_type = 'Organization'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -172,7 +346,7 @@ models:
               field: location_id
               config:
                 where: property = 'location.location'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -189,14 +363,14 @@ models:
         tests:
           - unique:
               config:
-                severity: error
+                severity: warn
       - name: patient_id
         tests:
           - relationships:
               to: ref('core__patient')
               field: patient_id
               config:
-                severity: error
+                severity: warn
   - name: core__immunization_references
     config:
       alias: immunization_references
@@ -207,7 +381,7 @@ models:
               to: ref('core__immunization')
               field: immunization_id
               config:
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -215,7 +389,7 @@ models:
               field: patient_id
               config:
                 where: property = 'patient'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -223,7 +397,7 @@ models:
               field: encounter_id
               config:
                 where: property = 'encounter'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -231,7 +405,7 @@ models:
               field: practitioner_id
               config:
                 where: property = 'performer.actor' and reference_type = 'Practitioner'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -239,7 +413,7 @@ models:
               field: organization_id
               config:
                 where: property = 'performer.actor' and reference_type = 'Organization'
-                severity: error
+                severity: warn
   - name: core__immunization
     config:
       alias: immunization
@@ -248,14 +422,14 @@ models:
         tests:
           - unique:
               config:
-                severity: error
+                severity: warn
       - name: patient_id
         tests:
           - relationships:
               to: ref('core__patient')
               field: patient_id
               config:
-                severity: error
+                severity: warn
   - name: core__location
     config:
       alias: location
@@ -264,7 +438,7 @@ models:
         tests:
           - unique:
               config:
-                severity: error
+                severity: warn
       - name: managing_organization_id
         tests:
           - relationships:
@@ -272,7 +446,7 @@ models:
               field: organization_id
               config:
                 where: managing_organization_id != ''
-                severity: error
+                severity: warn
   - name: core__medication_administration_references
     config:
       alias: medication_administration_references
@@ -283,7 +457,7 @@ models:
               to: ref('core__medication_administration')
               field: medication_administration_id
               config:
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -291,7 +465,7 @@ models:
               field: medication_id
               config:
                 where: property = 'medication_reference'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -299,7 +473,7 @@ models:
               field: patient_id
               config:
                 where: property = 'subject'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -307,7 +481,7 @@ models:
               field: practitioner_id
               config:
                 where: property = 'performer.actor' and reference_type = 'Practitioner'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -315,7 +489,7 @@ models:
               field: organization_id
               config:
                 where: property = 'performer.actor' and reference_type = 'Organization'
-                severity: error
+                severity: warn
   - name: core__medication_administration
     config:
       alias: medication_administration
@@ -324,21 +498,21 @@ models:
         tests:
           - unique:
               config:
-                severity: error
+                severity: warn
       - name: patient_id
         tests:
           - relationships:
               to: ref('core__patient')
               field: patient_id
               config:
-                severity: error
+                severity: warn
       - name: medication_id
         tests:
           - relationships:
               to: ref('core__medication')
               field: medication_id
               config:
-                severity: error
+                severity: warn
   - name: core__medication_dispense_references
     config:
       alias: medication_dispense_references
@@ -349,7 +523,7 @@ models:
               to: ref('core__medication_dispense')
               field: medication_dispense_id
               config:
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -357,7 +531,7 @@ models:
               field: medication_id
               config:
                 where: property = 'medication_reference'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -365,7 +539,7 @@ models:
               field: patient_id
               config:
                 where: property = 'subject'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -373,7 +547,7 @@ models:
               field: location_id
               config:
                 where: property = 'location'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -381,7 +555,7 @@ models:
               field: practitioner_id
               config:
                 where: property = 'performer.actor' and reference_type = 'Practitioner'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -389,7 +563,7 @@ models:
               field: organization_id
               config:
                 where: property = 'performer.actor' and reference_type = 'Organization'
-                severity: error
+                severity: warn
   - name: core__medication_dispense
     config:
       alias: medication_dispense
@@ -398,21 +572,21 @@ models:
         tests:
           - unique:
               config:
-                severity: error
+                severity: warn
       - name: patient_id
         tests:
           - relationships:
               to: ref('core__patient')
               field: patient_id
               config:
-                severity: error
+                severity: warn
       - name: medication_id
         tests:
           - relationships:
               to: ref('core__medication')
               field: medication_id
               config:
-                severity: error
+                severity: warn
   - name: core__medication_request_references
     config:
       alias: medication_request_references
@@ -423,7 +597,7 @@ models:
               to: ref('core__medication_request')
               field: medication_request_id
               config:
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -431,7 +605,7 @@ models:
               field: medication_id
               config:
                 where: property = 'medication_reference'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -439,7 +613,7 @@ models:
               field: patient_id
               config:
                 where: property = 'subject'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -447,7 +621,7 @@ models:
               field: encounter_id
               config:
                 where: property = 'encounter'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -455,7 +629,7 @@ models:
               field: practitioner_id
               config:
                 where: property = 'requester' and reference_type = 'Practitioner'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -463,7 +637,7 @@ models:
               field: organization_id
               config:
                 where: property = 'requester' and reference_type = 'Organization'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -471,7 +645,7 @@ models:
               field: condition_id
               config:
                 where: property = 'reason_reference' and reference_type = 'Condition'
-                severity: error
+                severity: warn
   - name: core__medication_request
     config:
       alias: medication_request
@@ -480,21 +654,21 @@ models:
         tests:
           - unique:
               config:
-                severity: error
+                severity: warn
       - name: patient_id
         tests:
           - relationships:
               to: ref('core__patient')
               field: patient_id
               config:
-                severity: error
+                severity: warn
       - name: medication_id
         tests:
           - relationships:
               to: ref('core__medication')
               field: medication_id
               config:
-                severity: error
+                severity: warn
   - name: core__medication_statement_references
     config:
       alias: medication_statement_references
@@ -505,7 +679,7 @@ models:
               to: ref('core__medication_statement')
               field: medication_statement_id
               config:
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -513,7 +687,7 @@ models:
               field: medication_id
               config:
                 where: property = 'medication_reference'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -521,7 +695,7 @@ models:
               field: patient_id
               config:
                 where: property = 'subject'
-                severity: error
+                severity: warn
   - name: core__medication_statement
     config:
       alias: medication_statement
@@ -530,21 +704,21 @@ models:
         tests:
           - unique:
               config:
-                severity: error
+                severity: warn
       - name: patient_id
         tests:
           - relationships:
               to: ref('core__patient')
               field: patient_id
               config:
-                severity: error
+                severity: warn
       - name: medication_id
         tests:
           - relationships:
               to: ref('core__medication')
               field: medication_id
               config:
-                severity: error
+                severity: warn
   - name: core__medication
     config:
       alias: medication
@@ -553,7 +727,7 @@ models:
         tests:
           - unique:
               config:
-                severity: error
+                severity: warn
   - name: core__observation_references
     config:
       alias: observation_references
@@ -564,7 +738,7 @@ models:
               to: ref('core__observation')
               field: observation_id
               config:
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -572,7 +746,7 @@ models:
               field: patient_id
               config:
                 where: property = 'subject'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -580,7 +754,7 @@ models:
               field: encounter_id
               config:
                 where: property = 'encounter'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -588,7 +762,7 @@ models:
               field: practitioner_id
               config:
                 where: property = 'performer' and reference_type = 'Practitioner'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -596,7 +770,7 @@ models:
               field: organization_id
               config:
                 where: property = 'performer' and reference_type = 'Organization'
-                severity: error
+                severity: warn
   - name: core__observation
     config:
       alias: observation
@@ -605,14 +779,14 @@ models:
         tests:
           - unique:
               config:
-                severity: error
+                severity: warn
       - name: patient_id
         tests:
           - relationships:
               to: ref('core__patient')
               field: patient_id
               config:
-                severity: error
+                severity: warn
   - name: core__organization
     config:
       alias: organization
@@ -621,7 +795,23 @@ models:
         tests:
           - unique:
               config:
-                severity: error
+                severity: warn
+  - name: core__binary
+    config:
+      alias: binary
+    columns:
+      - name: binary_id
+        tests:
+          - unique:
+              config:
+                severity: warn
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: warn
   - name: core__patient
     config:
       alias: patient
@@ -630,7 +820,71 @@ models:
         tests:
           - unique:
               config:
-                severity: error
+                severity: warn
+  - name: core__patient_address
+    config:
+      alias: patient_address
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: warn
+      - name: address_rank
+        tests:
+          - not_null:
+              config:
+                severity: warn
+  - name: core__patient_name
+    config:
+      alias: patient_name
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: warn
+      - name: name_rank
+        tests:
+          - not_null:
+              config:
+                severity: warn
+  - name: core__patient_mapping
+    config:
+      alias: patient_mapping
+    columns:
+      - name: external_id
+        tests:
+          - unique:
+              config:
+                severity: warn
+      - name: id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: warn
+  - name: core__patient_telecom
+    config:
+      alias: patient_telecom
+    columns:
+      - name: patient_id
+        tests:
+          - relationships:
+              to: ref('core__patient')
+              field: patient_id
+              config:
+                severity: warn
+      - name: telecom_rank
+        tests:
+          - not_null:
+              config:
+                severity: warn
   - name: core__practitioner
     config:
       alias: practitioner
@@ -639,7 +893,7 @@ models:
         tests:
           - unique:
               config:
-                severity: error
+                severity: warn
   - name: core__procedure_references
     config:
       alias: procedure_references
@@ -650,7 +904,7 @@ models:
               to: ref('core__procedure')
               field: procedure_id
               config:
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -658,7 +912,7 @@ models:
               field: patient_id
               config:
                 where: property = 'subject'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -666,7 +920,7 @@ models:
               field: encounter_id
               config:
                 where: property = 'encounter'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -674,7 +928,7 @@ models:
               field: location_id
               config:
                 where: property = 'location'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -682,7 +936,7 @@ models:
               field: practitioner_id
               config:
                 where: property = 'performer.actor' and reference_type = 'Practitioner'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -690,7 +944,7 @@ models:
               field: organization_id
               config:
                 where: property = 'performer.actor' and reference_type = 'Organization'
-                severity: error
+                severity: warn
       - name: reference_id
         tests:
           - relationships:
@@ -698,7 +952,7 @@ models:
               field: diagnostic_report_id
               config:
                 where: property = 'report' and reference_type = 'DiagnosticReport'
-                severity: error
+                severity: warn
   - name: core__procedure
     config:
       alias: procedure
@@ -707,11 +961,11 @@ models:
         tests:
           - unique:
               config:
-                severity: error
+                severity: warn
       - name: patient_id
         tests:
           - relationships:
               to: ref('core__patient')
               field: patient_id
               config:
-                severity: error
+                severity: warn

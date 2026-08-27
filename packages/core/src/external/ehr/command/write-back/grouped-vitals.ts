@@ -47,6 +47,7 @@ const ehrWriteBackGroupedVitalsMap: WriteBackGroupedVitalsFnMap = {
   [EhrSources.healthie]: undefined,
   [EhrSources.eclinicalworks]: undefined,
   [EhrSources.salesforce]: undefined,
+  [EhrSources.practicefusion]: undefined,
 };
 
 function getEhrWriteBackGroupedVitalsHandler(ehr: EhrSource): WriteBackGroupedVitalsFn {
@@ -179,6 +180,9 @@ export function getEhrGroupedVitals({
   }
   if (ehr === EhrSources.elation) {
     return groupVitalsByDate({ observations: vitals });
+  }
+  if (ehr === EhrSources.healthie) {
+    return [];
   }
   throw new BadRequestError("Could not find handler to get grouped vitals", undefined, {
     ehr,

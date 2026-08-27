@@ -1,9 +1,13 @@
+import { HieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
+import {
+  MLLP_SERVER_FIRST_VALID_PORT,
+  MLLP_SERVER_LAST_VALID_PORT,
+  isPccConnection,
+} from "@metriport/core/domain/hl7-notification/utils";
 import * as cdk from "aws-cdk-lib";
 import { Fn } from "aws-cdk-lib";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Construct } from "constructs";
-import { MLLP_DEFAULT_PORT } from "./constants";
-import { HieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 
 const IPSEC_1 = "ipsec.1";
 
@@ -54,10 +58,14 @@ export class VpnStack extends cdk.Stack {
        **/
       const offset = props.index * 10 + internalCidrBlockIndex * 3;
 
+      const permittedIngressPorts = isPccConnection(hieName)
+        ? ec2.AclTraffic.tcpPortRange(MLLP_SERVER_FIRST_VALID_PORT, MLLP_SERVER_LAST_VALID_PORT)
+        : ec2.AclTraffic.tcpPort(MLLP_SERVER_FIRST_VALID_PORT);
+
       this.addIngressRules(networkAcl, cidr, [
         {
           ruleNumber: 120 + offset,
-          traffic: ec2.AclTraffic.tcpPort(MLLP_DEFAULT_PORT),
+          traffic: permittedIngressPorts,
           ruleAction: ec2.Action.ALLOW,
         },
         // Used to create a point on the NACL to deny all traffic, below which we can

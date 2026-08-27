@@ -13,9 +13,9 @@ import {
   getOrganizationOrFail,
 } from "../../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import { cwOrgActiveSchema } from "../../../external/commonwell-v1/shared";
 import { getAndUpdateCWOrgAndMetriportOrgV2 } from "../../../external/commonwell-v2/command/organization/create-or-update-cw-organization";
 import { getParsedOrgOrFailV2 } from "../../../external/commonwell-v2/command/organization/organization";
+import { checkCwDirectoryHealth } from "../../../external/commonwell/command/cw-directory/health";
 import { getCwDirectoryEntry } from "../../../external/commonwell/command/cw-directory/list-cw-directory";
 import { rebuildCwDirectory } from "../../../external/commonwell/command/cw-directory/rebuild-cw-directory";
 import { runOrScheduleCwPatientDiscovery } from "../../../external/commonwell/patient/run-or-schedule-patient-discovery";
@@ -24,8 +24,13 @@ import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../../util";
+import { z } from "zod";
 
 const router = Router();
+
+const cwOrgActiveSchema = z.object({
+  active: z.boolean(),
+});
 
 /**
  * GET /internal/commonwell/ops/organization/:oid
@@ -149,7 +154,6 @@ router.post(
       patient,
       facilityId,
       requestId,
-      getOrgIdExcludeList: () => Promise.resolve([]),
       rerunPdOnNewDemographics,
       forceCommonwell,
     });
@@ -190,6 +194,21 @@ router.post(
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     const failGracefully = getFromQueryAsBoolean("failGracefully", req);
     await rebuildCwDirectory(failGracefully);
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/commonwell/directory/health
+ *
+ * Tests the CommonWell Directory health and sends heartbeat to monitoring service.
+ */
+router.post(
+  "/directory/health",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
+    await checkCwDirectoryHealth();
     return res.sendStatus(httpStatus.OK);
   })
 );

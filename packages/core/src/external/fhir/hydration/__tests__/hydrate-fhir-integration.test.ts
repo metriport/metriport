@@ -46,11 +46,15 @@ describe.skip("hydrateFhir - Integration Tests", () => {
         entry: [{ resource: condition }],
       };
 
-      const result = await hydrateFhir(bundle, mockLog);
+      const result = await hydrateFhir({
+        fhirBundle: bundle,
+        log: mockLog,
+        options: { lookupConditionCodeByDisplay: false },
+      });
 
       const hydratedCondition = result.data.entry?.[0]?.resource as Condition;
       expect(hydratedCondition?.code?.coding).toBeDefined();
-      expect(hydratedCondition?.code?.coding).toHaveLength(2);
+      expect(hydratedCondition?.code?.coding).toHaveLength(3);
 
       const icd10Coding = hydratedCondition?.code?.coding?.find(
         coding => coding.system === ICD_10_URL
@@ -79,7 +83,11 @@ describe.skip("hydrateFhir - Integration Tests", () => {
         entry: [{ resource: medication }],
       };
 
-      const result = await hydrateFhir(bundle, mockLog);
+      const result = await hydrateFhir({
+        fhirBundle: bundle,
+        log: mockLog,
+        options: { lookupConditionCodeByDisplay: false },
+      });
 
       const hydratedMedication = result.data.entry?.[0]?.resource as Medication;
       expect(hydratedMedication?.code?.coding).toBeDefined();
@@ -96,7 +104,7 @@ describe.skip("hydrateFhir - Integration Tests", () => {
     });
   });
 
-  describe("lookupMultipleCodes integration", () => {
+  describe("lookupByCode integration", () => {
     it("should successfully lookup codes using terminology server", async () => {
       const mockParameters = [
         {
@@ -109,7 +117,7 @@ describe.skip("hydrateFhir - Integration Tests", () => {
         },
       ];
 
-      const result = await termServer.lookupMultipleCodes(mockParameters, mockLog);
+      const result = await termServer.lookupByCode(mockParameters);
 
       expect(result).toBeDefined();
       expect(result?.data).toBeDefined();
@@ -125,6 +133,62 @@ describe.skip("hydrateFhir - Integration Tests", () => {
     });
   });
 
+  describe("lookupByDisplay integration", () => {
+    it("should successfully lookup code by display using terminology server", async () => {
+      const result = await termServer.lookupByDisplay({
+        display: "hyperlipidemia",
+        system: ICD_10_URL,
+      });
+
+      expect(result).toBeDefined();
+      expect(result?.system).toBe(ICD_10_URL);
+      expect(result?.code).toBeDefined();
+      expect(result?.display).toBeDefined();
+    });
+
+    it("should return undefined for display with no match", async () => {
+      const result = await termServer.lookupByDisplay({
+        display: "xyznonexistentconditionxyz",
+        system: ICD_10_URL,
+      });
+
+      expect(result).toBeUndefined();
+    });
+
+    it("should hydrate Condition via display lookup when no SNOMED code exists", async () => {
+      const condition: Condition = {
+        resourceType: "Condition",
+        id: faker.string.uuid(),
+        code: {
+          coding: [
+            {
+              display: "Anemia",
+            },
+          ],
+        },
+      };
+
+      const bundle: Bundle<Condition> = {
+        resourceType: "Bundle",
+        type: "collection",
+        entry: [{ resource: condition }],
+      };
+
+      const result = await hydrateFhir({
+        fhirBundle: bundle,
+        log: mockLog,
+        options: { lookupConditionCodeByDisplay: true },
+      });
+
+      const hydratedCondition = result.data.entry?.[0]?.resource as Condition;
+      const icd10Coding = hydratedCondition?.code?.coding?.find(
+        coding => coding.system === ICD_10_URL
+      );
+      expect(icd10Coding).toBeDefined();
+      expect(icd10Coding?.code).toBeDefined();
+    });
+  });
+
   describe("end-to-end hydration", () => {
     it("should hydrate a complete bundle with multiple resources", async () => {
       const condition: Condition = {
@@ -135,6 +199,18 @@ describe.skip("hydrateFhir - Integration Tests", () => {
             {
               system: SNOMED_URL,
               code: staphSnomedCode,
+            },
+          ],
+        },
+      };
+
+      const condition2: Condition = {
+        resourceType: "Condition",
+        id: faker.string.uuid(),
+        code: {
+          coding: [
+            {
+              display: "Anemia",
             },
           ],
         },
@@ -156,26 +232,27 @@ describe.skip("hydrateFhir - Integration Tests", () => {
       const bundle: Bundle = {
         resourceType: "Bundle",
         type: "collection",
-        entry: [{ resource: condition }, { resource: medication }],
+        entry: [{ resource: condition }, { resource: medication }, { resource: condition2 }],
       };
 
-      const result = await hydrateFhir(bundle, mockLog);
+      const result = await hydrateFhir({
+        fhirBundle: bundle,
+        log: mockLog,
+        options: { lookupConditionCodeByDisplay: true },
+      });
 
-      // Verify both resources were processed
       expect(result.data.entry).toBeDefined();
-      expect(result.data.entry).toHaveLength(2);
+      expect(result.data.entry).toHaveLength(3);
 
-      // Check Condition hydration
+      // Check Condition 1: SNOMED crosswalk to ICD-10 + CCSR
       const hydratedCondition = result.data.entry?.[0]?.resource as Condition;
-
       expect(hydratedCondition?.code?.coding).toBeDefined();
-      expect(hydratedCondition?.code?.coding).toHaveLength(2);
       const conditionIcd10 = hydratedCondition?.code?.coding?.find(
         coding => coding.system === ICD_10_URL
       );
       expect(conditionIcd10?.code).toBe(staphIcd10Code);
 
-      // Check Medication hydration
+      // Check Medication: NDC crosswalk to RxNorm
       const hydratedMedication = result.data.entry?.[1]?.resource as Medication;
       expect(hydratedMedication?.code?.coding).toBeDefined();
       expect(hydratedMedication?.code?.coding).toHaveLength(2);
@@ -183,6 +260,14 @@ describe.skip("hydrateFhir - Integration Tests", () => {
         coding => coding.system === RXNORM_URL
       );
       expect(medicationRxNorm).toBeDefined();
+
+      // Check Condition 2: display lookup to ICD-10
+      const hydratedCondition2 = result.data.entry?.[2]?.resource as Condition;
+      const condition2Icd10 = hydratedCondition2?.code?.coding?.find(
+        coding => coding.system === ICD_10_URL
+      );
+      expect(condition2Icd10).toBeDefined();
+      expect(condition2Icd10?.code).toBeDefined();
 
       // Check metadata
       expect(result.metadata).toBeDefined();
@@ -210,15 +295,19 @@ describe.skip("hydrateFhir - Integration Tests", () => {
         entry: [{ resource: condition }],
       };
 
-      const result = await hydrateFhir(bundle, mockLog);
+      const result = await hydrateFhir({
+        fhirBundle: bundle,
+        log: mockLog,
+        options: { lookupConditionCodeByDisplay: false },
+      });
 
-      // Verify the condition wasn't modified
       const hydratedCondition = result.data.entry?.[0]?.resource as Condition;
 
       expect(hydratedCondition?.code?.coding).toBeDefined();
-      expect(hydratedCondition?.code?.coding).toHaveLength(1);
-      expect(hydratedCondition?.code?.coding?.[0]?.system).toBe(ICD_10_URL);
-      expect(hydratedCondition?.code?.coding?.[0]?.code).toBe(staphIcd10Code);
+      const icd10Coding = hydratedCondition?.code?.coding?.find(
+        coding => coding.system === ICD_10_URL
+      );
+      expect(icd10Coding?.code).toBe(staphIcd10Code);
     });
 
     it("should handle empty bundle", async () => {
@@ -227,7 +316,11 @@ describe.skip("hydrateFhir - Integration Tests", () => {
         type: "collection",
       };
 
-      const result = await hydrateFhir(bundle, mockLog);
+      const result = await hydrateFhir({
+        fhirBundle: bundle,
+        log: mockLog,
+        options: { lookupConditionCodeByDisplay: false },
+      });
 
       expect(result.data).toEqual(bundle);
       expect(result.metadata).toBeUndefined();
@@ -240,7 +333,11 @@ describe.skip("hydrateFhir - Integration Tests", () => {
         entry: [],
       };
 
-      const result = await hydrateFhir(bundle, mockLog);
+      const result = await hydrateFhir({
+        fhirBundle: bundle,
+        log: mockLog,
+        options: { lookupConditionCodeByDisplay: false },
+      });
 
       expect(result.data).toEqual(bundle);
       expect(result.metadata).toBeUndefined();
@@ -268,7 +365,11 @@ describe.skip("hydrateFhir - Integration Tests", () => {
         entry: [{ resource: condition }],
       };
 
-      const result = await hydrateFhir(bundle, mockLog);
+      const result = await hydrateFhir({
+        fhirBundle: bundle,
+        log: mockLog,
+        options: { lookupConditionCodeByDisplay: false },
+      });
 
       // Should not crash and should return the original bundle
       expect(result.data).toBeDefined();

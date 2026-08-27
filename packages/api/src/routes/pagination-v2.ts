@@ -1,4 +1,5 @@
 import { Config } from "@metriport/core/util/config";
+import { replacePathParams } from "@metriport/core/util/replace-path-params";
 import {
   createQueryMetaSchemaV2,
   defaultItemsPerPage,
@@ -395,8 +396,13 @@ function getPaginationV2Url(
     }
   }
 
-  if ("_reconstructedRoute" in req) {
-    return hostUrl + req._reconstructedRoute + "?" + params.toString();
+  const paramsForPath = req.aggregatedParams ?? req.params ?? {};
+
+  if ("_reconstructedRoute" in req && typeof req._reconstructedRoute === "string") {
+    const routeWithParams = replacePathParams(req._reconstructedRoute, paramsForPath);
+    return hostUrl + routeWithParams + "?" + params.toString();
   }
-  return hostUrl + req.baseUrl + "?" + params.toString();
+  const routePath = req.baseUrl + req.path;
+  const routeWithParams = replacePathParams(routePath, paramsForPath);
+  return hostUrl + routeWithParams + "?" + params.toString();
 }

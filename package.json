@@ -8,6 +8,7 @@
     "preci": "npm run preinstall",
     "preinstall-deps": "npm run preci",
     "init": "npm i && SCRIPT='i' npm run lambdas:no-run",
+    "preclean": "npm run preinstall",
     "clean": "npm run clean --workspaces --if-present && SCRIPT='clean' npm run lambdas",
     "deepclean": "npm run deepclean --workspaces --if-present && echo 'rimraf node_modules' && rimraf node_modules && SCRIPT='deepclean' npm run lambdas",
     "prep-lambdas": "cd packages/lambdas && npm run prep-deploy && cd ../..",
@@ -47,6 +48,7 @@
     "packages/ihe-gateway-sdk",
     "packages/commonwell-sdk",
     "packages/carequality-sdk",
+    "packages/ehex-sdk",
     "packages/core",
     "packages/commonwell-cert-runner",
     "packages/commonwell-jwt-maker",
@@ -72,8 +74,8 @@
   "dependencies": {
     "axios": ">=1.8.2",
     "form-data": ">=4.0.4",
-    "sharp": "^0.33.5",
-    "semver": ">=5.7.2"
+    "semver": ">=5.7.2",
+    "sharp": "^0.33.5"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.4.2",

@@ -1,0 +1,88 @@
+---
+title: "Set Patient Facilities"
+description: "Sets the facilities associated with a patient. This operation overrides any existing facility associations and replaces them with the provided list."
+api: "POST /medical/v1/patient/{id}/facility"
+---
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the patient to set facilities for.
+</ParamField>
+
+## Body
+
+<ParamField body="facilityIds" type="string[]" required>
+  Array of facility IDs to associate with the patient. This
+  will replace all existing facility associations.
+</ParamField>
+
+## Response
+
+<ResponseField name="facilities" type="Facility[]" required>
+  Array of facilities associated with the patient after the
+  update.
+  <Expandable title="Facility properties">
+    <Snippet file="facility-response.mdx" />
+  </Expandable>
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const patientId = "018a80c4-292a-7486-a1234-76yuhe23yu14";
+const facilities = await metriport.setPatientFacilities(
+  patientId,
+  [
+    "018a80c4-292a-7486-a1234-9uiu76yhe234",
+    "018a80c4-292a-7486-a1234-6hyt345tyu23",
+  ]
+);
+```
+
+</ResponseExample>
+
+```json
+{
+  "facilities": [
+    {
+      "id": "018a80c4-292a-7486-a1234-9uiu76yhe234",
+      "eTag": "1",
+      "oid": "2.16.840.1.113883.3.666.123.4.101",
+      "name": "Care Facility, LLC",
+      "npi": "1234567891",
+      "tin": "12-3456789",
+      "active": true,
+      "address": {
+        "addressLine1": "2261 Market Street",
+        "addressLine2": "#4818",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip": "94114",
+        "country": "USA"
+      }
+    },
+    {
+      "id": "018a80c4-292a-7486-a1234-6hyt345tyu23",
+      "eTag": "1",
+      "oid": "2.16.840.1.113883.3.666.123.4.102",
+      "name": "Care Facility 2, LLC",
+      "npi": "1789123456",
+      "tin": "12-6789345",
+      "active": true,
+      "address": {
+        "addressLine1": "451 Care Street",
+        "addressLine2": "#320",
+        "city": "Austin",
+        "state": "TX",
+        "zip": "78617",
+        "country": "USA"
+      }
+    }
+  ]
+}
+```

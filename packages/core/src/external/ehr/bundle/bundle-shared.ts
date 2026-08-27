@@ -5,6 +5,7 @@ import { supportedAthenaHealthResources } from "../athenahealth";
 import { supportedCanvasResources } from "../canvas";
 import { supportedElationResources } from "../elation";
 import { supportedHealthieResources } from "../healthie";
+import { supportedPracticeFusionResources } from "../practicefusion";
 import { createPrefix, CreatePrefixParams } from "../shared";
 
 const globalPrefix = "bundle";
@@ -59,6 +60,7 @@ export function getSupportedResourcesByEhr(ehr: EhrSource): string[] {
   if (ehr === EhrSources.athena) return supportedAthenaHealthResources;
   if (ehr === EhrSources.elation) return supportedElationResources;
   if (ehr === EhrSources.healthie) return supportedHealthieResources;
+  if (ehr === EhrSources.practicefusion) return supportedPracticeFusionResources;
   return [];
 }
 

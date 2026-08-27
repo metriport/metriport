@@ -1,6 +1,6 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { NotFoundError } from "@metriport/shared";
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import { JwtToken, JwtTokenData, JwtTokenPerSource, JwtTokenSource } from "../domain/jwt-token";
 import { JwtTokenModel } from "../models/jwt-token";
 
@@ -102,6 +102,33 @@ export async function updateTokenExpiration({ id, exp }: { id: string; exp: Date
   });
   if (!existing) throw new NotFoundError("Entry not found", undefined, { id });
   await existing.update({ exp });
+}
+
+/**
+ * DOES NOT CHECK EXPIRATION
+ * Uses JSON containment to match partial data (e.g., match by practiceId only)
+ */
+export async function getLatestExpiringJwtTokenBySourceAndPartialData({
+  source,
+  data,
+}: {
+  source: JwtTokenSource;
+  data: Record<string, string>;
+}): Promise<JwtToken | undefined> {
+  if (Object.keys(data).length < 1) {
+    throw new Error("data parameter must not be empty");
+  }
+  const existing = await JwtTokenModel.findAll({
+    where: {
+      source,
+      [Op.and]: Sequelize.literal(`data @> :data::jsonb`),
+    },
+    replacements: { data: JSON.stringify(data) },
+    order: [["exp", "DESC"]],
+  });
+  const latest = existing[0];
+  if (!latest) return undefined;
+  return latest.dataValues;
 }
 
 export async function deleteTokenBasedOnExpBySourceAndData({

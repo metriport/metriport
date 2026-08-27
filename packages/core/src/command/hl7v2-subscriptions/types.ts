@@ -44,6 +44,8 @@ export type RosterRowData = {
   address1AddressLine1SplitByTabAddress1: string;
   address1AddressLine1SplitByTabAddress2: string;
   firstNameWithNoNicknames: string; // Removes nicknames like "John (Johnny)" -> "John"
+  firstNameWithNoSpecialCharacters: string;
+  lastNameWithNoSpecialCharacters: string;
 };
 
 export type HiePatientRosterMapping = {
@@ -57,7 +59,8 @@ export type HieConfig = {
   timezone: HieIanaTimezone;
   states: USState[];
   subscriptions: Hl7v2Subscription[];
-  checklyPingUrl?: string;
+  checklyId?: string; // ID for the heartbeat monitor
+  checklyPingUrl?: string; // URL to ping the heartbeat monitor
   cron: string;
   sftpConfig: HieSftpConfig;
   mapping: HiePatientRosterMapping;
@@ -67,6 +70,7 @@ export type VpnlessHieConfig = Omit<HieConfig, "gatewayPublicIp" | "internalCidr
 
 export type Hl7v2SubscriberParams = {
   hieName: string;
+  hieStates: USState[];
   count?: number | undefined;
 };
 

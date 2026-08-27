@@ -28,7 +28,7 @@ export function buildNotes(
       codeSystemName: "LOINC",
       displayName: sectionDetails.display ?? sectionDetails.sectionName,
     }),
-    title: sectionDetails.sectionName,
+    title: sectionDetails.sectionName.toUpperCase(),
     text: notOnFilePlaceholder,
   };
 

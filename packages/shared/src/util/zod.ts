@@ -1,3 +1,4 @@
+import { ZodError } from "zod";
 import { validDateOfBirthStringSchema as validDateOfBirthStringSchemaFromExternal } from "../external/zod/date";
 import {
   defaultNameStringSchema as defaultNameStringSchemaFromExternal,
@@ -20,3 +21,9 @@ export const defaultNameStringSchema = defaultNameStringSchemaFromExternal;
 
 /** @deprecated Use defaultZipStringSchema from @metriport/shared/external/zod/zip.ts instead */
 export const defaultZipStringSchema = defaultZipStringSchemaFromExternal;
+
+export function isZodError(error: unknown): error is ZodError {
+  if (error instanceof ZodError) return true;
+  if (typeof error !== "object" || error == null) return false;
+  return (error as { name?: unknown }).name === "ZodError";
+}

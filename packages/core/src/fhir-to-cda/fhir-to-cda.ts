@@ -8,10 +8,11 @@ import { toArray } from "@metriport/shared";
  * @returns Array of CDA documents in string format
  */
 export function convertFhirBundleToCda(
+  cxId: string,
   fhirBundle: Bundle | Bundle[],
   orgOid: string,
   isCustodian?: boolean
 ): string[] {
   const bundles = toArray(fhirBundle);
-  return bundles.map(bundle => generateCdaFromFhirBundle(bundle, orgOid, isCustodian));
+  return bundles.map(bundle => generateCdaFromFhirBundle(cxId, bundle, orgOid, isCustodian));
 }

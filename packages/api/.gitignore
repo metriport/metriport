@@ -132,3 +132,7 @@ metriport-api.tar.gz
 *.pem
 
 e2e-test-results
+quest-incoming
+quest-outgoing
+surescripts-incoming
+surescripts-outgoing

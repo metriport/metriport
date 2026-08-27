@@ -1,5 +1,5 @@
 import { SamlAttributes } from "@metriport/ihe-gateway-sdk";
-import { BadRequestError, toArray } from "@metriport/shared";
+import { BadRequestError, MetriportError, toArray } from "@metriport/shared";
 import dayjs from "dayjs";
 import { stripUrnPrefix } from "../../../../util/urn";
 import { getCachedPrincipalAndDelegatesMap } from "../../../hie-shared/principal-and-delegates-cache";
@@ -11,6 +11,7 @@ import {
   TextOrTextObject,
   treatmentPurposeOfUse,
 } from "../schema";
+import { defaultSubjectRole } from "../shared";
 import { extractText } from "../utils";
 
 export const successStatus = "urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success";
@@ -29,10 +30,19 @@ function isPurposeOfUseObject(value: AttributeValue): value is { PurposeOfUse: C
   return typeof value === "object" && "PurposeOfUse" in value;
 }
 
+// TODO Implement this - need to validate the inbound shape from CQ; add some logs for a while before building the zod schema
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function getSourceAddress(header: SamlHeader): string | undefined {
+  // return header?.From?.Address ?? undefined;
+  return undefined;
+}
+
 export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttributes {
+  const wsaFrom = getSourceAddress(header); // WS-Addressing
+
   const attributes = toArray(header.Security.Assertion.AttributeStatement)?.[0]?.Attribute;
   if (attributes === undefined) {
-    throw new Error("Attributes are undefined");
+    throw new MetriportError("Attributes are undefined", undefined, { wsaFrom });
   }
 
   function getAttributeValue(name: string): string | undefined {
@@ -43,13 +53,16 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
     return undefined;
   }
 
-  function getRoleAttributeValue(name: string): { code: string; display: string } | undefined {
+  function getRoleAttributeValue(
+    name: string
+  ): { code: string; display: string; system: string } | undefined {
     const attribute = attributes?.find(attr => attr._Name === name);
     if (!attribute) return undefined;
     if (isRoleObject(attribute.AttributeValue)) {
       return {
         code: attribute.AttributeValue.Role._code,
         display: attribute.AttributeValue.Role._displayName,
+        system: attribute.AttributeValue.Role._codeSystem ?? defaultSubjectRole.system,
       };
     }
     return undefined;
@@ -95,10 +108,6 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
   }
 
   const subjectRole = getRoleAttributeValue("urn:oasis:names:tc:xacml:2.0:subject:role");
-  const defaultSubjectRole = {
-    code: "106331006",
-    display: "Administrative AND/OR managerial worker",
-  };
 
   const purposeOfUse = getPurposeOfUseAttributeValue(
     "urn:oasis:names:tc:xspa:1.0:subject:purposeofuse"
@@ -107,6 +116,7 @@ export function convertSamlHeaderToAttributes(header: SamlHeader): SamlAttribute
   const principalOid = getPrincipalOidAttributevalue("QueryAuthGrantor");
 
   return {
+    wsaFrom,
     subjectId: subjectId ?? defaultSubjectId,
     organization: organization,
     organizationId: stripUrnPrefix(organizationId),

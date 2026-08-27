@@ -15,6 +15,7 @@ import { LambdaLayers } from "./shared/lambda-layers";
 import { Secrets } from "./shared/secrets";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue, provideAccessToQueue } from "./shared/sqs";
+import { createBucket } from "./shared/bucket";
 
 interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   lambdaLayers: LambdaLayers;
@@ -43,12 +44,12 @@ function settings() {
     name: "IHEGatewayV2OutboundPatientDiscoveryWriteToS3",
     entry: "ihe-gateway-v2-outbound-patient-discovery-write-to-s3",
     lambda: {
-      memory: 2048,
+      memory: 1024,
       timeout: writeToS3LambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(2),
-      maxMessageCountAlarmThreshold: 500_000,
+      alertMaxApproximateAgeOfOldestMessage: Duration.hours(2),
+      alertMaxApproximateNumberOfMessagesVisible: 500_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(writeToS3LambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
@@ -80,19 +81,23 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         alarmAction: props.alarmAction,
       });
 
-    const iheResponsesBucket = new s3.Bucket(this, "IHEResponsesBucket", {
-      bucketName: props.iheResponsesBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-    });
+    const iheResponsesBucket = createBucket(
+      this,
+      {
+        bucketName: props.iheResponsesBucketName,
+        versioned: true,
+      },
+      "IHEResponsesBucket"
+    );
 
-    const iheParsedResponsesBucket = new s3.Bucket(this, "iheParsedResponsesBucket", {
-      bucketName: props.iheParsedResponsesBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-    });
+    const iheParsedResponsesBucket = createBucket(
+      this,
+      {
+        bucketName: props.iheParsedResponsesBucketName,
+        versioned: true,
+      },
+      "iheParsedResponsesBucket"
+    );
 
     iheParsedResponsesBucket.grantWrite(writeToS3LambdaOutboundPD);
 
@@ -267,7 +272,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       createDLQ: true,
       lambdaLayers: [lambdaLayers.shared],
       envType,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alarmAction,
     });
 
     const lambda = createLambda({
@@ -282,7 +287,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alarmAction,
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
@@ -365,8 +370,9 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         ...(featureFlagsTable && { FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName }),
       },
       layers: [lambdaLayers.shared],
-      memory: 4096,
+      memory: 1024,
       timeout: Duration.minutes(10),
+      isEnableInsights: true,
       vpc,
     });
 

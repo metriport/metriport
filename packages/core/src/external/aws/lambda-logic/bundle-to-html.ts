@@ -1,6 +1,7 @@
 import {
   AllergyIntolerance,
   Bundle,
+  CarePlan,
   Coding,
   Condition,
   Coverage,
@@ -18,13 +19,13 @@ import {
   Procedure,
   RelatedPerson,
   Resource,
-  Task,
 } from "@medplum/fhirtypes";
-import { sortObservationsForDisplay } from "@metriport/shared/medical";
+import { sortObservationsForDisplay, splitDiagnosticReports } from "@metriport/shared/medical";
 import dayjs from "dayjs";
 import { intersection, uniqWith } from "lodash";
 import { Brief } from "../../../command/ai-brief/brief";
 import { isChronicCondition } from "../../ehr/shared";
+import { extractFhirTypesFromBundle } from "../../fhir/bundle/bundle";
 import { HCC_EXTENSION_URL } from "../../fhir/shared/extensions/hcc-extension";
 import {
   buildEncounterSections,
@@ -36,6 +37,7 @@ import {
   MISSING_DATE_KEY,
   MISSING_DATE_TEXT,
   getDeceasedStatus,
+  sortByDateDescending,
 } from "./bundle-to-html-shared";
 
 const RX_NORM_CODE = "rxnorm";
@@ -67,16 +69,18 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief, isLogoEnabled = 
     immunizations,
     familyMemberHistories,
     relatedPersons,
-    tasks,
     coverages,
     organizations,
+    carePlans,
   } = extractFhirTypesFromBundle(fhirBundle);
 
-  if (!patient) {
-    throw new Error("No patient found in bundle");
-  }
-
   const aweVisits = getAnnualWellnessVisits(conditions);
+
+  const { imagingReports, clinicalNotes } = splitDiagnosticReports(diagnosticReports, procedures, {
+    practitioners,
+    organizations,
+    encounters,
+  });
 
   const htmlPage = `
     <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -143,6 +147,7 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief, isLogoEnabled = 
             width: 100%;
             border: 1px solid black;
             border-radius: 5px;
+            table-layout: fixed;
           }
 
           thead tr,
@@ -162,6 +167,12 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief, isLogoEnabled = 
 
           tbody tr td {
             padding: 8px 5px;
+          }
+
+          .note-cell {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 0;
           }
 
           .section {
@@ -316,6 +327,39 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief, isLogoEnabled = 
             -webkit-box-orient: vertical;
           }
 
+          .encounter-box {
+            border: 1px solid #000;
+            border-radius: 5px;
+            padding: 16px;
+            margin-bottom: 18px;
+          }
+
+          .encounter-header {
+            display: -webkit-box;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-box-pack: justify;
+            -ms-flex-pack: justify;
+            justify-content: space-between;
+            margin-bottom: 12px;
+          }
+
+          .encounter-header .title {
+            margin: 0;
+            font-size: 1.1rem;
+            text-align: left;
+          }
+
+          .report-card {
+            background-color: #f2f2f2;
+            border-radius: 5px;
+            padding: 12px;
+            margin: 15px 0;
+            page-break-inside: avoid;
+            border-left: 3px solid #ccc;
+          }
+
+
         </style>
       </head>
 
@@ -325,165 +369,38 @@ export function bundleToHtml(fhirBundle: Bundle, brief?: Brief, isLogoEnabled = 
         <div class="divider"></div>
         <div id="mr-sections">
           ${createAWESection(diagnosticReports, practitioners, aweVisits, organizations)}
-          ${createMedicationSection(medications, medicationStatements)}
           ${
             isLogoEnabled
-              ? createDiagnosticReportsSection(
-                  diagnosticReports,
-                  practitioners,
-                  aweVisits,
-                  organizations
-                )
+              ? createClinicalNotesSection(clinicalNotes, practitioners, aweVisits, organizations)
               : ""
           }
+          ${
+            isLogoEnabled
+              ? createImagingReportsSection(imagingReports, practitioners, organizations)
+              : ""
+          }
+          ${createMedicationSection(medications, medicationStatements)}
           ${createConditionSection(conditions, encounters)}
           ${createAllergySection(allergies)}
-          ${createProcedureSection(procedures)}
+          ${createProcedureSection(procedures, diagnosticReports)}
           ${createObservationSocialHistorySection(observationSocialHistory)}
           ${createObservationVitalsSection(observationVitals)}
           ${createObservationLaboratorySection(observationLaboratory)}
+          ${createSurveySection(observationOther)}
           ${createOtherObservationsSection(observationOther)}
           ${createImmunizationSection(immunizations)}
+          ${createCarePlanSection(carePlans, practitioners, organizations, locations, conditions)}
           ${createFamilyHistorySection(familyMemberHistories)}
           ${createRelatedPersonSection(relatedPersons)}
-          ${createTaskSection(tasks)}
           ${createCoverageSection(coverages, organizations)}
           ${createEncountersSection(encounters, locations)}
+          ${createCareTeamSection(practitioners, encounters)}
         </div>
       </body>
     </html>
   `;
 
   return htmlPage;
-}
-
-// TODO: Use the version from "@metriport/core/external/fhir/bundle/bundle.ts"
-function extractFhirTypesFromBundle(bundle: Bundle): {
-  diagnosticReports: DiagnosticReport[];
-  patient?: Patient | undefined;
-  practitioners: Practitioner[];
-  medications: Medication[];
-  medicationStatements: MedicationStatement[];
-  conditions: Condition[];
-  allergies: AllergyIntolerance[];
-  locations: Location[];
-  procedures: Procedure[];
-  observationSocialHistory: Observation[];
-  observationVitals: Observation[];
-  observationLaboratory: Observation[];
-  observationOther: Observation[];
-  encounters: Encounter[];
-  immunizations: Immunization[];
-  familyMemberHistories: FamilyMemberHistory[];
-  relatedPersons: RelatedPerson[];
-  tasks: Task[];
-  coverages: Coverage[];
-  organizations: Organization[];
-} {
-  let patient: Patient | undefined;
-  const practitioners: Practitioner[] = [];
-  const diagnosticReports: DiagnosticReport[] = [];
-  const medicationStatements: MedicationStatement[] = [];
-  const medications: Medication[] = [];
-  const conditions: Condition[] = [];
-  const allergies: AllergyIntolerance[] = [];
-  const locations: Location[] = [];
-  const procedures: Procedure[] = [];
-  const observationSocialHistory: Observation[] = [];
-  const observationVitals: Observation[] = [];
-  const observationLaboratory: Observation[] = [];
-  const observationOther: Observation[] = [];
-  const encounters: Encounter[] = [];
-  const immunizations: Immunization[] = [];
-  const familyMemberHistories: FamilyMemberHistory[] = [];
-  const relatedPersons: RelatedPerson[] = [];
-  const tasks: Task[] = [];
-  const coverages: Coverage[] = [];
-  const organizations: Organization[] = [];
-
-  if (bundle.entry) {
-    for (const entry of bundle.entry) {
-      const resource = entry.resource;
-      if (resource?.resourceType === "Patient") {
-        patient = resource as Patient;
-      } else if (resource?.resourceType === "MedicationStatement") {
-        medicationStatements.push(resource as MedicationStatement);
-      } else if (resource?.resourceType === "Medication") {
-        medications.push(resource as Medication);
-      } else if (resource?.resourceType === "Condition") {
-        conditions.push(resource as Condition);
-      } else if (resource?.resourceType === "Location") {
-        locations.push(resource as Location);
-      } else if (resource?.resourceType === "AllergyIntolerance") {
-        allergies.push(resource as AllergyIntolerance);
-      } else if (resource?.resourceType === "Procedure") {
-        procedures.push(resource as Procedure);
-      } else if (resource?.resourceType === "Observation") {
-        const observation = resource as Observation;
-        const isVitalSigns = observation.category?.find(
-          ext => ext.coding?.[0]?.code?.toLowerCase() === "vital-signs"
-        );
-        const isSocialHistory = observation.category?.find(
-          ext => ext.coding?.[0]?.code?.toLowerCase() === "social-history"
-        );
-        const isLaboratory = observation.category?.find(
-          category => category.coding?.[0]?.code?.toLowerCase() === "laboratory"
-        );
-        const stringifyResource = JSON.stringify(resource);
-
-        if (stringifyResource && isVitalSigns) {
-          observationVitals.push(observation);
-        } else if (stringifyResource && isLaboratory) {
-          observationLaboratory.push(observation);
-        } else if (stringifyResource && isSocialHistory) {
-          observationSocialHistory.push(observation);
-        } else {
-          observationOther.push(observation);
-        }
-      } else if (resource?.resourceType === "Encounter") {
-        encounters.push(resource as Encounter);
-      } else if (resource?.resourceType === "Immunization") {
-        immunizations.push(resource as Immunization);
-      } else if (resource?.resourceType === "FamilyMemberHistory") {
-        familyMemberHistories.push(resource as FamilyMemberHistory);
-      } else if (resource?.resourceType === "RelatedPerson") {
-        relatedPersons.push(resource as RelatedPerson);
-      } else if (resource?.resourceType === "Task") {
-        tasks.push(resource as Task);
-      } else if (resource?.resourceType === "Coverage") {
-        coverages.push(resource as Coverage);
-      } else if (resource?.resourceType === "DiagnosticReport") {
-        diagnosticReports.push(resource as DiagnosticReport);
-      } else if (resource?.resourceType === "Practitioner") {
-        practitioners.push(resource as Practitioner);
-      } else if (resource?.resourceType === "Organization") {
-        organizations.push(resource as Organization);
-      }
-    }
-  }
-
-  return {
-    patient,
-    practitioners,
-    diagnosticReports,
-    medications,
-    medicationStatements,
-    conditions,
-    allergies,
-    locations,
-    procedures,
-    observationSocialHistory,
-    observationVitals,
-    observationLaboratory,
-    observationOther,
-    encounters,
-    immunizations,
-    familyMemberHistories,
-    relatedPersons,
-    tasks,
-    coverages,
-    organizations,
-  };
 }
 
 const metriportLogo = `<div class='logo-container'>
@@ -526,63 +443,70 @@ function createMRHeader(patient: Patient, isLogoEnabled: boolean) {
         <div class="header-table">
           <h4>Table of Contents</h4>
           <table><tbody><tr><td>
-            <ul id="nav">
+           <ul id="nav">
               <div class='half'>
                 <li>
-                  <a href="#awe">Annual Wellness Exams</a>
+                  <a href="#awe-anchor">Annual Wellness Exams</a>
                 </li>
                 ${
                   isLogoEnabled
                     ? `<li>
-                  <a href="#reports">Reports</a>
+                  <a href="#clinical-notes-anchor">Clinical Notes</a>
+                </li>
+                <li>
+                  <a href="#imaging-reports-anchor">Imaging Reports</a>
                 </li>`
                     : ""
                 }
                 <li>
-                  <a href="#medications">Medications</a>
+                  <a href="#medications-anchor">Medications</a>
                 </li>
                 <li>
-                  <a href="#conditions">Conditions</a>
+                  <a href="#conditions-anchor">Conditions</a>
                 </li>
                 <li>
-                  <a href="#allergies">Allergies</a>
+                  <a href="#allergies-anchor">Allergies</a>
                 </li>
                 <li>
-                  <a href="#procedures"
-                    >Procedures</a
-                  >
+                  <a href="#procedures-anchor">Procedures</a>
                 </li>
                 <li>
-                  <a href="#social-history">Social History</a>
+                  <a href="#social-history-anchor">Social History</a>
                 </li>
                 <li>
-                  <a href="#vitals">Vitals</a>
+                  <a href="#vitals-anchor">Vitals</a>
                 </li>
               </div>
               <div class='half'>
                 <li>
-                  <a href="#laboratory">Laboratory</a>
+                  <a href="#laboratory-anchor">Laboratory</a>
                 </li>
                 <li>
-                  <a href="#other-observations">Other Observations</a>
+                  <a href="#surveys-anchor">Surveys</a>
                 </li>
                 <li>
-                  <a href="#immunizations">Immunizations</a>
+                  <a href="#other-observations-anchor">Other Observations</a>
                 </li>
                 <li>
-                  <a href="#family-member-history">Family Member History</a>
+                  <a href="#immunizations-anchor">Immunizations</a>
                 </li>
                 <li>
-                  <a href="#related-persons">Related Persons</a>
+                  <a href="#family-member-history-anchor">Family Member History</a>
                 </li>
                 <li>
-                  <a href="#tasks">Tasks</a>
+                  <a href="#related-persons-anchor">Related Persons</a>
                 </li>
                 <li>
-                  <a href="#coverage">Coverage</a>
+                  <a href="#coverage-anchor">Coverage</a>
                 </li>
                 <li>
-                  <a href="#encounters">Encounters</a>
+                  <a href="#encounters-anchor">Encounters</a>
+                </li>
+                <li>
+                  <a href="#care-plans-anchor">Care Plans</a>
+                </li>
+                <li>
+                  <a href="#care-team-anchor">Care Team</a>
                 </li>
               </div>
             </ul>
@@ -634,7 +558,7 @@ function createAWESection(
   return `
     <div id="awe" class="section">
       <div class="section-title">
-        <h3 id="awe" title="reports">&#x276F; Annual Wellness Exams</h3>
+        <h3 id="awe-anchor" title="reports">&#x276F; Annual Wellness Exams</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
@@ -648,7 +572,7 @@ function createAWESection(
   `;
 }
 
-function createDiagnosticReportsSection(
+function createClinicalNotesSection(
   diagnosticReports: DiagnosticReport[],
   practitioners: Practitioner[],
   aweVisits: Condition[],
@@ -657,37 +581,327 @@ function createDiagnosticReportsSection(
   const mappedPractitioners = mapResourceToId<Practitioner>(practitioners);
   const mappedOrganizations = mapResourceToId<Organization>(organizations);
 
-  if (!diagnosticReports) {
-    return "";
-  }
+  if (!diagnosticReports) return "";
 
+  // reuse your existing AWE filtering logic by filtering here first
   const encounterSections = buildEncounterSections(diagnosticReports);
 
-  const nonAWEreports = buildReports(
+  const html = renderReportsInEncounterBoxes({
     encounterSections,
     mappedPractitioners,
     mappedOrganizations,
-    aweVisits,
-    false
-  );
+    titleForNoDateGroup: "Notes Without Date",
+    // exclude AWE from clinical notes section
+    encounterDateFilter: (encounterDate: string) => {
+      const aweVisit = aweVisits.find(v => (v.onsetDateTime ?? "") === encounterDate);
+      return !aweVisit;
+    },
+    // "Clinical Notes" should include both documentation + labs link (if you want)
+    includeLabsLink: true,
+  });
 
-  const hasNonAWEreports = nonAWEreports.length > 0;
+  const hasContent = html.trim().length > 0;
 
   return `
-    <div id="reports" class="section">
+    <div id="clinical-notes" class="section">
       <div class="section-title">
-        <h3 id="reports" title="reports">&#x276F; Reports</h3>
+        <h3 id="clinical-notes-anchor" title="Clinical Notes">&#x276F; Clinical Notes</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
         ${
-          hasNonAWEreports
-            ? nonAWEreports
-            : `<table><tbody><tr><td>No reports found</td></tr></tbody></table>`
+          hasContent
+            ? html
+            : `<table><tbody><tr><td>No clinical notes found</td></tr></tbody></table>`
         }
       </div>
     </div>
   `;
+}
+
+function createImagingReportsSection(
+  diagnosticReports: DiagnosticReport[],
+  practitioners: Practitioner[],
+  organizations: Organization[]
+) {
+  const mappedPractitioners = mapResourceToId<Practitioner>(practitioners);
+  const mappedOrganizations = mapResourceToId<Organization>(organizations);
+
+  if (!diagnosticReports || diagnosticReports.length === 0) {
+    return `
+      <div id="imaging-reports" class="section">
+        <div class="section-title">
+          <h3 id="imaging-reports-anchor" title="Imaging Reports">&#x276F; Imaging Reports</h3>
+          <a href="#mr-header">&#x25B2; Back to Top</a>
+        </div>
+        <div class="section-content">
+          <table><tbody><tr><td>No imaging reports found</td></tr></tbody></table>
+        </div>
+      </div>
+    `;
+  }
+
+  const encounterSections = buildEncounterSections(diagnosticReports);
+
+  const html = renderReportsInEncounterBoxes({
+    encounterSections,
+    mappedPractitioners,
+    mappedOrganizations,
+    titleForNoDateGroup: "Reports Without Date",
+    // imaging doesn't need AWE logic
+    includeLabsLink: false,
+  });
+
+  const hasContent = html.trim().length > 0;
+
+  return `
+    <div id="imaging-reports" class="section">
+      <div class="section-title">
+        <h3 id="imaging-reports-anchor" title="Imaging Reports">&#x276F; Imaging Reports</h3>
+        <a href="#mr-header">&#x25B2; Back to Top</a>
+      </div>
+      <div class="section-content">
+        ${
+          hasContent
+            ? html
+            : `<table><tbody><tr><td>No imaging reports found</td></tr></tbody></table>`
+        }
+      </div>
+    </div>
+  `;
+}
+
+type RenderReportsInEncounterBoxesArgs = {
+  encounterSections: EncounterSection;
+  mappedPractitioners: Record<string, Practitioner>;
+  mappedOrganizations: Record<string, Organization>;
+  titleForNoDateGroup: string;
+  encounterDateFilter?: (encounterDate: string) => boolean;
+  includeLabsLink?: boolean;
+};
+
+function renderReportsInEncounterBoxes(args: RenderReportsInEncounterBoxesArgs): string {
+  const {
+    encounterSections,
+    mappedPractitioners,
+    mappedOrganizations,
+    titleForNoDateGroup,
+    encounterDateFilter,
+    includeLabsLink = false,
+  } = args;
+
+  const docsWithNotes = filterEncounterSections(encounterSections);
+
+  const entries = Object.entries(docsWithNotes)
+    .sort(([keyA], [keyB]) => {
+      if (keyA === MISSING_DATE_KEY) return 1;
+      if (keyB === MISSING_DATE_KEY) return -1;
+      return dayjs(keyA).isBefore(dayjs(keyB)) ? 1 : -1;
+    })
+    .filter(([dateKey]) => (encounterDateFilter ? encounterDateFilter(dateKey) : true));
+
+  const dated = entries.filter(([dateKey]) => dateKey !== MISSING_DATE_KEY);
+  const noDate = entries.find(([dateKey]) => dateKey === MISSING_DATE_KEY);
+
+  const datedHtml = dated
+    .map(([dateKey, section]) =>
+      renderEncounterBox({
+        dateKey,
+        section,
+        mappedPractitioners,
+        mappedOrganizations,
+        includeLabsLink,
+      })
+    )
+    .filter(Boolean)
+    .join("");
+
+  const noDateHtml = noDate
+    ? renderNoDateBox({
+        title: titleForNoDateGroup,
+        section: noDate[1],
+        mappedPractitioners,
+        mappedOrganizations,
+      })
+    : "";
+
+  return `${datedHtml}${noDateHtml}`;
+}
+
+function renderEncounterBox(opts: {
+  dateKey: string;
+  section: EncounterSection[string]; // the value of encounterSections[date]
+  mappedPractitioners: Record<string, Practitioner>;
+  mappedOrganizations: Record<string, Organization>;
+  includeLabsLink: boolean;
+}): string {
+  const { dateKey, section, mappedPractitioners, mappedOrganizations, includeLabsLink } = opts;
+
+  const documentation = (section.documentation ?? []).filter(doc => isValidNonPdfNote(doc));
+  const hasDocs = documentation.length > 0;
+
+  const labs = section.labs ?? [];
+  const hasLabs = labs.length > 0;
+
+  if (!hasDocs && !(includeLabsLink && hasLabs)) return "";
+
+  const reportCardsHtml = documentation
+    .map(doc => renderReportCard(doc, mappedPractitioners, mappedOrganizations))
+    .filter(Boolean)
+    .join("");
+
+  const labsLinkHtml =
+    includeLabsLink && hasLabs
+      ? `
+        <div class="report-card">
+          <h5>Labs</h5>
+          <div class="labs">
+            <a href="#laboratory-anchor">Click To See Labs Section</a>
+          </div>
+        </div>
+      `
+      : "";
+
+  return `
+    <div class="encounter-box">
+      <div class="encounter-header">
+        <h3 class="title">Encounter</h3>
+        <span>Date: ${dateKey === MISSING_DATE_KEY ? MISSING_DATE_TEXT : dateKey}</span>
+      </div>
+
+      ${reportCardsHtml}
+      ${labsLinkHtml}
+    </div>
+  `;
+}
+
+function renderNoDateBox(opts: {
+  title: string;
+  section: EncounterSection[string];
+  mappedPractitioners: Record<string, Practitioner>;
+  mappedOrganizations: Record<string, Organization>;
+}): string {
+  const { title, section, mappedPractitioners, mappedOrganizations } = opts;
+
+  const documentation = (section.documentation ?? []).filter(doc => isValidNonPdfNote(doc));
+  if (documentation.length === 0) return "";
+
+  const reportCardsHtml = documentation
+    .map(doc => renderReportCard(doc, mappedPractitioners, mappedOrganizations))
+    .filter(Boolean)
+    .join("");
+
+  return `
+    <div class="encounter-box no-date">
+      <div class="encounter-header">
+        <h3 class="title">${title}</h3>
+        <span></span>
+      </div>
+
+      ${reportCardsHtml}
+    </div>
+  `;
+}
+
+function isValidNonPdfNote(doc: DiagnosticReport): boolean {
+  const noteContent = buildNoteContentFromPresentedForms(doc);
+  return hasMeaningfulHtml(noteContent);
+}
+
+function getNoteType(doc: DiagnosticReport): string {
+  return doc.code?.text ?? getValidCode(doc.code?.coding)[0]?.display ?? "";
+}
+
+function renderReportCard(
+  doc: DiagnosticReport,
+  mappedPractitioners: Record<string, Practitioner>,
+  mappedOrganizations: Record<string, Organization>
+): string {
+  const noteType = getNoteType(doc) || "Note";
+
+  const noteContent = buildNoteContentFromPresentedForms(doc);
+  if (!hasMeaningfulHtml(noteContent)) return "";
+
+  const practitionerField = createPractitionerField(doc, mappedPractitioners) || "";
+  const organizationField = createOrganiztionField(doc, mappedOrganizations) || "";
+  const fields = [practitionerField, organizationField].filter(f => f.trim().length > 0);
+
+  return `
+    <div class="report-card" data-id="${doc.id ?? ""}">
+      <h4>${noteType}</h4>
+
+      ${fields.length > 0 ? `<div class="report-card-meta">${fields.join("<br />")}</div>` : ""}
+
+      <div>
+        ${noteContent}
+      </div>
+    </div>
+  `;
+}
+
+function buildNoteContentFromPresentedForms(report: DiagnosticReport): string {
+  const parts =
+    report.presentedForm
+      ?.map(form => {
+        const raw = form.data ?? "";
+        if (!raw) return "";
+
+        const contentType = form.contentType?.toLowerCase();
+        if (contentType === "application/pdf") return "";
+
+        const decoded = decodePresentedFormData(raw);
+        if (!decoded) return "";
+
+        if (decoded.includes("^application^pdf^BASE64^")) return "";
+
+        const cleaned = cleanUpNote(decoded);
+        const safe = normalizeCdaNarrativeToHtml(cleaned);
+
+        return hasMeaningfulHtml(safe) ? safe : "";
+      })
+      .filter(Boolean) ?? [];
+
+  return parts.join("<hr/>");
+}
+
+function normalizeCdaNarrativeToHtml(html: string): string {
+  let s = html ?? "";
+
+  s = s
+    .replace(/<\s*list\b[^>]*>/gi, "<ul>")
+    .replace(/<\s*\/\s*list\s*>/gi, "</ul>")
+    .replace(/<\s*item\b[^>]*>/gi, "<li>")
+    .replace(/<\s*\/\s*item\s*>/gi, "</li>");
+
+  // Remove table structure tags in the that may break the outer Notes table
+  s = s.replace(/<\/?(table|thead|tbody|tfoot|tr|td|th|caption|colgroup|col)\b[^>]*>/gi, "");
+
+  return s;
+}
+
+function hasMeaningfulHtml(html: string): boolean {
+  const text = (html ?? "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return text.length > 0;
+}
+
+function decodePresentedFormData(data: string): string {
+  const normalized = (data ?? "")
+    .replace(/&#x3D;|&#61;/g, "=")
+    .replace(/&#x2B;|&#43;/g, "+")
+    .replace(/&#x2F;|&#47;/g, "/")
+    .trim();
+
+  if (!normalized) return "";
+
+  try {
+    return Buffer.from(normalized, "base64").toString("utf-8");
+  } catch {
+    return "";
+  }
 }
 
 function buildReports(
@@ -764,7 +978,7 @@ function buildReports(
                 ? `
                   <div class="labs">
                     <h4>Labs</h4>
-                    <a href="#laboratory">Click To See Labs Section</a>
+                    <a href="#laboratory-anchor">Click To See Labs Section</a>
                   </div>
                   `
                 : ""
@@ -816,10 +1030,10 @@ function cleanUpNote(note: string): string {
     .replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "")
     .replace(/<ID>.*?<\/ID>/g, "")
     .replace(/<styleCode>.*?<\/styleCode>/g, "")
-    .replace(/<width>.*?<\/width>/g, "") // https://metriport.slack.com/archives/C0616FCPAKZ/p1722627448791109?thread_ts=1722612577.018299&cid=C0616FCPAKZ
-    .replace(/(<paragraph>|<content>)/g, '<p class="p-line">') // https://metriport.slack.com/archives/C0616FCPAKZ/p1722625692474229?thread_ts=1722612577.018299&cid=C0616FCPAKZ
-    .replace(/(<paragraph\s?\/>|<content\s?\/>)/g, "<p>&nbsp;</p>") // https://metriport.slack.com/archives/C0616FCPAKZ/p1722625692474229?thread_ts=1722612577.018299&cid=C0616FCPAKZ
-    .replace(/(<\/paragraph>|<\/content>)/g, "</p>"); // https://metriport.slack.com/archives/C0616FCPAKZ/p1722625692474229?thread_ts=1722612577.018299&cid=C0616FCPAKZ
+    .replace(/<width>.*?<\/width>/g, "")
+    .replace(/(<paragraph>|<content>)/g, '<p class="p-line">')
+    .replace(/(<paragraph\s?\/>|<content\s?\/>)/g, "<p>&nbsp;</p>")
+    .replace(/(<\/paragraph>|<\/content>)/g, "</p>");
 }
 
 function removeEncodedStrings(valueString: string): string {
@@ -980,10 +1194,7 @@ function createSectionInMedications(
   const medicationStatementsSortedByDate = medicationStatements.sort((a, b) => {
     const aDate = getDateFormMedicationStatement(a);
     const bDate = getDateFormMedicationStatement(b);
-    if (!aDate && !bDate) return 0;
-    if (aDate && !bDate) return -1;
-    if (!aDate && bDate) return 1;
-    return dayjs(aDate).isBefore(dayjs(bDate)) ? 1 : -1;
+    return sortByDateDescending(aDate, bDate);
   });
   const medicalTableContents = `
       <h4>${title}</h4>
@@ -992,12 +1203,10 @@ function createSectionInMedications(
       <tr>
         <th style="width: 25%">Medication</th>
         <th style="width: 25%">Instructions</th>
-        <div style="width: 50%">
-          <th>Dosage</th>
-          <th>Status</th>
-          <th>Code</th>
-          <th>Date</th>
-        </div>
+        <th style="width: 15%">Dosage</th>
+        <th style="width: 10%">Status</th>
+        <th style="width: 12%">Code</th>
+        <th style="width: 13%">Date</th>
       </tr>
     </thead>
     <tbody>
@@ -1044,6 +1253,7 @@ type RenderCondition = {
   lastSeen: string | undefined;
   clinicalStatus: string;
   isChronic: boolean;
+  hasEncounterDiagnosis: boolean;
 };
 
 function createConditionSection(conditions: Condition[], encounter: Encounter[]) {
@@ -1088,16 +1298,26 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
       const onsetDateTime = condition.onsetDateTime;
       const clinicalStatus = getValidCode(condition.clinicalStatus?.coding)[0]?.display ?? "";
       let onsetStartTime = condition.onsetPeriod?.start;
-      let onsetEndTime = condition.onsetPeriod?.end;
 
       if (!onsetStartTime && condition.id) {
         onsetStartTime = conditionDateDict[condition.id]?.start;
       }
-      if (!onsetEndTime && condition.id) {
-        onsetEndTime = conditionDateDict[condition.id]?.end;
-      }
+
+      const lastSeenTime =
+        condition.abatementPeriod?.end ||
+        condition.abatementDateTime ||
+        condition.abatementPeriod?.start ||
+        condition.onsetPeriod?.end ||
+        (condition.id ? conditionDateDict[condition.id]?.end : undefined) ||
+        condition.onsetDateTime ||
+        condition.onsetPeriod?.start;
 
       const isChronic = isChronicCondition(condition);
+
+      const hasEncounterDiagnosis =
+        condition.category?.some(cat =>
+          cat.coding?.some(coding => coding.code === "encounter-diagnosis")
+        ) ?? false;
 
       const hccExtensions = condition.extension?.filter(ext => ext.url === HCC_EXTENSION_URL) ?? [];
       const hccCodes = hccExtensions
@@ -1114,9 +1334,10 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
         code: (codeName ?? "") + (hccCodes ? ` (${hccCodes})` : ""),
         name,
         firstSeen: onsetStartTime && onsetStartTime.length ? onsetStartTime : onsetDateTime,
-        lastSeen: onsetEndTime && onsetEndTime.length ? onsetEndTime : onsetDateTime,
+        lastSeen: lastSeenTime,
         clinicalStatus,
         isChronic,
+        hasEncounterDiagnosis,
       };
 
       const existingCondition = acc.find(
@@ -1167,18 +1388,7 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
       }
       return acc;
     }, [] as RenderCondition[])
-    .sort((a, b) => {
-      // sort the conditions so ones without dates will always be at the bottom
-      if (!a.firstSeen) {
-        return 1;
-      }
-
-      if (!b.firstSeen) {
-        return -1;
-      }
-
-      return dayjs(a.firstSeen).isBefore(dayjs(b.firstSeen)) ? 1 : -1;
-    });
+    .sort((a, b) => sortByDateDescending(a.firstSeen, b.firstSeen));
 
   const conditionTableContents =
     removeDuplicate.length > 0
@@ -1187,12 +1397,13 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
 
     <thead>
       <tr>
-        <th style="width: 30%">Condition</th>
-        <th style="width: 25%">Code</th>
-        <th style="width: 10%">Chronic</th>
-        <th style="width: 12%">First seen</th>
-        <th style="width: 12%">Last seen</th>
-        <th style="width: 11%">Status</th>
+        <th style="width: 28%">Condition</th>
+        <th style="width: 22%">Code</th>
+        <th style="width: 8%">Chronic</th>
+        <th style="width: 8%">Enc Dx</th>
+        <th style="width: 11%">First seen</th>
+        <th style="width: 11%">Last seen</th>
+        <th style="width: 12%">Status</th>
       </tr>
     </thead>
     <tbody>
@@ -1203,6 +1414,7 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
               <td>${condition.name}</td>
               <td>${condition.code ?? ""}</td>
               <td>${condition.isChronic ? "Yes" : "No"}</td>
+              <td>${condition.hasEncounterDiagnosis ? "Yes" : "No"}</td>
               <td>${formatDateForDisplay(condition.firstSeen)}</td>
               <td>${formatDateForDisplay(condition.lastSeen)}</td>
               <td>${condition.clinicalStatus}</td>
@@ -1288,9 +1500,7 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
 
       return acc;
     }, [] as RenderAllergy[])
-    .sort((a, b) => {
-      return dayjs(a.firstSeen).isBefore(dayjs(b.firstSeen)) ? 1 : -1;
-    });
+    .sort((a, b) => sortByDateDescending(a.firstSeen, b.firstSeen));
 
   const blacklistCodeText = ["no known allergies"];
   const blacklistManifestationText = ["info not available", "other"];
@@ -1346,14 +1556,16 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
   return createSection("Allergies", allergyTableContents);
 }
 
-function createProcedureSection(procedures: Procedure[]) {
+function createProcedureSection(procedures: Procedure[], diagnosticReports: DiagnosticReport[]) {
   if (!procedures) {
     return "";
   }
 
-  const proceduresSortedByDate = procedures.sort((a, b) => {
-    return dayjs(a.performedDateTime).isBefore(dayjs(b.performedDateTime)) ? 1 : -1;
-  });
+  const mappedReports = mapResourceToId<DiagnosticReport>(diagnosticReports);
+
+  const proceduresSortedByDate = procedures.sort((a, b) =>
+    sortByDateDescending(a.performedDateTime, b.performedDateTime)
+  );
 
   const removeDuplicate = uniqWith(proceduresSortedByDate, (a, b) => {
     const aDate = dayjs(a.performedDateTime).format(ISO_DATE);
@@ -1383,7 +1595,23 @@ function createProcedureSection(procedures: Procedure[]) {
             CPT_CODE,
           ]);
 
-          // TODO: ADD PERFORMER FROM PRACTITIONER
+          const linkedReportIds =
+            procedure.report?.map(r => r.reference?.split("/")[1]).filter(Boolean) ?? [];
+
+          const noteContent = linkedReportIds
+            .map(id => {
+              const report = mappedReports[id ?? ""];
+              if (!report?.presentedForm?.[0]?.data) return "";
+              const rawNote = Buffer.from(report.presentedForm[0].data, "base64").toString("utf-8");
+              return cleanUpNote(rawNote);
+            })
+            .filter(note => note.length > 0)
+            .join("<hr/>");
+
+          const noteRow = noteContent
+            ? `<tr><td colspan="4" class="note-cell" style="padding-left: 20px; font-size: 0.9em; background-color: #f9f9f9;">${noteContent}</td></tr>`
+            : "";
+
           return `
             <tr>
               <td>${procedure?.code?.text ?? ""}</td>
@@ -1391,6 +1619,7 @@ function createProcedureSection(procedures: Procedure[]) {
               <td>${formatDateForDisplay(procedure.performedDateTime)}</td>
               <td>${procedure.status ?? ""}</td>
             </tr>
+            ${noteRow}
           `;
         })
         .join("")}
@@ -1418,11 +1647,7 @@ function createObservationSocialHistorySection(observations: Observation[]) {
     return "";
   }
 
-  const observationsSortedByDate = observations.sort((a, b) => {
-    return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
-  });
-
-  const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
+  const removeDuplicate = uniqWith(observations, (a, b) => {
     const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
     const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
     const aText = a.code?.text ?? getValidCode(a.code?.coding)[0]?.display;
@@ -1462,7 +1687,12 @@ function createObservationSocialHistorySection(observations: Observation[]) {
       });
 
       return acc;
-    }, [] as RenderObservation[]);
+    }, [] as RenderObservation[])
+    .sort((a, b) => {
+      const aDate = a.firstDate || a.lastDate;
+      const bDate = b.firstDate || b.lastDate;
+      return sortByDateDescending(aDate, bDate);
+    });
 
   const observationTableContents =
     removeDuplicate.length > 0
@@ -1483,15 +1713,17 @@ function createObservationSocialHistorySection(observations: Observation[]) {
           // if dates are the same just render firstdate
           const date =
             observation.firstDate === observation.lastDate
-              ? observation.firstDate
-              : `${observation.firstDate} - ${observation.lastDate}`;
+              ? formatDateForDisplay(observation.firstDate)
+              : `${formatDateForDisplay(observation.firstDate)} - ${formatDateForDisplay(
+                  observation.lastDate
+                )}`;
 
           return `
             <tr>
               <td>${observation.display}</td>
               <td>${observation.value}</td>
               <td>${observation.code ?? ""}</td>
-              <td>${formatDateForDisplay(date)}</td>
+              <td>${date}</td>
             </tr>
           `;
         })
@@ -1528,9 +1760,9 @@ function createObservationVitalsSection(observations: Observation[]) {
     return "";
   }
 
-  const observationsSortedByDate = observations.sort((a, b) => {
-    return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
-  });
+  const observationsSortedByDate = observations.sort((a, b) =>
+    sortByDateDescending(a.effectiveDateTime, b.effectiveDateTime)
+  );
 
   const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
     const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
@@ -1617,9 +1849,9 @@ function createObservationLaboratorySection(observations: Observation[]) {
     return "";
   }
 
-  const observationsSortedByDate = observations.sort((a, b) => {
-    return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
-  });
+  const observationsSortedByDate = observations.sort((a, b) =>
+    sortByDateDescending(a.effectiveDateTime, b.effectiveDateTime)
+  );
 
   const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
     const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
@@ -1736,9 +1968,11 @@ function createOtherObservationsSection(observations: Observation[]) {
     return "";
   }
 
-  const observationsSortedByDate = observations.sort((a, b) => {
-    return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
-  });
+  const nonSurveyObservations = observations.filter(obs => !isSurveyObservation(obs));
+
+  const observationsSortedByDate = nonSurveyObservations.sort((a, b) =>
+    sortByDateDescending(a.effectiveDateTime, b.effectiveDateTime)
+  );
 
   const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
     const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
@@ -1838,21 +2072,145 @@ function filterObservationsByDate(observations: Observation[]): FilteredObservat
   return filteredObservations;
 }
 
-function renderClassDisplay(encounter: Encounter) {
-  const isDisplayIsNotValid =
-    encounter.class?.display === undefined || encounter.class?.display === "unknown";
+function isSurveyObservation(observation: Observation): boolean {
+  return (
+    observation.category?.some(category =>
+      category.coding?.some(coding => coding.code?.toLowerCase() === "survey")
+    ) ?? false
+  );
+}
 
-  if (encounter.class?.display && !isDisplayIsNotValid) {
-    return encounter.class?.display;
-  } else if (encounter.class?.code && !isDisplayIsNotValid) {
-    const extension = encounter.class?.extension?.find(coding => {
-      return coding.valueCoding?.code === encounter.class?.code;
-    });
-
-    return extension?.valueCoding?.display;
-  } else {
-    return "";
+function getSurveyObservationValue(observation: Observation): string {
+  if (observation.valueQuantity) {
+    const unit = observation.valueQuantity.unit?.replace(/[{()}]/g, "") ?? "";
+    return `${observation.valueQuantity.value ?? ""} ${unit}`.trim();
   }
+
+  if (observation.valueString) {
+    return observation.valueString;
+  }
+
+  if (observation.valueCodeableConcept) {
+    return (
+      observation.valueCodeableConcept.text ??
+      observation.valueCodeableConcept.coding?.[0]?.display ??
+      ""
+    );
+  }
+
+  return "";
+}
+
+function getSurveyObservationDate(observation: Observation): string | undefined {
+  return (
+    observation.effectiveDateTime ??
+    observation.effectivePeriod?.start ??
+    observation.effectivePeriod?.end ??
+    observation.issued
+  );
+}
+
+function createSurveySection(observations: Observation[]): string {
+  if (!observations) {
+    return createSection(
+      "Surveys",
+      `<table><tbody><tr><td>No survey info found</td></tr></tbody></table>`
+    );
+  }
+
+  const surveyObservations = observations.filter(isSurveyObservation);
+
+  if (surveyObservations.length === 0) {
+    return createSection(
+      "Surveys",
+      `<table><tbody><tr><td>No survey info found</td></tr></tbody></table>`
+    );
+  }
+
+  const surveysSortedByDate = surveyObservations.sort((a, b) => {
+    const aDate = getSurveyObservationDate(a);
+    const bDate = getSurveyObservationDate(b);
+    return sortByDateDescending(aDate, bDate);
+  });
+
+  const removeDuplicate = uniqWith(surveysSortedByDate, (a, b) => {
+    const aDate = dayjs(getSurveyObservationDate(a)).format(ISO_DATE);
+    const bDate = dayjs(getSurveyObservationDate(b)).format(ISO_DATE);
+    const aCode = a.code?.text ?? a.code?.coding?.[0]?.display;
+    const bCode = b.code?.text ?? b.code?.coding?.[0]?.display;
+    return aDate === bDate && aCode === bCode;
+  });
+
+  const surveyTableContents =
+    removeDuplicate.length > 0
+      ? `
+      <table>
+    <thead>
+      <tr>
+        <th style="width: 40%">Survey Name</th>
+        <th style="width: 35%">Most Recent Value</th>
+        <th style="width: 25%">Most Recent Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${removeDuplicate
+        .map(observation => {
+          const name =
+            getValidCode(observation.code?.coding)[0]?.display ?? observation.code?.text ?? "";
+          const value = getSurveyObservationValue(observation);
+          const date = formatDateForDisplay(getSurveyObservationDate(observation));
+
+          return `
+            <tr>
+              <td>${name}</td>
+              <td>${value}</td>
+              <td>${date}</td>
+            </tr>
+          `;
+        })
+        .join("")}
+    </tbody>
+    </table>
+  `
+      : `<table>
+      <tbody><tr><td>No survey info found</td></tr></tbody></table>
+      `;
+
+  return createSection("Surveys", surveyTableContents);
+}
+
+function renderClassDisplay(encounter: Encounter) {
+  function isUsefulDisplay(display: string | undefined): boolean {
+    return display !== undefined && display.toLowerCase() !== "unknown";
+  }
+
+  // Priority 1: class.display
+  if (encounter.class?.display && isUsefulDisplay(encounter.class.display)) {
+    return encounter.class.display;
+  }
+
+  // Priority 2: class.extension
+  if (encounter.class?.extension) {
+    const extension = encounter.class.extension.find(
+      coding => coding.valueCoding?.code === encounter.class?.code
+    );
+    if (extension?.valueCoding?.display && isUsefulDisplay(extension.valueCoding.display)) {
+      return extension.valueCoding.display;
+    }
+  }
+
+  // Priority 3: type[] array
+  if (encounter.type) {
+    const types = encounter.type
+      .flatMap(t => [t.text, ...(t.coding?.map(c => c.display) ?? [])])
+      .filter((v): v is string => Boolean(v))
+      .filter(v => v.toLowerCase() !== "unknown");
+    if (types.length > 0) {
+      return types.join(", ");
+    }
+  }
+
+  return "";
 }
 
 function createImmunizationSection(immunizations: Immunization[]) {
@@ -1860,9 +2218,9 @@ function createImmunizationSection(immunizations: Immunization[]) {
     return "";
   }
 
-  const immunizationsSortedByDate = immunizations.sort((a, b) => {
-    return dayjs(a.occurrenceDateTime).isBefore(dayjs(b.occurrenceDateTime)) ? 1 : -1;
-  });
+  const immunizationsSortedByDate = immunizations.sort((a, b) =>
+    sortByDateDescending(a.occurrenceDateTime, b.occurrenceDateTime)
+  );
 
   const removeDuplicate = uniqWith(immunizationsSortedByDate, (a, b) => {
     const aDate = dayjs(a.occurrenceDateTime).format(ISO_DATE);
@@ -2063,68 +2421,6 @@ function renderRelatedPersonAddresses(relatedPerson: RelatedPerson) {
   });
 }
 
-function createTaskSection(tasks: Task[]) {
-  if (!tasks) {
-    return "";
-  }
-
-  const tasksSortedByDate = tasks.sort((a, b) => {
-    return dayjs(a.authoredOn).isBefore(dayjs(b.authoredOn)) ? 1 : -1;
-  });
-
-  const removeDuplicate = uniqWith(tasksSortedByDate, (a, b) => {
-    const aDate = dayjs(a.authoredOn).format(ISO_DATE);
-    const bDate = dayjs(b.authoredOn).format(ISO_DATE);
-    return aDate === bDate && a.description === b.description;
-  }).filter(task => {
-    // date is before 1920
-    const date = dayjs(task.authoredOn).format(ISO_DATE);
-    const isBefore1920 = dayjs(date).isBefore(dayjs("1920-01-01"));
-
-    return !isBefore1920;
-  });
-
-  const taskTableContents =
-    removeDuplicate.length > 0
-      ? `
-      <table>
-
-    <thead>
-      <tr>
-        <th style="width: 20%">Task</th>
-        <th style="width: 20%">Reason</th>
-        <th style="width: 20%">Code</th>
-        <th style="width: 20%">Note</th>
-        <th style="width: 20%">Date</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${removeDuplicate
-        .map(task => {
-          const code = getSpecificCode(task.code?.coding ?? [], [SNOMED_CODE]);
-
-          return `
-            <tr>
-              <td>${task.description ?? ""}</td>
-              <td>${getValidCode(task.reasonCode?.coding)[0]?.display ?? ""}</td>
-              <td>${code ?? ""}</td>
-              <td>${task.note?.[0]?.text ?? ""}</td>
-              <td>${formatDateForDisplay(task.authoredOn)}</td>
-            </tr>
-          `;
-        })
-        .join("")}
-    </tbody>
-    </table>
-
-  `
-      : `        <table>
-      <tbody><tr><td>No task info found</td></tr></tbody>        </table>
-      `;
-
-  return createSection("Tasks", taskTableContents);
-}
-
 function createEncountersSection(encounters: Encounter[], locations: Location[]) {
   const mappedLocations = mapResourceToId<Location>(locations);
 
@@ -2132,9 +2428,9 @@ function createEncountersSection(encounters: Encounter[], locations: Location[])
     return "";
   }
 
-  const encountersSortedByDate = encounters.sort((a, b) => {
-    return dayjs(a.period?.start).isBefore(dayjs(b.period?.start)) ? 1 : -1;
-  });
+  const encountersSortedByDate = encounters.sort((a, b) =>
+    sortByDateDescending(a.period?.start, b.period?.start)
+  );
 
   const removeDuplicate = uniqWith(encountersSortedByDate, (a, b) => {
     const aDate = dayjs(a.period?.start).format(ISO_DATE);
@@ -2194,18 +2490,22 @@ function createCoverageSection(coverages: Coverage[], organizations: Organizatio
 
   const mappedOrganizations = mapResourceToId<Organization>(organizations);
 
-  const coveragesSortedByDate = coverages.sort((a, b) => {
-    return dayjs(a.period?.start).isBefore(dayjs(b.period?.start)) ? 1 : -1;
-  });
+  const coveragesSortedByDate = coverages.sort((a, b) =>
+    sortByDateDescending(a.period?.start, b.period?.start)
+  );
 
   const removeDuplicate = uniqWith(coveragesSortedByDate, (a, b) => {
+    const aPayor = a.payor?.[0]?.reference;
+    const bPayor = b.payor?.[0]?.reference;
+    const aId = a.identifier?.[0]?.value;
+    const bId = b.identifier?.[0]?.value;
+
     if (a.period?.start && b.period?.start) {
       const aDate = dayjs(a.period?.start).format(ISO_DATE);
       const bDate = dayjs(b.period?.start).format(ISO_DATE);
-      return aDate === bDate && a.type?.text === b.type?.text;
-    } else {
-      return a.relationship?.text === b.relationship?.text;
+      return aDate === bDate && aPayor === bPayor && aId === bId;
     }
+    return aPayor === bPayor && aId === bId;
   });
 
   const coverageTableContents =
@@ -2215,11 +2515,9 @@ function createCoverageSection(coverages: Coverage[], organizations: Organizatio
 
     <thead>
       <tr>
-        <th style="width: 20%">Provider</th>
-        <th style="width: 20%">Policy ID</th>
-        <th style="width: 20%">Status</th>
-        <th style="width: 20%">Start Date</th>
-        <th style="width: 20%">End Date</th>
+        <th style="width: 40%">Provider</th>
+        <th style="width: 30%">Policy ID</th>
+        <th style="width: 30%">Status</th>
       </tr>
     </thead>
     <tbody>
@@ -2233,8 +2531,6 @@ function createCoverageSection(coverages: Coverage[], organizations: Organizatio
               <td>${organization?.name ?? ""}</td>
               <td>${coverage.identifier?.[0]?.value ?? ""}</td>
               <td>${coverage.status ?? ""}</td>
-              <td>${formatDateForDisplay(coverage.period?.start)}</td>
-              <td>${formatDateForDisplay(coverage.period?.end)}</td>
             </tr>
           `;
         })
@@ -2248,6 +2544,295 @@ function createCoverageSection(coverages: Coverage[], organizations: Organizatio
       `;
 
   return createSection("Coverage", coverageTableContents);
+}
+
+function createCarePlanSection(
+  carePlans: CarePlan[],
+  practitioners: Practitioner[],
+  organizations: Organization[],
+  locations: Location[],
+  conditions: Condition[]
+): string {
+  if (!carePlans || carePlans.length === 0) {
+    return createSection(
+      "Care Plans",
+      `<table><tbody><tr><td>No care plan info found</td></tr></tbody></table>`
+    );
+  }
+
+  const mappedPractitioners = mapResourceToId<Practitioner>(practitioners);
+  const mappedOrganizations = mapResourceToId<Organization>(organizations);
+  const mappedConditions = mapResourceToId<Condition>(conditions);
+
+  const carePlansSortedByDate = carePlans.sort((a, b) => {
+    const aDate = a.activity?.[0]?.detail?.scheduledPeriod?.start ?? a.period?.start;
+    const bDate = b.activity?.[0]?.detail?.scheduledPeriod?.start ?? b.period?.start;
+    return sortByDateDescending(aDate, bDate);
+  });
+
+  const removeDuplicate = uniqWith(carePlansSortedByDate, (a, b) => {
+    const aDate = dayjs(a.activity?.[0]?.detail?.scheduledPeriod?.start ?? a.period?.start).format(
+      ISO_DATE
+    );
+    const bDate = dayjs(b.activity?.[0]?.detail?.scheduledPeriod?.start ?? b.period?.start).format(
+      ISO_DATE
+    );
+    return aDate === bDate && a.description === b.description;
+  });
+
+  const carePlanTableContents =
+    removeDuplicate.length > 0
+      ? `
+      <table>
+    <thead>
+      <tr>
+        <th style="width: 35%">Description</th>
+        <th style="width: 20%">Practitioner</th>
+        <th style="width: 20%">Organization</th>
+        <th style="width: 10%">Status</th>
+        <th style="width: 15%">Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${removeDuplicate
+        .map(carePlan => {
+          const description = getCarePlanDescription(carePlan);
+          const practitionerName = getCarePlanPractitionerName(carePlan, mappedPractitioners);
+          const organizationName = getCarePlanOrganization(carePlan, mappedOrganizations);
+          const status = carePlan.status ?? "";
+          const rawDate =
+            carePlan.activity?.[0]?.detail?.scheduledPeriod?.start ?? carePlan.period?.start;
+          const date = formatDateForDisplay(rawDate);
+          const conditionsText = getCarePlanConditions(carePlan, mappedConditions);
+
+          return `
+            <tr>
+              <td>${description}${
+            conditionsText ? `<br/><small><em>Addresses: ${conditionsText}</em></small>` : ""
+          }</td>
+              <td>${practitionerName}</td>
+              <td>${organizationName}</td>
+              <td>${status}</td>
+              <td>${date}</td>
+            </tr>
+          `;
+        })
+        .join("")}
+    </tbody>
+    </table>
+  `
+      : `<table>
+      <tbody><tr><td>No care plan info found</td></tr></tbody></table>
+      `;
+
+  return createSection("Care Plans", carePlanTableContents);
+}
+
+function getCarePlanDescription(carePlan: CarePlan): string {
+  const mainDescription = carePlan.description ?? "";
+  const activityDescription = carePlan.activity?.[0]?.detail?.description ?? "";
+
+  if (mainDescription && activityDescription) {
+    return `${mainDescription} - ${activityDescription}`;
+  }
+  return mainDescription || activityDescription || "-";
+}
+
+function getCarePlanPractitionerName(
+  carePlan: CarePlan,
+  mappedPractitioners: Record<string, Practitioner>
+): string {
+  const performers = carePlan.activity?.[0]?.detail?.performer ?? [];
+  const practitionerRef = performers.find(p => p.reference?.startsWith("Practitioner/"));
+
+  if (!practitionerRef?.reference) return "";
+
+  const practitionerId = practitionerRef.reference.split("/")[1];
+  const practitioner = practitionerId ? mappedPractitioners[practitionerId] : undefined;
+
+  if (!practitioner?.name?.[0]) return "";
+
+  const givenName = practitioner.name[0].given?.join(" ") ?? "";
+  const familyName = practitioner.name[0].family ?? "";
+  let fullName = `${givenName} ${familyName}`.trim();
+
+  const qualification = practitioner.qualification?.[0]?.code?.coding?.[0]?.display;
+  if (qualification) {
+    fullName += ` (${qualification})`;
+  }
+
+  return fullName || "";
+}
+
+function getCarePlanOrganization(
+  carePlan: CarePlan,
+  mappedOrganizations: Record<string, Organization>
+): string {
+  const authorRef = carePlan.author;
+
+  if (!authorRef?.reference?.startsWith("Organization/")) return "";
+
+  const orgId = authorRef.reference.split("/")[1];
+  const organization = orgId ? mappedOrganizations[orgId] : undefined;
+
+  return organization?.name ?? "";
+}
+
+function getCarePlanConditions(
+  carePlan: CarePlan,
+  mappedConditions: Record<string, Condition>
+): string {
+  const addressRefs = carePlan.addresses ?? [];
+
+  const conditionNames = addressRefs
+    .map(ref => {
+      if (!ref.reference?.startsWith("Condition/")) return undefined;
+      const conditionId = ref.reference.split("/")[1];
+      const condition = conditionId ? mappedConditions[conditionId] : undefined;
+      return condition?.code?.text ?? condition?.code?.coding?.[0]?.display;
+    })
+    .filter(Boolean);
+
+  return conditionNames.join(", ") || "";
+}
+
+function createCareTeamSection(practitioners: Practitioner[], encounters: Encounter[]): string {
+  if (!practitioners || practitioners.length === 0) {
+    return createSection(
+      "Care Team",
+      `<table><tbody><tr><td>No care team info found</td></tr></tbody></table>`
+    );
+  }
+
+  const practitionersWithDates = practitioners.map(practitioner => ({
+    practitioner,
+    lastEncounterDate: getMostRecentEncounterDateForPractitioner(practitioner, encounters),
+  }));
+
+  const sortedPractitioners = practitionersWithDates.sort((a, b) => {
+    return sortByDateDescending(a.lastEncounterDate, b.lastEncounterDate);
+  });
+
+  const removeDuplicate = uniqWith(sortedPractitioners, (a, b) => {
+    const aName = getCareTeamName(a.practitioner);
+    const bName = getCareTeamName(b.practitioner);
+    return aName === bName;
+  });
+
+  const careTeamTableContents =
+    removeDuplicate.length > 0
+      ? `
+      <table>
+    <thead>
+      <tr>
+        <th style="width: 25%">Name</th>
+        <th style="width: 20%">Specialty</th>
+        <th style="width: 15%">Phone</th>
+        <th style="width: 25%">Address</th>
+        <th style="width: 15%">Last Appt</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${removeDuplicate
+        .map(({ practitioner, lastEncounterDate }) => {
+          const name = getCareTeamName(practitioner);
+          const specialty = getCareTeamSpecialty(practitioner);
+          const phone = getCareTeamPhone(practitioner);
+          const address = getCareTeamAddress(practitioner);
+          const lastAppt = lastEncounterDate ? formatDateForDisplay(lastEncounterDate) : "";
+
+          return `
+            <tr>
+              <td>${name}</td>
+              <td>${specialty}</td>
+              <td>${phone}</td>
+              <td>${address}</td>
+              <td>${lastAppt}</td>
+            </tr>
+          `;
+        })
+        .join("")}
+    </tbody>
+    </table>
+  `
+      : `<table>
+      <tbody><tr><td>No care team info found</td></tr></tbody></table>
+      `;
+
+  return createSection("Care Team", careTeamTableContents);
+}
+
+function getCareTeamName(practitioner: Practitioner): string {
+  if (!practitioner.name?.[0]) return "";
+
+  const name = practitioner.name[0];
+  const prefix = name.prefix?.join(" ") ?? "";
+  const given = name.given?.join(" ") ?? "";
+  const family = name.family ?? "";
+
+  return `${prefix} ${given} ${family}`.replace(/\s+/g, " ").trim() || "";
+}
+
+function getCareTeamSpecialty(practitioner: Practitioner): string {
+  const qualifications = practitioner.qualification ?? [];
+
+  for (const qualification of qualifications) {
+    const codings = qualification.code?.coding ?? [];
+    for (const coding of codings) {
+      if (coding.display) {
+        return coding.display;
+      }
+    }
+    if (qualification.code?.text) {
+      return qualification.code.text;
+    }
+  }
+
+  return "";
+}
+
+function getCareTeamPhone(practitioner: Practitioner): string {
+  const phones = practitioner.telecom
+    ?.filter(t => t.system === "phone")
+    .map(t => t.value)
+    .filter(Boolean);
+
+  return phones?.join(", ") || "";
+}
+
+function getCareTeamAddress(practitioner: Practitioner): string {
+  if (!practitioner.address?.[0]) return "";
+
+  const addr = practitioner.address[0];
+  const parts = [addr.line?.join(", "), addr.city, addr.state, addr.postalCode].filter(Boolean);
+
+  return parts.join(", ") || "";
+}
+
+function getMostRecentEncounterDateForPractitioner(
+  practitioner: Practitioner,
+  encounters: Encounter[]
+): string | undefined {
+  if (!practitioner.id) return undefined;
+
+  const practitionerRef = `Practitioner/${practitioner.id}`;
+  let mostRecentDate: string | undefined;
+
+  for (const encounter of encounters) {
+    const participants = encounter.participant ?? [];
+    const isParticipant = participants.some(p => p.individual?.reference === practitionerRef);
+
+    if (isParticipant) {
+      const encounterDate = encounter.period?.end ?? encounter.period?.start;
+      if (encounterDate) {
+        if (!mostRecentDate || dayjs(encounterDate).isAfter(dayjs(mostRecentDate))) {
+          mostRecentDate = encounterDate;
+        }
+      }
+    }
+  }
+
+  return mostRecentDate;
 }
 
 function getSpecificCode(coding: Coding[], systemsList: string[]): string | null {

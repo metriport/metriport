@@ -7,6 +7,7 @@ import {
   parseDischargeRequeryJob,
 } from "@metriport/shared/domain/patient/patient-monitoring/discharge-requery";
 import {
+  calculateDischargeRequeryRetryScheduledAt,
   calculateScheduledAt,
   defaultRemainingAttempts,
   earliest,
@@ -46,8 +47,20 @@ export async function createDischargeRequeryJob(
   if (!(await isDischargeRequeryFeatureFlagEnabledForCx(cxId))) return;
 
   let remainingAttempts = props.remainingAttempts ?? defaultRemainingAttempts;
-  let scheduledAt = calculateScheduledAt(remainingAttempts);
-  log(`remainingAttempts: ${remainingAttempts}, scheduledAt: ${scheduledAt.toISOString()}`);
+
+  const minRequeriesRemaining = Math.min(
+    ...dischargeData
+      .filter(d => d.dischargeRequeriesRemaining)
+      .map(d => d.dischargeRequeriesRemaining as number)
+  );
+  const hasRequerySchedule = isFinite(minRequeriesRemaining) && minRequeriesRemaining > 0;
+
+  let scheduledAt = hasRequerySchedule
+    ? calculateDischargeRequeryRetryScheduledAt(minRequeriesRemaining)
+    : calculateScheduledAt(remainingAttempts);
+  log(
+    `remainingAttempts: ${remainingAttempts}, requeriesRemaining: ${minRequeriesRemaining}, scheduledAt: ${scheduledAt.toISOString()}`
+  );
 
   const existingJobs = await getPatientJobs({
     cxId,

@@ -1,13 +1,20 @@
 import { getLocalStorage } from "@metriport/core/util/local-storage";
 import { NextFunction, Request, Response } from "express";
 import { customAlphabet } from "nanoid";
+import {
+  colorizeRequestId,
+  colorizeHttpMethodAndRoute,
+  colorizeStatusCode,
+  colorizeDuration,
+  colorizeMetadata,
+} from "../../shared/log-colorizer";
 import { getCxId, getCxIdFromQuery } from "../util";
 import { analyzeRoute } from "./request-analytics";
 
 const asyncLocalStorage = getLocalStorage("reqId");
 const nanoid = customAlphabet("0123456789abcdefghijklmnopqrstuvwxyz");
 
-export const requestLogger = (req: Request, res: Response, next: NextFunction): void => {
+export function requestLogger(req: Request, res: Response, next: NextFunction): void {
   const reqId = nanoid();
   // TODO move the asyncLocalStorage logic to its own, dedicated middleware
   asyncLocalStorage.run(reqId, () => {
@@ -24,13 +31,12 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
         : undefined;
 
     console.log(
-      "%s ....Begins %s %s %s %s",
-      reqId,
-      method,
-      url,
+      "%s ....Begins %s%s%s%s",
+      colorizeRequestId(reqId),
+      colorizeHttpMethodAndRoute(method, url),
       toString(params),
       toString(query),
-      cxId ? `{"cxId":"${cxId}"}` : ""
+      cxId ? colorizeMetadata(` {"cxId":"${cxId}"}`) : ""
     );
 
     const startHrTime = process.hrtime();
@@ -39,12 +45,11 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
       const elapsedHrTime = process.hrtime(startHrTime);
       const elapsedTimeInMs = elapsedHrTime[0] * 1000 + elapsedHrTime[1] / 1e6;
       console.log(
-        "%s ....Done %s %s | %d | %fms",
-        reqId,
-        method,
-        url,
-        res.statusCode,
-        elapsedTimeInMs
+        "%s ....Done %s | %s | %s",
+        colorizeRequestId(reqId),
+        colorizeHttpMethodAndRoute(method, url),
+        colorizeStatusCode(res.statusCode),
+        colorizeDuration(`${elapsedTimeInMs}ms`)
       );
 
       analyzeRoute({
@@ -60,7 +65,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
     });
     next();
   });
-};
+}
 
 export function splitUrlToClientAndPath(url: string): { client?: string; path: string } {
   const separator = "/medical/v1";

@@ -89,7 +89,7 @@ export function patientToCommonwell({
   };
 }
 
-function mapGenderAtBirthToCw(k: GenderAtBirth): GenderCodes | undefined {
+export function mapGenderAtBirthToCw(k: GenderAtBirth): GenderCodes | undefined {
   return genderMapping[k];
 }
 

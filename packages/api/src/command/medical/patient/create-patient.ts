@@ -14,6 +14,7 @@ import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert
 import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-initial-patient-discovery";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
+import { addPatientToCohorts } from "../cohort/patient-cohort/add-patient-to-cohorts";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { attachPatientIdentifiers, getPatientByDemo, PatientWithIdentifiers } from "./get-patient";
 import { createPatientSettings } from "./settings/create-patient-settings";
@@ -30,6 +31,7 @@ export async function createPatient({
   forceCommonwell,
   forceCarequality,
   settings,
+  cohortIds,
 }: {
   patient: PatientCreateCmd;
   runPd?: boolean;
@@ -37,6 +39,7 @@ export async function createPatient({
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
   settings?: PatientSettingsData;
+  cohortIds?: string[];
 }): Promise<PatientWithIdentifiers> {
   const { cxId, facilityId, externalId } = patient;
   const { log } = out(`createPatient.${cxId}`);
@@ -108,6 +111,13 @@ export async function createPatient({
       ...settings,
     }),
     upsertPatientToFHIRServer(newPatient.cxId, fhirPatient),
+    cohortIds && cohortIds.length > 0
+      ? addPatientToCohorts({
+          cxId,
+          patientId: patientCreate.id,
+          cohortIds,
+        })
+      : Promise.resolve(),
   ]);
 
   if (runPd) {

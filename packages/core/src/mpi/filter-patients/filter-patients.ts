@@ -1,14 +1,14 @@
 import { partition } from "lodash";
-import { normalizePatientInboundMpi } from "../normalize-patient";
 import { PatientData } from "../../domain/patient";
-import { calculateFullNameScore } from "./match-name";
+import { normalizePatient } from "../normalize-patient";
+import { crossValidateInvalidLinks } from "./cross-validate-links";
+import { calculateAddressScore } from "./match-address";
+import { checkBusinessRules } from "./match-business-rules";
+import { calculateContactScores } from "./match-contact";
 import { calculateDobScore } from "./match-dob";
 import { calculateGenderScore } from "./match-gender";
-import { calculateAddressScore } from "./match-address";
-import { calculateContactScores } from "./match-contact";
+import { calculateFullNameScore } from "./match-name";
 import { calculateSsnScore, hasSsnData } from "./match.ssn";
-import { checkBusinessRules } from "./match-business-rules";
-import { crossValidateInvalidLinks } from "./cross-validate-links";
 
 type LinkStatus = {
   patient: PatientData;
@@ -69,8 +69,8 @@ export function evaluatePatientMatch(
   scores: { [key: string]: number };
   failedRule?: string;
 } {
-  const normalizedMetriportPatient = normalizePatientInboundMpi(metriportPatient);
-  const normalizedExternalPatient = normalizePatientInboundMpi(externalPatient);
+  const normalizedMetriportPatient = normalizePatient(metriportPatient);
+  const normalizedExternalPatient = normalizePatient(externalPatient);
 
   const scores = {
     dob: 0,

@@ -1,11 +1,11 @@
 import { TreatmentType } from "@metriport/shared";
 import {
   Facility,
+  isDelegateFacility,
   isInitiatorAndResponder,
-  isOboFacility,
 } from "../../../../domain/medical/facility";
-import { createOrUpdateCWOrganizationV2 } from "../organization/create-or-update-cw-organization";
 import { buildCwOrgNameForFacility } from "../../../commonwell/shared";
+import { createOrUpdateCWOrganizationV2 } from "../organization/create-or-update-cw-organization";
 
 export async function createOrUpdateFacilityInCwV2({
   cxId,
@@ -21,7 +21,7 @@ export async function createOrUpdateFacilityInCwV2({
   const orgName = buildCwOrgNameForFacility({
     vendorName: cxOrgName,
     orgName: facility.data.name,
-    oboOid: isOboFacility(facility.cwType) ? facility.cwOboOid ?? undefined : undefined,
+    principalOid: isDelegateFacility(facility) ? facility.principalOid ?? undefined : undefined,
   });
 
   await createOrUpdateCWOrganizationV2({

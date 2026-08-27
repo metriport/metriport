@@ -51,7 +51,7 @@ export default (app: Application) => {
   app.use("/connect", connect);
 
   // routes with OAuth based authentication
-  app.use("/oauth", reportClientErrors, oauthRoutes);
+  app.use("/oauth", oauthRoutes);
 
   // routes with JWT based authentication
   app.use("/ehr", ehr);

@@ -1,19 +1,23 @@
-import { DbCreds } from "@metriport/shared";
+import { DbCreds, MetriportError } from "@metriport/shared";
+import { Config } from "../../../../../util/config";
+import { processAsyncError } from "../../../../../util/error/shared";
 import { out } from "../../../../../util/log";
-import { sendPatientCsvsToDb } from "../../../csv-to-db/send-csvs-to-db";
+import { TableDefinitions } from "../../../fwh/utils";
 import { buildFhirToCsvIncrementalJobPrefix } from "../../file-name";
 import { buildFhirToCsvTransformHandler } from "../transform/fhir-to-csv-transform-factory";
 import {
   FhirToCsvIncrementalHandler,
   ProcessFhirToCsvIncrementalRequest,
 } from "./fhir-to-csv-incremental";
+import { sendPatientCsvsToDb } from "./utils";
+import { doesConsolidatedDataExist } from "../../../../consolidated/consolidated-exists";
 
 export class FhirToCsvIncrementalDirect extends FhirToCsvIncrementalHandler {
   constructor(
-    private readonly analyticsBucketName: string,
-    private readonly region: string,
+    private readonly tablesDefinitions: TableDefinitions,
     private readonly dbCreds: DbCreds,
-    private readonly tablesDefinitions: Record<string, string>
+    private readonly analyticsBucketName: string = Config.getAnalyticsBucketName(),
+    private readonly region: string = Config.getAWSRegion()
   ) {
     super();
   }
@@ -23,14 +27,36 @@ export class FhirToCsvIncrementalDirect extends FhirToCsvIncrementalHandler {
     patientId,
     jobId = this.generateJobId(),
   }: ProcessFhirToCsvIncrementalRequest): Promise<string> {
-    const { log } = out(`FhirToCsvIncrementalDirect - cx ${cxId} pt ${patientId}`);
+    this.processFhirToCsvIncrementalSync({
+      cxId,
+      patientId,
+      jobId,
+    }).catch(processAsyncError(`FhirToCsvIncrementalDirect processFhirToCsvIncrementalSync`));
+    return jobId;
+  }
+
+  async processFhirToCsvIncrementalSync({
+    cxId,
+    patientId,
+    jobId = this.generateJobId(),
+  }: ProcessFhirToCsvIncrementalRequest): Promise<string> {
+    const { log } = out(
+      `FhirToCsvIncrementalDirect.processFhirToCsvIncrementalSync - cx ${cxId} pt ${patientId}`
+    );
+
+    const doesPatientHaveConsolidatedBundle = await doesConsolidatedDataExist(cxId, patientId);
+    if (!doesPatientHaveConsolidatedBundle) {
+      const msg = `Patient does not have a consolidated bundle`;
+      log(msg);
+      throw new MetriportError(msg, undefined, { cxId, patientId });
+    }
 
     const outputPrefix = buildFhirToCsvIncrementalJobPrefix({ cxId, patientId });
 
     const startedAt = Date.now();
     log(`Starting FhirToCsvTransform...`);
     const handler = buildFhirToCsvTransformHandler();
-    await handler.startFhirToCsvTransform({
+    await handler.runFhirToCsvTransform({
       cxId,
       patientId,
       outputPrefix,

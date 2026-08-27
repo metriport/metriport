@@ -2,6 +2,7 @@ import { BookedAppointment as BookedAppointmentAthena } from "@metriport/shared/
 import { SlimBookedAppointment } from "@metriport/shared/interface/external/ehr/canvas/appointment";
 import { BookedAppointment as BookedAppointmentElation } from "@metriport/shared/interface/external/ehr/elation/appointment";
 import { AppointmentWithAttendee } from "@metriport/shared/interface/external/ehr/healthie/appointment";
+import { BookedAppointment as BookedAppointmentPracticeFusion } from "@metriport/shared/interface/external/ehr/practicefusion/appointment";
 
 export type GetAppointmentsRequest = {
   method: AppointmentMethods;
@@ -22,7 +23,8 @@ export type Appointment =
   | BookedAppointmentAthena
   | BookedAppointmentElation
   | AppointmentWithAttendee
-  | SlimBookedAppointment;
+  | SlimBookedAppointment
+  | BookedAppointmentPracticeFusion;
 
 export enum AppointmentMethods {
   athenaGetAppointments = "athenaGetAppointments",
@@ -31,4 +33,5 @@ export enum AppointmentMethods {
   elationGetAppointments = "elationGetAppointments",
   healthieGetAppointments = "healthieGetAppointments",
   eclinicalworksGetAppointments = "eclinicalworksGetAppointments",
+  practiceFusionGetAppointments = "practiceFusionGetAppointments",
 }

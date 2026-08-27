@@ -1,13 +1,21 @@
 import {
   AllergyIntolerance,
+  Appointment,
   CarePlan,
+  CareTeam,
+  CommunicationRequest,
   Composition,
   Condition,
   Coverage,
+  Device,
+  DeviceRequest,
   DiagnosticReport,
   DocumentReference,
   Encounter,
   FamilyMemberHistory,
+  Goal,
+  Group,
+  HealthcareService,
   Immunization,
   Location,
   Medication,
@@ -15,14 +23,21 @@ import {
   MedicationDispense,
   MedicationRequest,
   MedicationStatement,
+  NutritionOrder,
   Observation,
   Organization,
   Patient,
   Practitioner,
+  PractitionerRole,
   Procedure,
   RelatedPerson,
+  RequestGroup,
+  Resource,
   RiskAssessment,
   ServiceRequest,
+  Substance,
+  Task,
+  VisionPrescription,
 } from "@medplum/fhirtypes";
 import { SmartCodeableConcept, Smart } from "./smart-resources";
 
@@ -364,3 +379,113 @@ export type SmartComposition = Smart<Composition> & CompositionCodingFields;
 export type SmartCoverage = Smart<Coverage> & CoverageCodingFields;
 
 export type SmartDocumentReference = Smart<DocumentReference> & DocumentReferenceCodingFields;
+
+export type SmartPractitionerRole = Smart<PractitionerRole>;
+
+export type SmartGroup = Smart<Group>;
+
+export type SmartDevice = Smart<Device>;
+
+export type SmartCareTeam = Smart<CareTeam>;
+
+export type SmartGoal = Smart<Goal>;
+
+export type SmartAppointment = Smart<Appointment>;
+
+export type SmartCommunicationRequest = Smart<CommunicationRequest>;
+
+export type SmartDeviceRequest = Smart<DeviceRequest>;
+
+export type SmartNutritionOrder = Smart<NutritionOrder>;
+
+export type SmartTask = Smart<Task>;
+
+export type SmartVisionPrescription = Smart<VisionPrescription>;
+
+export type SmartRequestGroup = Smart<RequestGroup>;
+
+export type SmartHealthcareService = Smart<HealthcareService>;
+
+export type SmartSubstance = Smart<Substance>;
+
+/**
+ * Conditional type that maps base FHIR resource types to their Smart equivalents
+ * This ensures consistent typing throughout the SDK
+ */
+export type ToSmart<T extends Resource> = T extends Observation
+  ? SmartObservation
+  : T extends Condition
+  ? SmartCondition
+  : T extends Procedure
+  ? SmartProcedure
+  : T extends AllergyIntolerance
+  ? SmartAllergyIntolerance
+  : T extends Encounter
+  ? SmartEncounter
+  : T extends DiagnosticReport
+  ? SmartDiagnosticReport
+  : T extends Immunization
+  ? SmartImmunization
+  : T extends Medication
+  ? SmartMedication
+  : T extends MedicationRequest
+  ? SmartMedicationRequest
+  : T extends MedicationAdministration
+  ? SmartMedicationAdministration
+  : T extends MedicationDispense
+  ? SmartMedicationDispense
+  : T extends MedicationStatement
+  ? SmartMedicationStatement
+  : T extends FamilyMemberHistory
+  ? SmartFamilyMemberHistory
+  : T extends RelatedPerson
+  ? SmartRelatedPerson
+  : T extends RiskAssessment
+  ? SmartRiskAssessment
+  : T extends ServiceRequest
+  ? SmartServiceRequest
+  : T extends CarePlan
+  ? SmartCarePlan
+  : T extends Patient
+  ? SmartPatient
+  : T extends Practitioner
+  ? SmartPractitioner
+  : T extends PractitionerRole
+  ? SmartPractitionerRole
+  : T extends Organization
+  ? SmartOrganization
+  : T extends Location
+  ? SmartLocation
+  : T extends Composition
+  ? SmartComposition
+  : T extends Coverage
+  ? SmartCoverage
+  : T extends DocumentReference
+  ? SmartDocumentReference
+  : T extends Group
+  ? SmartGroup
+  : T extends Device
+  ? SmartDevice
+  : T extends CareTeam
+  ? SmartCareTeam
+  : T extends Goal
+  ? SmartGoal
+  : T extends Appointment
+  ? SmartAppointment
+  : T extends CommunicationRequest
+  ? SmartCommunicationRequest
+  : T extends DeviceRequest
+  ? SmartDeviceRequest
+  : T extends NutritionOrder
+  ? SmartNutritionOrder
+  : T extends Task
+  ? SmartTask
+  : T extends VisionPrescription
+  ? SmartVisionPrescription
+  : T extends RequestGroup
+  ? SmartRequestGroup
+  : T extends HealthcareService
+  ? SmartHealthcareService
+  : T extends Substance
+  ? SmartSubstance
+  : Smart<T>; // Fallback to generic Smart for any other Resource type

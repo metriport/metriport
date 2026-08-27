@@ -55,10 +55,11 @@ export function parseFileName(fileName: string): ParsedFileName | undefined {
 }
 
 export function parseFilePath(filePath: string): ParsedFileName | undefined {
-  if (filePath.includes("/")) {
-    const pathParts = filePath.split("/");
+  const normalized = filePath.replace(/\/+$/, "");
+  if (normalized.includes("/")) {
+    const pathParts = normalized.split("/");
     const fileName = pathParts[pathParts.length - 1];
     if (fileName) return parseFileName(fileName);
   }
-  return undefined;
+  return parseFileName(normalized);
 }

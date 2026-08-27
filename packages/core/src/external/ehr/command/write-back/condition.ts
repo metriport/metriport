@@ -4,6 +4,7 @@ import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/
 import { ICD_10_CODE, SNOMED_CODE } from "@metriport/shared/medical/fhir/constants";
 import { writeBackCondition as writeBackConditionAthena } from "../../athenahealth/command/write-back/condition";
 import { writeBackCondition as writeBackConditionElation } from "../../elation/command/write-back/condition";
+import { writeBackConditionHealthie } from "../../healthie/command/write-back/condition";
 
 export type WriteBackConditionRequest = {
   ehr: EhrSource;
@@ -32,9 +33,10 @@ const ehrWriteBackConditionMap: WriteBackConditionFnMap = {
   [EhrSources.canvas]: undefined,
   [EhrSources.athena]: writeBackConditionAthena,
   [EhrSources.elation]: writeBackConditionElation,
-  [EhrSources.healthie]: undefined,
+  [EhrSources.healthie]: writeBackConditionHealthie,
   [EhrSources.eclinicalworks]: undefined,
   [EhrSources.salesforce]: undefined,
+  [EhrSources.practicefusion]: undefined,
 };
 
 function getEhrWriteBackConditionHandler(ehr: EhrSource): WriteBackConditionFn {
@@ -56,6 +58,7 @@ export const ehrWriteBackConditionPrimaryCodeMap: Record<EhrSource, CodingSystem
   [EhrSources.healthie]: ICD_10_CODE,
   [EhrSources.eclinicalworks]: undefined,
   [EhrSources.salesforce]: undefined,
+  [EhrSources.practicefusion]: undefined,
 };
 
 export function getEhrWriteBackConditionPrimaryCode(ehr: EhrSource): CodingSystem {

@@ -1,0 +1,38 @@
+---
+title: "Measure Report"
+description: "Schema documentation for the Measure Report table in the Metriport data model"
+group: "Schema"
+icon: "n/a"
+---
+
+The MeasureReport resource represents the results of a quality measure calculation for an individual patient. It captures population membership (initial population, denominator, numerator) and supporting evidence used in the calculation.
+
+MeasureReport resources are used to represent care gaps and quality measure evaluations.
+
+**MeasureReport Table:**
+
+**Primary Keys:**
+
+- measure_report_id
+
+**Foreign Keys:**
+
+- patient_id
+
+| Column            | Data Type | Description                                                                                                                                                  |
+| ----------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| measure_report_id | varchar   | Unique identifier for the measure report (maps to `id`)                                                                                                      |
+| patient_id        | varchar   | The patient identifier (extracted from `subject.reference`)                                                                                                  |
+| measure           | varchar   | Reference to the measure (maps to `measure`, e.g., canonical URL)                                                                                            |
+| status            | varchar   | Status of the report (maps to `status`, typically "complete")                                                                                                |
+| type              | varchar   | Type of report (maps to `type`, typically "individual")                                                                                                      |
+| date              | timestamp | When the measure was calculated (maps to `date`)                                                                                                             |
+| period_start      | date      | Start date of the measurement period (maps to `period.start`)                                                                                                |
+| period_end        | date      | End date of the measurement period (maps to `period.end`)                                                                                                    |
+| contained         | variant   | Array of contained resources (maps to `contained[]`). **Parameters with detailed calculation parameters and supporting evidence are stored in this column.** |
+| group             | variant   | Array of measure groups with population data (maps to `group[]`)                                                                                             |
+| meta_source       | varchar   | Source document filename from FHIR meta.source                                                                                                               |
+| data_source       | varchar   | **Deprecated.** Use `meta_source` instead.                                                                                                                   |
+| data_source_ext   | varchar   | Integration source of the data, derived from FHIR extension                                                                                                  |
+
+**Note:** The `contained` column holds the Parameters resource with detailed calculation parameters and supporting evidence. The `group` column holds the population stratifications (initial-population, denominator, numerator, etc.). Both use Snowflake's VARIANT type for JSON array storage.

@@ -30,8 +30,8 @@ function settings(): JobsSettings {
         timeout: runPatientJobQueueTimeout,
       },
       queue: {
-        alarmMaxAgeOfOldestMessage: Duration.hours(1),
-        maxMessageCountAlarmThreshold: 15_000,
+        alertMaxApproximateAgeOfOldestMessage: Duration.hours(1),
+        alertMaxApproximateNumberOfMessagesVisible: 15_000,
         maxReceiveCount: 1,
         visibilityTimeout: Duration.seconds(runPatientJobQueueTimeout.toSeconds() * 2 + 1),
         createRetryLambda: false,
@@ -49,7 +49,7 @@ function settings(): JobsSettings {
 interface JobsNestedStackProps extends NestedStackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
-  alarmAction?: SnsAction;
+  alertAction?: SnsAction;
   lambdaLayers: LambdaLayers;
 }
 
@@ -67,7 +67,7 @@ export class JobsNestedStack extends NestedStack {
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      alertAction: props.alertAction,
     };
 
     const runPatientJob = this.setupRunPatientJob({
@@ -89,9 +89,9 @@ export class JobsNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
+    alertAction: SnsAction | undefined;
   }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, envType, sentryDsn, alertAction } = ownProps;
     const {
       name,
       entry,
@@ -109,7 +109,7 @@ export class JobsNestedStack extends NestedStack {
       createDLQ: true,
       lambdaLayers: [lambdaLayers.shared],
       envType,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     const lambda = createLambda({
@@ -125,7 +125,7 @@ export class JobsNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));

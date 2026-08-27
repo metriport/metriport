@@ -1,9 +1,9 @@
-import { v4 as uuidv4 } from "uuid";
-import dayjs from "dayjs";
 import {
   OutboundPatientDiscoveryReq,
   OutboundPatientDiscoveryRespSuccessfulSchema,
 } from "@metriport/ihe-gateway-sdk";
+import dayjs from "dayjs";
+import { v4 as uuidv4 } from "uuid";
 
 export const xcpdGateway = {
   id: uuidv4(),
@@ -28,6 +28,7 @@ export const outboundXcpdRequest: OutboundPatientDiscoveryReq = {
     subjectRole: {
       code: "106331006",
       display: "Administrative AND/OR managerial worker",
+      system: "2.16.840.1.113883.6.96", // SNOMED_CT
     },
     organization: "White House Medical Inc",
     organizationId: "2.16.840.1.113883.3.9621.5.213",
@@ -69,10 +70,12 @@ export const outboundXcpdRequestMissingFields: OutboundPatientDiscoveryReq = {
   timestamp: "2024-04-04T19:11:55.879Z",
   principalCareProviderIds: ["1234567890"],
   samlAttributes: {
+    wsaFrom: "urn:namespace:internal-org-code",
     subjectId: "America Inc",
     subjectRole: {
       code: "106331006",
       display: "Administrative AND/OR managerial worker",
+      system: "2.16.840.1.113883.6.96", // SNOMED_CT
     },
     organization: "White House Medical Inc",
     organizationId: "2.16.840.1.113883.3.9621.5.213",
@@ -199,6 +202,7 @@ export const outboundDqRequest = {
     subjectRole: {
       code: "46255001",
       display: "Pharmacist",
+      system: "2.16.840.1.113883.6.96",
     },
     organization: "Family Medical Clinic",
     organizationId: "http://familymedicalclinic.org",
@@ -332,6 +336,7 @@ export const outboundDrRequest = {
     subjectRole: {
       code: "46255001",
       display: "Pharmacist",
+      system: "2.16.840.1.113883.6.96",
     },
     organization: "Family Medical Clinic",
     organizationId: "http://familymedicalclinic.org",
@@ -378,6 +383,7 @@ export const outboundDrRequestMtom = {
     subjectRole: {
       code: "46255001",
       display: "Pharmacist",
+      system: "2.16.840.1.113883.6.96",
     },
     organization: "Family Medical Clinic",
     organizationId: "http://familymedicalclinic.org",

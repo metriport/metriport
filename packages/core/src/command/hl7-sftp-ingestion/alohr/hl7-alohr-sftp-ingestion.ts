@@ -1,7 +1,5 @@
 import { log as createLog } from "../../../util/log";
 
-export const HIE_NAME = "Alohr";
-
 export const log = createLog("hl7-alohr-sftp-ingestion");
 
 export interface Hl7AlohrSftpIngestion {

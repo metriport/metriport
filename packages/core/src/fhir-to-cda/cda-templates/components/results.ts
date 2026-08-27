@@ -36,7 +36,7 @@ export function buildResultsSection(
       codeSystemName: "LOINC",
       displayName: sectionDetails.display ?? sectionDetails.sectionName,
     }),
-    title: sectionDetails.sectionName,
+    title: sectionDetails.sectionName.toUpperCase(),
     text: notOnFilePlaceholder,
   };
 
@@ -150,7 +150,9 @@ function buildEntriesFromAssembledNote(note: AssembledNote, referenceId: string)
       low: withNullFlavor(formatDateToCdaTimestamp(report.effectiveDateTime), "_value"),
       high: withNullFlavor(undefined, "_value"),
     },
-    component: createObservations(observations, referenceId).map(o => o.component), // TODO: Add procedure components
+    component: observations.flatMap((o, index) =>
+      createObservations([o], `${referenceId}-observation${index + 1}`).map(obs => obs.component)
+    ), // TODO: Add procedure components
   };
 
   return {
@@ -168,7 +170,10 @@ function buildEntriesFromAssembledNote(note: AssembledNote, referenceId: string)
 export function mapResultsStatusCode(status: string | undefined): ActStatusCode {
   if (!status) return "completed";
   switch (status) {
-    case "final" || "corrected" || "appended" || "amended":
+    case "final":
+    case "corrected":
+    case "appended":
+    case "amended":
       return "completed";
     case "registered":
       return "active";

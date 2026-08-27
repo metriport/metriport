@@ -7,7 +7,7 @@ export const namespaces = {
   wsu: "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd",
   wss: "http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd",
   xsi: "http://www.w3.org/2001/XMLSchema-instance",
-  xsd: "http://www.w3.org/2001/XMLSchema-instance",
+  xsd: "http://www.w3.org/2001/XMLSchema-instance", // TODO: change to "http://www.w3.org/2001/XMLSchema"
   hl7: "urn:hl7-org:v3",
   xs: "http://www.w3.org/2001/XMLSchema",
   ce: "hl7:CE",

@@ -22,6 +22,7 @@ import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { setDocRetrieveStartAt } from "../../hie/set-doc-retrieve-start";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
+import { iheToFhirDocumentReference } from "../../ihe-shared/ihe-to-fhir";
 import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
 import { getCQData } from "../patient";
 import { getCqInitiator } from "../shared";
@@ -30,7 +31,6 @@ import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
 import {
   containsDuplicateMetriportId,
   containsMetriportId,
-  cqToFHIR,
   DocumentReferenceWithMetriportId,
   getContentTypeOrUnknown,
 } from "./shared";
@@ -182,6 +182,7 @@ export async function processOutboundDocumentQueryResps({
       patientId,
       cxId: cxId,
       numOfGateways: documentRetrievalRequestsV2.length,
+      forceDownload,
     });
   } catch (error) {
     const msg = `Failed to process documents in Carequality.`;
@@ -409,7 +410,14 @@ async function storeInitDocRefInFHIR(
       try {
         const docId = docRef.metriportId ?? "";
 
-        const fhirDocRef = cqToFHIR(docId, docRef, "preliminary", patientId, cqExtension);
+        const fhirDocRef = iheToFhirDocumentReference({
+          docId,
+          docRef,
+          docStatus: "preliminary",
+          patientId,
+          source: MedicalDataSource.CAREQUALITY,
+          contentExtension: cqExtension,
+        });
 
         await upsertDocumentToFHIRServer(cxId, fhirDocRef, log);
       } catch (error) {

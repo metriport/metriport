@@ -4,20 +4,18 @@ import {
   PersonalIdentifier as IheIdentifier,
   Telecom as IheTelecom,
 } from "@metriport/ihe-gateway-sdk";
-import { Address } from "../../../domain/address";
+import { STATE_MAPPINGS } from "@metriport/shared";
 import { Contact } from "../../../domain/contact";
 import { getStateEnum } from "../../../domain/geographic-locations";
-import { createDriversLicensePersonalIdentifier, PatientData } from "../../../domain/patient";
+import { createDriversLicensePersonalIdentifier } from "../../../domain/patient";
+import { PatientDataForMpiMatching, RelaxedAddress } from "../../../mpi/normalize-patient";
 import { mapFhirToMetriportGender } from "../../fhir/patient/conversion";
 import { isContactType } from "../../fhir/patient/shared";
-import {
-  LivingSubjectAdministrativeGenderRequestedError,
-  PatientAddressRequestedError,
-  XDSRegistryError,
-} from "../error";
-import { STATE_MAPPINGS } from "../shared";
+import { LivingSubjectAdministrativeGenderRequestedError, XDSRegistryError } from "../error";
 
-export function validateFHIRAndExtractPatient(payload: InboundPatientDiscoveryReq): PatientData {
+export function validateFHIRAndExtractPatient(
+  payload: InboundPatientDiscoveryReq
+): PatientDataForMpiMatching {
   const patient = payload.patientResource;
   const firstName = patient.name?.flatMap(n => n.given ?? []).join(",");
 
@@ -39,26 +37,13 @@ export function validateFHIRAndExtractPatient(payload: InboundPatientDiscoveryRe
   }
 
   const addresses = (patient.address ?? []).map((addr: IheAddress) => {
-    const addressLine1 = addr.line ? addr.line.join(" ") : "";
-    const city = addr.city || "";
+    const addressLine1 = addr.line && addr.line.length > 0 ? addr.line.join(" ") : undefined;
+    const city = addr.city;
     const state = addr.state ? getStateEnum(addr.state) : undefined;
-    const zip = addr.postalCode || "";
+    const zip = addr.postalCode;
     const country = addr.country || "USA";
 
-    if (!addressLine1) {
-      throw new PatientAddressRequestedError("Address Line 1 is not defined");
-    }
-    if (!city) {
-      throw new PatientAddressRequestedError("City is not defined");
-    }
-    if (!state) {
-      throw new PatientAddressRequestedError("State is not defined");
-    }
-    if (!zip) {
-      throw new PatientAddressRequestedError("Zip is not defined");
-    }
-
-    const newAddress: Address = {
+    const newAddress: RelaxedAddress = {
       addressLine1,
       city,
       state,
@@ -88,7 +73,7 @@ export function validateFHIRAndExtractPatient(payload: InboundPatientDiscoveryRe
     return [];
   });
 
-  const convertedPatient: PatientData = {
+  const convertedPatient: PatientDataForMpiMatching = {
     firstName: firstName,
     lastName: lastName,
     dob: birthDate,

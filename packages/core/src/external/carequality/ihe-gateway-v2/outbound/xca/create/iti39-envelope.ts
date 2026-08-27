@@ -1,17 +1,19 @@
+import { OutboundDocumentRetrievalReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
+import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "@metriport/shared";
+import { uuidv4 } from "@metriport/shared/util";
 import dayjs from "dayjs";
 import { XMLBuilder } from "fast-xml-parser";
-import { OutboundDocumentRetrievalReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
+import { wrapIdInUrnOid, wrapIdInUrnUuid } from "../../../../../../util/urn";
+import { expiresIn, namespaces } from "../../../constants";
+import {
+  doesGatewayRequireSeparateDr,
+  doesGatewayUseSha1,
+  getDocumentUniqueIdFunctionByGateway,
+  getHomeCommunityId,
+} from "../../../gateways";
 import { createSecurityHeader } from "../../../saml/security/security-header";
 import { signFullSaml } from "../../../saml/security/sign";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
-import { namespaces, expiresIn } from "../../../constants";
-import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
-import { wrapIdInUrnUuid, wrapIdInUrnOid } from "../../../../../../util/urn";
-import {
-  getHomeCommunityId,
-  getDocumentUniqueIdFunctionByGateway,
-  doesGatewayUseSha1,
-} from "../../../gateways";
 
 const action = "urn:ihe:iti:2007:CrossGatewayRetrieve";
 
@@ -122,12 +124,28 @@ export function createAndSignBulkDRRequests({
   const signedRequests: SignedDrRequest[] = [];
 
   for (const bodyData of bulkBodyData) {
-    const signedRequest = createAndSignDRRequest(bodyData, samlCertsAndKeys);
-    signedRequests.push({
-      gateway: bodyData.gateway,
-      signedRequest,
-      outboundRequest: bodyData,
-    });
+    if (doesGatewayRequireSeparateDr(bodyData.gateway.homeCommunityId)) {
+      for (const docRef of bodyData.documentReference) {
+        const drRequest = {
+          ...bodyData,
+          id: uuidv4(),
+          documentReference: [docRef],
+        };
+        const signedRequest = createAndSignDRRequest(drRequest, samlCertsAndKeys);
+        signedRequests.push({
+          gateway: drRequest.gateway,
+          signedRequest,
+          outboundRequest: drRequest,
+        });
+      }
+    } else {
+      const signedRequest = createAndSignDRRequest(bodyData, samlCertsAndKeys);
+      signedRequests.push({
+        gateway: bodyData.gateway,
+        signedRequest,
+        outboundRequest: bodyData,
+      });
+    }
   }
 
   return signedRequests;

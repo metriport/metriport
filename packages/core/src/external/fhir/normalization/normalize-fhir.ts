@@ -2,11 +2,12 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { cloneDeep } from "lodash";
 import { buildCompleteBundleEntry, extractFhirTypesFromBundle } from "../bundle/bundle";
 import { sortCodings } from "./coding";
+import { linkProceduresToDiagnosticReports } from "./link-procedures-to-reports";
 import { normalizeConditions } from "./resources/condition";
 import { normalizeCoverages } from "./resources/coverage";
-import { filterInvalidEncounters } from "./resources/encounter";
+import { normalizeDiagnosticReports } from "./resources/diagnostic-reports";
+import { filterInvalidEncounters, normalizeEncounters } from "./resources/encounter";
 import { normalizeObservations } from "./resources/observation";
-import { linkProceduresToDiagnosticReports } from "./link-procedures-to-reports";
 
 /**
  * Normalizes a FHIR Bundle by standardizing and cleaning up its resources.
@@ -39,11 +40,15 @@ export function normalizeFhir(fhirBundle: Bundle<Resource>): Bundle<Resource> {
   const normalizedConditions = normalizeConditions(resourceArrays.conditions);
   resourceArrays.conditions = normalizedConditions;
 
+  const diagnosticReports = normalizeDiagnosticReports(resourceArrays.diagnosticReports);
+  resourceArrays.diagnosticReports = diagnosticReports;
+
   const validEncounters = filterInvalidEncounters(
     resourceArrays.encounters,
     resourceArrays.locations
   );
-  resourceArrays.encounters = validEncounters;
+  const normalizedEncounters = normalizeEncounters(validEncounters);
+  resourceArrays.encounters = normalizedEncounters;
 
   const proceduresWithDiagnosticReports = linkProceduresToDiagnosticReports(
     resourceArrays.procedures,

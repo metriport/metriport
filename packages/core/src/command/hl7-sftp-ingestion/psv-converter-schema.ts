@@ -100,9 +100,25 @@ export const rowSchema = z.object({
   EmergencySeverityLevel: z
     .string()
     .optional()
-    .refine(val => !val || /^[1-5]$/.test(val), {
-      message: "ESI level must be 1-5",
-    }),
+    .transform(val => {
+      if (val === "0") {
+        // Lahie uses 0 as "Unknown" triage level
+        // Hl7 standard does not support this, so for now we are mapping it to 5 (non-urgent).
+        // TODO: Ask Lahie to fix this.
+        return "5";
+      }
+      return val;
+    })
+    .refine(
+      val => {
+        const validEsiLevels = ["1", "2", "3", "4", "5"];
+        const isValidEsiLevel = !val || validEsiLevels.includes(val);
+        return isValidEsiLevel;
+      },
+      {
+        message: "ESI level must be 1-5 or 0 (mapped to 5)",
+      }
+    ),
   PatClass: PatClassEnum,
 });
 

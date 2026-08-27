@@ -5,6 +5,7 @@ import { getResourceBundleByResourceId as getAthenaResourceBundleByResourceId } 
 import { getResourceBundleByResourceId as getCanvasResourceBundleByResourceId } from "../canvas/command/get-resource-bundle-by-resource-id";
 import { getResourceBundleByResourceId as getElationResourceBundleByResourceId } from "../elation/command/get-resource-bundle-by-resource-id";
 import { getResourceBundleByResourceId as getHealthieResourceBundleByResourceId } from "../healthie/command/get-resource-bundle-by-resource-id";
+import { getResourceBundleByResourceId as getPracticeFusionResourceBundleByResourceId } from "../practicefusion/command/get-resource-bundle-by-resource-id";
 
 export type GetResourceBundleByResourceIdRequest = {
   ehr: EhrSource;
@@ -47,6 +48,7 @@ const ehrGetResourceBundleByResourceIdMap: GetResourceBundleByResourceIdMethodsM
   [EhrSources.healthie]: getHealthieResourceBundleByResourceId,
   [EhrSources.eclinicalworks]: undefined,
   [EhrSources.salesforce]: undefined,
+  [EhrSources.practicefusion]: getPracticeFusionResourceBundleByResourceId,
 };
 
 function getEhrGetResourceBundleByResourceIdHandler(ehr: EhrSource): GetResourceBundleByResourceId {

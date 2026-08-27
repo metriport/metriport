@@ -1,0 +1,30 @@
+---
+title: "Patient Address"
+description: "Schema documentation for the Patient Address table in the Metriport data model"
+group: "Schema"
+icon: "n/a"
+---
+
+The patient address table contains normalized address information for patients. This table supports multiple addresses per patient.
+
+**Primary Keys:**
+
+* patient_id
+* address_rank
+
+**Foreign Keys:**
+
+* patient_id - links to the [patient](/medical-api/handling-data/schema/patient) table
+
+| Column          | Data Type | Description                                    |
+| --------------- | --------- | ---------------------------------------------- |
+| patient_id      | varchar   | Unique identifier for the patient              |
+| address         | varchar   | First and second address lines concatenated    |
+| city            | varchar   | City name                                      |
+| district        | varchar   | District name (e.g., county)                   |
+| state           | varchar   | State or province code                         |
+| zip_code        | varchar   | ZIP or postal code                             |
+| country         | varchar   | Country code                                   |
+| lines           | varchar[] | Address lines as array of strings              |
+| data_source_ext | varchar   | Integration source of the data, derived from FHIR extension |
+| address_rank    | integer   | Patient FHIR resource array order              |

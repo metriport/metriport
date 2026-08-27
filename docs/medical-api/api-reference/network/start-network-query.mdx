@@ -1,0 +1,64 @@
+---
+title: "Start Network Query"
+description: "Triggers a network query for the specified patient across all available health data networks."
+api: "POST /medical/v1/network/query"
+---
+
+<Warning>
+  This endpoint returns a 2XX status code even when one or
+  more data sources fail to start or encounter errors.
+  Source-level failures are reported in the `errors` array
+  of the response body rather than as HTTP 4XX or 5XX status
+  codes. Always check the `errors` key in the response to
+  detect partial failures.
+</Warning>
+
+This endpoint triggers a _network query_, an asynchronous query against various kinds of health data sources including HIEs, pharmacies, and laboratories.
+As data from each source is processed and merged into a patient's record, also known as their 'Consolidated Data', we emit `network-query.*` webhook events.
+
+Every time a source completes, a webhook request will be sent to [your configured URL](/medical-api/api-reference/settings/post-settings)
+containing a link to download the patient's consolidated data.
+
+Webhook message types - see [the webhooks page](/medical-api/handling-data/webhooks-with-nq#network-query-data)
+for more details:
+
+- `network-query.hie`: HIE data has been merged into the consolidated bundle;
+- `network-query.pharmacy`: Pharmacy data has been merged into the consolidated bundle;
+- `network-query.lab`: Laboratory data has been merged into the consolidated bundle.
+
+## Query Params
+
+<ParamField query="patientId" type="string" required>
+  The ID of the Patient for which to query health data.
+</ParamField>
+
+## Body
+
+<Snippet file="network-query-body.mdx" />
+
+## Response
+
+<Snippet file="network-query-response.mdx" />
+
+<ResponseExample>
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const status = await metriport.startNetworkQuery({
+patientId: "00000000-0000-0000-00000-000000000000",
+sources: ["hie", "pharmacy", "laboratory"],
+metadata: {
+youCan: "putAny",
+stringKeyValue: "pairsHere",
+},
+});
+
+```
+</ResponseExample>
+
+## Rate Limits
+
+See [limits and throttling](/medical-api/more-info/limits#rate-limits)
+```

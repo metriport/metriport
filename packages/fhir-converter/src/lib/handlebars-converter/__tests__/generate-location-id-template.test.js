@@ -159,6 +159,23 @@ describe("GenerateLocationId.hbs template vs generateLocationId helper function"
       expect(helperRes1).toBe(helperRes2);
       expect(templateRes1.Id).toBe(helperRes1);
     });
+
+    it("should generate consistent UUIDs for same name data with location.location.name._", () => {
+      const locationData = {
+        location: {
+          name: { _: "Consistent Facility Name" },
+        },
+      };
+
+      const templateRes1 = renderLocationId(locationData);
+      const templateRes2 = renderLocationId(locationData);
+      const helperRes1 = functions.generateLocationId(locationData);
+      const helperRes2 = functions.generateLocationId(locationData);
+
+      expect(templateRes1.Id).toBe(templateRes2.Id);
+      expect(helperRes1).toBe(helperRes2);
+      expect(templateRes1.Id).toBe(helperRes1);
+    });
   });
 
   describe("Edge cases and error handling", () => {

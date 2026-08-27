@@ -78,4 +78,21 @@ export {
 } from "./medical/models/patient";
 export { PatientDTO } from "./medical/models/patientDTO";
 export { NetworkEntry } from "./medical/models/network-entry";
+export {
+  GetNetworkQueryStatusRequest,
+  NetworkQueryStatus,
+  networkQueryStatus,
+  NetworkQueryStatusDto,
+  NetworkQueryStatusDtoParsed,
+  networkQueryStatusDtoSchema,
+  NetworkSource,
+  networkSourceSchema,
+  SourceQueryError,
+  sourceQueryErrorSchema,
+  SourceQueryStatus,
+  sourceQueryStatus,
+  SourceQueryStatusDto,
+  sourceQueryStatusDtoSchema,
+  StartNetworkQueryRequest,
+} from "@metriport/shared/domain/network-query";
 export { patientSettingsSchema, TreatmentType } from "@metriport/shared";

@@ -36,6 +36,7 @@ runs
 .aider.*
 .aider*
 .env*
+.venv/
 
 *.out
 delay-time*.txt

@@ -8,7 +8,7 @@ export const kylaDocRefs: DataEntry[] = [
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTIyMDEzODgtQzk1RC00RkU2LTlCNzAtQTQ4MTZBMDM3NzVB",
+      id: "M2MxMmZhZjYtZDMxNC00YWI4LWFlYzEtYjU1ZjZhY2RhN2Uw",
       content: [
         {
           attachment: {
@@ -28,7 +28,7 @@ export const kylaDocRefs: DataEntry[] = [
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDEzMjItNzg5NC0xMjM0LTFCNzAtQjM4MTZBMDM3NzVC",
+      id: "MzYwMWRjNjYtYWZkZS00YjJkLWIwY2EtMDliNTdiMDM0OTVm",
       content: [
         {
           attachment: {
@@ -48,7 +48,7 @@ export const kylaDocRefs: DataEntry[] = [
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDEzMjItNzg5NC1CNTQzLTFCNzAtQjM4MTZBMDM3NzVC",
+      id: "ZWY0NTljNzMtOTU5MS00NzlkLWExZmEtMTVhOTYwNDU1MGQ2",
       content: [
         {
           attachment: {
@@ -68,7 +68,7 @@ export const kylaDocRefs: DataEntry[] = [
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4MTZBMDM3NzVC",
+      id: "MmRiYjg0ZGQtZWEwZC00MjNhLWFjYTAtODk2YjY2ZDYyYmFk",
       content: [
         {
           attachment: {
@@ -88,7 +88,7 @@ export const kylaDocRefs: DataEntry[] = [
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4MTZBMDM3NzVD",
+      id: "MTI3ZjgzZDEtYzE2Ny00ZWQ2LWE4N2EtOTQwZDBiNWUyN2Uw",
       content: [
         {
           attachment: {
@@ -107,7 +107,7 @@ export const kylaDocRefs: DataEntry[] = [
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4MTZBMDM3NzZD",
+      id: "NGRhYTUxNDktZGQ4OC00ZDg0LTk3YWItNmM2YjIzMzhlMmFh",
       content: [
         {
           attachment: {
@@ -126,7 +126,7 @@ export const kylaDocRefs: DataEntry[] = [
     },
     docRef: {
       resourceType: "DocumentReference",
-      id: "QTExMDEzMjItSDM5Mi1CNTQzLTFCNzAtQjM4NDZBMDM3NzZD",
+      id: "Njc3OTQ1NjItMGJjYS00MzgyLWEwMjEtNzdjZTEyZWUzOTk5",
       content: [
         {
           attachment: {

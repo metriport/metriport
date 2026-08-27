@@ -22,7 +22,7 @@ const router = Router();
  * @param req.params.id The ID of AthenaHealth Patient.
  * @param req.query.practiceId The ID of AthenaHealth Practice.
  * @param req.query.departmentId The ID of AthenaHealth Department.
- * @returns Metriport Patient if found.
+ * @returns Metriport Patient ID if found.
  */
 router.get(
   "/:id",
@@ -50,7 +50,7 @@ router.get(
  * @param req.params.id The ID of AthenaHealth Patient.
  * @param req.query.practiceId The ID of AthenaHealth Practice.
  * @param req.query.departmentId The ID of AthenaHealth Department.
- * @returns Metriport Patient if found.
+ * @returns Metriport Patient ID if found.
  */
 router.post(
   "/:id",

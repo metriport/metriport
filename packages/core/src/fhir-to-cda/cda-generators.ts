@@ -14,12 +14,14 @@ import { buildEncompassingEncounter } from "./cda-templates/components/encompass
 import { placeholderOrgOid } from "./cda-templates/constants";
 
 export function generateCdaFromFhirBundle(
+  cxId: string,
   fhirBundle: Bundle,
   oid: string,
   isCustodian = false
 ): string {
   const patientResource = findPatientResource(fhirBundle);
   const organizationResource = findOrganizationResource(fhirBundle);
+  const patientId = patientResource?.id;
 
   if (!patientResource || !organizationResource) {
     const missing = [];
@@ -31,6 +33,10 @@ export function generateCdaFromFhirBundle(
     }
     throw new BadRequestError(`${missing.join(", ")} resource(s) not found`);
   }
+  if (!patientId) {
+    throw new BadRequestError("Patient ID not found");
+  }
+
   const recordTarget = buildRecordTargetFromFhirPatient(patientResource);
   const author = buildAuthor(organizationResource);
   const custodian = isCustodian ? buildCustodian(organizationResource) : buildCustodian();
@@ -44,29 +50,32 @@ export function generateCdaFromFhirBundle(
     );
   }
 
-  const clinicalDocument = buildClinicalDocumentXml(
+  const clinicalDocument = buildClinicalDocumentXml({
+    cxId,
     recordTarget,
     author,
     custodian,
     encompassingEncounter,
     structuredBody,
-    composition
-  );
+    composition,
+    patientId,
+    documentType: "ccd",
+  });
 
   return postProcessXml(clinicalDocument, oid);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function postProcessXml(xml: any, oid: string): string {
-  xml = prependStyling(xml);
-  return xml
-    .replaceAll("<br>", "<br/>")
-    .replaceAll("</br>", "")
-    .replaceAll(placeholderOrgOid, oid)
-    .replaceAll("&lt;", "<")
-    .replaceAll("&gt;", ">")
-    .replaceAll("&quot;", '"')
-    .replaceAll("</text><text>", "");
+function postProcessXml(xml: string, oid: string): string {
+  const fullXml = prependStyling(xml);
+  const orgPlaceholderRegex = new RegExp(placeholderOrgOid, "g");
+  return fullXml
+    .replace(/<br>/g, "<br/>")
+    .replace(/<\/br>/g, "")
+    .replace(orgPlaceholderRegex, oid)
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/<\/text><text>/g, "");
 }
 
 function prependStyling(xml: string): string {

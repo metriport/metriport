@@ -1,3 +1,5 @@
+import { startDocumentQueryParamsSchema } from "@metriport/core/command/shared/api/start-document-query";
+import { buildDocumentQueryStarter } from "@metriport/core/command/shared/document-query/document-query-starter-factory";
 import { BulkGetDocUrlStatus } from "@metriport/core/domain/bulk-get-document-url";
 import { convertResult } from "@metriport/core/domain/document-query";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
@@ -6,6 +8,7 @@ import { documentBulkSignerLambdaResponseArraySchema } from "@metriport/core/ext
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
 import { isMedicalDataSource } from "@metriport/core/external/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { BadRequestError } from "@metriport/shared";
 import { Request, Response } from "express";
@@ -38,8 +41,6 @@ import {
 import { setDocQueryProgress } from "../../../external/hie/set-doc-query-progress";
 import { Config } from "../../../shared/config";
 import { parseISODate } from "../../../shared/date";
-import { errorToString } from "../../../shared/log";
-import { capture } from "../../../shared/notifications";
 import { requestLogger } from "../../helpers/request-logger";
 import { toDTO } from "../../medical/dtos/document-bulk-downloadDTO";
 import { cxRequestMetadataSchema } from "../../medical/schemas/request-metadata";
@@ -111,10 +112,7 @@ router.post(
       isDisableWH,
       dryRun,
       logConsolidatedCountBefore,
-    }).catch(err => {
-      console.log(`Error re-converting documents for cxId ${cxId}: ${errorToString(err)}`);
-      capture.error(err);
-    });
+    }).catch(processAsyncError(`Error re-converting documents for cxId ${cxId}`, undefined, true));
     return res.status(httpStatus.OK).json({
       processing: true,
       cxId,
@@ -233,6 +231,7 @@ const documentDataSchema = z.object({
   originalName: z.string(),
   locationUrl: z.string(),
   docId: z.string(),
+  hash: z.string().nullish(),
 });
 
 const uploadDocSchema = z.object({
@@ -401,6 +400,33 @@ router.post(
     });
 
     return res.status(httpStatus.OK).json(docQueryProgress);
+  })
+);
+
+const bulkEnqueueDocumentQueryRequestsSchema = z.object({
+  requests: z.array(startDocumentQueryParamsSchema).min(1),
+});
+
+/**
+ * POST /internal/docs/query/enqueue
+ *
+ * Enqueues multiple document queries for processing. This endpoint accepts an array of document
+ * query requests and processes them using the DocumentQueryStarter factory.
+ * @param req.body.requests - Array of document query requests to enqueue.
+ * @return 200 Indicating the document queries were successfully enqueued.
+ */
+router.post(
+  "/query/enqueue",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const { requests } = bulkEnqueueDocumentQueryRequestsSchema.parse(req.body);
+
+    await buildDocumentQueryStarter().startDocumentQueries(requests);
+
+    return res.status(httpStatus.OK).json({
+      processing: true,
+      requestCount: requests.length,
+    });
   })
 );
 

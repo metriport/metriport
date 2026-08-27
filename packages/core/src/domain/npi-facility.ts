@@ -1,4 +1,5 @@
 import z from "zod";
+import { FacilityType } from "./facility";
 
 export const npiAddressSchema = z.object({
   country_code: z.string(),
@@ -10,10 +11,17 @@ export const npiAddressSchema = z.object({
 });
 export type NpiAddress = z.infer<typeof npiAddressSchema>;
 
+export const npiOtherNamesSchema = z.object({
+  organization_name: z.string(),
+});
+export type NpiOtherNames = z.infer<typeof npiOtherNamesSchema>;
+
 export const npiRegistryFacilitySchema = z.object({
   number: z.string(),
   addresses: z.array(npiAddressSchema),
+  other_names: z.array(npiOtherNamesSchema),
 });
+
 export type NpiRegistryFacility = z.infer<typeof npiRegistryFacilitySchema>;
 
 export const npiRegistryReturnSchema = z.object({
@@ -33,10 +41,12 @@ export type NpiRegistryReturn = z.infer<typeof npiRegistryReturnSchema>;
 
 export const additionalInformationInternalFacilitySchema = z.object({
   facilityName: z.string(),
-  facilityType: z.enum(["obo", "non-obo"]),
-  cqOboOid: z.string().optional(),
-  cwOboOid: z.string().optional(),
+  cqActive: z.boolean(),
+  cwActive: z.boolean(),
+  type: z.nativeEnum(FacilityType),
+  principalOid: z.string().optional(),
 });
+
 export type AdditionalInformationInternalFacility = z.infer<
   typeof additionalInformationInternalFacilitySchema
 >;

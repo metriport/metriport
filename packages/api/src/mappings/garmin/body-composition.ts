@@ -25,7 +25,7 @@ export const mapToBody = (items: GarminBodyCompositionList): UserData<Body>[] =>
 export const garminBodyCompositionToBody = (gBody: GarminBodyComposition): Body => {
   const res: Body = {
     metadata: {
-      // TODO https://github.com/metriport/metriport-internal/issues/166
+      // TODO
       date: secondsToISODate(gBody.measurementTimeInSeconds),
       source: PROVIDER_GARMIN,
     },

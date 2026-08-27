@@ -5,47 +5,61 @@ group: "Schema"
 icon: "n/a"
 ---
 
-A condition is used to record detailed information about a condition, problem, diagnosis, or other event, situation, issue, or clinical concept that has risen to a level of concern. The condition could be a point in time diagnosis in context of an encounter, it could be an item on the practitioner’s Problem List, or it could be a concern that doesn’t exist on the practitioner’s Problem List. Often times, a condition is about a clinician's assessment and assertion of a particular aspect of a patient's state of health. It can be used to record information about a disease/illness identified from application of clinical reasoning over the pathologic and pathophysiologic findings (diagnosis), or identification of health issues/situations that a practitioner considers harmful, potentially harmful and may be investigated and managed (problem), or other health issue/situation that may require ongoing monitoring and/or management (health issue/concern).
+A condition is used to record detailed information about a condition, problem, diagnosis, or other event, situation, issue, or clinical concept that has risen to a level of concern. The condition could be a point in time diagnosis in context of an encounter, it could be an item on the practitioner's Problem List, or it could be a concern that doesn't exist on the practitioner's Problem List. Often times, a condition is about a clinician's assessment and assertion of a particular aspect of a patient's state of health. It can be used to record information about a disease/illness identified from application of clinical reasoning over the pathologic and pathophysiologic findings (diagnosis), or identification of health issues/situations that a practitioner considers harmful, potentially harmful and may be investigated and managed (problem), or other health issue/situation that may require ongoing monitoring and/or management (health issue/concern).
 
 **Reference Table:**
 
 The `condition_references` table contains normalized references from the condition to other entities. It supports the following reference properties:
-* **subject** (required): links to the patient who has the condition
-* **encounter**: links to the encounter where the condition was recorded
-* **recorder**: links to the practitioner who recorded the condition
+
+- **subject** (required): links to the patient who has the condition
+- **encounter**: links to the encounter where the condition was recorded
+- **recorder**: links to the practitioner who recorded the condition
 
 For detailed information about reference table structure and indexing, see the [Reference Tables documentation](/medical-api/handling-data/schema/reference-tables).
 
 **Condition Table:**
 
 **Primary Keys:**
-* condition_id
+
+- condition_id
 
 **Foreign Keys:**
-* patient_id
 
-| Column | Data Type | Description |
-| ------ | --------- | ----------- |
-| condition_id | varchar | Unique identifier for the condition |
-| patient_id | varchar | Unique identifier for the patient |
-| recorded_date | date | Date when the condition was recorded |
-| onset_date | date | Date when the condition began |
-| end_date | date | Date when the condition ended |
-| icd_10_cm_code | varchar | ICD-10-CM code for the condition |
-| icd_10_cm_display | varchar | Human-readable description of ICD-10-CM code |
-| snomed_code | varchar | SNOMED CT code for the condition |
-| snomed_display | varchar | Human-readable description of SNOMED CT code |
-| icd_9_cm_code | varchar | ICD-9-CM code for the condition |
-| icd_9_cm_display | varchar | Human-readable description of ICD-9-CM code |
-| category_hl7_code | varchar | HL7 category code for the condition |
-| category_hl7_display | varchar | Human-readable description of HL7 category |
-| source_category_code | varchar | Original category code from source system |
-| source_category_display | varchar | Original category display from source system |
-| source_category_system | varchar | Original category system from source system |
-| clinical_status_hl7_code | varchar | HL7 clinical status code |
-| clinical_status_hl7_display | varchar | Human-readable description of clinical status |
-| source_clinical_status_code | varchar | Original clinical status code from source system |
-| source_clinical_status_display | varchar | Original clinical status display from source system |
-| source_clinical_status_system | varchar | Original clinical status system from source system |
-| note_text | varchar | Additional notes about the condition |
-| data_source | varchar | Source of the condition data |
+- patient_id
+
+| Column                         | Data Type | Description                                                                         |
+| ------------------------------ | --------- | ----------------------------------------------------------------------------------- |
+| condition_id                   | varchar   | Unique identifier for the condition                                                 |
+| patient_id                     | varchar   | Unique identifier for the patient                                                   |
+| recorded_date                  | date      | Date when the condition was recorded                                                |
+| onset_date                     | date      | Date when the condition began                                                       |
+| end_date                       | date      | Date when the condition ended                                                       |
+| icd_10_cm_code                 | varchar   | ICD-10-CM code for the condition                                                    |
+| icd_10_cm_display              | varchar   | Human-readable description of ICD-10-CM code                                        |
+| snomed_code                    | varchar   | SNOMED CT code for the condition                                                    |
+| snomed_display                 | varchar   | Human-readable description of SNOMED CT code                                        |
+| icd_9_cm_code                  | varchar   | ICD-9-CM code for the condition                                                     |
+| icd_9_cm_display               | varchar   | Human-readable description of ICD-9-CM code                                         |
+| ccsr_code                      | varchar   | AHRQ CCSR (Clinical Classifications Software Refined) code for the condition        |
+| ccsr_display                   | varchar   | Human-readable description of the AHRQ CCSR code                                    |
+| source_code_code               | varchar   | Original code from source system                                                    |
+| source_code_display            | varchar   | Original code display from source system                                            |
+| source_code_system             | varchar   | Original code system from source system                                             |
+| category_hl7_code              | varchar   | HL7 category code for the condition                                                 |
+| category_hl7_display           | varchar   | Human-readable description of HL7 category                                          |
+| source_category_code           | varchar   | Original category code from source system                                           |
+| source_category_display        | varchar   | Original category display from source system                                        |
+| source_category_system         | varchar   | Original category system from source system                                         |
+| clinical_status_hl7_code       | varchar   | HL7 clinical status code                                                            |
+| clinical_status_hl7_display    | varchar   | Human-readable description of clinical status                                       |
+| source_clinical_status_code    | varchar   | Original clinical status code from source system                                    |
+| source_clinical_status_display | varchar   | Original clinical status display from source system                                 |
+| source_clinical_status_system  | varchar   | Original clinical status system from source system                                  |
+| note_text                      | varchar   | Additional notes about the condition                                                |
+| chronicity_code                | varchar   | Chronicity code indicating if the condition is acute or chronic                     |
+| hcc_code                       | varchar   | CMS HCC (Hierarchical Condition Category) code for risk adjustment                  |
+| verification_status            | varchar   | Verification status of the condition. Set to `unconfirmed` for algorithmic suspects |
+| evidence                       | variant   | JSON array of evidence references supporting the condition (used for suspects)      |
+| meta_source                    | varchar   | Source document filename from FHIR meta.source                                      |
+| data_source                    | varchar   | **Deprecated.** Use `meta_source` instead.                                          |
+| data_source_ext                | varchar   | Integration source of the data, derived from FHIR extension                         |

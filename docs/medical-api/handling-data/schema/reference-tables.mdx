@@ -20,6 +20,13 @@ Each reference table contains the following columns:
 
 ## Reference Tables by Resource Type
 
+### [Allergy Intolerance References](/medical-api/handling-data/schema/allergy-intolerance/base)
+The `allergy_intolerance_references` table supports the following reference properties:
+- **patient** (required): links to the [patient](/medical-api/handling-data/schema/patient) who has the allergy/intolerance
+- **encounter**: links to the [encounter](/medical-api/handling-data/schema/encounter) where the allergy/intolerance was recorded
+- **recorder**: links to the [practitioner](/medical-api/handling-data/schema/practitioner) who recorded the allergy/intolerance
+- **asserter**: links to the [practitioner](/medical-api/handling-data/schema/practitioner) or [patient](/medical-api/handling-data/schema/patient) who asserted the allergy/intolerance
+
 ### [Condition References](/medical-api/handling-data/schema/condition)
 The `condition_references` table supports the following reference properties:
 - **subject** (required): links to the [patient](/medical-api/handling-data/schema/patient) who has the condition

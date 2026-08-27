@@ -1,0 +1,120 @@
+<ResponseField name="requestId" type="string" required>
+  The unique identifier for this network query request. Use
+  this to track the query status and correlate webhooks.
+</ResponseField>
+
+<ResponseField name="startedAt" type="string" required>
+  ISO 8601 timestamp of when the network query request was
+  initially made.
+</ResponseField>
+
+<ResponseField name="status" type="string" required>
+  The overall status of the network query. Can be one of:
+
+  - `processing` - at least one source is still being queried
+  - `completed` - all sources have completed successfully
+  - `partial` - some sources completed, some failed
+  - `failed` - all sources failed
+</ResponseField>
+
+<ResponseField name="sources" type="Source[]" required>
+  Array of status objects for each data source being
+  queried. A source type may appear multiple times if it was
+  retried after a failure.
+  <Expandable title="Source properties">
+    <ResponseField name="type" type="string" required>
+      The type of source: `hie`, `pharmacy`, or `lab`.
+    </ResponseField>
+    <ResponseField name="status" type="string" required>
+      The status of this source: `processing`, `completed`,
+      or `failed`.
+    </ResponseField>
+    <ResponseField name="startedAt" type="string" required>
+      ISO 8601 timestamp of when this specific source
+      request was initiated.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="errors" type="SourceError[]">
+  Array of errors for data sources that could not be
+  queried. Only present when one or more sources fail to
+  start.
+  <Expandable title="SourceError properties">
+    <ResponseField name="source" type="string" required>
+      The type of source that failed: `hie`, `pharmacy`, or
+      `lab`.
+    </ResponseField>
+    <ResponseField name="httpStatus" type="number" required>
+      The HTTP status code representing the error. Common
+      values: - `400` - Bad Request (access to this data
+      source is not enabled for this account) - `429` - Too
+      Many Requests (rate limit exceeded for this data
+      source)
+    </ResponseField>
+    <ResponseField name="message" type="string" required>
+      A human-readable description of the error.
+    </ResponseField>
+    <ResponseField name="timestamp" type="string" required>
+      ISO 8601 timestamp of when the error occurred.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+**Example Response Body (all sources started):**
+
+```json
+{
+  "requestId": "00000000-0000-0000-0000-000000000000",
+  "startedAt": "2024-12-30T10:00:00.000Z",
+  "status": "processing",
+  "sources": [
+    {
+      "type": "hie",
+      "status": "processing",
+      "startedAt": "2024-12-30T10:00:00.500Z"
+    },
+    {
+      "type": "pharmacy",
+      "status": "processing",
+      "startedAt": "2024-12-30T10:00:00.750Z"
+    },
+    {
+      "type": "lab",
+      "status": "processing",
+      "startedAt": "2024-12-30T10:00:01.000Z"
+    }
+  ]
+}
+```
+
+**Example Response Body (with source errors):**
+
+```json
+{
+  "requestId": "00000000-0000-0000-0000-000000000000",
+  "startedAt": "2024-12-30T10:00:00.000Z",
+  "status": "processing",
+  "sources": [
+    {
+      "type": "hie",
+      "status": "processing",
+      "startedAt": "2024-12-30T10:00:00.500Z"
+    }
+  ],
+  "errors": [
+    {
+      "source": "pharmacy",
+      "httpStatus": 400,
+      "message": "Access to pharmacy data source is not enabled for this account",
+      "timestamp": "2024-12-30T10:00:00.600Z"
+    },
+    {
+      "source": "lab",
+      "httpStatus": 429,
+      "message": "Rate limit exceeded for laboratory data source",
+      "timestamp": "2024-12-30T10:00:00.800Z"
+    }
+  ]
+}
+```

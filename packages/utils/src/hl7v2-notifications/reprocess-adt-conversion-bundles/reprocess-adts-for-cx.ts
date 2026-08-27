@@ -9,7 +9,7 @@ import { buildHl7NotificationWebhookSender } from "@metriport/core/command/hl7-n
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Config } from "@metriport/core/util/config";
 import { makeDir, writeFileContents } from "@metriport/core/util/fs";
-import { sleep } from "@metriport/shared";
+import { KONZA_HIE_NAME, sleep } from "@metriport/shared";
 import { buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
 
 /**
@@ -20,8 +20,9 @@ import { buildDayjs, elapsedTimeFromNow } from "@metriport/shared/common/date";
  * Steps:
  * 1. Ensure your .env file has the required AWS and bucket configuration (AWS_REGION)
  * 2. Update the listOfCxIds array on line 35 with the CX IDs to process
- * 2.5. Set dryRun to false to actually send the adts to the webhook
- * 3. Run the script:
+ * 3. Set dryRun to false to actually send the adts to the webhook
+ * 4. Ensure isSendWebhook is set to the desired value.
+ * 5. Run the script:
  *    npx ts-node src/hl7v2-notifications/reprocess-adt-conversion-bundles/reprocess-adts-for-cx.ts
  *
  * Usage:
@@ -35,6 +36,7 @@ Config.getHl7NotificationQueueUrl(); // Needed if running for realsies. Comment 
 // ⚠️ THIS ONLY WORKS WITH KONZA ⚠️
 const listOfCxIds: string[] = [];
 
+const isSendWebhook = false;
 const dryRun = true;
 
 type IdentifiedMessage = {
@@ -70,6 +72,7 @@ async function reprocessAdtsForCxs() {
       message: adt.hl7Message,
       messageReceivedTimestamp: adt.messageReceivedTimestamp,
       hieName: adt.hieName,
+      isSendWebhook,
     };
     if (!dryRun) {
       const handler = buildHl7NotificationWebhookSender();
@@ -148,7 +151,7 @@ async function getAllAdtsFromPt(cxId: string, ptId: string): Promise<IdentifiedM
     if (!hieName) {
       continue;
     }
-    if (hieName !== "KONZA") {
+    if (hieName !== KONZA_HIE_NAME) {
       console.log(`Skipping ${object.Key} because it's not from Konza`);
       continue;
     }
@@ -164,7 +167,7 @@ async function getAllAdtsFromPt(cxId: string, ptId: string): Promise<IdentifiedM
       ptId,
       hl7Message: adt,
       messageReceivedTimestamp: fileTimestamp,
-      hieName: "Konza",
+      hieName: KONZA_HIE_NAME,
     });
   }
   return allAdts;

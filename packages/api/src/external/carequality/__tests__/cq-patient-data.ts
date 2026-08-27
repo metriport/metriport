@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { LinkDemographicsHistory } from "@metriport/core/domain/patient-demographics";
 import { normalizeEmailNewSafe } from "@metriport/shared";
-import dayjs from "dayjs";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { makeBaseDomain } from "../../../domain/__tests__/base-domain";
 import { makeAddressStrict } from "../../../domain/medical/__tests__/location-address";
 import {
@@ -25,7 +25,7 @@ export function makeCqDataLink(): CQLink {
           given: [faker.person.firstName(), faker.person.firstName()],
         },
       ],
-      birthDate: dayjs(faker.date.past()).format(ISO_DATE),
+      birthDate: buildDayjs(faker.date.past()).format(ISO_DATE),
       gender: faker.helpers.arrayElement(["unknown", "male", "female", "other"]),
       identifier: [], // TODO
       address: [
@@ -59,7 +59,7 @@ export function makeLinksHistory(): LinkDemographicsHistory {
   return {
     [faker.string.uuid()]: [
       {
-        dob: dayjs(faker.date.past()).format(ISO_DATE),
+        dob: buildDayjs(faker.date.past()).format(ISO_DATE),
         gender: "male",
         names: [
           normalizeAndStringifyNames({

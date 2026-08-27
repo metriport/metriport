@@ -13,14 +13,19 @@ export type BooleanFF = z.infer<typeof ffBooleanSchema>;
 
 export const booleanFFsSchema = z.object({
   commonwellFeatureFlag: ffBooleanSchema,
+  commonwellLogsEnabled: ffBooleanSchema,
+  commonwellNewDocumentIdFormatEnabled: ffBooleanSchema,
   carequalityFeatureFlag: ffBooleanSchema,
   cqDoaFeatureFlag: ffBooleanSchema,
   debugFeatureFlag: ffBooleanSchema,
+  ehexEnabled: ffBooleanSchema,
+  ehexTargetedQueriesEnabled: ffBooleanSchema,
 });
 export type BooleanFeatureFlags = z.infer<typeof booleanFFsSchema>;
 
 export const cxBasedFFsSchema = z.object({
   cxsWithCQDirectFeatureFlag: ffStringValuesSchema,
+  cxsWithEhexEnabled: ffStringValuesSchema,
   cxsWithCWFeatureFlag: ffStringValuesSchema,
   cxsWithADHDMRFeatureFlag: ffStringValuesSchema,
   cxsWithNoMrLogoFeatureFlag: ffStringValuesSchema,
@@ -28,6 +33,7 @@ export const cxBasedFFsSchema = z.object({
   cxsWithSimpleMrFeatureFlag: ffStringValuesSchema,
   cxsWithDermMrFeatureFlag: ffStringValuesSchema,
   cxsWithAiBriefFeatureFlag: ffStringValuesSchema,
+  cxsWithAiBriefV2FeatureFlag: ffStringValuesSchema,
   cxsWithSurescriptsFeatureFlag: ffStringValuesSchema,
   cxsWithSurescriptsNotificationsFeatureFlag: ffStringValuesSchema,
   cxsWithQuestFeatureFlag: ffStringValuesSchema,
@@ -36,24 +42,33 @@ export const cxBasedFFsSchema = z.object({
   cxsWithIncreasedSandboxLimitFeatureFlag: ffStringValuesSchema,
   cxsWithEpicEnabled: ffStringValuesSchema,
   cxsWithDemoAugEnabled: ffStringValuesSchema,
-  cxsWithStalePatientUpdateEnabled: ffStringValuesSchema,
   cxsWithStrictMatchingAlgorithm: ffStringValuesSchema,
   cxsWithAthenaCustomFieldsEnabled: ffStringValuesSchema,
+  cxsWithEnrichedPatientDemographicsFeatureFlag: ffStringValuesSchema,
   cxsWithPcpVisitAiSummaryFeatureFlag: ffStringValuesSchema,
   cxsWithRecentVisitAiSummary: ffStringValuesSchema,
   cxsWithCardiacCareAiSummary: ffStringValuesSchema,
+  cxsWithCardiacCareV2AiSummary: ffStringValuesSchema,
   cxsWithNitratesAndConditionsAiSummary: ffStringValuesSchema,
   cxsWithDischargeSlackNotificationFeatureFlag: ffStringValuesSchema,
   cxsWithDischargeRequeryFeatureFlag: ffStringValuesSchema,
   cxsWithXmlRedownloadFeatureFlag: ffStringValuesSchema,
-  analyticsIncrementalIngestion: ffStringValuesSchema,
+  cxsWithAnalyticsIncrementalIngestion: ffStringValuesSchema.optional(),
+  cxsWithAnalyticsIncrementalRawToCore: ffStringValuesSchema.optional(),
+  cxsWithDatawarehouseSnowflake: ffStringValuesSchema.optional(),
   cxsWithNewSoapEnvelopeFeatureFlag: ffStringValuesSchema,
+  cxsWithAdtsRosterUploadEnabledFeatureFlag: ffStringValuesSchema,
+  cxsWithAdtsDataVisibleEnabledFeatureFlag: ffStringValuesSchema,
+  cxsWithDashV2FeatureFlag: ffStringValuesSchema,
+  cxsWithLegacyDashV1FeatureFlag: ffStringValuesSchema,
+  cxsWithSendAdtToCanvasFeatureFlag: ffStringValuesSchema,
+  cxsWithEhexMaxParticipantCountBypassEnabled: ffStringValuesSchema,
+  cxsWithHydrateConditionCodeByDisplayFeatureFlag: ffStringValuesSchema,
 });
 export type CxBasedFFsSchema = z.infer<typeof cxBasedFFsSchema>;
 
 export const stringValueFFsSchema = cxBasedFFsSchema.merge(
   z.object({
-    oidsWithIHEGatewayV2Enabled: ffStringValuesSchema,
     e2eCxIds: ffStringValuesSchema.nullish(),
   })
 );
@@ -65,3 +80,13 @@ export type CxFeatureFlagStatus = Partial<
 
 export const ffDatastoreSchema = stringValueFFsSchema.merge(booleanFFsSchema);
 export type FeatureFlagDatastore = z.infer<typeof ffDatastoreSchema>;
+
+export const frontendIntendedFFsSchema = cxBasedFFsSchema.pick({
+  cxsWithDashV2FeatureFlag: true,
+  cxsWithLegacyDashV1FeatureFlag: true,
+});
+export type FrontendIntendedFFs = z.infer<typeof frontendIntendedFFsSchema>;
+export type FrontendIntendedReadableFlagNames = "shouldShowDashV2" | "shouldShowLegacyDashV1";
+export type CxFeatureFlagsResponse = Partial<
+  Record<keyof FrontendIntendedFFs | FrontendIntendedReadableFlagNames, true>
+>;

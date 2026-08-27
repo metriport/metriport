@@ -69,4 +69,4 @@ console.log('- Random facility names (e.g., "Main Springfield Medical Center")')
 console.log("- Random NPIs (10-digit numbers)");
 console.log("- Random addresses (realistic US addresses)");
 console.log("- Random facility types (80% initiator_and_responder, 20% initiator_only)");
-console.log("- Random OBO OIDs for initiator_only facilities");
+console.log("- Random principal OIDs for initiator_only facilities");

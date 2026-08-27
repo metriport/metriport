@@ -1,33 +1,34 @@
+{{ config(unique_key='m_patient_id') }}
+{% set extension_max_index = 2 %}
+
 select
-        cast(ms.id as {{ dbt.type_string() }} )                                                     as medication_statement_id
-    ,   cast(right(ms.subject_reference, 36) as {{ dbt.type_string() }} )                           as patient_id
-    ,   cast(m.id as {{ dbt.type_string() }} )                                                      as medication_id
-    ,   cast(ms.status as {{ dbt.type_string() }} )                                                 as status
+        {{ try_to_cast_string('ms.id') }}                                                       as medication_statement_id
+    ,   {{ try_to_cast_string('right(ms.subject_reference, 36)') }}                             as patient_id
+    ,   {{ try_to_cast_string('right(ms.medicationreference_reference, 36)') }}                 as medication_id
+    ,   {{ try_to_cast_string('ms.status') }}                                                   as status
     ,   coalesce(
-            {{ try_to_cast_date('ms.effectivedatetime') }},
-            {{ try_to_cast_date('ms.effectiveperiod_start') }}
-        )                                                                                           as effective_date
-    ,   {{ try_to_cast_date('ms.effectiveperiod_end') }}                                            as end_date
-    ,   cast(
-            coalesce(
-                ms.dosage_0_doseandrate_0_dosequantity_unit,
-                ms.dosage_1_doseandrate_0_dosequantity_unit
-            ) as {{ dbt.type_string() }} 
-        )                                                                                           as dose_unit
-    ,   cast(
-            coalesce(
-                ms.dosage_0_doseandrate_0_dosequantity_value,
-                ms.dosage_1_doseandrate_0_dosequantity_value
-            ) as {{ dbt.type_string() }} 
-        )                                                                                           as dose_amount
-    ,   cast(
-            coalesce(
-                ms.note_0_text,
-                ms.note_1_text,
-                ms.note_2_text
-            ) as {{ dbt.type_string() }}
-        )                                                                                           as note_text
-    ,   cast(ms.meta_source as {{ dbt.type_string() }} )                                            as data_source
+            {{ try_to_cast_datetime('ms.effectivedatetime') }},
+            {{ try_to_cast_datetime('ms.effectiveperiod_start') }}
+        )                                                                                       as effective_date
+    ,   {{ try_to_cast_datetime('ms.effectiveperiod_end') }}                                    as end_date
+    ,   {{ try_to_cast_string('ms.dosage_0_doseandrate_0_dosequantity_unit') }}                 as dose_unit
+    ,   {{ try_to_cast_string('ms.dosage_0_doseandrate_0_dosequantity_value') }}                as dose_amount
+    ,   {{ try_to_cast_string('ms.note_0_text') }}                                              as note_text
+    ,   {{ try_to_cast_string('ms.meta_source') }}                                              as data_source
+    {#- Data source extension: extension with data-source URL -#}
+    ,   {{ try_to_cast_string(get_inline_extension(
+            'ms',
+            'https://public.metriport.com/fhir/StructureDefinition/data-source.json',
+            extension_max_index,
+            'valuecoding_code',
+            none,
+            none
+        )) }}                                                                                   as data_source_ext
+    ,   {{ try_to_cast_string('ms.meta_source') }}                                              as meta_source
+    ,   ms.m_patient_id
+    ,   ms.m_job_id
+    ,   ms.m_created_at
+    ,   ms.m_updated_at
+    ,   ms.m_deleted_at
+    ,   ms.raw_to_core_job_id
 from {{ref('stage__medicationstatement')}} as ms
-inner join {{ref('stage__medication')}} as m
-    on right(ms.medicationreference_reference, 36) = m.id

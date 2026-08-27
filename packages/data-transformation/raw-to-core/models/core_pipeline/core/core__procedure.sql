@@ -1,116 +1,103 @@
-with base_resource as (
-    select
-        id,
-        subject_reference,
-        status,
-        performeddatetime,
-        performedperiod_start,
-        performedperiod_end,
-        note_0_text,
-        note_1_text,
-        note_2_text,
-        meta_source
-    from {{ref('stage__procedure')}}
-),
-target_code_codings as (
-   {{   
-        get_target_codings(
-            get_procedure_codings,
-            'procedure_id', 
-            9, 
-            none, 
-            (
-                'http://www.ama-assn.org/go/cpt',
-                'http://snomed.info/sct'
-            )
-        ) 
-    }}
-),
-target_bodysite_codings as (
-    {{ 
-        get_target_codings(
-            get_procedure_bodysite_codings, 
-            'procedure_id', 
-            1, 
-            1, 
-            (
-                'http://snomed.info/sct',
-            )
-        ) 
-    }}
-),
-target_reason_codings as (
-    {{ 
-        get_target_codings(
-            get_procedure_reason_codings, 
-            'procedure_id', 
-            1, 
-            1,
-            (
-                'http://snomed.info/sct',
-            )
-        ) 
-    }}
-)
+{{ config(unique_key='m_patient_id') }}
+{% set code_coding_max_index = 4 %}
+{% set bodysite_coding_max_index = 1 %}
+{% set bodysite_secondary_coding_max_index = 1 %}
+{% set reasoncode_coding_max_index = 1 %}
+{% set reasoncode_secondary_coding_max_index = 1 %}
+{% set extension_max_index = 2 %}
+
 select
-        cast(pro.id as {{ dbt.type_string() }} )                                                                    as procedure_id
-    ,   cast(right(pro.subject_reference, 36) as {{ dbt.type_string() }} )                                          as patient_id
-    ,   cast(pro.status as {{ dbt.type_string() }} )                                                                as status
+        {{ try_to_cast_string('pro.id') }}                                              as procedure_id
+    ,   {{ try_to_cast_string('right(pro.subject_reference, 36)') }}                    as patient_id
+    ,   {{ try_to_cast_string('pro.status') }}                                          as status
     ,   coalesce(
-            {{ try_to_cast_date('pro.performeddatetime', 'YYYY-MM-DD') }},
-            {{ try_to_cast_date('pro.performedperiod_start', 'YYYY-MM-DD') }}
-        )                                                                                                           as performed_date
-    ,   {{ try_to_cast_date('pro.performedperiod_end', 'YYYY-MM-DD') }}                                             as end_date
-    ,   cast(
-            coalesce(
-                hcpcs.hcpcs,
-                tc_cpt.code
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                           as cpt_code
-    ,   cast(
-            coalesce(
-                hcpcs.long_description,
-                tc_cpt.display
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                           as cpt_display
-    ,   cast(
-            coalesce(
-                snomed.snomed_ct,
-                tc_snomed_ct.code
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                           as snomed_code
-    ,   cast(
-            coalesce(
-                snomed.description,
-                tc_snomed_ct.display
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                           as snomed_display
-    ,   cast(bodysite_snomed_ct.code as {{ dbt.type_string() }} )                                                   as bodysite_snomed_code
-    ,   cast(bodysite_snomed_ct.display as {{ dbt.type_string() }} )                                                as bodysite_snomed_display
-    ,   cast(reason_snomed_ct.code as {{ dbt.type_string() }} )                                                     as reason_snomed_code
-    ,   cast(reason_snomed_ct.display as {{ dbt.type_string() }} )                                                  as reason_snomed_display
-    ,   cast(
-            coalesce(
-                pro.note_0_text,
-                pro.note_1_text,
-                pro.note_2_text
-            ) as {{ dbt.type_string() }} 
-        )                                                                                                           as note_text
-    ,   cast(pro.meta_source as {{ dbt.type_string() }} )                                                           as data_source
-from base_resource pro
-left join target_code_codings tc_cpt
-    on pro.id = tc_cpt.procedure_id 
-        and tc_cpt.system = 'http://www.ama-assn.org/go/cpt'
-left join target_code_codings tc_snomed_ct
-    on pro.id = tc_snomed_ct.procedure_id 
-        and tc_snomed_ct.system = 'http://snomed.info/sct'
-left join target_bodysite_codings bodysite_snomed_ct
-    on pro.id = bodysite_snomed_ct.procedure_id 
-        and bodysite_snomed_ct.system = 'http://snomed.info/sct'
-left join target_reason_codings reason_snomed_ct
-    on pro.id = reason_snomed_ct.procedure_id 
-        and reason_snomed_ct.system = 'http://snomed.info/sct'
-left join {{ref('terminology__hcpcs_level_2')}} hcpcs
-    on tc_cpt.code = hcpcs.hcpcs
-left join {{ref('terminology__snomed_ct')}} snomed
-    on tc_snomed_ct.code = snomed.snomed_ct
+            {{ try_to_cast_datetime('pro.performeddatetime') }},
+            {{ try_to_cast_datetime('pro.performedperiod_start') }}
+        )                                                                               as performed_date
+    ,   {{ try_to_cast_datetime('pro.performedperiod_end') }}                           as end_date
+    {#- CPT: Check each code_coding index 0-4 (5 values), normalize system -#}
+    ,   {{ try_to_cast_string(get_inline_coding_case(
+            'pro',
+            'code_coding',
+            'http://www.ama-assn.org/go/cpt',
+            code_coding_max_index,
+            'code'
+        )) }} as cpt_code
+    ,   {{ try_to_cast_string(get_inline_coding_case(
+            'pro',
+            'code_coding',
+            'http://www.ama-assn.org/go/cpt',
+            code_coding_max_index,
+            'display'
+        )) }} as cpt_display
+    {#- SNOMED CT: Check each code_coding index 0-4 (5 values), normalize system -#}
+    ,   {{ try_to_cast_string(get_inline_coding_case(
+            'pro',
+            'code_coding',
+            'http://snomed.info/sct',
+            code_coding_max_index,
+            'code'
+        )) }} as snomed_code
+    ,   {{ try_to_cast_string(get_inline_coding_case(
+            'pro',
+            'code_coding',
+            'http://snomed.info/sct',
+            code_coding_max_index,
+            'display'
+        )) }} as snomed_display
+    ,   {{ try_to_cast_string('pro.code_coding_0_code') }}                              as source_code_code
+    ,   {{ try_to_cast_string('pro.code_coding_0_display') }}                           as source_code_display
+    ,   {{ try_to_cast_string('pro.code_coding_0_system') }}                            as source_code_system
+    {#- Body site SNOMED: Check nested bodysite_i_coding_j structure -#}
+    ,   {{ try_to_cast_string(get_inline_nested_coding_case(
+            'pro',
+            'bodysite',
+            'http://snomed.info/sct',
+            bodysite_coding_max_index,
+            bodysite_secondary_coding_max_index,
+            'code'
+        )) }} as bodysite_snomed_code
+    ,   {{ try_to_cast_string(get_inline_nested_coding_case(
+            'pro',
+            'bodysite',
+            'http://snomed.info/sct',
+            bodysite_coding_max_index,
+            bodysite_secondary_coding_max_index,
+            'display'
+        )) }} as bodysite_snomed_display
+    {#- Reason SNOMED: Check nested reasoncode_i_coding_j structure -#}
+    ,   {{ try_to_cast_string(get_inline_nested_coding_case(
+            'pro',
+            'reasoncode',
+            'http://snomed.info/sct',
+            reasoncode_coding_max_index,
+            reasoncode_secondary_coding_max_index,
+            'code'
+        )) }} as reason_snomed_code
+    ,   {{ try_to_cast_string(get_inline_nested_coding_case(
+            'pro',
+            'reasoncode',
+            'http://snomed.info/sct',
+            reasoncode_coding_max_index,
+            reasoncode_secondary_coding_max_index,
+            'display'
+        )) }} as reason_snomed_display
+    ,   {{ try_to_cast_string('pro.note_0_text') }}                                     as note_text
+    ,   {{ try_to_cast_string('pro.meta_source') }}                                     as data_source
+    {#- Data source extension: extension with data-source URL -#}
+    ,   {{ try_to_cast_string(get_inline_extension(
+            'pro',
+            'https://public.metriport.com/fhir/StructureDefinition/data-source.json',
+            extension_max_index,
+            'valuecoding_code',
+            none,
+            none
+        )) }}                                                                           as data_source_ext
+    ,   {{ try_to_cast_string('pro.meta_source') }}                                     as meta_source
+    ,   pro.m_patient_id
+    ,   pro.m_job_id
+    ,   pro.m_created_at
+    ,   pro.m_updated_at
+    ,   pro.m_deleted_at
+    ,   pro.raw_to_core_job_id
+from {{ref('stage__procedure')}} pro

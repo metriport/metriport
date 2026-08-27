@@ -9,6 +9,7 @@ import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getFacilityOrFail } from "../facility/get-facility";
+import { addPatientToCohorts } from "../cohort/patient-cohort/add-patient-to-cohorts";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import {
   PatientWithIdentifiers,
@@ -23,21 +24,24 @@ export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
 
 // TODO build unit test to validate the patient is being sent correctly to Sequelize
 // See: document-query.test.ts, "send a modified object to Sequelize"
-// See: https://metriport.slack.com/archives/C04DMKE9DME/p1686779391180389
 export async function updatePatient({
   patientUpdate,
+  runPd = true,
   rerunPdOnNewDemographics,
   forceCommonwell,
   forceCarequality,
   emit = true,
+  cohortIds,
 }: {
   patientUpdate: PatientUpdateCmd;
+  runPd?: boolean;
   rerunPdOnNewDemographics?: boolean;
   // START TODO #1572 - remove
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
   // END TODO #1572 - remove
   emit?: boolean;
+  cohortIds?: string[];
 }): Promise<PatientWithIdentifiers> {
   const { cxId, facilityId } = patientUpdate;
 
@@ -47,15 +51,26 @@ export async function updatePatient({
   const patient = await updatePatientWithoutHIEs(patientUpdate, emit);
 
   const fhirPatient = toFHIR(patient);
-  await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
+  await Promise.all([
+    upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient),
+    cohortIds && cohortIds.length > 0
+      ? addPatientToCohorts({
+          cxId: patientUpdate.cxId,
+          patientId: patientUpdate.id,
+          cohortIds,
+        })
+      : Promise.resolve(),
+  ]);
 
-  runOrSchedulePatientDiscoveryAcrossHies({
-    patient,
-    facilityId,
-    rerunPdOnNewDemographics,
-    forceCommonwell,
-    forceCarequality,
-  }).catch(processAsyncError("runOrSchedulePatientDiscoveryAcrossHies"));
+  if (runPd) {
+    runOrSchedulePatientDiscoveryAcrossHies({
+      patient,
+      facilityId,
+      rerunPdOnNewDemographics,
+      forceCommonwell,
+      forceCarequality,
+    }).catch(processAsyncError("runOrSchedulePatientDiscoveryAcrossHies"));
+  }
 
   const patientWithIdentifiers = await attachPatientIdentifiers(patient);
   return patientWithIdentifiers;

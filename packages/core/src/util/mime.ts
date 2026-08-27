@@ -7,9 +7,13 @@ import { contentType, extension } from "mime-types";
  * "+xml" to the end of their MIME type, which were not considering here.
  * Examples: "application/xhtml+xml", "application/atom+xml".
  * See: https://en.wikipedia.org/wiki/XML_and_MIME
+ *
+ * Also handles mime types with parameters like "text/xml; charset=utf-8"
  */
 export function isMimeTypeXML(mimeType?: string | undefined | null): boolean {
-  return mimeType === XML_APP_MIME_TYPE || mimeType === XML_TXT_MIME_TYPE;
+  if (!mimeType) return false;
+  const lower = mimeType.toLowerCase();
+  return lower.includes(XML_APP_MIME_TYPE) || lower.includes(XML_TXT_MIME_TYPE);
 }
 
 // define exportable constants for all the different file types
@@ -20,6 +24,7 @@ export const JSON_FILE_EXTENSION = "json";
 export const PDF_MIME_TYPE = "application/pdf";
 export const PDF_FILE_EXTENSION = "pdf";
 export const XML_APP_MIME_TYPE = "application/xml";
+/** @deprecated, prefer XML_APP_MIME_TYPE */
 export const XML_TXT_MIME_TYPE = "text/xml";
 export const XML_FILE_EXTENSION = "xml";
 export const CSV_MIME_TYPE = "text/csv";

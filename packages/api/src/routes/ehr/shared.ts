@@ -12,7 +12,13 @@ import {
   EhrWebhookJwtTokenSource,
 } from "../../external/ehr/shared/utils/jwt-token";
 import { getAuthorizationToken, getFrom, getFromQueryOrFail } from "../util";
-import { parseIdFromPathParams, parseIdFromQueryParams, PathDetails, validatePath } from "./util";
+import {
+  parseIdFromPathParams,
+  parseIdFromQueryParams,
+  PathDetails,
+  strictUUIDpattern,
+  validatePath,
+} from "./util";
 
 export type ParseResponse = {
   externalId: string;
@@ -80,6 +86,14 @@ export const validPatientPaths: PathDetails[] = [
     pathRegex: new RegExp(`^/facility-matches$`),
     pathParamKey: "id",
   },
+  {
+    pathRegex: new RegExp(`^/suspect$`),
+    pathParamKey: "id",
+  },
+  {
+    pathRegex: new RegExp(`^/care-gaps$`),
+    pathParamKey: "id",
+  },
 ];
 
 export const validedDocumentPaths: PathDetails[] = [
@@ -96,12 +110,32 @@ export const validedDocumentPaths: PathDetails[] = [
   },
 ];
 
+export const validedInferencePaths: PathDetails[] = [
+  { pathRegex: new RegExp(`^/resource/summary$`) },
+];
+
+export const validedFeatureFlagsPaths: PathDetails[] = [
+  {
+    pathRegex: new RegExp(`^/$`),
+  },
+];
+
+export const validedTcmEncounterPaths: PathDetails[] = [
+  { pathRegex: new RegExp(`^/$`) },
+  { pathRegex: new RegExp(strictUUIDpattern) },
+];
+
+export const validedFacilityPaths: PathDetails[] = [{ pathRegex: new RegExp(`^/$`) }];
+
+export const validedCohortPaths: PathDetails[] = [{ pathRegex: new RegExp(`^/$`) }];
+
 export async function processPatientRoute(
   req: Request,
-  source: PatientMappingSource
+  source: PatientMappingSource,
+  skipPathParamKeyCheck = false
 ): Promise<void> {
   const path = validatePath(req, validPatientPaths);
-  if (path.pathParamKey) {
+  if (!skipPathParamKeyCheck && path.pathParamKey) {
     const externalId = parseIdFromPathParams(req, path.pathParamKey);
     await replaceIdInQueryParams(req, source, externalId);
   }
@@ -109,13 +143,34 @@ export async function processPatientRoute(
 
 export async function processDocumentRoute(
   req: Request,
-  source: PatientMappingSource
+  source: PatientMappingSource,
+  skipQueryParamKeyCheck = false
 ): Promise<void> {
   const path = validatePath(req, validedDocumentPaths);
-  if (path.queryParamKey) {
+  if (!skipQueryParamKeyCheck && path.queryParamKey) {
     const externalId = parseIdFromQueryParams(req, path.queryParamKey);
     await replaceIdInQueryParams(req, source, externalId);
   }
+}
+
+export async function processInferenceRoute(req: Request): Promise<void> {
+  validatePath(req, validedInferencePaths);
+}
+
+export async function processFeatureFlagsRoute(req: Request): Promise<void> {
+  validatePath(req, validedFeatureFlagsPaths);
+}
+
+export async function processTcmEncounterRoute(req: Request): Promise<void> {
+  validatePath(req, validedTcmEncounterPaths);
+}
+
+export async function processFacilityRoute(req: Request): Promise<void> {
+  validatePath(req, validedFacilityPaths);
+}
+
+export async function processCohortRoute(req: Request): Promise<void> {
+  validatePath(req, validedCohortPaths);
 }
 
 export async function replaceIdInQueryParams(

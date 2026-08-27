@@ -95,6 +95,7 @@
     "validator": "^13.7.0"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.800.0",
     "antlr4": "4.9.2",
     "applicationinsights": "^1.4.1",
     "body-parser": "^1.19.0",

@@ -1,0 +1,23 @@
+<ParamField body="sources" type="string[]" required>
+  An array of data sources to query. Must contain at least one value.
+  Possible values: **`hie`**, **`pharmacy`**, **`lab`**.
+</ParamField>
+
+<ParamField body="metadata" type="object" optional>
+  Custom metadata to include with the request. This will be returned in webhook payloads.
+  <Expandable title="Metadata properties">
+    Holds a record of up to 50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long.
+  </Expandable>
+</ParamField>
+
+**Example Request Body:**
+
+```json
+{
+  "sources": ["hie", "pharmacy", "lab"],
+  "metadata": {
+    "youCan": "putAny",
+    "stringKeyValue": "pairsHere"
+  }
+}
+```

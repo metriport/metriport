@@ -14,6 +14,17 @@ export function buildFhirToCsvBulkJobPrefix({
   return `${buildFhirToCsvBulkBasePrefix(cxId)}/f2c=${jobId}`;
 }
 
+export function buildFhirToCsvBulkPatientPrefixFromBulkJobPrefix({
+  bulkJobPrefix,
+  patientId,
+}: {
+  bulkJobPrefix: string;
+  patientId: string;
+}): string {
+  // e.g.: snowflake/fhir-to-csv/cx=cx-id/f2c=2025-08-08T02-18-56/pt=patient-id/
+  return `${bulkJobPrefix}/pt=${patientId}`;
+}
+
 export function buildFhirToCsvBulkPatientPrefix({
   cxId,
   jobId,
@@ -53,16 +64,30 @@ export function buildFhirToCsvIncrementalJobPrefix({
   cxId: string;
   patientId: string;
 }): string {
-  return `snowflake/fhir-to-csv-incremental/cx=${cxId}/pt=${patientId}`;
+  return `ingestion/fhir-to-csv-incremental/cx=${cxId}/pt=${patientId}`;
 }
 
 export function parseTableNameFromFhirToCsvIncrementalFileKey(key: string): string {
-  // e.g.: snowflake/fhir-to-csv-incremental/cx=eae9172a-1c55-437b-bc1a-9689c64e47a1/pt=0194f5f7-c165-7c48-b7fe-cf1f4da02e17/patient.csv
+  // e.g. of key: snowflake/fhir-to-csv-incremental/cx=eae9172a-1c55-437b-bc1a-9689c64e47a1/pt=0194f5f7-c165-7c48-b7fe-cf1f4da02e17/_tmp_fhir-to-csv_output_198712df-3dca-4ad2-b7c0-1579ca31cc76_0199772c-40c3-7e1a-a755-7555c75bfe0c_allergyintolerance.csv
   const fileNameWithExt = key.split("/").pop();
-  const tableName =
-    fileNameWithExt?.substring(0, fileNameWithExt.lastIndexOf(".")) ?? fileNameWithExt;
+  // e.g. of fileNameWithExt: '_tmp_fhir-to-csv_output_198712df-3dca-4ad2-b7c0-1579ca31cc76_0199772c-40c3-7e1a-a755-7555c75bfe0c_allergyintolerance.csv'
+  const tableName = fileNameWithExt?.split("_").slice(6).join("_").split(".")[0];
   if (!tableName) {
-    throw new MetriportError(`Failed to parse tableName from fhirToCsvFileKey`, undefined, { key });
+    throw new MetriportError(`Failed to parse table name from file key`, undefined, {
+      key,
+      fileNameWithExt,
+      context: "parseTableNameFromFhirToCsvIncrementalFileKey",
+    });
+  }
+  return tableName.toLowerCase();
+}
+
+export function parseTableNameFromConfigurationFileName(fileName: string): string {
+  const tableName = fileName.split("_").slice(1).join("_")?.replace(".ini", "")?.toLowerCase();
+  if (!tableName) {
+    throw new MetriportError(`Failed to parse tableName from configuration file name`, undefined, {
+      fileName,
+    });
   }
   return tableName;
 }

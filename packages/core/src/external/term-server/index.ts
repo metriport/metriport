@@ -1,6 +1,7 @@
 import { TypedValue } from "@medplum/core";
 import { Coding, ConceptMap, Parameters, ParametersParameter } from "@medplum/fhirtypes";
 import { executeWithNetworkRetries } from "@metriport/shared";
+import { trimWhitespace } from "@metriport/shared/common/string";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosInstance } from "axios";
 import { Config } from "../../util/config";
@@ -14,6 +15,7 @@ import {
   SNOMED_URL,
 } from "../../util/constants";
 import { buildMappingExtension } from "../fhir/shared/extensions/mapping-extension";
+import { out } from "../../util";
 
 export type CodeSystemLookupOutput = {
   name: string;
@@ -24,7 +26,8 @@ export type CodeSystemLookupOutput = {
 };
 
 export const termServerUrl = Config.getTermServerUrl();
-const bulkLookupUrl = "code-system/lookup/bulk";
+const bulkLookupByCodeUrl = "code-system/lookup/bulk";
+const lookupByDisplayUrl = "code-system/lookup-by-display";
 const crosswalkUrl = "concept-map/translate";
 
 export const supportedSystems = [
@@ -48,16 +51,15 @@ export function buildTermServerApi(): AxiosInstance | undefined {
 
   return axios.create({
     baseURL: termServerUrl,
-    timeout: 10_000,
+    timeout: 15_000,
     transitional: {
       clarifyTimeoutError: true,
     },
   });
 }
 
-export async function lookupMultipleCodes(
-  params: Parameters[],
-  log: typeof console.log
+export async function lookupByCode(
+  params: Parameters[]
 ): Promise<
   { metadata: Record<string, string | number>; data: CodeSystemLookupOutput[] } | undefined
 > {
@@ -65,9 +67,8 @@ export async function lookupMultipleCodes(
   if (!termServer || params.length === 0) return;
 
   const startedAt = Date.now();
-  const result = await termServer.post(bulkLookupUrl, params);
+  const result = await termServer.post(bulkLookupByCodeUrl, params);
   const duration = Date.now() - startedAt;
-  log(`Done code lookup. Duration: ${duration} ms`);
 
   const data = result.data.filter(
     (d: { resourceType?: string }) => d.resourceType !== "OperationOutcome"
@@ -80,6 +81,41 @@ export async function lookupMultipleCodes(
   };
 
   return { metadata, data };
+}
+
+export async function lookupByDisplay({
+  display,
+  system,
+}: {
+  display: string;
+  system: string;
+}): Promise<Coding | undefined> {
+  const termServer = buildTermServerApi();
+  if (!termServer) return undefined;
+
+  const params = buildFhirParametersForLookupByDisplay({ display, system });
+  if (!params) return undefined;
+
+  try {
+    const result = await executeWithNetworkRetries(async function () {
+      return termServer.post(lookupByDisplayUrl, params);
+    });
+
+    const data = result.data;
+    if (!data || data.resourceType === "OperationOutcome") return undefined;
+
+    if (!data.code) return undefined;
+
+    return {
+      system,
+      code: data.code,
+      ...(data.display ? { display: data.display } : undefined),
+    };
+  } catch (error) {
+    const { log } = out(`lookupByDisplay`);
+    log(`tried to lookup: ${display}, system: ${system}`);
+    return undefined;
+  }
 }
 
 export async function crosswalkCode({
@@ -133,8 +169,8 @@ export function buildMultipleFhirParametersFromCodings(
 }
 
 export function buildFhirParametersFromCoding(coding: Coding): Parameters | undefined {
-  const code = coding.code?.trim();
-  const system = coding.system?.trim();
+  const code = trimWhitespace(coding.code);
+  const system = trimWhitespace(coding.system);
   if (!code || !system) return undefined;
 
   const isValidSystem = isSystemValid(system);
@@ -158,12 +194,37 @@ export function buildFhirParametersFromCoding(coding: Coding): Parameters | unde
   };
 }
 
+export function buildFhirParametersForLookupByDisplay({
+  display,
+  system,
+}: {
+  display: string;
+  system: string;
+}): Parameters | undefined {
+  const trimmedDisplay = trimWhitespace(display);
+  if (!trimmedDisplay) return undefined;
+
+  const trimmedSystem = trimWhitespace(system);
+  if (!trimmedSystem || !isSystemValid(trimmedSystem)) return undefined;
+
+  const parameter: ParametersParameter[] = [
+    { name: "display", valueString: trimmedDisplay },
+    { name: "system", valueUri: trimmedSystem },
+  ];
+
+  return {
+    resourceType: "Parameters",
+    parameter,
+    id: createUuidFromText(JSON.stringify(parameter)),
+  };
+}
+
 export function buildFhirParametersForCrosswalkFromCoding(
   coding: Coding,
   targetSystem: string
 ): Parameters | undefined {
-  const code = coding.code?.trim();
-  const system = coding.system?.trim();
+  const code = trimWhitespace(coding.code);
+  const system = trimWhitespace(coding.system);
   if (!code || !system) return undefined;
 
   const isValidSystem = isSystemValid(system);

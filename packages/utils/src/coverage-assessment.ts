@@ -5,6 +5,7 @@ import { DocumentQuery, MetriportMedicalApi } from "@metriport/api-sdk";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
 import { executeWithNetworkRetries, getEnvVarOrFail, sleep } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import axios from "axios";
 import { Command } from "commander";
 import dayjs from "dayjs";
@@ -16,6 +17,7 @@ import { getDelayTime } from "./shared/duration";
 import { initFile } from "./shared/file";
 import { buildGetDirPathInside, initRunsFolder } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
+import { getIdsFromFile } from "./shared/ids";
 import { logErrorToFile } from "./shared/log";
 
 dayjs.extend(duration);
@@ -39,16 +41,11 @@ dayjs.extend(duration);
  * $ npm run coverage-assessment
  */
 
-// add patient IDs here to kick off queries for specific patient IDs
+// Leave both of those empty to process all patients for the customer
+// Add patient IDs here to kick off queries for specific patient IDs
 const patientIds: string[] = [];
-// In case there are too many IDs - e.g., when we export them from the DB (make sure to only export the IDs)
-// Single ID per line
-// const patientIds: string[] = fs
-//   .readFileSync("", "utf-8")
-//   .split("\n")
-//   .filter(id => id.trim().length > 0)
-//   .map(id => id.replaceAll('"', ""))
-//   .filter(id => id !== "id");
+// Alternatively, you can provide a file with patient IDs, one per line
+const fileName = "";
 
 // auth stuff
 const cxId = getEnvVarOrFail("CX_ID");
@@ -83,13 +80,20 @@ async function main() {
   program.parse();
   const { log } = out("");
 
-  const startedAt = Date.now();
-  log(`>>> Starting with ${patientIds.length} patient IDs...`);
+  const idsToProcess = [...patientIds];
+  if (fileName && idsToProcess.length === 0) {
+    const idsFromFile = getIdsFromFile(fileName);
+    idsToProcess.push(...idsFromFile);
+    console.log(`>>> Found ${idsToProcess.length} patient IDs in ${fileName}`);
+  }
+
+  const startedAt = buildDayjs().valueOf();
+  log(`>>> Starting with ${idsToProcess.length} patient IDs...`);
 
   const { orgName } = await getCxData(cxId, undefined, false);
   const { patientIds: patientIdsToQuery, isAllPatients } = await getPatientIds({
     cxId,
-    patientIds,
+    patientIds: idsToProcess,
     axios,
   });
 

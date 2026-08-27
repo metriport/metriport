@@ -1,13 +1,9 @@
 import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { CustomerData, customerDataSchema } from "@metriport/shared/domain/customer";
-import axios, { AxiosInstance } from "axios";
+import axios from "axios";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { validateAndLogResponse } from "./shared";
-
-export interface GetCustomerDataParams {
-  cxId: string;
-}
 
 /**
  * Sends an API request to cx-data, which returns the customer's data (facilities)
@@ -15,12 +11,9 @@ export interface GetCustomerDataParams {
  * @param params - The customer ID
  * @returns The customer's data
  */
-export async function getCustomerData(
-  { cxId }: GetCustomerDataParams,
-  axiosInstance?: AxiosInstance
-): Promise<CustomerData> {
-  const { log, debug } = out(`Surescripts getCustomer - cxId ${cxId}`);
-  const api = axiosInstance ?? axios.create({ baseURL: Config.getApiUrl() });
+export async function getCustomerData(cxId: string): Promise<CustomerData> {
+  const { log, debug } = out(`ss.getCustomer - cxId ${cxId}`);
+  const api = axios.create({ baseURL: Config.getApiUrl() });
   const queryParams = new URLSearchParams({ cxId });
   const getCustomerUrl = `/internal/cx-data?${queryParams.toString()}`;
   try {

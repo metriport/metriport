@@ -17,11 +17,17 @@ import {
   CdaCodeCv,
   CdaInstanceIdentifier,
   CdaOriginalText,
+  CdaValueCd,
   CdaValueEd,
+  CdaValuePq,
+  CdaValueSt,
   ConcernActEntryAct,
   EffectiveTimeLowHigh,
+  EffectiveTimeValue,
+  Entry,
   ObservationMedia,
   ObservationOrganizer,
+  ObservationEntry,
 } from "../../fhir-to-cda/cda-types/shared-types";
 import { capture } from "../../util";
 import { isValidBase64 } from "../../util/base64";
@@ -42,6 +48,8 @@ import { groupObservations } from "./shared";
 
 const region = Config.getAWSRegion();
 
+const CLIENT_ASSIGNED_ID_CONSTRAINT_FAILURE = "HAPI-0825";
+
 function getS3UtilsInstance(): S3Utils {
   return new S3Utils(region);
 }
@@ -54,6 +62,12 @@ type FileDetails = {
 type MediaTypeProvider = {
   _mediaType?: string;
 };
+
+type ObservationValueElement = CdaValuePq | CdaValueCd | CdaValueEd | CdaValueSt;
+
+function hasTextContent(value: ObservationValueElement): value is CdaValueEd | CdaValueSt {
+  return "#text" in value;
+}
 
 type SentryParams = {
   patientId: string;
@@ -78,7 +92,8 @@ export async function processAttachments({
   fhirUrl: string;
   medicalDataSource?: string | undefined;
 }) {
-  const { log } = out(`processAttachments - filepath ${filePath}`);
+  const baseLogPrefix = `processAttachments - filepath ${filePath}`;
+  const { log } = out(baseLogPrefix);
   try {
     const s3Utils = getS3UtilsInstance();
 
@@ -91,7 +106,7 @@ export async function processAttachments({
 
     const contextParams: SentryParams = { patientId, cxId, filePath };
     b64Attachments.acts.map(act => {
-      const fileDetails = getDetailsForAct(act.text, log, contextParams);
+      const fileDetails = getDetailsForAct(act.text, baseLogPrefix, contextParams);
       if (!fileDetails) return;
 
       const docRef = buildDocumentReferenceFromAct(patientId, extensions, act);
@@ -119,7 +134,7 @@ export async function processAttachments({
 
       mediaObservations.map(mediaEntry => {
         const obsMedia = mediaEntry.observationMedia;
-        const fileDetails = getDetailsForMediaObs(obsMedia.value, log, contextParams);
+        const fileDetails = getDetailsForMediaObs(obsMedia.value, baseLogPrefix, contextParams);
 
         if (!fileDetails) return;
 
@@ -146,6 +161,36 @@ export async function processAttachments({
       });
     });
 
+    b64Attachments.nonMediaObservations.map(obs => {
+      const values = toArray(obs.observation?.value);
+
+      values.forEach((value, valueIndex) => {
+        const fileDetails = getDetailsForNonMediaObs(value, baseLogPrefix, contextParams);
+        if (!fileDetails) return;
+
+        const docRef = buildDocumentReferenceFromNonMediaObs(
+          patientId,
+          extensions,
+          obs,
+          valueIndex
+        );
+        if (!docRef.id) throw new Error("Missing ID in DocRef");
+
+        const fileKey = createAttachmentUploadFilePath({
+          filePath,
+          attachmentId: docRef.id,
+          mimeType: fileDetails.mimeType,
+        });
+        const fileUrl = s3Utils.buildFileUrl(s3BucketName, fileKey);
+        const attachment = buildAttachment(fileDetails, fileUrl, fileKey);
+        docRef.content = [{ attachment }];
+
+        const uploadParams = buildUploadParams(fileDetails, s3BucketName, fileKey);
+        uploadDetails.push(uploadParams);
+        docRefs.push(docRef);
+      });
+    });
+
     log(`Extracted ${docRefs.length} attachments`);
     const docRefBundleEntries = docRefs.map(dr => ({ resource: dr }));
     const collectionBundle: Bundle = {
@@ -166,20 +211,24 @@ export async function processAttachments({
     }
   } catch (error) {
     const msg = `Failed to process attachments - not interrupting main flow`;
-    log(`${msg} - ${errorToString(error)}`);
-    capture.message(msg, {
-      extra: {
-        cxId,
-        patientId,
-        filePath,
-        s3BucketName,
-        fhirUrl,
-        medicalDataSource,
-        numberOfAttachments: b64Attachments.total,
-        error,
-      },
-      level: "warning",
-    });
+    const errorMessage = errorToString(error);
+    log(`${msg} - ${errorMessage}`);
+
+    if (!errorMessage.includes(CLIENT_ASSIGNED_ID_CONSTRAINT_FAILURE)) {
+      capture.message(msg, {
+        extra: {
+          cxId,
+          patientId,
+          filePath,
+          s3BucketName,
+          fhirUrl,
+          medicalDataSource,
+          numberOfAttachments: b64Attachments.total,
+          errorMessage,
+        },
+        level: "warning",
+      });
+    }
   }
   log(`Done...`);
 }
@@ -230,28 +279,37 @@ function buildDocumentReferenceDraft(
 
 function getDetailsForAct(
   document: CdaOriginalText | undefined,
-  log: typeof console.log,
+  baseLogPrefix: string,
   contextParams: SentryParams
 ): FileDetails | undefined {
-  const actLog = (msg: string) => log(`[Act] ${msg}`);
-  return getFileDetails(document?.["#text"], document ?? {}, actLog, contextParams);
+  return getFileDetails(document?.["#text"], document ?? {}, baseLogPrefix, "Act", contextParams);
 }
 
 function getDetailsForMediaObs(
   value: CdaValueEd | undefined,
-  log: typeof console.log,
+  baseLogPrefix: string,
   contextParams: SentryParams
 ): FileDetails | undefined {
-  const mediaObsLog = (msg: string) => log(`[MediaObs] ${msg}`);
-  return getFileDetails(value?.["#text"], value ?? {}, mediaObsLog, contextParams);
+  return getFileDetails(value?.["#text"], value ?? {}, baseLogPrefix, "MediaObs", contextParams);
+}
+
+function getDetailsForNonMediaObs(
+  value: ObservationValueElement | undefined,
+  baseLogPrefix: string,
+  contextParams: SentryParams
+): FileDetails | undefined {
+  const text = value && hasTextContent(value) ? value["#text"] : undefined;
+  return getFileDetails(text, value ?? {}, baseLogPrefix, "NonMediaObs", contextParams);
 }
 
 function getFileDetails(
   fileB64Contents: string | undefined,
-  mediaTypeProvider: MediaTypeProvider,
-  log: (msg: string) => void,
+  mediaTypeProvider: MediaTypeProvider | Record<string, unknown>,
+  baseLogPrefix: string,
+  prefix: string,
   contextParams: SentryParams
 ): FileDetails | undefined {
+  const { log: prefixedLog } = out(`${baseLogPrefix} - ${prefix}`);
   if (!fileB64Contents) return undefined;
 
   // Clean up the base64 string - remove any whitespace, newlines etc
@@ -260,7 +318,7 @@ function getFileDetails(
 
   if (!isValidBase64(unquotedB64)) {
     const msg = `Invalid base64 string in attachment`;
-    log(msg);
+    prefixedLog(msg);
     capture.message(msg, {
       extra: { ...contextParams },
       level: "info",
@@ -271,11 +329,13 @@ function getFileDetails(
 
   const fileBuffer = Buffer.from(unquotedB64, "base64");
   let mimeType = detectFileType(fileBuffer).mimeType;
-  log(`[getFileDetails] Detected mimetype: ${mimeType}`);
+  prefixedLog(`[getFileDetails] Detected mimetype: ${mimeType}`);
 
-  if (mimeType === OCTET_MIME_TYPE && mediaTypeProvider._mediaType) {
-    log(`[getFileDetails] Will use specified mimetype: ${mediaTypeProvider._mediaType}`);
-    mimeType = mediaTypeProvider._mediaType;
+  const specifiedMediaType =
+    typeof mediaTypeProvider._mediaType === "string" ? mediaTypeProvider._mediaType : undefined;
+  if (mimeType === OCTET_MIME_TYPE && specifiedMediaType) {
+    prefixedLog(`[getFileDetails] Will use specified mimetype: ${specifiedMediaType}`);
+    mimeType = specifiedMediaType;
   }
 
   return {
@@ -290,7 +350,7 @@ function buildDocumentReferenceFromAct(
   act: ConcernActEntryAct
 ) {
   const docRef = buildDocumentReferenceDraft(patientId, extensions);
-  const docRefId = createUuidFromText(JSON.stringify(act));
+  const docRefId = createUuidFromText(JSON.stringify(act) + `${patientId}`);
   const identifiers = getIdentifiers(act.id);
   const date = getDate(act.effectiveTime);
   const type = getType(act.code);
@@ -304,13 +364,18 @@ function buildDocumentReferenceFromAct(
 }
 
 function getIdentifiers(
-  id: CdaInstanceIdentifier | CdaInstanceIdentifier[] | undefined
+  id: CdaInstanceIdentifier | CdaInstanceIdentifier[] | Entry | undefined
 ): Identifier[] {
   const ids = toArray(id);
-  return ids.map(id => ({
-    ...(id?._root && { system: id._root }),
-    ...(id?._extension && { value: id._extension }),
-  }));
+  return ids
+    .map(item => {
+      if (typeof item === "string") return undefined;
+      return {
+        ...(item._root && { system: item._root }),
+        ...(item._extension && { value: item._extension }),
+      };
+    })
+    .filter((id): id is Identifier => id != null && (!!id.system || !!id.value));
 }
 
 function getSourceExtension(medicalSource: string | undefined): Extension | undefined {
@@ -321,9 +386,24 @@ function getSourceExtension(medicalSource: string | undefined): Extension | unde
   return undefined;
 }
 
-function getDate(time: EffectiveTimeLowHigh | undefined): string | undefined {
-  if (time?.low?._value) return buildDayjs(normalizeDateFromXml(time.low._value)).toISOString();
-  if (time?.high?._value) return buildDayjs(normalizeDateFromXml(time.high._value)).toISOString();
+function hasLowOrHigh(
+  time: EffectiveTimeLowHigh | EffectiveTimeValue
+): time is EffectiveTimeLowHigh {
+  return "low" in time || "high" in time;
+}
+
+function getDate(time: EffectiveTimeLowHigh | EffectiveTimeValue | undefined): string | undefined {
+  if (time && "_value" in time && time._value) {
+    return buildDayjs(normalizeDateFromXml(time._value)).toISOString();
+  }
+  if (time && hasLowOrHigh(time)) {
+    if (time.low?._value) {
+      return buildDayjs(normalizeDateFromXml(time.low._value)).toISOString();
+    }
+    if (time.high?._value) {
+      return buildDayjs(normalizeDateFromXml(time.high._value)).toISOString();
+    }
+  }
   return undefined;
 }
 
@@ -390,10 +470,30 @@ function buildDocumentReferenceFromObsMedia(
   obsMedia: ObservationMedia
 ): DocumentReference {
   const docRef = buildDocumentReferenceDraft(patientId, extensions);
-  const docRefId = createUuidFromText(JSON.stringify(obsMedia));
+  const docRefId = createUuidFromText(JSON.stringify(obsMedia) + `${patientId}`);
   const identifiers = getIdentifiers(obsMedia.id);
   const date = getDate(organizer.effectiveTime);
   const type = getType(organizer.code);
+  return fillDocumentReference(docRef, {
+    docRefId,
+    identifiers,
+    type,
+    date,
+  });
+}
+
+function buildDocumentReferenceFromNonMediaObs(
+  patientId: string,
+  extensions: Extension[],
+  obs: ObservationEntry,
+  valueIndex: number
+): DocumentReference {
+  const docRef = buildDocumentReferenceDraft(patientId, extensions);
+  const { observation } = obs;
+  const docRefId = createUuidFromText(JSON.stringify(obs) + `${valueIndex}` + `${patientId}`);
+  const identifiers = getIdentifiers(observation.id);
+  const date = getDate(observation.effectiveTime);
+  const type = getType(observation.code);
   return fillDocumentReference(docRef, {
     docRefId,
     identifiers,

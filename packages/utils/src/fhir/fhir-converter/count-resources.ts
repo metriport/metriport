@@ -11,13 +11,13 @@ import { countResourcesPerDirectory, getResourceCountByFile } from "./shared";
  * recursively).
  *
  * Usage:
- * > ts-node src/fhir-converter/count-resources.ts <file/folder.json>
+ * > ts-node src/fhir/fhir-converter/count-resources.ts <file/folder.json>
  */
 
 export async function main() {
   const fileName = process.argv[2];
   if (!fileName) {
-    console.log(`Usage: ts-node src/fhir-converter/count-resources.ts <file/folder.json>`);
+    console.log(`Usage: ts-node src/fhir/fhir-converter/count-resources.ts <file/folder.json>`);
     process.exit(1);
   }
 

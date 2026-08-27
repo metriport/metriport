@@ -6,14 +6,12 @@ import {
   OutboundDocumentRetrievalResp,
   XCAGateway,
 } from "@metriport/ihe-gateway-sdk";
-import { toArray } from "@metriport/shared";
+import { CODE_SYSTEM_ERROR, toArray } from "@metriport/shared";
 import dayjs from "dayjs";
 import { out } from "../../../../../../util/log";
 import { capture } from "../../../../../../util/notifications";
-import { RegistryError, RegistryErrorList } from "./schema";
-import { CODE_SYSTEM_ERROR } from "../../../../shared";
 import { httpErrorCode, schemaErrorCode } from "../../../../error";
-
+import { RegistryError, RegistryErrorList } from "./schema";
 const { log } = out("XCA Error Handling");
 const knownNonRetryableErrors = ["No active consent for patient id"];
 

@@ -1,18 +1,18 @@
 import { PatientData } from "@metriport/core/domain/patient";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { out } from "@metriport/core/util";
 import { capture } from "@metriport/core/util/notifications";
 import { WebhookMetadata } from "@metriport/shared/medical";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { PatientSourceIdentifierMap } from "../../../domain/patient-mapping";
 import { Product } from "../../../domain/product";
 import { MAPIWebhookType } from "../../../domain/webhook";
-import { patientEvents } from "../../../event/medical/patient-event";
 import { DocumentBulkUrlDTO } from "../../../routes/medical/dtos/document-bulk-downloadDTO";
 import { DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
-import { getSettingsOrFail } from "../../settings/getSettings";
 import { reportUsage as reportUsageCmd } from "../../internal-server/report-usage";
+import { getSettingsOrFail } from "../../settings/getSettings";
 import { isWebhookDisabled, processRequest } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
+import { getNetworkQueryByRequestId } from "../network-query/get-network-query";
 import { updateProgressWebhookSent } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 import { CONVERSION_WEBHOOK_TYPE, DOWNLOAD_WEBHOOK_TYPE } from "./process-doc-query-webhook";
@@ -55,6 +55,15 @@ export async function processPatientDocumentRequest(
 ): Promise<void> {
   const { log } = out(`Document Webhook - cxId: ${cxId}, patientId: ${patientId}`);
   try {
+    const isLegacyWebhook = whType === DOWNLOAD_WEBHOOK_TYPE || whType === CONVERSION_WEBHOOK_TYPE;
+    if (isLegacyWebhook && requestId) {
+      const networkQuery = await getNetworkQueryByRequestId({ requestId });
+      if (networkQuery) {
+        log(`Skipping legacy ${whType} webhook for network query ${requestId}`);
+        return;
+      }
+    }
+
     const [settings, patient] = await Promise.all([
       getSettingsOrFail({ id: cxId }),
       getPatientOrFail({ id: patientId, cxId }),
@@ -112,8 +121,6 @@ export async function processPatientDocumentRequest(
         progressType
       );
     }
-
-    patientEvents().emitCanvasIntegration({ id: patientId, cxId, metadata: cxMetadata, whType });
 
     const shouldReportUsage =
       status === MAPIWebhookStatus.completed &&

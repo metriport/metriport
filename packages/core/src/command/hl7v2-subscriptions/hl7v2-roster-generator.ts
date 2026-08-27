@@ -1,4 +1,5 @@
 import {
+  BAMBOO_HIE_NAME,
   GenderAtBirth,
   InternalOrganizationDTO,
   internalOrganizationDTOSchema,
@@ -6,19 +7,21 @@ import {
   otherGender,
   simpleExecuteWithRetries,
   unknownGender,
+  USState,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { initTimer } from "@metriport/shared/common/timer";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import axios, { AxiosResponse } from "axios";
 import { stringify } from "csv-stringify/sync";
-import _ from "lodash";
+import _, { partition } from "lodash";
 import { stripInvalidCharactersFromPatientData } from "../../domain/character-sanitizer";
 import { getFirstNameAndMiddleInitial, Patient } from "../../domain/patient";
 import { S3Utils, storeInS3WithRetries } from "../../external/aws/s3";
-import { out } from "../../util";
+import { capture, out } from "../../util";
 import { Config } from "../../util/config";
 import { CSV_FILE_EXTENSION, CSV_MIME_TYPE } from "../../util/mime";
+import { getCxsWithAdtsRosterUploadFeatureFlagEnabled } from "../feature-flags/domain-ffs";
 import { METRIPORT_ASSIGNING_AUTHORITY_IDENTIFIER } from "./constants";
 import {
   trackRosterSizePerCustomer,
@@ -55,31 +58,56 @@ export class Hl7v2RosterGenerator {
 
   async execute(config: HieConfig | VpnlessHieConfig): Promise<void> {
     const { log } = out("Hl7v2RosterGenerator");
-    const { states } = config;
+    const hieStates = config.states;
     const hieName = config.name;
     const loggingDetails = {
       hieName,
       mapping: config.mapping,
-      states,
+      states: hieStates,
     };
 
     log(`Running with this config: ${JSON.stringify(loggingDetails)}`);
     log(`Getting all subscribed patients...`);
     const rawPatients = await simpleExecuteWithRetries(
-      () => this.getAllSubscribedPatients(hieName),
+      () => this.getAllSubscribedPatients({ hieName, hieStates }),
       log
     );
     log(`Found ${rawPatients.length} total patients`);
 
     const patients = rawPatients.map(stripInvalidCharactersFromPatientData);
 
-    const cxIds = new Set(patients.map(p => p.cxId));
+    const cxIds = Array.from(new Set(patients.map(p => p.cxId)));
+
+    const cxsAllowedToUploadRoster = await getCxsWithAdtsRosterUploadFeatureFlagEnabled();
+
+    const [cxsWithRosterUpload, cxsWithoutRosterUpload] = partition(cxIds, cxId =>
+      cxsAllowedToUploadRoster.includes(cxId)
+    );
+
+    if (cxsWithoutRosterUpload.length > 0) {
+      const msg =
+        `Customer(s) without ADT roster upload feature flag enabled, tried to upload a roster. ` +
+        `Ask in slack if this is expected. Roster processing will continue for the allowed customers.`;
+      capture.error(msg, {
+        extra: {
+          cxsWithoutRosterUpload,
+          totalCxIds: cxIds,
+          allowedCxs: cxsAllowedToUploadRoster,
+          hieName,
+        },
+      });
+    }
 
     log(`Getting all organizations for patients...`);
-    const orgs = await simpleExecuteWithRetries(() => this.getOrganizations([...cxIds]), log);
+    const orgs = await simpleExecuteWithRetries(
+      () => this.getOrganizations([...cxsWithRosterUpload]),
+      log
+    );
     const orgsByCxId = _.keyBy(orgs, "cxId");
 
-    const rosterRowInputs = patients.map(p => {
+    const cxsWithRosterUploadSet = new Set(cxsWithRosterUpload);
+    const patientsWithRosterUpload = patients.filter(p => cxsWithRosterUploadSet.has(p.cxId));
+    const rosterRowInputs = patientsWithRosterUpload.map(p => {
       const org = orgsByCxId[p.cxId];
       if (!org) {
         throw new MetriportError(
@@ -97,7 +125,7 @@ export class Hl7v2RosterGenerator {
         });
       }
 
-      return createRosterRowInput(p, { shortcode: org.shortcode }, states);
+      return createRosterRowInput(p, { shortcode: org.shortcode }, hieStates);
     });
     const newRosterRowInputs = customizeInputsForHies(rosterRowInputs, hieName);
     const rosterRows = newRosterRowInputs.map(input => createRosterRow(input, config.mapping));
@@ -128,7 +156,7 @@ export class Hl7v2RosterGenerator {
 
     const rosterSize = rosterRows.length;
     const trackRosterSizePerCustomerParams: TrackRosterSizePerCustomerParams = {
-      patients,
+      patients: patientsWithRosterUpload,
       hieName,
       orgsByCxId,
       rosterSize,
@@ -137,12 +165,21 @@ export class Hl7v2RosterGenerator {
     await trackRosterSizePerCustomer(trackRosterSizePerCustomerParams);
   }
 
-  private async getAllSubscribedPatients(hieName: string): Promise<Patient[]> {
-    const { log } = out(`getAllSubscribedPatients - hieName ${hieName}`);
+  private async getAllSubscribedPatients({
+    hieName,
+    hieStates,
+  }: {
+    hieName: string;
+    hieStates: USState[];
+  }): Promise<Patient[]> {
+    const { log } = out(
+      `getAllSubscribedPatients - hieName: ${hieName}, states: ${hieStates.join(",")}`
+    );
     const allSubscribers: Patient[] = [];
     let currentUrl: string | undefined = `${this.apiUrl}/${HL7V2_SUBSCRIBERS_ENDPOINT}`;
     let baseParams: Hl7v2SubscriberParams | undefined = {
       hieName,
+      hieStates,
       count: NUMBER_OF_PATIENTS_PER_PAGE,
     };
 
@@ -199,7 +236,7 @@ function customizeInputsForHies(
   rosterRowInputs: RosterRowData[],
   hieName: string
 ): RosterRowData[] {
-  if (hieName === "Bamboo") {
+  if (hieName === BAMBOO_HIE_NAME) {
     return rosterRowInputs.map(({ scrambledId, ...rest }) => ({
       scrambledId: toBambooId(scrambledId),
       ...rest,
@@ -284,6 +321,8 @@ export function createRosterRowInput(
   const address1AddressLine1SplitByTabAddress1 = address1SplitParts[0] ?? "";
   const address1AddressLine1SplitByTabAddress2 = address1SplitParts[1] ?? a1?.addressLine2 ?? "";
   const firstNameWithNoNicknames = data.firstName.replace(/\s*\([^)]*\)/g, ""); // Removes nicknames like "John (Johnny)" -> "John"
+  const firstNameWithNoSpecialCharacters = cleanName(firstNameWithNoNicknames);
+  const lastNameWithNoSpecialCharacters = cleanName(data.lastName);
 
   return {
     id: p.id,
@@ -325,5 +364,16 @@ export function createRosterRowInput(
     address1AddressLine1SplitByTabAddress1,
     address1AddressLine1SplitByTabAddress2,
     firstNameWithNoNicknames,
+    firstNameWithNoSpecialCharacters,
+    lastNameWithNoSpecialCharacters,
   };
+}
+
+export function cleanName(value: string): string {
+  return value
+    .normalize("NFD") // Break accents into separate chars
+    .replace(/[\u0300-\u036f]/g, "") // Remove accent marks
+    .replace(/[^a-zA-Z\s]/g, "") // Keep only letters and spaces
+    .replace(/\s+/g, " ") // Remove unnecessary spaces
+    .trim();
 }

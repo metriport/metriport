@@ -64,6 +64,7 @@ const mainHeaders = "externalId,firstName,lastName,dob,gender";
 const addressHeaders = "zip,city,state,addressLine1,addressLine2";
 const contactHeaders = "phone,email";
 const additionalIdentifiersHeaders = "ssn,driversLicenceNo,driversLicenceState";
+const cohortHeader = "cohort";
 
 async function main() {
   await sleep(50); // Give some time to avoid mixing logs w/ Node's
@@ -83,8 +84,10 @@ async function main() {
     const patientData = makePatient();
     patients.push(patientData);
   }
-  const { headers, amountOfAddresses, amountOfContacts } = buildHeaders(patients);
-  const contents = patients.map(patientToCsv(amountOfAddresses, amountOfContacts)).join("\n");
+  const { headers, amountOfAddresses, amountOfContacts, amountOfCohorts } = buildHeaders(patients);
+  const contents = patients
+    .map(patientToCsv(amountOfAddresses, amountOfContacts, amountOfCohorts))
+    .join("\n");
   const fileContents = [headers, contents].join("\n");
   fs.writeFileSync(outputFileNameFull, fileContents);
   fs.rmSync(outputCurrentFileNameFull, { force: true });
@@ -138,6 +141,8 @@ function makePatient(): PatientPayload {
   return {
     externalId,
     ...patientData,
+    cohortIds: undefined,
+    facilityId: undefined,
   };
 }
 
@@ -158,12 +163,15 @@ function buildHeaders(patients: PatientPayload[]): {
   headers: string;
   amountOfAddresses: number;
   amountOfContacts: number;
+  amountOfCohorts: number;
 } {
   let maxAmountOfContacts = 0;
   let maxAmountOfAddresses = 0;
+  let maxAmountOfCohorts = 0;
   patients.forEach(patient => {
     maxAmountOfContacts = Math.max(maxAmountOfContacts, patient.contact?.length ?? 0);
     maxAmountOfAddresses = Math.max(maxAmountOfAddresses, patient.address?.length ?? 0);
+    maxAmountOfCohorts = Math.max(maxAmountOfCohorts, patient.cohortIds?.length ?? 0);
   });
   const headers = [mainHeaders];
   for (let i = 1; i <= maxAmountOfAddresses; i++) {
@@ -173,10 +181,15 @@ function buildHeaders(patients: PatientPayload[]): {
     headers.push(buildHeadersForVariableColumns(contactHeaders, i));
   }
   headers.push(additionalIdentifiersHeaders);
+  for (let i = 1; i <= maxAmountOfCohorts; i++) {
+    headers.push(`${cohortHeader}-${i}`);
+  }
+
   return {
     headers: headers.join(","),
     amountOfAddresses: maxAmountOfAddresses,
     amountOfContacts: maxAmountOfContacts,
+    amountOfCohorts: maxAmountOfCohorts,
   };
 }
 
@@ -187,7 +200,11 @@ function buildHeadersForVariableColumns(headers: string, columnNumber: number) {
     .join(",");
 }
 
-function patientToCsv(amountOfAddresses: number, amountOfContacts: number) {
+function patientToCsv(
+  amountOfAddresses: number,
+  amountOfContacts: number,
+  amountOfCohorts: number
+) {
   return (patient: PatientPayload): string => {
     const columns: string[] = [];
     columns.push(patient.externalId ?? "");
@@ -202,6 +219,9 @@ function patientToCsv(amountOfAddresses: number, amountOfContacts: number) {
       columns.push(contactToCsv(patient.contact?.[i] ?? {}));
     }
     columns.push(personalIdsToCsv(patient.personalIdentifiers ?? []));
+    for (let i = 0; i < amountOfCohorts; i++) {
+      columns.push(patient.cohortIds?.[i] ?? "");
+    }
     return columns.join(",");
   };
 }

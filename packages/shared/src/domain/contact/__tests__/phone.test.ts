@@ -216,5 +216,10 @@ describe("phone", () => {
       const result = normalizePhoneNumber("1987654321 ext 555");
       expect(result).toBe("9876543215");
     });
+
+    it(`removes all prepended text and returns the bare 10 digit phone number`, () => {
+      const result = normalizePhoneNumber("tel:+1-222-333-4455");
+      expect(result).toBe("2223334455");
+    });
   });
 });

@@ -209,7 +209,6 @@ var generateLocationId = function (location) {
      * This has something to do with wether "addr" is present in playingEntity when it is not we seem to be hitting this error.
      * The exact cause is unknown.
      *
-     * Link to original issue: https://linear.app/metriport/issue/ENG-975/fhir-converter-name-field-not-working
      */
     const peName = location?.playingEntity?.name;
     if (peName && typeof peName === "object" && Object.prototype.hasOwnProperty.call(peName, "_")) {
@@ -217,6 +216,8 @@ var generateLocationId = function (location) {
     }
     const id = uuidv3(peName, uuidv3.URL);
     return id;
+  } else if (location.location?.name?._) {
+    return uuidv3(location.location.name._, uuidv3.URL);
   }
 
   return {};
@@ -913,6 +914,16 @@ module.exports.external = [
     },
   },
   {
+    name: "containsEscapeChar",
+    description: "Returns true if a string includes a backslash: containsEscapeChar parentStr",
+    func: function (parentStr) {
+      if (!parentStr) {
+        return false;
+      }
+      return parentStr.includes("\\");
+    },
+  },
+  {
     name: "sha1Hash",
     description: "Returns sha1 hash (in hex) of given string: sha1Hash string",
     func: function (str) {
@@ -1470,6 +1481,15 @@ module.exports.external = [
     description: "Converts to JSON string: toJsonString object",
     func: function (str) {
       return JSON.stringify(str);
+    },
+  },
+  {
+    name: "escapeJsonString",
+    description: "Escapes a string for JSON without wrapping in quotes: escapeJsonString string",
+    func: function (str) {
+      if (str == undefined) return "";
+      const jsonString = JSON.stringify(str);
+      return jsonString.slice(1, -1);
     },
   },
   {

@@ -1,6 +1,8 @@
+import { disableWHMetadata } from "@metriport/core/domain/document-query/trigger-and-query";
 import EClinicalWorksApi from "@metriport/core/external/ehr/eclinicalworks/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { MetriportError } from "@metriport/shared";
+import { EClinicalWorksSecondaryMappings } from "@metriport/shared/interface/external/ehr/eclinicalworks/cx-mapping";
 import { eclinicalworksDashSource } from "@metriport/shared/interface/external/ehr/eclinicalworks/jwt-token";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { getJwtTokenByIdOrFail } from "../../../../command/jwt-token";
@@ -8,6 +10,7 @@ import { findOrCreatePatientMapping, getPatientMapping } from "../../../../comma
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
+import { getCxMappingAndParsedSecondaryMappings } from "../../shared/command/mapping/get-cx-mapping-and-secondary-mappings";
 import { getOrCreateMetriportPatientFhir } from "../../shared/command/patient/get-or-create-metriport-patient-fhir";
 import { createMetriportPatientDemosFhir } from "../../shared/utils/fhir";
 import { createEClinicalWorksClient } from "../shared";
@@ -29,6 +32,13 @@ export async function syncEClinicalWorksPatientIntoMetriport({
   api,
   triggerDq = false,
 }: SyncEClinicalWorksPatientIntoMetriportParams): Promise<string> {
+  const { parsedSecondaryMappings } =
+    await getCxMappingAndParsedSecondaryMappings<EClinicalWorksSecondaryMappings>({
+      ehr: EhrSources.eclinicalworks,
+      practiceId: eclinicalworksPracticeId,
+    });
+  const shouldDisableWebhooks = !parsedSecondaryMappings.sendDocumentQueryWebhookEnabled;
+
   const existingPatient = await getPatientMapping({
     cxId,
     externalId: eclinicalworksPatientId,
@@ -71,6 +81,7 @@ export async function syncEClinicalWorksPatientIntoMetriport({
       cxId,
       patientId: metriportPatient.id,
       facilityId,
+      ...(shouldDisableWebhooks && { cxDocumentRequestMetadata: disableWHMetadata }),
     }).catch(processAsyncError(`EClinicalWorks queryDocumentsAcrossHIEs`));
   }
   await findOrCreatePatientMapping({

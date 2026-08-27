@@ -1,0 +1,28 @@
+---
+title: "Patient Name"
+description: "Schema documentation for the Patient Name table in the Metriport data model"
+group: "Schema"
+icon: "n/a"
+---
+
+The patient name table contains normalized name information for patients. This table supports multiple names per patient, allowing for historical name tracking, legal name changes, and aliases.
+
+**Primary Keys:**
+
+* patient_id
+* name_rank
+
+**Foreign Keys:**
+
+* patient_id - links to the [patient](/medical-api/handling-data/schema/patient) table
+
+| Column          | Data Type | Description                                             |
+| --------------- | --------- | ------------------------------------------------------- |
+| patient_id      | varchar   | Unique identifier for the patient                       |
+| last_name       | varchar   | Family name (last name)                                 |
+| first_name      | varchar   | First given name                                        |
+| given_names     | varchar[] | All given names for the family name as array of strings |
+| suffixes        | varchar[] | Name suffixes as array of strings                       |
+| prefixes        | varchar[] | Name prefixes as array of strings                       |
+| data_source_ext | varchar   | Integration source of the data, derived from FHIR extension |
+| name_rank       | integer   | Patient FHIR resource array order                       |

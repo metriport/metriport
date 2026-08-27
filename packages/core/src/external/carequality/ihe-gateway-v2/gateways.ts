@@ -1,8 +1,7 @@
 import { SamlAttributes, XCAGateway, XCPDGateway } from "@metriport/ihe-gateway-sdk";
+import { METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX } from "@metriport/shared";
 import { validate as validateUuid } from "uuid";
 import { wrapIdInUrnUuid } from "../../../util/urn";
-
-import { METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX } from "../shared";
 /*
  * Gateways with this url require the Metriport OID instead of the Initiator OID in the SOAP body.
  */
@@ -33,6 +32,14 @@ export const redoxOidPrefix = "2.16.840.1.113883.3.6147";
 export const ntstPrefix = "2.16.840.1.113883.3.3569";
 
 export const kno2OidPrefix = "2.16.840.1.113883.3.3126.2.3";
+
+export const metroHealthOid = "1.2.840.114350.1.13.56.2.7.3.688884.100";
+const gatewaysThatRequireSeparateDr = [metroHealthOid];
+
+export function doesGatewayRequireSeparateDr(oid: string): boolean {
+  if (gatewaysThatRequireSeparateDr.includes(oid)) return true;
+  return false;
+}
 
 const gatewayPrefixesThatUseSha1 = [kno2OidPrefix];
 

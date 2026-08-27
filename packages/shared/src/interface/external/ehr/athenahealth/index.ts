@@ -13,3 +13,4 @@ export * from "./clinical-document";
 export * from "./allergy";
 export * from "./surgical-history";
 export * from "./encounter";
+export * from "./family-history";

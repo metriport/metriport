@@ -1,38 +1,28 @@
-import { Config } from "../../../../util/config";
 import { executeWithNetworkRetries } from "@metriport/shared";
-import { getLambdaResultPayload, makeLambdaClient } from "../../../aws/lambda";
-import { SurescriptsConversionBundle, SurescriptsJob } from "../../types";
-import { SurescriptsConvertPatientResponseHandler } from "./convert-patient-response";
-
-const region = Config.getAWSRegion();
-const lambdaClient = makeLambdaClient(region);
+import { createUuidFromText } from "@metriport/shared/common/uuid";
+import { Config } from "../../../../util/config";
+import { SQSClient } from "../../../aws/sqs";
+import {
+  SurescriptsConvertPatientResponseHandler,
+  SurescriptsPatientResponse,
+} from "./convert-patient-response";
 
 export class SurescriptsConvertPatientResponseHandlerCloud
   implements SurescriptsConvertPatientResponseHandler
 {
-  constructor(private readonly surescriptsConvertPatientResponseLambdaName: string) {}
+  constructor(
+    private readonly queueUrl: string = Config.getSurescriptsConvertPatientResponseQueueUrl(),
+    private readonly sqsClient = new SQSClient({ region: Config.getAWSRegion() })
+  ) {}
 
-  async convertPatientResponse(
-    job: SurescriptsJob
-  ): Promise<SurescriptsConversionBundle | undefined> {
-    const payload = JSON.stringify(job);
-    return await executeWithNetworkRetries(async () => {
-      const result = await lambdaClient
-        .invoke({
-          FunctionName: this.surescriptsConvertPatientResponseLambdaName,
-          InvocationType: "RequestResponse",
-          Payload: payload,
-        })
-        .promise();
-
-      if (!result.Payload) return undefined;
-      const resultPayload = getLambdaResultPayload({
-        result,
-        lambdaName: this.surescriptsConvertPatientResponseLambdaName,
-        failOnEmptyResponse: false,
+  async convertPatientResponse(response: SurescriptsPatientResponse): Promise<void> {
+    const payload = JSON.stringify(response);
+    await executeWithNetworkRetries(async () => {
+      await this.sqsClient.sendMessageToQueue(this.queueUrl, payload, {
+        fifo: true,
+        messageDeduplicationId: createUuidFromText(payload),
+        messageGroupId: response.patientId,
       });
-      if (!resultPayload) return undefined;
-      return JSON.parse(resultPayload) as SurescriptsConversionBundle;
     });
   }
 }

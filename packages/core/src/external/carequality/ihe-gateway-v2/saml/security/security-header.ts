@@ -149,7 +149,7 @@ export function createSecurityHeader({
               "saml2:AttributeValue": {
                 "hl7:Role": {
                   "@_xmlns:hl7": namespaces.hl7,
-                  "@_code": "224608005",
+                  "@_code": "106331006",
                   "@_codeSystem": SNOMED_CODE,
                   "@_codeSystemName": "SNOMED_CT",
                   "@_displayName": "Administrative AND/OR managerial worker",

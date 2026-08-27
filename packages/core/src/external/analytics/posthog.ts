@@ -47,6 +47,26 @@ export async function analyticsAsync(params: EventMessageV1, postApiKey?: string
   await posthog.shutdown();
 }
 
+export interface GroupIdentifyParams {
+  groupKey: string;
+  properties?: Record<string, string | number | boolean | null | undefined>;
+}
+
+export function groupIdentify(params: GroupIdentifyParams, postApiKey?: string): PostHog | void {
+  const apiKey = postApiKey ?? defaultPostHogApiKey;
+  if (!apiKey) return;
+
+  const posthog = new PostHog(apiKey);
+
+  posthog.groupIdentify({
+    groupType: groupType,
+    groupKey: params.groupKey,
+    ...(params.properties && { properties: params.properties }),
+  });
+
+  return posthog;
+}
+
 export enum EventTypes {
   patientCreate = "patientCreate",
   query = "query",

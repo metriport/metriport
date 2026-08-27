@@ -63,6 +63,7 @@ router.get(
     const { after, ...query } = tcmEncounterListQuerySchema.parse(req.query);
     const additionalQueryParams = {
       ...(query.facilityId ? { facilityId: query.facilityId } : {}),
+      ...(query.cohortId ? { cohortId: query.cohortId } : {}),
       ...(query.daysLookback ? { daysLookback: query.daysLookback } : {}),
       ...(query.eventType ? { eventType: query.eventType } : {}),
       ...(query.coding ? { coding: query.coding } : {}),

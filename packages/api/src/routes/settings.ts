@@ -265,7 +265,16 @@ router.post(
     }
 
     // Accept any object; require presence of meta.type
-    const payloadSchema = z.object({ meta: z.object({ type: z.string() }) }).passthrough();
+    const payloadSchema = z
+      .object({
+        meta: z.object({
+          messageId: z.string(),
+          requestId: z.string(),
+          when: z.string(),
+          type: z.string(),
+        }),
+      })
+      .passthrough();
     const payload = payloadSchema.parse(req.body);
     const response = await sendPayload(payload, webhookUrl, webhookKey);
     res.status(status.OK).json(response);

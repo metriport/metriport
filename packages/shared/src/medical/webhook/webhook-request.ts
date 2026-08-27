@@ -27,13 +27,30 @@ export type Hl7WebhookTypeSchemaType = z.infer<typeof hl7NotificationWebhookType
 export const bulkPatientImportWebhookTypeSchema = z.literal(`medical.bulk-patient-create`);
 export type BulkPatientImportWebhookType = z.infer<typeof bulkPatientImportWebhookTypeSchema>;
 
+export const networkQueryHieWebhookTypeSchema = z.literal("network-query.hie");
+export type NetworkQueryHieWebhookType = z.infer<typeof networkQueryHieWebhookTypeSchema>;
+
+export const networkQueryPharmacyWebhookTypeSchema = z.literal("network-query.pharmacy");
+export type NetworkQueryPharmacyWebhookType = z.infer<typeof networkQueryPharmacyWebhookTypeSchema>;
+
+export const networkQueryLabWebhookTypeSchema = z.literal("network-query.lab");
+export type NetworkQueryLabWebhookType = z.infer<typeof networkQueryLabWebhookTypeSchema>;
+
+export const networkQueryWebhookTypeSchema = z.union([
+  networkQueryHieWebhookTypeSchema,
+  networkQueryPharmacyWebhookTypeSchema,
+  networkQueryLabWebhookTypeSchema,
+]);
+export type NetworkQueryWebhookType = z.infer<typeof networkQueryWebhookTypeSchema>;
+
 export const mapiWebhookTypeSchema = consolidatedWebhookTypeSchema
   .or(consolidatedWebhookTypeSchema)
   .or(docDownloadWebhookTypeSchema)
   .or(docConversionWebhookTypeSchema)
   .or(docBulkDownloadWebhookTypeSchema)
   .or(hl7NotificationWebhookTypeSchema)
-  .or(bulkPatientImportWebhookTypeSchema);
+  .or(bulkPatientImportWebhookTypeSchema)
+  .or(networkQueryWebhookTypeSchema);
 export type MAPIWebhookType = z.infer<typeof mapiWebhookTypeSchema>;
 
 export const webhookTypeSchema = pingWebhookTypeSchema.or(mapiWebhookTypeSchema);
@@ -178,6 +195,47 @@ export const bulkPatientImportWebhookRequestSchema = z.object({
 });
 export type BulkPatientImportWebhookRequest = z.infer<typeof bulkPatientImportWebhookRequestSchema>;
 
+export const networkQuerySourceTypeSchema = z.enum(["hie", "pharmacy", "lab"]);
+export type NetworkQuerySourceType = z.infer<typeof networkQuerySourceTypeSchema>;
+
+export const networkQueryWebhookPayloadSchema = z.object({
+  patientId: z.string(),
+  externalId: z.string().optional(),
+  consolidatedDataUrl: z.string(),
+  source: z.object({
+    type: networkQuerySourceTypeSchema,
+    source: z.string().optional(),
+    status: z.enum(["completed", "failed"]),
+    completedAt: dateSchema,
+  }),
+});
+export type NetworkQueryWebhookPayload = z.infer<typeof networkQueryWebhookPayloadSchema>;
+
+export const networkQueryHieWebhookRequestSchema = z.object({
+  meta: baseWebhookMetadataSchema.merge(z.object({ type: networkQueryHieWebhookTypeSchema })),
+  payload: networkQueryWebhookPayloadSchema,
+});
+export type NetworkQueryHieWebhookRequest = z.infer<typeof networkQueryHieWebhookRequestSchema>;
+
+export const networkQueryPharmacyWebhookRequestSchema = z.object({
+  meta: baseWebhookMetadataSchema.merge(z.object({ type: networkQueryPharmacyWebhookTypeSchema })),
+  payload: networkQueryWebhookPayloadSchema,
+});
+export type NetworkQueryPharmacyWebhookRequest = z.infer<
+  typeof networkQueryPharmacyWebhookRequestSchema
+>;
+
+export const networkQueryLabWebhookRequestSchema = z.object({
+  meta: baseWebhookMetadataSchema.merge(z.object({ type: networkQueryLabWebhookTypeSchema })),
+  payload: networkQueryWebhookPayloadSchema,
+});
+export type NetworkQueryLabWebhookRequest = z.infer<typeof networkQueryLabWebhookRequestSchema>;
+
+export type NetworkQueryWebhookRequest =
+  | NetworkQueryHieWebhookRequest
+  | NetworkQueryPharmacyWebhookRequest
+  | NetworkQueryLabWebhookRequest;
+
 export const patientAdmitWebhookPayloadSchema = z.object({
   url: z.string(),
   patientId: z.string(),
@@ -242,6 +300,9 @@ export const webhookRequestSchema = z.union([
   documentConversionWebhookRequestSchema,
   documentBulkDownloadWebhookRequestSchema,
   bulkPatientImportWebhookRequestSchema,
+  networkQueryHieWebhookRequestSchema,
+  networkQueryPharmacyWebhookRequestSchema,
+  networkQueryLabWebhookRequestSchema,
   patientAdmitWebhookRequestSchema,
   patientTransferWebhookRequestSchema,
   patientDischargeWebhookRequestSchema,
@@ -305,4 +366,32 @@ export function isPatientDischargeWebhookRequest(
   whRequest: WebhookRequest
 ): whRequest is PatientDischargeWebhookRequest {
   return whRequest.meta.type === "patient.discharge";
+}
+
+export function isNetworkQueryHieWebhookRequest(
+  whRequest: WebhookRequest
+): whRequest is NetworkQueryHieWebhookRequest {
+  return whRequest.meta.type === "network-query.hie";
+}
+
+export function isNetworkQueryPharmacyWebhookRequest(
+  whRequest: WebhookRequest
+): whRequest is NetworkQueryPharmacyWebhookRequest {
+  return whRequest.meta.type === "network-query.pharmacy";
+}
+
+export function isNetworkQueryLabWebhookRequest(
+  whRequest: WebhookRequest
+): whRequest is NetworkQueryLabWebhookRequest {
+  return whRequest.meta.type === "network-query.lab";
+}
+
+export function isNetworkQueryWebhookRequest(
+  whRequest: WebhookRequest
+): whRequest is NetworkQueryWebhookRequest {
+  return (
+    isNetworkQueryHieWebhookRequest(whRequest) ||
+    isNetworkQueryPharmacyWebhookRequest(whRequest) ||
+    isNetworkQueryLabWebhookRequest(whRequest)
+  );
 }

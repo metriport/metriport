@@ -33,6 +33,7 @@ import {
   isAllergyIntolerance,
   isCondition,
   isDiagnosticReport,
+  isFamilyMemberHistory,
   isMedicationStatement,
   isObservation,
   isProcedure,
@@ -101,6 +102,7 @@ const supportedWriteBackResourceTypes: ResourceType[] = [
   "MedicationStatement",
   "Procedure",
   "AllergyIntolerance",
+  "FamilyMemberHistory",
 ];
 export type SupportedWriteBackResourceType = (typeof supportedWriteBackResourceTypes)[number];
 export function isSupportedWriteBackResourceType(
@@ -410,6 +412,7 @@ function getWriteBackResourceType(resource: Resource): WriteBackResourceType | u
   }
   if (isProcedure(resource)) return "procedure";
   if (isAllergyIntolerance(resource)) return "allergy";
+  if (isFamilyMemberHistory(resource)) return "family-history";
   throw new BadRequestError("Could not find write back resource type for resource", undefined, {
     resourceType: resource.resourceType,
   });
@@ -490,6 +493,9 @@ export function shouldWriteBackResource({
   } else if (writeBackResourceType === "allergy") {
     if (writeBackFilters.allergy?.disabled) return false;
     return isAllergyIntolerance(resource);
+  } else if (writeBackResourceType === "family-history") {
+    if (writeBackFilters.familyMemberHistory?.disabled) return false;
+    return isFamilyMemberHistory(resource);
   }
   throw new BadRequestError("Could not find write back resource type", undefined, {
     writeBackResourceType,

@@ -4,7 +4,7 @@ dotenv.config();
 import { Bundle } from "@medplum/fhirtypes";
 import { generateCdaFromFhirBundle } from "@metriport/core/fhir-to-cda/cda-generators";
 import { splitBundleByCompositions } from "@metriport/core/fhir-to-cda/composition-splitter";
-import { getEnvVarOrFail } from "@metriport/shared";
+import { getEnvVar, getEnvVarOrFail, uuidv7 } from "@metriport/shared";
 import axios, { AxiosInstance } from "axios";
 import fs from "fs";
 import path from "path";
@@ -22,6 +22,7 @@ import path from "path";
  *
  */
 
+const cxId = getEnvVar("CX_ID") ?? uuidv7();
 const fhirBaseUrl = "http://localhost:8777";
 const orgOid = getEnvVarOrFail("ORG_OID");
 const baseInputFolder = "./src/cda-converter/scratch/";
@@ -66,7 +67,7 @@ async function main() {
         return;
       }
 
-      convertFhirToCda(fhirBundle, file, inputJsonBundlesFolder, outputFolderCDA, orgOid);
+      convertFhirToCda(cxId, fhirBundle, file, inputJsonBundlesFolder, outputFolderCDA, orgOid);
       convertCdaToFhir(
         outputFolderCDA,
         outputFolderFHIR,
@@ -80,7 +81,8 @@ async function main() {
   });
 }
 
-export function convertFhirBundleToCdaTesting(
+function convertFhirBundleToCdaTesting(
+  cxId: string,
   fhirBundle: Bundle,
   orgOid: string
 ): {
@@ -89,12 +91,13 @@ export function convertFhirBundleToCdaTesting(
 } {
   const splitBundles = splitBundleByCompositions(fhirBundle);
   return {
-    cdaDocuments: splitBundles.map(bundle => generateCdaFromFhirBundle(bundle, orgOid)),
+    cdaDocuments: splitBundles.map(bundle => generateCdaFromFhirBundle(cxId, bundle, orgOid)),
     splitBundles: splitBundles,
   };
 }
 
 function convertFhirToCda(
+  cxId: string,
   fhirBundle: Bundle,
   inputFileName: string,
   outputFolderBundles: string,
@@ -104,7 +107,7 @@ function convertFhirToCda(
   let cdaDocuments;
   let splitBundles;
   try {
-    const result = convertFhirBundleToCdaTesting(fhirBundle, orgOid);
+    const result = convertFhirBundleToCdaTesting(cxId, fhirBundle, orgOid);
     cdaDocuments = result.cdaDocuments;
     splitBundles = result.splitBundles;
   } catch (error) {

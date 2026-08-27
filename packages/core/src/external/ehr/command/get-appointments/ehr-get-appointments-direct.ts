@@ -4,6 +4,7 @@ import { getAppointmentsFromSubscriptionEvents as getAppointmentsSubscriptionEve
 import { getAppointments as getAppointmentsCanvas } from "../../canvas/command/get-appointments";
 import { getAppointments as getAppointmentsElation } from "../../elation/command/get-appointments";
 import { getAppointments as getAppointmentsHealthie } from "../../healthie/command/get-appointments";
+import { getAppointments as getAppointmentsPracticeFusion } from "../../practicefusion/command/get-appointments";
 import {
   Appointment,
   AppointmentMethods,
@@ -34,6 +35,7 @@ const ehrGetAppointmentsMap: AppointmentFnMap = {
   [AppointmentMethods.healthieGetAppointments]: getAppointmentsHealthie,
   [AppointmentMethods.canvasGetAppointments]: getAppointmentsCanvas,
   [AppointmentMethods.eclinicalworksGetAppointments]: undefined,
+  [AppointmentMethods.practiceFusionGetAppointments]: getAppointmentsPracticeFusion,
 };
 
 function getEhrGetAppointmentsHandler(method: AppointmentMethods): GetAppointmentsFn {

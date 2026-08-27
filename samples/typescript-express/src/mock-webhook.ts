@@ -12,6 +12,9 @@ import {
   isPatientAdmitWebhookRequest,
   isPatientTransferWebhookRequest,
   isPatientDischargeWebhookRequest,
+  isNetworkQueryHieWebhookRequest,
+  isNetworkQueryPharmacyWebhookRequest,
+  isNetworkQueryLabWebhookRequest,
 } from "@metriport/shared/medical";
 import express, { Application, raw, Request, Response } from "express";
 import fs from "fs";
@@ -185,6 +188,36 @@ app.post("/", raw({ type: "*/*" }), async (req: Request, res: Response): Promise
       `Patient discharged: ${dischargePayload.patientId}, externalId: ${dischargePayload.externalId}`
     );
     console.log(JSON.stringify(dischargePayload, undefined, 2));
+    processed = true;
+  }
+
+  if (isNetworkQueryHieWebhookRequest(payload)) {
+    console.log(`Received network-query.hie webhook`);
+    const hiePayload = payload.payload;
+    console.log(
+      `HIE data ready for patient: ${hiePayload.patientId}, externalId: ${hiePayload.externalId}`
+    );
+    console.log(JSON.stringify(hiePayload, undefined, 2));
+    processed = true;
+  }
+
+  if (isNetworkQueryPharmacyWebhookRequest(payload)) {
+    console.log(`Received network-query.pharmacy webhook`);
+    const pharmacyPayload = payload.payload;
+    console.log(
+      `Pharmacy data ready for patient: ${pharmacyPayload.patientId}, externalId: ${pharmacyPayload.externalId}`
+    );
+    console.log(JSON.stringify(pharmacyPayload, undefined, 2));
+    processed = true;
+  }
+
+  if (isNetworkQueryLabWebhookRequest(payload)) {
+    console.log(`Received network-query.lab webhook`);
+    const labPayload = payload.payload;
+    console.log(
+      `Lab data ready for patient: ${labPayload.patientId}, externalId: ${labPayload.externalId}`
+    );
+    console.log(JSON.stringify(labPayload, undefined, 2));
     processed = true;
   }
 

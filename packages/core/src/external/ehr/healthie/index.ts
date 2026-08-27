@@ -10,11 +10,13 @@ import {
 } from "@medplum/fhirtypes";
 import {
   BadRequestError,
+  errorToString,
   MetriportError,
   NotFoundError,
   sleep,
   toTitleCase,
 } from "@metriport/shared";
+import jaroWinkler from "jaro-winkler";
 import { buildDayjs } from "@metriport/shared/common/date";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { normalizeGenderSafe, unknownGender } from "@metriport/shared/domain/gender";
@@ -35,6 +37,9 @@ import {
   Condition,
   ConditionsGraphql,
   conditionsGraphqlSchema,
+  createAllergySensitivityGraphqlSchema,
+  CreateMedicationParams,
+  icdCodesResponseGraphqlSchema,
   Immunization,
   ImmunizationsGraphql,
   immunizationsGraphqlSchema,
@@ -58,21 +63,51 @@ import {
   SubscriptionWithSignatureSecret,
   SubscriptionWithSignatureSecretGraphql,
   subscriptionWithSignatureSecretGraphqlSchema,
+  updateClientDiagnosesGraphqlSchema,
 } from "@metriport/shared/interface/external/ehr/healthie/index";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios, { AxiosInstance } from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+import { z } from "zod";
+import { executeAsynchronously } from "../../../util/concurrency";
 import { Config } from "../../../util/config";
 import { CVX_URL, ICD_10_URL, RXNORM_URL } from "../../../util/constants";
 import { out } from "../../../util/log";
+import { capture } from "../../../util/notifications";
 import {
   ApiConfig,
   fetchEhrBundleUsingCache,
   formatDate,
+  getAllergyIntoleranceCategoryType,
+  getAllergyIntoleranceClinicalStatus,
+  getAllergyIntoleranceManifestationText,
+  getAllergyIntoleranceOnsetDate,
+  getConditionIcd10Code,
+  getConditionStartDate,
+  getConditionStatus,
+  getMedicationRxnormCoding,
+  getMedicationStatementStartDate,
   makeRequest,
   MakeRequestParamsInEhr,
+  MedicationWithRefs,
   paginateWaitTime,
   saveEhrReferenceBundle,
 } from "../shared";
+import { getValidUcumCode } from "../../fhir/parser/ucum-unit";
+
+dayjs.extend(duration);
+const parallelRequests = 5;
+const maxJitter = dayjs.duration(2, "seconds");
+const minMedicationNameSimilarity = 0.85;
+
+const problemStatusesMap = new Map<string, string>();
+problemStatusesMap.set("active", "Active");
+problemStatusesMap.set("relapse", "Active");
+problemStatusesMap.set("recurrence", "Active");
+problemStatusesMap.set("remission", "Controlled");
+problemStatusesMap.set("resolved", "Resolved");
+problemStatusesMap.set("inactive", "Resolved");
 
 export const supportedHealthieResources: ResourceType[] = [
   "MedicationStatement",
@@ -427,7 +462,7 @@ class HealthieApi {
   }: {
     cxId: string;
     patientId: string;
-  }): Promise<ConditionFhir[]> {
+  }): Promise<{ convertedCondition: ConditionFhir; icd10CodeId?: string }[]> {
     const { debug } = out(
       `Healthie getConditions - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
     );
@@ -441,6 +476,7 @@ class HealthieApi {
           first_symptom_date
           end_date
           active
+          icd_code_id
           icd_code {
             code
             display_name
@@ -464,7 +500,12 @@ class HealthieApi {
     return conditionsGraphqlResponse.data.user.diagnoses.flatMap(condition => {
       const convertedCondition = this.convertConditionToFhir(patientId, condition);
       if (!convertedCondition) return [];
-      return [convertedCondition];
+      return [
+        {
+          convertedCondition,
+          ...(condition.icd_code_id ? { icd10CodeId: condition.icd_code_id } : {}),
+        },
+      ];
     });
   }
 
@@ -561,7 +602,9 @@ class HealthieApi {
       switch (resourceType) {
         case "Condition": {
           const conditions = await client.getConditions({ cxId, patientId: healthiePatientId });
-          return conditions.map(condition => ehrStrictFhirResourceSchema.parse(condition));
+          return conditions.map(({ convertedCondition }) =>
+            ehrStrictFhirResourceSchema.parse(convertedCondition)
+          );
         }
         case "MedicationStatement": {
           const medicationStatements = await client.getMedicationStatements({
@@ -625,12 +668,14 @@ class HealthieApi {
     healthiePatientId,
     resourceType,
     resourceId,
+    useCachedBundle = true,
   }: {
     cxId: string;
     metriportPatientId: string;
     healthiePatientId: string;
     resourceType: string;
     resourceId: string;
+    useCachedBundle?: boolean;
   }): Promise<Bundle> {
     if (
       !isSupportedHealthieResource(resourceType) &&
@@ -642,6 +687,43 @@ class HealthieApi {
         resourceType,
       });
     }
+    const client = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    async function fetchResourcesFromEhr(): Promise<EhrStrictFhirResource[]> {
+      switch (resourceType) {
+        case "Condition": {
+          const conditions = await client.getConditions({ cxId, patientId: healthiePatientId });
+          return conditions.map(({ convertedCondition }) =>
+            ehrStrictFhirResourceSchema.parse(convertedCondition)
+          );
+        }
+        case "MedicationStatement": {
+          const medicationStatements = await client.getMedicationStatements({
+            cxId,
+            patientId: healthiePatientId,
+          });
+          const medications: EhrStrictFhirResource[] = medicationStatements.map(({ medication }) =>
+            ehrStrictFhirResourceSchema.parse(medication)
+          );
+          await saveEhrReferenceBundle({
+            ehr: EhrSources.healthie,
+            cxId,
+            metriportPatientId,
+            ehrPatientId: healthiePatientId,
+            referenceBundle: createStrictBundleFromResourceList(medications),
+          });
+          return medicationStatements.map(({ medicationStatement }) =>
+            ehrStrictFhirResourceSchema.parse(medicationStatement)
+          );
+        }
+        case "AllergyIntolerance": {
+          const allergies = await client.getAllergies({ cxId, patientId: healthiePatientId });
+          return allergies.map(allergy => ehrStrictFhirResourceSchema.parse(allergy));
+        }
+        default: {
+          return Promise.resolve([]);
+        }
+      }
+    }
     const bundle = await fetchEhrBundleUsingCache({
       ehr: EhrSources.healthie,
       cxId,
@@ -649,8 +731,8 @@ class HealthieApi {
       ehrPatientId: healthiePatientId,
       resourceType,
       resourceId,
-      fetchResourcesFromEhr: () => Promise.resolve([]),
-      useCachedBundle: true,
+      fetchResourcesFromEhr,
+      useCachedBundle,
     });
     return bundle;
   }
@@ -905,6 +987,397 @@ class HealthieApi {
     return subscription.data.createWebhook.webhook;
   }
 
+  async createMedication({
+    cxId,
+    patientId,
+    medicationWithRefs,
+  }: {
+    cxId: string;
+    patientId: string;
+    medicationWithRefs: MedicationWithRefs;
+  }): Promise<void> {
+    const { log, debug } = out(
+      `Healthie createMedication - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      medicationId: medicationWithRefs.medication.id,
+    };
+
+    const rxnormCoding = getMedicationRxnormCoding(medicationWithRefs.medication);
+    const text = medicationWithRefs.medication.code?.text;
+    const medicationName = text ?? rxnormCoding?.display;
+    if (!medicationName) {
+      throw new BadRequestError("No medication name found", undefined, additionalInfo);
+    }
+
+    const existing = await this.getMedicationStatements({ cxId, patientId });
+
+    const createMedicationArgs: CreateMedicationParams[] = [];
+
+    if (medicationWithRefs.statement.length > 0) {
+      for (const statement of medicationWithRefs.statement) {
+        const startdate = getMedicationStatementStartDate(statement);
+        const startdateYear = buildDayjs(startdate).format("YYYY-MM-DD");
+        const formattedStartDate = this.formatDate(startdate);
+        if (!formattedStartDate) continue;
+
+        const formattedEndDate = this.formatDate(statement.effectivePeriod?.end);
+        const directionsArray = statement.dosage?.flatMap(d => (d?.text ? [d.text] : [])) ?? [];
+        const directions = directionsArray.length > 0 ? directionsArray.join("; ") : undefined;
+
+        const doseQuantity = statement.dosage
+          ?.flatMap(d => d?.doseAndRate ?? [])
+          .find(dr => dr?.doseQuantity)?.doseQuantity;
+        const dosage = doseQuantity
+          ? `${doseQuantity.value}${doseQuantity.unit ? ` ${doseQuantity.unit}` : ""}`
+          : undefined;
+
+        const active = statement.status === "active" || statement.status === "intended";
+
+        // check if statement exists in Healthie (name + date only)
+        const existsInHealthie = existing.some(record => {
+          const recordMedName = record.medication.code?.text;
+          if (!recordMedName) return false;
+
+          const recordStartDateRaw =
+            record.medicationStatement.effectiveDateTime ??
+            record.medicationStatement.effectivePeriod?.start;
+          const recordStartDate = recordStartDateRaw
+            ? buildDayjs(recordStartDateRaw).format("YYYY-MM-DD")
+            : undefined;
+
+          const nameSimilarity = jaroWinkler(
+            medicationName.toLowerCase(),
+            recordMedName.toLowerCase()
+          );
+          const nameMatches = nameSimilarity >= minMedicationNameSimilarity;
+          const dateMatches = recordStartDate === startdateYear;
+
+          return nameMatches && dateMatches;
+        });
+
+        if (existsInHealthie) continue;
+
+        // check if we're about to create this in current batch (name + date only)
+        const existsInBatch = createMedicationArgs.some(
+          arg => arg.start_date === formattedStartDate
+        );
+
+        if (existsInBatch) continue;
+
+        createMedicationArgs.push({
+          start_date: formattedStartDate,
+          end_date: formattedEndDate,
+          directions,
+          dosage,
+          active,
+        });
+      }
+    }
+
+    // if no statements, create a single medication with status
+    if (createMedicationArgs.length === 0) {
+      const hasMedication = existing.some(record => {
+        const recordMedName = record.medication.code?.text;
+        if (!recordMedName) return false;
+        const nameSimilarity = jaroWinkler(
+          medicationName.toLowerCase(),
+          recordMedName.toLowerCase()
+        );
+        return nameSimilarity >= minMedicationNameSimilarity;
+      });
+      if (!hasMedication) {
+        createMedicationArgs.push({ active: medicationWithRefs.medication.status === "active" });
+      }
+    }
+
+    if (createMedicationArgs.length === 0) return;
+
+    const operationName = "createMedication";
+    const query = `mutation createMedication($input: createMedicationInput!) {
+      createMedication(input: $input) {
+        medication {
+          name
+          active
+          comment
+          directions
+          dosage
+          start_date
+          end_date
+        }
+      }
+    }`;
+
+    const sharedData = {
+      user_id: patientId,
+      name: medicationName,
+      comment: "Added via Metriport App",
+    };
+
+    const allCreatedMedications: unknown[] = [];
+    const createMedicationErrors: { error: unknown; medication: string }[] = [];
+
+    await executeAsynchronously(
+      createMedicationArgs,
+      async (params: CreateMedicationParams) => {
+        try {
+          const variables = {
+            input: {
+              ...sharedData,
+              ...params,
+            },
+          };
+          const createdMedication = await this.makeRequest({
+            cxId,
+            patientId,
+            s3Path: `create-medication-${additionalInfo.medicationId}`,
+            operationName,
+            query,
+            variables,
+            schema: z.any(),
+            additionalInfo,
+            debug,
+          });
+          allCreatedMedications.push(createdMedication);
+        } catch (error) {
+          if (error instanceof BadRequestError || error instanceof NotFoundError) return;
+          const medicationToString = JSON.stringify(params);
+          log(`Failed to create medication ${medicationToString}. Cause: ${errorToString(error)}`);
+          createMedicationErrors.push({ error, medication: medicationToString });
+        }
+      },
+      {
+        numberOfParallelExecutions: parallelRequests,
+        maxJitterMillis: maxJitter.asMilliseconds(),
+      }
+    );
+    if (createMedicationErrors.length > 0) {
+      const msg = "Failure while creating some medications @ Healthie";
+      capture.message(msg, {
+        extra: {
+          ...additionalInfo,
+          createMedicationArgsCount: createMedicationArgs.length,
+          createMedicationErrorsCount: createMedicationErrors.length,
+          errors: createMedicationErrors,
+          context: "healthie.create-medication",
+        },
+        level: "warning",
+      });
+    }
+  }
+
+  async createCondition({
+    cxId,
+    patientId,
+    condition,
+  }: {
+    cxId: string;
+    patientId: string;
+    condition: ConditionFhir;
+  }): Promise<void> {
+    const { debug } = out(
+      `Healthie createCondition - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      conditionId: condition.id,
+    };
+    const icd10Code = getConditionIcd10Code(condition);
+    if (!icd10Code) {
+      throw new BadRequestError("No ICD-10 code found for condition", undefined, additionalInfo);
+    }
+    const icd10CodeId = await this.getIcd10CodeId({ cxId, patientId, icd10Code });
+    if (!icd10CodeId) {
+      throw new BadRequestError("No ICD-10 code ID found for condition", undefined, additionalInfo);
+    }
+
+    const existing = await this.getConditions({ cxId, patientId });
+    const conditionIcd10CodeIds = new Set(
+      existing.flatMap(c => (c.icd10CodeId ? [c.icd10CodeId] : []))
+    );
+    if (conditionIcd10CodeIds.has(icd10CodeId)) return;
+
+    const startDate = getConditionStartDate(condition);
+    const formattedStartDate = this.formatDate(startDate);
+    const conditionStatus = getConditionStatus(condition);
+    const problemStatus = conditionStatus
+      ? problemStatusesMap.get(conditionStatus.toLowerCase())
+      : undefined;
+    const isActive = problemStatus
+      ? problemStatus.toLowerCase() === "active" || problemStatus.toLowerCase().includes("active")
+      : false;
+
+    const operationName = "updateClient";
+    const query = `mutation updateClient($input: updateClientInput!) {
+      updateClient(input: $input) {
+        user {
+          id
+          diagnoses {
+            first_symptom_date
+            active
+            icd_code_id
+          }
+        }
+      }
+    }`;
+
+    const variables = {
+      input: {
+        id: patientId,
+        diagnoses: [
+          {
+            first_symptom_date: formattedStartDate,
+            active: isActive,
+            icd_code_id: icd10CodeId,
+          },
+        ],
+      },
+    };
+
+    await this.makeRequest({
+      cxId,
+      patientId,
+      s3Path: "update-client-diagnoses",
+      operationName,
+      query,
+      variables,
+      schema: updateClientDiagnosesGraphqlSchema,
+      additionalInfo,
+      debug,
+    });
+  }
+
+  async createAllergyIntolerance({
+    cxId,
+    patientId,
+    allergyIntolerance,
+  }: {
+    cxId: string;
+    patientId: string;
+    allergyIntolerance: AllergyIntolerance;
+  }): Promise<void> {
+    const { debug } = out(
+      `Healthie createAllergyIntolerance - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      allergyId: allergyIntolerance.id,
+    };
+
+    const reaction = allergyIntolerance.reaction;
+    if (!reaction || reaction.length < 1) {
+      throw new BadRequestError("No reactions found for allergy", undefined, additionalInfo);
+    }
+
+    const allergyData: [string, string | undefined, string | undefined, string | undefined][] =
+      reaction.flatMap(r => {
+        const substanceText = r.substance?.text;
+        if (!substanceText) return [];
+        const categoryType = getAllergyIntoleranceCategoryType(r);
+        const manifestationText = getAllergyIntoleranceManifestationText(r);
+        return [[substanceText, categoryType, manifestationText, r.severity]];
+      });
+
+    const allergySubstance = allergyData[0];
+    if (!allergySubstance) {
+      throw new BadRequestError("No allergy substance found", undefined, additionalInfo);
+    }
+
+    const existing = await this.getAllergies({ cxId, patientId });
+    const allergyNames = new Set(
+      existing.flatMap(a => (a.code?.text?.toLowerCase() ? [a.code.text.toLowerCase()] : []))
+    );
+    if (allergyNames.has(allergySubstance[0].toLowerCase())) return;
+
+    const variables = {
+      input: {
+        user_id: patientId,
+        category: "allergy",
+        name: allergySubstance[0],
+        category_type: allergySubstance[1],
+        reaction: allergySubstance[2],
+        severity: allergySubstance[3],
+        onset_date: getAllergyIntoleranceOnsetDate(allergyIntolerance),
+        status: getAllergyIntoleranceClinicalStatus(allergyIntolerance),
+      },
+    };
+
+    const operationName = "createAllergySensitivity";
+    const query = `mutation createAllergySensitivity($input: createAllergySensitivityInput!) {
+      createAllergySensitivity(input: $input) {
+        allergy_sensitivity {
+          category
+          name
+          category_type
+          reaction
+          severity
+          onset_date
+          status
+        }
+      }
+    }`;
+
+    await this.makeRequest({
+      cxId,
+      patientId,
+      s3Path: "create-allergy-sensitivity",
+      operationName,
+      query,
+      variables,
+      schema: createAllergySensitivityGraphqlSchema,
+      additionalInfo,
+      debug,
+    });
+  }
+
+  private async getIcd10CodeId({
+    cxId,
+    patientId,
+    icd10Code,
+  }: {
+    cxId: string;
+    patientId: string;
+    icd10Code: string;
+  }): Promise<string> {
+    const { debug } = out(
+      `Healthie getIcd10CodeId - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} icd10Code ${icd10Code}`
+    );
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      icd10Code,
+    };
+    const operationName = "icdCodes";
+    const query = `query icdCodes($keywords: String!) {
+      icdCodes(
+        keywords: $keywords
+      ) {
+        id
+      }
+    }`;
+    const variables = { keywords: icd10Code };
+    const response = await this.makeRequest({
+      cxId,
+      patientId,
+      s3Path: "get-icd10-code-id",
+      operationName,
+      query,
+      variables,
+      schema: icdCodesResponseGraphqlSchema,
+      additionalInfo,
+      debug,
+    });
+    return response?.data?.icdCodes?.[0]?.id ?? "";
+  }
+
   private async makeRequest<T>({
     cxId,
     patientId,
@@ -964,6 +1437,9 @@ class HealthieApi {
       buildDayjs(medication.end_date).isBefore(buildDayjs());
     const medicationStatementId = medication.id;
     const medicationId = createUuidFromText(`medicationstatement_${medicationStatementId}`);
+    const [dosage, unit] = medication.dosage?.split(" ") ?? [];
+    const dosageValue = parseFloat(dosage ?? "");
+    const dosageUnit = getValidUcumCode(unit ?? "");
     const medicationStatementFhir: MedicationStatement = {
       resourceType: "MedicationStatement",
       id: medication.id,
@@ -986,13 +1462,23 @@ class HealthieApi {
             effectiveDateTime: buildDayjs(medication.end_date).toISOString(),
           }
         : {}),
-      ...(medication.dosage
+      ...(medication.dosage || medication.directions
         ? {
             dosage: [
               {
-                text: `${medication.dosage} ${
-                  medication.frequency ? ` ${medication.frequency}` : ""
-                } ${medication.directions ? ` ${medication.directions}` : ""}`,
+                ...(medication.directions ? { text: medication.directions } : {}),
+                ...(!isNaN(dosageValue) && dosageValue > 0
+                  ? {
+                      doseAndRate: [
+                        {
+                          doseQuantity: {
+                            value: dosageValue,
+                            ...(dosageUnit ? { unit: dosageUnit } : {}),
+                          },
+                        },
+                      ],
+                    }
+                  : {}),
               },
             ],
           }

@@ -18,7 +18,7 @@ export async function getCwInitiator(
   return getHieInitiator(patient, facilityId, true);
 }
 
-export async function isFacilityEnabledToQueryCW(
+async function isFacilityEnabledToQueryCW(
   facilityId: string | undefined,
   patient: Pick<Patient, "id" | "cxId">
 ): Promise<boolean> {
@@ -28,13 +28,13 @@ export async function isFacilityEnabledToQueryCW(
 export function buildCwOrgNameForFacility({
   vendorName,
   orgName,
-  oboOid,
+  principalOid,
 }: {
   vendorName: string;
   orgName: string;
-  oboOid: string | undefined;
+  principalOid: string | undefined;
 }): string {
-  if (oboOid) {
+  if (principalOid) {
     return `${orgName} (${vendorName})`;
   }
   return `${vendorName} - ${orgName}`;

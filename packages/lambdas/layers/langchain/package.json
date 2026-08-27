@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "preinstall": "npm i -g rimraf",
-    "clean": "rimraf dist && rimraf node_modules",
+    "clean": "npx rimraf dist && npx rimraf node_modules",
     "prep-deploy": "./scripts/prep-deploy.sh",
     "build": "tsc -p tsconfig.json"
   },

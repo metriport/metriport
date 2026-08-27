@@ -15,7 +15,11 @@ import duration from "dayjs/plugin/duration";
 import stringify from "fast-json-stable-stringify";
 import fs from "fs";
 import { elapsedTimeAsStr } from "../shared/duration";
-import { buildGetDirPathInside, getFileNameForOrg, initRunsFolder } from "../shared/folder";
+import {
+  buildGetDirPathInside,
+  getFileNameForOrgWithTimestamp,
+  initRunsFolder,
+} from "../shared/folder";
 // Not happy with importing from a diff package, but it's a quick fix for now
 import { Facility } from "../../../api/src/domain/medical/facility";
 import { cmdToCqOrgDetails } from "../../../api/src/external/carequality/command/cq-organization/create-or-update-cq-organization";
@@ -82,10 +86,14 @@ export async function main() {
         type: org.type,
       },
       oid: org.oid,
+      principalOid: org.principalOid ?? null,
+      delegateOids: org.delegateOids ?? [],
       cqActive: org.cqActive ?? false,
       cqApproved: org.cqApproved ?? false,
       cwActive: org.cwActive ?? false,
       cwApproved: org.cwApproved ?? false,
+      ehexActive: org.ehexActive ?? false,
+      ehexApproved: org.ehexApproved ?? false,
       createdAt: new Date(),
       updatedAt: new Date(),
       eTag: org.eTag ?? "",
@@ -115,14 +123,14 @@ export async function main() {
             npi: facility.npi,
             active: facility.active == undefined ? undefined : facility.active,
           },
-          cqType: facility.cqType,
-          cqOboOid: facility.cqOboOid,
+          type: facility.type,
+          principalOid: facility.principalOid,
           cqActive: facility.cqActive ?? false,
           cqApproved: facility.cqApproved ?? false,
           cwActive: facility.cwActive ?? false,
           cwApproved: facility.cwApproved ?? false,
-          cwOboOid: facility.cwOboOid,
-          cwType: facility.cwType,
+          ehexApproved: facility.ehexApproved ?? false,
+          ehexActive: facility.ehexActive ?? false,
           createdAt: new Date(),
           updatedAt: new Date(),
           eTag: facility.eTag ?? "",
@@ -151,8 +159,10 @@ async function process(
   const cqOrg = (await cqApi.getOrganization(org.oid)) ?? "NOT_FOUND";
 
   const pathAndPrefix = outputFolderName + "/" + type + "_";
-  const outputFileNameMetriport = getFileNameForOrg(org.name + "_metriport");
-  const outputFileNameCq = getFileNameForOrg(org.name + "_cq");
+  const outputFileNameMetriport = getFileNameForOrgWithTimestamp({
+    orgName: org.name + "_metriport",
+  });
+  const outputFileNameCq = getFileNameForOrgWithTimestamp({ orgName: org.name + "_cq" });
 
   const outputCq = JSON.stringify(JSON.parse(stringify(cqOrg)), null, 2);
   fs.writeFileSync(pathAndPrefix + outputFileNameCq, outputCq);

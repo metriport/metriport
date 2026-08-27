@@ -16,26 +16,36 @@ import {
 } from "./elation/auth/middleware";
 import elationDash from "./elation/routes/dash";
 import elationWebhooks from "./elation/routes/webhook";
+import { processCxIdDash as processCxIdEmbedDash } from "./embed/auth/middleware";
+import embedDash from "./embed/routes/dash";
 import {
   processCxIdDash as processCxIdHealthieDash,
   processCxIdWebhooks as processCxIdHealthieWebhooks,
 } from "./healthie/auth/middleware";
 import healthieDash from "./healthie/routes/dash";
 import healthieWebhooks from "./healthie/routes/webhook";
+import { processCxIdDash as processCxIdPracticeFusionDash } from "./practicefusion/auth/middleware";
+import practicefusionDash from "./practicefusion/routes/dash";
 import { processCxIdDash as processCxIdSalesforceDash } from "./salesforce/auth/middleware";
 import salesforceDash from "./salesforce/routes/dash";
 
 const routes = Router();
 
+// patient scoped routes
 routes.use("/athenahealth", processCxIdDashAthena, checkMAPIAccess, athenaDash);
 routes.use("/canvas", processCxIdCanvasDash, checkMAPIAccess, canvasDash);
 routes.use("/elation", processCxIdElationDash, checkMAPIAccess, elationDash);
 routes.use("/healthie", processCxIdHealthieDash, checkMAPIAccess, healthieDash);
 routes.use("/eclinicalworks", processCxIdEclinicalworksDash, checkMAPIAccess, eclinicalworksDash);
 routes.use("/salesforce", processCxIdSalesforceDash, checkMAPIAccess, salesforceDash);
+routes.use("/practicefusion", processCxIdPracticeFusionDash, checkMAPIAccess, practicefusionDash);
 
+// webhook
 routes.use("/webhook/canvas", processCxIdCanvasWebhooks, checkMAPIAccess, canvasWebhooks);
 routes.use("/webhook/elation", processCxIdElationWebhooks, checkMAPIAccess, elationWebhooks);
 routes.use("/webhook/healthie", processCxIdHealthieWebhooks, checkMAPIAccess, healthieWebhooks);
+
+// whole app scoped routes
+routes.use("/embed", processCxIdEmbedDash, checkMAPIAccess, embedDash);
 
 export default routes;

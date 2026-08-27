@@ -1,11 +1,16 @@
 import { Hl7Field, Hl7Message, Hl7Segment } from "@medplum/core";
-import { nanoid } from "nanoid";
 import { MetriportError } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import {
+  ICD_10_URL,
+  ICD_9_URL,
+  LOINC_URL,
+  SNOMED_URL,
+} from "@metriport/shared/medical/fhir/constants";
+import { nanoid } from "nanoid";
 import { capture, out } from "../../../util";
 import { Base64Scrambler } from "../../../util/base64-scrambler";
 import { Config } from "../../../util/config";
-import { ICD_10_URL, ICD_9_URL, LOINC_URL, SNOMED_URL } from "../../../util/constants";
 import { HL7_FILE_EXTENSION } from "../../../util/mime";
 import { packUuid, unpackUuid } from "../../../util/pack-uuid";
 import { getMessageDatetime, getMessageUniqueIdentifier } from "./msh";
@@ -26,6 +31,8 @@ const hl7CodingSystemToUrlMap: Record<string, string> = {
   I10: ICD_10_URL, // ICD-10
   "ICD-10": ICD_10_URL, // ICD-10
   ICD10: ICD_10_URL, // ICD-10
+  ICD1: ICD_10_URL, // ICD-10
+  "ICD-1": ICD_10_URL, // ICD-10
   "ICD-10-CM": ICD_10_URL, // ICD-10
   I9: ICD_9_URL, // ICD-9
   "ICD-9": ICD_9_URL, // ICD-9

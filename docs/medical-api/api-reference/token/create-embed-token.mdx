@@ -1,0 +1,55 @@
+---
+title: "Create Embed Token"
+description: "Generates an access token for embedding Metriport in your application."
+api: "POST /medical/v1/token/embed"
+---
+
+This endpoint generates an access token for embedding Metriport within your application.
+
+## Body
+
+<ParamField
+  body="expirationInSeconds"
+  type="number"
+  default="36000"
+>
+  Optional expiration time in seconds. Maximum: `36000` (10
+  hours).
+</ParamField>
+
+## Response
+
+<ResponseField name="token" type="string">
+  The generated access token.
+</ResponseField>
+
+<ResponseExample>
+
+```javascript SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const response = await metriport.createEmbedToken({
+  expirationInSeconds: 3600,
+});
+
+console.log(response.token);
+```
+
+```bash curl
+curl -X POST "https://api.metriport.com/medical/v1/token/embed" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "expirationInSeconds": 3600
+  }'
+```
+
+</ResponseExample>
+
+```json Response
+{
+  "token": "11111111-1111-1111-1111-111111111111"
+}
+```

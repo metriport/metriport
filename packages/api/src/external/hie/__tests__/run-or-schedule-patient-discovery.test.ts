@@ -70,7 +70,6 @@ describe("run initial patient discovery", () => {
     expect(cwCreate_mock).toHaveBeenCalledWith(
       expect.objectContaining({
         ...sharedParams,
-        getOrgIdExcludeList: expect.any(Function),
         forceCWCreate: forceCommonwell,
       })
     );
@@ -97,7 +96,6 @@ describe("run initial patient discovery", () => {
     expect(cwCreate_mock).toHaveBeenCalledWith(
       expect.objectContaining({
         ...sharedParams,
-        getOrgIdExcludeList: expect.any(Function),
         forceCWCreate: forceCommonwell,
       })
     );
@@ -124,7 +122,6 @@ describe("run initial patient discovery", () => {
     expect(cwCreate_mock).toHaveBeenCalledWith(
       expect.objectContaining({
         ...sharedParams,
-        getOrgIdExcludeList: expect.any(Function),
         forceCWCreate: forceCommonwell,
       })
     );
@@ -159,7 +156,6 @@ describe("run initial patient discovery", () => {
     expect(cwRunOrSchedule_mock).toHaveBeenCalledWith(
       expect.objectContaining({
         ...sharedParams,
-        getOrgIdExcludeList: expect.any(Function),
         forceCommonwell,
       })
     );
@@ -186,7 +182,6 @@ describe("run initial patient discovery", () => {
     expect(cwRunOrSchedule_mock).toHaveBeenCalledWith(
       expect.objectContaining({
         ...sharedParams,
-        getOrgIdExcludeList: expect.any(Function),
         forceCommonwell,
       })
     );
@@ -213,7 +208,6 @@ describe("run initial patient discovery", () => {
     expect(cwRunOrSchedule_mock).toHaveBeenCalledWith(
       expect.objectContaining({
         ...sharedParams,
-        getOrgIdExcludeList: expect.any(Function),
         forceCommonwell,
       })
     );

@@ -1,18 +1,18 @@
-import { z } from "zod";
-import { Patient } from "@metriport/shared/domain/patient";
 import { MetriportError } from "@metriport/shared";
 import { makeNameDemographics } from "@metriport/shared/common/demographics";
+import { Patient } from "@metriport/shared/domain/patient";
+import { QuestRosterType } from "@metriport/shared/interface/external/quest/roster";
+import { z } from "zod";
 import { makeGenderDemographics, RelationshipToSubscriber } from "../codes";
 import {
+  requestDetailRow,
+  requestDetailSchema,
+  requestFooterRow,
+  requestFooterSchema,
   requestHeaderRow,
   requestHeaderSchema,
-  requestDetailSchema,
-  requestDetailRow,
-  requestFooterSchema,
-  requestFooterRow,
 } from "../schema/request";
 import { OutgoingFileRowSchema } from "../schema/shared";
-import { QuestRosterType } from "../types";
 
 export function buildRosterFile(patients: Patient[], rosterType: QuestRosterType): Buffer {
   const header = buildRosterHeader(rosterType);
@@ -22,7 +22,7 @@ export function buildRosterFile(patients: Patient[], rosterType: QuestRosterType
 }
 
 function buildRosterHeader(rosterType: QuestRosterType): Buffer {
-  const generalMnemonic = rosterType === "notifications" ? "METRIP" : "IVMETRI";
+  const generalMnemonic = rosterType === QuestRosterType.NOTIFICATIONS ? "METRIP" : "IVMETR";
   return buildQuestRequestRow(
     { recordType: "H", generalMnemonic, fileCreationDate: new Date() },
     requestHeaderSchema,

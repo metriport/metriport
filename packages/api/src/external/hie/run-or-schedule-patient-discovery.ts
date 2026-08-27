@@ -9,6 +9,7 @@ export async function runOrSchedulePatientDiscoveryAcrossHies({
   patient,
   facilityId,
   rerunPdOnNewDemographics,
+  forcePd,
   forceCommonwell,
   forceCarequality,
   requestId = uuidv7(),
@@ -16,6 +17,7 @@ export async function runOrSchedulePatientDiscoveryAcrossHies({
   patient: Patient;
   facilityId: string;
   rerunPdOnNewDemographics?: boolean;
+  forcePd?: boolean;
   // START TODO #1572 - remove
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
@@ -29,6 +31,7 @@ export async function runOrSchedulePatientDiscoveryAcrossHies({
     facilityId,
     requestId,
     rerunPdOnNewDemographics,
+    forcePd,
     forceCarequality,
   }).catch(processAsyncError("runOrScheduleCqPatientDiscovery"));
   // COMMONWELL
@@ -36,8 +39,8 @@ export async function runOrSchedulePatientDiscoveryAcrossHies({
     patient: existingPatient,
     facilityId,
     requestId,
-    getOrgIdExcludeList: () => Promise.resolve([]),
     rerunPdOnNewDemographics,
+    forcePd,
     forceCommonwell,
   }).catch(processAsyncError("runOrScheduleCwPatientDiscovery"));
 }

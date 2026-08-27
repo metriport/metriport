@@ -13,7 +13,7 @@ export type DocQueryCheckerProps = {
   lambdaLayers: LambdaLayers;
   vpc: IVpc;
   apiAddress: string;
-  alarmSnsAction?: SnsAction;
+  alertSnsAction?: SnsAction;
 };
 
 function getSettings(
@@ -22,7 +22,7 @@ function getSettings(
 ) {
   return {
     ...props,
-    name: "ScheduledDocumentQueryChecker",
+    name: "ScheduledDocumentQueryCheckerV2",
     lambdaMemory: 256,
     lambdaTimeout: Duration.seconds(100), // How long can the lambda run for, max is 900 seconds (15 minutes)
     runtime: Runtime.NODEJS_18_X,
@@ -41,7 +41,7 @@ export function createDocQueryChecker(props: DocQueryCheckerProps): Lambda | und
     lambdaLayers,
     vpc,
     runtime,
-    alarmSnsAction,
+    alertSnsAction,
     name,
     lambdaMemory,
     lambdaTimeout,
@@ -60,7 +60,7 @@ export function createDocQueryChecker(props: DocQueryCheckerProps): Lambda | und
     runtime,
     memory: lambdaMemory,
     timeout: lambdaTimeout,
-    alarmSnsAction,
+    alertSnsAction,
     envType: config.environmentType,
     envVars: {
       TIMEOUT_MILLIS: String(httpTimeout.toMilliseconds()),

@@ -5,6 +5,7 @@ import * as rds from "aws-cdk-lib/aws-rds";
 import { Construct } from "constructs";
 import { RDSConfig } from "../../config/aws/rds";
 import { mbToBytes } from "../shared/util";
+import { addAlarmToMetric } from "./alarm";
 
 const DEFAULT_MIN_LOCAL_STORAGE_MB_ALARM = 10_000;
 const DB_CONN_ALARM_THRESHOLD = 0.8;
@@ -19,16 +20,24 @@ export function getMaxPostgresConnections(maxAcu: number): number {
   return 5_000;
 }
 
-export function addDBClusterPerformanceAlarms(
-  scope: Construct,
-  dbCluster: rds.DatabaseCluster,
-  dbClusterName: string,
-  dbConfig: RDSConfig,
-  alarmAction?: SnsAction
-) {
+export function addDBClusterAlertsAndAlarms({
+  scope,
+  dbCluster,
+  dbClusterName,
+  dbConfig,
+  alertAction,
+  alarmAction,
+}: {
+  scope: Construct;
+  dbCluster: rds.DatabaseCluster;
+  dbClusterName: string;
+  dbConfig: RDSConfig;
+  alertAction?: SnsAction;
+  alarmAction: SnsAction;
+}) {
   if (!dbConfig.alarmThresholds) return;
 
-  const createAlarm = ({
+  function createAlert({
     name,
     metric,
     threshold,
@@ -42,19 +51,19 @@ export function addDBClusterPerformanceAlarms(
     evaluationPeriods: number;
     comparisonOperator?: cloudwatch.ComparisonOperator;
     treatMissingData?: cloudwatch.TreatMissingData;
-  }) => {
+  }) {
     const alarm = metric.createAlarm(scope, `${dbClusterName}${name}`, {
       threshold,
       evaluationPeriods,
       comparisonOperator,
       treatMissingData,
     });
-    alarmAction && alarm.addAlarmAction(alarmAction);
-    alarmAction && alarm.addOkAction(alarmAction);
+    alertAction && alarm.addAlarmAction(alertAction);
+    alertAction && alarm.addOkAction(alertAction);
     return alarm;
-  };
+  }
 
-  createAlarm({
+  createAlert({
     metric: dbCluster.metricFreeableMemory(),
     name: "FreeableMemoryAlarm",
     threshold: mbToBytes(dbConfig.alarmThresholds.freeableMemoryMb),
@@ -63,7 +72,7 @@ export function addDBClusterPerformanceAlarms(
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
 
-  createAlarm({
+  createAlert({
     metric: dbCluster.metricCPUUtilization(),
     name: "CPUUtilizationAlarm",
     threshold: dbConfig.alarmThresholds.cpuUtilizationPct,
@@ -71,7 +80,7 @@ export function addDBClusterPerformanceAlarms(
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
 
-  createAlarm({
+  createAlert({
     metric: dbCluster.metricVolumeReadIOPs(),
     name: "VolumeReadIOPsAlarm",
     threshold: dbConfig.alarmThresholds.volumeReadIops,
@@ -79,7 +88,7 @@ export function addDBClusterPerformanceAlarms(
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
 
-  createAlarm({
+  createAlert({
     metric: dbCluster.metricVolumeWriteIOPs(),
     name: "VolumeWriteIOPsAlarm",
     threshold: dbConfig.alarmThresholds.volumeWriteIops,
@@ -87,19 +96,23 @@ export function addDBClusterPerformanceAlarms(
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
 
-  createAlarm({
+  addAlarmToMetric({
+    scope,
     metric: dbCluster.metricACUUtilization(),
-    name: "ACUUtilizationAlarm",
+    name: `${dbClusterName}-ACUUtilization-Alarm`,
+    description: `Alarm if ACU utilization is above ${dbConfig.alarmThresholds.acuUtilizationPct}%`,
     threshold: dbConfig.alarmThresholds.acuUtilizationPct,
+    comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
     evaluationPeriods: 2,
-    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    alarmSnsAction: alarmAction,
   });
 
   const thresholdAlarmOpenConnectionsPerDbInstance =
     DB_CONN_ALARM_THRESHOLD * getMaxPostgresConnections(dbConfig.maxCapacity);
 
   dbCluster.instanceIdentifiers.forEach((instanceId, index) => {
-    createAlarm({
+    addAlarmToMetric({
+      scope,
       metric: dbCluster.metricDatabaseConnections({
         dimensionsMap: {
           DBInstanceIdentifier: instanceId,
@@ -107,11 +120,12 @@ export function addDBClusterPerformanceAlarms(
         statistic: "Maximum",
         period: cdk.Duration.minutes(1),
       }),
-      name: `DatabaseConnectionsAlarm-${index + 1}`,
+      name: `${dbClusterName}-DatabaseConnectionsAlarm-${index + 1}`,
+      description: `Alarm if the number of open connections is greater than or equal to ${thresholdAlarmOpenConnectionsPerDbInstance}`,
       threshold: thresholdAlarmOpenConnectionsPerDbInstance,
-      evaluationPeriods: 2,
+      evaluationPeriods: 3,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      alarmSnsAction: alarmAction,
     });
   });
 
@@ -120,7 +134,7 @@ export function addDBClusterPerformanceAlarms(
    * create this alarm because of compliance controls (SOC2).
    * @see: https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.Overview.StorageReliability.html#aurora-storage-growth
    */
-  createAlarm({
+  createAlert({
     metric: dbCluster.metricFreeLocalStorage(),
     name: "FreeLocalStorageAlarm",
     threshold: mbToBytes(

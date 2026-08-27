@@ -37,7 +37,8 @@ router.post(
  * @param req.query.cxId The ID of Metriport Customer.
  * @param req.query.patientId The ID of Elation Patient.
  * @param req.query.practiceId The ID of Elation Practice.
- * @param req.query.triggerDq Whether to trigger a data quality check.
+ * @param req.query.triggerDq Whether to trigger a data quality check (optional).
+ * @param req.query.isAppointment Whether triggered via an appointment (optional).
  * @returns 200 OK
  */
 router.post(

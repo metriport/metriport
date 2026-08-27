@@ -27,6 +27,7 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
     ...(config.carequality?.secretNames
       ? buildSecrets(scope, config.carequality.secretNames)
       : undefined),
+    ...(config.ehex?.secretNames ? buildSecrets(scope, config.ehex.secretNames) : undefined),
     ...buildSecrets(scope, config.analyticsSecretNames),
     ...(config.canvas?.secretNames ? buildSecrets(scope, config.canvas.secretNames) : undefined),
     ...(config.ehrIntegration?.athenaHealth.secrets
@@ -41,6 +42,9 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
     ...(config.ehrIntegration?.healthie.secrets
       ? buildSecrets(scope, config.ehrIntegration.healthie.secrets)
       : undefined),
+    ...(config.ehrIntegration?.practicefusion.secrets
+      ? buildSecrets(scope, config.ehrIntegration.practicefusion.secrets)
+      : undefined),
     ...(config.hl7Notification?.secrets
       ? buildSecrets(scope, config.hl7Notification?.secrets)
       : undefined),
@@ -48,6 +52,7 @@ export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
     ...(!isSandbox(config)
       ? buildSecrets(scope, collectHiePasswordSecretNames(config.hl7Notification.hieConfigs))
       : undefined),
+    ...(!isSandbox(config) ? buildSecrets(scope, config.checklySecrets) : undefined),
   };
   return secrets;
 }

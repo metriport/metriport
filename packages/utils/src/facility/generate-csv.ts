@@ -6,9 +6,13 @@ import { MetriportError } from "@metriport/shared";
 import { Command } from "commander";
 import csvParser from "csv-parser";
 import fs from "fs";
-import { createCsv, InputRowFacilityImport } from "./bulk-import-facility";
+import { InputRowFacilityImport } from "./bulk-import-facility";
+import { FacilityType } from "@metriport/core/domain/facility";
+import { createCsv } from "./utils";
 
 /*
+ * Creates a csv file with mock facility data.
+ *
  * This script will read NPIs from a csv saved locally.
  *
  * Run this script from the package root. Not from src/facility/
@@ -30,7 +34,7 @@ type GenerateCsvParams = {
   endRow: number;
 };
 
-const CSV_HEADER = ["npi", "facilityName", "facilityType", "cqOboOid", "cwOboOid"].join(",") + "\n";
+const CSV_HEADER = ["npi", "facilityName", "type", "principalOid"].join(",") + "\n";
 
 async function main({ inputFile, startRow, endRow }: GenerateCsvParams) {
   if (isNaN(startRow) || isNaN(endRow) || startRow < 1 || endRow < startRow) {
@@ -65,24 +69,22 @@ async function main({ inputFile, startRow, endRow }: GenerateCsvParams) {
       const npi = row["npi"]?.trim();
       if (!npi) return;
 
-      const facilityType: InputRowFacilityImport["facilityType"] =
-        Math.random() < 0.5 ? "obo" : "non-obo";
-      const isObo = facilityType === "obo";
+      const type: InputRowFacilityImport["type"] =
+        Math.random() < 0.5 ? FacilityType.initiatorOnly : FacilityType.initiatorAndResponder;
 
-      const cqOboOid = isObo ? `2.16.840.1.${getRandomNumber()}` : "";
-      const cwOboOid = isObo ? `2.16.840.1.${getRandomNumber()}` : "";
+      const principalOid =
+        type === FacilityType.initiatorOnly ? `2.16.840.1.${getRandomNumber()}` : "";
 
-      results.push({ npi, facilityName: faker.company.name(), facilityType, cqOboOid, cwOboOid });
+      results.push({
+        npi,
+        facilityName: faker.company.name(),
+        type,
+        principalOid,
+      });
     })
     .on("end", () => {
       const lines = results.map(r =>
-        [
-          r.npi,
-          `"${r.facilityName.replace(/"/g, '""')}"`,
-          r.facilityType,
-          r.cqOboOid,
-          r.cwOboOid,
-        ].join(",")
+        [r.npi, `"${r.facilityName.replace(/"/g, '""')}"`, r.type, r.principalOid].join(",")
       );
       fs.writeFileSync(fullPath, [CSV_HEADER, ...lines].join("\n"), "utf-8");
       console.log(`Wrote ${results.length} rows (data rows ${startRow}–${endRow}) → ${fullPath}`);

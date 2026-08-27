@@ -12,6 +12,7 @@ import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { QueueAndLambdaSettings, LambdaSettingsWithNameAndEntry } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
+import { createBucket } from "./shared/bucket";
 
 const waitTimePatientSync = Duration.seconds(10); // 6 patients/min
 const waitTimeElationLinkPatient = Duration.seconds(10); // 6 patients/min
@@ -49,8 +50,8 @@ function settings(): {
       timeout: syncPatientLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(6),
-      maxMessageCountAlarmThreshold: 5_000,
+      alertMaxApproximateAgeOfOldestMessage: Duration.hours(6),
+      alertMaxApproximateNumberOfMessagesVisible: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(syncPatientLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
@@ -70,8 +71,8 @@ function settings(): {
       timeout: elationLinkPatientLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(6),
-      maxMessageCountAlarmThreshold: 5_000,
+      alertMaxApproximateAgeOfOldestMessage: Duration.hours(6),
+      alertMaxApproximateNumberOfMessagesVisible: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(elationLinkPatientLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
@@ -91,8 +92,8 @@ function settings(): {
       timeout: healthieLinkPatientLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(6),
-      maxMessageCountAlarmThreshold: 5_000,
+      alertMaxApproximateAgeOfOldestMessage: Duration.hours(6),
+      alertMaxApproximateNumberOfMessagesVisible: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(healthieLinkPatientLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
@@ -113,8 +114,8 @@ function settings(): {
       timeout: computeResourceDiffBundlesLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(2),
-      maxMessageCountAlarmThreshold: 5_000,
+      alertMaxApproximateAgeOfOldestMessage: Duration.hours(2),
+      alertMaxApproximateNumberOfMessagesVisible: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(computeResourceDiffBundlesLambdaTimeout.toSeconds() + 1),
       createRetryLambda: false,
@@ -136,8 +137,8 @@ function settings(): {
       timeout: refreshEhrBundlesLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(2),
-      maxMessageCountAlarmThreshold: 5_000,
+      alertMaxApproximateAgeOfOldestMessage: Duration.hours(2),
+      alertMaxApproximateNumberOfMessagesVisible: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(refreshEhrBundlesLambdaTimeout.toSeconds() + 1),
       createRetryLambda: false,
@@ -158,8 +159,8 @@ function settings(): {
       timeout: contributeResourceDiffBundlesLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(4),
-      maxMessageCountAlarmThreshold: 5_000,
+      alertMaxApproximateAgeOfOldestMessage: Duration.hours(4),
+      alertMaxApproximateNumberOfMessagesVisible: 5_000,
       maxReceiveCount: 1,
       visibilityTimeout: Duration.seconds(
         contributeResourceDiffBundlesLambdaTimeout.toSeconds() + 1
@@ -182,8 +183,8 @@ function settings(): {
       timeout: writeBackResourceDiffBundlesLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.hours(4),
-      maxMessageCountAlarmThreshold: 5_000,
+      alertMaxApproximateAgeOfOldestMessage: Duration.hours(4),
+      alertMaxApproximateNumberOfMessagesVisible: 5_000,
       maxReceiveCount: 1,
       visibilityTimeout: Duration.seconds(
         writeBackResourceDiffBundlesLambdaTimeout.toSeconds() + 1
@@ -212,7 +213,7 @@ function settings(): {
 interface EhrNestedStackProps extends NestedStackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
-  alarmAction?: SnsAction;
+  alertAction?: SnsAction;
   lambdaLayers: LambdaLayers;
   ehrResponsesBucket: s3.Bucket | undefined;
   medicalDocumentsBucket: s3.Bucket;
@@ -248,22 +249,24 @@ export class EhrNestedStack extends NestedStack {
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      alertAction: props.alertAction,
       ehrResponsesBucket: props.ehrResponsesBucket,
     });
 
-    const ehrBundleBucket = new s3.Bucket(this, "EhrBundleBucket", {
-      bucketName: props.config.ehrBundleBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-      cors: [
-        {
-          allowedOrigins: ["*"],
-          allowedMethods: [s3.HttpMethods.GET],
-        },
-      ],
-    });
+    const ehrBundleBucket = createBucket(
+      this,
+      {
+        bucketName: props.config.ehrBundleBucketName,
+        versioned: true,
+        cors: [
+          {
+            allowedOrigins: ["*"],
+            allowedMethods: [s3.HttpMethods.GET],
+          },
+        ],
+      },
+      "EhrBundleBucket"
+    );
     this.ehrBundleBucket = ehrBundleBucket;
 
     const syncPatient = this.setupSyncPatient({
@@ -271,7 +274,7 @@ export class EhrNestedStack extends NestedStack {
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      alertAction: props.alertAction,
     });
     this.syncPatientLambda = syncPatient.lambda;
     this.syncPatientQueue = syncPatient.queue;
@@ -281,7 +284,7 @@ export class EhrNestedStack extends NestedStack {
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      alertAction: props.alertAction,
     });
     this.elationLinkPatientLambda = elationLinkPatient.lambda;
     this.elationLinkPatientQueue = elationLinkPatient.queue;
@@ -291,7 +294,7 @@ export class EhrNestedStack extends NestedStack {
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      alertAction: props.alertAction,
     });
     this.healthieLinkPatientLambda = healthieLinkPatient.lambda;
     this.healthieLinkPatientQueue = healthieLinkPatient.queue;
@@ -301,7 +304,7 @@ export class EhrNestedStack extends NestedStack {
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      alertAction: props.alertAction,
       ehrResponsesBucket: props.ehrResponsesBucket,
       ehrBundleBucket: this.ehrBundleBucket,
     });
@@ -313,7 +316,7 @@ export class EhrNestedStack extends NestedStack {
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      alertAction: props.alertAction,
       ehrResponsesBucket: props.ehrResponsesBucket,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
       ehrBundleBucket: this.ehrBundleBucket,
@@ -326,7 +329,7 @@ export class EhrNestedStack extends NestedStack {
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      alertAction: props.alertAction,
       ehrResponsesBucket: props.ehrResponsesBucket,
       medicalDocumentsBucket: props.medicalDocumentsBucket,
       ehrBundleBucket: this.ehrBundleBucket,
@@ -339,7 +342,7 @@ export class EhrNestedStack extends NestedStack {
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      alertAction: props.alertAction,
       ehrResponsesBucket: props.ehrResponsesBucket,
       ehrBundleBucket: this.ehrBundleBucket,
       fhirConverterLambda: props.fhirConverterLambda,
@@ -355,10 +358,10 @@ export class EhrNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
+    alertAction: SnsAction | undefined;
     ehrResponsesBucket: s3.Bucket | undefined;
   }): Lambda {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, envType, sentryDsn, alertAction } = ownProps;
     const { name, entry, lambda: lambdaSettings } = settings().getAppointments;
 
     const lambda = createLambda({
@@ -376,7 +379,7 @@ export class EhrNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     ownProps.ehrResponsesBucket?.grantWrite(lambda);
@@ -389,9 +392,9 @@ export class EhrNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
+    alertAction: SnsAction | undefined;
   }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, envType, sentryDsn, alertAction } = ownProps;
     const {
       name,
       entry,
@@ -409,7 +412,7 @@ export class EhrNestedStack extends NestedStack {
       createDLQ: true,
       lambdaLayers: [lambdaLayers.shared],
       envType,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     const lambda = createLambda({
@@ -425,7 +428,7 @@ export class EhrNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
@@ -438,9 +441,9 @@ export class EhrNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
+    alertAction: SnsAction | undefined;
   }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, envType, sentryDsn, alertAction } = ownProps;
     const {
       name,
       entry,
@@ -458,7 +461,7 @@ export class EhrNestedStack extends NestedStack {
       createDLQ: true,
       lambdaLayers: [lambdaLayers.shared],
       envType,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     const lambda = createLambda({
@@ -474,7 +477,7 @@ export class EhrNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
@@ -487,9 +490,9 @@ export class EhrNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
+    alertAction: SnsAction | undefined;
   }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, envType, sentryDsn, alertAction } = ownProps;
     const {
       name,
       entry,
@@ -507,7 +510,7 @@ export class EhrNestedStack extends NestedStack {
       createDLQ: true,
       lambdaLayers: [lambdaLayers.shared],
       envType,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     const lambda = createLambda({
@@ -523,7 +526,7 @@ export class EhrNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
@@ -536,11 +539,11 @@ export class EhrNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
+    alertAction: SnsAction | undefined;
     ehrResponsesBucket: s3.Bucket | undefined;
     ehrBundleBucket: s3.Bucket;
   }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, envType, sentryDsn, alertAction } = ownProps;
     const {
       name,
       entry,
@@ -558,7 +561,7 @@ export class EhrNestedStack extends NestedStack {
       createDLQ: true,
       lambdaLayers: [lambdaLayers.shared, lambdaLayers.langchain],
       envType,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     const lambda = createLambda({
@@ -579,7 +582,7 @@ export class EhrNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
@@ -595,12 +598,12 @@ export class EhrNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
+    alertAction: SnsAction | undefined;
     ehrResponsesBucket: s3.Bucket | undefined;
     medicalDocumentsBucket: s3.Bucket;
     ehrBundleBucket: s3.Bucket;
   }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, envType, sentryDsn, alertAction } = ownProps;
     const {
       name,
       entry,
@@ -618,7 +621,7 @@ export class EhrNestedStack extends NestedStack {
       createDLQ: true,
       lambdaLayers: [lambdaLayers.shared, lambdaLayers.langchain],
       envType,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     const lambda = createLambda({
@@ -640,7 +643,7 @@ export class EhrNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
@@ -657,12 +660,12 @@ export class EhrNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
+    alertAction: SnsAction | undefined;
     ehrResponsesBucket: s3.Bucket | undefined;
     medicalDocumentsBucket: s3.Bucket;
     ehrBundleBucket: s3.Bucket;
   }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, envType, sentryDsn, alertAction } = ownProps;
     const {
       name,
       entry,
@@ -680,7 +683,7 @@ export class EhrNestedStack extends NestedStack {
       createDLQ: true,
       lambdaLayers: [lambdaLayers.shared, lambdaLayers.langchain],
       envType,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     const lambda = createLambda({
@@ -702,7 +705,7 @@ export class EhrNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
@@ -719,14 +722,14 @@ export class EhrNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
+    alertAction: SnsAction | undefined;
     ehrResponsesBucket: s3.Bucket | undefined;
     ehrBundleBucket: s3.Bucket;
     fhirConverterLambda: Lambda | undefined;
     fhirConverterBucket: s3.Bucket | undefined;
     computeResourceDiffBundlesQueue: Queue;
   }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, envType, sentryDsn, alertAction } = ownProps;
     const {
       name,
       entry,
@@ -744,7 +747,7 @@ export class EhrNestedStack extends NestedStack {
       createDLQ: true,
       lambdaLayers: [lambdaLayers.shared, lambdaLayers.langchain],
       envType,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     const lambda = createLambda({
@@ -773,7 +776,7 @@ export class EhrNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared, lambdaLayers.langchain],
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));

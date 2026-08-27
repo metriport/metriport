@@ -62,23 +62,20 @@ export async function storePartitionedPayloadsInS3({
   context: string;
   lambdaParams: Record<string, string | undefined>;
   log: typeof console.log;
-}): Promise<void> {
-  const fileNames: string[] = [];
+}): Promise<string[]> {
+  const s3Keys: string[] = [];
 
   const payloadsWithIndices = partitionedPayloads.map((payload, index) => ({ payload, index }));
 
   const results = await executeAsynchronously(
     payloadsWithIndices,
     async ({ payload, index }) => {
-      const nameWithPartNumber = buildDocumentNameForPartialConversions(
-        preConversionFilename,
-        index
-      );
+      const s3Key = buildDocumentNameForPartialConversions(preConversionFilename, index);
       await storeInS3WithRetries({
         s3Utils,
         payload,
         bucketName: conversionResultBucketName,
-        fileName: nameWithPartNumber,
+        fileName: s3Key,
         contentType: XML_APP_MIME_TYPE,
         log,
         errorConfig: {
@@ -91,7 +88,7 @@ export async function storePartitionedPayloadsInS3({
           shouldCapture: false,
         },
       });
-      fileNames[index] = nameWithPartNumber;
+      s3Keys[index] = s3Key;
     },
     {
       numberOfParallelExecutions: 3,
@@ -108,11 +105,13 @@ export async function storePartitionedPayloadsInS3({
       extra: {
         ...lambdaParams,
         context,
-        fileNames,
+        s3Keys,
         errors: failures.map(f => f.reason),
       },
     });
   }
+
+  return s3Keys;
 }
 
 export async function storePreprocessedPayloadInS3({

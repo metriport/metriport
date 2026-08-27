@@ -2,6 +2,7 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 import { docContributionFileParam } from "@metriport/core/external/commonwell-v1/document/document-contribution";
 import { retrieveDocumentForCommonWellContribution } from "@metriport/core/external/commonwell/contribution/shared-document-retrieval";
 import { out } from "@metriport/core/util/log";
+import { OCTET_MIME_TYPE, XML_APP_MIME_TYPE } from "@metriport/core/util/mime";
 import { errorToString } from "@metriport/shared";
 import * as lambda from "aws-lambda";
 import { capture } from "./shared/capture";
@@ -39,18 +40,18 @@ export const handler = capture.wrapHandler(
       log(`Received request w/ params: ${JSON.stringify(event.queryStringParameters)}`);
 
       const fileName = event.queryStringParameters?.[docContributionFileParam] ?? "";
-      if (fileName.trim().length <= 0) {
+      if (fileName.trim().length < 1) {
         return sendResponse(
           {
             statusCode: 400,
-            body: "Missing fileName query parameter",
+            body: `Missing ${docContributionFileParam} query parameter`,
           },
           log
         );
       }
 
       const fileContents = await retrieveDocumentForCommonWellContribution({
-        fileName,
+        documentIdOrFileNameOrFilePath: fileName,
         s3Utils,
         bucketName,
       });
@@ -60,7 +61,7 @@ export const handler = capture.wrapHandler(
         {
           statusCode: 200,
           headers: {
-            "Content-Type": "application/octet-stream",
+            "Content-Type": XML_APP_MIME_TYPE,
           },
           body: fileContents,
         },
@@ -87,7 +88,8 @@ export const handler = capture.wrapHandler(
 );
 
 function sendResponse(response: lambda.APIGatewayProxyResult, log: typeof console.log) {
-  const isFileContent = response.headers?.["Content-Type"] === "application/octet-stream";
+  const contentType = response.headers?.["Content-Type"];
+  const isFileContent = contentType === OCTET_MIME_TYPE || contentType === XML_APP_MIME_TYPE;
 
   if (isFileContent) {
     const { body, ...responseWithoutBody } = response;

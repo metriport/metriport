@@ -1,35 +1,46 @@
-import { Cohort, CohortCreate } from "@metriport/core/domain/cohort";
 import { out } from "@metriport/core/util";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { BadRequestError } from "@metriport/shared";
+import {
+  Cohort,
+  CohortCreateCmd,
+  DEFAULT_COLOR,
+  DEFAULT_SETTINGS,
+} from "@metriport/shared/domain/cohort";
+import { cloneDeep } from "lodash";
 import { CohortModel } from "../../../models/medical/cohort";
-import { getCohortByName } from "./get-cohort";
+import { validateCohortSettingsOrFail } from "../patient/get-settings";
+import { validateCohortName } from "./update-cohort";
 
+/**
+ * Creates a new cohort.
+ * @param cxId - The ID of the CX.
+ * @param name - The name of the cohort.
+ * @param description - The description of the cohort.
+ * @param color - The color of the cohort.
+ * @param settings - The settings of the cohort.
+ * @returns The created cohort.
+ */
 export async function createCohort({
   cxId,
   name,
-  monitoring,
-}: Omit<CohortCreate, "id">): Promise<Cohort> {
+  description = "",
+  color = DEFAULT_COLOR,
+  settings,
+}: CohortCreateCmd): Promise<Cohort> {
   const { log } = out(`createCohort - cx: ${cxId}`);
+  const normalizedName = await validateCohortName({ cxId, name });
 
-  const trimmedName = name.trim();
-  const existingCohort = await getCohortByName({ cxId, name: trimmedName });
-  if (existingCohort) {
-    throw new BadRequestError("A cohort with this name already exists", undefined, {
-      cxId,
-      name: trimmedName,
-    });
-  }
+  await validateCohortSettingsOrFail(cxId, settings, log);
 
-  const cohortCreate: CohortCreate = {
+  const cohortCreate = {
     id: uuidv7(),
     cxId,
-    name: trimmedName,
-    monitoring,
+    name: normalizedName,
+    description,
+    color,
+    settings: settings ?? cloneDeep(DEFAULT_SETTINGS),
   };
 
   const newCohort = await CohortModel.create(cohortCreate);
-
-  log(`Done. New cohort ID: ${JSON.stringify(newCohort)}`);
-  return newCohort.dataValues;
+  return { ...newCohort.dataValues, eTag: newCohort.eTag };
 }

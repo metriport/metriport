@@ -17,7 +17,6 @@ export class CwDirectoryEntryViewModel
   declare city: string | undefined;
   declare state: string | undefined;
   declare zip: string | undefined;
-  declare country: string;
   declare data: unknown;
   declare active: boolean;
   declare npi?: string;
@@ -54,9 +53,6 @@ export class CwDirectoryEntryViewModel
           type: DataTypes.STRING,
         },
         zip: {
-          type: DataTypes.STRING,
-        },
-        country: {
           type: DataTypes.STRING,
         },
         data: {

@@ -35,7 +35,6 @@ export function getLinkStatusCW(data: PatientExternalData | undefined): LinkStat
 export async function create({
   patient,
   facilityId,
-  getOrgIdExcludeList,
   requestId: inputRequestId,
   forceCWCreate = false,
   rerunPdOnNewDemographics = false,
@@ -43,7 +42,6 @@ export async function create({
 }: {
   patient: Patient;
   facilityId: string;
-  getOrgIdExcludeList: () => Promise<string[]>;
   requestId?: string;
   forceCWCreate?: boolean;
   rerunPdOnNewDemographics?: boolean;
@@ -78,7 +76,6 @@ export async function create({
   return await registerAndLinkPatientInCwV2({
     patient: createAugmentedPatient(updatedPatient),
     facilityId,
-    getOrgIdExcludeList,
     rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
     requestId,
     startedAt,
@@ -91,7 +88,6 @@ export async function create({
 export async function update({
   patient,
   facilityId,
-  getOrgIdExcludeList,
   requestId: inputRequestId,
   forceCWUpdate = false,
   rerunPdOnNewDemographics = false,
@@ -125,7 +121,6 @@ export async function update({
   await updatePatientAndLinksInCwV2({
     patient: createAugmentedPatient(updatedPatient),
     facilityId,
-    getOrgIdExcludeList,
     rerunPdOnNewDemographics: cxRerunPdOnNewDemographics,
     requestId,
     startedAt,

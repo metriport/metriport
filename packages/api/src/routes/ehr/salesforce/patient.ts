@@ -16,7 +16,7 @@ const router = Router();
  * @param req.query.practiceId The ID of Salesforce Practice.
  * @param req.query.instanceUrl The Salesforce instance URL.
  * @param req.query.tokenId The ID of Salesforce Token.
- * @returns Metriport Patient if found.
+ * @returns Metriport Patient ID if found.
  */
 router.get(
   "/:id",
@@ -47,7 +47,7 @@ router.get(
  * @param req.query.practiceId The ID of Salesforce Practice.
  * @param req.query.instanceUrl The Salesforce instance URL.
  * @param req.query.tokenId The ID of Salesforce Token.
- * @returns Metriport Patient if found.
+ * @returns Metriport Patient ID if found.
  */
 router.post(
   "/:id",

@@ -1,0 +1,113 @@
+---
+title: "Overview"
+description: "Learn about medical coding systems and how we apply them."
+---
+
+Medical coding systems are common vocabularies that allow specific identification of different clinical concepts.
+There are a number of common and widely used medical coding systems, such as ICD-10-CM, SNOMED, and others. However, different healthcare IT systems use all kinds of coding systems - some standardized, some proprietary. Metriport enriches data with code system lookup, normalization, and cross-walks, so that the result is cohesive and more robust than it is at the source.
+
+## Common Medical Coding Systems
+
+<Tip>
+  You can use the URLs of these systems from the table below
+  to filter for relevant codes in your patient's
+  [Consolidated
+  Bundle](/medical-api/api-reference/fhir/consolidated-data-query-post).
+</Tip>
+
+Below is an overview of the most prevalent coding systems supported by Metriport and often found in the source documents:
+| Coding System | Identifiers | Purpose | FHIR Resources | Example | Maintained by |
+| :------------- | :-------- | :-------- | :-------------- | :-------------- | :-------- |
+| [ICD-10-CM](https://www.cdc.gov/nchs/icd/icd-10-cm/index.html) <br/>(International Classification of Diseases, 10th Revision, Clinical Modification) | OID: 2.16.840.1.113883.6.90<br/> URL: http://hl7.org/fhir/sid/icd-10-cm | Encodes medical diagnoses and conditions | Condition | `E11.9` → _Type 2 diabetes mellitus without complications_ | U.S. National Center for Health Statistics (NCHS) |
+| [CPT](https://www.ama-assn.org/topics/cpt-codes) <br/>(Current Procedural Terminology) | OID: 2.16.840.1.113883.6.12<br/> URL: http://www.ama-assn.org/go/cpt | Encodes outpatient medical procedures and services | Procedure | `0331T` → _Myocardial sympathetic innervation imaging, planar qualitative and quantitative assessment_ | American Medical Association (AMA) |
+| [CVX](https://www2a.cdc.gov/vaccines/iis/iisstandards/vaccines.asp?rpt=cvx) <br/>(Vaccine Codes)| OID: 2.16.840.1.113883.12.292<br/> URL: http://hl7.org/fhir/sid/cvx | Identifies vaccines and vaccine groups | Immunization | `125` → _Novel Influenza-H1N1-09, live virus for nasal administration_ | U.S. Centers for Disease Control and Prevention (CDC) |
+| [SNOMED CT](https://www.snomed.org/what-is-snomed-ct) <br/>(Systematized Nomenclature of Medicine – Clinical Terms)| OID: 2.16.840.1.113883.6.96<br/> URL: http://snomed.info/sct | Encodes comprehensive clinical terminology for conditions, findings, and procedures | Condition, Procedure, and others | `44054006` → _Diabetes mellitus type 2 (disorder)_ | SNOMED International |
+| [LOINC](https://loinc.org/) <br/>(Logical Observation Identifiers Names and Codes) | OID: 2.16.840.1.113883.6.1<br/> URL: http://loinc.org | Encodes laboratory and clinical observations | Observation, Encounter, and others | `718-7` → _Hemoglobin [Mass/volume] in Blood_ | Regenstrief Institute |
+| [NDC](https://www.fda.gov/drugs/drug-approvals-and-databases/national-drug-code-directory) <br/>(National Drug Code) | OID: 2.16.840.1.113883.6.69<br/> URL: http://hl7.org/fhir/sid/ndc | Identifies drug products marketed in the U.S. | Medication | `0002-8215-01` → _insulin human (Humulin R) 100 [iU]/mL Parenteral Injection, Solution, 1 VIAL, MULTI-DOSE in 1 CARTON (0002-8215-01) / 10 mL in 1 VIAL, MULTI-DOSE_ | U.S. Food and Drug Administration (FDA) |
+| [RxNorm](https://www.nlm.nih.gov/research/umls/rxnorm/index.html) | OID: 2.16.840.1.113883.6.88<br/> URL: http://www.nlm.nih.gov/research/umls/rxnorm | Normalizes drug names and clinical drugs | Medication | `311036` → _HumuLIN R 100 UNT/ML Injectable Solution_ | U.S. National Library of Medicine (NLM) |
+
+## Other Clinical Classification Systems
+
+These systems are typically not provided in the source documents, but are added by Metriport:
+| Coding System | Purpose | FHIR Resources | Example | Maintained by |
+| :-------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------- | :------------- | :-------------------------------------------------- |
+| [CCSR](/medical-api/fhir/coding-systems/ccsr) <br/>(Clinical Classifications Software Refined) | Groups ICD-10-CM diagnosis codes into clinically meaningful categories across body systems | Condition | `END002` → _Diabetes mellitus without complication_ | U.S. Agency for Healthcare Research and Quality (AHRQ) |
+| [HCC](https://www.cms.gov/medicare/payment/medicare-advantage-rates-statistics/risk-adjustment) <br/>(Hierarchical Condition Categories) | Groups ICD-10-CM diagnosis codes into hierarchical categories used for risk adjustment and reimbursement | Condition | `18` → _Diabetes with chronic complications_ | U.S. Centers for Medicare & Medicaid Services (CMS) |
+| [CCIR](https://www.hcup-us.ahrq.gov/toolssoftware/ccsr/chronic.jsp) <br/>(Chronic Condition Indicator Refined) | Classifies ICD-10-CM diagnosis codes as chronic or nonchronic across 18 clinical condition categories | Condition | `C` → _Chronic_ | U.S. Agency for Healthcare Research and Quality (AHRQ) |
+
+## Representation in FHIR
+
+Each of these coding systems appears in FHIR as elements of `coding`, `category`, or `extension` arrays.
+
+Here's a subset of attributes you can expect to find in a Condition resource, displaying how Metriport uses different coding systems to hydrate the clinical data:
+
+```json
+{
+  "resourceType": "Condition",
+  "code": {
+    "text": "Unspecified atrial fibrillation",
+    "coding": [
+      {
+        "code": "I48.91",
+        "display": "Unspecified atrial fibrillation",
+        "system": "http://hl7.org/fhir/sid/icd-10-cm"
+      },
+      {
+        "code": "49436004",
+        "system": "http://snomed.info/sct",
+        "display": "Atrial fibrillation (disorder)"
+      },
+      {
+        "code": "427.31",
+        "display": "Atrial fibrillation, unspecified type (HCC)",
+        "system": "http://terminology.hl7.org/CodeSystem/ICD-9CM-diagnosiscodes"
+      }
+    ]
+  },
+  "category": [
+    {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+          "code": "encounter-diagnosis",
+          "display": "Encounter Diagnosis"
+        }
+      ],
+      "text": "Encounter Diagnosis"
+    },
+    {
+      "coding": [
+        {
+          "system": "https://hcup-us.ahrq.gov/toolssoftware/ccsr/ccs_refined.jsp",
+          "code": "CIR",
+          "display": "Diseases of the circulatory system"
+        }
+      ],
+      "text": "Diseases of the circulatory system"
+    }
+  ],
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/condition-related",
+      "valueCoding": {
+        "code": "C",
+        "display": "Chronic",
+        "system": "https://public.metriport.com/fhir/StructureDefinition/condition-chronicity.json"
+      }
+    },
+    {
+      "url": "https://public.metriport.com/fhir/StructureDefinition/condition-hcc.json",
+      "valueCodeableConcept": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/cmshcc",
+            "display": "Unspecified atrial fibrillation",
+            "version": "v24",
+            "code": "96"
+          }
+        ]
+      }
+    }
+  ]
+}
+```

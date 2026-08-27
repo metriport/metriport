@@ -16,8 +16,12 @@ export class OrganizationModel extends BaseModel<OrganizationModel> implements O
   declare data: OrganizationData;
   declare cqActive: boolean;
   declare cwActive: boolean;
+  declare ehexActive: boolean;
   declare cqApproved: boolean;
   declare cwApproved: boolean;
+  declare ehexApproved: boolean;
+  declare principalOid: string | null;
+  declare delegateOids: string[];
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     OrganizationModel.init(
@@ -50,6 +54,11 @@ export class OrganizationModel extends BaseModel<OrganizationModel> implements O
           defaultValue: false,
           allowNull: false,
         },
+        ehexActive: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
+          allowNull: false,
+        },
         cqApproved: {
           type: DataTypes.BOOLEAN,
           defaultValue: false,
@@ -59,6 +68,22 @@ export class OrganizationModel extends BaseModel<OrganizationModel> implements O
           type: DataTypes.BOOLEAN,
           defaultValue: false,
           allowNull: false,
+        },
+        ehexApproved: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
+          allowNull: false,
+        },
+        principalOid: {
+          type: DataTypes.STRING,
+          defaultValue: null,
+          allowNull: true,
+        },
+        delegateOids: {
+          type: DataTypes.ARRAY(DataTypes.STRING),
+          defaultValue: [],
+          allowNull: false,
+          field: "delegate_oids",
         },
       },
       {

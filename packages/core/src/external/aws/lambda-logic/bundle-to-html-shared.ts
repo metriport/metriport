@@ -31,6 +31,38 @@ export function formatDateForDisplay(date?: Date | string | undefined): string {
 }
 
 /**
+ * Sort comparator for chronological order (oldest first).
+ * Items without dates are placed at the bottom.
+ * For date ranges, uses the start date.
+ *
+ * @param aDate - First date value (string | undefined)
+ * @param bDate - Second date value (string | undefined)
+ * @returns Comparison result for Array.sort()
+ */
+export function sortByDateChronological(aDate?: string, bDate?: string): number {
+  if (!aDate && !bDate) return 0;
+  if (!aDate) return 1;
+  if (!bDate) return -1;
+  return dayjs(aDate).diff(dayjs(bDate)); // older first
+}
+
+/**
+ * Sort comparator for descending order (newest first).
+ * Items without dates are placed at the bottom.
+ * For date ranges, uses the start date.
+ *
+ * @param aDate - First date value (string | undefined)
+ * @param bDate - Second date value (string | undefined)
+ * @returns Comparison result for Array.sort()
+ */
+export function sortByDateDescending(aDate?: string, bDate?: string): number {
+  if (!aDate && !bDate) return 0;
+  if (!aDate) return 1;
+  if (!bDate) return -1;
+  return dayjs(bDate).diff(dayjs(aDate)); // newer first
+}
+
+/**
  * @returns EncounterSection - NOTE: don't assume key is a date, it might be MISSING_DATE_KEY, in
  * case the date is not available. See EncounterSection type for more details.
  */
@@ -100,7 +132,10 @@ export function createBrief(brief?: Brief): string {
   const { link, content } = brief;
   const briefContents = `
   <div class="brief-section-content">
-    <table><tbody><tr><td>${content.replace(/\n/g, "<br/>")}</td></tr></tbody></table>
+    <table><tbody><tr><td style="white-space: pre-wrap;">${content.replace(
+      /\n/g,
+      "<br/>"
+    )}</td></tr></tbody></table>
     <div class="brief-warning">
       <div class="brief-warning-contents">
         <div class="brief-warning-icon">
@@ -126,10 +161,11 @@ export function createBrief(brief?: Brief): string {
 }
 
 export function createSection(title: string, tableContents: string, id?: string) {
+  const sectionId = id ?? title.toLowerCase().replace(/\s+/g, "-");
   return `
-    <div id="${id ?? title.toLowerCase().replace(/\s+/g, "-")}" class="section">
+    <div id="${sectionId}" class="section">
       <div class="section-title">
-        <h3 id="${title}" title="${title}">&#x276F; ${title}</h3>
+        <h3 id="${sectionId}-anchor" title="${title}">&#x276F; ${title}</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
@@ -143,7 +179,7 @@ function asYesNo(value: boolean): "yes" | "no" {
   return value ? ("yes" as const) : ("no" as const);
 }
 
-export const getDeceasedStatus = (familyMemberHistory: FamilyMemberHistory): "yes" | "no" | "" => {
+export function getDeceasedStatus(familyMemberHistory: FamilyMemberHistory): "yes" | "no" | "" {
   const deceasedBoolean = familyMemberHistory.deceasedBoolean;
   if (deceasedBoolean !== undefined) {
     return asYesNo(deceasedBoolean);
@@ -158,4 +194,4 @@ export const getDeceasedStatus = (familyMemberHistory: FamilyMemberHistory): "ye
   }
 
   return "";
-};
+}

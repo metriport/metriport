@@ -1,8 +1,10 @@
+import { disableWHMetadata } from "@metriport/core/domain/document-query/trigger-and-query";
 import { PatientDemoData } from "@metriport/core/domain/patient";
 import SalesforceApi from "@metriport/core/external/ehr/salesforce/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { BadRequestError, MetriportError, normalizeDob, normalizeGender } from "@metriport/shared";
+import { SalesforceSecondaryMappings } from "@metriport/shared/interface/external/ehr/salesforce/cx-mapping";
 import { salesforceDashSource } from "@metriport/shared/interface/external/ehr/salesforce/jwt-token";
 import { Patient as SalesforcePatient } from "@metriport/shared/interface/external/ehr/salesforce/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
@@ -11,6 +13,7 @@ import { findOrCreatePatientMapping, getPatientMapping } from "../../../../comma
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
+import { getCxMappingAndParsedSecondaryMappings } from "../../shared/command/mapping/get-cx-mapping-and-secondary-mappings";
 import { getOrCreateMetriportPatient } from "../../shared/command/patient/get-or-create-metriport-patient";
 import { createAddresses, createContacts, createNames, createSalesforceClient } from "../shared";
 
@@ -36,6 +39,12 @@ export async function syncSalesforcePatientIntoMetriport({
   const { log } = out(
     `syncSalesforcePatientIntoMetriport - practiceId: ${salesforcePracticeId} ptId: ${salesforcePatientId}`
   );
+  const { parsedSecondaryMappings } =
+    await getCxMappingAndParsedSecondaryMappings<SalesforceSecondaryMappings>({
+      ehr: EhrSources.salesforce,
+      practiceId: salesforcePracticeId,
+    });
+  const shouldDisableWebhooks = !parsedSecondaryMappings.sendDocumentQueryWebhookEnabled;
 
   const existingPatient = await getPatientMapping({
     cxId,
@@ -87,6 +96,7 @@ export async function syncSalesforcePatientIntoMetriport({
       cxId,
       patientId: metriportPatient.id,
       facilityId,
+      ...(shouldDisableWebhooks && { cxDocumentRequestMetadata: disableWHMetadata }),
     }).catch(processAsyncError(`Salesforce queryDocumentsAcrossHIEs`));
   }
 

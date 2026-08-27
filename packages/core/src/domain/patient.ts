@@ -76,6 +76,10 @@ export type PatientDemoData = Pick<
   PatientData,
   "firstName" | "lastName" | "dob" | "genderAtBirth" | "personalIdentifiers" | "address" | "contact"
 >;
+export type PatientDemoDataStrict = Pick<
+  PatientDemoData,
+  "firstName" | "lastName" | "dob" | "genderAtBirth" | "address"
+>;
 
 export interface PatientCreate extends BaseDomainCreate {
   cxId: string;

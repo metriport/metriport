@@ -38,9 +38,7 @@ function buildPatient(patient: Patient): CdaPatientRole {
     raceCode: withNullFlavor(undefined, "code"),
     ethnicGroupCode: withNullFlavor(undefined, "code"),
     languageCommunication: {
-      languageCode: buildCodeCe({
-        code: patient.communication?.[0]?.language?.coding?.[0]?.code,
-      }),
+      languageCode: withNullFlavor(undefined, "code"),
     },
   };
 }
@@ -48,7 +46,7 @@ function buildPatient(patient: Patient): CdaPatientRole {
 export function buildRecordTargetFromFhirPatient(patient: Patient): CdaRecordTarget {
   const recordTarget = {
     patientRole: {
-      id: buildInstanceIdentifiersFromIdentifier(patient.identifier),
+      id: buildInstanceIdentifiersFromIdentifier(patient.identifier), // TODO: Fix the patient ID
       addr: buildAddress(patient.address),
       telecom: buildTelecom(patient.telecom),
       patient: buildPatient(patient),
@@ -61,7 +59,8 @@ function mapNameUse(use: string | undefined) {
   if (!use) return undefined;
   // From EntityNameUse of the CDA R2 IG
   switch (use.toLowerCase()) {
-    case "artist" || "stage":
+    case "artist":
+    case "stage":
       return "A";
     case "alphabetic":
       return "ABC";
@@ -69,11 +68,13 @@ function mapNameUse(use: string | undefined) {
       return "ASGN";
     case "license":
       return "C";
-    case "indigenous" || "tribal":
+    case "indigenous":
+    case "tribal":
       return "I";
     case "ideographic":
       return "IDE";
-    case "usual" || "legal":
+    case "usual":
+    case "legal":
       return "L";
     case "pseudonim":
       return "P";

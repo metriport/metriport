@@ -37,7 +37,7 @@ export async function uploadCdaDocuments({
           medicalDocumentsBucket: Config.getMedicalDocumentsBucketName(),
           region: Config.getAWSRegion(),
           organization,
-          docId: index > 0 ? `${docId}_${index}` : docId,
+          docId: index > 0 ? `${docId}.${index}` : docId,
         });
       })
     );

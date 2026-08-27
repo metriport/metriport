@@ -24,6 +24,7 @@ export async function processHl7FhirBundleWebhook({
   whenSourceSent,
   admitTimestamp,
   dischargeTimestamp,
+  isSendWebhook = true,
 }: Hl7NotificationWebhookRequest): Promise<void> {
   capture.setExtra({ patientId, context: `webhook.processHl7FhirBundleWebhook` });
   const { log } = out(`processHl7FhirBundleWebhook, cx: ${cxId}, pt: ${patientId}`);
@@ -98,8 +99,13 @@ export async function processHl7FhirBundleWebhook({
       type: webhookType,
       payload: whData,
       requestId,
+      status: !isSendWebhook ? "success" : undefined,
     });
 
+    if (!isSendWebhook) {
+      log("Not sending webhook");
+      return;
+    }
     await processRequest(webhookRequest, settings, { requestId });
   } catch (err) {
     const msg = `Failed to send hl7 notification webhook`;

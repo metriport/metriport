@@ -18,6 +18,7 @@ export enum OIDNode {
   templates = 11,
   local_vocab = 12,
   other = 13,
+  ehex_hub_gateway = 14,
 }
 
 export function addOidPrefix(oid: string): string {

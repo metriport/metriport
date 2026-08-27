@@ -1,34 +1,46 @@
-export const gfrUnitNormalizationMap = new Map<string, string>([
+const unknownsMap = new Map<string, string>([
   ["below", "UNK"],
-  ["seetext", "UNK"],
   ["comment", "UNK"],
-  ["unk", "UNK"],
+  ["seetext", "UNK"],
   ["seebelow", "UNK"],
+  ["seenote", "UNK"],
   ["seecmnt", "UNK"],
   ["seecomment", "UNK"],
+  ["&gt;60", "UNK"],
+  ["unk", "UNK"],
   ["na", "UNK"],
   ["units", "UNK"],
+  ["oth", "UNK"],
   ["{#}/ml", "UNK"],
   ["{*}", "UNK"],
   ["{_}", "UNK"],
   ["{ratio}", "UNK"],
   ["{see_below}", "UNK"],
   [".", "UNK"],
+  [")", "UNK"],
+  ["2559736295", "UNK"],
+  ["null", "UNK"],
+  ["&amp;", "UNK"],
+  ["{zz}", "UNK"],
+  ["zz", "UNK"],
+  ["{number}", "UNK"],
+]);
+
+const mlPerMinPer173m2UnitNormalizationMap = new Map<string, string>([
   ["(ckd-epi)ml/min/1.73m2", "mL/min/1.73m2"],
   ["(ckd-epi2021)ml/min/1.73m2", "mL/min/1.73m2"],
   ["(ml/min/1.73)", "mL/min/1.73m2"],
-  ["/1.73m2", "mL/min/1.73m2"],
-  ["1.73msq", "mL/min/1.73m2"],
   ["60ml/min/1.73m2", "mL/min/1.73m2"],
   ["mil/min/1.73m2", "mL/min/1.73m2"],
-  ["ml-min", "mL/min/1.73m2"],
-  ["ml/mi", "mL/min/1.73m2"],
   ["ml/mim/1.73m2", "mL/min/1.73m2"],
-  ["ml/min", "mL/min/1.73m2"],
-  ["ml/min/", "mL/min/1.73m2"],
   ["ml/min/(1.73_m2)", "mL/min/1.73m2"],
   ["ml/min/1", "mL/min/1.73m2"],
   ["ml/min/1.7", "mL/min/1.73m2"],
+  ["ml/min/m^2", "mL/min/1.73m2"],
+  ["ml/min/1.73mï¿½", "mL/min/1.73m2"],
+  ["ml/min/1.73m\\s\\2", "mL/min/1.73m2"],
+  ["m/l/min/1.73m2", "mL/min/1.73m2"],
+  ["ml/min/a", "mL/min/1.73m2"],
   ["ml/min/1.72m2", "mL/min/1.73m2"],
   ["ml/min/1.73", "mL/min/1.73m2"],
   ["ml/min/1.73**2", "mL/min/1.73m2"],
@@ -74,8 +86,6 @@ export const gfrUnitNormalizationMap = new Map<string, string>([
   ["ml/min/sa", "mL/min/1.73m2"],
   ["ml/min/{1.73_m2}", "mL/min/1.73m2"],
   ["ml/min/{1.73m2}", "mL/min/1.73m2"],
-  ["ml/minute", "mL/min/1.73m2"],
-  ["mls/min.", "mL/min/1.73m2"],
   ["mls/min/1.73m2", "mL/min/1.73m2"],
   ["{(ml/min/1.73m2)}", "mL/min/1.73m2"],
   ["{ml/min/1.73_m2}", "mL/min/1.73m2"],
@@ -89,15 +99,33 @@ export const gfrUnitNormalizationMap = new Map<string, string>([
   ["{ml/min/sa}", "mL/min/1.73m2"],
   ["{ml/min1.73_sq_m}", "mL/min/1.73m2"],
   ["{ml/minm2}", "mL/min/1.73m2"],
-  ["{ml/min}", "mL/min/1.73m2"],
   ["ml/min/1.73&quot;squaremeters&quot;", "mL/min/1.73m2"],
   ["ml/min/[1.73_m2]", "mL/min/1.73m2"],
   ["ml/mn/1.73m2", "mL/min/1.73m2"],
   ["ml/minper1.73", "mL/min/1.73m2"],
   ["m/m/1.73", "mL/min/1.73m2"],
+  ["mlmin173m2", "mL/min/1.73m2"],
+  ["ml/min/1.732m2", "mL/min/1.73m2"],
+  ["ml/min/bas", "mL/min/1.73m2"],
+]);
+
+export const gfrUnitNormalizationMap = new Map<string, string>([
+  ...mlPerMinPer173m2UnitNormalizationMap.entries(),
+  ["/1.73m2", "mL/min/1.73m2"],
+  ["1.73msq", "mL/min/1.73m2"],
+  ["ml-min", "mL/min/1.73m2"],
+  ["ml/mi", "mL/min/1.73m2"],
+  ["ml/min", "mL/min/1.73m2"],
+  ["ml/min/", "mL/min/1.73m2"],
+  ["ml/minute", "mL/min/1.73m2"],
+  ["mls/min.", "mL/min/1.73m2"],
+  ["{ml/min}", "mL/min/1.73m2"],
+  ["{(ml/min)}", "mL/min/1.73m2"],
+  ["mlpermin", "mL/min/1.73m2"],
   ["0", "mL/min/1.73m2"],
   ["1", "mL/min/1.73m2"],
   ["2", "mL/min/1.73m2"],
+  ["/1.73_m2", "mL/min/1.73m2"],
   ["g/dl", "g/dL"],
   ["mg/dl", "mg/dL"],
   ["ml", "mL"],
@@ -105,13 +133,19 @@ export const gfrUnitNormalizationMap = new Map<string, string>([
   ["ug/dl", "ug/dL"],
   ["egfr", "{egfr}"],
   ["gfrunit", "{egfr}"],
+  ["gfr", "{egfr}"],
   ["{egfr}", "{egfr}"],
   ["{estgfr}", "{egfr}"],
   ["glomerular_filtration_rate_unit", "{egfr}"],
+  ["%", "UNK"],
+  ...unknownsMap.entries(),
 ]);
 
-export const a1cUnitNormalizationMap = new Map<string, string>([
+const percentageUnitNormalizationMap = new Map<string, string>([
   ["%", "%"],
+  ["per", "%"],
+  ["percent", "%"],
+  ["percent_of_total_hgb", "%"],
   ["%(non-diabetic)", "%"],
   ["%_a1c", "%"],
   ["%_hgb", "%"],
@@ -125,12 +159,16 @@ export const a1cUnitNormalizationMap = new Map<string, string>([
   ["%hb", "%"],
   ["%hba1c", "%"],
   ["%hgb", "%"],
+  ["%{tot&#x27;hgb}", "%"],
   ["%ngsp", "%"],
   ["%ofhgb", "%"],
   ["%oftot", "%"],
   ["%oftotal", "%"],
   ["%oftotalh", "%"],
   ["%oftotalhemoglobin", "%"],
+  ["percenthemoglobin", "%"],
+  ["{%t.hgb}", "%"],
+  ["%_hba1c", "%"],
   ["%oftotalhgb", "%"],
   ["%t.hgb", "%"],
   ["%total", "%"],
@@ -145,9 +183,6 @@ export const a1cUnitNormalizationMap = new Map<string, string>([
   ["100%", "%"],
   ["5oftotalhgb", "%"],
   ["a1c", "%"],
-  ["per", "%"],
-  ["percent", "%"],
-  ["percent_of_total_hgb", "%"],
   ["s/coratio", "%"],
   ["{%_of_total_hgb}", "%"],
   ["{%_of_total}", "%"],
@@ -157,6 +192,10 @@ export const a1cUnitNormalizationMap = new Map<string, string>([
   ["{(%)}", "%"],
   ["{(%oftotalhgb)}", "%"],
   ["{hgb%}", "%"],
+]);
+
+export const a1cUnitNormalizationMap = new Map<string, string>([
+  ...percentageUnitNormalizationMap.entries(),
   ["0", "%"],
   ["1", "%"],
   ["genericcomposite[%^%^lb]", "UNK"],
@@ -164,41 +203,39 @@ export const a1cUnitNormalizationMap = new Map<string, string>([
   ["gm/dl", "mg/dL"],
   ["mg/dl", "mg/dL"],
   ["mmol/mol", "mmol/mol"],
-  [")", "UNK"],
-  ["2559736295", "UNK"],
-  ["null", "UNK"],
-  ["{_}", "UNK"],
-  ["{zz}", "UNK"],
-  ["unk", "UNK"],
+  ...unknownsMap.entries(),
 ]);
 
-export const bmiUnitNormalizationMap = new Map<string, string>([
-  ["%", "kg/m2"],
-  ["1", "kg/m2"],
-  ["{}", "kg/m2"],
-  ["kg", "kg/m2"],
+const kgPerM2UnitNormalizationMap = new Map<string, string>([
   ["kg.m/s", "kg/m2"],
-  ["kg/cm2", "kg/m2"],
-  ["kg/m", "kg/m2"],
   ["kg/m&amp;#xb2;", "kg/m2"],
   ["kg/m2", "kg/m2"],
   ["kg/m²", "kg/m2"],
   ["kg/meter(2)", "kg/m2"],
+  ["kilogram/(meter^2)", "kg/m2"],
+  ["kilogrampersquaremeter", "kg/m2"],
+]);
+
+export const bmiUnitNormalizationMap = new Map<string, string>([
+  ...kgPerM2UnitNormalizationMap.entries(),
+  ["%", "kg/m2"],
+  ["1", "kg/m2"],
+  ["{}", "kg/m2"],
+  ["kg", "kg/m2"],
+  ["kg/cm2", "kg/m2"],
+  ["kg/m", "kg/m2"],
   ["m2", "kg/m2"],
   ["{bmi}", "kg/m2"],
   ["{index_val}", "kg/m2"],
+  ["indexvalue", "kg/m2"],
   ["{index}", "kg/m2"],
   ["percent", "kg/m2"],
-  ["kilogram/(meter^2)", "kg/m2"],
-  ["kilogrampersquaremeter", "kg/m2"],
   ["lb/in2", "lb/in2"],
   ["{lb/in2}", "lb/in2"],
   ["{lbs/in2}", "lb/in2"],
   ["cc/m2", "UNK"],
   ["cm", "UNK"],
-  ["na", "UNK"],
-  ["{number}", "UNK"],
-  ["unk", "UNK"],
+  ...unknownsMap.entries(),
 ]);
 
 export const bmiPercentileUnitNormalizationMap = new Map<string, string>([
@@ -206,6 +243,7 @@ export const bmiPercentileUnitNormalizationMap = new Map<string, string>([
   ["{percentile}", "%"],
   ["1", "%"],
   ["%", "%"],
+  ["percentile", "%"],
   ["years", "years"],
   ["years)", "years"],
 ]);
@@ -223,7 +261,11 @@ export const glucoseUnitNormalizationMap = new Map<string, string>([
   ["{(mg/dl)}", "mg/dL"],
   ["{mg/dl}", "mg/dL"],
   ["milligramperdeciliter", "mg/dL"],
+  ["milligrams", "mg/dL"],
   [")", "mg/dL"],
+  ["mgdl", "mg/dL"],
+  ["mgs/dl", "mg/dL"],
+  ["mg/dlfasting", "mg/dL"],
   ["mmol/l", "mmol/l"],
   ["%", "%"],
   ["g/dl", "g/dL"],
@@ -235,14 +277,12 @@ export const glucoseUnitNormalizationMap = new Map<string, string>([
   ["0", "UNK"],
   ["1", "UNK"],
   ["]", "UNK"],
-  ["{_}", "UNK"],
   ["fl", "UNK"],
   ["h", "UNK"],
   ["mg%", "UNK"],
   ["ng/dl", "UNK"],
   ["ng/ml", "UNK"],
-  ["oth", "UNK"],
-  ["unk", "UNK"],
+  ...unknownsMap.entries(),
 ]);
 
 export const efUnitNormalizationMap = new Map<string, string>([
@@ -252,3 +292,39 @@ export const efUnitNormalizationMap = new Map<string, string>([
   ["ml", "mL"],
   ["ml/m2", "mL/m2"],
 ]);
+
+const unitSpecificNormalizationMaps = [
+  mlPerMinPer173m2UnitNormalizationMap,
+  percentageUnitNormalizationMap,
+  kgPerM2UnitNormalizationMap,
+];
+
+/**
+ * Merges all LOINC-specific unit maps into a single context-free normalization map.
+ * Only includes non-UNK entries that are unambiguous across all maps
+ * (same key always maps to the same value).
+ */
+function buildUnitSimilarityMap(maps: Map<string, string>[]): Map<string, string> {
+  const combined = new Map<string, string>();
+  const conflicts = new Set<string>();
+
+  for (const map of maps) {
+    for (const [key, value] of map) {
+      if (value === "UNK") continue;
+      if (conflicts.has(key)) continue;
+
+      const existing = combined.get(key);
+      if (existing && existing !== value) {
+        combined.delete(key);
+        conflicts.add(key);
+        continue;
+      }
+
+      combined.set(key, value);
+    }
+  }
+
+  return combined;
+}
+
+export const unitSimilarityMap = buildUnitSimilarityMap(unitSpecificNormalizationMaps);

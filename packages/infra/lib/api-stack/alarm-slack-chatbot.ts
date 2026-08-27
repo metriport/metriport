@@ -11,11 +11,15 @@ import { RetentionDays } from "aws-cdk-lib/aws-logs";
 import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 
+const DEFAULT_CONSTRUCT_ID = "SlackChannelConfiguration";
+const DEFAULT_ROLE_PREFIX = "SlackBot";
+
 type SlackBotProps = {
   readonly configName: string;
   readonly workspaceId: string;
   readonly channelId: string;
   readonly topics: ReadonlyArray<ITopic>;
+  readonly id?: string;
 };
 
 export class AlarmSlackBot {
@@ -23,9 +27,11 @@ export class AlarmSlackBot {
     scope: Construct,
     props: SlackBotProps
   ): SlackChannelConfiguration {
-    const { configName, channelId, workspaceId, topics } = props;
+    const { configName, channelId, workspaceId, topics, id } = props;
+    const constructId = id ?? DEFAULT_CONSTRUCT_ID;
+    const roleId = `${id ?? DEFAULT_ROLE_PREFIX}Role`;
 
-    const role = new Role(scope, "SlackBotRole", {
+    const role = new Role(scope, roleId, {
       assumedBy: new ServicePrincipal("chatbot.amazonaws.com"),
       description: "Role for AWS ChatBot",
       managedPolicies: [ManagedPolicy.fromAwsManagedPolicyName("ReadOnlyAccess")],
@@ -42,7 +48,7 @@ export class AlarmSlackBot {
       },
     });
 
-    return new SlackChannelConfiguration(scope, "SlackChannelConfiguration", {
+    return new SlackChannelConfiguration(scope, constructId, {
       slackChannelConfigurationName: configName,
       slackWorkspaceId: workspaceId,
       slackChannelId: channelId,

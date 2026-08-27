@@ -1,4 +1,5 @@
 import { Duration } from "aws-cdk-lib";
+import { ComparisonOperator, Stats } from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
@@ -13,6 +14,7 @@ import { getConfig } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { createQueue as defaultCreateQueue, provideAccessToQueue } from "../shared/sqs";
+import { addAlarmToMetric } from "../shared/alarm";
 import { settings as settingsFhirConverter } from "./fhir-converter-service";
 
 export type FHIRConverterConnector = {
@@ -22,19 +24,9 @@ export type FHIRConverterConnector = {
   lambda: Lambda;
 };
 
-/**
- * Determines the ratio of lambdas to ECS cores. We want this lower than 1 to minimize sending more requests
- * than the FHIR Converter can process in parallel, which would mean using it's worker thread's internal queue.
- * See more here: https://metriport.slack.com/archives/C04DBBJSKGB/p1739719790818809?thread_ts=1739665734.719219&cid=C04DBBJSKGB
- */
-const multiplier = 0.8;
-
 function settings() {
-  const {
-    cpuAmount: fhirConverterCPUAmount,
-    taskCountMin: fhirConverterTaskCountMin,
-    maxExecutionTimeout,
-  } = settingsFhirConverter();
+  const config = getConfig();
+  const { maxExecutionTimeout } = settingsFhirConverter();
   const lambdaTimeout = maxExecutionTimeout.minus(Duration.seconds(5));
   return {
     connectorName: "FHIRConverter",
@@ -42,10 +34,7 @@ function settings() {
     // Number of messages the lambda pull from SQS at once
     lambdaBatchSize: 1,
     // Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
-    maxConcurrency: Math.max(
-      2,
-      Math.ceil(fhirConverterCPUAmount * fhirConverterTaskCountMin * multiplier)
-    ),
+    maxConcurrency: config.fhirConverterConnectorMaxConcurrency,
     // How long can the lambda run for, max is 900 seconds (15 minutes)
     lambdaTimeout,
     // How long will it take before Axios returns a timeout error - should be less than the lambda timeout
@@ -56,9 +45,10 @@ function settings() {
     // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ
     visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
     // How long a message can be on the queue before an alarm is triggered
-    alarmMaxAgeOfOldestMessage: Duration.minutes(5),
-    // How many messages to allow in the queue before an alarm is triggered
-    maxMessageCountAlarmThreshold: 50_000,
+    alertMaxApproximateAgeOfOldestMessage: Duration.minutes(35),
+    // How many visible messages to allow in the queue before an alarm is triggered
+    alertMaxApproximateNumberOfMessagesVisible: 25_000,
+    alarmMaxApproximateNumberOfMessagesVisible: 100_000,
   };
 }
 
@@ -75,7 +65,7 @@ function settings() {
  * @param vpc - The VPC to create the connector in.
  * @param lambdaLayers - The lambda layers to use for the connector.
  * @param envType - The environment type to use for the connector.
- * @param alarmSnsAction - The SNS action to use for the connector.
+ * @param alertSnsAction - The SNS action to use for the connector.
  * @param config - The config to use for the connector.
  * @param medicalDocumentsBucket - The medical documents bucket to use for the connector.
  * @param featureFlagsTable - The feature flags table to use for the connector.
@@ -88,25 +78,30 @@ export function create({
   vpc,
   lambdaLayers,
   envType,
+  alertSnsAction,
   alarmSnsAction,
   config,
   medicalDocumentsBucket,
   featureFlagsTable,
   apiNotifierQueue,
+  fhirConverterLambda: fhirConverterLambdaToInvoke,
 }: {
   stack: Construct;
   vpc: IVpc;
   lambdaLayers: LambdaLayers;
   envType: EnvType;
-  alarmSnsAction?: SnsAction;
+  alertSnsAction?: SnsAction;
+  alarmSnsAction: SnsAction;
   config: EnvConfig;
   medicalDocumentsBucket: s3.IBucket;
   featureFlagsTable: dynamodb.Table;
   apiNotifierQueue: IQueue;
+  fhirConverterLambda: Lambda | undefined;
 }): FHIRConverterConnector {
   const { queue, dlq, bucket } = createQueueAndBucket({
     stack,
     envType,
+    alertSnsAction,
     alarmSnsAction,
   });
   const fhirConverterLambda = createLambda({
@@ -120,9 +115,10 @@ export function create({
     medicalDocumentsBucket,
     fhirServerUrl: config.fhirServerUrl,
     termServerUrl: config.termServerUrl,
-    alarmSnsAction,
+    alertSnsAction,
     featureFlagsTable,
     apiNotifierQueue,
+    fhirConverterLambdaToInvoke,
   });
   return {
     queue,
@@ -135,19 +131,22 @@ export function create({
 export function createQueueAndBucket({
   stack,
   envType,
+  alertSnsAction,
   alarmSnsAction,
 }: {
   stack: Construct;
   envType: EnvType;
-  alarmSnsAction?: SnsAction;
+  alertSnsAction?: SnsAction;
+  alarmSnsAction: SnsAction;
 }): Omit<FHIRConverterConnector, "lambda"> {
   const config = getConfig();
   const {
     connectorName,
     visibilityTimeout,
     maxReceiveCount,
-    maxMessageCountAlarmThreshold,
-    alarmMaxAgeOfOldestMessage,
+    alertMaxApproximateAgeOfOldestMessage,
+    alertMaxApproximateNumberOfMessagesVisible,
+    alarmMaxApproximateNumberOfMessagesVisible,
   } = settings();
   const queue = defaultCreateQueue({
     stack,
@@ -158,25 +157,35 @@ export function createQueueAndBucket({
     visibilityTimeout,
     maxReceiveCount,
     envType,
+    alertSnsAction,
+    alertMaxApproximateAgeOfOldestMessage,
+    alertMaxApproximateNumberOfMessagesVisible,
+  });
+
+  addAlarmToMetric({
+    scope: stack,
+    metric: queue.metricApproximateNumberOfMessagesVisible({
+      period: Duration.minutes(1),
+      statistic: Stats.MAXIMUM,
+    }),
+    name: `${connectorName}-ApproximateNumberOfMessagesVisible-Critical-Alarm`,
+    description: `Alarm if the approximate amount of visible messages in the 
+    queue is greater than or equal to ${alarmMaxApproximateNumberOfMessagesVisible}.`,
+    threshold: alarmMaxApproximateNumberOfMessagesVisible,
+    comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
     alarmSnsAction,
-    alarmMaxAgeOfOldestMessage,
-    maxMessageCountAlarmThreshold,
   });
 
   const dlq = queue.deadLetterQueue;
   if (!dlq) throw Error(`Missing DLQ of Queue ${queue.queueName}`);
 
-  const bucketName = config.fhirConverterBucketName;
-  const existingBucket = bucketName
-    ? s3.Bucket.fromBucketName(stack, `${connectorName}Bucket`, bucketName)
-    : undefined;
-  const fhirConverterBucket =
-    existingBucket ??
-    new s3.Bucket(stack, `${connectorName}Bucket`, {
-      bucketName: config.fhirConverterBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-    });
+  const fhirConverterBucketName = config.fhirConverterBucketName;
+  if (!fhirConverterBucketName) throw new Error("fhirConverterBucketName is required");
+  const fhirConverterBucket = s3.Bucket.fromBucketName(
+    stack,
+    `${connectorName}Bucket`,
+    fhirConverterBucketName
+  );
 
   return { queue, dlq: dlq.queue, bucket: fhirConverterBucket };
 }
@@ -192,9 +201,10 @@ export function createLambda({
   medicalDocumentsBucket,
   fhirServerUrl,
   termServerUrl,
-  alarmSnsAction,
+  alertSnsAction,
   featureFlagsTable,
   apiNotifierQueue,
+  fhirConverterLambdaToInvoke,
 }: {
   lambdaLayers: LambdaLayers;
   envType: EnvType;
@@ -206,9 +216,10 @@ export function createLambda({
   medicalDocumentsBucket: s3.IBucket;
   fhirServerUrl: string;
   termServerUrl?: string;
-  alarmSnsAction?: SnsAction;
+  alertSnsAction?: SnsAction;
   featureFlagsTable: dynamodb.Table;
   apiNotifierQueue: IQueue;
+  fhirConverterLambdaToInvoke: Lambda | undefined;
 }): Lambda {
   const config = getConfig();
   const {
@@ -239,14 +250,21 @@ export function createLambda({
       CONVERSION_RESULT_BUCKET_NAME: fhirConverterBucket.bucketName,
       CONVERSION_RESULT_QUEUE_URL: apiNotifierQueue.queueUrl,
       FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
+      ...(fhirConverterLambdaToInvoke && {
+        FHIR_CONVERTER_LAMBDA_NAME: fhirConverterLambdaToInvoke.functionName,
+      }),
     },
     timeout: lambdaTimeout,
-    alarmSnsAction,
+    alertSnsAction,
+    isEnableInsights: true,
   });
 
   fhirConverterBucket.grantReadWrite(conversionLambda);
   medicalDocumentsBucket.grantReadWrite(conversionLambda);
   featureFlagsTable.grantReadData(conversionLambda);
+  if (fhirConverterLambdaToInvoke) {
+    fhirConverterLambdaToInvoke.grantInvoke(conversionLambda);
+  }
 
   conversionLambda.addEventSource(
     new SqsEventSource(sourceQueue, {

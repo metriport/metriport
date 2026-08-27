@@ -1,10 +1,10 @@
 import {
-  OutboundPatientDiscoveryResp,
+  isNonErroringOutboundPatientDiscoveryResponse,
+  isSuccessfulOutboundDocRetrievalResponse,
+  isSuccessfulOutboundPatientDiscoveryResponse,
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp,
-  isSuccessfulOutboundDocRetrievalResponse,
-  isNonErroringOutboundPatientDiscoveryResponse,
-  isSuccessfulOutboundPatientDiscoveryResponse,
+  OutboundPatientDiscoveryResp,
 } from "@metriport/ihe-gateway-sdk";
 
 import { httpErrorCode, schemaErrorCode } from "@metriport/core/external/carequality/error";
@@ -152,6 +152,7 @@ export function getOutboundPatientDiscoverySuccessFailureCount(
   };
 }
 
+// TODO ENG-1692 Merge this and the same function from packages/ihe-gateway-sdk
 export function isSuccessfulOutboundDocQueryResponse(obj: OutboundDocumentQueryResp): boolean {
   return (
     "documentReference" in obj ||

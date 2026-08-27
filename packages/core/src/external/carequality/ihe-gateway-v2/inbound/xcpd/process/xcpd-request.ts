@@ -1,8 +1,7 @@
 import { InboundPatientDiscoveryReq, PatientResource } from "@metriport/ihe-gateway-sdk";
-import { errorToString, isEmail, isPhoneNumber, toArray } from "@metriport/shared";
+import { BadRequestError, errorToString, isEmail, isPhoneNumber, toArray } from "@metriport/shared";
 import { createXMLParser } from "@metriport/shared/common/xml-parser";
 import dayjs from "dayjs";
-import { capture } from "../../../../../../util";
 import { out } from "../../../../../../util/log";
 import { mapIheGenderToFhir } from "../../../../shared";
 import { storeXcpdRequest } from "../../../monitor/store";
@@ -26,11 +25,11 @@ export function transformIti55RequestToPatientResource(
   }));
 
   const address = toArray(queryParams.patientAddress?.value).map(addr => ({
-    line: toArray(addr.streetAddressLine).map(line => line.toString()),
-    city: addr.city ? String(addr.city) : undefined,
-    state: addr.state ? String(addr.state) : undefined,
-    postalCode: addr.postalCode ? String(addr.postalCode) : undefined,
-    country: addr.country ? String(addr.country) : undefined,
+    line: toArray(addr.streetAddressLine).map(line => extractText(line)),
+    city: addr.city ? extractText(addr.city) : undefined,
+    state: addr.state ? extractText(addr.state) : undefined,
+    postalCode: addr.postalCode ? extractText(addr.postalCode) : undefined,
+    country: addr.country ? extractText(addr.country) : undefined,
   }));
 
   const telecom = toArray(queryParams.patientTelecom?.value).flatMap(tel => {
@@ -70,7 +69,7 @@ export function transformIti55RequestToPatientResource(
 export async function processInboundXcpdRequest(
   request: string
 ): Promise<InboundPatientDiscoveryReq> {
-  const log = out("Inbound XCPD Request").log;
+  const log = out("CQ Inbound XCPD Request").log;
   const parser = createXMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "_",
@@ -97,7 +96,7 @@ export async function processInboundXcpdRequest(
     await storeXcpdRequest({ request, inboundRequest });
     if (samlAttributes.principalOid) {
       log(
-        `Validating delegated request: principal - ${samlAttributes.principalOid}, delegate -${samlAttributes.homeCommunityId}`
+        `Validating delegated request: principal - ${samlAttributes.principalOid}, delegate - ${samlAttributes.homeCommunityId}`
       );
       await validateDelegatedRequest(samlAttributes.principalOid, samlAttributes.homeCommunityId);
       log("Successfully validated");
@@ -106,17 +105,10 @@ export async function processInboundXcpdRequest(
     return inboundRequest;
   } catch (error) {
     const msg = "Failed to parse ITI-55 request";
-    log(
-      `${msg}: Error - ${errorToString(error, { detailed: true })}, iti55Request: ${JSON.stringify(
-        jsonObj
-      )}, request: ${request}`
-    );
-    capture.error(msg, {
-      extra: {
-        error,
-        request,
-      },
+    throw new BadRequestError(msg, error, {
+      // TODO try this out when testing this
+      // requestId: extractText(jsonObj.Envelope.Header.MessageID),
+      error: errorToString(error),
     });
-    throw new Error(`${msg}: ${errorToString(error, { detailed: true })}`);
   }
 }

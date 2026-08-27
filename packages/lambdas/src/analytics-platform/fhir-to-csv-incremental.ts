@@ -1,9 +1,10 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
-import { dbCredsForLambdaSchema } from "@metriport/core/command/analytics-platform/config";
-import { ProcessFhirToCsvIncrementalRequest } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/incremental/fhir-to-csv-incremental";
 import { FhirToCsvIncrementalDirect } from "@metriport/core/command/analytics-platform/fhir-to-csv/command/incremental/fhir-to-csv-incremental-direct";
-import { readConfigs } from "@metriport/core/command/analytics-platform/fhir-to-csv/configs/read-column-defs";
-import { doesConsolidatedDataExist } from "@metriport/core/command/consolidated/consolidated-get";
+import { parseConfigsIntoColumnsByTableName } from "@metriport/core/command/analytics-platform/fhir-to-csv/configs/read-column-defs";
+import { rawDbSchema } from "@metriport/core/command/analytics-platform/fwh/utils";
+import { dbCredsForLambdaSchema } from "@metriport/core/command/analytics-platform/utils";
+import { recreateConsolidatedBundle } from "@metriport/core/command/consolidated/api/recreate-consolidated";
+import { doesConsolidatedDataExist } from "@metriport/core/command/consolidated/consolidated-exists";
 import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { controlDuration } from "@metriport/core/util/race-control";
 import { DbCreds, errorToString, getEnvVarOrFail, MetriportError } from "@metriport/shared";
@@ -23,7 +24,6 @@ const region = getEnvVarOrFail("AWS_REGION");
 // Set by us
 const featureFlagsTableName = getEnvVarOrFail("FEATURE_FLAGS_TABLE_NAME");
 const analyticsBucketName = getEnvVarOrFail("ANALYTICS_BUCKET_NAME");
-// also needs access to MEDICAL_DOCUMENTS_BUCKET_NAME
 const dbCredsRaw = getEnvVarOrFail("DB_CREDS");
 const dbCreds = dbCredsForLambdaSchema.parse(JSON.parse(dbCredsRaw));
 
@@ -53,13 +53,13 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
     if (!doesPatientHaveConsolidatedBundle) {
       const msg = `Patient does not have a consolidated bundle`;
       log(msg);
-      throw new MetriportError(msg, undefined, { cxId, patientId });
+      await recreateConsolidatedBundle({ cxId, patientId, useCachedAiBrief: false });
+      log(`Recreated consolidated bundle`);
+      return;
     }
 
     log(`Reading table definitions from /opt/configurations`);
-    const tablesDefinitions = readConfigs(`/opt/configurations`);
-
-    const remainingLambdaExecutionTime = Math.max(0, context.getRemainingTimeInMillis() - 200);
+    const tablesDefinitions = parseConfigsIntoColumnsByTableName(`/opt/configurations`);
 
     const dbCredsForFunction: DbCreds = {
       host: dbCreds.host,
@@ -68,23 +68,22 @@ export const handler = capture.wrapHandler(async (event: SQSEvent, context: Cont
       username: dbCreds.username,
       engine: dbCreds.engine,
       password: dbPassword,
+      schemaName: rawDbSchema,
     };
+
+    const remainingLambdaExecutionTime = Math.max(0, context.getRemainingTimeInMillis() - 200);
 
     log(`Invoking processFhirToCsvIncremental... it has ${remainingLambdaExecutionTime}ms to run`);
     const startedAt = Date.now();
     const fhirToCsvHandler = new FhirToCsvIncrementalDirect(
-      analyticsBucketName,
-      region,
+      tablesDefinitions,
       dbCredsForFunction,
-      tablesDefinitions
+      analyticsBucketName,
+      region
     );
-    const params: ProcessFhirToCsvIncrementalRequest = {
-      cxId,
-      patientId,
-    };
     const timedOutResp = "Timeout";
     const resp = await Promise.race([
-      fhirToCsvHandler.processFhirToCsvIncremental(params),
+      fhirToCsvHandler.processFhirToCsvIncrementalSync({ cxId, patientId }),
       controlDuration(remainingLambdaExecutionTime, timedOutResp),
     ]);
     if (resp === timedOutResp) {

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { subscriptionResources } from "./subscription";
-import { writeBackFiltersSchema } from "../shared";
+import { documentQueryWebhookFiltersSchema, writeBackFiltersSchema } from "../shared";
 
 const webhookSchema = z.object({
   url: z.string(),
@@ -19,5 +19,6 @@ export const elationSecondaryMappingsSchema = z
     defaultPracticeId: z.string().optional(),
     defaultPhysicianId: z.string().optional(),
   })
-  .merge(writeBackFiltersSchema);
+  .merge(writeBackFiltersSchema)
+  .merge(documentQueryWebhookFiltersSchema);
 export type ElationSecondaryMappings = z.infer<typeof elationSecondaryMappingsSchema>;

@@ -7,10 +7,11 @@ import axios from "axios";
 import csv from "csv-parser";
 import fs, { createReadStream } from "fs";
 import { chunk, groupBy } from "lodash";
+import readline from "readline/promises";
 import { normalizeExternalIdUtils } from "../bulk-insert-patients";
 import { elapsedTimeAsStr } from "../shared/duration";
-import { buildGetDirPathInside } from "../shared/folder";
 import { initFile } from "../shared/file";
+import { buildGetDirPathInside } from "../shared/folder";
 
 /**
  * Trigger ingestion of patients' consolidated into OpenSearch.
@@ -21,7 +22,7 @@ import { initFile } from "../shared/file";
  * - Run: `ts-node src/open-search/ingest-patients.ts <path-to-csv>`
  */
 
-const CHUNK_SIZE = 100;
+const CHUNK_SIZE = 10;
 const PARALLEL_CALLS = 5;
 const API_URL = getEnvVarOrFail("API_URL");
 
@@ -76,12 +77,14 @@ async function main() {
   }
   console.log(`Loaded CSV...`);
 
-  const cxIds = groupBy(results, v => v.cxId);
-  console.log(`${Object.keys(cxIds).length} cxs, ${results.length} patients`);
+  const cxsAndPatients = groupBy(results, v => v.cxId);
+  console.log(`${Object.keys(cxsAndPatients).length} cxs, ${results.length} patients`);
+
+  await displayWarningAndConfirmation(cxsAndPatients);
 
   const failedIngestions: { cxId: string; patientIds: string[]; error: string }[] = [];
 
-  for (const [cxId, entries] of Object.entries(cxIds)) {
+  for (const [cxId, entries] of Object.entries(cxsAndPatients)) {
     const patientIds = entries.map(v => v.patientId);
     const chunks = chunk(patientIds, CHUNK_SIZE);
 
@@ -115,7 +118,7 @@ async function main() {
   }
 
   console.log(``);
-  console.log(`Total time: ${elapsedTimeAsStr(startedAt)}ms - ${results.length} patient IDs`);
+  console.log(`Total time: ${elapsedTimeAsStr(startedAt)} - ${results.length} patient IDs`);
 
   if (failedIngestions.length > 0) {
     const errorFilePath = `${outputFolderName}/failed-ingestions.json`;
@@ -144,6 +147,26 @@ export function mapCsvToIds(csvPatient: {
     return [{ field: "general", error: "Missing required fields" }];
   }
   return { cxId, patientId };
+}
+
+async function displayWarningAndConfirmation(cxsAndPatients: Record<string, PatientRecord[]>) {
+  const countOfCxs = Object.keys(cxsAndPatients).length;
+  const countOfPatients = Object.values(cxsAndPatients).flat().length;
+  const msg =
+    `You are about to trigger the ingestion of ${countOfPatients} patients of ` +
+    `${countOfCxs} cxs into OpenSearch, are you sure?`;
+  console.log(msg);
+  console.log("Are you sure you want to proceed?");
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  const answer = await rl.question("Type 'yes' to proceed: ");
+  if (answer !== "yes") {
+    console.log("Aborting...");
+    process.exit(0);
+  }
+  rl.close();
 }
 
 if (require.main === module) {

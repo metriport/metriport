@@ -9,7 +9,7 @@ import {
 import { toArray } from "@metriport/shared";
 import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
 import { Dayjs } from "dayjs";
-import { cloneDeep } from "lodash";
+import { cloneDeep, partition } from "lodash";
 import { condenseBundle } from "../../domain/ai-brief/condense-bundle";
 import {
   applyResourceSpecificFilters,
@@ -450,17 +450,20 @@ function filterOutDuplicatedDiagnosticReports(entries: SlimResource[]): SlimReso
   return [...withoutDuplicateReports, ...otherEntries];
 }
 
+const LAB_REPORT_CATEGORY = "relevant diagnostic tests and/or laboratory data";
+
+function isLabReport(report: SlimDiagnosticReport): boolean {
+  return (
+    !!report.category &&
+    !Array.isArray(report.category) &&
+    typeof report.category === "string" &&
+    report.category.toLowerCase().includes(LAB_REPORT_CATEGORY)
+  );
+}
+
 function filterOutOldLabs(reports: SlimDiagnosticReport[]): SlimDiagnosticReport[] {
   const NUM_MOST_RECENT_LABS_TO_KEEP = 2;
-
-  const labReports = reports.filter(
-    report =>
-      report.category &&
-      !Array.isArray(report.category) &&
-      typeof report.category === "string" &&
-      report.category.toLowerCase().includes("relevant diagnostic tests and/or laboratory data")
-  );
-  const nonLabReports = reports.filter(report => !report.category?.includes("laboratory data"));
+  const [labReports, nonLabReports] = partition(reports, isLabReport);
 
   const sortedLabReports = labReports.sort((a, b) => {
     const aDates = getDatesFromEffectiveDateTimeOrPeriod(a);

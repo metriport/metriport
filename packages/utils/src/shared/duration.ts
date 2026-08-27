@@ -1,14 +1,21 @@
 import { getFileContents } from "@metriport/core/util/fs";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { formatNumber } from "@metriport/shared/common/numbers";
 import dayjs from "dayjs";
 import duration, { Duration } from "dayjs/plugin/duration";
 
 dayjs.extend(duration);
 
-export function elapsedTimeAsStr(startedAt: number, finishedAt = Date.now()) {
-  const ellapsedTime = dayjs.duration(finishedAt - startedAt);
-  const timeInMin = formatNumber(ellapsedTime.asMinutes());
-  const timeInMillis = formatNumber(ellapsedTime.asMilliseconds());
+/**
+ * Returns the elapsed time as a string in milliseconds and minutes.
+ *
+ * NOTE: this is based in UTC, make sure you capture the startedAt in UTC as well - by using
+ * buildDayjs().valueOf() instead of Date.now().
+ */
+export function elapsedTimeAsStr(startedAt: number, finishedAt = buildDayjs().valueOf()): string {
+  const elapsedTime = dayjs.duration(finishedAt - startedAt);
+  const timeInMin = formatNumber(elapsedTime.asMinutes());
+  const timeInMillis = formatNumber(elapsedTime.asMilliseconds());
   return `${timeInMillis} millis / ${timeInMin} min`;
 }
 

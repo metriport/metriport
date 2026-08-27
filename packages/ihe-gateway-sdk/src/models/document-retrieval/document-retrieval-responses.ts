@@ -36,11 +36,15 @@ export type InboundDocumentRetrievalResp = z.infer<typeof inboundDocumentRetriev
 const outboundDocumentRetrievalRespSuccessfulSchema = baseResponseSchema.extend({
   gateway: xcaGatewaySchema,
   documentReference: z.array(documentReferenceSchema),
+  requestedDocumentCount: z.number().optional(),
+  originalRequestId: z.string().nullish(),
 });
 
 const outboundDocumentRetrievalRespFaultSchema = baseErrorResponseSchema.extend({
   gateway: xcaGatewaySchema,
   documentReference: z.never().or(z.literal(undefined)),
+  requestedDocumentCount: z.number().optional(),
+  originalRequestId: z.string().nullish(),
 });
 
 export const outboundDocumentRetrievalRespSchema = z.union([
@@ -54,4 +58,30 @@ export function isSuccessfulOutboundDocRetrievalResponse(
   obj: BaseResponse
 ): obj is OutboundDocumentRetrievalResp & { documentReference: DocumentReference[] } {
   return "documentReference" in obj;
+}
+
+export function isSuccessfulInboundDocRetrievalResponse(
+  obj: BaseResponse
+): obj is InboundDocumentRetrievalResp & { documentReference: DocumentReference[] } {
+  return "documentReference" in obj;
+}
+
+/** Safe context for logging/capture: no document content or patient identifiers. */
+export function toSafeCaptureContext(
+  response: OutboundDocumentRetrievalResp
+): Record<string, unknown> {
+  const { gateway } = response;
+  return {
+    id: response.id,
+    requestChunkId: response.requestChunkId,
+    timestamp: response.timestamp,
+    responseTimestamp: response.responseTimestamp,
+    requestTimestamp: response.requestTimestamp,
+    duration: response.duration,
+    responseHttpStatusCode: response.responseHttpStatusCode,
+    documentReferenceCount: response.documentReference?.length ?? 0,
+    requestedDocumentCount: response.requestedDocumentCount,
+    originalRequestId: response.originalRequestId,
+    gatewayHomeCommunityId: gateway?.homeCommunityId,
+  };
 }

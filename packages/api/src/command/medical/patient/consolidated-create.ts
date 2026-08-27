@@ -2,13 +2,11 @@ import { Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { convertCollectionBundleToTransactionBundle } from "@metriport/core/external/fhir/bundle/convert-to-transaction-bundle";
 import { OPERATION_OUTCOME_EXTENSION_URL } from "@metriport/core/external/fhir/shared/extensions/extension";
 import { uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
-import { createUploadFilePath } from "@metriport/core/shareback/file";
+import { createUploadFilePath, sentToFhirServerPrefix } from "@metriport/core/shareback/file";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { out } from "@metriport/core/util/log";
 import { errorToString } from "@metriport/shared";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
-
-export const sentToFhirServerPrefix = "toFhirServer";
 
 export async function createOrUpdateConsolidatedPatientData({
   cxId,

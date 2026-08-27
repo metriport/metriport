@@ -12,6 +12,7 @@ import {
   getDateFromResource,
   hasBlacklistedText,
   isUnknownCoding,
+  isUselessDisplay,
 } from "../shared";
 
 /**
@@ -65,7 +66,6 @@ export function groupSameConditions(
     const date = getDateFromResource(condition);
     const { snomedCode, icd10Code } = extractCodes(condition.code);
     const display = extractDisplayFromConcept(condition.code);
-
     const identifiers = [
       ...(snomedCode ? [{ snomedCode }] : []),
       ...(icd10Code ? [{ icd10Code }] : []),
@@ -140,7 +140,9 @@ function isKnownCondition(concept: CodeableConcept | undefined) {
     return !isUnknownCoding(coding) && (code !== "55607006" || display !== "problem");
   });
 
-  return knownCodings?.length && knownCodings?.length > 0;
+  const isCodingPassing = knownCodings?.length && knownCodings?.length > 0;
+  const isTextPassing = concept?.text && !isUselessDisplay(concept.text);
+  return isCodingPassing || isTextPassing;
 }
 
 export function extractCodes(concept: CodeableConcept | undefined): {

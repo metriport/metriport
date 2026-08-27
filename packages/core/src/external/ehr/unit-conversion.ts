@@ -1,3 +1,4 @@
+import { out } from "../../util";
 import { capture } from "../../util/notifications";
 
 const gToLbs = 0.00220462;
@@ -5,6 +6,7 @@ const gToKg = 1 / 1000;
 const kgToLbs = 2.20462;
 const kgToG = 1000;
 const lbsToG = 453.592;
+const lbPerIn2ToKgPerM2 = 703.06957829636;
 const lbsToKg = lbsToG * gToKg;
 const cmToInches = 0.393701;
 const inchesToCm = 1 / cmToInches;
@@ -90,6 +92,9 @@ export function convertCodeAndValue(
     if (isKgPerM2(baseInputUnits)) {
       return { ...baseParams, value: valueNumber };
     }
+    if (isLbPerIn2(baseInputUnits)) {
+      return { ...baseParams, value: convertLbPerIn2ToKgPerM2(valueNumber) };
+    }
   }
   if (targetUnits === "mmHg") {
     if (isMmHg(baseInputUnits)) {
@@ -106,6 +111,11 @@ export function convertCodeAndValue(
       return { ...baseParams, value: valueNumber };
     }
   }
+
+  const { log } = out(`convertCodeAndValue`);
+  log(
+    `Unknown units: ${baseInputUnits} -> ${targetUnits} for loincCode: ${loincCode} value: ${value}`
+  );
   capture.message("Unknown units", {
     extra: {
       units: baseInputUnits,
@@ -159,6 +169,10 @@ function convertCelciusToFahrenheit(value: number): number {
   return value * (9 / 5) + 32;
 }
 
+function convertLbPerIn2ToKgPerM2(value: number): number {
+  return value * lbPerIn2ToKgPerM2;
+}
+
 function isKg(units: string): boolean {
   return units === "kg" || units === "kilogram" || units === "kilograms";
 }
@@ -176,7 +190,7 @@ function isCm(units: string): boolean {
 }
 
 function isIn(units: string): boolean {
-  return units === "in_i" || units.includes("inch");
+  return units === "in_i" || units.includes("inch") || units.replace("[", "").startsWith("in_");
 }
 
 function isDegf(units: string): boolean {
@@ -189,6 +203,10 @@ function isCel(units: string): boolean {
 
 function isKgPerM2(units: string): boolean {
   return units === "kg/m2";
+}
+
+function isLbPerIn2(units: string): boolean {
+  return units === "lb/in2" || units === "[lb/in2]";
 }
 
 function isMmHg(units: string): boolean {

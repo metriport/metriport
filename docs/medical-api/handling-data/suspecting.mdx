@@ -1,0 +1,270 @@
+---
+title: "Suspecting"
+sidebarTitle: "Suspecting"
+icon: "n/a"
+description: "Automated detection of potential conditions based on clinical evidence patterns."
+group: "Data Analytics"
+---
+
+# Overview
+
+Suspecting automatically detects potential conditions based on clinical evidence patterns
+from patient medical records. The system analyzes clinical data including laboratory results,
+medications, procedures, and documented conditions to identify patients who may have undiagnosed
+conditions.
+
+Suspects are stored as **unconfirmed Condition resources** in the data warehouse, allowing them to
+coexist with confirmed diagnoses while remaining clearly identifiable through the
+`VERIFICATION_STATUS` field.
+
+Suspecting runs at scheduled intervals and analyzes your patient population to identify potential
+conditions that may require clinical review or follow-up.
+
+# Available Conditions
+
+The following conditions are supported by the suspecting system:
+
+## Mental Health
+
+| Condition            |
+| -------------------- |
+| Bipolar Disorder     |
+| Depression           |
+| Dementia             |
+| Seizure Disorder     |
+| Anorexia and Bulimia |
+| Alcohol Use Disorder |
+
+## Cardiovascular
+
+| Condition                   |
+| --------------------------- |
+| Heart Failure               |
+| Hypertension                |
+| Coronary Artery Disease     |
+| Peripheral Arterial Disease |
+| Carotid Artery Stenosis     |
+| Angina                      |
+| Arrhythmia                  |
+| Aortic Aneurysm             |
+| History of CVA              |
+
+## Metabolic
+
+| Condition           |
+| ------------------- |
+| Morbid Obesity      |
+| Diabetes            |
+| Prediabetes         |
+| Hyperlipidemia      |
+| Hyperparathyroidism |
+| Hypothyroidism      |
+
+## Respiratory
+
+| Condition               |
+| ----------------------- |
+| COPD                    |
+| Asthma                  |
+| Obstructive Sleep Apnea |
+
+## Renal/Hepatic
+
+| Condition              |
+| ---------------------- |
+| Chronic Kidney Disease |
+| Cirrhosis              |
+| Chronic Hepatitis C    |
+
+## Other
+
+| Condition                        |
+| -------------------------------- |
+| Diabetic Retinopathy             |
+| Retinal Vein Occlusion           |
+| Age-Related Macular Degeneration |
+| Lung Nodule                      |
+| Thyroid Nodule                   |
+| Barrett's Esophagus              |
+| Benign Carcinoid                 |
+| Bone Density                     |
+| Amputation                       |
+| Ostomy                           |
+| History of Active Cancer         |
+
+# Getting Started
+
+Suspecting runs at scheduled intervals and analyzes your patient data to identify potential
+conditions. Once suspecting is enabled for your account, results will be available through the API
+and data warehouse.
+
+# Accessing via API
+
+You can retrieve suspect records using the `GET /medical/v1/suspect` endpoint. Suspects are returned
+as FHIR Condition resources with `verificationStatus` set to `unconfirmed`.
+
+# Accessing via Data Warehouse
+
+Suspect records are stored in the **[CONDITION](/medical-api/handling-data/schema/condition)** table alongside confirmed diagnoses. Suspects are distinguished by `VERIFICATION_STATUS = 'unconfirmed'`.
+
+## Key Suspect Fields
+
+The following fields are specific to suspects:
+
+| Column              | Description                                              |
+| ------------------- | -------------------------------------------------------- |
+| VERIFICATION_STATUS | Set to `unconfirmed` for suspects                        |
+| EVIDENCE            | JSON array of evidence references supporting the suspect |
+
+## Evidence Structure
+
+The `EVIDENCE` column contains a JSON array of evidence references. Each evidence object includes:
+
+```json
+[
+  {
+    "detail": [
+      {
+        "reference": "Observation/00000000-0000-0000-0000-000000000000",
+        "display": "Lithium detected"
+      }
+    ]
+  },
+  {
+    "detail": [
+      {
+        "reference": "MedicationStatement/11111111-1111-1111-1111-111111111111",
+        "display": "Active prescription for lithium carbonate"
+      }
+    ]
+  }
+]
+```
+
+Each evidence object contains:
+
+- `detail`: Array of references to supporting resources
+- `reference`: FHIR resource reference (e.g., `Observation/00000000-0000-0000-0000-000000000000`, `MedicationStatement/11111111-1111-1111-1111-111111111111`)
+- `display`: Human-readable explanation of why this evidence supports the suspect
+
+## Example Queries
+
+### Find all suspects for a patient
+
+```sql
+SELECT
+  CONDITION_ID,
+  PATIENT_ID,
+  ICD_10_CM_CODE,
+  ICD_10_CM_DISPLAY,
+  EVIDENCE,
+  RECORDED_DATE
+FROM CONDITION
+WHERE PATIENT_ID = '22222222-2222-2222-2222-222222222222'
+  AND VERIFICATION_STATUS = 'unconfirmed'
+ORDER BY RECORDED_DATE DESC;
+```
+
+### Find all patients with a specific suspect condition
+
+```sql
+SELECT
+  PATIENT_ID,
+  ICD_10_CM_CODE,
+  ICD_10_CM_DISPLAY,
+  RECORDED_DATE
+FROM CONDITION
+WHERE VERIFICATION_STATUS = 'unconfirmed'
+  AND ICD_10_CM_CODE = 'R7303'
+ORDER BY RECORDED_DATE DESC
+LIMIT 10;
+```
+
+### Count suspects by condition type
+
+```sql
+SELECT
+  ICD_10_CM_CODE,
+  ICD_10_CM_DISPLAY,
+  COUNT(DISTINCT PATIENT_ID) as patient_count
+FROM CONDITION
+WHERE VERIFICATION_STATUS = 'unconfirmed'
+  AND RECORDED_DATE >= DATEADD(day, -30, CURRENT_DATE())
+GROUP BY ICD_10_CM_CODE, ICD_10_CM_DISPLAY
+ORDER BY patient_count DESC;
+```
+
+# The Suspect Model
+
+When a suspect is identified, the API returns a FHIR Condition resource with the following structure:
+
+```json
+{
+  "resourceType": "Condition",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "clinicalStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+        "code": "active"
+      }
+    ]
+  },
+  "verificationStatus": {
+    "coding": [
+      {
+        "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+        "code": "unconfirmed",
+        "display": "Unconfirmed"
+      }
+    ]
+  },
+  "category": [
+    {
+      "coding": [
+        {
+          "system": "http://metriport.com/fhir/CodeSystem/condition-category",
+          "code": "suspect",
+          "display": "Algorithmic Suspect"
+        }
+      ]
+    }
+  ],
+  "code": {
+    "coding": [
+      {
+        "system": "http://hl7.org/fhir/sid/icd-10-cm",
+        "code": "F31.9",
+        "display": "Bipolar disorder, unspecified"
+      }
+    ]
+  },
+  "subject": {
+    "reference": "Patient/22222222-2222-2222-2222-222222222222"
+  },
+  "recordedDate": "2025-12-05",
+  "evidence": [
+    {
+      "detail": [
+        {
+          "reference": "Observation/00000000-0000-0000-0000-000000000000",
+          "display": "Lithium detected"
+        }
+      ]
+    },
+    {
+      "detail": [
+        {
+          "reference": "MedicationStatement/11111111-1111-1111-1111-111111111111",
+          "display": "Active prescription for lithium carbonate"
+        }
+      ]
+    }
+  ]
+}
+```
+
+For complete schema details, migration information, and advanced queries, see:
+
+- [Condition Schema Documentation](/medical-api/handling-data/schema/condition)
+- [Data Analytics Overview](/medical-api/handling-data/data-analytics)

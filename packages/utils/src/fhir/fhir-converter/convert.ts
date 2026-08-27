@@ -30,7 +30,7 @@ export async function convertCDAsToFHIR(
   fhirExtension: string,
   outputFolderName: string,
   options?: ProcessingOptions
-): Promise<{ errorCount: number; nonXMLBodyCount: number }> {
+): Promise<{ errorCount: number; nonXMLBodyCount: number; totalAttachments: number }> {
   console.log(`Converting ${fileNames.length} files, ${parallelConversions} at a time...`);
   let errorCount = 0;
   let nonXMLBodyCount = 0;
@@ -68,9 +68,8 @@ export async function convertCDAsToFHIR(
     `Converted ${fileNames.length - errorCount} files in ${conversionDuration} ms.${reportFailure}`
   );
 
-  const attachmentsProcessed = attachmentsProcessedPerFile.reduce((sum, count) => sum + count, 0);
-  console.log(`Attachments processed: ${attachmentsProcessed}`);
-  return { errorCount, nonXMLBodyCount };
+  const totalAttachments = attachmentsProcessedPerFile.reduce((sum, count) => sum + count, 0);
+  return { errorCount, nonXMLBodyCount, totalAttachments };
 }
 
 export async function convert(
@@ -147,6 +146,7 @@ export async function convert(
       cxId,
       patientId,
       bundle: combinedBundle,
+      isVerbose: false,
     });
   }
 

@@ -15,7 +15,7 @@ export function genericErrorToString(err: any): string {
   if (typeof err !== "object" || err == null) return String(err);
   const msg = "message" in err ? err.message : String(err);
   const code = "code" in err ? err.code : undefined;
-  const status = "response" in err ? err.response.status : undefined;
+  const status = "response" in err && err.response ? err.response.status : undefined;
   const suffix =
     code && status ? ` (${code} - ${status})` : code || status ? ` (${code ?? status})` : "";
   return msg + suffix;

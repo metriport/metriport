@@ -33,5 +33,6 @@ export function getCqCommand(cmd: CreateOrUpdateOrganizationCmd): CreateOrUpdate
     email: metriportEmailForCq,
     active: org.cqActive,
     role: "Connection" as const,
+    delegateOids: org.delegateOids,
   };
 }

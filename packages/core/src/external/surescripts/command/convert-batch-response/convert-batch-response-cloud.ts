@@ -1,35 +1,28 @@
-import { Config } from "../../../../util/config";
 import { executeWithNetworkRetries } from "@metriport/shared";
-import { getLambdaResultPayload, makeLambdaClient } from "../../../aws/lambda";
-import { SurescriptsConversionBundle, SurescriptsJob } from "../../types";
-import { SurescriptsConvertBatchResponseHandler } from "./convert-batch-response";
+import { createUuidFromText } from "@metriport/shared/common/uuid";
+import { Config } from "../../../../util/config";
+import { SQSClient } from "../../../aws/sqs";
+import {
+  SurescriptsBatchResponse,
+  SurescriptsConvertBatchResponseHandler,
+} from "./convert-batch-response";
 
 export class SurescriptsConvertBatchResponseHandlerCloud
   implements SurescriptsConvertBatchResponseHandler
 {
   constructor(
-    private readonly surescriptsConvertBatchResponseLambdaName: string,
-    private readonly lambdaClient = makeLambdaClient(Config.getAWSRegion())
+    private readonly queueUrl: string = Config.getSurescriptsConvertBatchResponseQueueUrl(),
+    private readonly sqsClient = new SQSClient({ region: Config.getAWSRegion() })
   ) {}
 
-  async convertBatchResponse(job: SurescriptsJob): Promise<SurescriptsConversionBundle[]> {
-    const payload = JSON.stringify(job);
-    return await executeWithNetworkRetries(async () => {
-      const result = await this.lambdaClient
-        .invoke({
-          FunctionName: this.surescriptsConvertBatchResponseLambdaName,
-          InvocationType: "RequestResponse",
-          Payload: payload,
-        })
-        .promise();
-
-      const resultPayload = getLambdaResultPayload({
-        result,
-        lambdaName: this.surescriptsConvertBatchResponseLambdaName,
-        failOnEmptyResponse: false,
+  async convertBatchResponse(response: SurescriptsBatchResponse): Promise<void> {
+    const payload = JSON.stringify(response);
+    await executeWithNetworkRetries(async () => {
+      await this.sqsClient.sendMessageToQueue(this.queueUrl, payload, {
+        fifo: true,
+        messageDeduplicationId: createUuidFromText(payload),
+        messageGroupId: response.cxId,
       });
-      if (!resultPayload) return [];
-      return JSON.parse(resultPayload) as SurescriptsConversionBundle[];
     });
   }
 }

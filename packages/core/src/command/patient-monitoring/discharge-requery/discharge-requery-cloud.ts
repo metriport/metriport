@@ -14,7 +14,7 @@ export class DischargeRequeryCloud implements DischargeRequery {
     await this.sqsClient.sendMessageToQueue(this.dischargeRequeryQueueUrl, payload, {
       fifo: true,
       messageDeduplicationId: createUuidFromText(payload),
-      messageGroupId: params.cxId,
+      messageGroupId: params.patientId,
     });
   }
 }

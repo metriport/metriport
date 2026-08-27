@@ -10,6 +10,7 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { ConnectWidgetConfig, EnvConfig } from "../config/env-config";
 import { addErrorAlarmToLambdaFunc } from "./shared/lambda";
+import { createBucket } from "./shared/bucket";
 
 interface ConnectWidgetStackProps extends StackProps {
   config: Omit<EnvConfig, "connectWidget" | "connectWidgetUrl"> & {
@@ -36,12 +37,14 @@ export class ConnectWidgetStack extends Stack {
     new CfnOutput(this, "Site", { value: "https://" + siteDomain });
 
     // Content bucket
-    const siteBucket = new s3.Bucket(this, `${idPrefix}Bucket`, {
-      bucketName: siteDomain,
-      publicReadAccess: false,
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-    });
+    const siteBucket = createBucket(
+      this,
+      {
+        bucketName: siteDomain,
+        blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      },
+      `${idPrefix}Bucket`
+    );
 
     // Grant access to cloudfront
     siteBucket.addToResourcePolicy(

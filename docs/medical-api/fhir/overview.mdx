@@ -18,7 +18,7 @@ communicate with each other.
 
 ## Resources & Data Types
 
-After you initiate a new document query for a given patient, Metriport will automatically convert
+After you initiate a new [Network Query](/medical-api/api-reference/network/start-network-query) for a given patient, Metriport will automatically convert
 any newly found C-CDA documents from XML to the corresponding FHIR Resources in JSON.
 
 A FHIR Resource is a representation of some concept related to healthcare. Some examples include:
@@ -32,75 +32,57 @@ In JSON, an Observation Resource would look like this, for example:
 ```json
 {
   "resourceType": "Observation",
-  "id": "D19DA918-0F16-11EE-B2A6-A2F55214B7C1",
   "meta": {
-    "lastUpdated": "2025-04-17T18:09:29.947Z",
+    "lastUpdated": "2025-10-22T14:56:59.704Z",
     "source": "01964571-db3c-7953-9987-fe7b62cc278c/01964571-db3c-7953-9987-fe7cb3d109e4/01964571-db3c-7953-9987-fe7b62cc278c_01964571-db3c-7953-9987-fe7cb3d109e4_01964571-db3c-7953-9987-fe7d7dcb476d.xml"
   },
-  "extension": [
-    {
-      "url": "https://public.metriport.com/fhirextensions#observation-documentDate",
-      "valueDateTime": "2019-02-22T16:24:00+00:00"
-    },
-    {
-      "url": "https://public.metriport.com/fhirextensions#observation-documentType",
-      "valueCodeableConcept": {
-        "coding": [
-          {
-            "system": "https://public.metriport.com/codes/Proprietary/DocumentType",
-            "code": "CCD Vitals",
-            "display": "CCD Vitals"
-          }
-        ]
-      }
-    },
-    {
-      "url": "https://public.metriport.com/fhir/StructureDefinition/doc-id-extension.json",
-      "valueString": "1A5512D2-0EE9-11EE-B2A6-A2F55214B7C1-MLKJ392874kjshhKJSHDFdskjfh98234uiy"
-    }
-  ],
-  "status": "unknown",
+  "id": "00000000-0000-0000-0000-000000000000",
   "category": [
     {
       "coding": [
         {
           "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-          "code": "vital-signs"
+          "code": "vital-signs",
+          "display": "Vital Signs"
         }
       ],
-      "text": "vital-signs"
+      "text": "Vital Signs"
     }
   ],
+  "status": "final",
   "code": {
+    "text": "Body mass index (BMI) [Ratio]",
     "coding": [
       {
-        "system": "http://loinc.org",
-        "code": "8302-2",
-        "display": "Body height",
-        "userSelected": true
-      },
-      {
-        "system": "urn:oid:2.16.840.1.113883.6.1",
-        "code": "8302-2",
-        "display": "Body height",
-        "userSelected": false
+        "code": "39156-5",
+        "display": "Body mass index (BMI) [Ratio]",
+        "system": "http://loinc.org"
       }
     ]
   },
-  "subject": {
-    "reference": "Patient/2.16.840.1.113883.3.9621.666"
-  },
-  "encounter": {
-    "reference": "Encounter/D19DA9AE-0F16-11EE-B2A6-A2F55214B7C1"
-  },
-  "effectiveDateTime": "2019-02-22T16:24:00+00:00",
-  "issued": "2019-02-22T16:24:00+00:00",
+  "effectiveDateTime": "2024-01-18T05:00:00.000Z",
   "valueQuantity": {
-    "value": 167.6,
-    "unit": "centimeter",
-    "system": "http://unitsofmeasure.org",
-    "code": "cm"
-  }
+    "value": 26.4,
+    "unit": "kg/m2",
+    "system": "http://unitsofmeasure.org"
+  },
+  "subject": {
+    "reference": "Patient/00000000-0000-0000-0000-000000000000"
+  },
+  "performer": [
+    {
+      "reference": "Practitioner/11111111-1111-1111-1111-111111111111"
+    },
+    {
+      "reference": "Organization/22222222-2222-2222-2222-222222222222"
+    }
+  ],
+  "extension": [
+    {
+      "url": "https://public.metriport.com/fhir/StructureDefinition/doc-id-extension.json",
+      "valueString": "01964571-db3c-7953-9987-fe7b62cc278c/01964571-db3c-7953-9987-fe7cb3d109e4/01964571-db3c-7953-9987-fe7b62cc278c_01964571-db3c-7953-9987-fe7cb3d109e4_01964571-db3c-7953-9987-fe7d7dcb476d.xml"
+    }
+  ]
 }
 ```
 
@@ -111,9 +93,10 @@ Additionally, to meet data contribution requirements, you're able to provide new
 Patient using the [Add Patient Data endpoint](/medical-api/api-reference/fhir/add-patient-data).
 
 <Tip>
-  You can see the [HL7 FHIR Resource Index](https://www.hl7.org/fhir/R4/resourcelist.html) for an
-  overview of various FHIR Resources by category, as well as our [Resource
-  List](/medical-api/fhir/resources).
+  You can see the [HL7 FHIR Resource
+  Index](https://www.hl7.org/fhir/R4/resourcelist.html) for
+  an overview of various FHIR Resources by category, as well
+  as our [Resource List](/medical-api/fhir/resources).
 </Tip>
 
 FHIR Resources each have their own specification for properties that may be included in the Resource,
@@ -133,3 +116,11 @@ Extensions can be available under the `extension` property on any FHIR Resource,
 have their own [specification for data they can contain](/medical-api/fhir/data-types/extension).
 
 For example, Metriport introduces a [Condition Chronicity Extension](/medical-api/fhir/extensions/chronicity) inside FHIR Condition resources to specify whether the underlying medical condition is chronic.
+
+## Coding Systems
+
+Clinical concepts are best described by using specific codes from [standardized coding systems](/medical-api/fhir/coding-systems/overview), such as ICD-10-CM, SNOMED, and others.
+
+These can be found in the `coding` arrays of many FHIR Resources.
+
+Metriport maximizes the use of codes provided in the source clinical documents, while also saturating the data with systems, such as [CCSR](/medical-api/fhir/coding-systems/ccsr).

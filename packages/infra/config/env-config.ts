@@ -1,9 +1,11 @@
 import { CqDirectorySimplifiedOrg } from "@metriport/shared/interface/external/carequality/directory/simplified-org";
 import { EnvType } from "../lib/env-type";
 import { AnalyticsPlatformConfig } from "./analytics-platform-config";
+import { AuditLogsConfig } from "./audit-log-config";
 import { RDSConfig } from "./aws/rds";
 import { Hl7NotificationConfig } from "./hl7-notification-config";
 import { IHEGatewayProps } from "./ihe-gateway-config";
+import { EhexGatewayProps } from "./ehex-gateway-config";
 import { OpenSearchConnectorConfig } from "./open-search-config";
 import { PatientImportProps } from "./patient-import";
 
@@ -13,6 +15,14 @@ export type ConnectWidgetConfig = {
   subdomain: string;
   host: string;
   domain: string;
+};
+
+type AlarmConfig = {
+  secrets: {
+    pagerdutyUrl: string;
+  };
+  slackChannelId: string;
+  slackWorkspaceId: string;
 };
 
 type EnvConfigBase = {
@@ -25,6 +35,17 @@ type EnvConfigBase = {
   domain: string; // Base domain
   subdomain: string; // API subdomain
   authSubdomain: string; // Authentication subdomain
+  /** Additional subdomains for the API (e.g., ["practicefusion"] for practicefusion.api.staging.metriport.com) */
+  additionalApiSubdomains?: (
+    | "athena"
+    | "eclinicalworks"
+    | "salesforce"
+    | "practicefusion"
+    | "canvas"
+    | "healthie"
+    | "elation"
+    | "embed"
+  )[];
   apiDatabase: RDSConfig & {
     /**
      * Sequelize DB pool settings.
@@ -82,7 +103,11 @@ type EnvConfigBase = {
   iheResponsesBucketName: string;
   iheParsedResponsesBucketName: string;
   iheRequestsBucketName: string;
+  ehexResponsesBucketName: string;
+  ehexParsedResponsesBucketName: string;
+  ehexRequestsBucketName: string;
   fhirConverterBucketName?: string;
+  fhirConverterConnectorMaxConcurrency: number;
   analyticsSecretNames: {
     POST_HOG_API_KEY_SECRET: string;
   };
@@ -95,6 +120,16 @@ type EnvConfigBase = {
     modelId: string;
     region: string;
     anthropicVersion: string;
+    bedrockBaseUrl: string;
+    secretNames: {
+      BEDROCK_API_KEY: string;
+    };
+  };
+  baseten?: {
+    basetenBaseUrl: string;
+    secretNames: {
+      BASETEN_API_KEY: string;
+    };
   };
   openSearch: OpenSearchConnectorConfig;
   carequality?: {
@@ -123,6 +158,24 @@ type EnvConfigBase = {
       CW_TECHNICAL_CONTACT_TITLE: string;
       CW_TECHNICAL_CONTACT_EMAIL: string;
       CW_TECHNICAL_CONTACT_PHONE: string;
+    };
+  };
+  ehex?: {
+    apiTaskRoleArn: string;
+    featureFlagsTableArn: string;
+    secretNames: {
+      EHEX_MANAGEMENT_API_KEY: string;
+      EHEX_ORG_PRIVATE_KEY: string;
+      EHEX_ORG_CERTIFICATE: string;
+      EHEX_ORG_CERTIFICATE_INTERMEDIATE: string;
+      EHEX_ORG_PRIVATE_KEY_PASSWORD: string;
+    };
+    envVars?: {
+      EHEX_ORG_URLS?: string;
+      EHEX_SERVICE_OWN_URLS?: string;
+      EHEX_URLS_TO_EXCLUDE?: string;
+      EHEX_ADDITIONAL_ORGS?: CqDirectorySimplifiedOrg[];
+      EHEX_HUB_GROUPED_QUERY_URL?: string; // URL of the Hub grouped query, i.e. GeoState or HRR
     };
   };
   // Secret props should be in upper case because they become env vars for ECS
@@ -157,6 +210,7 @@ type EnvConfigBase = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
   };
   iheGateway?: IHEGatewayProps;
+  ehexGateway?: EhexGatewayProps;
   patientImport: PatientImportProps;
   canvas?: {
     secretNames: {
@@ -181,7 +235,7 @@ type EnvConfigBase = {
      * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
      */
     scheduleExpressions: string | string[];
-    heartbeatUrl: string;
+    heartbeatUrl?: string;
   };
   docQueryChecker?: {
     /**
@@ -196,6 +250,10 @@ type EnvConfigBase = {
     heartbeatUrl?: string;
   };
   cwDirectoryRebuilder?: {
+    scheduleExpressions: string | string[];
+    heartbeatUrl?: string;
+  };
+  ehexDirectoryRebuilder?: {
     scheduleExpressions: string | string[];
     heartbeatUrl?: string;
   };
@@ -230,6 +288,15 @@ type EnvConfigBase = {
     salesforce: {
       env: string;
     };
+    practicefusion: {
+      env: string;
+      secrets: {
+        PRACTICEFUSION_CLIENT_KEY_AND_SECRET_MAP: string;
+      };
+    };
+    embed: {
+      env: string;
+    };
   };
   surescripts?: {
     surescriptsSenderId: string;
@@ -258,7 +325,9 @@ type EnvConfigBase = {
     startScheduledPatientJobsScheduleExpression: string;
     startScheduledPatientJobsSchedulerUrl: string;
   };
+  alarms: AlarmConfig;
   aiBriefBucketName: string;
+  auditLogs: AuditLogsConfig;
 };
 
 export type EnvConfigNonSandbox = EnvConfigBase & {
@@ -271,9 +340,17 @@ export type EnvConfigNonSandbox = EnvConfigBase & {
   };
   connectWidget: ConnectWidgetConfig;
   engineeringCxId: string;
+  checklySecrets: {
+    checklyAccountId: string;
+    checklyHeartbeatApiKey: string;
+  };
   hl7Notification: Hl7NotificationConfig;
-  fhirConversionBucketName: string;
   analyticsPlatform: AnalyticsPlatformConfig;
+  fhirConversionBucketName: string;
+  cwDirectoryHealth?: {
+    scheduleExpressions: string | string[];
+    heartbeatUrl?: string;
+  };
 };
 
 export type EnvConfigSandbox = EnvConfigBase & {

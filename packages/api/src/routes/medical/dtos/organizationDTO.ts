@@ -19,6 +19,10 @@ export type InternalOrganizationDTO = BaseDTO &
     cqActive: boolean;
     cwApproved: boolean;
     cwActive: boolean;
+    ehexApproved: boolean;
+    ehexActive: boolean;
+    principalOid: string | null;
+    delegateOids: string[];
   };
 
 export function dtoFromModel(org: Organization): OrganizationDTO {
@@ -42,5 +46,9 @@ export function internalDtoFromModel(org: Organization): InternalOrganizationDTO
     cqActive: org.cqActive,
     cwApproved: org.cwApproved,
     cwActive: org.cwActive,
+    ehexApproved: org.ehexApproved,
+    ehexActive: org.ehexActive,
+    principalOid: org.principalOid,
+    delegateOids: org.delegateOids,
   };
 }

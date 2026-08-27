@@ -6,12 +6,19 @@ import {
 } from "@metriport/core/domain/document-query";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { isMedicalDataSource, MedicalDataSource } from "@metriport/core/external/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { MetriportError } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import {
+  DatasourceQueryStatus,
+  hieSpecificSource,
+} from "@metriport/shared/domain/network-query/source";
 import { getCQData } from "../../../external/carequality/patient";
-import { getCWData } from "../../../external/commonwell-v1/patient";
+import { getCWData } from "../../../external/commonwell/patient/patient";
+import { handleEhexConversionStatus } from "../../../external/ehex/document/process-conversion-resps";
 import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-progress";
+import { updateSingleDatasourceQueryStatus } from "../network-query/update-datasource-query-status";
 import { recreateConsolidated } from "../patient/consolidated-recreate";
 
 export async function calculateDocumentConversionStatus({
@@ -37,6 +44,18 @@ export async function calculateDocumentConversionStatus({
 
   const hasSource = isMedicalDataSource(source);
   if (!hasSource) throw new MetriportError("Invalid source", { source });
+
+  if (source === MedicalDataSource.EHEX) {
+    return handleEhexConversionStatus({
+      patientId,
+      cxId,
+      requestId,
+      docId,
+      convertResult,
+      details,
+      count: countParam,
+    });
+  }
 
   const count = countParam == undefined ? 1 : countParam;
 
@@ -94,6 +113,24 @@ export async function calculateDocumentConversionStatus({
         failedConversions,
       },
     });
+
+    // Update network query status when HIE conversion completes
+    try {
+      await updateSingleDatasourceQueryStatus({
+        cxId,
+        patientId,
+        requestId,
+        source: "hie",
+        specificSource: hieSpecificSource,
+        toStatus: DatasourceQueryStatus.Converted,
+      });
+    } catch (err) {
+      processAsyncError(
+        "Failed to update network query status for HIE conversion completion",
+        log,
+        true
+      )(err);
+    }
   }
 
   if (

@@ -1,18 +1,16 @@
-import { nanoid } from "nanoid";
 import { Patient } from "@metriport/core/domain/patient";
+import { getGatewaySpecificDocRefsPerRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
+import { defaultSubjectRole } from "@metriport/core/external/carequality/ihe-gateway-v2/shared";
 import { capture } from "@metriport/core/util/notifications";
 import {
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalReq,
 } from "@metriport/ihe-gateway-sdk";
-import { getGatewaySpecificDocRefsPerRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/gateways";
 import dayjs from "dayjs";
 import { chunk } from "lodash";
+import { nanoid } from "nanoid";
 import { HieInitiator } from "../../hie/get-hie-initiator";
 import { createPurposeOfUse, getSystemUserName } from "../shared";
-
-const SUBJECT_ROLE_CODE = "106331006";
-const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
 
 function isGWValid(gateway: { homeCommunityId: string; url: string }): boolean {
   return !!gateway.homeCommunityId && !!gateway.url;
@@ -47,13 +45,11 @@ export function createOutboundDocumentRetrievalReqs({
         id: requestId,
         cxId: patient.cxId,
         patientId: patient.id,
+        externalPatientId: documentQueryResult.patientId,
         timestamp: now,
         samlAttributes: {
           subjectId: user,
-          subjectRole: {
-            code: SUBJECT_ROLE_CODE,
-            display: SUBJECT_ROLE_DISPLAY,
-          },
+          subjectRole: defaultSubjectRole,
           organization: initiator.name,
           organizationId: initiator.oid,
           homeCommunityId: initiator.oid,

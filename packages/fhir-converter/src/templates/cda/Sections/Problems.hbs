@@ -29,7 +29,7 @@
         {{#each (multipleToArray 2_16_840_1_113883_10_20_22_2_5_1.entry 2_16_840_1_113883_10_20_22_2_5.entry) as |problems|}}
             {{#each (toArray problems.act.entryRelationship) as |condEntry|}}
                 {{#if condEntry.observation}}
-                    {{>Resources/Condition.hbs conditionEntry=condEntry.observation encounterDate=problems.act.effectiveTime ID=(generateUUID (toJsonString condEntry.observation))}},
+                    {{>Resources/Condition.hbs conditionEntry=condEntry.observation encounterDate=problems.act.effectiveTime backupDisplay=problems.act.text._ ID=(generateUUID (toJsonString condEntry.observation))}},
                     {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                         {{>References/Condition/subject.hbs ID=(generateUUID (toJsonString condEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
                     {{/with}}
@@ -48,7 +48,7 @@
     {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.20')}}
         {{#each (toArray 2_16_840_1_113883_10_20_22_2_20.entry ) as |resolvedProblems|}}
             {{#if resolvedProblems.observation}}
-                {{>Resources/Condition.hbs conditionEntry=resolvedProblems.observation ID=(generateUUID (toJsonString resolvedProblems.observation))}},
+                {{>Resources/Condition.hbs conditionEntry=resolvedProblems.observation backupDisplay=resolvedProblems.act.text._ ID=(generateUUID (toJsonString resolvedProblems.observation))}},
                 {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                     {{>References/Condition/subject.hbs ID=(generateUUID (toJsonString resolvedProblems.observation)) REF=(concat 'Patient/' patientId.Id)}},
                 {{/with}}

@@ -33,6 +33,28 @@ export interface UcumSourceRow {
   dimension: string;
 }
 
+export interface CcsrSourceRow extends Record<string, string> {
+  icd10cmcode: string;
+  icd10cmcodedescription: string;
+  defaultccsrcategoryip: string;
+  defaultccsrcategorydescriptionip: string;
+  defaultccsrcategoryop: string;
+  defaultccsrcategorydescriptionop: string;
+  ccsrcategory1: string;
+  ccsrcategory1description: string;
+  ccsrcategory2: string;
+  ccsrcategory2description: string;
+  ccsrcategory3: string;
+  ccsrcategory3description: string;
+  ccsrcategory4: string;
+  ccsrcategory4description: string;
+  ccsrcategory5: string;
+  ccsrcategory5description: string;
+  ccsrcategory6: string;
+  ccsrcategory6description: string;
+  rationalefordefaultassignment: string;
+}
+
 export async function readHccSource(year: string): Promise<HccSourceRow[]> {
   const hccSourcePath = path.resolve(process.cwd(), "runs/hcc", `${year}.csv`);
   return new Promise((resolve, reject) => {
@@ -71,6 +93,32 @@ export async function readUcumSource(): Promise<UcumSourceRow[]> {
     const rows: UcumSourceRow[] = initialUcumSourceData;
     fs.createReadStream(ucumSourcePath)
       .pipe(csv({ separator: "\t" }))
+      .on("data", function (row) {
+        rows.push(row);
+      })
+      .on("end", function () {
+        resolve(rows);
+      })
+      .on("error", function (error) {
+        reject(error);
+      });
+  });
+}
+
+export async function readCcsrSource(fileName: string): Promise<CcsrSourceRow[]> {
+  const ccsrSourcePath = path.isAbsolute(fileName)
+    ? fileName
+    : path.resolve(process.cwd(), "runs/ccsr", fileName);
+  return new Promise((resolve, reject) => {
+    const rows: CcsrSourceRow[] = [];
+    fs.createReadStream(ccsrSourcePath)
+      .pipe(
+        csv({
+          mapHeaders: ({ header }: { header: string }) => {
+            return header.replace(/[!@#$%^&*()+=\-[\]\\';,./{}|":<>?~_\s]/gi, "").toLowerCase();
+          },
+        })
+      )
       .on("data", function (row) {
         rows.push(row);
       })

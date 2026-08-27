@@ -2,23 +2,23 @@ import { ComparisonOperator, TreatMissingData } from "aws-cdk-lib/aws-cloudwatch
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { ApplicationTargetGroup, HttpCodeTarget } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Construct } from "constructs";
-import { addAlarmToMetric } from "../shared/cloudwatch-metric";
+import { addAlertToMetric } from "../shared/cloudwatch-metric";
 
 export function addDefaultMetricsToTargetGroup({
   targetGroup,
   scope,
   id,
   idx = 0,
-  alarmAction,
+  alertAction,
 }: {
   targetGroup: ApplicationTargetGroup;
   scope: Construct;
   id: string;
   idx?: number;
-  alarmAction?: SnsAction;
+  alertAction?: SnsAction;
 }) {
   const name = `${id}_TargetGroup${idx}`;
-  addAlarmToMetric({
+  addAlertToMetric({
     scope,
     metric: targetGroup.metrics.unhealthyHostCount(),
     alarmName: `${name}_UnhealthyRequestCount`,
@@ -26,9 +26,9 @@ export function addDefaultMetricsToTargetGroup({
     evaluationPeriods: 1,
     comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
     treatMissingData: TreatMissingData.NOT_BREACHING,
-    alarmAction,
+    alertAction: alertAction,
   });
-  addAlarmToMetric({
+  addAlertToMetric({
     scope,
     metric: targetGroup.metrics.httpCodeTarget(HttpCodeTarget.TARGET_5XX_COUNT),
     alarmName: `${name}_Target5xxCount`,
@@ -36,6 +36,6 @@ export function addDefaultMetricsToTargetGroup({
     evaluationPeriods: 1,
     comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
     treatMissingData: TreatMissingData.NOT_BREACHING,
-    alarmAction,
+    alertAction: alertAction,
   });
 }

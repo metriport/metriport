@@ -6,7 +6,7 @@ import { compressGzip, decompressGzip } from "../../util/compression";
 import { LocalReplica } from "./replica/local";
 import { S3Replica } from "./replica/s3";
 import {
-  SftpClientImpl,
+  SftpClient as ISftpClient,
   SftpConfig,
   SftpListFilterFunction,
   SftpReadOptions,
@@ -16,7 +16,7 @@ import {
 
 type SftpMethod<T> = (this: SftpClient, client: SshSftpClient) => Promise<T>;
 
-export class SftpClient implements SftpClientImpl {
+export class SftpClient implements ISftpClient {
   protected readonly client: SshSftpClient;
   private sshError: unknown[] = [];
   private sshErrorHandler: (error?: unknown) => void;

@@ -5,7 +5,10 @@ import { out } from "../../../../util/log";
 import { capture } from "../../../../util/notifications";
 import { isCarequalityContent } from "../../../carequality/extension";
 import { isCommonwellContent } from "../../../commonwell/extension";
+import { BASE_EXTENSION_URL } from "./base-extension";
 import { dataSourceExtensionDefaults } from "./extension";
+
+export const CX_ID_EXTENSION_URL = `${BASE_EXTENSION_URL}/customer-id`;
 
 // URL is required: https://www.hl7.org/fhir/R4/extensibility.html#Extension.url
 export type MetriportDataSourceExtension = Omit<Extension, "url" | "valueCoding"> &

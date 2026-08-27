@@ -17,26 +17,13 @@ export function parseCWOrganization(org: Organization): CwDirectoryEntryData {
 
   // Get the first location (primary address)
   const location = org.locations?.[0];
-  if (!location) {
-    throw new MetriportError("Missing location on CW Org", undefined, {
-      org: stringify(org),
-    });
-  }
 
-  const addressLine1 = location.address1;
-  const addressLine2 = location.address2;
-  const city = location.city;
-  const state = location.state;
-  const zipCode = location.postalCode;
-  const country = location.country;
+  const addressLine1 = location?.address1;
+  const addressLine2 = location?.address2;
+  const city = location?.city;
+  const state = location?.state;
+  const zipCode = location?.postalCode;
   const npi = org.npiType1 || org.npiType2 || undefined;
-
-  if (!addressLine1 || !city || !state || !zipCode || !country) {
-    throw new MetriportError("Missing required address fields on CW Org", undefined, {
-      org: stringify(org),
-    });
-  }
-
   const orgType = org.type || "Unknown";
   const delegateOids = getDelegateOids(org.networks ?? []);
 
@@ -46,15 +33,23 @@ export function parseCWOrganization(org: Organization): CwDirectoryEntryData {
     oid: organizationId,
     orgType,
     rootOrganization: org.memberName,
-    addressLine: `${addressLine1} ${addressLine2 ?? ""}`,
+    addressLine: getAddressLine(addressLine1, addressLine2),
     city,
-    state: normalizeUSStateForAddressSafe(state) ?? undefined,
-    zip: normalizeZipCodeNewSafe(zipCode) ?? undefined,
+    state: (state && normalizeUSStateForAddressSafe(state)) ?? undefined,
+    zip: (zipCode && normalizeZipCodeNewSafe(zipCode)) ?? undefined,
     data: org,
     active: org.isActive ?? false,
     npi,
     delegateOids,
   };
+}
+
+function getAddressLine(
+  addressLine1: string | undefined,
+  addressLine2: string | null | undefined
+): string {
+  if (!addressLine1 && !addressLine2) return "Not specified";
+  return [addressLine1, addressLine2].filter(Boolean).join(" ");
 }
 
 function getDelegateOids(networks: Organization["networks"]): string[] {

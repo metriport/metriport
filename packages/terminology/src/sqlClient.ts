@@ -1,5 +1,7 @@
 import { Database } from "sqlite3";
 import { promisify } from "util";
+import { errorToString } from "@metriport/shared";
+import { out } from "./log";
 /* eslint-disable */
 
 export interface DbClient {
@@ -16,12 +18,13 @@ export class TermServerClient implements DbClient {
   private allAsync: (query: string, params: any[]) => Promise<any[]>;
 
   constructor(dbPath: string) {
+    const { log } = out("TermServerClient");
     this.db = new Database(dbPath, err => {
       if (err) {
-        console.log(`Error opening database: ${err}`);
+        log(`Error opening database: ${errorToString(err)}`);
         throw err;
       } else {
-        console.log(`Connected to SQLite database at: ${dbPath}`);
+        log(`Connected to SQLite database at: ${dbPath}`);
       }
     });
 

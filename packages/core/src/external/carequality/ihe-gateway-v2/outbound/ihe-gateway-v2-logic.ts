@@ -5,6 +5,9 @@ import {
   OutboundDocumentRetrievalResp,
   OutboundPatientDiscoveryReq,
   OutboundPatientDiscoveryResp,
+  toSafeCaptureContext,
+  toSafeCaptureContextDocumentQuery,
+  toSafeCaptureContextDocumentRetrieval,
 } from "@metriport/ihe-gateway-sdk";
 import { errorToString, executeWithNetworkRetries, executeWithRetries } from "@metriport/shared";
 import axios from "axios";
@@ -180,9 +183,14 @@ export async function createSignSendProcessXCPDRequest({
         });
       } catch (error) {
         const msg = "Failed to send PD response to internal CQ endpoint";
-        const extra = { cxId, patientId, result };
-        log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
-        capture.error(msg, { extra: { ...extra, error } });
+        const extra = {
+          cxId,
+          patientId,
+          result: toSafeCaptureContext(result),
+          error: errorToString(error),
+        };
+        log(`${msg} - ${JSON.stringify(extra)}`);
+        capture.error(msg, { extra });
       }
     }
     if (parsedResponsesBucket) {
@@ -257,9 +265,14 @@ export async function createSignSendProcessDqRequests({
       });
     } catch (error) {
       const msg = "Failed to send DQ response to internal CQ endpoint";
-      const extra = { cxId, patientId, result };
-      log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
-      capture.error(msg, { extra: { ...extra, error } });
+      const extra = {
+        cxId,
+        patientId,
+        result: toSafeCaptureContextDocumentQuery(result),
+        error: errorToString(error),
+      };
+      log(`${msg} - ${JSON.stringify(extra)}`);
+      capture.error(msg, { extra });
     }
   });
 
@@ -301,9 +314,14 @@ export async function createSignSendProcessDrRequests({
       });
     } catch (error) {
       const msg = "Failed to send DR response to internal CQ endpoint";
-      const extra = { cxId, patientId, result };
-      log(`${msg} - ${errorToString(error)} - ${JSON.stringify(extra)}`);
-      capture.error(msg, { extra: { ...extra, error } });
+      const extra = {
+        cxId,
+        patientId,
+        result: toSafeCaptureContextDocumentRetrieval(result),
+        error: errorToString(error),
+      };
+      log(`${msg} - ${JSON.stringify(extra)}`);
+      capture.error(msg, { extra });
     }
   });
 

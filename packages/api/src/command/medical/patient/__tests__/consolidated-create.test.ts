@@ -1,15 +1,12 @@
 import { faker } from "@faker-js/faker";
 import { Bundle, BundleEntry, DiagnosticReport } from "@medplum/fhirtypes";
-import { createUploadFilePath } from "@metriport/core/shareback/file";
 import { HapiFhirClient } from "@metriport/core/external/fhir/api/api-hapi";
 import * as s3Upload from "@metriport/core/fhir-to-cda/upload";
+import { createUploadFilePath, sentToFhirServerPrefix } from "@metriport/core/shareback/file";
 import { v4 as uuidv4 } from "uuid";
 import { Config } from "../../../../shared/config";
 import { diagnosticReport, patient, transactionRespBundle } from "../../__tests__/fhir-payloads";
-import {
-  createOrUpdateConsolidatedPatientData,
-  sentToFhirServerPrefix,
-} from "../consolidated-create";
+import { createOrUpdateConsolidatedPatientData } from "../consolidated-create";
 
 let fhir_readResource: jest.SpyInstance;
 let fhir_executeBatch: jest.SpyInstance;

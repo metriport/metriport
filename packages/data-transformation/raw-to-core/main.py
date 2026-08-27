@@ -1,24 +1,12 @@
+from datetime import datetime, timedelta, timezone
 from dbt.cli.main import dbtRunner
 import os
-import boto3
 import sys
-import gzip
-import csv
-import time
+import json
 
-bucket_name = 'tuva-public-resources'
-
-# Define only the enabled terminology files
-terminology_files = [
-    'cvx.csv',
-    'hcpcs_level_2.csv',
-    'icd_10_cm.csv',
-    'icd_9_cm.csv',
-    'loinc.csv',
-    'snomed_ct.csv'
-]
 
 def handler(event: dict, context: dict):
+    is_server = len(sys.argv) > 1 and sys.argv[1] == "server"
     profile = os.getenv("PROFILE") or "postgres"
     env_param_prefix = "DBT_SNOWFLAKE" if profile == "snowflake" else "DBT_PG"
 
@@ -49,7 +37,7 @@ def handler(event: dict, context: dict):
             raise ValueError("Missing required environment variables: ROLE")
         os.environ['DBT_SNOWFLAKE_ROLE'] = role
 
-    cliDatabase = sys.argv[1] if len(sys.argv) > 1 else None
+    cliDatabase = sys.argv[1] if len(sys.argv) > 1 and not is_server else None
     database_suffix = "DATABASE"
     database_env_param = f"{env_param_prefix}_{database_suffix}"
     database = cliDatabase or os.getenv(database_suffix) or os.getenv(database_env_param)
@@ -57,13 +45,37 @@ def handler(event: dict, context: dict):
         raise ValueError(f"Missing required environment variables: {database_suffix}")
     os.environ[database_env_param] = database
 
-    cliSchema = sys.argv[2] if len(sys.argv) > 2 else None
+    cliSchema = sys.argv[2] if len(sys.argv) > 2 and not is_server else None
     schema_suffix = "SCHEMA"
     schema_env_param = f"{env_param_prefix}_{schema_suffix}"
     schema = cliSchema or os.getenv(schema_suffix) or os.getenv(schema_env_param)
     if not schema:
-        raise ValueError("Missing required environment variables: SCHEMA")
+        raise ValueError(f"Missing required environment variables: {schema_suffix}")
     os.environ[schema_env_param] = schema
+
+    cliJobId = sys.argv[3] if len(sys.argv) > 3 and not is_server else None
+    job_id_suffix = "JOB_ID"
+    job_id = cliJobId or os.getenv(job_id_suffix)
+    if not job_id:
+        raise ValueError(f"Missing required environment variables: {job_id_suffix}")
+    os.environ[job_id_suffix] = job_id
+
+    cliFullRefresh = sys.argv[4] if len(sys.argv) > 4 and not is_server else None
+    full_refresh_suffix = "FULL_REFRESH"
+    full_refresh = cliFullRefresh or os.getenv(full_refresh_suffix)
+    if not full_refresh:
+        raise ValueError(f"Missing required environment variables: {full_refresh_suffix}")
+    os.environ[full_refresh_suffix] = full_refresh
+
+    cliLookbackTimestamp = sys.argv[5] if len(sys.argv) > 5 and not is_server else None
+    lookback_timestamp_suffix = "LOOKBACK_TIMESTAMP"
+    lookback_timestamp = cliLookbackTimestamp or os.getenv(lookback_timestamp_suffix)
+    os.environ[lookback_timestamp_suffix] = lookback_timestamp or "none"
+
+    cliLookbackHours = sys.argv[6] if len(sys.argv) > 6 and not is_server else None
+    lookback_hours_suffix = "LOOKBACK_HOURS"
+    lookback_hours = cliLookbackHours or os.getenv(lookback_hours_suffix)
+    os.environ[lookback_hours_suffix] = lookback_hours or "none"
 
     if profile == "snowflake":
         warehouse_suffix = "WAREHOUSE"
@@ -73,67 +85,21 @@ def handler(event: dict, context: dict):
             raise ValueError(f"Missing required environment variables: {warehouse_suffix}")
         os.environ[warehouse_env_param] = warehouse
 
-    print(f"Downloading {len(terminology_files)} terminology files from {bucket_name} to {schema}")
-    s3_client = boto3.client("s3")
+    lookback_ts = get_lookback_timestamp(full_refresh, lookback_timestamp, lookback_hours)
+    print(f"Lookback timestamp: {lookback_ts}")
 
-    if profile == "postgres":
-        # Start timing the download process
-        download_start_time = time.time()
-
-        for filename in terminology_files:
-            # Determine the S3 key based on filename
-            if filename in ['other_provider_taxonomy.csv', 'provider.csv']:
-                # These files are in versioned_provider_data folder
-                s3_key = f"versioned_provider_data/0.15.1/{filename}_0_0_0.csv.gz"
-            else:
-                # All other files are in versioned_terminology folder
-                s3_key = f"versioned_terminology/0.15.1/{filename}_0_0_0.csv.gz"
-
-            # Set up file paths
-            output_compressed_file = f"seeds/terminology/terminology__{filename}.gz"
-            output_file = f"seeds/terminology/terminology__{filename}"
-
-            try:
-                # Download the compressed file from S3
-                s3_client.download_file(bucket_name, s3_key, output_compressed_file)
-                print(f"Downloaded {s3_key} from S3")
-
-                # Read compressed rows from the file
-                with gzip.open(output_compressed_file, 'rt', encoding='utf-8') as f_in:
-                    new_rows = f_in.readlines()
-
-                # Check if the output_file exists and has only one row (header)
-                if os.path.exists(output_file):
-                    with open(output_file, 'r', encoding='utf-8') as f_existing:
-                        existing_rows = f_existing.readlines()
-                    if len(existing_rows) == 1:
-                        # Write header from existing file, then all new rows
-                        with open(output_file, 'w', encoding='utf-8') as f_out:
-                            f_out.write(existing_rows[0] + '\n')  # Write existing header
-                            f_out.writelines(new_rows)  # Write all new rows (no header to skip)
-                        print(f"Appended {len(new_rows)} rows to {output_file} (existing header kept)")
-                    else:
-                        print(f"{output_file} already has data, skipping append")
-                else:
-                    # Write all new rows to new file
-                    with open(output_file, 'w', encoding='utf-8') as f_out:
-                        f_out.writelines(new_rows)
-                    print(f"Wrote {len(new_rows)} rows to new file {output_file}")
-
-                print(f"Downloaded and processed file {s3_key}")
-
-            except Exception as e:
-                print(f"Error processing {s3_key}: {str(e)}")
-                continue
-
-        # Calculate and display download timing
-        download_end_time = time.time()
-        download_duration = download_end_time - download_start_time
-        print(f"Finished downloading terminology files in {download_duration:.2f} seconds")
+    vars_dict = {
+        "input_database": database,
+        "input_schema": schema,
+        "input_job_id": job_id,
+        "full_refresh": full_refresh,
+        "lookback_timestamp": lookback_ts,
+    }
+    vars_json = json.dumps(vars_dict)
 
     print(f"Running DBT build with database: {database}, schema: {schema}")
     dbt_runner = dbtRunner()
-    cli_args = ["build", "--target", profile, "--vars", f'{{"input_database": "{database}", "input_schema": "{schema}"}}']
+    cli_args = ["build", "--target", profile, "--vars", vars_json]
     result = dbt_runner.invoke(cli_args)
     if result.success:
         print("DBT build completed successfully")
@@ -149,6 +115,26 @@ def main():
     """Main entry point for CLI usage."""
     handler({}, {})
 
+def get_lookback_timestamp(full_refresh: str, lookback_timestamp: str, lookback_hours: str) -> str:
+    if full_refresh and full_refresh.lower() == "true":
+        return "1970-01-01 00:00:00"
+    if lookback_timestamp and lookback_timestamp != "none":
+        return lookback_timestamp
+    hours = int(lookback_hours) if lookback_hours and lookback_hours != "none" else 1
+    return (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
 
 if __name__ == "__main__":
-    main()
+    import sys
+    
+    # Check if we should run in server mode
+    if len(sys.argv) > 1 and sys.argv[1] == "server":
+        # Import and run the server
+        from server import app
+        port = int(os.environ.get('SERVER_PORT', 8000))
+        host = os.environ.get('SERVER_HOST', '0.0.0.0')
+        debug = os.environ.get('DEBUG', 'false').lower() == 'true'
+        print(f"Starting core transform HTTP server on {host}:{port}")
+        app.run(host=host, port=port, debug=debug)
+    else:
+        # Run in CLI mode (default behavior)
+        main()

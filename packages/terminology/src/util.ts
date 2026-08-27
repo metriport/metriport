@@ -1,7 +1,32 @@
-import { MetriportError } from "@metriport/shared";
+import { errorToString, MetriportError } from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { NextFunction, Request, Response } from "express";
+import { v4 as uuidv4 } from "uuid";
+import { asyncLocalStorage, out } from "./log";
 
 const normalizationErrorMsg = "Invalid NDC code";
+const requestIdLength = 10;
+
+/**
+ * No PHI is expected in these requests.
+ */
+function logRequestData(req: Request): string {
+  return ` | params: ${JSON.stringify(req.params)} | query: ${JSON.stringify(req.query)}`;
+}
+
+export function requestLogger(req: Request, res: Response, next: NextFunction): void {
+  const { log } = out();
+  req.requestId = uuidv4().slice(0, requestIdLength);
+  asyncLocalStorage.run(req.requestId, () => {
+    const start = buildDayjs();
+    log(`....Begins ${req.method} ${req.path}${logRequestData(req)}`);
+    res.on("close", () => {
+      const durationMs = buildDayjs().diff(start, "millisecond");
+      log(`....Done ${req.method} ${req.path} | ${res.statusCode} | ${durationMs}ms`);
+    });
+    next();
+  });
+}
 
 export function asyncHandler(
   f: (
@@ -12,10 +37,11 @@ export function asyncHandler(
   ) => Promise<Response<any, Record<string, any>> | void>
 ) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const { log } = out("asyncHandler");
     try {
       await f(req, res, next);
     } catch (err) {
-      console.log(`${JSON.stringify(err)}`);
+      log(`error: ${errorToString(err)}`);
       next(err);
     }
   };
@@ -29,6 +55,8 @@ export function asyncHandler(
  *   - 6 digits: remove leading zero
  *   - 5 digits: keep as is
  *   - 4 digits: add leading zero
+ *   - 2 digits: add leading zeros - unconventional; happens in the wild
+ *   - 1 digit: add leading zeros - unconventional; happens in the wild
  * - Product (second segment):
  *   - 4 digits: keep as is
  *   - 3 digits: add leading zero
@@ -64,6 +92,10 @@ export function normalizeNdcCode(ndc: string, isTruncatedAllowed = false): strin
       normalized += labeler;
     } else if (labeler.length === 4) {
       normalized += `0${labeler}`;
+    } else if (labeler.length === 2) {
+      normalized += `000${labeler}`;
+    } else if (labeler.length === 1) {
+      normalized += `0000${labeler}`;
     } else {
       throw new MetriportError(normalizationErrorMsg, undefined, {
         cleaned,

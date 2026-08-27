@@ -1,10 +1,13 @@
+import { disableWHMetadata } from "@metriport/core/domain/document-query/trigger-and-query";
 import CanvasApi from "@metriport/core/external/ehr/canvas/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { CanvasSecondaryMappings } from "@metriport/shared/interface/external/ehr/canvas/cx-mapping";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
+import { getCxMappingAndParsedSecondaryMappings } from "../../shared/command/mapping/get-cx-mapping-and-secondary-mappings";
 import { getOrCreateMetriportPatientFhir } from "../../shared/command/patient/get-or-create-metriport-patient-fhir";
 import { createMetriportPatientDemosFhir } from "../../shared/utils/fhir";
 import { isDqCooldownExpired } from "../../shared/utils/patient";
@@ -27,6 +30,13 @@ export async function syncCanvasPatientIntoMetriport({
   triggerDq = false,
   triggerDqForExistingPatient = false,
 }: SyncCanvasPatientIntoMetriportParams): Promise<string> {
+  const { parsedSecondaryMappings } =
+    await getCxMappingAndParsedSecondaryMappings<CanvasSecondaryMappings>({
+      ehr: EhrSources.canvas,
+      practiceId: canvasPracticeId,
+    });
+  const shouldDisableWebhooks = !parsedSecondaryMappings.sendDocumentQueryWebhookEnabled;
+
   const existingPatient = await getPatientMapping({
     cxId,
     externalId: canvasPatientId,
@@ -46,6 +56,7 @@ export async function syncCanvasPatientIntoMetriport({
         cxId,
         patientId: metriportPatient.id,
         facilityId,
+        ...(shouldDisableWebhooks && { cxDocumentRequestMetadata: disableWHMetadata }),
       }).catch(processAsyncError(`Canvas queryDocumentsAcrossHIEs`));
     }
     const metriportPatientId = metriportPatient.id;
@@ -71,6 +82,7 @@ export async function syncCanvasPatientIntoMetriport({
       cxId,
       patientId: metriportPatient.id,
       facilityId,
+      ...(shouldDisableWebhooks && { cxDocumentRequestMetadata: disableWHMetadata }),
     }).catch(processAsyncError(`Canvas queryDocumentsAcrossHIEs`));
   }
   await findOrCreatePatientMapping({

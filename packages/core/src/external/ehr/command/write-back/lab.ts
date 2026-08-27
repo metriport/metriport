@@ -31,6 +31,7 @@ const ehrWriteBackLabMap: WriteBackLabFnMap = {
   [EhrSources.healthie]: undefined,
   [EhrSources.eclinicalworks]: undefined,
   [EhrSources.salesforce]: undefined,
+  [EhrSources.practicefusion]: undefined,
 };
 
 function getEhrWriteBackLabHandler(ehr: EhrSource): WriteBackLabFn {

@@ -1,6 +1,7 @@
 import {
   isCarequalityEnabled,
   isCQDirectEnabledForCx,
+  isCqDoaEnabled,
 } from "@metriport/core/command/feature-flags/domain-ffs";
 import { Coordinates } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
@@ -9,19 +10,19 @@ import { GenderAtBirth, Patient, PatientData } from "@metriport/core/domain/pati
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { capture } from "@metriport/core/util/notifications";
 import {
+  normalizeEmailNewSafe,
+  normalizePhoneNumberSafe,
   PurposeOfUse,
   USStateForAddress,
-  normalizePhoneNumberSafe,
-  normalizeEmailNewSafe,
 } from "@metriport/shared";
 import { buildDayjs, ISO_DATE } from "@metriport/shared/common/date";
-import { isCqDoaEnabled } from "@metriport/core/command/feature-flags/domain-ffs";
 import { errorToString } from "@metriport/shared/common/error";
 import z from "zod";
 import { getAddressWithCoordinates } from "../../domain/medical/address";
 import { Config } from "../../shared/config";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 import { CQLink } from "./cq-patient-data";
+
 // TODO: adjust when we support multiple POUs
 export function createPurposeOfUse() {
   return PurposeOfUse.TREATMENT;
@@ -106,54 +107,13 @@ export type CQOrgDetails = {
   active: boolean;
   /** Translates into the `partOf` field in Carequality. Usually either `metriportOid` or `metriportIntermediaryOid` */
   parentOrgOid?: string | undefined;
-  /** Gets translated into the DOA extension in Carequality. Only used for OBO facilities. @see https://sequoiaproject.org/SequoiaProjectHealthcareDirectoryImplementationGuide/output/StructureDefinition-DOA.html */
-  oboOid?: string | undefined;
-  /** Gets translated into the generated text extension in Carequality. Only used for OBO facilities. */
-  oboName?: string | undefined;
+  /** OID of the principal org this delegate facility acts on behalf of. Used to determine if facility is a delegate. */
+  principalOid?: string | undefined;
+  /** OIDs of delegate facilities that can act on behalf of this principal. Gets translated into DOA extensions in Carequality. @see https://sequoiaproject.org/SequoiaProjectHealthcareDirectoryImplementationGuide/output/StructureDefinition-DOA.html */
+  delegateOids?: string[] | undefined;
 };
 
 export type CQOrgDetailsWithUrls = CQOrgDetails & CQOrgUrls;
-
-export function formatDate(dateString: string | undefined): string | undefined {
-  if (!dateString) return undefined;
-  const preprocessedDate = dateString.replace(/[-:]/g, "");
-  const year = preprocessedDate.slice(0, 4);
-  const month = preprocessedDate.slice(4, 6);
-  const day = preprocessedDate.slice(6, 8);
-  const formattedDate = `${year}-${month}-${day}`;
-
-  try {
-    const date = new Date(formattedDate);
-    return date.toISOString();
-  } catch (error) {
-    const msg = "Error creating date object for document reference";
-    console.log(`${msg}: ${error}`);
-  }
-
-  return undefined;
-}
-
-export function formatDatetime(dateString: string | undefined): string | undefined {
-  if (!dateString) return undefined;
-  const preprocessedDate = dateString.replace(/[-:TZ]/g, "");
-  const year = preprocessedDate.slice(0, 4);
-  const month = preprocessedDate.slice(4, 6);
-  const day = preprocessedDate.slice(6, 8);
-  const hour = preprocessedDate.slice(8, 10) || "00";
-  const minute = preprocessedDate.slice(10, 12) || "00";
-  const second = preprocessedDate.slice(12, 14) || "00";
-  const formattedDate = `${year}-${month}-${day}T${hour}:${minute}:${second}.000Z`;
-
-  try {
-    const date = new Date(formattedDate);
-    return date.toISOString();
-  } catch (error) {
-    const msg = "Error creating date object for document reference";
-    console.log(`${msg}: ${error}`);
-  }
-
-  return undefined;
-}
 
 export async function getCqInitiator(
   patient: Pick<Patient, "id" | "cxId">,
@@ -183,18 +143,6 @@ export function buildCqOrgNameForFacility({
   orgName: string;
 }): string {
   return `${vendorName} - ${orgName}`;
-}
-
-export function buildCqOrgNameForOboFacility({
-  vendorName,
-  orgName,
-  oboOid,
-}: {
-  vendorName: string;
-  orgName: string;
-  oboOid: string;
-}): string {
-  return `${vendorName} - ${orgName} #OBO# ${oboOid}`;
 }
 
 export async function getCqAddress({

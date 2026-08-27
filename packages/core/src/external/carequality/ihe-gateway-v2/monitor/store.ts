@@ -13,6 +13,7 @@ import {
 import { S3Utils } from "../../../aws/s3";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
+import { XML_APP_MIME_TYPE } from "../../../../util/mime";
 
 const { log } = out("Storing IHE Req/Resp");
 
@@ -54,7 +55,7 @@ export async function storeXcpdResponses({
       bucket: bucketOutbound,
       key,
       file: Buffer.from(response),
-      contentType: "application/xml",
+      contentType: XML_APP_MIME_TYPE,
     });
   } catch (error) {
     log(`Error storing XCPD response: ${error}`);
@@ -88,7 +89,7 @@ export async function storeDqResponse({
       bucket: bucketOutbound,
       key,
       file: Buffer.from(response),
-      contentType: "application/xml",
+      contentType: XML_APP_MIME_TYPE,
     });
   } catch (error) {
     log(`Error storing DQ response: ${error}`);
@@ -125,7 +126,7 @@ export async function storeDrResponse({
       bucket: bucketOutbound,
       key,
       file: response,
-      contentType: "application/xml",
+      contentType: XML_APP_MIME_TYPE,
     });
   } catch (error) {
     log(`Error storing DR response: ${error}`);
@@ -156,7 +157,7 @@ export async function storeXcpdRequest({
       bucket: bucketInbound,
       key,
       file: Buffer.from(request),
-      contentType: "application/xml",
+      contentType: XML_APP_MIME_TYPE,
     });
   } catch (error) {
     log(`Error storing XCPD response: ${error}`);
@@ -222,7 +223,7 @@ export async function storeDqRequest({
       bucket: bucketInbound,
       key,
       file: Buffer.from(request),
-      contentType: "application/xml",
+      contentType: XML_APP_MIME_TYPE,
     });
   } catch (error) {
     log(`Error storing XCPD response: ${error}`);
@@ -253,7 +254,7 @@ export async function storeDrRequest({
       bucket: bucketInbound,
       key,
       file: Buffer.from(request),
-      contentType: "application/xml",
+      contentType: XML_APP_MIME_TYPE,
     });
   } catch (error) {
     log(`Error storing XCPD response: ${error}`);

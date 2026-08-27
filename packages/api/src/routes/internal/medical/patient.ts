@@ -1,21 +1,27 @@
 import { genderAtBirthSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { getConsolidatedSnapshotFromS3 } from "@metriport/core/command/consolidated/snapshot-on-s3";
+import { getPatientStateWithOverallStatus } from "@metriport/core/command/patient-state/get-patient-state";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { Patient } from "@metriport/core/domain/patient";
 import { hl7v2SubscribersQuerySchema } from "@metriport/core/domain/patient-settings";
-import { MedicalDataSource } from "@metriport/core/external/index";
+import { MedicalDataSource } from "@metriport/core/external";
 import { Config } from "@metriport/core/util/config";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import {
-  BadRequestError,
   errorToString,
   internalSendConsolidatedSchema,
   MetriportError,
+  NotFoundError,
   PaginatedResponse,
+  parseEhrSourceOrFail,
   sleep,
   stringToBoolean,
 } from "@metriport/shared";
+import {
+  DatasourceQueryStatus,
+  hieSpecificSource,
+} from "@metriport/shared/domain/network-query/source";
 import {
   questMappingRequestSchema,
   questSource,
@@ -28,25 +34,33 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { chunk } from "lodash";
 import { z } from "zod";
+import { internalOnlyGetPatientReadOnlyByIdOrFail } from "../../../command/internal/get-patient-read-only";
 import {
   createPatientMapping,
   findFirstPatientMappingForSource,
 } from "../../../command/mapping/patient";
 import { resetExternalDataSource } from "../../../command/medical/admin/reset-external-data";
+import { listCohortsWithSizesForPatient } from "../../../command/medical/cohort/get-cohort";
+import { addPatientToCohorts } from "../../../command/medical/cohort/patient-cohort/add-patient-to-cohorts";
 import { getFacilityOrFail } from "../../../command/medical/facility/get-facility";
+import { getNetworkQueryStatusByRequestId } from "../../../command/medical/network-query/network-query";
+import { updateDatasourceQueryStatusByRequestId } from "../../../command/medical/network-query/update-datasource-query-status";
+import { getOrganizations } from "../../../command/medical/organization/get-organization";
 import {
   getConsolidated,
   getConsolidatedAndSendToCx,
 } from "../../../command/medical/patient/consolidated-get";
 import { recreateConsolidated } from "../../../command/medical/patient/consolidated-recreate";
 import { getCoverageAssessments } from "../../../command/medical/patient/coverage-assessment-get";
-import { createPatient, PatientCreateCmd } from "../../../command/medical/patient/create-patient";
+import { createOrUpdatePatientBasedOnDemo } from "../../../command/medical/patient/create-or-update-patient";
+import { PatientCreateCmd } from "../../../command/medical/patient/create-patient";
 import { deletePatient } from "../../../command/medical/patient/delete-patient";
 import {
   getHl7v2Subscribers,
   GetHl7v2SubscribersParams,
 } from "../../../command/medical/patient/get-hl7v2-subscribers";
 import {
+  getPatientByExternalId,
   getPatientOrFail,
   getPatients,
   getPatientStates,
@@ -61,11 +75,10 @@ import {
   updatePatientWithoutHIEs,
 } from "../../../command/medical/patient/update-patient";
 import { Pagination } from "../../../command/pagination";
+import { createAugmentedPatient } from "../../../domain/medical/patient-demographics";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import { PatientUpdaterCarequality } from "../../../external/carequality/patient-updater-carequality";
-import cwCommands from "../../../external/commonwell";
 import { PatientUpdaterCommonWell } from "../../../external/commonwell/patient/patient-updater-commonwell";
-import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
 import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
 import { parseISODate } from "../../../shared/date";
@@ -73,9 +86,9 @@ import { getETag } from "../../../shared/http";
 import { handleParams } from "../../helpers/handle-params";
 import { requestLogger } from "../../helpers/request-logger";
 import { dtoFromModel } from "../../medical/dtos/patientDTO";
+import { cohortIdsSchema } from "../../medical/schemas/cohort";
 import { getResourcesQueryParam } from "../../medical/schemas/fhir";
 import { hl7NotificationSchema } from "../../medical/schemas/hl7-notification";
-import { linkCreateSchema } from "../../medical/schemas/link";
 import { schemaCreateToPatientData } from "../../medical/schemas/patient";
 import { paginated } from "../../pagination";
 import { getUUIDFrom } from "../../schemas/uuid";
@@ -83,6 +96,7 @@ import {
   asyncHandler,
   getFrom,
   getFromParamsOrFail,
+  getFromQuery,
   getFromQueryAsArray,
   getFromQueryAsArrayOrFail,
   getFromQueryAsBoolean,
@@ -91,8 +105,8 @@ import {
 import patientConsolidatedRoutes from "./patient-consolidated";
 import patientImportRoutes from "./patient-import";
 import patientJobRoutes from "./patient-job";
-import patientMonitoringRoutes from "./patient-monitoring";
 import patientSettingsRoutes from "./patient-settings";
+import patientMonitoringRoutes from "./patient/patient-monitoring";
 
 dayjs.extend(duration);
 
@@ -127,15 +141,23 @@ router.get(
   "/hl7v2-subscribers",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
-    const { hieName } = hl7v2SubscribersQuerySchema.parse(req.query);
+    const { hieStates, hieName } = hl7v2SubscribersQuerySchema.parse(req.query);
 
     const params: GetHl7v2SubscribersParams = {
+      hieStates,
       hieName,
     };
 
+    const hieStatesQueryParams = Object.fromEntries(
+      hieStates.map((state, index) => [`hieStates[${index}]`, state])
+    );
+
     const { meta, items } = await paginated({
       request: req,
-      additionalQueryParams: { hieName },
+      additionalQueryParams: {
+        hieName,
+        ...hieStatesQueryParams,
+      },
       getItems: (pagination: Pagination) => {
         return getHl7v2Subscribers({
           ...params,
@@ -219,9 +241,7 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const { patientIds } = updateAllSchema.parse(req.body);
 
-    const { failedUpdateCount } = await new PatientUpdaterCommonWell(
-      getCqOrgIdsToDenyOnCw
-    ).updateAll(cxId, patientIds);
+    const { failedUpdateCount } = await new PatientUpdaterCommonWell().updateAll(cxId, patientIds);
 
     return res.status(status.OK).json({ failedUpdateCount });
   })
@@ -317,78 +337,6 @@ router.post(
       secondaryMappings: {},
     });
     return res.sendStatus(status.CREATED);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/patient/:patientId/link/:source
- *
- * TODO: ENG-554 - Remove this route when we migrate to CW v2
- *
- * Creates link to the specified entity.
- *
- * @param req.params.patientId Patient ID to link to a person.
- * @param req.params.source HIE from where the link is made to.
- * @param req.query.cxId The customer ID.
- * @param req.query.facilityId The ID of the facility to provide the NPI to remove link from patient.
- * @returns 201 upon success.
- */
-router.post(
-  "/:patientId/link/:source",
-  handleParams,
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getFromParamsOrFail("patientId", req);
-    const facilityIdParam = getFrom("query").optional("facilityId", req);
-    const linkSource = getFromParamsOrFail("source", req);
-    const linkCreate = linkCreateSchema.parse(req.body);
-
-    const patient = await getPatientOrFail({ cxId, id: patientId });
-    const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
-
-    if (linkSource === MedicalDataSource.COMMONWELL) {
-      await cwCommands.link.create(
-        linkCreate.entityId,
-        patientId,
-        cxId,
-        facilityId,
-        getCqOrgIdsToDenyOnCw
-      );
-      return res.sendStatus(status.CREATED);
-    }
-    throw new BadRequestError(`Unsupported link source: ${linkSource}`);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * DELETE /internal/patient/:patientId/link/:source
- *
- * Removes the specified HIE link from the specified patient.
- *
- * @param req.params.patientId Patient ID to remove link from.
- * @param req.params.linkSource HIE to remove the link from.
- * @param req.query.cxId The customer ID.
- * @param req.query.facilityId The ID of the facility to provide the NPI to remove link from patient.
- * @returns 204 upon successful link delete.
- */
-router.delete(
-  "/:patientId/link/:source",
-  handleParams,
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientId = getFromParamsOrFail("patientId", req);
-    const facilityIdParam = getFrom("query").optional("facilityId", req);
-    const linkSource = req.params.source;
-    const patient = await getPatientOrFail({ cxId, id: patientId });
-    const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
-
-    if (linkSource === MedicalDataSource.COMMONWELL) {
-      await cwCommands.link.reset(patientId, cxId, facilityId);
-    }
-
-    return res.sendStatus(status.NO_CONTENT);
   })
 );
 
@@ -523,6 +471,78 @@ router.get(
   })
 );
 
+/**
+ * GET /internal/patient/external-id
+ *
+ * Searches for a patient based on an external ID. Returns the first and last name of the patient, if it exists.
+ *
+ * @return The first and last name of the patient.
+ */
+router.get(
+  "/external-id",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const externalId = getFromQueryOrFail("externalId", req);
+    const unparsedSource = getFromQuery("source", req);
+    const source = parseEhrSourceOrFail(unparsedSource);
+    const patient = await getPatientByExternalId({ cxId, externalId, source });
+    if (!patient) {
+      throw new NotFoundError("Patient not found");
+    }
+    return res
+      .status(status.OK)
+      .json({ id: patient.id, firstName: patient.data.firstName, lastName: patient.data.lastName });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/:id/consolidated-link-demographics
+ *
+ * Returns the consolidated link demographics for a patient
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @return The consolidated link demographics or null if not present.
+ */
+router.get(
+  "/:id/consolidated-link-demographics",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFromParamsOrFail("id", req);
+    const patient = await getPatientReadOnlyOrFail({ cxId, patientId: id });
+    return res.status(status.OK).json(patient.data.consolidatedLinkDemographics ?? null);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/:id/customer
+ *
+ * Returns the customer ID and organization details for the specified patient.
+ *
+ * @param req.params.id The patient ID.
+ * @return The customer ID, organization name, and location.
+ */
+router.get(
+  "/:id/customer",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const id = getFromParamsOrFail("id", req);
+    const patient = await internalOnlyGetPatientReadOnlyByIdOrFail(id);
+    const cxId = patient.cxId;
+    const organizations = await getOrganizations({ cxIds: [cxId] });
+    const organization = organizations[0];
+    if (!organization) {
+      throw new NotFoundError("Organization not found for patient");
+    }
+    const data = organization.data;
+    return res.status(status.OK).json({ cxId, name: data.name, location: data.location });
+  })
+);
+
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/:id
  *
@@ -530,6 +550,7 @@ router.get(
  *
  * @param req.query.cxId The customer ID.
  * @param req.params.id The patient ID.
+ * @param req.query.includeAugmentationDemographics Optional. If true, augments patient demographics with consolidated link demographics.
  * @return A patient.
  */
 router.get(
@@ -539,8 +560,14 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);
+    const includeAugmentationDemographics =
+      getFromQueryAsBoolean("includeAugmentationDemographics", req) ?? false;
 
-    const patient = await getPatientReadOnlyOrFail({ cxId, patientId: id });
+    let patient = await getPatientReadOnlyOrFail({ cxId, patientId: id });
+    if (includeAugmentationDemographics) {
+      const augmentedPatient = createAugmentedPatient(patient);
+      patient = augmentedPatient;
+    }
     const dto = dtoFromModel(patient);
 
     return res.status(status.OK).json(dto);
@@ -565,6 +592,7 @@ router.post(
     const id = getFromParamsOrFail("id", req);
     const requestId = getFrom("query").optional("requestId", req);
     const rerunPdOnNewDemographics = getFromQueryAsBoolean("rerunPdOnNewDemographics", req);
+    const forcePd = getFromQueryAsBoolean("forcePd", req);
     const patient = await getPatientOrFail({ cxId, id });
     const facilityId = patient.facilityIds[0];
 
@@ -573,6 +601,7 @@ router.post(
       facilityId,
       rerunPdOnNewDemographics,
       requestId,
+      forcePd,
     });
     return res.status(status.OK).json({ requestId });
   })
@@ -648,6 +677,13 @@ router.get(
  *
  * Continues the process of consolidating a patient's data by sending the consolidated bundle to the customer.
  *
+ * For network query flow (requestId in network_query_request view):
+ * - Updates the network query status to "completed"
+ * - Sends the network query webhook (handled by updateDatasourceQueryStatusByRequestId)
+ *
+ * For legacy document query flow (requestId not in network_query_request view):
+ * - Sends the consolidated data webhook via getConsolidatedAndSendToCx
+ *
  * @param req.query.cxId The customer ID.
  * @param req.params.id The patient ID.
  * @param req.body The data to send to getConsolidatedAndSendToCx and S3 info about the bundle to be loaded.
@@ -680,20 +716,39 @@ router.post(
       bundleFilename,
     });
 
-    getConsolidatedAndSendToCx({
-      patient,
-      bundle,
-      requestId,
-      conversionType,
-      resources,
-      dateFrom,
-      dateTo,
-      fromDashboard,
-    }).catch(
-      processAsyncError(
-        "POST /internal/patient/:id/consolidated, calling getConsolidatedAndSendToCx"
-      )
-    );
+    // Check if this is a network query flow or legacy document query flow
+    const networkQuery = await getNetworkQueryStatusByRequestId({ cxId, requestId });
+
+    if (networkQuery) {
+      // Update status to "completed" and send the network query webhook
+      log(`Network query found, updating status to completed`);
+      updateDatasourceQueryStatusByRequestId({
+        cxId,
+        requestId,
+        source: "hie",
+        specificSource: hieSpecificSource,
+        toStatus: DatasourceQueryStatus.Completed,
+      }).catch(
+        processAsyncError("POST /internal/patient/:id/consolidated, updateNetworkQueryStatus")
+      );
+    } else {
+      log(`Network query not found, sending consolidated data webhook`);
+      getConsolidatedAndSendToCx({
+        patient,
+        bundle,
+        requestId,
+        conversionType,
+        resources,
+        dateFrom,
+        dateTo,
+        fromDashboard,
+      }).catch(
+        processAsyncError(
+          "POST /internal/patient/:id/consolidated, calling getConsolidatedAndSendToCx"
+        )
+      );
+    }
+
     return res.sendStatus(status.OK);
   })
 );
@@ -713,6 +768,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFromQueryOrFail("facilityId", req);
+    const contextId = getFromQuery("contextId", req);
     const rerunPdOnNewDemographics = stringToBoolean(
       getFrom("query").optional("rerunPdOnNewDemographics", req)
     );
@@ -720,22 +776,24 @@ router.post(
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const runPd = getFromQueryAsBoolean("runPd", req) ?? false;
     const payload = patientCreateSchema.parse(req.body);
+    const { cohorts: cohortIds, ...patientCreateProps } = payload;
 
     const patientCreate: PatientCreateCmd = {
-      ...schemaCreateToPatientData(payload),
+      ...schemaCreateToPatientData(patientCreateProps),
       cxId,
       facilityId,
     };
-
-    const patient = await createPatient({
-      patient: patientCreate,
+    const { patient, created } = await createOrUpdatePatientBasedOnDemo({
+      patientCreate,
       runPd,
       rerunPdOnNewDemographics,
       forceCommonwell,
       forceCarequality,
+      cohortIds,
+      contextId,
     });
 
-    return res.status(status.CREATED).json(dtoFromModel(patient));
+    return res.status(created ? status.CREATED : status.OK).json(dtoFromModel(patient));
   })
 );
 
@@ -748,6 +806,7 @@ router.post(
  * @param req.query.cxId - The customer ID.
  * @param req.query.presignedUrl - S3 presigned URL to access the FHIR bundle.
  * @param req.query.triggerEvent - the type of HL7 notification.
+ * @param req.query.isSendWebhook - whether to send the webhook. Optional.
  */
 router.post(
   "/:id/notification",
@@ -790,6 +849,63 @@ router.delete(
   })
 );
 
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/:id/cohort
+ *
+ * Returns a list of all cohorts the patient is a member of.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The ID of the patient whose cohorts are to be returned.
+ * @returns The cohorts for the patient.
+ */
+router.get(
+  "/:id/cohort",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFromParamsOrFail("id", req);
+
+    await getPatientOrFail({ id: patientId, cxId });
+
+    const cohortsWithSizes = await listCohortsWithSizesForPatient({ cxId, patientId });
+
+    return res.status(status.OK).json({ cohorts: cohortsWithSizes });
+  })
+);
+
+/**
+ * POST /internal/patient/:id/cohort
+ *
+ * Add a patient to multiple cohorts.
+ *
+ * @param req.params.id The ID of the patient to add to cohorts.
+ * @param req.query.cxId The customer ID.
+ * @param req.body.cohortIds The list of cohort IDs to add the patient to.
+ */
+router.post(
+  "/:id/cohort",
+  handleParams,
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientId = getFromParamsOrFail("id", req);
+    const { cohortIds } = cohortIdsSchema.parse(req.body);
+
+    await getPatientOrFail({ id: patientId, cxId });
+
+    await addPatientToCohorts({
+      cxId,
+      patientId,
+      cohortIds,
+    });
+
+    const cohortsWithSizes = await listCohortsWithSizesForPatient({ cxId, patientId });
+
+    return res.status(status.CREATED).json({ cohorts: cohortsWithSizes });
+  })
+);
+
 /**
  * POST /internal/patient/:id/consolidated/refresh
  *
@@ -827,6 +943,44 @@ router.post(
       throw new MetriportError(msg, undefined, { patientId: id, cxId });
     }
     return res.status(status.OK).json({ requestId });
+  })
+);
+
+const sourceNetworkSchema = z.nativeEnum(MedicalDataSource);
+
+/**
+ * GET /internal/patient/:id/state
+ *
+ * Retrieves the patient state for a given patient and network.
+ * @param req.params.id The patient ID.
+ * @param req.query.cxId The customer ID.
+ * @param req.query.network The network.
+ * @param req.query.requestId The request ID. Optional. If not provided, the most recent patient state will be returned.
+ * @param req.query.isConsiderConversion Whether to consider the conversion status in the overall status. Optional. Defaults to true.
+ * @returns The patient state.
+ */
+router.get(
+  "/:id/state",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    if (Config.isSandbox()) return res.sendStatus(status.NOT_IMPLEMENTED);
+
+    const patientId = getUUIDFrom("params", req, "id").orFail();
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const requestId = getUUIDFrom("query", req, "requestId").optional();
+    const isConsiderConversion = getFromQueryAsBoolean("isConsiderConversion", req);
+    const networkRaw = getFromQueryOrFail("network", req);
+    const network = sourceNetworkSchema.parse(networkRaw);
+
+    const patientState = await getPatientStateWithOverallStatus({
+      patientId: patient.id,
+      cxId: patient.cxId,
+      network,
+      requestId,
+      isConsiderConversion,
+    });
+    return res.status(status.OK).json({ patientState });
   })
 );
 

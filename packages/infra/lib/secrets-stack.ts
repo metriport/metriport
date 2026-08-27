@@ -64,6 +64,14 @@ export class SecretsStack extends Stack {
       }
     }
 
+    if (props.config.ehex?.secretNames) {
+      for (const secretName of Object.values<string | undefined>(props.config.ehex.secretNames)) {
+        if (!secretName || !secretName.trim().length) continue;
+        const secret = makeSecret(secretName);
+        logSecretInfo(this, secret, secretName);
+      }
+    }
+
     const ehrSecrets = {
       ...props.config.canvas?.secretNames,
       ...props.config.ehrIntegration?.athenaHealth.secrets,
@@ -98,6 +106,25 @@ export class SecretsStack extends Stack {
         const secret = makeSecret(secretName);
         logSecretInfo(this, secret, secretName);
       }
+    }
+
+    if (props.config.baseten) {
+      for (const secretName of Object.values(props.config.baseten.secretNames)) {
+        const secret = makeSecret(secretName);
+        logSecretInfo(this, secret, secretName);
+      }
+    }
+
+    if (props.config.bedrock) {
+      for (const secretName of Object.values(props.config.bedrock.secretNames)) {
+        const secret = makeSecret(secretName);
+        logSecretInfo(this, secret, secretName);
+      }
+    }
+
+    for (const secretName of Object.values(props.config.alarms.secrets)) {
+      const secret = makeSecret(secretName);
+      logSecretInfo(this, secret, secretName);
     }
 
     if (!isSandbox(props.config)) {
@@ -135,6 +162,11 @@ export class SecretsStack extends Stack {
             excludeCharacters: PROBLEMATIC_IPSEC_CHARACTERS,
           },
         });
+        logSecretInfo(this, secret, secretName);
+      }
+
+      for (const secretName of Object.values(props.config.checklySecrets)) {
+        const secret = makeSecret(secretName);
         logSecretInfo(this, secret, secretName);
       }
     }

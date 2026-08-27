@@ -1,23 +1,16 @@
-import {
-  parseAdtSubscriptionRequest,
-  parsePatientSettingsRequest,
-  parseQuestPatientRequest,
-} from "@metriport/core/domain/patient-settings";
+import { createQueryMetaSchemaV2 } from "@metriport/shared/domain/pagination-v2";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
-import { upsertPatientSettingsForPatientList } from "../../../command/medical/patient/settings/create-patient-settings";
 import {
-  addHieSubscriptionToPatients,
-  removeHieSubscriptionFromPatients,
-} from "../../../command/medical/patient/settings/hie-subscriptions";
-import {
-  addQuestSubscriptionToPatients,
-  removeQuestSubscriptionFromPatients,
-} from "../../../command/medical/patient/settings/quest-monitoring";
+  getPatientIdsCountForPatientsWithAdtSubscriptions,
+  getPatientIdsForPatientsWithAdtSubscriptions,
+  getPatientIdsForPatientsWithLaboratoryNotifications,
+} from "../../../command/medical/patient/settings/get-patient-settings";
 import { requestLogger } from "../../helpers/request-logger";
+import { paginatedV2 } from "../../pagination-v2";
 import { getUUIDFrom } from "../../schemas/uuid";
 import { asyncHandler } from "../../util";
 
@@ -26,141 +19,68 @@ dayjs.extend(duration);
 const router = Router();
 
 /** ---------------------------------------------------------------------------
- * POST /internal/patient/settings/
+ * GET /internal/patient/settings/laboratory-notifications
  *
- * Creates or updates patient settings for a select list of patient IDs.
+ * Returns the patient IDs for patients with laboratory notification subscriptions for a given customer.
  *
  * @param req.query.cxId The customer ID.
- * @param req.query.facilityId The facility ID. Optional.
- * @param req.query.patientIds List of patient IDs to update.
- * @param req.body The patient settings to apply. Optional, defaults to empty object.
- * @returns 200 with the results of the operation.
+ * @returns 200 with the array of patient IDs.
  */
-router.post(
-  "/",
+router.get(
+  "/laboratory-notifications",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const facilityId = getUUIDFrom("query", req, "facilityId").optional();
-    const { patientIds, settings } = parsePatientSettingsRequest(req.body);
 
-    const result = await upsertPatientSettingsForPatientList({
-      cxId,
-      facilityId,
-      patientIds,
-      settings,
-    });
-
-    return res.status(status.OK).json(result);
+    const patientIds = await getPatientIdsForPatientsWithLaboratoryNotifications({ cxId });
+    return res.status(status.OK).json(patientIds);
   })
 );
 
+const ADT_PATIENT_IDS_MAX_PAGE_SIZE = 1000;
+const adtPatientIdsQuerySchema = createQueryMetaSchemaV2(ADT_PATIENT_IDS_MAX_PAGE_SIZE);
+
 /** ---------------------------------------------------------------------------
- * POST /internal/patient/settings/adt
+ * GET /internal/patient/settings/adt
  *
- * Adds an ADT subscription for a select list of patient IDs.
+ * Returns the patient IDs for patients with ADT subscriptions for a given customer with pagination support.
  *
  * @param req.query.cxId The customer ID.
- * @param req.query.facilityId The facility ID. Optional.
- * @param req.body The patient settings to apply. Optional, defaults to empty object.
- * @returns 200 with the results of the operation.
+ * @param req.query.fromItem Optional pagination parameter to start from a specific item.
+ * @param req.query.toItem Optional pagination parameter to end at a specific item.
+ * @param req.query.count Optional number of items per page (max 1000).
+ * @param req.query.sort Optional sort parameter (e.g., "id=asc").
+ * @returns 200 with the paginated patient IDs.
  */
-router.post(
+router.get(
   "/adt",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const { patientIds, hieName } = parseAdtSubscriptionRequest(req.body);
 
-    const result = await addHieSubscriptionToPatients({
-      cxId,
-      patientIds,
-      hieName,
+    adtPatientIdsQuerySchema.parse(req.query);
+
+    const result = await paginatedV2({
+      request: req,
+      additionalQueryParams: { cxId },
+      getItems: async pagination => {
+        const patientIds = await getPatientIdsForPatientsWithAdtSubscriptions({
+          cxId,
+          pagination,
+        });
+        return patientIds;
+      },
+      getTotalCount: () => getPatientIdsCountForPatientsWithAdtSubscriptions({ cxId }),
+      allowedSortColumns: {
+        id: { table: "ps", column: "patient_id", type: "regular" },
+      },
+      maxItemsPerPage: ADT_PATIENT_IDS_MAX_PAGE_SIZE,
     });
 
-    return res.status(status.OK).json(result);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * DELETE /internal/patient/settings/adt
- *
- * Removes an ADT subscription for a select list of patient IDs.
- *
- * @param req.query.cxId The customer ID.
- * @param req.query.facilityId The facility ID. Optional.
- * @param req.body The patient settings to apply. Optional, defaults to empty object.
- * @returns 200 with the results of the operation.
- */
-router.delete(
-  "/adt",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const { patientIds, hieName } = parseAdtSubscriptionRequest(req.body);
-
-    const result = await removeHieSubscriptionFromPatients({
-      cxId,
-      patientIds,
-      hieName,
+    return res.status(status.OK).json({
+      meta: result.meta,
+      patientIds: result.items.map(item => item.id),
     });
-
-    return res.status(status.OK).json(result);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/patient/settings/quest
- *
- * Adds a Quest monitoring subscription for a select list of patient IDs.
- *
- * @param req.query.cxId The customer ID.
- * @param req.body The patient settings to apply. Optional, defaults to empty object.
- * @returns 200 with the results of the operation.
- */
-router.post(
-  "/quest",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const { notifications, backfill, patientIds } = parseQuestPatientRequest(req.body);
-
-    const result = await addQuestSubscriptionToPatients({
-      cxId,
-      patientIds,
-      backfill,
-      notifications,
-    });
-
-    return res.status(status.OK).json(result);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * DELETE /internal/patient/settings/quest
- *
- * Removes a Quest monitoring subscription for a select list of patient IDs.
- *
- * @param req.query.cxId The customer ID.
- * @param req.query.facilityId The facility ID. Optional.
- * @param req.body The patient settings to apply. Optional, defaults to empty object.
- * @returns 200 with the results of the operation.
- */
-router.delete(
-  "/quest",
-  requestLogger,
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const { notifications, backfill, patientIds } = parseQuestPatientRequest(req.body);
-
-    const result = await removeQuestSubscriptionFromPatients({
-      cxId,
-      patientIds,
-      backfill,
-      notifications,
-    });
-
-    return res.status(status.OK).json(result);
   })
 );
 

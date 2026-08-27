@@ -21,7 +21,7 @@ export async function listPatientRecords({
   const key = createFolderNamePatientRecords(cxId, jobId);
   try {
     const s3Utils = getS3UtilsInstance();
-    const files = await s3Utils.listObjects(bucketName, key);
+    const files = await s3Utils.listObjectsV3(bucketName, key);
     return files.flatMap(file => file.Key ?? []);
   } catch (error) {
     const msg = `Failure while listing patient records @ PatientImport`;

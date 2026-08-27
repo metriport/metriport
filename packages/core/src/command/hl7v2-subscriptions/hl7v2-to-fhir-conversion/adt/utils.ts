@@ -1,8 +1,10 @@
 import { Hl7Field, Hl7Message } from "@medplum/core";
 import { Coding, Encounter } from "@medplum/fhirtypes";
+import { BAMBOO_HIE_NAME, KONZA_HIE_NAME } from "@metriport/shared";
 import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { buildPeriod } from "../../../../external/fhir/shared/datetime";
 import { uuidv7 } from "../../../../util/uuid-v7";
+import { getMessageUniqueIdentifier } from "../msh";
 import {
   getOptionalValueFromField,
   getOptionalValueFromMessage,
@@ -10,7 +12,6 @@ import {
   getSegmentByNameOrFail,
   mapHl7SystemNameToSystemUrl,
 } from "../shared";
-import { getMessageUniqueIdentifier } from "../msh";
 
 const NUMBER_OF_DATA_POINTS_PER_CONDITION = 3;
 type CodingIndex = 0 | 1;
@@ -40,8 +41,20 @@ export function getPatientClassCode(adt: Hl7Message): string | undefined {
   return getOptionalValueFromMessage(adt, "PV1", 2, 1);
 }
 
+/**
+ * Gets the discharge disposition from PV1.36.
+ *
+ * @see {@link https://hl7-definition.caristix.com/v2/HL7v2.5.1/Fields/PV1.36}
+ */
+export function getDischargeDisposition(adt: Hl7Message): string | undefined {
+  return getOptionalValueFromMessage(adt, "PV1", 36, 1);
+}
+
 // Note this is a temporary hack to fix Konza adts. A proper solution with a strategy pattern is planned in the near future.
 export function getFacilityName(adt: Hl7Message, hieName: string): string | undefined {
+  const facilityNameFromZfaSegment = getLocationNameFromCustomZfaSegment(adt, hieName);
+  if (facilityNameFromZfaSegment) return facilityNameFromZfaSegment;
+
   const evn = getSegmentByNameOrFail(adt, "EVN");
   const eventFacilityNamespace = getOptionalValueFromSegment(evn, 7, 1);
   const eventFacilityUniversalId = getOptionalValueFromSegment(evn, 7, 2);
@@ -49,14 +62,15 @@ export function getFacilityName(adt: Hl7Message, hieName: string): string | unde
     return [eventFacilityNamespace, eventFacilityUniversalId].filter(Boolean).join(" - ");
   }
 
-  const pv1Segment = adt.getSegment("PV1");
-  if (!pv1Segment) return undefined;
-
   const servicingFacilityName = getServicingFacilityName(adt, hieName);
   if (servicingFacilityName) return servicingFacilityName;
 
+  const pv1Segment = adt.getSegment("PV1");
+  if (!pv1Segment) return undefined;
   const assignedPatientLocationFacility = getOptionalValueFromSegment(pv1Segment, 3, 4);
-  return assignedPatientLocationFacility ?? undefined;
+  if (assignedPatientLocationFacility) return assignedPatientLocationFacility;
+
+  return undefined;
 }
 
 const KONZA_SERVICING_FACILITY_NAME_INDEX = 2; // HL7V2 component (1 indexed)
@@ -66,10 +80,22 @@ function getServicingFacilityName(adt: Hl7Message, hieName: string): string | un
   const pv1Segment = adt.getSegment("PV1");
   if (!pv1Segment) return undefined;
 
-  if (hieName === "Konza") {
+  if (hieName === KONZA_HIE_NAME) {
     return getOptionalValueFromSegment(pv1Segment, 39, KONZA_SERVICING_FACILITY_NAME_INDEX);
   }
   return getOptionalValueFromSegment(pv1Segment, 39, DEFAULT_SERVICING_FACILITY_NAME_INDEX);
+}
+
+const ZFA_LOCATION_NAME_INDEX = 2; // HL7V2 field (1 indexed)
+function getLocationNameFromCustomZfaSegment(adt: Hl7Message, hieName: string): string | undefined {
+  if (hieName !== BAMBOO_HIE_NAME) return undefined;
+
+  const zfaSegment = adt.getSegment("ZFA");
+  if (!zfaSegment) return undefined;
+
+  const locationName = getOptionalValueFromSegment(zfaSegment, ZFA_LOCATION_NAME_INDEX, 1);
+  if (!locationName) return undefined;
+  return locationName;
 }
 
 export function getAttendingDoctorNameDetails(adt: Hl7Message): HumanNameDetails | undefined {
@@ -124,17 +150,21 @@ export function getPotentialIdentifiers(adt: Hl7Message, hieName: string) {
   };
 }
 
+/**
+ * ⚠️ UUID key must always include all of the potential identifiers used downstream in deduplication.
+ * In this case, we are using the admit date to deduplicate encounters so we need to include that in the UUID key.
+ */
 export function createEncounterId(adt: Hl7Message, patientId: string, hieName: string) {
   const { visitNumber, accountNumber, mrn, admitDate, facilityName, messageId } =
     getPotentialIdentifiers(adt, hieName);
 
-  if (visitNumber) return createUuidFromText(`${visitNumber}-${patientId}`);
-  if (accountNumber) return createUuidFromText(`${accountNumber}-${patientId}`);
+  if (visitNumber) return createUuidFromText(`${visitNumber}-${patientId}-${admitDate}`);
+  if (accountNumber) return createUuidFromText(`${accountNumber}-${patientId}-${admitDate}`);
   if (mrn && admitDate) {
     return createUuidFromText(`${mrn}-${admitDate}`);
   }
   if (facilityName && messageId) {
-    return createUuidFromText(`${facilityName}-${messageId}`);
+    return createUuidFromText(`${facilityName}-${messageId}-${admitDate}`);
   }
 
   return uuidv7();

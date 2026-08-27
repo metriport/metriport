@@ -143,18 +143,33 @@ export async function findFirstPatientMappingForSource({
   return mappings?.dataValues;
 }
 
+export async function findFirstPatientMappingForSourceOrFail({
+  patientId,
+  source,
+}: Omit<
+  PatientMappingParams,
+  "cxId" | "externalId" | "secondaryMappings"
+>): Promise<PatientMapping> {
+  const mapping = await findFirstPatientMappingForSource({ patientId, source });
+  if (!mapping) {
+    throw new NotFoundError("PatientMapping not found for source", undefined, {
+      patientId,
+      source,
+    });
+  }
+  return mapping;
+}
+
 export async function findPatientWithExternalId({
   externalId,
   source,
 }: Omit<PatientMappingParams, "cxId" | "patientId" | "secondaryMappings">): Promise<
   PatientMapping | undefined
 > {
-  const mappings = await PatientMappingModel.findOne({
+  const mapping = await PatientMappingModel.findOne({
     where: { externalId, source },
-    order: [["createdAt", "ASC"]],
-    limit: 1,
   });
-  return mappings?.dataValues;
+  return mapping?.dataValues;
 }
 
 async function getPatientMappingModelById({
@@ -214,7 +229,7 @@ export async function setSecondaryMappingsOnPatientMappingById({
     { secondaryMappings: validatedSecondaryMappings },
     { where: { cxId, patientId, id } }
   );
-  if (affectedCount === 0) {
+  if (affectedCount < 1) {
     throw new MetriportError("Failed to update PatientMapping - no rows affected", undefined, {
       cxId,
       patientId,

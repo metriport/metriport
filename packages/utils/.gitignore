@@ -137,3 +137,7 @@ runs
 !.env.test
 
 src/cda-converter/test-files
+src/analytics-platform/care-gap/validation
+
+delay-time*.txt
+should-stop-script.txt

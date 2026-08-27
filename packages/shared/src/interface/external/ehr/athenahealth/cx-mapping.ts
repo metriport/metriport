@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { writeBackFiltersSchema } from "../shared";
+import { documentQueryWebhookFiltersSchema, writeBackFiltersSchema } from "../shared";
 
 export const athenaSecondaryMappingsSchema = z
   .object({
@@ -10,5 +10,6 @@ export const athenaSecondaryMappingsSchema = z
     contributionEncounterAppointmentTypesBlacklist: z.string().array().optional(),
     contributionEncounterSummariesEnabled: z.boolean().optional(),
   })
-  .merge(writeBackFiltersSchema);
+  .merge(writeBackFiltersSchema)
+  .merge(documentQueryWebhookFiltersSchema);
 export type AthenaSecondaryMappings = z.infer<typeof athenaSecondaryMappingsSchema>;

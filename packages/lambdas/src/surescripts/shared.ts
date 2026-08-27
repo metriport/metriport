@@ -1,16 +1,23 @@
-import { Config } from "@metriport/core/util/config";
-import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
-import { BadRequestError } from "@metriport/shared";
 import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
-import { SurescriptsReplica } from "@metriport/core/external/surescripts/replica";
+import { Config } from "@metriport/core/util/config";
+import { BadRequestError } from "@metriport/shared";
 
-export async function makeSurescriptsClient(): Promise<SurescriptsSftpClient> {
-  // Feature flags are required by the client to validate requesters
-  FeatureFlags.init(Config.getAWSRegion(), Config.getFeatureFlagsTableName());
-
+export async function buildSurescriptsClient({
+  surescriptsSftpPublicKeyName,
+  surescriptsSftpPrivateKeyName,
+  surescriptsSftpSenderPasswordName,
+}: {
+  surescriptsSftpPublicKeyName: string;
+  surescriptsSftpPrivateKeyName: string;
+  surescriptsSftpSenderPasswordName: string;
+}): Promise<SurescriptsSftpClient> {
   const { surescriptsPublicKey, surescriptsPrivateKey, surescriptsSenderPassword } =
-    await getSurescriptSecrets();
+    await getSurescriptSecrets({
+      surescriptsSftpPublicKeyName,
+      surescriptsSftpPrivateKeyName,
+      surescriptsSftpSenderPasswordName,
+    });
   return new SurescriptsSftpClient({
     publicKey: surescriptsPublicKey,
     privateKey: surescriptsPrivateKey,
@@ -19,11 +26,15 @@ export async function makeSurescriptsClient(): Promise<SurescriptsSftpClient> {
   });
 }
 
-export function makeSurescriptsReplica(): SurescriptsReplica {
-  return new SurescriptsReplica();
-}
-
-export async function getSurescriptSecrets(): Promise<{
+export async function getSurescriptSecrets({
+  surescriptsSftpPublicKeyName,
+  surescriptsSftpPrivateKeyName,
+  surescriptsSftpSenderPasswordName,
+}: {
+  surescriptsSftpPublicKeyName: string;
+  surescriptsSftpPrivateKeyName: string;
+  surescriptsSftpSenderPasswordName: string;
+}): Promise<{
   surescriptsPublicKey: string;
   surescriptsPrivateKey: string;
   surescriptsSenderPassword: string;
@@ -31,9 +42,9 @@ export async function getSurescriptSecrets(): Promise<{
   const region = Config.getAWSRegion();
   const [surescriptsPublicKey, surescriptsPrivateKey, surescriptsSenderPassword] =
     await Promise.all([
-      getSecretValue("SurescriptsPublicKey", region),
-      getSecretValue("SurescriptsPrivateKey", region),
-      getSecretValue("SurescriptsSenderPassword", region),
+      getSecretValue(surescriptsSftpPublicKeyName, region),
+      getSecretValue(surescriptsSftpPrivateKeyName, region),
+      getSecretValue(surescriptsSftpSenderPasswordName, region),
     ]);
   if (!surescriptsPublicKey) throw new BadRequestError("Missing surescripts public key");
   if (!surescriptsPrivateKey) throw new BadRequestError("Missing surescripts private key");

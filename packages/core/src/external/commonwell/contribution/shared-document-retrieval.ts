@@ -1,7 +1,10 @@
+import { BadRequestError } from "@metriport/shared";
 import { S3Utils } from "../../../external/aws/s3";
+import { getFilePathFromDocumentId } from "../../../shareback/file";
+import { docContributionFileParam } from "../../commonwell-v1/document/document-contribution";
 
 export interface DocumentRetrievalParams {
-  fileName: string;
+  documentIdOrFileNameOrFilePath: string;
   s3Utils: S3Utils;
   bucketName: string;
 }
@@ -9,17 +12,19 @@ export interface DocumentRetrievalParams {
 export async function retrieveDocumentForCommonWellContribution(
   params: DocumentRetrievalParams
 ): Promise<string> {
-  const { fileName, s3Utils, bucketName } = params;
+  const { documentIdOrFileNameOrFilePath, s3Utils, bucketName } = params;
 
-  if (fileName.trim().length <= 0) {
-    throw new Error("Missing fileName parameter");
+  const withoutLeadingSlash = documentIdOrFileNameOrFilePath.startsWith("/")
+    ? documentIdOrFileNameOrFilePath.slice(1)
+    : documentIdOrFileNameOrFilePath;
+  if (!withoutLeadingSlash || withoutLeadingSlash.trim().length < 1) {
+    throw new BadRequestError(`Invalid ${docContributionFileParam} parameter`, undefined, {
+      documentIdOrFileNameOrFilePath,
+    });
   }
 
-  const key = fileName.startsWith("/") ? fileName.slice(1) : fileName;
-  if (!key || key.trim().length <= 0) {
-    throw new Error("Invalid fileName parameter");
-  }
+  const fileS3Key = await getFilePathFromDocumentId(withoutLeadingSlash);
 
-  const docString = await s3Utils.getFileContentsAsString(bucketName, key);
+  const docString = await s3Utils.getFileContentsAsString(bucketName, fileS3Key);
   return docString;
 }

@@ -1,6 +1,6 @@
 {
   "name": "@metriport/shared",
-  "version": "0.26.11",
+  "version": "0.32.1",
   "description": "Common code shared across packages - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -21,7 +21,10 @@
     "./api": "./dist/api/index.js",
     "./common/*": "./dist/common/*.js",
     "./domain": "./dist/domain/index.js",
+    "./domain/network-query": "./dist/domain/network-query/index.js",
     "./domain/*": "./dist/domain/*.js",
+    "./external": "./dist/external/index.js",
+    "./external/*": "./dist/external/*.js",
     "./interface/*": "./dist/interface/*.js",
     "./medical": "./dist/medical/index.js",
     "./medical/*": "./dist/medical/*.js",
@@ -45,8 +48,17 @@
       "domain": [
         "dist/domain/index.d.ts"
       ],
+      "domain/network-query": [
+        "dist/domain/network-query/index.d.ts"
+      ],
       "domain/*": [
         "dist/domain/*"
+      ],
+      "external": [
+        "dist/external/index.d.ts"
+      ],
+      "external/*": [
+        "dist/external/*"
       ],
       "interface": [
         "dist/interface/index.d.ts"

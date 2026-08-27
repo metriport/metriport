@@ -1,4 +1,4 @@
-import { CommonWellAPI, CommonwellError } from "@metriport/commonwell-sdk";
+import { CommonWellAPI } from "@metriport/commonwell-sdk";
 import {
   emptyFunction,
   errorToString,
@@ -355,7 +355,7 @@ export class DocumentDownloaderLocalV2 extends DocumentDownloader {
         code,
         status,
       };
-      if (error instanceof CommonwellError && error.cause?.response?.status === 404) {
+      if (error instanceof NotFoundError) {
         const msg = "CW - Document not found";
         const { log } = out("downloadDocumentFromCW.v2");
         log(`${msg} - ${JSON.stringify(additionalInfo)}`);

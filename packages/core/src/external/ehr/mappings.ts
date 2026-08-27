@@ -7,9 +7,13 @@ import {
   athenaPatientMappingSecondaryMappingsSchema,
 } from "@metriport/shared/interface/external/ehr/athenahealth/patient-mapping";
 import {
-  CanavsSecondaryMappings,
+  CanvasSecondaryMappings,
   canvasSecondaryMappingsSchema,
 } from "@metriport/shared/interface/external/ehr/canvas/cx-mapping";
+import {
+  EClinicalWorksSecondaryMappings,
+  eclinicalworksSecondaryMappingsSchema,
+} from "@metriport/shared/interface/external/ehr/eclinicalworks/cx-mapping";
 import {
   ElationSecondaryMappings,
   elationSecondaryMappingsSchema,
@@ -19,10 +23,26 @@ import {
   healthieSecondaryMappingsSchema,
 } from "@metriport/shared/interface/external/ehr/healthie/cx-mapping";
 import {
+  PracticeFusionSecondaryMappings,
+  practicefusionSecondaryMappingsSchema,
+} from "@metriport/shared/interface/external/ehr/practicefusion/cx-mapping";
+import {
+  SalesforceSecondaryMappings,
+  salesforceSecondaryMappingsSchema,
+} from "@metriport/shared/interface/external/ehr/salesforce/cx-mapping";
+import {
+  EmbedSecondaryMappings,
+  embedSecondaryMappingsSchema,
+} from "@metriport/shared/interface/external/ehr/embed/cx-mapping";
+import {
   PatientMappingSecondaryMappings,
   patientMappingSecondaryMappingsSchema,
 } from "@metriport/shared/interface/external/ehr/shared";
-import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import {
+  EhrSource,
+  EhrSources,
+  EmbedSources,
+} from "@metriport/shared/interface/external/ehr/source";
 import { z } from "zod";
 
 export const ehrSourceWithSecondaryMappings = [
@@ -30,6 +50,9 @@ export const ehrSourceWithSecondaryMappings = [
   EhrSources.elation,
   EhrSources.canvas,
   EhrSources.healthie,
+  EhrSources.eclinicalworks,
+  EhrSources.practicefusion,
+  EhrSources.salesforce,
 ] as const;
 export type EhrSourceWithSecondaryMappings = (typeof ehrSourceWithSecondaryMappings)[number];
 export function isEhrSourceWithSecondaryMappings(
@@ -40,9 +63,15 @@ export function isEhrSourceWithSecondaryMappings(
 
 export type EhrCxMappingSecondaryMappings =
   | AthenaSecondaryMappings
-  | CanavsSecondaryMappings
+  | CanvasSecondaryMappings
   | ElationSecondaryMappings
-  | HealthieSecondaryMappings;
+  | HealthieSecondaryMappings
+  | EClinicalWorksSecondaryMappings
+  | PracticeFusionSecondaryMappings
+  | SalesforceSecondaryMappings;
+
+export type EmbedCxMappingSecondaryMappings = EmbedSecondaryMappings;
+export const embedCxMappingSecondaryMappingsSchema = embedSecondaryMappingsSchema;
 
 export const ehrCxMappingSecondaryMappingsSchemaMap: {
   [key in EhrSourceWithSecondaryMappings]: z.Schema<EhrCxMappingSecondaryMappings>;
@@ -51,14 +80,21 @@ export const ehrCxMappingSecondaryMappingsSchemaMap: {
   [EhrSources.elation]: elationSecondaryMappingsSchema,
   [EhrSources.canvas]: canvasSecondaryMappingsSchema,
   [EhrSources.healthie]: healthieSecondaryMappingsSchema,
+  [EhrSources.eclinicalworks]: eclinicalworksSecondaryMappingsSchema,
+  [EhrSources.practicefusion]: practicefusionSecondaryMappingsSchema,
+  [EhrSources.salesforce]: salesforceSecondaryMappingsSchema,
 };
 
 export const ehrCxMappingSecondaryMappingsSchemaMapGeneral: {
   [key in EhrSource]: z.Schema<EhrCxMappingSecondaryMappings> | undefined;
 } = {
   ...ehrCxMappingSecondaryMappingsSchemaMap,
-  [EhrSources.eclinicalworks]: undefined,
-  [EhrSources.salesforce]: undefined,
+};
+
+export const embedCxMappingSecondaryMappingsSchemaMap: {
+  [key in EmbedSources]: z.Schema<EmbedSecondaryMappings>;
+} = {
+  [EmbedSources.embed]: embedSecondaryMappingsSchema,
 };
 
 export type EhrPatientMappingSecondaryMappings =
@@ -74,4 +110,11 @@ export const ehrPatientMappingSecondaryMappingsSchemaMap: {
   [EhrSources.healthie]: patientMappingSecondaryMappingsSchema,
   [EhrSources.eclinicalworks]: patientMappingSecondaryMappingsSchema,
   [EhrSources.salesforce]: patientMappingSecondaryMappingsSchema,
+  [EhrSources.practicefusion]: patientMappingSecondaryMappingsSchema,
+};
+
+export const embedPatientMappingSecondaryMappingsSchemaMap: {
+  [key in EmbedSources]: z.Schema<EhrPatientMappingSecondaryMappings>;
+} = {
+  [EmbedSources.embed]: patientMappingSecondaryMappingsSchema,
 };

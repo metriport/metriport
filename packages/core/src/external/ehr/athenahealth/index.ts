@@ -5,6 +5,7 @@ import {
   Condition,
   Encounter as EncounterFhir,
   Extension,
+  FamilyMemberHistory,
   Immunization,
   Observation,
   Procedure,
@@ -56,6 +57,9 @@ import {
   createdClinicalDocumentSchema,
   CreatedClinicalDocumentSuccess,
   createdClinicalDocumentSuccessSchema,
+  createdFamilyHistorySchema,
+  CreatedFamilyHistorySuccess,
+  createdFamilyHistorySuccessSchema,
   CreatedLabResult,
   createdLabResultSchema,
   CreatedLabResultSuccess,
@@ -92,17 +96,23 @@ import {
   EncounterSummary,
   encounterSummarySchema,
   EventType,
+  FamilyHistoryAction,
+  FamilyHistoryResponse,
+  familyHistoryResponseSchema,
   FeedType,
   MedicationCreateParams,
   MedicationReference,
   MedicationReferences,
   medicationReferencesSchema,
   PatientCustomField,
+  UpdateFamilyHistoryRelative,
+  UpdateFamilyHistoryRequest,
   VitalsCreateParams,
 } from "@metriport/shared/interface/external/ehr/athenahealth/index";
 import {
   EhrFhirResourceBundle,
   ehrFhirResourceBundleSchema,
+  EhrStrictFhirResource,
   EhrStrictFhirResourceBundle,
   EhrStrictFhirResourceBundleEntry,
 } from "@metriport/shared/interface/external/ehr/fhir-resource";
@@ -113,6 +123,7 @@ import {
   patientSearchSchema,
 } from "@metriport/shared/interface/external/ehr/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
+import { FAMILY_MEMBER_HISTORY_ROLE_CODE_URL, SNOMED_URL } from "@metriport/shared/medical";
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -124,6 +135,7 @@ import { capture } from "../../../util/notifications";
 import { createOrReplaceDocument } from "../document/command/create-or-replace-document";
 import { fetchDocument } from "../document/command/fetch-document";
 import { DocumentType } from "../document/document-shared";
+import { familyMemberHistoryRelationshipMap } from "../family-member-history-relationship-map";
 import {
   ApiConfig,
   convertEhrBundleToValidEhrStrictBundle,
@@ -217,6 +229,73 @@ vitalSignCodesMap.set("8302-2", { codeKey: "VITALS.HEIGHT", targetUnits: "cm" })
 vitalSignCodesMap.set("56086-2", { codeKey: "VITALS.WAISTCIRCUMFERENCE", targetUnits: "cm" });
 vitalSignCodesMap.set("39156-5", { codeKey: "VITALS.BMI", targetUnits: "kg/m2" });
 
+const fhirRelationships = familyMemberHistoryRelationshipMap.concept;
+const fhirCodeToAthenaRelationMap: Record<string, string> = {
+  /**
+   * Mother variants: MTH, NMTH, GESTM, MTHFOST, NMTHF, STPMTH, ADOPTM (mother, natural mother, gestational mother, foster mother, stepmother, adoptive mother)
+   */
+  MTH: "Mother",
+  NMTH: "Mother",
+  GESTM: "Mother",
+  MTHFOST: "Mother",
+  NMTHF: "Mother",
+  STPMTH: "Mother",
+  ADOPTM: "Mother",
+  /**
+   * Father variants: FTH, NFTH, FTHFOST, NFTHF, STPFTH, ADOPTF (father, natural father, foster father, stepfather, adoptive father)
+   */
+  FTH: "Father",
+  NFTH: "Father",
+  FTHFOST: "Father",
+  NFTHF: "Father",
+  STPFTH: "Father",
+  ADOPTF: "Father",
+  /**
+   * Brother variants: BRO, NBRO, HBRO, TWINBRO, FTWINBRO, ITWINBRO, STPBRO (brother, natural brother, half-brother, twin brother, stepbrother)
+   */
+  BRO: "Brother",
+  NBRO: "Brother",
+  HBRO: "Brother",
+  TWINBRO: "Brother",
+  FTWINBRO: "Brother",
+  ITWINBRO: "Brother",
+  STPBRO: "Brother",
+  /**
+   * Sister variants: SIS, NSIS, HSIS, TWINSIS, FTWINSIS, ITWINSIS, STPSIS (sister, natural sister, half-sister, twin sister, stepsister)
+   */
+  SIS: "Sister",
+  NSIS: "Sister",
+  HSIS: "Sister",
+  TWINSIS: "Sister",
+  FTWINSIS: "Sister",
+  ITWINSIS: "Sister",
+  STPSIS: "Sister",
+  /**
+   * Son variants: SON, SONC, SONADOPT, SONFOST, STPSON (natural son, son, adopted son, foster son, stepson)
+   */
+  SON: "Son",
+  SONC: "Son",
+  SONADOPT: "Son",
+  SONFOST: "Son",
+  STPSON: "Son",
+  /**
+   * Daughter variants: DAU, DAUC, DAUADOPT, DAUFOST, STPDAU (natural daughter, daughter, adopted daughter, foster daughter, stepdaughter)
+   */
+  DAU: "Daughter",
+  DAUC: "Daughter",
+  DAUADOPT: "Daughter",
+  DAUFOST: "Daughter",
+  STPDAU: "Daughter",
+  PGRFTH: "Paternal Grandfather",
+  PGRMTH: "Paternal Grandmother",
+  PUNCLE: "Paternal Uncle",
+  PAUNT: "Paternal Aunt",
+  MGRFTH: "Maternal Grandfather",
+  MGRMTH: "Maternal Grandmother",
+  MUNCLE: "Maternal Uncle",
+  MAUNT: "Maternal Aunt",
+};
+
 const medicationRequestIntents = ["proposal", "plan", "order", "option"];
 const coverageCount = 50;
 const validObservationResultStatuses = [
@@ -233,6 +312,7 @@ export const supportedAthenaHealthResources: ResourceType[] = [
   "AllergyIntolerance",
   "Condition",
   "DiagnosticReport",
+  "FamilyMemberHistory", // Not FHIR, but we convert to FHIR
   "Immunization",
   "MedicationRequest",
   "MedicationStatement", // NOT REALLY SUPPORTED
@@ -254,7 +334,7 @@ export const supportedAthenaHealthReferenceResources: ResourceType[] = [
 export const scopes = [
   ...supportedAthenaHealthResources,
   ...supportedAthenaHealthReferenceResources,
-].filter(resource => resource !== "MedicationStatement");
+].filter(resource => resource !== "MedicationStatement" && resource !== "FamilyMemberHistory");
 
 export type SupportedAthenaHealthResource = (typeof supportedAthenaHealthResources)[number];
 export function isSupportedAthenaHealthResource(
@@ -1334,6 +1414,169 @@ class AthenaHealthApi {
     return allCreatedVitals;
   }
 
+  async createFamilyHistory({
+    cxId,
+    patientId,
+    departmentId,
+    familyHistory,
+  }: {
+    cxId: string;
+    patientId: string;
+    departmentId: string;
+    familyHistory: FamilyMemberHistory;
+  }): Promise<CreatedFamilyHistorySuccess> {
+    const { debug } = out(
+      `AthenaHealth createFamilyHistory - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId} departmentId ${departmentId}`
+    );
+    const chartFamilyHistoryUrl = `/chart/${this.stripPatientId(patientId)}/familyhistory`;
+    const familyHistoryId = familyHistory.id ?? "unknown";
+
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      departmentId,
+      familyHistoryId,
+    };
+
+    const existingRelations = await this.getFamilyHistory({ cxId, patientId, departmentId });
+    const action = this.determineFamilyHistoryAction(
+      existingRelations,
+      familyHistory,
+      departmentId,
+      additionalInfo
+    );
+
+    if (action.type === "skip") {
+      return createdFamilyHistorySuccessSchema.parse({ success: true, errormessage: undefined });
+    }
+
+    const createdFamilyHistory = await this.makeRequest({
+      cxId,
+      patientId,
+      s3Path: this.createWriteBackPath("familyhistory", familyHistoryId),
+      method: "PUT",
+      data: action.athenaFamilyHistory,
+      url: chartFamilyHistoryUrl,
+      schema: createdFamilyHistorySchema,
+      additionalInfo,
+      debug,
+    });
+
+    if (!createdFamilyHistory.success) {
+      throw new MetriportError("Family history creation failed", undefined, {
+        ...additionalInfo,
+        error: createdFamilyHistory.errormessage,
+      });
+    }
+
+    return createdFamilyHistorySuccessSchema.parse(createdFamilyHistory);
+  }
+
+  /**
+   * Gets the next available relationkeyid by finding the max existing one and adding 1
+   */
+  private getNextRelationKeyId(existingFamilyHistory: FamilyMemberHistory[]): number {
+    if (existingFamilyHistory.length < 1) return 1;
+    return (
+      Math.max(...existingFamilyHistory.map(fh => parseInt(fh.id?.split("-").pop() ?? "0", 10))) + 1
+    );
+  }
+
+  private determineFamilyHistoryAction(
+    existingFamilyHistory: FamilyMemberHistory[],
+    newFamilyHistory: FamilyMemberHistory,
+    departmentId: string,
+    additionalInfo: Record<string, string | undefined>
+  ): FamilyHistoryAction {
+    const athenaFamilyHistory = this.convertFamilyHistoryToAthenaShape(
+      newFamilyHistory,
+      departmentId,
+      additionalInfo
+    );
+    const [relative] = athenaFamilyHistory.relatives;
+
+    if (!relative || relative.problems.length < 1) return { type: "skip" };
+    if (existingFamilyHistory.length < 1)
+      return {
+        type: "create",
+        athenaFamilyHistory: {
+          ...athenaFamilyHistory,
+          relatives: [{ ...relative, relationkeyid: 1 }],
+        },
+      };
+
+    const matchingRelative = existingFamilyHistory.find(
+      m => m.relationship?.text?.toLowerCase() === relative.relation.toLowerCase()
+    );
+
+    if (!matchingRelative) {
+      return {
+        type: "create",
+        athenaFamilyHistory: {
+          ...athenaFamilyHistory,
+          relatives: [
+            { ...relative, relationkeyid: this.getNextRelationKeyId(existingFamilyHistory) },
+          ],
+        },
+      };
+    }
+
+    // else update the relative with only new problems to avoid dups
+    const existingSnomedCodes = new Set(
+      (matchingRelative.condition ?? []).map(getConditionSnomedCode).filter(Boolean)
+    );
+
+    const newProblemsOnly = relative.problems.filter(
+      p => !!p.snomedcode && !existingSnomedCodes.has(p.snomedcode)
+    );
+    if (newProblemsOnly.length === 0) return { type: "skip" };
+
+    // we append relationkeyid to the relative id in getFamilyHistory conversion step
+    const relationkeyid = parseInt(matchingRelative.id?.split("-").pop() ?? "0", 10);
+    return {
+      type: "update",
+      athenaFamilyHistory: {
+        ...athenaFamilyHistory,
+        relatives: [{ ...relative, relationkeyid, problems: newProblemsOnly }],
+      },
+    };
+  }
+
+  async getFamilyHistory({
+    cxId,
+    patientId,
+    departmentId,
+  }: {
+    cxId: string;
+    patientId: string;
+    departmentId: string;
+  }): Promise<FamilyMemberHistory[]> {
+    const { debug } = out(
+      `AthenaHealth getFamilyHistory - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const familyHistoryUrl = `/chart/${this.stripPatientId(
+      patientId
+    )}/familyhistory?departmentid=${this.stripDepartmentId(departmentId)}`;
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      departmentId,
+    };
+    const athenaFamilyHistory = await this.makeRequest<FamilyHistoryResponse>({
+      cxId,
+      patientId,
+      s3Path: this.createWriteBackPath("familyhistory", "get"),
+      method: "GET",
+      url: familyHistoryUrl,
+      schema: familyHistoryResponseSchema,
+      additionalInfo,
+      debug,
+    });
+    return this.convertFamilyHistoryResponseToFhir(athenaFamilyHistory, patientId);
+  }
+
   async searchForMedication({
     cxId,
     patientId,
@@ -1559,6 +1802,7 @@ class AthenaHealthApi {
     metriportPatientId,
     athenaPatientId,
     resourceType,
+    departmentId,
     attachAppointmentType = false,
     fetchEncounterSummary = false,
     useCachedBundle = true,
@@ -1567,6 +1811,7 @@ class AthenaHealthApi {
     metriportPatientId: string;
     athenaPatientId: string;
     resourceType: string;
+    departmentId?: string;
     attachAppointmentType?: boolean;
     fetchEncounterSummary?: boolean;
     useCachedBundle?: boolean;
@@ -1588,6 +1833,25 @@ class AthenaHealthApi {
         ehrPatientId: athenaPatientId,
         resourceType,
         fetchResourcesFromEhr: () => Promise.resolve([]),
+        useCachedBundle,
+      });
+    }
+    // FamilyMemberHistory uses proprietary API, not FHIR
+    if (resourceType === "FamilyMemberHistory") {
+      return await fetchEhrBundleUsingCache({
+        ehr: EhrSources.athena,
+        cxId,
+        metriportPatientId,
+        ehrPatientId: athenaPatientId,
+        resourceType,
+        fetchResourcesFromEhr: async () => {
+          if (!departmentId) return [];
+          return (await this.getFamilyHistory({
+            cxId,
+            patientId: athenaPatientId,
+            departmentId,
+          })) as EhrStrictFhirResource[];
+        },
         useCachedBundle,
       });
     }
@@ -1676,6 +1940,7 @@ class AthenaHealthApi {
     athenaPatientId,
     resourceType,
     resourceId,
+    departmentId,
     attachAppointmentType = false,
     fetchEncounterSummary = false,
     useCachedBundle = true,
@@ -1685,6 +1950,7 @@ class AthenaHealthApi {
     athenaPatientId: string;
     resourceType: string;
     resourceId: string;
+    departmentId?: string;
     attachAppointmentType?: boolean;
     fetchEncounterSummary?: boolean;
     useCachedBundle?: boolean;
@@ -1712,6 +1978,27 @@ class AthenaHealthApi {
         resourceType,
         resourceId,
         fetchResourcesFromEhr: () => Promise.resolve([]),
+        useCachedBundle,
+      });
+    }
+
+    // FamilyMemberHistory uses proprietary API, not FHIR
+    if (resourceType === "FamilyMemberHistory") {
+      return await fetchEhrBundleUsingCache({
+        ehr: EhrSources.athena,
+        cxId,
+        metriportPatientId,
+        ehrPatientId: athenaPatientId,
+        resourceType,
+        resourceId,
+        fetchResourcesFromEhr: async () => {
+          if (!departmentId) return [];
+          return (await this.getFamilyHistory({
+            cxId,
+            patientId: athenaPatientId,
+            departmentId,
+          })) as EhrStrictFhirResource[];
+        },
         useCachedBundle,
       });
     }
@@ -1966,11 +2253,7 @@ class AthenaHealthApi {
       return bookedAppointments;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      if (
-        error.message?.includes(
-          "Changed messages require setup (subscription) that has not been done."
-        )
-      ) {
+      if (error.cause?.status === 403) {
         // 403 indicates no existing subscription so we create one
         log(`Subscribing to appointment event for cxId ${cxId}`);
         await this.subscribeToEvent({
@@ -2227,6 +2510,54 @@ class AthenaHealthApi {
     ];
   }
 
+  private convertFamilyHistoryToAthenaShape(
+    familyMemberHistory: FamilyMemberHistory,
+    departmentId: string,
+    additionalInfo: Record<string, string | undefined>
+  ): Pick<UpdateFamilyHistoryRequest, "departmentid"> & {
+    relatives: Pick<UpdateFamilyHistoryRelative, "relation" | "problems">[];
+  } {
+    if (!familyMemberHistory.condition || familyMemberHistory.condition.length < 1) {
+      throw new BadRequestError(
+        "No Family Member History problems found @ AthenaHealth",
+        undefined,
+        additionalInfo
+      );
+    }
+
+    const { relationship, deceasedAge, condition } = familyMemberHistory;
+
+    const problemsWithSnomedCode = condition.flatMap(c => {
+      const snomedCode = getConditionSnomedCode(c);
+      if (!snomedCode) return [];
+      const onsetAge = c.onsetAge?.value;
+      const note = c.note?.map(n => n.text).join("; ");
+      const diedofage = c.contributedToDeath ? deceasedAge?.value : undefined;
+      return {
+        snomedcode: snomedCode,
+        ...(onsetAge !== undefined ? { onsetage: onsetAge } : {}),
+        ...(note !== undefined ? { note } : {}),
+        ...(diedofage !== undefined ? { diedofage } : {}),
+      };
+    });
+
+    if (problemsWithSnomedCode.length < 1) {
+      throw new BadRequestError(
+        "No SNOMED coding found for Family Member History problems @ AthenaHealth",
+        undefined,
+        additionalInfo
+      );
+    }
+
+    const relationText =
+      fhirCodeToAthenaRelationMap[relationship?.coding?.[0]?.code ?? ""] ?? "Unspecified Relation";
+
+    return {
+      departmentid: this.stripDepartmentId(departmentId),
+      relatives: [{ relation: relationText, problems: problemsWithSnomedCode }],
+    };
+  }
+
   private getSearchvaluesFromCoding(
     codingDisplay: string,
     additionalInfo: Record<string, string | undefined>
@@ -2282,6 +2613,56 @@ class AthenaHealthApi {
 
   private createReferencePath(referenceType: string, referenceId?: string): string {
     return `reference/${referenceType}/${referenceId}`;
+  }
+
+  // CRITICAL: does not affect xor!?
+  // the only weird piece is metriport resource come with full set of relationships
+  // while athena has limited set of relationships in fhirCodeToAthenaRelationMap.
+  // Which means on XOR we will always have EHR only bundles that we will try to contribute to networks.
+  // Contirbute to networks is smart enough to dedup...
+  private convertFamilyHistoryResponseToFhir(
+    athenaFamilyHistory: FamilyHistoryResponse,
+    athenaPatientId: string
+  ): FamilyMemberHistory[] {
+    if (!athenaFamilyHistory.relatives || athenaFamilyHistory.relatives.length === 0) {
+      return [];
+    }
+    return athenaFamilyHistory.relatives.flatMap(relative => {
+      if (!relative.relation) return [];
+      if (!relative.relationkeyid) return [];
+      const relationSlug = relative.relation.toLowerCase().replace(/\s+/g, "-");
+      const diedOfAge = relative.problems?.find(p => p.diedofage)?.diedofage;
+      return {
+        id: `athena-${athenaPatientId}-${relationSlug}-${relative.relationkeyid}`,
+        resourceType: "FamilyMemberHistory",
+        status: "completed",
+        patient: { reference: `Patient/${athenaPatientId}` },
+        relationship: {
+          text: relative.relation,
+          coding: [
+            {
+              code:
+                fhirRelationships.find(
+                  r => r.display.toLowerCase() === relative.relation?.toLowerCase()
+                )?.code ?? "OTH",
+              display: relative.relation,
+              system: FAMILY_MEMBER_HISTORY_ROLE_CODE_URL,
+            },
+          ],
+        },
+        ...(diedOfAge !== undefined
+          ? { deceasedBoolean: true, deceasedAge: { value: diedOfAge } }
+          : {}),
+        condition: relative.problems
+          ? relative.problems.map(problem => ({
+              ...(problem.diedofage !== undefined && { contributedToDeath: true }),
+              ...(problem.snomedcode !== undefined && {
+                code: { coding: [{ code: problem.snomedcode?.toString(), system: SNOMED_URL }] },
+              }),
+            }))
+          : [],
+      };
+    });
   }
 }
 

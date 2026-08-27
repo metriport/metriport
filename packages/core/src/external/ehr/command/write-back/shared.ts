@@ -5,6 +5,7 @@ import {
   isAllergyIntolerance,
   isCondition,
   isDiagnosticReport,
+  isFamilyMemberHistory,
   isMedication,
   isMedicationStatement,
   isObservation,
@@ -12,13 +13,14 @@ import {
 } from "../../../fhir/shared";
 import { writeBackAllergy } from "./allergy";
 import { writeBackCondition } from "./condition";
+import { writeBackFamilyHistory } from "./family-history";
 import { EhrGroupedVitals, isEhrGroupedVitals, writeBackGroupedVitals } from "./grouped-vitals";
 import { writeBackLab } from "./lab";
 import { writeBackLabPanel } from "./lab-panel";
 import { writeBackMedicationStatement } from "./medication-statement";
 import { writeBackProcedure } from "./procedure";
 
-export const writeBackEhrSources = [EhrSources.athena, EhrSources.elation];
+export const writeBackEhrSources = [EhrSources.athena, EhrSources.elation, EhrSources.healthie];
 export type WriteBackEhrSource = (typeof writeBackEhrSources)[number];
 export function isEhrSourceWithWriteBack(ehr: EhrSource): ehr is WriteBackEhrSource {
   return writeBackEhrSources.includes(ehr as WriteBackEhrSource);
@@ -31,7 +33,8 @@ export type WriteBackResourceType =
   | "grouped-vitals"
   | "medication-statement"
   | "procedure"
-  | "allergy";
+  | "allergy"
+  | "family-history";
 
 export type WriteBackResourceRequest = {
   ehr: EhrSource;
@@ -206,6 +209,21 @@ export async function writeBackResource({ ...params }: WriteBackResourceRequest)
     return await writeBackAllergy({
       ...params,
       allergyIntolerance: params.primaryResourceOrResources,
+    });
+  } else if (params.writeBackResource === "family-history") {
+    if (!isFamilyMemberHistory(params.primaryResourceOrResources)) {
+      throw new BadRequestError(
+        "FamilyHistory write back requires primary resource to be a family member history",
+        undefined,
+        {
+          ehr: params.ehr,
+          writeBackResource: params.writeBackResource,
+        }
+      );
+    }
+    return await writeBackFamilyHistory({
+      ...params,
+      familyHistory: params.primaryResourceOrResources,
     });
   }
   throw new BadRequestError("Could not find handler to write back resource", undefined, {

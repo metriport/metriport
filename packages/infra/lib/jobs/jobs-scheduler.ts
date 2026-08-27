@@ -12,13 +12,13 @@ export type JobsSchedulerProps = {
   lambdaLayers: LambdaLayers;
   vpc: IVpc;
   apiAddress: string;
-  alarmSnsAction?: SnsAction;
+  alertSnsAction?: SnsAction;
 };
 
 function getSettings(props: JobsSchedulerProps, config: NonNullable<EnvConfig["jobs"]>) {
   return {
     ...props,
-    name: "StartScheduledPatientJobs",
+    name: "StartScheduledPatientJobsV2",
     scheduleExpression: config.startScheduledPatientJobsScheduleExpression, // See: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
     url: `http://${props.apiAddress}${config.startScheduledPatientJobsSchedulerUrl}`,
   };
@@ -28,7 +28,7 @@ export function createJobsScheduler(props: JobsSchedulerProps): Lambda | undefin
   const config = getConfig();
   if (!config.jobs) return undefined;
 
-  const { stack, lambdaLayers, vpc, alarmSnsAction, name, scheduleExpression, url } = getSettings(
+  const { stack, lambdaLayers, vpc, alertSnsAction, name, scheduleExpression, url } = getSettings(
     props,
     config.jobs
   );
@@ -40,7 +40,7 @@ export function createJobsScheduler(props: JobsSchedulerProps): Lambda | undefin
     vpc,
     scheduleExpression,
     url,
-    alarmSnsAction,
+    alertSnsAction,
     envType: config.environmentType,
   });
 

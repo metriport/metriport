@@ -1,16 +1,28 @@
+import {
+  CONDITION_CCSR_CATEGORY_SYSTEM_URL,
+  ICD_10_URL,
+  LOINC_URL,
+  NDC_URL,
+  RXNORM_URL,
+  SNOMED_URL,
+} from "@metriport/shared/medical/fhir/constants";
+
 /**
  * FHIR Coding System URLs and configuration for common coding systems
  */
 
 /**
  * Standard FHIR coding system URLs
+ *
+ * TODO: Add CPT, CVX, and many others.
  */
 export const CODING_SYSTEMS = {
-  LOINC: "http://loinc.org",
-  ICD10: "http://hl7.org/fhir/sid/icd-10-cm",
-  SNOMED: "http://snomed.info/sct",
-  RXNORM: "http://www.nlm.nih.gov/research/umls/rxnorm",
-  NDC: "http://hl7.org/fhir/sid/ndc",
+  LOINC: LOINC_URL,
+  ICD10: ICD_10_URL,
+  SNOMED: SNOMED_URL,
+  RXNORM: RXNORM_URL,
+  NDC: NDC_URL,
+  CCSR: CONDITION_CCSR_CATEGORY_SYSTEM_URL,
 } as const;
 
 /**
@@ -41,6 +53,10 @@ export const CODING_SYSTEM_CONFIG = [
   {
     systemName: "Ndc",
     systemUrl: CODING_SYSTEMS.NDC,
+  },
+  {
+    systemName: "Ccsr",
+    systemUrl: CODING_SYSTEMS.CCSR,
   },
 ] as const;
 

@@ -1,0 +1,55 @@
+---
+title: "Remove Patients from Cohort"
+description: "Bulk remove patients from a cohort."
+api: "DELETE /medical/v1/cohort/{id}/patient"
+---
+
+For more information, see the [guide about Cohorts](/medical-api/handling-data/cohorts)
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the cohort to remove patients from.
+</ParamField>
+
+## Body
+
+You must provide either `patientIds` or `allPatients`, but not both.
+
+<ParamField body="patientIds" type="string[]" optional>
+  Array of patient IDs to remove from the cohort. Mutually exclusive with the `allPatients` property.
+</ParamField>
+
+<ParamField body="allPatients" type="boolean" optional>
+  Property to confirm you want to remove all patients in your metriport 
+  instance from the cohort. Mutually exclusive with the `patientIds` array.
+</ParamField>
+
+## Response
+
+<Snippet file="cohort-with-details-response-with-message.mdx" />
+
+<ResponseExample>
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+// Remove specific patients from cohort
+const result = await metriport.removePatientsFromCohort({
+  cohortId: "00000000-0000-0000-0000-000000000000",
+  patientIds: [
+      "11111111-1111-1111-1111-111111111111",
+      "22222222-2222-2222-2222-222222222222",
+  ],
+});
+
+// Remove all patients from cohort
+const resultAll = await metriport.removePatientsFromCohort({
+  cohortId: "00000000-0000-0000-0000-000000000000",
+  allPatients: true
+});
+```
+</ResponseExample>
+
+<Snippet file="cohort-remove-patients-response-json.mdx" />

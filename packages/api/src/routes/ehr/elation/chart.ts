@@ -28,7 +28,7 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const elationPatientId = getFrom("params").orFail("id", req);
     const elationPracticeId = getFromQueryOrFail("practiceId", req);
-    const payload = req.body; // TODO Parse body https://github.com/metriport/metriport-internal/issues/2170
+    const payload = req.body; // TODO Parse body
     const conditionDetails = await writeConditionToChart({
       cxId,
       elationPatientId,

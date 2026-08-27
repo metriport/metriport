@@ -1,0 +1,59 @@
+---
+title: "Create Cohort"
+description: "Creates a new cohort for organizing and managing groups of patients. 
+Cohort names must be unique within your organization."
+api: "POST /medical/v1/cohort"
+---
+
+For more information, see the [guide about Cohorts](/medical-api/handling-data/cohorts)
+
+## Body
+
+<Snippet file="cohort.mdx" />
+
+## Response
+
+<Snippet file="cohort-response.mdx" />
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const cohort = await metriport.createCohort({
+  name: "High Risk",
+  color: "red",
+  description: "Patients that need frequent and robust monitoring.",
+  settings: {
+    monitoring: {
+      hie: {
+        enabled: true,
+        frequency: "weekly"
+      },
+      adt: {
+        enabled: true
+      },
+      pharmacy: {
+        notifications: true,
+        schedule: {
+          enabled: false,
+          frequency: "monthly"
+        }
+      },
+      laboratory: {
+        notifications: true,
+        schedule: {
+          enabled: false,
+          frequency: "monthly"
+        }
+      },
+    },
+  }
+});
+```
+
+</ResponseExample>
+
+<Snippet file="cohort-response-json.mdx" />

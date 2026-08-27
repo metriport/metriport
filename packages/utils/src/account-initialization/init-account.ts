@@ -95,8 +95,7 @@ type FacilityConfig = {
   cqActive: boolean;
   cwApproved: boolean;
   cwActive: boolean;
-  cqOboOid?: string;
-  cwOboOid?: string;
+  principalOid?: string;
 };
 
 const program = new Command();
@@ -250,10 +249,8 @@ async function createFacilityViaAPI(facilityData: {
   cqActive: boolean;
   cwApproved: boolean;
   cwActive: boolean;
-  cqType: FacilityType;
-  cwType: FacilityType;
-  cqOboOid?: string;
-  cwOboOid?: string;
+  type: FacilityType;
+  principalOid?: string;
 }): Promise<FacilityDTO> {
   const { log } = out(`HTTP Create Facility - ${facilityData.data.name}`);
 
@@ -266,14 +263,12 @@ async function createFacilityViaAPI(facilityData: {
     state: facilityData.data.address.state,
     zip: facilityData.data.address.zip,
     country: facilityData.data.address.country,
-    cqType: facilityData.cqType,
-    cwType: facilityData.cwType,
+    type: facilityData.type,
     cqActive: facilityData.cqActive,
     cwActive: facilityData.cwActive,
     cqApproved: facilityData.cqApproved,
     cwApproved: facilityData.cwApproved,
-    cqOboOid: facilityData.cqOboOid,
-    cwOboOid: facilityData.cwOboOid,
+    principalOid: facilityData.principalOid,
   };
 
   log(`Creating facility via API: ${facilityData.data.name} (NPI: ${facilityData.data.npi})`);
@@ -373,12 +368,10 @@ async function createFacilityForAccount(config: FacilityConfig): Promise<Facilit
     data: facilityData,
     cqApproved: config.cqApproved,
     cqActive: config.cqActive,
-    cqType: config.facilityType,
-    cqOboOid: config.cqOboOid,
+    type: config.facilityType,
+    principalOid: config.principalOid,
     cwApproved: config.cwApproved,
     cwActive: config.cwActive,
-    cwType: config.facilityType,
-    cwOboOid: config.cwOboOid,
   });
 
   log(`Facility created with ID: ${facility.id}, OID: ${facility.oid}`);
@@ -455,8 +448,7 @@ function generateRandomFacilities(count: number, facilityType: FacilityType): Fa
       cwApproved: defaultCwApproved,
       cwActive: defaultCwActive,
       ...(facilityType === FacilityType.initiatorOnly && {
-        cqOboOid: makeOid(),
-        cwOboOid: makeOid(),
+        principalOid: makeOid(),
       }),
     };
 

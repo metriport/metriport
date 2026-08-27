@@ -1,4 +1,9 @@
-import { OrganizationBizType, OrganizationCreate } from "@metriport/core/domain/organization";
+import {
+  OrganizationBizType,
+  OrganizationCreate,
+  validateOrgDelegation,
+} from "@metriport/core/domain/organization";
+import { groupIdentify } from "@metriport/core/external/analytics/posthog";
 import { toFHIR } from "@metriport/core/external/fhir/organization/conversion";
 import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -20,7 +25,13 @@ export async function createOrganization({
   cqActive,
   cwApproved,
   cwActive,
+  ehexApproved,
+  ehexActive,
+  principalOid,
+  delegateOids,
 }: OrganizationCreate): Promise<OrganizationModel> {
+  validateOrgDelegation({ principalOid, delegateOids });
+
   const existingOrg = await getOrganization({ cxId });
   if (existingOrg) throw new BadRequestError(`Organization already exists for customer ${cxId}`);
 
@@ -32,11 +43,22 @@ export async function createOrganization({
     cqActive,
     cwApproved,
     cwActive,
+    ehexApproved,
+    ehexActive,
+    principalOid,
+    delegateOids,
   });
 
   await createTenantIfNotExists(org);
   const fhirOrg = toFHIR(org);
   await upsertOrgToFHIRServer(org.cxId, fhirOrg);
+
+  groupIdentify({
+    groupKey: org.cxId,
+    properties: {
+      name: org.data.name,
+    },
+  });
 
   return org;
 }
@@ -49,7 +71,11 @@ async function createOrganizationInternal({
   cqActive = false,
   cwApproved = false,
   cwActive = false,
+  ehexApproved = false,
+  ehexActive = false,
   attempt = 1,
+  principalOid,
+  delegateOids = [],
 }: OrganizationCreate & { attempt?: number }): Promise<OrganizationModel> {
   try {
     const { oid, organizationNumber } = await createOrganizationId();
@@ -62,8 +88,12 @@ async function createOrganizationInternal({
       data,
       cqActive,
       cwActive,
+      ehexActive,
       cqApproved,
       cwApproved,
+      ehexApproved,
+      principalOid,
+      delegateOids,
     });
 
     return org;
@@ -88,6 +118,11 @@ async function createOrganizationInternal({
           cqActive,
           cwApproved,
           cwActive,
+          ehexApproved,
+          ehexActive,
+          principalOid,
+          delegateOids,
+          // eslint-disable-next-line no-param-reassign
           attempt: ++attempt,
         });
       }

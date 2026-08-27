@@ -2,6 +2,7 @@ import { Medication, MedicationStatement } from "@medplum/fhirtypes";
 import { BadRequestError, JwtTokenInfo } from "@metriport/shared";
 import { EhrSource, EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { writeBackMedicationStatement as writeBackMedicationStatementAthena } from "../../athenahealth/command/write-back/medication-statement";
+import { writeBackMedicationStatementHealthie } from "../../healthie/command/write-back/medication-statement";
 
 export type WriteBackMedicationStatementRequest = {
   ehr: EhrSource;
@@ -39,9 +40,10 @@ const ehrWriteBackMedicationStatementMap: WriteBackMedicationStatementFnMap = {
   [EhrSources.canvas]: undefined,
   [EhrSources.athena]: writeBackMedicationStatementAthena,
   [EhrSources.elation]: undefined,
-  [EhrSources.healthie]: undefined,
+  [EhrSources.healthie]: writeBackMedicationStatementHealthie,
   [EhrSources.eclinicalworks]: undefined,
   [EhrSources.salesforce]: undefined,
+  [EhrSources.practicefusion]: undefined,
 };
 
 function getEhrWriteBackMedicationStatementHandler(ehr: EhrSource): WriteBackMedicationStatementFn {

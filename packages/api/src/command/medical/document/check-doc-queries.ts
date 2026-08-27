@@ -1,6 +1,7 @@
 import { DocumentQueryStatus, Progress, ProgressType } from "@metriport/core/domain/document-query";
 import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import dayjs from "dayjs";
@@ -9,6 +10,8 @@ import stringify from "json-stringify-safe";
 import { QueryTypes } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
+import { getNetworkQueryByRequestId } from "../network-query/get-network-query";
+import { updateDatasourceQueryStatusByRequestId } from "../network-query/update-datasource-query-status";
 import { recreateConsolidated } from "../patient/consolidated-recreate";
 import { getPatientOrFail } from "../patient/get-patient";
 import { sendWHNotifications } from "./check-doc-queries-notification";
@@ -17,12 +20,24 @@ import {
   PatientsWithValidationResult,
   SingleValidationResult,
 } from "./check-doc-queries-shared";
+import { DatasourceQueryStatus, hieSpecificSource } from "@metriport/shared/domain/network-query";
 
 dayjs.extend(duration);
 
 const MAX_TIME_TO_PROCESS = dayjs.duration({ minutes: 30 });
 const BUFFER_TIME = dayjs.duration({ minutes: 16 });
 const MAX_CONCURRENT_UDPATES = 10;
+
+function checkInvalid(prop: Progress): SingleValidationResult {
+  const { status, total = 0 } = prop;
+  const isTotalValid = total === calculateTotal(prop);
+  const isStatusValid = isValidStatus(status);
+  if (status === "failed") return undefined;
+  if (!isTotalValid && !isStatusValid) return "both";
+  if (!isTotalValid) return "total";
+  if (!isStatusValid) return "status";
+  return undefined;
+}
 
 /**
  * Ops-driven function to check the status of all document queries in progress.
@@ -45,17 +60,6 @@ export async function checkDocumentQueries(patientIds: string[]): Promise<void> 
         log(`Patient without doc query progress @ query, skipping it: ${patient.id} `);
         continue;
       }
-
-      const checkInvalid = (prop: Progress): SingleValidationResult => {
-        const { status, total = 0 } = prop;
-        const isTotalValid = total === calculateTotal(prop);
-        const isStatusValid = isValidStatus(status);
-        if (status === "failed") return undefined;
-        if (!isTotalValid && !isStatusValid) return "both";
-        if (!isTotalValid) return "total";
-        if (!isStatusValid) return "status";
-        return undefined;
-      };
 
       if (docQueryProgress.convert) {
         const whatsInvalid = checkInvalid(docQueryProgress.convert);
@@ -174,6 +178,23 @@ async function updatePatientsInSequence([patientId, { cxId, ...whatToUpdate }]: 
   }
   const patient = await updatePatient();
   if (!patient) return;
+
+  // Update network query status if this was a network query flow
+  const requestId = patient.data.documentQueryProgress?.requestId;
+  if (requestId) {
+    const networkQuery = await getNetworkQueryByRequestId({ requestId });
+    if (networkQuery) {
+      log(`Network query found for requestId ${requestId}, updating status to completed`);
+      updateDatasourceQueryStatusByRequestId({
+        cxId,
+        requestId,
+        source: "hie",
+        specificSource: hieSpecificSource,
+        toStatus: DatasourceQueryStatus.Completed,
+      }).catch(processAsyncError("check-doc-queries updateNetworkQueryStatus", log));
+    }
+  }
+
   // we want to await here to ensure the consolidated bundle is created before we send the webhook
   await recreateConsolidated({ patient, context: "check-queries" });
 }
@@ -224,8 +245,10 @@ function getQuery(patientIds: string[] = []): string {
   const processing: DocumentQueryStatus = "processing";
   // END
 
-  const property = (propertyName: ProgressType) =>
-    `${data}->'${documentQueryProgress}'->'${propertyName}'`;
+  function property(propertyName: ProgressType): string {
+    return `${data}->'${documentQueryProgress}'->'${propertyName}'`;
+  }
+
   const convert = property("convert");
   const download = property("download");
 

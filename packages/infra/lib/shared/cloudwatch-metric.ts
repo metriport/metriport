@@ -2,7 +2,7 @@ import { Alarm, ComparisonOperator, Metric, TreatMissingData } from "aws-cdk-lib
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { Construct } from "constructs";
 
-export function addAlarmToMetric({
+export function addAlertToMetric({
   scope,
   metric,
   alarmName,
@@ -10,7 +10,7 @@ export function addAlarmToMetric({
   evaluationPeriods,
   comparisonOperator,
   treatMissingData,
-  alarmAction,
+  alertAction,
   includeOkAction = true,
 }: {
   scope: Construct;
@@ -20,7 +20,7 @@ export function addAlarmToMetric({
   evaluationPeriods: number;
   comparisonOperator?: ComparisonOperator;
   treatMissingData?: TreatMissingData;
-  alarmAction?: SnsAction;
+  alertAction?: SnsAction;
   includeOkAction?: boolean;
 }): Alarm {
   const alarm = metric.createAlarm(scope, alarmName, {
@@ -29,7 +29,7 @@ export function addAlarmToMetric({
     comparisonOperator,
     treatMissingData,
   });
-  alarmAction && alarm.addAlarmAction(alarmAction);
-  alarmAction && includeOkAction && alarm.addOkAction(alarmAction);
+  alertAction && alarm.addAlarmAction(alertAction);
+  alertAction && includeOkAction && alarm.addOkAction(alertAction);
   return alarm;
 }

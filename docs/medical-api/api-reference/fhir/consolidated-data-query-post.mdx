@@ -4,10 +4,20 @@ description: "Trigger a consolidated data query for the given patient"
 api: "POST /medical/v1/patient/{id}/consolidated/query"
 ---
 
+<Info>
+  **Important:** This endpoint retrieves the **cached**
+  consolidated data from your most recent [Network
+  Query](/medical-api/api-reference/network/start-network-query)
+  (or [Legacy Document
+  Query](/medical-api/legacy-api-reference/document/start-document-query)
+  if you're still using it). It does not fetch new data from
+  external sources.
+</Info>
+
 When executed, this endpoint triggers an asynchronous query to retrieve a Patient's consolidated data in either
 FHIR JSON format, or a rendered PDF or HTML [Medical Record Summary](/medical-api/handling-data/medical-record-summary).
 
-Once the data is is ready for consumption, a `consolidated-data` [Webhook message](/medical-api/handling-data/webhooks#patient-consolidated-data) will be sent to
+Once the data is ready for consumption, a `consolidated-data` [Webhook message](/medical-api/handling-data/webhooks-with-nq#patient-consolidated-data) will be sent to
 [your configured URL](/medical-api/api-reference/settings/post-settings) - this message will contain a URL to download the data,
 based on the [parameters](#query-params) used to trigger the query.
 
@@ -26,7 +36,8 @@ You can check the status of the data query by calling [get consolidated data que
 ## Query Params
 
 <ParamField query="conversionType" type="string" required>
-  The format of the resulting data. Can be one of `json`, `pdf`, or `html`.
+  The format of the resulting data. Can be one of `json`,
+  `pdf`, or `html`.
 </ParamField>
 
 <Tip>

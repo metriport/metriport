@@ -1,16 +1,15 @@
-// error-response.ts
 import {
+  BaseErrorResponse,
   InboundDocumentQueryReq,
   InboundDocumentQueryResp,
   InboundDocumentRetrievalReq,
   InboundDocumentRetrievalResp,
   InboundPatientDiscoveryReq,
   InboundPatientDiscoveryResp,
-  BaseErrorResponse,
 } from "@metriport/ihe-gateway-sdk";
-import { METRIPORT_HOME_COMMUNITY_ID, CODE_SYSTEM_ERROR } from "./shared";
-import { MetriportError } from "../../util/error/metriport-error";
+import { CODE_SYSTEM_ERROR, METRIPORT_HOME_COMMUNITY_ID } from "@metriport/shared";
 import status from "http-status";
+import { MetriportError } from "../../util/error/metriport-error";
 
 export class IHEGatewayError extends MetriportError {
   constructor(
@@ -89,6 +88,8 @@ function constructBaseErrorResponse(
           severity: "error",
           code: "processing",
           details: {
+            // TODO consider refactoring this so system is CODE_SYSTEM_ERROR and code is error.name.
+            // TODO see ehex/error.ts for reference.
             coding: [{ system: error.name, code: error.iheErrorCode ?? CODE_SYSTEM_ERROR }],
             text: error.message,
           },

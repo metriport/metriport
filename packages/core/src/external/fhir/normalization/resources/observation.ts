@@ -15,6 +15,7 @@ import {
   efUnitNormalizationMap,
   gfrUnitNormalizationMap,
   glucoseUnitNormalizationMap,
+  unitSimilarityMap,
 } from "./unit-maps";
 
 type UnitWithCode = {
@@ -28,6 +29,10 @@ type ReferenceRange = {
   unit: string | undefined;
   text?: string | undefined;
 };
+
+type NonConvertibleNormalizedUnit = { isConvertibleUnit: false; unit: string | undefined };
+type ConvertibleNormalizedUnit = { isConvertibleUnit: true; unit: Unit | string };
+type NormalizedUnit = NonConvertibleNormalizedUnit | ConvertibleNormalizedUnit;
 
 const loincCodeToTargetCallbackFnMap = new Map<string, (unit: string) => string>([
   // GFR
@@ -226,7 +231,9 @@ function normalizeValueQuantity(quantity: Quantity, loincCode?: string): Quantit
   const normalizedQuantity = cloneDeep(quantity);
 
   if (!normalizedQuantity.unit) return normalizedQuantity;
-  const unit = normalizeUnit(normalizedQuantity.unit, loincCode);
+  const unit = loincCode
+    ? normalizeUnit(normalizedQuantity.unit, loincCode)
+    : normalizeUnitBasedOnSimilarity(normalizedQuantity.unit);
   if (!unit) return normalizedQuantity;
   if (unit.isConvertibleUnit) {
     normalizedQuantity.unit = unit.unit as Unit;
@@ -264,30 +271,41 @@ function getStandardUnitFromLoincCode(unit: string, loincCode?: string): string 
   return targetUnitFn(unit);
 }
 
-function normalizeUnit(
-  unit: string,
-  loincCode?: string
-):
-  | { isConvertibleUnit: false; unit: string | undefined }
-  | { isConvertibleUnit: true; unit: Unit | string }
-  | undefined {
+function getConvertibleUnit(trimmedUnit: string): ConvertibleNormalizedUnit | undefined {
+  if (unitConversionAndNormalizationMap.has(trimmedUnit)) {
+    return { isConvertibleUnit: true, unit: trimmedUnit as Unit };
+  }
+  if (unitConversionAndNormalizationMap.has(trimmedUnit.toLowerCase())) {
+    return { isConvertibleUnit: true, unit: trimmedUnit.toLowerCase() as Unit };
+  }
+  if (unitConversionAndNormalizationMap.has(trimmedUnit.toUpperCase())) {
+    return { isConvertibleUnit: true, unit: trimmedUnit.toUpperCase() as Unit };
+  }
+  const nonStandard = nonStandardUnitNormalizationMap.get(trimmedUnit.toLowerCase());
+  if (nonStandard) {
+    return { isConvertibleUnit: true, unit: nonStandard };
+  }
+  return undefined;
+}
+
+function normalizeUnit(unit: string, loincCode?: string): NormalizedUnit | undefined {
   if (!unit || typeof unit !== "string") return undefined;
   const trimmedUnit = unit.trim();
   const standardUnit = getStandardUnitFromLoincCode(unit, loincCode);
   if (standardUnit) return { isConvertibleUnit: false, unit: standardUnit };
 
-  return unitConversionAndNormalizationMap.has(trimmedUnit)
-    ? { isConvertibleUnit: true, unit: trimmedUnit as Unit }
-    : unitConversionAndNormalizationMap.has(trimmedUnit.toLowerCase())
-    ? { isConvertibleUnit: true, unit: trimmedUnit.toLowerCase() as Unit }
-    : unitConversionAndNormalizationMap.has(trimmedUnit.toUpperCase())
-    ? { isConvertibleUnit: true, unit: trimmedUnit.toUpperCase() as Unit }
-    : nonStandardUnitNormalizationMap.get(trimmedUnit.toLowerCase())
-    ? {
-        isConvertibleUnit: true,
-        unit: nonStandardUnitNormalizationMap.get(trimmedUnit.toLowerCase()) as Unit,
-      }
-    : undefined;
+  return getConvertibleUnit(trimmedUnit);
+}
+
+function normalizeUnitBasedOnSimilarity(unit: string): NormalizedUnit | undefined {
+  if (!unit || typeof unit !== "string") return undefined;
+  const trimmedUnit = unit.trim();
+  const normalized = trimmedUnit.toLowerCase().replace(/ /g, "");
+
+  const similarUnit = unitSimilarityMap.get(normalized);
+  if (similarUnit) return { isConvertibleUnit: false, unit: similarUnit };
+
+  return getConvertibleUnit(trimmedUnit);
 }
 
 export function buildObservationInterpretation(obs: Observation): CodeableConcept[] | undefined {

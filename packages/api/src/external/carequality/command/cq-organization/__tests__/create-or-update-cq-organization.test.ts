@@ -5,15 +5,16 @@ import { Organization } from "@medplum/fhirtypes";
 import { CarequalityManagementAPI, CarequalityManagementApiFhir } from "@metriport/carequality-sdk";
 import { OrganizationWithId } from "@metriport/carequality-sdk/client/carequality";
 import { makeOrganization } from "@metriport/core/fhir-to-cda/cda-templates/components/__tests__/make-organization";
+import { FacilityType } from "@metriport/core/domain/facility";
 import { metriportCompanyDetails } from "@metriport/shared";
-import * as getAddress from "../../../../../domain/medical/address";
-import { FacilityType, isOboFacility } from "../../../../../domain/medical/facility";
 import { makeFacilityModel } from "../../../../../domain/medical/__tests__/facility";
 import { makeAddressWithCoordinates } from "../../../../../domain/medical/__tests__/location-address";
+import * as getAddress from "../../../../../domain/medical/address";
+import { isInitiatorOnly } from "../../../../../domain/medical/facility";
 import { FacilityModel } from "../../../../../models/medical/facility";
 import * as apiFhirFile from "../../../api";
 import { metriportEmail as metriportEmailForCq } from "../../../constants";
-import { buildCqOrgNameForFacility, buildCqOrgNameForOboFacility } from "../../../shared";
+import { buildCqOrgNameForFacility } from "../../../shared";
 import { metriportIntermediaryOid, metriportOid } from "../constants";
 import { createOrUpdateCqOrganization } from "../create-or-update-cq-organization";
 import { getOrganizationFhirTemplate } from "../organization-template";
@@ -21,7 +22,7 @@ import { getOrganizationFhirTemplate } from "../organization-template";
 let getAddressWithCoordination: jest.SpyInstance;
 let makeCarequalityManagementAPIMock: jest.SpyInstance<CarequalityManagementAPI | undefined>;
 let facilityMock: FacilityModel;
-let oboFacilityMock: FacilityModel;
+let delegateFacilityMock: FacilityModel;
 
 jest
   .spyOn(CarequalityManagementApiFhir.prototype, "listOrganizations")
@@ -32,20 +33,16 @@ jest
 
 beforeEach(() => {
   facilityMock = makeFacilityModel({
-    cqType: FacilityType.initiatorAndResponder,
+    type: FacilityType.initiatorAndResponder,
     cqActive: true,
-    cqOboOid: undefined,
-    cwType: FacilityType.initiatorAndResponder,
     cwActive: true,
-    cwOboOid: undefined,
+    principalOid: undefined,
   });
-  oboFacilityMock = makeFacilityModel({
-    cqType: FacilityType.initiatorOnly,
+  delegateFacilityMock = makeFacilityModel({
+    type: FacilityType.initiatorOnly,
     cqActive: true,
-    cqOboOid: faker.string.uuid(),
-    cwType: FacilityType.initiatorOnly,
     cwActive: true,
-    cwOboOid: faker.string.uuid(),
+    principalOid: faker.string.uuid(),
   });
   getAddressWithCoordination = jest.spyOn(getAddress, "getAddressWithCoordinates");
   makeCarequalityManagementAPIMock = jest.spyOn(apiFhirFile, "makeCarequalityManagementApiOrFail");
@@ -69,7 +66,7 @@ function makeApiImpl(params: {
 }
 
 describe("createOrUpdateCqOrganization", () => {
-  it("calls hie creates with expected params when called - non-obo", async () => {
+  it("calls hie creates with expected params when called - principal org", async () => {
     const cxId = faker.string.uuid();
     const cxOrgName = faker.company.name();
 
@@ -132,28 +129,23 @@ describe("createOrUpdateCqOrganization", () => {
     expect(apiImpl.updateOrganization).toHaveBeenCalledWith(expect.objectContaining(expectedCqOrg));
   });
 
-  it("calls hie creates with expected params when called - obo", async () => {
+  it("calls hie creates with expected params when called - delegate", async () => {
     const cxId = faker.string.uuid();
     const cxOrgName = faker.company.name();
 
-    const isObo = isOboFacility(oboFacilityMock.cqType);
+    const isInitiator = isInitiatorOnly(delegateFacilityMock.type);
     const orgName = buildCqOrgNameForFacility({
       vendorName: cxOrgName,
-      orgName: oboFacilityMock.data.name,
+      orgName: delegateFacilityMock.data.name,
     });
-    const oboName = buildCqOrgNameForOboFacility({
-      vendorName: cxOrgName,
-      orgName: oboFacilityMock.data.name,
-      oboOid: oboFacilityMock.cqOboOid!,
-    });
-    const parentOrgOid = isObo ? metriportIntermediaryOid : metriportOid;
+    const parentOrgOid = isInitiator ? metriportIntermediaryOid : metriportOid;
 
     const mockedAddress = makeAddressWithCoordinates();
     getAddressWithCoordination.mockImplementation(() => {
       return Promise.resolve(mockedAddress);
     });
 
-    const address = oboFacilityMock.data.address;
+    const address = delegateFacilityMock.data.address;
     const addressLine = address.addressLine2
       ? `${address.addressLine1}, ${address.addressLine2}`
       : address.addressLine1;
@@ -166,14 +158,13 @@ describe("createOrUpdateCqOrganization", () => {
       city: address.city,
       state: address.state,
       postalCode: address.zip,
-      oid: oboFacilityMock.oid,
+      oid: delegateFacilityMock.oid,
       contactName: metriportCompanyDetails.name,
       phone: metriportCompanyDetails.phone,
       email: metriportEmailForCq,
-      active: oboFacilityMock.cqActive,
+      active: delegateFacilityMock.cqActive,
       parentOrgOid,
-      oboOid: oboFacilityMock.cqOboOid ?? undefined,
-      oboName,
+      principalOid: delegateFacilityMock.principalOid ?? undefined,
       role: "Connection" as const,
     };
     const expectedCqOrg = await getOrganizationFhirTemplate(expectedOrgDetails);
@@ -189,16 +180,15 @@ describe("createOrUpdateCqOrganization", () => {
 
     await createOrUpdateCqOrganization({
       cxId,
-      oid: oboFacilityMock.oid,
+      oid: delegateFacilityMock.oid,
       name: orgName,
       address,
       contactName: metriportCompanyDetails.name,
       phone: metriportCompanyDetails.phone,
       email: metriportEmailForCq,
-      active: oboFacilityMock.cqActive,
+      active: delegateFacilityMock.cqActive,
       parentOrgOid,
-      oboOid: oboFacilityMock.cqOboOid ?? undefined,
-      oboName,
+      principalOid: delegateFacilityMock.principalOid ?? undefined,
       role: "Connection" as const,
     });
 

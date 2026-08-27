@@ -1,5 +1,4 @@
-import { USState } from "@metriport/shared";
-import { STATE_MAPPINGS } from "../shared";
+import { STATE_MAPPINGS, USState } from "@metriport/shared";
 
 describe("State Mappings Validation", () => {
   it("should have an entry for every USState", () => {

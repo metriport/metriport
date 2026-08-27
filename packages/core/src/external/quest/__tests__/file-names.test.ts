@@ -1,10 +1,10 @@
 import { MetriportError } from "@metriport/shared";
 import {
+  buildPatientLabConversionFileName,
+  buildPatientLabConversionPrefix,
+  buildPatientLatestLabConversionFileName,
   buildRosterFileName,
   parseResponseFileName,
-  buildPatientLabConversionPrefix,
-  buildLatestConversionFileName,
-  buildLabConversionFileNameForDate,
 } from "../file/file-names";
 
 describe("parseResponseFileName", () => {
@@ -18,16 +18,23 @@ describe("parseResponseFileName", () => {
   });
 
   it("builds a roster file name", () => {
-    expect(buildRosterFileName()).toBe("Metriport_backfill_20250101.txt");
     expect(buildRosterFileName({ rosterType: "backfill" })).toBe("Metriport_backfill_20250101.txt");
     expect(buildRosterFileName({ rosterType: "notifications" })).toBe(
       "Metriport_notifications_20250101.txt"
     );
   });
 
-  it("parses a correct date interval", () => {
+  it("parses a correct notifications file name", () => {
     expect(parseResponseFileName("Metriport_202501010201.txt")).toEqual({
       dateId: "202501010201",
+      rosterType: "notifications",
+    });
+  });
+
+  it("correctly parses a backfill file name", () => {
+    expect(parseResponseFileName("Metriport_MIPE_202501010201.txt")).toEqual({
+      dateId: "202501010201",
+      rosterType: "backfill",
     });
   });
 
@@ -59,30 +66,34 @@ describe("parseResponseFileName", () => {
         patientId: "171a1b08-c27d-442a-9251-0905a29d0c49",
       })
     ).toBe(
-      `quest/cxId=eaa16107-a05e-4090-838e-a7f51d7921c1/patientId=171a1b08-c27d-442a-9251-0905a29d0c49/dateId=`
+      `quest/cxId=eaa16107-a05e-4090-838e-a7f51d7921c1/patientId=171a1b08-c27d-442a-9251-0905a29d0c49`
     );
   });
 
   it("builds a latest conversion file name", () => {
     expect(
-      buildLatestConversionFileName(
-        "eaa16107-a05e-4090-838e-a7f51d7921c1",
-        "171a1b08-c27d-442a-9251-0905a29d0c49"
-      )
+      buildPatientLatestLabConversionFileName({
+        cxId: "eaa16107-a05e-4090-838e-a7f51d7921c1",
+        patientId: "171a1b08-c27d-442a-9251-0905a29d0c49",
+      })
     ).toBe(
       "quest/cxId=eaa16107-a05e-4090-838e-a7f51d7921c1/patientId=171a1b08-c27d-442a-9251-0905a29d0c49/latest.json"
     );
   });
 
-  it("builds a lab conversion file name for date", () => {
-    expect(
-      buildLabConversionFileNameForDate({
-        cxId: "eaa16107-a05e-4090-838e-a7f51d7921c1",
-        patientId: "171a1b08-c27d-442a-9251-0905a29d0c49",
-        dateId: "202501010201",
-      })
-    ).toBe(
-      "quest/cxId=eaa16107-a05e-4090-838e-a7f51d7921c1/patientId=171a1b08-c27d-442a-9251-0905a29d0c49/dateId=202501010201/conversion.json"
+  it("builds a lab conversion file name for backfills and notifications", () => {
+    const sharedParams = {
+      cxId: "eaa16107-a05e-4090-838e-a7f51d7921c1",
+      patientId: "171a1b08-c27d-442a-9251-0905a29d0c49",
+      dateId: "202501010201",
+    };
+    const sharedPrefix =
+      "quest/cxId=eaa16107-a05e-4090-838e-a7f51d7921c1/patientId=171a1b08-c27d-442a-9251-0905a29d0c49/dateId=202501010201/";
+    expect(buildPatientLabConversionFileName({ ...sharedParams, rosterType: "backfill" })).toBe(
+      `${sharedPrefix}backfill.json`
     );
+    expect(
+      buildPatientLabConversionFileName({ ...sharedParams, rosterType: "notifications" })
+    ).toBe(`${sharedPrefix}notifications.json`);
   });
 });

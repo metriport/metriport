@@ -19,10 +19,10 @@ capture.setExtra({ lambdaName: lambdaName });
 
 // TODO move to capture.wrapHandler()
 export const handler = Sentry.AWSLambda.wrapHandler(
-  async ({ requestId, numOfGateways, patientId, cxId }: PollOutboundResults) => {
+  async ({ requestId, numOfGateways, patientId, cxId, forceDownload }: PollOutboundResults) => {
     console.log(
       `Running with envType: ${getEnvType()}, requestId: ${requestId}, ` +
-        `numOfGateways: ${numOfGateways} cxId: ${cxId} patientId: ${patientId}`
+        `numOfGateways: ${numOfGateways} cxId: ${cxId} patientId: ${patientId} forceDownload: ${forceDownload}`
     );
     try {
       const dbCreds = await getSecretValueOrFail(dbCredsArn, region);
@@ -34,6 +34,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         cxId,
         numOfGateways,
         maxPollingDuration: parseInt(maxPollingDuration),
+        forceDownload,
       });
     } catch (error) {
       const msg = `Error sending document retrieval results`;

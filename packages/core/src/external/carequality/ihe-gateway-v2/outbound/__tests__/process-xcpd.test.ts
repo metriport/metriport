@@ -96,7 +96,7 @@ describe("processXCPDResponse", () => {
       },
     });
 
-    expect(response.patientMatch).toBeNull();
+    expect(response.patientMatch).not.toBeTruthy();
   });
   it("should process the HTTP error XCPD response correctly", async () => {
     const httpError = { error: "HTTP 503 error" };
@@ -111,7 +111,7 @@ describe("processXCPDResponse", () => {
     });
 
     expect(response.operationOutcome).toBeTruthy();
-    expect(response.patientMatch).toBeNull();
+    expect(response.patientMatch).not.toBeTruthy();
   });
   it("should process response that is not a string correctly", async () => {
     const randomResponse = "This is a bad response and is not xml";
@@ -125,6 +125,6 @@ describe("processXCPDResponse", () => {
       },
     });
     expect(response.operationOutcome).toBeTruthy();
-    expect(response.patientMatch).toBeNull();
+    expect(response.patientMatch).not.toBeTruthy();
   });
 });

@@ -1,23 +1,23 @@
-import { Hl7Message, Hl7Segment, Hl7Field } from "@medplum/core";
+import { Hl7Field, Hl7Message, Hl7Segment } from "@medplum/core";
+import { buildDayjs } from "@metriport/shared/common/date";
+import { ALOHR_HIE_NAME } from "@metriport/shared/external";
 import { S3Utils } from "../../../external/aws/s3";
 import { Config } from "../../../util/config";
+import { capture } from "../../../util/notifications";
+import { Hl7NotificationSenderParams } from "../../hl7-notification/hl7-notification-webhook-sender";
+import { buildHl7NotificationWebhookSender } from "../../hl7-notification/hl7-notification-webhook-sender-factory";
+import { asString } from "../../hl7-notification/utils";
 import {
-  HIE_NAME,
+  getCxIdAndPatientIdOrFail,
+  getSegmentByNameOrFail,
+} from "../../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
+import {
   Hl7AlohrSftpIngestion,
   Hl7AlohrSftpIngestionParams,
   log,
   TimestampedMessage,
 } from "./hl7-alohr-sftp-ingestion";
 import { AlohrSftpIngestionClient } from "./hl7-alohr-sftp-ingestion-client";
-import { buildHl7NotificationWebhookSender } from "../../hl7-notification/hl7-notification-webhook-sender-factory";
-import { Hl7NotificationSenderParams } from "../../hl7-notification/hl7-notification-webhook-sender";
-import { buildDayjs } from "@metriport/shared/common/date";
-import {
-  getCxIdAndPatientIdOrFail,
-  getSegmentByNameOrFail,
-} from "../../hl7v2-subscriptions/hl7v2-to-fhir-conversion/shared";
-import { asString } from "../../hl7-notification/utils";
-import { capture } from "../../../util/notifications";
 
 export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
   private readonly ALTERNATE_PATIENT_ID_FIELD_INDEX = 4; // 1 indexed
@@ -109,7 +109,7 @@ export class Hl7AlohrSftpIngestionDirect implements Hl7AlohrSftpIngestion {
         patientId: msg.patientId,
         message: msg.message,
         messageReceivedTimestamp: msg.timestamp,
-        hieName: HIE_NAME,
+        hieName: ALOHR_HIE_NAME,
       };
       await webhookSender.execute(webhookSenderParams);
     }

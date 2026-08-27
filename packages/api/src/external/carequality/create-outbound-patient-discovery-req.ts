@@ -1,7 +1,8 @@
+import { defaultSubjectRole } from "@metriport/core/external/carequality/ihe-gateway-v2/shared";
 import {
   OutboundPatientDiscoveryReq,
-  XCPDGateway,
   PatientResource,
+  XCPDGateway,
 } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { HieInitiator } from "../hie/get-hie-initiator";
@@ -35,11 +36,7 @@ export function createOutboundPatientDiscoveryReq({
     samlAttributes: {
       queryGrantorOid: initiator.queryGrantorOid,
       subjectId: user,
-      // TODO https://github.com/metriport/metriport/pull/1302#discussion_r1422876830
-      subjectRole: {
-        code: "106331006",
-        display: "Administrative AND/OR managerial worker",
-      },
+      subjectRole: defaultSubjectRole,
       organization: initiator.name,
       organizationId: initiator.oid,
       homeCommunityId: initiator.oid,

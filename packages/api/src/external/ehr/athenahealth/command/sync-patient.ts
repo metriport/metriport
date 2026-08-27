@@ -1,13 +1,16 @@
 import { isAthenaCustomFieldsEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
+import { disableWHMetadata } from "@metriport/core/domain/document-query/trigger-and-query";
 import AthenaHealthApi from "@metriport/core/external/ehr/athenahealth/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { BadRequestError } from "@metriport/shared";
+import { AthenaSecondaryMappings } from "@metriport/shared/interface/external/ehr/athenahealth/cx-mapping";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import { findOrCreatePatientMapping, getPatientMapping } from "../../../../command/mapping/patient";
 import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/document-query";
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 import { Config } from "../../../../shared/config";
+import { getCxMappingAndParsedSecondaryMappings } from "../../shared/command/mapping/get-cx-mapping-and-secondary-mappings";
 import { getOrCreateMetriportPatientFhir } from "../../shared/command/patient/get-or-create-metriport-patient-fhir";
 import { createMetriportPatientDemosFhir } from "../../shared/utils/fhir";
 import { isDqCooldownExpired } from "../../shared/utils/patient";
@@ -36,6 +39,14 @@ export async function syncAthenaPatientIntoMetriport({
   triggerDqForExistingPatient = false,
 }: SyncAthenaPatientIntoMetriportParams): Promise<string> {
   await validateDepartmentId({ cxId, athenaPracticeId, athenaPatientId, athenaDepartmentId });
+  const { parsedSecondaryMappings } =
+    await getCxMappingAndParsedSecondaryMappings<AthenaSecondaryMappings>({
+      ehr: EhrSources.athena,
+      practiceId: athenaPracticeId,
+    });
+
+  const shouldDisableWebhooks = !parsedSecondaryMappings.sendDocumentQueryWebhookEnabled;
+
   let athenaApi: AthenaHealthApi | undefined;
   if (await isAthenaCustomFieldsEnabledForCx(cxId)) {
     athenaApi = api ?? (await createAthenaClient({ cxId, practiceId: athenaPracticeId }));
@@ -76,6 +87,7 @@ export async function syncAthenaPatientIntoMetriport({
         cxId,
         patientId: metriportPatient.id,
         facilityId,
+        ...(shouldDisableWebhooks && { cxDocumentRequestMetadata: disableWHMetadata }),
       }).catch(processAsyncError(`AthenaHealth queryDocumentsAcrossHIEs`));
     }
     const metriportPatientId = metriportPatient.id;
@@ -104,6 +116,7 @@ export async function syncAthenaPatientIntoMetriport({
       cxId,
       patientId: metriportPatient.id,
       facilityId,
+      ...(shouldDisableWebhooks && { cxDocumentRequestMetadata: disableWHMetadata }),
     }).catch(processAsyncError(`AthenaHealth queryDocumentsAcrossHIEs`));
   }
   await findOrCreatePatientMapping({

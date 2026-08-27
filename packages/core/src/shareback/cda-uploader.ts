@@ -1,12 +1,37 @@
 import { DocumentReference, Organization } from "@medplum/fhirtypes";
-import { errorToString } from "@metriport/shared";
-import { createUploadFilePath, createUploadMetadataFilePath } from "../shareback/file";
+import { errorToString, MetriportError } from "@metriport/shared";
 import { S3Utils } from "../external/aws/s3";
-import { MetriportError } from "../util/error/metriport-error";
+import {
+  createCcdaDocumentPath,
+  createCcdDocumentPath,
+  getMetadataFilePathFromDocumentFilePath,
+} from "../shareback/file";
+import { createDocumentHash } from "../util/hash";
 import { out } from "../util/log";
 import { XML_APP_MIME_TYPE } from "../util/mime";
 import { sizeInBytes } from "../util/string";
-import { createAndUploadDocumentMetadataFile } from "./create-and-upload-extrinsic-object";
+import { createAndUploadDocumentMetadataFile } from "./create-and-upload-metadata";
+
+type CdaDocumentUploaderParamsBase = {
+  cxId: string;
+  patientId: string;
+  bundle: string;
+  medicalDocumentsBucket: string;
+  region: string;
+  organization: Organization;
+  docRef?: DocumentReference;
+};
+export type CdaDocumentUploaderParams = CdaDocumentUploaderParamsBase &
+  (
+    | {
+        docId: string;
+        isCcd?: false;
+      }
+    | {
+        docId?: never;
+        isCcd: true;
+      }
+  );
 
 export async function cdaDocumentUploaderHandler({
   cxId,
@@ -17,20 +42,16 @@ export async function cdaDocumentUploaderHandler({
   organization,
   docId,
   docRef,
-}: {
-  cxId: string;
-  patientId: string;
-  bundle: string;
-  medicalDocumentsBucket: string;
-  region: string;
-  organization: Organization;
-  docId: string;
-  docRef?: DocumentReference;
-}): Promise<{ filePath: string; metadataFilePath: string }> {
+  isCcd,
+}: CdaDocumentUploaderParams): Promise<{ filePath: string; metadataFilePath: string }> {
   const { log } = out(`CDA Upload - cxId: ${cxId} - patientId: ${patientId}`);
   const fileSize = sizeInBytes(bundle);
   const s3Utils = new S3Utils(region);
-  const destinationKey = createUploadFilePath(cxId, patientId, `${docId}.xml`);
+  const destinationKey = isCcd
+    ? createCcdDocumentPath({ cxId, patientId })
+    : createCcdaDocumentPath({ cxId, patientId, docId });
+  const bundleBuffer = Buffer.from(bundle);
+  const hash = createDocumentHash(bundleBuffer);
 
   try {
     await s3Utils.uploadFile({
@@ -48,19 +69,21 @@ export async function cdaDocumentUploaderHandler({
     });
   }
 
-  const metadataFileName = createUploadMetadataFilePath(cxId, patientId, docId);
+  const metadataS3Key = getMetadataFilePathFromDocumentFilePath(destinationKey);
   try {
     await createAndUploadDocumentMetadataFile({
       s3Utils,
       cxId,
       patientId,
-      docId: destinationKey,
+      documentS3Key: destinationKey,
       size: fileSize,
       organization,
-      metadataFileName,
+      metadataS3Key,
       destinationBucket: medicalDocumentsBucket,
       mimeType: XML_APP_MIME_TYPE,
       docRef,
+      hash,
+      isCcd,
     });
   } catch (error) {
     const msg = "Failed to create the shareback metadata file of a CDA";
@@ -68,11 +91,12 @@ export async function cdaDocumentUploaderHandler({
     throw new MetriportError(msg, error, {
       medicalDocumentsBucket,
       destinationKeyOfCdaFile: destinationKey,
+      metadataS3Key,
     });
   }
 
   return {
     filePath: destinationKey,
-    metadataFilePath: metadataFileName,
+    metadataFilePath: metadataS3Key,
   };
 }

@@ -1,6 +1,6 @@
 import type SshSftpClient from "ssh2-sftp-client";
 
-export interface SftpClientImpl {
+export interface SftpClient {
   connect(): Promise<void>;
   disconnect(): Promise<void>;
   read(remotePath: string, options?: SftpReadOptions): Promise<Buffer>;

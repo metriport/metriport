@@ -35,4 +35,6 @@ For detailed information about reference table structure and indexing, see the [
 | dose_unit | varchar | Unit of measurement for the dose |
 | dose_amount | varchar | Amount of medication |
 | note_text | varchar | Additional notes about the statement |
-| data_source | varchar | Source of the medication statement data |
+| meta_source | varchar | Source document filename from FHIR meta.source |
+| data_source | varchar | **Deprecated.** Use `meta_source` instead. |
+| data_source_ext | varchar | Integration source of the data, derived from FHIR extension |

@@ -29,6 +29,7 @@ import { EnvConfig } from "../../config/env-config";
 import { AnalyticsPlatformsAssets } from "../analytics-platform/types";
 import { JobsAssets } from "../jobs/types";
 import { QuestAssets } from "../quest/types";
+import { SDEAssets } from "../sde/types";
 import { defaultBedrockPolicyStatement } from "../shared/bedrock";
 import { DnsZones } from "../shared/dns";
 import { createHieConfigDictionary } from "../shared/hie-config-dictionary";
@@ -44,7 +45,6 @@ import { provideAccessToQueue } from "../shared/sqs";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd, isSandbox } from "../shared/util";
 import { SurescriptsAssets } from "../surescripts/types";
-import { SDEAssets } from "../sde/types";
 
 interface ApiProps extends StackProps {
   config: EnvConfig;
@@ -107,7 +107,8 @@ export function createAPIService({
   dbReadReplicaEndpoint,
   dynamoDBTokenTable,
   outboundRateLimitTable,
-  alarmAction,
+  patientStateTable,
+  alertAction,
   dnsZones,
   fhirServerUrl,
   fhirConverterQueueUrl,
@@ -121,6 +122,8 @@ export function createAPIService({
   patientImportResultLambda,
   patientImportBucket,
   dischargeRequeryQueue,
+  scheduledQueriesQueue,
+  documentQueryQueue,
   ehrSyncPatientQueue,
   elationLinkPatientQueue,
   healthieLinkPatientQueue,
@@ -130,13 +133,14 @@ export function createAPIService({
   ehrGetAppointmentsLambda,
   ehrBundleBucket,
   generalBucket,
+  ehexTrustStoreBucket,
   incomingHl7NotificationBucket,
   conversionBucket,
   medicalDocumentsUploadBucket,
   ehrResponsesBucket,
   fhirToBundleLambda,
   fhirToBundleCountLambda,
-  fhirToMedicalRecordLambda2,
+  fhirToMedicalRecordLambda,
   fhirToCdaConverterLambda,
   rateLimitTable,
   searchIngestionQueue,
@@ -146,6 +150,7 @@ export function createAPIService({
   consolidatedSearchLambda,
   consolidatedIngestionQueue,
   featureFlagsTable,
+  docIdToFilepathMappingTable,
   surescriptsAssets,
   questAssets,
   sdeAssets,
@@ -160,7 +165,8 @@ export function createAPIService({
   dbReadReplicaEndpoint: rds.Endpoint;
   dynamoDBTokenTable: dynamodb.Table;
   outboundRateLimitTable: dynamodb.Table;
-  alarmAction: SnsAction | undefined;
+  patientStateTable: dynamodb.Table;
+  alertAction: SnsAction | undefined;
   dnsZones: DnsZones;
   fhirServerUrl: string;
   fhirConverterQueueUrl: string | undefined;
@@ -174,6 +180,8 @@ export function createAPIService({
   patientImportResultLambda: ILambda;
   patientImportBucket: s3.IBucket;
   dischargeRequeryQueue: IQueue | undefined;
+  scheduledQueriesQueue: IQueue | undefined;
+  documentQueryQueue: IQueue;
   ehrSyncPatientQueue: IQueue;
   elationLinkPatientQueue: IQueue;
   healthieLinkPatientQueue: IQueue;
@@ -183,13 +191,14 @@ export function createAPIService({
   ehrGetAppointmentsLambda: ILambda;
   ehrBundleBucket: s3.IBucket;
   generalBucket: s3.IBucket;
+  ehexTrustStoreBucket: s3.IBucket | undefined;
   incomingHl7NotificationBucket: s3.IBucket | undefined;
   conversionBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.IBucket;
   ehrResponsesBucket: s3.IBucket | undefined;
   fhirToBundleLambda: ILambda;
   fhirToBundleCountLambda: ILambda;
-  fhirToMedicalRecordLambda2: ILambda | undefined;
+  fhirToMedicalRecordLambda: ILambda | undefined;
   fhirToCdaConverterLambda: ILambda | undefined;
   rateLimitTable: dynamodb.Table;
   searchIngestionQueue: IQueue;
@@ -199,6 +208,7 @@ export function createAPIService({
   consolidatedSearchLambda: ILambda;
   consolidatedIngestionQueue: IQueue;
   featureFlagsTable: dynamodb.Table;
+  docIdToFilepathMappingTable: dynamodb.Table;
   surescriptsAssets: SurescriptsAssets | undefined;
   questAssets: QuestAssets | undefined;
   sdeAssets: SDEAssets | undefined;
@@ -269,6 +279,17 @@ export function createAPIService({
           SEARCH_PASSWORD: ecs.Secret.fromSecretsManager(searchAuth.secret),
           ...secretsToECS(removeUnusedSecretsForApiService(secrets, props.config)),
           ...secretsToECS(buildSecrets(stack, props.config.propelAuth.secrets)),
+          ...(analyticsPlatformAssets && {
+            ANALYTICS_DB_CREDS: ecs.Secret.fromSecretsManager(
+              analyticsPlatformAssets.dbCredsSecret
+            ),
+            FHIR_TO_CSV_DB_PASSWORD: ecs.Secret.fromSecretsManager(
+              analyticsPlatformAssets.fhirToCsvDbPassword
+            ),
+            RAW_TO_CORE_DB_PASSWORD: ecs.Secret.fromSecretsManager(
+              analyticsPlatformAssets.rawToCoreDbPassword
+            ),
+          }),
         },
         environment: {
           NODE_ENV: "production", // Determines its being run in the cloud, the logical env is set on ENV_TYPE
@@ -280,6 +301,7 @@ export function createAPIService({
           DB_POOL_SETTINGS: JSON.stringify(dbPoolSettings),
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
           OUTBOUND_RATE_LIMIT_TABLE_NAME: outboundRateLimitTable.tableName,
+          PATIENT_STATE_TABLE_NAME: patientStateTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
           API_LB_ADDRESS: props.config.loadBalancerDnsName,
           ...(props.config.apiGatewayUsagePlanId
@@ -336,6 +358,12 @@ export function createAPIService({
           ...(dischargeRequeryQueue && {
             DISCHARGE_REQUERY_QUEUE_URL: dischargeRequeryQueue.queueUrl,
           }),
+          ...(scheduledQueriesQueue && {
+            PATIENT_MONITORING_SCHEDULED_QUERIES_QUEUE_URL: scheduledQueriesQueue.queueUrl,
+          }),
+          ...(documentQueryQueue && {
+            DOCUMENT_QUERY_QUEUE_URL: documentQueryQueue.queueUrl,
+          }),
           EHR_SYNC_PATIENT_QUEUE_URL: ehrSyncPatientQueue.queueUrl,
           ELATION_LINK_PATIENT_QUEUE_URL: elationLinkPatientQueue.queueUrl,
           HEALTHIE_LINK_PATIENT_QUEUE_URL: healthieLinkPatientQueue.queueUrl,
@@ -348,8 +376,8 @@ export function createAPIService({
           EHR_BUNDLE_BUCKET_NAME: ehrBundleBucket.bucketName,
           FHIR_TO_BUNDLE_LAMBDA_NAME: fhirToBundleLambda.functionName,
           FHIR_TO_BUNDLE_COUNT_LAMBDA_NAME: fhirToBundleCountLambda.functionName,
-          ...(fhirToMedicalRecordLambda2 && {
-            FHIR_TO_MEDICAL_RECORD_LAMBDA2_NAME: fhirToMedicalRecordLambda2.functionName,
+          ...(fhirToMedicalRecordLambda && {
+            FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
           }),
           ...(fhirToCdaConverterLambda && {
             FHIR_TO_CDA_CONVERTER_LAMBDA_NAME: fhirToCdaConverterLambda.functionName,
@@ -384,6 +412,7 @@ export function createAPIService({
             PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
           }),
           FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
+          DOC_ID_MAPPING_TABLE_NAME: docIdToFilepathMappingTable.tableName,
           ...(props.config.iheGateway?.trustStoreBucketName && {
             CQ_TRUST_BUNDLE_BUCKET_NAME: props.config.iheGateway.trustStoreBucketName,
           }),
@@ -393,6 +422,7 @@ export function createAPIService({
             EHR_HEALTHIE_ENVIRONMENT: props.config.ehrIntegration.healthie.env,
             EHR_ECLINICALWORKS_ENVIRONMENT: props.config.ehrIntegration.eclinicalworks.env,
             EHR_SALESFORCE_ENVIRONMENT: props.config.ehrIntegration.salesforce.env,
+            EHR_PRACTICEFUSION_ENVIRONMENT: props.config.ehrIntegration.practicefusion.env,
           }),
           ...(!isSandbox(props.config) && {
             DASH_URL: props.config.dashUrl,
@@ -404,6 +434,10 @@ export function createAPIService({
           ...(props.config.cwDirectoryRebuilder?.heartbeatUrl && {
             CW_DIR_REBUILD_HEARTBEAT_URL: props.config.cwDirectoryRebuilder.heartbeatUrl,
           }),
+          ...(!isSandbox(props.config) &&
+            props.config.cwDirectoryHealth?.heartbeatUrl && {
+              CW_DIR_HEARTBEAT_URL: props.config.cwDirectoryHealth.heartbeatUrl,
+            }),
           ...(surescriptsAssets && {
             PHARMACY_CONVERSION_BUCKET_NAME: surescriptsAssets.pharmacyConversionBucket.bucketName,
             SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsAssets.surescriptsReplicaBucket.bucketName,
@@ -442,14 +476,53 @@ export function createAPIService({
               props.config.hl7Notification.dischargeNotificationSlackUrl,
           }),
           ...(analyticsPlatformAssets && {
+            ANALYTICS_DB_READER_HOST: analyticsPlatformAssets.analyticsDbReaderHost,
+            ANALYTICS_BUCKET_NAME: analyticsPlatformAssets.analyticsPlatformBucket.bucketName,
             FHIR_TO_CSV_BULK_QUEUE_URL: analyticsPlatformAssets.fhirToCsvBulkQueue.queueUrl,
             FHIR_TO_CSV_INCREMENTAL_QUEUE_URL:
               analyticsPlatformAssets.fhirToCsvIncrementalQueue.queueUrl,
-            ANALYTICS_BUCKET_NAME: analyticsPlatformAssets.analyticsPlatformBucket.bucketName,
-            CORE_TRANSFORM_BATCH_JOB_QUEUE_ARN:
-              analyticsPlatformAssets.coreTransformBatchJobQueue.jobQueueArn,
-            CORE_TRANSFORM_BATCH_JOB_DEFINITION_ARN:
-              analyticsPlatformAssets.coreTransformBatchJob.jobDefinitionArn,
+            // Raw to Core
+            RAW_TO_CORE_TRIGGER_QUEUE_URL: analyticsPlatformAssets.rawToCoreTriggerQueue.queueUrl,
+            RAW_TO_CORE_BATCH_JOB_QUEUE_ARN:
+              analyticsPlatformAssets.rawToCoreBatchJobQueue.jobQueueArn,
+            RAW_TO_CORE_BATCH_JOB_DEFINITION_ARN:
+              analyticsPlatformAssets.rawToCoreBatchJob.jobDefinitionArn,
+            RAW_TO_CORE_COMPLETION_TOPIC_ARN:
+              analyticsPlatformAssets.rawToCoreCompletionTopic.topicArn,
+            // Core to HEDIS
+            CORE_TO_HEDIS_TRIGGER_QUEUE_URL:
+              analyticsPlatformAssets.coreToHedisTriggerQueue.queueUrl,
+            CORE_TO_HEDIS_BATCH_JOB_QUEUE_ARN:
+              analyticsPlatformAssets.coreToHedisBatchJobQueue.jobQueueArn,
+            CORE_TO_HEDIS_BATCH_JOB_DEFINITION_ARN:
+              analyticsPlatformAssets.coreToHedisBatchJob.jobDefinitionArn,
+            CORE_TO_HEDIS_COMPLETION_TOPIC_ARN:
+              analyticsPlatformAssets.coreToHedisCompletionTopic.topicArn,
+            // Export Core From FWH to S3
+            EXPORT_CORE_FROM_FWH_TO_S3_TRIGGER_QUEUE_URL:
+              analyticsPlatformAssets.exportCoreFromFwhToS3TriggerQueue.queueUrl,
+            EXPORT_CORE_FROM_FWH_TO_S3_BATCH_JOB_QUEUE_ARN:
+              analyticsPlatformAssets.exportCoreFromFwhToS3BatchJobQueue.jobQueueArn,
+            EXPORT_CORE_FROM_FWH_TO_S3_BATCH_JOB_DEFINITION_ARN:
+              analyticsPlatformAssets.exportCoreFromFwhToS3BatchJob.jobDefinitionArn,
+            EXPORT_CORE_FROM_FWH_TO_S3_COMPLETION_TOPIC_ARN:
+              analyticsPlatformAssets.exportCoreFromFwhToS3CompletionTopic.topicArn,
+            // Connectors
+            SNOWFLAKE_CONNECTOR_TRIGGER_QUEUE_URL:
+              analyticsPlatformAssets.snowflakeConnectorTriggerQueue.queueUrl,
+            SNOWFLAKE_CONNECTOR_BATCH_JOB_QUEUE_ARN:
+              analyticsPlatformAssets.snowflakeConnectorBatchJobQueue.jobQueueArn,
+            SNOWFLAKE_CONNECTOR_BATCH_JOB_DEFINITION_ARN:
+              analyticsPlatformAssets.snowflakeConnectorBatchJob.jobDefinitionArn,
+            CONNECTOR_INGESTION_COMPLETE_TOPIC_ARN:
+              analyticsPlatformAssets.connectorIngestionCompleteTopic.topicArn,
+            ANALYTICS_WEBHOOK_CONSUMER_QUEUE_URL:
+              analyticsPlatformAssets.analyticsWebhookConsumerQueue.queueUrl,
+            CQL_TRANSFORM_QUEUE_URL: analyticsPlatformAssets.cqlTransformQueue.queueUrl,
+            FHIR_TO_CSV_DB_USERNAME: analyticsPlatformAssets.fhirToCsvUserName,
+            RAW_TO_CORE_DB_USERNAME: analyticsPlatformAssets.rawToCoreUserName,
+            CREATE_FHIR_TABLES_LAMBDA_NAME:
+              analyticsPlatformAssets.createFhirTablesLambda.functionName,
           }),
           ...(props.config.hl7Notification?.hieConfigs && {
             HIE_CONFIG_DICTIONARY: JSON.stringify(
@@ -457,6 +530,12 @@ export function createAPIService({
             ),
           }),
           GENERAL_BUCKET_NAME: generalBucket.bucketName,
+          ...(ehexTrustStoreBucket && {
+            EHEX_TRUST_BUNDLE_BUCKET_NAME: ehexTrustStoreBucket.bucketName,
+          }),
+          ...(props.config.ehex?.envVars?.EHEX_HUB_GROUPED_QUERY_URL !== undefined && {
+            EHEX_HUB_GROUPED_QUERY_URL: props.config.ehex.envVars.EHEX_HUB_GROUPED_QUERY_URL,
+          }),
         },
       },
       healthCheckGracePeriod: Duration.seconds(60),
@@ -470,6 +549,10 @@ export function createAPIService({
   );
   // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html
   // fargateService.taskDefinition.defaultContainer?.addUlimits({ ... });
+
+  // Enable Availability Zone rebalancing for the underlying ECS service
+  (fargateService.service.node.defaultChild as ecs.CfnService).availabilityZoneRebalancing =
+    "ENABLED";
 
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
   const apiUrl = `${props.config.subdomain}.${props.config.domain}`;
@@ -516,16 +599,21 @@ export function createAPIService({
     targetGroup,
     scope: stack,
     id: "API",
-    alarmAction,
+    alertAction,
   });
 
   // Access grant for Aurora DB's secret
   dbCredsSecret.grantRead(fargateService.taskDefinition.taskRole);
+  analyticsPlatformAssets?.dbCredsSecret.grantRead(fargateService.taskDefinition.taskRole);
+  analyticsPlatformAssets?.fhirToCsvDbPassword.grantRead(fargateService.taskDefinition.taskRole);
+  analyticsPlatformAssets?.rawToCoreDbPassword.grantRead(fargateService.taskDefinition.taskRole);
   // RW grant for Dynamo DB
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   rateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   featureFlagsTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
+  docIdToFilepathMappingTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   outboundRateLimitTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
+  patientStateTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
 
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
@@ -539,6 +627,35 @@ export function createAPIService({
   fhirToBundleCountLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   ehrGetAppointmentsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   consolidatedSearchLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  if (analyticsPlatformAssets) {
+    analyticsPlatformAssets.createFhirTablesLambda.grantInvoke(
+      fargateService.taskDefinition.taskRole
+    );
+  }
+  if (surescriptsAssets) {
+    surescriptsAssets.surescriptsLambdas.forEach(({ lambda }) => {
+      lambda.grantInvoke(fargateService.taskDefinition.taskRole);
+    });
+  }
+  if (questAssets) {
+    questAssets.questLambdas.forEach(({ lambda }) => {
+      lambda.grantInvoke(fargateService.taskDefinition.taskRole);
+    });
+  }
+  if (analyticsPlatformAssets) {
+    analyticsPlatformAssets.rawToCoreCompletionTopic.grantPublish(
+      fargateService.taskDefinition.taskRole
+    );
+    analyticsPlatformAssets.coreToHedisCompletionTopic.grantPublish(
+      fargateService.taskDefinition.taskRole
+    );
+    analyticsPlatformAssets.exportCoreFromFwhToS3CompletionTopic.grantPublish(
+      fargateService.taskDefinition.taskRole
+    );
+    analyticsPlatformAssets.connectorIngestionCompleteTopic.grantPublish(
+      fargateService.taskDefinition.taskRole
+    );
+  }
   // Access grant for buckets
   patientImportBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   conversionBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
@@ -549,6 +666,7 @@ export function createAPIService({
     fargateService.taskDefinition.taskRole
   );
 
+  ehexTrustStoreBucket?.grantRead(fargateService.taskDefinition.taskRole);
   incomingHl7NotificationBucket?.grantRead(fargateService.taskDefinition.taskRole);
 
   if (surescriptsAssets) {
@@ -568,8 +686,8 @@ export function createAPIService({
     ehrResponsesBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
   }
 
-  if (fhirToMedicalRecordLambda2) {
-    fhirToMedicalRecordLambda2.grantInvoke(fargateService.taskDefinition.taskRole);
+  if (fhirToMedicalRecordLambda) {
+    fhirToMedicalRecordLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   }
 
   provideAccessToQueue({
@@ -614,16 +732,58 @@ export function createAPIService({
       queue: analyticsPlatformAssets.fhirToCsvIncrementalQueue,
       resource: fargateService.taskDefinition.taskRole,
     });
-    analyticsPlatformAssets.coreTransformBatchJob.grantSubmitJob(
-      fargateService.taskDefinition.taskRole,
-      analyticsPlatformAssets.coreTransformBatchJobQueue
-    );
+    provideAccessToQueue({
+      accessType: "send",
+      queue: analyticsPlatformAssets.rawToCoreTriggerQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+    provideAccessToQueue({
+      accessType: "send",
+      queue: analyticsPlatformAssets.coreToHedisTriggerQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+    provideAccessToQueue({
+      accessType: "send",
+      queue: analyticsPlatformAssets.exportCoreFromFwhToS3TriggerQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+    provideAccessToQueue({
+      accessType: "send",
+      queue: analyticsPlatformAssets.snowflakeConnectorTriggerQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+    provideAccessToQueue({
+      accessType: "send",
+      queue: analyticsPlatformAssets.analyticsWebhookConsumerQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+    provideAccessToQueue({
+      accessType: "send",
+      queue: analyticsPlatformAssets.cqlTransformQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
   }
 
   if (dischargeRequeryQueue) {
     provideAccessToQueue({
       accessType: "send",
       queue: dischargeRequeryQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+  }
+
+  if (scheduledQueriesQueue) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: scheduledQueriesQueue,
+      resource: fargateService.taskDefinition.taskRole,
+    });
+  }
+
+  if (documentQueryQueue) {
+    provideAccessToQueue({
+      accessType: "send",
+      queue: documentQueryQueue,
       resource: fargateService.taskDefinition.taskRole,
     });
   }
@@ -698,8 +858,8 @@ export function createAPIService({
       datapointsToAlarm: 2,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-  alarmAction && fargateCPUAlarm.addAlarmAction(alarmAction);
-  alarmAction && fargateCPUAlarm.addOkAction(alarmAction);
+  alertAction && fargateCPUAlarm.addAlarmAction(alertAction);
+  alertAction && fargateCPUAlarm.addOkAction(alertAction);
 
   const fargateMemoryAlarm = fargateService.service
     .metricMemoryUtilization()
@@ -709,8 +869,8 @@ export function createAPIService({
       datapointsToAlarm: 2,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-  alarmAction && fargateMemoryAlarm.addAlarmAction(alarmAction);
-  alarmAction && fargateMemoryAlarm.addOkAction(alarmAction);
+  alertAction && fargateMemoryAlarm.addAlarmAction(alertAction);
+  alertAction && fargateMemoryAlarm.addOkAction(alertAction);
 
   // allow the LB to talk to fargate
   fargateService.service.connections.allowFrom(

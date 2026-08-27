@@ -12,7 +12,7 @@ export type CqDirectoryRebuilderProps = {
   stack: Construct;
   lambdaLayers: LambdaLayers;
   vpc: IVpc;
-  alarmSnsAction?: SnsAction;
+  alertSnsAction?: SnsAction;
 };
 
 function getSettings(
@@ -39,7 +39,7 @@ export function createCqDirectoryRebuilder(props: CqDirectoryRebuilderProps): La
     stack,
     lambdaLayers,
     vpc,
-    alarmSnsAction,
+    alertSnsAction,
     name,
     lambdaMemory,
     lambdaTimeout,
@@ -57,7 +57,7 @@ export function createCqDirectoryRebuilder(props: CqDirectoryRebuilderProps): La
     url,
     memory: lambdaMemory,
     timeout: lambdaTimeout,
-    alarmSnsAction,
+    alertSnsAction,
     envType: config.environmentType,
     envVars: {
       TIMEOUT_MILLIS: String(httpTimeout.toMilliseconds()),

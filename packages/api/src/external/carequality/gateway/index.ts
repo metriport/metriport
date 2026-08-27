@@ -46,7 +46,7 @@ export async function gatherXCPDGateways(patient: Patient): Promise<XCPDGateway[
   const filteredOrgs = facilitiesWithEpicFilter(allOrgs, isEpicEnabled);
   const allOrgsWithBasics = filteredOrgs.map(toBasicOrgAttributes);
   const orgsToSearch = filterCQOrgsToSearch(allOrgsWithBasics);
-  const v2Gateways = await cqOrgsToXCPDGateways(orgsToSearch);
+  const v2Gateways = cqOrgsToXCPDGateways(orgsToSearch);
 
   return v2Gateways;
 }

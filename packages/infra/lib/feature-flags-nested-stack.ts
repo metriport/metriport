@@ -1,9 +1,9 @@
 import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
-import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
+import { addDynamoPerformanceAlerts } from "./shared/ddb";
 import { isProd } from "./shared/util";
 
 interface FeatureFlagsNestedStackProps extends NestedStackProps {
@@ -96,59 +96,16 @@ export class FeatureFlagsNestedStack extends NestedStack {
     //
     // For now, we will manually enable PITR on replicas in the console.
     // add performance alarms for monitoring prod environment
-    this.addDynamoPerformanceAlarms({
+    addDynamoPerformanceAlerts({
+      scope: this,
       table,
       dynamoConstructName,
-      consumedWriteCapacityUnitsAlarmThreshold,
-      consumedWriteCapacityUnitsAlarmPeriod,
-      consumedReadCapacityUnitsAlarmThreshold,
-      consumedReadCapacityUnitsAlarmPeriod,
-      alarmAction,
+      consumedWriteCapacityUnitsAlertThreshold: consumedWriteCapacityUnitsAlarmThreshold,
+      consumedWriteCapacityUnitsAlertPeriod: consumedWriteCapacityUnitsAlarmPeriod,
+      consumedReadCapacityUnitsAlertThreshold: consumedReadCapacityUnitsAlarmThreshold,
+      consumedReadCapacityUnitsAlertPeriod: consumedReadCapacityUnitsAlarmPeriod,
+      alertAction: alarmAction,
     });
     return table;
-  }
-
-  private addDynamoPerformanceAlarms({
-    table,
-    dynamoConstructName,
-    consumedWriteCapacityUnitsAlarmThreshold,
-    consumedWriteCapacityUnitsAlarmPeriod,
-    consumedReadCapacityUnitsAlarmThreshold,
-    consumedReadCapacityUnitsAlarmPeriod,
-    alarmAction,
-  }: {
-    table: dynamodb.Table;
-    dynamoConstructName: string;
-    consumedWriteCapacityUnitsAlarmThreshold: number;
-    consumedWriteCapacityUnitsAlarmPeriod: number;
-    consumedReadCapacityUnitsAlarmThreshold: number;
-    consumedReadCapacityUnitsAlarmPeriod: number;
-    alarmAction?: SnsAction;
-  }) {
-    const readUnitsMetric = table.metricConsumedReadCapacityUnits();
-    const readAlarm = readUnitsMetric.createAlarm(
-      this,
-      `${dynamoConstructName}ConsumedReadCapacityUnitsAlarm`,
-      {
-        threshold: consumedReadCapacityUnitsAlarmThreshold, // units per second
-        evaluationPeriods: consumedReadCapacityUnitsAlarmPeriod,
-        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-      }
-    );
-    alarmAction && readAlarm.addAlarmAction(alarmAction);
-    alarmAction && readAlarm.addOkAction(alarmAction);
-
-    const writeUnitsMetric = table.metricConsumedWriteCapacityUnits();
-    const writeAlarm = writeUnitsMetric.createAlarm(
-      this,
-      `${dynamoConstructName}ConsumedWriteCapacityUnitsAlarm`,
-      {
-        threshold: consumedWriteCapacityUnitsAlarmThreshold, // units per second
-        evaluationPeriods: consumedWriteCapacityUnitsAlarmPeriod,
-        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-      }
-    );
-    alarmAction && writeAlarm.addAlarmAction(alarmAction);
-    alarmAction && writeAlarm.addOkAction(alarmAction);
   }
 }

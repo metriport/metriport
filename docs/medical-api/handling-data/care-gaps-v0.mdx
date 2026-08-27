@@ -1,0 +1,215 @@
+---
+title: "Care Gaps"
+sidebarTitle: "Care Gaps"
+icon: "n/a"
+description: "Automated identification of missing or incomplete care based on HEDIS quality measures."
+group: "Data Analytics"
+---
+
+# Overview
+
+Care Gaps automatically identifies missing or incomplete care for patients based on HEDIS quality
+measures. The system analyzes patient data to determine whether recommended screenings, preventive
+care, and treatments have been completed according to evidence-based guidelines.
+
+Care Gaps runs at scheduled intervals and analyzes your patient population to identify opportunities
+for improving care quality and closing gaps in care delivery.
+
+# Available Measures
+
+The following HEDIS measures are currently supported:
+
+| Measure                     | Code |
+| --------------------------- | ---- |
+| Breast Cancer Screening     | BCSE |
+| Colorectal Cancer Screening | COLE |
+
+# Getting Started
+
+Care Gaps runs at scheduled intervals and analyzes your patient data to identify gaps in care. Once
+care gaps is enabled for your account, results will be available through an API.
+
+# Accessing via API
+
+You can retrieve care gap records using the `GET /medical/v1/care-gap` endpoint. Each care gap record
+includes a `run_id` field which is a unique identifier that identifies the generation/run that produced the care gap,
+allowing you to track and filter results by specific analysis runs.
+
+# Accessing via Data Warehouse
+
+Care gap records are also available in the data warehouse under the `DATA_PRODUCTS.CARE_GAP` table.
+This allows you to query and analyze care gap data using SQL alongside other patient data.
+
+## Table Schema
+
+| Column                            | Description                                              |
+| --------------------------------- | -------------------------------------------------------- |
+| PATIENT_ID                        | The patient identifier                                   |
+| MEASURE_NAME                      | HEDIS measure name (e.g., BCSE_Details-2025.1.0)         |
+| MEASURE_CODE                      | HEDIS measure code (e.g., BCSE, COLE)                    |
+| MEASURE_REPORT_CODE               | Code from the first group of the measure report          |
+| MEASURE_REPORT_INITIAL_POPULATION | Flag for initial-population from first group (0 or 1)    |
+| MEASURE_REPORT_EXCLUSION          | Flag for denominator-exclusion from first group (0 or 1) |
+| MEASURE_REPORT_DENOMINATOR        | Flag for denominator from first group (0 or 1)           |
+| MEASURE_REPORT_NUMERATOR          | Flag for numerator from first group (0 or 1)             |
+| MEASUREMENT_PERIOD_START          | Start date of the measurement period                     |
+| MEASUREMENT_PERIOD_END            | End date of the measurement period                       |
+| MEASURE_REPORT                    | FHIR MeasureReport resource (JSON)                       |
+| SUPPORTING_EVIDENCE               | FHIR Parameters resource (JSON)                          |
+| LAST_RUN                          | Timestamp of last analysis                               |
+| RUN_ID                            | Unique identifier for the generation/run                 |
+
+The flattened columns (`MEASURE_REPORT_CODE`, `MEASURE_REPORT_INITIAL_POPULATION`,
+`MEASURE_REPORT_EXCLUSION`, `MEASURE_REPORT_DENOMINATOR`, `MEASURE_REPORT_NUMERATOR`,
+`MEASUREMENT_PERIOD_START`, `MEASUREMENT_PERIOD_END`) are extracted from the first group (index 0)
+of the `measureReport.group` array and the `measureReport.period` object for easier querying. The
+full `MEASURE_REPORT` and `SUPPORTING_EVIDENCE` objects remain available in their respective columns
+for more granular access.
+
+## Example Query
+
+```sql
+SELECT
+    MEASURE_CODE,
+    COUNT(DISTINCT PATIENT_ID) AS compliant_count
+FROM DATA_PRODUCTS.CARE_GAP
+WHERE MEASURE_REPORT_INITIAL_POPULATION = 1
+AND MEASURE_REPORT_EXCLUSION = 0
+AND MEASURE_REPORT_DENOMINATOR = 1
+AND MEASURE_REPORT_NUMERATOR = 1
+AND YEAR(DATE(MEASUREMENT_PERIOD_END)) = 2025
+GROUP BY MEASURE_CODE
+ORDER BY compliant_count DESC
+LIMIT 10;
+```
+
+# The Care Gap Model
+
+When a care gap is identified, the API returns data in the following format:
+
+```json
+{
+  "careGaps": [
+    {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "cxId": "11111111-1111-1111-1111-111111111111",
+      "patientId": "22222222-2222-2222-2222-222222222222",
+      "measureName": "BCSE_Details-2025.1.0",
+      "measureCode": "BCSE",
+      "measureReport": {
+        "resourceType": "MeasureReport",
+        "id": "BCSE-Details-2025.1.0.0.22222222-2222-2222-2222-222222222222",
+        "status": "complete",
+        "type": "individual",
+        "measure": "http://ncqa.org/fhir/Measure/BCSE-Details",
+        "subject": {
+          "reference": "Patient/22222222-2222-2222-2222-222222222222"
+        },
+        "period": {
+          "start": "2025-01-01",
+          "end": "2025-12-31"
+        },
+        "group": [
+          {
+            "id": "BreastCancerScreening",
+            "code": {
+              "coding": [
+                {
+                  "system": "https://ncqa.org/fhir/CodeSystem/measure-group",
+                  "code": "BreastCancerScreening"
+                }
+              ]
+            },
+            "population": [
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://hl7.org/fhir/CodeSystem/measure-population",
+                      "code": "initial-population"
+                    }
+                  ]
+                },
+                "count": 1
+              },
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://hl7.org/fhir/CodeSystem/measure-population",
+                      "code": "denominator-exclusion"
+                    }
+                  ]
+                },
+                "count": 0
+              },
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://hl7.org/fhir/CodeSystem/measure-population",
+                      "code": "denominator"
+                    }
+                  ]
+                },
+                "count": 1
+              },
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://hl7.org/fhir/CodeSystem/measure-population",
+                      "code": "numerator"
+                    }
+                  ]
+                },
+                "count": 0
+              }
+            ]
+          }
+        ]
+      },
+      "supportingEvidence": {
+        "resourceType": "Parameters",
+        "id": "BCSE-Details-2025.1.0.0.22222222-2222-2222-2222-222222222222",
+        "parameter": [
+          {
+            "name": "Age at end of measurement period",
+            "valueInteger": 42
+          },
+          {
+            "name": "Is continuously enrolled",
+            "valueBoolean": false
+          },
+          {
+            "name": "Initial population",
+            "valueBoolean": true
+          },
+          {
+            "name": "Denominator",
+            "valueBoolean": true
+          },
+          {
+            "name": "Numerator",
+            "valueBoolean": false
+          },
+          {
+            "name": "Mammography screening period",
+            "valuePeriod": {
+              "start": "2023-10-01",
+              "end": "2025-12-31"
+            }
+          }
+        ]
+      },
+      "lastRun": "2025-12-05T14:30:15Z",
+      "runId": "55555555-5555-5555-5555-555555555555"
+    }
+  ]
+}
+```
+
+# Additional Information
+
+For more information about working with patient data, see the [data analytics](/medical-api/handling-data/data-analytics)
+documentation.

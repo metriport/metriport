@@ -1,0 +1,25 @@
+---
+title: "Patient Telecom"
+description: "Schema documentation for the Patient Telecom table in the Metriport data model"
+group: "Schema"
+icon: "n/a"
+---
+
+The patient telecom table contains normalized contact information for patients. This table supports multiple telecom entries per patient, including phone numbers and email addresses.
+
+**Primary Keys:**
+
+* patient_id
+* telecom_rank
+
+**Foreign Keys:**
+
+* patient_id - links to the [patient](/medical-api/handling-data/schema/patient) table
+
+| Column          | Data Type | Description                                                                                                                                                                                                                                                                                                                        |
+| --------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| patient_id      | varchar   | Unique identifier for the patient                                                                                                                                                                                                                                                                                                  |
+| system          | varchar   | The type of contact method. Possible values:<br/>– <code>phone</code>: A phone number<br/>– <code>email</code>: An email address<br/>– <code>fax</code>: A fax number<br/>– <code>pager</code>: A pager number<br/>– <code>url</code>: A URL<br/>– <code>sms</code>: An SMS contact<br/>– <code>other</code>: Other contact method |
+| value           | varchar   | The phone number, email address, etc.                                                                                                                                                                                                                                                                                              |
+| data_source_ext | varchar   | Integration source of the data, derived from FHIR extension                                                                                                                                                                                                                                                                        |
+| telecom_rank    | integer   | Patient FHIR resource array order                                                                                                                                                                                                                                                                                                  |

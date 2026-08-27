@@ -44,14 +44,12 @@ export const facilityMapiCreateSchema = facilityMapiBaseSchema.omit({ oid: true 
 export type FacilityMapiCreate = z.infer<typeof facilityMapiCreateSchema>;
 
 export const facilityInternalDetailsSchema = z.object({
+  type: z.nativeEnum(FacilityType),
+  principalOid: z.string().nullable(),
   cqApproved: z.boolean().optional().nullable(),
-  cqType: z.nativeEnum(FacilityType),
   cqActive: z.boolean().optional().nullable(),
-  cqOboOid: z.string().nullable(),
   cwApproved: z.boolean().optional().nullable(),
-  cwType: z.nativeEnum(FacilityType),
   cwActive: z.boolean().optional().nullable(),
-  cwOboOid: z.string().nullable(),
 });
 
 export const facilitySchema = baseUpdateSchema

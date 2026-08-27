@@ -16,6 +16,7 @@ const ehrSourcesWithResourceDiffBundles = [
   EhrSources.athena,
   EhrSources.elation,
   EhrSources.healthie,
+  EhrSources.practicefusion,
 ] as const;
 export type EhrSourceWithResourceDiffBundles = (typeof ehrSourcesWithResourceDiffBundles)[number];
 export function isEhrSourceWithResourceDiffBundles(

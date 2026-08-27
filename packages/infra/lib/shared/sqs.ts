@@ -24,19 +24,21 @@ const DEFAULT_VISIBILITY_TIMEOUT_MULTIPLIER = 6;
 
 const DEFAULT_MAX_RECEIVE_COUNT = 5;
 const DEFAULT_MAX_AGE_OF_OLDEST_MESSAGE = Duration.minutes(10);
-const DEFAULT_MAX_AGE_OF_OLDEST_MESSAGE_DLQ = Duration.hours(2);
 
 export type QueueProps = (StandardQueueProps | FifoQueueProps) & {
   dlq?: never;
   producer?: IGrantable;
   consumer?: IGrantable;
-  alarmSnsAction?: SnsAction;
-  alarmMaxAgeOfOldestMessage?: Duration;
+  alertSnsAction?: SnsAction;
+  alertMaxApproximateAgeOfOldestMessage?: Duration;
   createDLQ?: boolean | undefined;
   createRetryLambda?: boolean | undefined;
   lambdaLayers?: ILayerVersion[];
   envType: EnvType;
-  alarmMaxAgeOfOldestMessageDlq?: Duration;
+  alertMaxApproximateAgeOfOldestMessageDlq?: Duration;
+  alertMaxApproximateNumberOfMessagesVisible?: number;
+  alertMaxNumberOfMessagesReceived?: number;
+  alertMaxApproximateNumberOfMessagesVisibleDlq?: number;
 };
 
 /**
@@ -45,19 +47,28 @@ export type QueueProps = (StandardQueueProps | FifoQueueProps) & {
  * @param props.createDLQ - create a dead letter queue, default true
  * @param props.createRetryLambda - create a lambda to retry messages on DLQ, default true
  * @param props.fifo - whether to create a FIFO queue or not, default false
+ * @param props.alertMaxApproximateAgeOfOldestMessage - the maximum approximate age of the oldest message in the queue before
+ * an alarm is triggered
+ * @param props.alertMaxApproximateNumberOfMessagesVisible - the maximum approximate number of visible messages in the queue
+ * before an alarm is triggered
+ * @param props.alertMaxNumberOfMessagesReceived - the maximum number of messages received in the queue before an alarm is triggered
+ * @param props.alertMaxApproximateAgeOfOldestMessageDlq - the maximum approximate age of the oldest message in the
+ * DLQ before an alarm is triggered
+ * @param props.alertMaxApproximateNumberOfMessagesVisibleDlq - the maximum approximate number of visible messages in the
+ * DLQ before an alarm is triggered
  * @returns
  */
 export function createQueue(props: QueueProps): Queue {
-  const alarmMaxAgeOfOldestMessage =
-    props.alarmMaxAgeOfOldestMessage ?? DEFAULT_MAX_AGE_OF_OLDEST_MESSAGE;
+  const alertMaxApproximateAgeOfOldestMessage =
+    props.alertMaxApproximateAgeOfOldestMessage ?? DEFAULT_MAX_AGE_OF_OLDEST_MESSAGE;
   const createDLQ = props.createDLQ !== false;
 
   const dlq = createDLQ
     ? defaultDLQ(props.stack, props.name, props.fifo, {
-        alarmSnsAction: props.alarmSnsAction,
-        ...(props.alarmMaxAgeOfOldestMessageDlq
-          ? { alarmMaxAgeOfOldestMessage: props.alarmMaxAgeOfOldestMessageDlq }
-          : undefined),
+        alertSnsAction: props.alertSnsAction,
+        alertMaxApproximateAgeOfOldestMessage: props.alertMaxApproximateAgeOfOldestMessageDlq,
+        alertMaxApproximateNumberOfMessagesVisible:
+          props.alertMaxApproximateNumberOfMessagesVisibleDlq,
       })
     : undefined;
   const isCreateRetryLambda = props.createRetryLambda ?? true;
@@ -72,22 +83,34 @@ export function createQueue(props: QueueProps): Queue {
   props.consumer && queue.grantConsumeMessages(props.consumer);
   props.consumer && dlq && dlq.grantSendMessages(props.consumer);
 
-  if (props.maxMessageCountAlarmThreshold) {
-    addMessageCountAlarmToQueue({
+  if (props.alertMaxNumberOfMessagesReceived) {
+    addNumberOfMessagesReceivedAlarmToQueue({
       stack: props.stack,
       queue,
-      threshold: props.maxMessageCountAlarmThreshold,
+      threshold: props.alertMaxNumberOfMessagesReceived,
       alarmName: `${props.name}-MessageCount-Alarm`,
-      alarmAction: props?.alarmSnsAction,
+      alarmAction: props?.alertSnsAction,
+    });
+  }
+
+  const alertMaxApproximateNumberOfMessagesVisible =
+    props.alertMaxApproximateNumberOfMessagesVisible;
+  if (alertMaxApproximateNumberOfMessagesVisible) {
+    addApproximateNumberOfMessagesVisibleAlarmToQueue({
+      stack: props.stack,
+      queue,
+      threshold: alertMaxApproximateNumberOfMessagesVisible,
+      alarmName: `${props.name}-ApproximateNumberOfMessagesVisible-Alarm`,
+      alarmAction: props?.alertSnsAction,
     });
   }
 
   addMaxAgeOfOldestMessageAlarmToQueue({
     stack: props.stack,
     queue,
-    threshold: alarmMaxAgeOfOldestMessage,
-    alarmName: `${props.name}-MaxAgeOldestMessage-Alarm`,
-    alarmAction: props?.alarmSnsAction,
+    threshold: alertMaxApproximateAgeOfOldestMessage,
+    alarmName: `${props.name}-ApproximateAgeOfOldestMessage-Alarm`,
+    alarmAction: props?.alertSnsAction,
   });
 
   if (dlq && isCreateRetryLambda) {
@@ -112,7 +135,6 @@ type AbstractQueueProps = {
   receiveMessageWaitTime?: Duration;
   // maximum number of times a message can be processed before being automatically sent to the dead-letter queue
   maxReceiveCount?: number;
-  maxMessageCountAlarmThreshold?: number;
 };
 export type StandardQueueProps = AbstractQueueProps & {
   contentBasedDeduplication?: never;
@@ -173,8 +195,9 @@ function createFifoQueue(props: FifoQueueProps): Queue {
 }
 
 export type DefaultDLQProps = {
-  alarmSnsAction?: SnsAction;
-  alarmMaxAgeOfOldestMessage?: Duration;
+  alertSnsAction?: SnsAction;
+  alertMaxApproximateAgeOfOldestMessage?: Duration;
+  alertMaxApproximateNumberOfMessagesVisible?: number;
 };
 
 export function defaultDLQ(
@@ -182,8 +205,9 @@ export function defaultDLQ(
   name: string,
   fifo?: boolean,
   {
-    alarmSnsAction,
-    alarmMaxAgeOfOldestMessage = DEFAULT_MAX_AGE_OF_OLDEST_MESSAGE_DLQ,
+    alertSnsAction,
+    alertMaxApproximateAgeOfOldestMessage,
+    alertMaxApproximateNumberOfMessagesVisible,
   }: DefaultDLQProps = {}
 ): Queue {
   const dlq = new Queue(scope, name + "DLQ", {
@@ -195,21 +219,25 @@ export function defaultDLQ(
     visibilityTimeout: Duration.minutes(1),
   });
 
-  addMessageCountAlarmToQueue({
-    stack: scope,
-    queue: dlq,
-    threshold: 1,
-    alarmName: `${name}-DLQ-Alarm`,
-    alarmAction: alarmSnsAction,
-  });
+  if (alertMaxApproximateNumberOfMessagesVisible) {
+    addApproximateNumberOfMessagesVisibleAlarmToQueue({
+      stack: scope,
+      queue: dlq,
+      threshold: alertMaxApproximateNumberOfMessagesVisible,
+      alarmName: `${name}-DLQ-Alarm`,
+      alarmAction: alertSnsAction,
+    });
+  }
 
-  addMaxAgeOfOldestMessageAlarmToQueue({
-    stack: scope,
-    queue: dlq,
-    threshold: alarmMaxAgeOfOldestMessage,
-    alarmName: `${name}Dlq-MaxAgeOldestMessage-Alarm`,
-    alarmAction: alarmSnsAction,
-  });
+  if (alertMaxApproximateAgeOfOldestMessage) {
+    addMaxAgeOfOldestMessageAlarmToQueue({
+      stack: scope,
+      queue: dlq,
+      threshold: alertMaxApproximateAgeOfOldestMessage,
+      alarmName: `${name}Dlq-ApproximateAgeOfOldestMessage-Alarm`,
+      alarmAction: alertSnsAction,
+    });
+  }
 
   return dlq;
 }
@@ -232,7 +260,33 @@ export function provideAccessToQueue({
   if (receiveOrBoth.includes(accessType)) queue.grantConsumeMessages(resource);
 }
 
-export function addMessageCountAlarmToQueue({
+export function addApproximateNumberOfMessagesVisibleAlarmToQueue({
+  stack,
+  queue,
+  threshold,
+  alarmName,
+  alarmAction,
+}: {
+  stack: Construct;
+  queue: Queue;
+  threshold: number;
+  alarmName: string;
+  alarmAction?: SnsAction;
+}) {
+  const metric = queue.metricApproximateNumberOfMessagesVisible({
+    period: Duration.minutes(1),
+    statistic: Stats.MAXIMUM,
+  });
+  const alarm = metric.createAlarm(stack, alarmName, {
+    threshold,
+    evaluationPeriods: 1,
+    alarmDescription: `Alarm if the approximate amount of visible messages in the queue is greater than or equal to the threshold (${threshold}) for 1 evaluation period`,
+    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+  });
+  alarmAction && alarm.addAlarmAction(alarmAction);
+}
+
+export function addNumberOfMessagesReceivedAlarmToQueue({
   stack,
   queue,
   threshold,
@@ -252,7 +306,7 @@ export function addMessageCountAlarmToQueue({
   const alarm = errMetric.createAlarm(stack, alarmName, {
     threshold,
     evaluationPeriods: 1,
-    alarmDescription: `Alarm if the count of messages greater than or equal to the threshold (${threshold}) for 1 evaluation period`,
+    alarmDescription: `Alarm if the count of messages received is greater than or equal to the threshold (${threshold}) for 1 evaluation period`,
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
   alarmAction && alarm.addAlarmAction(alarmAction);
@@ -275,11 +329,15 @@ export function addMaxAgeOfOldestMessageAlarmToQueue({
     period: Duration.minutes(1),
     statistic: Stats.MAXIMUM,
   });
+
   const alarm = metric.createAlarm(stack, alarmName, {
     threshold: threshold.toSeconds(),
     evaluationPeriods: 1,
-    alarmDescription: `Alarm if the age of the oldest message is greater than threshold for 1 evaluation period`,
+    alarmDescription: `Alarm if the age of the oldest message is greater than or equal to the threshold (${threshold.toSeconds()} seconds) for 1 evaluation period`,
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
-  alarmAction && alarm.addAlarmAction(alarmAction);
+
+  if (alarmAction) {
+    alarm.addAlarmAction(alarmAction);
+  }
 }

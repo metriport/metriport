@@ -1,16 +1,16 @@
-import { XMLBuilder } from "fast-xml-parser";
-import { v4 as uuidv4 } from "uuid";
 import {
-  InboundPatientDiscoveryResp,
   InboundPatientDiscoveryReq,
+  InboundPatientDiscoveryResp,
   isSuccessfulInboundPatientDiscoveryResponse,
 } from "@metriport/ihe-gateway-sdk";
-import { createSecurityHeader } from "../../shared";
-import { queryResponseCodes, ackCodes, xmlBuilderAttributes } from "../../../shared";
-import { namespaces } from "../../../constants";
-import { timestampToSoapBody } from "../../../utils";
-import { METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX } from "../../../../shared";
+import { METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX } from "@metriport/shared";
+import { XMLBuilder } from "fast-xml-parser";
+import { v4 as uuidv4 } from "uuid";
 import { mapFhirToMetriportGender } from "../../../../../fhir/patient/conversion";
+import { namespaces } from "../../../constants";
+import { ackCodes, queryResponseCodes, xmlBuilderAttributes } from "../../../shared";
+import { timestampToSoapBody } from "../../../utils";
+import { createSecurityHeader } from "../../shared";
 
 function createQueryByParameter(request: InboundPatientDiscoveryReq): object {
   const { id, samlAttributes, patientResource } = request;

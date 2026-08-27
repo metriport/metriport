@@ -22,7 +22,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     );
     try {
       const bundles = splitCompositions ? splitBundleByCompositions(bundle) : bundle;
-      return convertFhirBundleToCda(bundles, orgOid, isCustodian);
+      return convertFhirBundleToCda(cxId, bundles, orgOid, isCustodian);
 
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {

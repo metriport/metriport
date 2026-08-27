@@ -1,9 +1,8 @@
 import { PatientLoaderMetriportAPI } from "../command/patient-loader-metriport-api";
-import { PatientData } from "../domain/patient";
 import { epicMatchingAlgorithm, matchPatients } from "./match-patients";
 import { useFirstMatchingPatient } from "./merge-patients";
 import { MPI } from "./mpi";
-import { normalizePatientInboundMpi } from "./normalize-patient";
+import { normalizePatientInboundMpi, PatientDataForMpiMatching } from "./normalize-patient";
 import { PatientMPI, patientToPatientMPI } from "./shared";
 
 export class InboundMpiMetriportApi implements MPI {
@@ -12,7 +11,9 @@ export class InboundMpiMetriportApi implements MPI {
 
   constructor(protected apiUrl: string) {}
 
-  public async findMatchingPatient(patient: PatientData): Promise<PatientMPI | undefined> {
+  public async findMatchingPatient(
+    patient: PatientDataForMpiMatching
+  ): Promise<PatientMPI | undefined> {
     const normalizedPatientDemo = normalizePatientInboundMpi(patient);
     if (!normalizedPatientDemo) throw new Error("Invalid Patient Data");
 
@@ -22,10 +23,13 @@ export class InboundMpiMetriportApi implements MPI {
         genderAtBirth: normalizedPatientDemo.genderAtBirth,
       },
     });
+
+    const patientsThatAreOptedIn = foundPatients.filter(patient => !patient.hieOptOut);
+
     const matchingPatients = matchPatients(
       epicMatchingAlgorithm,
       [],
-      foundPatients.map(patientToPatientMPI),
+      patientsThatAreOptedIn.map(patientToPatientMPI),
       normalizedPatientDemo,
       this.SIMILARITY_THRESHOLD
     );

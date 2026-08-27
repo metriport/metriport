@@ -28,7 +28,6 @@ import {
   RiskAssessment,
   ServiceRequest,
   CarePlan,
-  Goal,
   Appointment,
   CommunicationRequest,
   DeviceRequest,
@@ -41,6 +40,26 @@ import {
   Coding,
   CodeableConcept,
 } from "@medplum/fhirtypes";
+
+import type {
+  SmartCondition,
+  SmartProcedure,
+  SmartPatient,
+  SmartDevice,
+  SmartLocation,
+  SmartEncounter,
+  SmartPractitioner,
+  SmartOrganization,
+  SmartCareTeam,
+  SmartObservation,
+  SmartComposition,
+  SmartDocumentReference,
+  SmartMedication,
+  SmartMedicationRequest,
+  SmartCarePlan,
+  SmartGoal,
+  ToSmart,
+} from "./coding-fields";
 
 /**
  * Options for reverse reference lookup
@@ -66,6 +85,8 @@ export interface SmartCoding extends Coding {
   isRxNorm(): boolean;
   /** Check if this coding belongs to the NDC system */
   isNdc(): boolean;
+  /** Check if this coding belongs to the CCSR system */
+  isCcsr(): boolean;
   /** Check if this coding's code matches a specific code value */
   matchesCode(code: string): boolean;
   /** Check if this coding's code matches any of the provided code values */
@@ -168,6 +189,23 @@ export interface SmartCodeableConcept extends Omit<CodeableConcept, "coding"> {
   hasSomeNdc(codes: string[]): boolean;
   /** Find an NDC coding matching a predicate */
   findNdcCoding(predicate: (code: string) => boolean): SmartCoding | undefined;
+
+  /** Get the first CCSR coding */
+  getCcsr(): SmartCoding | undefined;
+  /** Get all CCSR codings */
+  getCcsrCodings(): SmartCoding[];
+  /** Get the first CCSR code value */
+  getCcsrCode(): string | undefined;
+  /** Get all CCSR code values */
+  getCcsrCodes(): string[];
+  /** Check if this CodeableConcept has any CCSR coding */
+  hasCcsr(): boolean;
+  /** Check if this CodeableConcept has a specific CCSR code */
+  hasCcsrCode(code: string): boolean;
+  /** Check if this CodeableConcept has any of the provided CCSR codes */
+  hasSomeCcsr(codes: string[]): boolean;
+  /** Find a CCSR coding matching a predicate */
+  findCcsrCoding(predicate: (code: string) => boolean): SmartCoding | undefined;
 }
 
 /**
@@ -184,13 +222,13 @@ export interface SmartResourceBase {
    */
   getReferencingResources<T extends Resource = Resource>(
     options?: ReverseReferenceOptions
-  ): Smart<T>[];
+  ): ToSmart<T>[];
 
   /**
    * Get all resources referenced by this resource (forward reference lookup)
    * @returns Array of smart resources referenced by this resource based on REFERENCE_METHOD_MAPPING
    */
-  getReferencedResources<T extends Resource = Resource>(): Smart<T>[];
+  getReferencedResources<T extends Resource = Resource>(): ToSmart<T>[];
 
   /**
    * Convert the resource to a string representation without proxy limitations
@@ -214,95 +252,99 @@ export type Smart<T extends Resource> = T & SmartResourceBase & ReferenceMethods
  * Reference methods for Observation resources
  */
 export interface ObservationReferenceMethods {
-  getBasedOn<T extends Resource>(): Smart<T>[];
-  getPartOf<T extends Resource>(): Smart<T>[];
-  getSubject<T extends Patient | Group | Device | Location>(): Smart<T> | undefined;
-  getFocus<T extends Resource>(): Smart<T>[];
-  getEncounter(): Smart<Encounter> | undefined;
+  getBasedOn<T extends Resource>(): ToSmart<T>[];
+  getPartOf<T extends Resource>(): ToSmart<T>[];
+  getSubject<T extends Patient | Group | Device | Location>(): ToSmart<T> | undefined;
+  getFocus<T extends Resource>(): ToSmart<T>[];
+  getEncounter(): SmartEncounter | undefined;
   getPerformers<
     T extends Practitioner | PractitionerRole | Organization | CareTeam | Patient | RelatedPerson
-  >(): Smart<T>[];
-  getSpecimen<T extends Resource>(): Smart<T> | undefined;
-  getDevice<T extends Device>(): Smart<T> | undefined;
-  getHasMember<T extends Resource>(): Smart<T>[];
-  getDerivedFrom<T extends Resource>(): Smart<T>[];
+  >(): ToSmart<T>[];
+  getSpecimen<T extends Resource>(): ToSmart<T> | undefined;
+  getDevice(): SmartDevice | undefined;
+  getHasMember<T extends Resource>(): ToSmart<T>[];
+  getDerivedFrom<T extends Resource>(): ToSmart<T>[];
 }
 
 /**
  * Reference methods for Encounter resources
  */
 export interface EncounterReferenceMethods {
-  getSubject<T extends Patient | Group>(): Smart<T> | undefined;
-  getEpisodeOfCare<T extends Resource>(): Smart<T>[];
-  getBasedOn<T extends Resource>(): Smart<T>[];
-  getParticipants<T extends Practitioner | PractitionerRole | RelatedPerson | Device>(): Smart<T>[];
-  getAppointment<T extends Resource>(): Smart<T>[];
-  getReasonReference<T extends Resource>(): Smart<T>[];
-  getAccount<T extends Resource>(): Smart<T>[];
-  getServiceProvider(): Smart<Organization> | undefined;
-  getPartOf(): Smart<Encounter> | undefined;
-  getHospitalizationOrigin<T extends Location | Organization>(): Smart<T> | undefined;
-  getHospitalizationDestination<T extends Location | Organization>(): Smart<T> | undefined;
-  getLocation(): Smart<Location>[];
-  getDiagnosisCondition<T extends Condition | Procedure>(): Smart<T>[];
+  getSubject<T extends Patient | Group>(): ToSmart<T> | undefined;
+  getEpisodeOfCare<T extends Resource>(): ToSmart<T>[];
+  getBasedOn<T extends Resource>(): ToSmart<T>[];
+  getParticipants<
+    T extends Practitioner | PractitionerRole | RelatedPerson | Device
+  >(): ToSmart<T>[];
+  getAppointment<T extends Resource>(): ToSmart<T>[];
+  getReasonReference<T extends Resource>(): ToSmart<T>[];
+  getAccount<T extends Resource>(): ToSmart<T>[];
+  getServiceProvider(): SmartOrganization | undefined;
+  getPartOf(): SmartEncounter | undefined;
+  getHospitalizationOrigin<T extends Location | Organization>(): ToSmart<T> | undefined;
+  getHospitalizationDestination<T extends Location | Organization>(): ToSmart<T> | undefined;
+  getLocation(): SmartLocation[];
+  getDiagnosisCondition(): (SmartCondition | SmartProcedure)[];
 }
 
 /**
  * Reference methods for DiagnosticReport resources
  */
 export interface DiagnosticReportReferenceMethods {
-  getBasedOn<T extends Resource>(): Smart<T>[];
-  getSubject<T extends Patient | Group | Device | Location>(): Smart<T> | undefined;
-  getEncounter(): Smart<Encounter> | undefined;
-  getPerformers<T extends Practitioner | PractitionerRole | Organization | CareTeam>(): Smart<T>[];
+  getBasedOn<T extends Resource>(): ToSmart<T>[];
+  getSubject<T extends Patient | Group | Device | Location>(): ToSmart<T> | undefined;
+  getEncounter(): SmartEncounter | undefined;
+  getPerformers<
+    T extends Practitioner | PractitionerRole | Organization | CareTeam
+  >(): ToSmart<T>[];
   getResultsInterpreter<
     T extends Practitioner | PractitionerRole | Organization | CareTeam
-  >(): Smart<T>[];
-  getSpecimen<T extends Resource>(): Smart<T>[];
-  getResults(): Smart<Observation>[];
-  getImagingStudy<T extends Resource>(): Smart<T>[];
-  getMediaLink<T extends Resource>(): Smart<T>[];
+  >(): ToSmart<T>[];
+  getSpecimen<T extends Resource>(): ToSmart<T>[];
+  getResults(): SmartObservation[];
+  getImagingStudy<T extends Resource>(): ToSmart<T>[];
+  getMediaLink<T extends Resource>(): ToSmart<T>[];
 }
 
 /**
  * Reference methods for Patient resources
  */
 export interface PatientReferenceMethods {
-  getGeneralPractitioners<T extends Practitioner | PractitionerRole | Organization>(): Smart<T>[];
-  getManagingOrganization(): Smart<Organization> | undefined;
-  getContactOrganization(): Smart<Organization>[];
-  getLinkOther<T extends Patient | RelatedPerson>(): Smart<T>[];
+  getGeneralPractitioners<T extends Practitioner | PractitionerRole | Organization>(): ToSmart<T>[];
+  getManagingOrganization(): SmartOrganization | undefined;
+  getContactOrganization(): SmartOrganization[];
+  getLinkOther<T extends Patient | RelatedPerson>(): ToSmart<T>[];
 }
 
 /**
  * Reference methods for Practitioner resources
  */
 export interface PractitionerReferenceMethods {
-  getQualificationIssuer(): Smart<Organization>[];
+  getQualificationIssuer(): SmartOrganization[];
 }
 
 /**
  * Reference methods for PractitionerRole resources
  */
 export interface PractitionerRoleReferenceMethods {
-  getPractitioner(): Smart<Practitioner> | undefined;
-  getOrganization(): Smart<Organization> | undefined;
-  getLocation(): Smart<Location>[];
-  getHealthcareService<T extends Resource>(): Smart<T>[];
-  getEndpoint<T extends Resource>(): Smart<T>[];
+  getPractitioner(): SmartPractitioner | undefined;
+  getOrganization(): SmartOrganization | undefined;
+  getLocation(): SmartLocation[];
+  getHealthcareService<T extends Resource>(): ToSmart<T>[];
+  getEndpoint<T extends Resource>(): ToSmart<T>[];
 }
 
 /**
  * Reference methods for AllergyIntolerance resources
  */
 export interface AllergyIntoleranceReferenceMethods {
-  getPatient(): Smart<Patient> | undefined;
-  getEncounter(): Smart<Encounter> | undefined;
+  getPatient(): SmartPatient | undefined;
+  getEncounter(): SmartEncounter | undefined;
   getRecorder<T extends Practitioner | PractitionerRole | Patient | RelatedPerson>():
-    | Smart<T>
+    | ToSmart<T>
     | undefined;
   getAsserter<T extends Patient | RelatedPerson | Practitioner | PractitionerRole>():
-    | Smart<T>
+    | ToSmart<T>
     | undefined;
 }
 
@@ -310,65 +352,65 @@ export interface AllergyIntoleranceReferenceMethods {
  * Reference methods for Condition resources
  */
 export interface ConditionReferenceMethods {
-  getSubject<T extends Patient | Group>(): Smart<T> | undefined;
-  getEncounter(): Smart<Encounter> | undefined;
+  getSubject<T extends Patient | Group>(): ToSmart<T> | undefined;
+  getEncounter(): SmartEncounter | undefined;
   getRecorder<T extends Practitioner | PractitionerRole | Patient | RelatedPerson>():
-    | Smart<T>
+    | ToSmart<T>
     | undefined;
   getAsserter<T extends Practitioner | PractitionerRole | Patient | RelatedPerson>():
-    | Smart<T>
+    | ToSmart<T>
     | undefined;
-  getStageAssessment<T extends Resource>(): Smart<T>[];
-  getEvidenceDetail<T extends Resource>(): Smart<T>[];
+  getStageAssessment<T extends Resource>(): ToSmart<T>[];
+  getEvidenceDetail<T extends Resource>(): ToSmart<T>[];
 }
 
 /**
  * Reference methods for Organization resources
  */
 export interface OrganizationReferenceMethods {
-  getPartOf(): Smart<Organization> | undefined;
-  getEndpoint<T extends Resource>(): Smart<T>[];
+  getPartOf(): SmartOrganization | undefined;
+  getEndpoint<T extends Resource>(): ToSmart<T>[];
 }
 
 /**
  * Reference methods for Location resources
  */
 export interface LocationReferenceMethods {
-  getManagingOrganization(): Smart<Organization> | undefined;
-  getPartOf(): Smart<Location> | undefined;
-  getEndpoint<T extends Resource>(): Smart<T>[];
+  getManagingOrganization(): SmartOrganization | undefined;
+  getPartOf(): SmartLocation | undefined;
+  getEndpoint<T extends Resource>(): ToSmart<T>[];
 }
 
 /**
  * Reference methods for Composition resources
  */
 export interface CompositionReferenceMethods {
-  getSubject<T extends Resource>(): Smart<T> | undefined;
-  getEncounter(): Smart<Encounter> | undefined;
+  getSubject<T extends Resource>(): ToSmart<T> | undefined;
+  getEncounter(): SmartEncounter | undefined;
   getAuthors<
     T extends Practitioner | PractitionerRole | Device | Patient | RelatedPerson | Organization
-  >(): Smart<T>[];
-  getCustodian(): Smart<Organization> | undefined;
+  >(): ToSmart<T>[];
+  getCustodian(): SmartOrganization | undefined;
   getAttesterParty<
     T extends Patient | RelatedPerson | Practitioner | PractitionerRole | Organization
-  >(): Smart<T>[];
-  getRelatesToTarget(): Smart<Composition>[];
-  getEventDetail<T extends Resource>(): Smart<T>[];
+  >(): ToSmart<T>[];
+  getRelatesToTarget(): SmartComposition[];
+  getEventDetail<T extends Resource>(): ToSmart<T>[];
   getSectionAuthor<
     T extends Practitioner | PractitionerRole | Device | Patient | RelatedPerson | Organization
-  >(): Smart<T>[];
-  getSectionFocus<T extends Resource>(): Smart<T>[];
-  getSectionEntry<T extends Resource>(): Smart<T>[];
+  >(): ToSmart<T>[];
+  getSectionFocus<T extends Resource>(): ToSmart<T>[];
+  getSectionEntry<T extends Resource>(): ToSmart<T>[];
 }
 
 /**
  * Reference methods for Coverage resources
  */
 export interface CoverageReferenceMethods {
-  getBeneficiary(): Smart<Patient> | undefined;
-  getSubscriber<T extends Patient | RelatedPerson>(): Smart<T> | undefined;
-  getPayors<T extends Organization | Patient | RelatedPerson>(): Smart<T>[];
-  getPolicyHolder<T extends Patient | RelatedPerson | Organization>(): Smart<T> | undefined;
+  getBeneficiary(): SmartPatient | undefined;
+  getSubscriber<T extends Patient | RelatedPerson>(): ToSmart<T> | undefined;
+  getPayors<T extends Organization | Patient | RelatedPerson>(): ToSmart<T>[];
+  getPolicyHolder<T extends Patient | RelatedPerson | Organization>(): ToSmart<T> | undefined;
 }
 
 /**
@@ -376,41 +418,41 @@ export interface CoverageReferenceMethods {
  */
 export interface DocumentReferenceReferenceMethods {
   getSubject<T extends Patient | Group | Practitioner | PractitionerRole | Device>():
-    | Smart<T>
+    | ToSmart<T>
     | undefined;
   getAuthors<
     T extends Practitioner | PractitionerRole | Organization | Device | Patient | RelatedPerson
-  >(): Smart<T>[];
+  >(): ToSmart<T>[];
   getAuthenticator<T extends Practitioner | PractitionerRole | Organization>():
-    | Smart<T>
+    | ToSmart<T>
     | undefined;
-  getCustodian(): Smart<Organization> | undefined;
-  getRelatesToTarget(): Smart<DocumentReference>[];
-  getContextEncounter<T extends Encounter | Resource>(): Smart<T>[];
-  getContextSourcePatientInfo(): Smart<Patient> | undefined;
-  getContextRelated<T extends Resource>(): Smart<T>[];
+  getCustodian(): SmartOrganization | undefined;
+  getRelatesToTarget(): SmartDocumentReference[];
+  getContextEncounter<T extends Encounter | Resource>(): ToSmart<T>[];
+  getContextSourcePatientInfo(): SmartPatient | undefined;
+  getContextRelated<T extends Resource>(): ToSmart<T>[];
 }
 
 /**
  * Reference methods for Immunization resources
  */
 export interface ImmunizationReferenceMethods {
-  getPatient(): Smart<Patient> | undefined;
-  getEncounter(): Smart<Encounter> | undefined;
-  getLocation(): Smart<Location> | undefined;
-  getManufacturer(): Smart<Organization> | undefined;
-  getPerformers<T extends Practitioner | PractitionerRole | Organization>(): Smart<T>[];
-  getReasonReference<T extends Condition | Observation | DiagnosticReport>(): Smart<T>[];
-  getProtocolAppliedAuthority(): Smart<Organization>[];
-  getReactionDetail(): Smart<Observation>[];
+  getPatient(): SmartPatient | undefined;
+  getEncounter(): SmartEncounter | undefined;
+  getLocation(): SmartLocation | undefined;
+  getManufacturer(): SmartOrganization | undefined;
+  getPerformers<T extends Practitioner | PractitionerRole | Organization>(): ToSmart<T>[];
+  getReasonReference<T extends Condition | Observation | DiagnosticReport>(): ToSmart<T>[];
+  getProtocolAppliedAuthority(): SmartOrganization[];
+  getReactionDetail(): SmartObservation[];
 }
 
 /**
  * Reference methods for Medication resources
  */
 export interface MedicationReferenceMethods {
-  getManufacturer(): Smart<Organization> | undefined;
-  getIngredientItem<T extends Resource | Medication>(): Smart<T>[];
+  getManufacturer(): SmartOrganization | undefined;
+  getIngredientItem<T extends Resource | Medication>(): ToSmart<T>[];
 }
 
 /**
@@ -419,14 +461,14 @@ export interface MedicationReferenceMethods {
 export interface MedicationRequestReferenceMethods {
   getReportedReference<
     T extends Patient | Practitioner | PractitionerRole | RelatedPerson | Organization
-  >(): Smart<T> | undefined;
-  getMedicationReference(): Smart<Medication> | undefined;
-  getSubject<T extends Patient | Group>(): Smart<T> | undefined;
-  getEncounter(): Smart<Encounter> | undefined;
-  getSupportingInformation<T extends Resource>(): Smart<T>[];
+  >(): ToSmart<T> | undefined;
+  getMedicationReference(): SmartMedication | undefined;
+  getSubject<T extends Patient | Group>(): ToSmart<T> | undefined;
+  getEncounter(): SmartEncounter | undefined;
+  getSupportingInformation<T extends Resource>(): ToSmart<T>[];
   getRequester<
     T extends Practitioner | PractitionerRole | Organization | Patient | RelatedPerson | Device
-  >(): Smart<T> | undefined;
+  >(): ToSmart<T> | undefined;
   getPerformer<
     T extends
       | Practitioner
@@ -436,113 +478,113 @@ export interface MedicationRequestReferenceMethods {
       | Device
       | RelatedPerson
       | CareTeam
-  >(): Smart<T> | undefined;
-  getRecorder<T extends Practitioner | PractitionerRole>(): Smart<T> | undefined;
-  getReasonReference<T extends Condition | Observation>(): Smart<T>[];
-  getBasedOn<T extends Resource>(): Smart<T>[];
-  getInsurance<T extends Resource>(): Smart<T>[];
-  getPriorPrescription(): Smart<MedicationRequest> | undefined;
-  getDetectedIssue<T extends Resource>(): Smart<T>[];
-  getEventHistory<T extends Resource>(): Smart<T>[];
-  getDispenseRequestPerformer(): Smart<Organization> | undefined;
+  >(): ToSmart<T> | undefined;
+  getRecorder<T extends Practitioner | PractitionerRole>(): ToSmart<T> | undefined;
+  getReasonReference<T extends Condition | Observation>(): ToSmart<T>[];
+  getBasedOn<T extends Resource>(): ToSmart<T>[];
+  getInsurance<T extends Resource>(): ToSmart<T>[];
+  getPriorPrescription(): SmartMedicationRequest | undefined;
+  getDetectedIssue<T extends Resource>(): ToSmart<T>[];
+  getEventHistory<T extends Resource>(): ToSmart<T>[];
+  getDispenseRequestPerformer(): SmartOrganization | undefined;
 }
 
 /**
  * Reference methods for Procedure resources
  */
 export interface ProcedureReferenceMethods {
-  getBasedOn<T extends Resource>(): Smart<T>[];
-  getPartOf<T extends Procedure | Observation | Resource>(): Smart<T>[];
-  getSubject<T extends Patient | Group>(): Smart<T> | undefined;
-  getEncounter(): Smart<Encounter> | undefined;
+  getBasedOn<T extends Resource>(): ToSmart<T>[];
+  getPartOf<T extends Procedure | Observation | Resource>(): ToSmart<T>[];
+  getSubject<T extends Patient | Group>(): ToSmart<T> | undefined;
+  getEncounter(): SmartEncounter | undefined;
   getRecorder<T extends Patient | RelatedPerson | Practitioner | PractitionerRole>():
-    | Smart<T>
+    | ToSmart<T>
     | undefined;
   getAsserter<T extends Patient | RelatedPerson | Practitioner | PractitionerRole>():
-    | Smart<T>
+    | ToSmart<T>
     | undefined;
   getPerformers<
     T extends Practitioner | PractitionerRole | Organization | Patient | RelatedPerson | Device
-  >(): Smart<T>[];
-  getPerformerOnBehalfOf(): Smart<Organization>[];
-  getLocation(): Smart<Location> | undefined;
+  >(): ToSmart<T>[];
+  getPerformerOnBehalfOf(): SmartOrganization[];
+  getLocation(): SmartLocation | undefined;
   getReasonReference<
     T extends Condition | Observation | Procedure | DiagnosticReport | DocumentReference
-  >(): Smart<T>[];
-  getReport<T extends DiagnosticReport | DocumentReference | Composition>(): Smart<T>[];
-  getComplicationDetail(): Smart<Condition>[];
-  getFocalDeviceManipulated(): Smart<Device>[];
-  getUsedReference<T extends Device | Medication | Resource>(): Smart<T>[];
+  >(): ToSmart<T>[];
+  getReport<T extends DiagnosticReport | DocumentReference | Composition>(): ToSmart<T>[];
+  getComplicationDetail(): SmartCondition[];
+  getFocalDeviceManipulated(): SmartDevice[];
+  getUsedReference<T extends Device | Medication | Resource>(): ToSmart<T>[];
 }
 
 /**
  * Reference methods for FamilyMemberHistory resources
  */
 export interface FamilyMemberHistoryReferenceMethods {
-  getPatient(): Smart<Patient> | undefined;
+  getPatient(): SmartPatient | undefined;
 }
 
 /**
  * Reference methods for MedicationAdministration resources
  */
 export interface MedicationAdministrationReferenceMethods {
-  getSubject<T extends Patient | Group>(): Smart<T> | undefined;
-  getContext<T extends Encounter>(): Smart<T> | undefined;
+  getSubject<T extends Patient | Group>(): ToSmart<T> | undefined;
+  getContext<T extends Encounter>(): ToSmart<T> | undefined;
   getPerformers<
     T extends Practitioner | PractitionerRole | Patient | RelatedPerson | Device
-  >(): Smart<T>[];
-  getMedicationReference(): Smart<Medication> | undefined;
+  >(): ToSmart<T>[];
+  getMedicationReference(): SmartMedication | undefined;
 }
 
 /**
  * Reference methods for MedicationDispense resources
  */
 export interface MedicationDispenseReferenceMethods {
-  getSubject<T extends Patient | Group>(): Smart<T> | undefined;
-  getContext<T extends Encounter>(): Smart<T> | undefined;
+  getSubject<T extends Patient | Group>(): ToSmart<T> | undefined;
+  getContext<T extends Encounter>(): ToSmart<T> | undefined;
   getPerformers<
     T extends Practitioner | PractitionerRole | Organization | Patient | Device | RelatedPerson
-  >(): Smart<T>[];
-  getMedicationReference(): Smart<Medication> | undefined;
+  >(): ToSmart<T>[];
+  getMedicationReference(): SmartMedication | undefined;
 }
 
 /**
  * Reference methods for MedicationStatement resources
  */
 export interface MedicationStatementReferenceMethods {
-  getSubject<T extends Patient | Group>(): Smart<T> | undefined;
-  getContext<T extends Encounter>(): Smart<T> | undefined;
+  getSubject<T extends Patient | Group>(): ToSmart<T> | undefined;
+  getContext<T extends Encounter>(): ToSmart<T> | undefined;
   getInformationSource<
     T extends Patient | Practitioner | PractitionerRole | RelatedPerson | Organization
-  >(): Smart<T> | undefined;
-  getMedicationReference(): Smart<Medication> | undefined;
+  >(): ToSmart<T> | undefined;
+  getMedicationReference(): SmartMedication | undefined;
 }
 
 /**
  * Reference methods for RelatedPerson resources
  */
 export interface RelatedPersonReferenceMethods {
-  getPatient(): Smart<Patient> | undefined;
+  getPatient(): SmartPatient | undefined;
 }
 
 /**
  * Reference methods for RiskAssessment resources
  */
 export interface RiskAssessmentReferenceMethods {
-  getSubject<T extends Patient | Group>(): Smart<T> | undefined;
-  getEncounter(): Smart<Encounter> | undefined;
-  getPerformer<T extends Practitioner | PractitionerRole | Device>(): Smart<T> | undefined;
+  getSubject<T extends Patient | Group>(): ToSmart<T> | undefined;
+  getEncounter(): SmartEncounter | undefined;
+  getPerformer<T extends Practitioner | PractitionerRole | Device>(): ToSmart<T> | undefined;
 }
 
 /**
  * Reference methods for ServiceRequest resources
  */
 export interface ServiceRequestReferenceMethods {
-  getSubject<T extends Patient | Group | Location | Device>(): Smart<T> | undefined;
-  getEncounter(): Smart<Encounter> | undefined;
+  getSubject<T extends Patient | Group | Location | Device>(): ToSmart<T> | undefined;
+  getEncounter(): SmartEncounter | undefined;
   getRequester<
     T extends Practitioner | PractitionerRole | Organization | Patient | RelatedPerson | Device
-  >(): Smart<T> | undefined;
+  >(): ToSmart<T> | undefined;
   getPerformers<
     T extends
       | Practitioner
@@ -552,18 +594,18 @@ export interface ServiceRequestReferenceMethods {
       | Patient
       | Device
       | RelatedPerson
-  >(): Smart<T>[];
+  >(): ToSmart<T>[];
 }
 
 /**
  * Reference methods for CarePlan resources
  */
 export interface CarePlanReferenceMethods {
-  getBasedOn(): Smart<CarePlan>[];
-  getReplaces(): Smart<CarePlan>[];
-  getPartOf(): Smart<CarePlan>[];
-  getSubject<T extends Patient | Group>(): Smart<T> | undefined;
-  getEncounter(): Smart<Encounter> | undefined;
+  getBasedOn(): SmartCarePlan[];
+  getReplaces(): SmartCarePlan[];
+  getPartOf(): SmartCarePlan[];
+  getSubject<T extends Patient | Group>(): ToSmart<T> | undefined;
+  getEncounter(): SmartEncounter | undefined;
   getAuthor<
     T extends
       | Patient
@@ -573,7 +615,7 @@ export interface CarePlanReferenceMethods {
       | RelatedPerson
       | Organization
       | CareTeam
-  >(): Smart<T> | undefined;
+  >(): ToSmart<T> | undefined;
   getContributor<
     T extends
       | Patient
@@ -583,11 +625,11 @@ export interface CarePlanReferenceMethods {
       | RelatedPerson
       | Organization
       | CareTeam
-  >(): Smart<T>[];
-  getCareTeam(): Smart<CareTeam>[];
-  getAddresses(): Smart<Condition>[];
-  getSupportingInfo<T extends Resource>(): Smart<T>[];
-  getGoal(): Smart<Goal>[];
+  >(): ToSmart<T>[];
+  getCareTeam(): SmartCareTeam[];
+  getAddresses(): SmartCondition[];
+  getSupportingInfo<T extends Resource>(): ToSmart<T>[];
+  getGoal(): SmartGoal[];
   getActivityReference<
     T extends
       | Appointment
@@ -599,13 +641,13 @@ export interface CarePlanReferenceMethods {
       | ServiceRequest
       | VisionPrescription
       | RequestGroup
-  >(): Smart<T>[];
-  getActivityOutcomeReference<T extends Resource>(): Smart<T>[];
+  >(): ToSmart<T>[];
+  getActivityOutcomeReference<T extends Resource>(): ToSmart<T>[];
   getActivityDetailReasonReference<
     T extends Condition | Observation | DiagnosticReport | DocumentReference
-  >(): Smart<T>[];
-  getActivityDetailGoal(): Smart<Goal>[];
-  getActivityDetailLocation(): Smart<Location>[];
+  >(): ToSmart<T>[];
+  getActivityDetailGoal(): SmartGoal[];
+  getActivityDetailLocation(): SmartLocation[];
   getActivityDetailPerformer<
     T extends
       | Practitioner
@@ -616,8 +658,8 @@ export interface CarePlanReferenceMethods {
       | CareTeam
       | HealthcareService
       | Device
-  >(): Smart<T>[];
-  getActivityDetailProductReference<T extends Medication | Substance>(): Smart<T>[];
+  >(): ToSmart<T>[];
+  getActivityDetailProductReference<T extends Medication | Substance>(): ToSmart<T>[];
 }
 
 /**

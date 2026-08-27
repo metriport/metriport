@@ -143,6 +143,7 @@ export function addMissingReferences(
       resultBundle,
       originalBundle,
       addMissingReferencesFn,
+      // eslint-disable-next-line no-param-reassign
       ++iteration
     );
   }

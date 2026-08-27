@@ -1,7 +1,7 @@
 import { Bundle, BundleEntry, Resource } from "@medplum/fhirtypes";
+import { buildConversionFhirHandler } from "@metriport/core/command/conversion-fhir/conversion-fhir-factory";
 import { buildConversionResultHandler } from "@metriport/core/command/conversion-result/conversion-result-factory";
 import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
-import { MetriportError } from "@metriport/shared";
 import {
   FhirConverterParams,
   FhirExtension,
@@ -31,16 +31,17 @@ import {
 import { partitionPayload } from "@metriport/core/external/cda/partition-payload";
 import { processAttachments } from "@metriport/core/external/cda/process-attachments";
 import { removeBase64PdfEntries } from "@metriport/core/external/cda/remove-b64";
+import { ensurePatientInBundle } from "@metriport/core/external/fhir/consolidated/ensure-patient-in-bundle";
 import { hydrate } from "@metriport/core/external/fhir/consolidated/hydrate";
 import { normalize } from "@metriport/core/external/fhir/consolidated/normalize";
 import { FHIR_APP_MIME_TYPE, TXT_MIME_TYPE } from "@metriport/core/util/mime";
-import { errorToString, executeWithNetworkRetries } from "@metriport/shared";
+import { errorToString, executeWithNetworkRetries, MetriportError } from "@metriport/shared";
 import { SQSEvent } from "aws-lambda";
-import axios, { AxiosError } from "axios";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail } from "./shared/env";
 import { Log, prefixedLog } from "./shared/log";
+import axios from "axios";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -52,9 +53,9 @@ const region = getEnvOrFail("AWS_REGION");
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const fhirUrl = getEnvOrFail("FHIR_SERVER_URL");
 const medicalDocumentsBucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME");
 const featureFlagsTableName = getEnvOrFail("FEATURE_FLAGS_TABLE_NAME");
+const axiosTimeoutSeconds = Number(getEnvOrFail("AXIOS_TIMEOUT_SECONDS"));
 
 // Call this before reading FFs
 FeatureFlags.init(region, featureFlagsTableName);
@@ -63,15 +64,6 @@ const conversionResultHandler = buildConversionResultHandler();
 
 const s3Utils = new S3Utils(region);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
-const fhirConverter = axios.create({
-  // Only response timeout, no option for connection timeout: https://github.com/axios/axios/issues/4835
-  timeout: axiosTimeoutSeconds * 1_000, // should be less than the lambda timeout
-  transitional: {
-    // enables ETIMEDOUT instead of ECONNABORTED for timeouts - https://betterstack.com/community/guides/scaling-nodejs/nodejs-errors/
-    clarifyTimeoutError: true,
-  },
-});
-const LARGE_CHUNK_SIZE_IN_BYTES = 50_000_000;
 
 const HYDRATION_TIMEOUT_MS = 5_000;
 
@@ -102,6 +94,15 @@ type EventBody = {
   documentExtension: FhirExtension;
 };
 
+const fhirConverterEcs = axios.create({
+  // Only response timeout, no option for connection timeout: https://github.com/axios/axios/issues/4835
+  timeout: axiosTimeoutSeconds * 1_000, // should be less than the lambda timeout
+  transitional: {
+    // enables ETIMEDOUT instead of ECONNABORTED for timeouts - https://betterstack.com/community/guides/scaling-nodejs/nodejs-errors/
+    clarifyTimeoutError: true,
+  },
+});
+
 // TODO: 2502 - Migrate most of the logic to the core to simplify the lambda handler as much as possible
 
 export const handler = capture.wrapHandler(async (event: SQSEvent) => {
@@ -131,13 +132,12 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
     const cxId = attrib.cxId?.stringValue;
     const patientId = attrib.patientId?.stringValue;
     const jobId = attrib.jobId?.stringValue;
-    const medicalDataSource = attrib.source?.stringValue as MedicalDataSource | undefined;
     const converterUrl = attrib.serverUrl?.stringValue;
+    const medicalDataSource = attrib.source?.stringValue as MedicalDataSource | undefined;
     const unusedSegments = attrib.unusedSegments?.stringValue;
     const invalidAccess = attrib.invalidAccess?.stringValue;
     if (!cxId) throw new Error(`Missing cxId`);
     if (!patientId) throw new Error(`Missing patientId`);
-    if (!converterUrl) throw new Error(`Missing converterUrl`);
     if (!medicalDataSource) throw new Error(`Missing source`);
     capture.setExtra({ cxId, patientId, jobId, source: medicalDataSource });
     const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
@@ -201,8 +201,10 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
       const conversionStart = Date.now();
 
       const converterParams: FhirConverterParams = {
+        cxId,
         patientId,
         fileName: s3FileName,
+        s3Bucket: conversionResultBucketName,
         unusedSegments,
         invalidAccess,
       };
@@ -223,23 +225,25 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
 
       const partitionedPayloads = partitionPayload(payloadClean);
 
+      const s3Keys = await storePartitionedPayloadsInS3({
+        s3Utils,
+        partitionedPayloads,
+        conversionResultBucketName,
+        preConversionFilename,
+        context: lambdaName,
+        lambdaParams,
+        log,
+      });
+
       const [conversionResult] = await Promise.all([
         convertPayloadToFHIR({
-          converterUrl,
           partitionedPayloads,
+          s3Keys,
           converterParams,
+          converterUrl,
           log,
         }),
         dealWithAttachments(),
-        storePartitionedPayloadsInS3({
-          s3Utils,
-          partitionedPayloads,
-          conversionResultBucketName,
-          preConversionFilename,
-          context: lambdaName,
-          lambdaParams,
-          log,
-        }),
       ]);
 
       metrics.conversion = {
@@ -297,10 +301,28 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
         // Intentionally not rethrowing here, we don't want to break conversion b/c of a hydration failure
       }
 
+      const { bundle: bundleForNormalize, patientWasInjected } = ensurePatientInBundle(
+        hydratedBundle,
+        patientId
+      );
+      if (patientWasInjected) {
+        const msg =
+          "Patient not found in bundle; injected minimal Patient for downstream processing.";
+        log(msg);
+        capture.message(msg, {
+          level: "warning",
+          extra: {
+            cxId,
+            patientId,
+            context: lambdaName,
+            s3FileName,
+          },
+        });
+      }
       const normalizedBundle = await normalize({
         cxId,
         patientId,
-        bundle: hydratedBundle,
+        bundle: bundleForNormalize,
       });
 
       await storeNormalizedConversionResult({
@@ -345,18 +367,18 @@ export const handler = capture.wrapHandler(async (event: SQSEvent) => {
 });
 
 async function convertPayloadToFHIR({
-  converterUrl,
   partitionedPayloads,
+  s3Keys,
   converterParams,
+  converterUrl,
   log,
 }: {
-  converterUrl: string;
   partitionedPayloads: string[];
+  s3Keys: string[];
   converterParams: FhirConverterParams;
+  converterUrl: string | undefined;
   log: typeof console.log;
 }): Promise<Bundle<Resource>> {
-  log(`Calling converter on url ${converterUrl} with params ${JSON.stringify(converterParams)}`);
-
   try {
     const combinedBundle: Bundle<Resource> = {
       resourceType: "Bundle",
@@ -369,37 +391,21 @@ async function convertPayloadToFHIR({
     }
 
     const bundleEntrySet = new Set<BundleEntry<Resource>>();
-    for (let index = 0; index < partitionedPayloads.length; index++) {
-      const payload = partitionedPayloads[index];
-
-      const chunkSize = payload ? new Blob([payload]).size : 0;
-      if (chunkSize > LARGE_CHUNK_SIZE_IN_BYTES) {
-        const msg = `Chunk size is too large`;
-        log(`${msg} - chunkSize ${chunkSize} on ${index}`);
-        capture.message(msg, {
-          extra: {
-            chunkSize,
-            patientId: converterParams.patientId,
-            fileName: converterParams.fileName,
-          },
-          level: "warning",
-        });
+    for (const [index, payload] of partitionedPayloads.entries()) {
+      const s3Key = s3Keys[index];
+      if (!s3Key) {
+        log(`Skipping partition ${index} - s3Key missing (upload likely failed)`);
+        continue;
       }
 
-      const res = await executeWithNetworkRetries(
-        () =>
-          fhirConverter.post(converterUrl, payload, {
-            params: converterParams,
-            headers: { "Content-Type": TXT_MIME_TYPE },
-          }),
-        {
-          // No retries on timeout b/c we want to re-enqueue instead of trying within the same lambda run,
-          // it could lead to timing out the lambda execution.
-          log,
-        }
-      );
-
-      const conversionResult = res.data.fhirResource as Bundle<Resource>;
+      log(`Calling converter with s3Key ${s3Key}`);
+      const conversionResult = await convertFileWithFallback({
+        converterParams,
+        s3Key,
+        payload,
+        converterUrl,
+        log,
+      });
 
       if (conversionResult?.entry && conversionResult.entry.length > 0) {
         log(
@@ -413,12 +419,8 @@ async function convertPayloadToFHIR({
     log(`Combined bundle contains: ${combinedBundle.entry.length} resources`);
     return combinedBundle;
   } catch (error) {
-    const defaultErrorMessage = "Failed to convert CDA to FHIR";
-    const errorMessage =
-      error instanceof AxiosError
-        ? error.response?.data?.error?.message ?? defaultErrorMessage
-        : defaultErrorMessage;
-    throw new MetriportError(errorMessage, error, {
+    throw new MetriportError("Failed to convert CDA to FHIR", error, {
+      error: errorToString(error),
       patientId: converterParams.patientId,
       fileName: converterParams.fileName,
     });
@@ -493,4 +495,61 @@ async function sendConversionResult({
     source: medicalDataSource,
     status: "success",
   });
+}
+
+async function convertFileWithFallback({
+  converterParams,
+  s3Key,
+  payload,
+  converterUrl,
+  log,
+}: {
+  converterParams: FhirConverterParams;
+  s3Key: string;
+  payload: string;
+  converterUrl: string | undefined;
+  log: typeof console.log;
+}): Promise<Bundle<Resource>> {
+  try {
+    const conversionFhir = buildConversionFhirHandler();
+    return await conversionFhir.callConverter({ ...converterParams, s3Key });
+  } catch (error) {
+    const errorMessage = errorToString(error);
+    log(`Failed to convert file, - using ecs as fallback. Original Error: ${errorMessage}`);
+    if (!converterUrl)
+      throw new MetriportError(`Fallback Converter URL is not set.`, error, {
+        converterParams: JSON.stringify(converterParams),
+        errorMessage,
+      });
+    const result = await callEcsToConvert({ converterUrl, converterParams, payload, log });
+    return result;
+  }
+}
+
+async function callEcsToConvert({
+  converterUrl,
+  converterParams,
+  payload,
+  log,
+}: {
+  converterUrl: string;
+  converterParams: FhirConverterParams;
+  payload: string;
+  log: typeof console.log;
+}): Promise<Bundle<Resource>> {
+  const res = await executeWithNetworkRetries(
+    () =>
+      fhirConverterEcs.post(converterUrl, payload, {
+        params: converterParams,
+        headers: { "Content-Type": TXT_MIME_TYPE },
+      }),
+    {
+      // No retries on timeout b/c we want to re-enqueue instead of trying within the same lambda run,
+      // it could lead to timing out the lambda execution.
+      log,
+    }
+  );
+
+  const conversionResult = res.data.fhirResource as Bundle<Resource>;
+  return conversionResult;
 }

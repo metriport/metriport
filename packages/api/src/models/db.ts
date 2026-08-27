@@ -9,13 +9,19 @@ import {
 } from "@metriport/shared";
 import * as AWS from "aws-sdk";
 import { Sequelize } from "sequelize";
+import { colorizeSqlQuery, colorizeTransactionId } from "../shared/log-colorizer";
 import { CQDirectoryEntryViewModel } from "../external/carequality/models/cq-directory-view";
 import { CQPatientDataModel } from "../external/carequality/models/cq-patient-data";
 import { OutboundDocumentQueryRespModel } from "../external/carequality/models/outbound-document-query-resp";
 import { OutboundDocumentRetrievalRespModel } from "../external/carequality/models/outbound-document-retrieval-resp";
 import { OutboundPatientDiscoveryRespModel } from "../external/carequality/models/outbound-patient-discovery-resp";
+import { EhexOutboundDocumentQueryRespModel } from "../external/ehex/models/outbound-document-query-resp";
+import { EhexOutboundDocumentRetrievalRespModel } from "../external/ehex/models/outbound-document-retrieval-resp";
+import { EhexOutboundPatientDiscoveryRespModel } from "../external/ehex/models/outbound-patient-discovery-resp";
 import { CwDirectoryEntryViewModel } from "../external/commonwell/models/cw-directory-view";
 import { CwPatientDataModel } from "../external/commonwell/models/cw-patient-data";
+import { EhexDirectoryEntryViewModel } from "../external/ehex/models/ehex-directory-view";
+import { EhexPatientDataModel } from "../external/ehex/models/ehex-patient-data";
 import { HIEDirectoryEntryViewModel } from "../external/hie/models/hie-directory-view";
 import { FacilityModel } from "../models/medical/facility";
 import { OrganizationModel } from "../models/medical/organization";
@@ -33,18 +39,23 @@ import { JwtTokenModel } from "./jwt-token";
 import { CohortModel } from "./medical/cohort";
 import { DocRefMappingModel } from "./medical/docref-mapping";
 import { MAPIAccess } from "./medical/mapi-access";
+import { DatasourceQueryModel } from "./medical/datasource-query";
+import { NetworkQueryRequestViewModel } from "./medical/network-query-request-view";
 import { PatientModel } from "./medical/patient";
 import { PatientCohortModel } from "./medical/patient-cohort";
 import { PatientImportJobModel } from "./medical/patient-import";
 import { PatientImportMappingModel } from "./medical/patient-import-mapping";
 import { PatientModelReadOnly } from "./medical/patient-readonly";
+import { PatientRosterModel } from "./medical/patient-roster";
+import { RosterModel } from "./medical/roster";
 import { TcmEncounterModel } from "./medical/tcm-encounter";
 import { PatientJobModel } from "./patient-job";
 import { PatientMappingModel } from "./patient-mapping";
 import { PatientSettingsModel } from "./patient-settings";
 import { Settings } from "./settings";
-import { WebhookRequest } from "./webhook-request";
 import { SuspectModel } from "./suspect";
+import { WebhookRequest } from "./webhook-request";
+import { CareGapModel } from "./care-gap";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -53,7 +64,9 @@ const models: ModelSetup[] = [
   WebhookRequest.setup,
   OrganizationModel.setup,
   CQDirectoryEntryViewModel.setup,
+  EhexDirectoryEntryViewModel.setup,
   CQPatientDataModel.setup,
+  EhexPatientDataModel.setup,
   CwDirectoryEntryViewModel.setup,
   CwPatientDataModel.setup,
   FacilityModel.setup,
@@ -66,6 +79,9 @@ const models: ModelSetup[] = [
   OutboundPatientDiscoveryRespModel.setup,
   OutboundDocumentQueryRespModel.setup,
   OutboundDocumentRetrievalRespModel.setup,
+  EhexOutboundPatientDiscoveryRespModel.setup,
+  EhexOutboundDocumentQueryRespModel.setup,
+  EhexOutboundDocumentRetrievalRespModel.setup,
   FeedbackModel.setup,
   FeedbackEntryModel.setup,
   CxMappingModel.setup,
@@ -77,8 +93,13 @@ const models: ModelSetup[] = [
   PatientJobModel.setup,
   CohortModel.setup,
   PatientCohortModel.setup,
+  RosterModel.setup,
+  PatientRosterModel.setup,
   TcmEncounterModel.setup,
   SuspectModel.setup,
+  CareGapModel.setup,
+  DatasourceQueryModel.setup,
+  NetworkQueryRequestViewModel.setup,
 ];
 
 const modelsReadOnly: ModelSetup[] = [PatientModelReadOnly.setup];
@@ -100,8 +121,34 @@ export interface DocTableNames {
   rateLimit?: string;
   featureFlags: string;
   outboundRateLimit?: string;
+  ehexPatientState?: string;
+  docIdToFilepathMapping: string;
 }
 export let docTableNames: DocTableNames;
+
+/**
+ * Custom logger for Sequelize that colorizes SQL queries in development
+ */
+function createSqlLogger(enableLogging: boolean): boolean | ((sql: string) => void) {
+  if (!enableLogging) return false;
+
+  return (sql: string): void => {
+    // Extract transaction ID if present (format: "Executing (transactionId): SQL")
+    const transactionMatch = sql.match(/^Executing \(([^)]+)\): (.+)$/);
+
+    if (transactionMatch) {
+      const transactionId = transactionMatch[1];
+      const query = transactionMatch[2];
+      const coloredTransactionId = colorizeTransactionId(transactionId);
+      const coloredQuery = colorizeSqlQuery(query);
+      console.log(`Executing (${coloredTransactionId}): ${coloredQuery}`);
+    } else {
+      // For queries without transaction ID
+      const coloredSql = colorizeSqlQuery(sql);
+      console.log(coloredSql);
+    }
+  };
+}
 
 async function initDB(): Promise<void> {
   // make sure we have the env vars we need
@@ -109,7 +156,10 @@ async function initDB(): Promise<void> {
   const rateLimitTableName = Config.getRateLimitTableName();
   const featureFlagsTableName = ConfigCore.getFeatureFlagsTableName();
   const outboundRateLimitTableName = Config.getOutboundRateLimitTableName();
+  const ehexPatientStateTableName = Config.getPatientStateTableName();
+  const docIdTableName = ConfigCore.getDocIdMappingTableName();
   const logDBOperations = Config.isCloudEnv() ? false : true;
+  const sqlLogger = createSqlLogger(logDBOperations);
   const dbPoolSettings = getDbPoolSettings();
 
   docTableNames = {
@@ -117,6 +167,8 @@ async function initDB(): Promise<void> {
     rateLimit: rateLimitTableName,
     featureFlags: featureFlagsTableName,
     outboundRateLimit: outboundRateLimitTableName,
+    ehexPatientState: ehexPatientStateTableName,
+    docIdToFilepathMapping: docIdTableName,
   };
 
   // get database creds
@@ -127,7 +179,7 @@ async function initDB(): Promise<void> {
     port: dbCreds.port,
     dialect: dbCreds.engine,
     pool: dbPoolSettings,
-    logging: logDBOperations,
+    logging: sqlLogger,
     logQueryParameters: logDBOperations,
   });
   const readerEndpoint = getDbReadReplicaEndpoint();
@@ -138,7 +190,7 @@ async function initDB(): Promise<void> {
         port: readerEndpoint.port,
         dialect: dbCreds.engine,
         pool: dbPoolSettings,
-        logging: logDBOperations,
+        logging: sqlLogger,
         logQueryParameters: logDBOperations,
       })
     : sequelize;
@@ -157,7 +209,9 @@ async function initDB(): Promise<void> {
     PatientSettingsModel.associate({ PatientModelReadOnly });
     CohortModel.associate({ PatientCohortModel });
     PatientCohortModel.associate({ CohortModel });
-    PatientModel.associate({ PatientCohortModel, TcmEncounterModel });
+    RosterModel.associate({ PatientRosterModel });
+    PatientRosterModel.associate({ RosterModel });
+    PatientModel.associate({ PatientCohortModel, PatientRosterModel, TcmEncounterModel });
     TcmEncounterModel.associate({ PatientModel, OrganizationModel });
     OrganizationModel.associate({ TcmEncounterModel });
 

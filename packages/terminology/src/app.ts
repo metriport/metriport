@@ -22,13 +22,17 @@ import duration from "dayjs/plugin/duration";
 import express from "express";
 import { fhirRouter } from "./router";
 import { initTermServer } from "./init-term-server";
+import { out } from "./log";
+import { requestLogger } from "./util";
 
 dayjs.extend(duration);
 
 async function main() {
+  const { log } = out("Main");
   const app = express();
 
   app.use(express.json({ limit: "50mb" }));
+  app.use(requestLogger);
 
   app.route("/").get((req, res) => {
     res.status(200).send("OK");
@@ -41,7 +45,7 @@ async function main() {
   const PORT = process.env.PORT || 8080;
 
   const server = app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    log(`Server is running on port ${PORT}`);
   });
 
   const loadBalancerTimeout = dayjs.duration({ minutes: 15 }).asMilliseconds();

@@ -1,6 +1,6 @@
 import { Coverage } from "@medplum/fhirtypes";
 import { isValidUuid } from "../../../../util/uuid-v7";
-
+import { trimWhitespace } from "@metriport/shared/common/string";
 /**
  * We want to remove useless identifiers that simply contain UUIDs from the CDA they came from.
  * Instead, we'd prefer to keep the identifiers that might hold policy ID, member ID, or subscriber ID.
@@ -13,7 +13,7 @@ export function normalizeCoverages(coverages: Coverage[]): Coverage[] {
     if (!identifiers) return coverage;
 
     const validIdentifiers = identifiers.filter(identifier => {
-      const value = identifier.value?.trim();
+      const value = trimWhitespace(identifier.value);
       if (!value) return false;
 
       if (value.includes("urn:uuid")) return false;

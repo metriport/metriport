@@ -1,3 +1,4 @@
+import { disableWHMetadata } from "@metriport/core/domain/document-query/trigger-and-query";
 import { PatientDemoData } from "@metriport/core/domain/patient";
 import ElationApi from "@metriport/core/external/ehr/elation/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -5,6 +6,7 @@ import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { errorToString, MetriportError, normalizeDob, normalizeGender } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { ElationSecondaryMappings } from "@metriport/shared/interface/external/ehr/elation/cx-mapping";
 import { elationDashSource } from "@metriport/shared/interface/external/ehr/elation/jwt-token";
 import { Patient as ElationPatient } from "@metriport/shared/interface/external/ehr/elation/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
@@ -19,6 +21,7 @@ import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/d
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 import { Config } from "../../../../shared/config";
+import { getCxMappingAndParsedSecondaryMappings } from "../../shared/command/mapping/get-cx-mapping-and-secondary-mappings";
 import { getOrCreateMetriportPatient } from "../../shared/command/patient/get-or-create-metriport-patient";
 import { isDqCooldownExpired } from "../../shared/utils/patient";
 import { createAddresses, createContacts, createElationClient, createNames } from "../shared";
@@ -52,6 +55,13 @@ export async function syncElationPatientIntoMetriport({
   const { log } = out(
     `syncElationPatientIntoMetriport - practId: ${elationPracticeId} ptId: ${elationPatientId}`
   );
+  const { parsedSecondaryMappings } =
+    await getCxMappingAndParsedSecondaryMappings<ElationSecondaryMappings>({
+      ehr: EhrSources.elation,
+      practiceId: elationPracticeId,
+    });
+  const shouldDisableWebhooks = !parsedSecondaryMappings.sendDocumentQueryWebhookEnabled;
+
   const existingMapping = await getPatientMapping({
     cxId,
     externalId: elationPatientId,
@@ -75,6 +85,7 @@ export async function syncElationPatientIntoMetriport({
         cxId,
         patientId: metriportPatientId,
         facilityId,
+        ...(shouldDisableWebhooks && { cxDocumentRequestMetadata: disableWHMetadata }),
       }).catch(processAsyncError(`Elation queryDocumentsAcrossHIEs`));
     }
     await createElationPatientMetadata({
@@ -111,6 +122,7 @@ export async function syncElationPatientIntoMetriport({
         cxId,
         patientId: metriportPatientId,
         facilityId,
+        ...(shouldDisableWebhooks && { cxDocumentRequestMetadata: disableWHMetadata }),
       }).catch(processAsyncError(`Elation queryDocumentsAcrossHIEs`));
     }
     await Promise.all([

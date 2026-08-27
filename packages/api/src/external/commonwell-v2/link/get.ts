@@ -40,16 +40,16 @@ export async function get(
     getCwInitiator({ id: patientId, cxId }, facilityId),
   ]);
 
-  const commonWell = makeCommonWellAPI(initiator.name, initiator.oid, initiator.npi);
   const cwPatientId = getCommonwellPatientId(patient);
   if (!cwPatientId) {
-    log(`No CW patient ID for patient`, patient.id);
+    log(`No CW patient ID for patient: ${patient.id}`);
     return {
       existingLinks: [],
       probableLinks: [],
     };
   }
 
+  const commonWell = makeCommonWellAPI(initiator.name, initiator.oid, initiator.npi);
   try {
     const [existingLinks, probableLinks] = await Promise.all([
       findExistingLinks({

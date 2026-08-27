@@ -1,8 +1,9 @@
-import fs from "fs";
-import { Command } from "commander";
-import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
-import { SftpActionDirect } from "@metriport/core/external/sftp/command/sftp-action/sftp-action-direct";
 import { SftpAction } from "@metriport/core/external/sftp/command/sftp-action/sftp-action";
+import { SftpActionDirect } from "@metriport/core/external/sftp/command/sftp-action/sftp-action-direct";
+import { SurescriptsSftpClient } from "@metriport/core/external/surescripts/client";
+import { MetriportError } from "@metriport/shared";
+import { Command } from "commander";
+import fs from "fs";
 
 /**
  * Test an SFTP connection to Surescripts. Will only work if it is being run from a server
@@ -37,6 +38,12 @@ import { SftpAction } from "@metriport/core/external/sftp/command/sftp-action/sf
  */
 const sftpAction = new Command();
 
+/**
+ * Executes an SFTP action using the Surescripts SFTP client.
+ *
+ * @param action - The SFTP action to execute
+ * @returns Promise resolving to the action result
+ */
 async function executeSftpAction<A extends SftpAction>(action: A) {
   const client = new SurescriptsSftpClient({
     logLevel: "debug",
@@ -118,7 +125,7 @@ sftpWrite
   .description("Write a file to the SFTP server")
   .action(async (localPath: string, remotePath: string, { compress }: { compress?: boolean }) => {
     if (!fs.existsSync(localPath)) {
-      throw new Error(`File ${localPath} does not exist`);
+      throw new MetriportError(`File ${localPath} does not exist`);
     }
     const content = fs.readFileSync(localPath).toString("base64");
     await executeSftpAction({

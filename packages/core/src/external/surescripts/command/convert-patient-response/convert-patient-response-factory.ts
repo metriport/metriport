@@ -7,6 +7,5 @@ export function buildConvertPatientResponseHandler(): SurescriptsConvertPatientR
   if (Config.isDev()) {
     return new SurescriptsConvertPatientResponseHandlerDirect();
   }
-  const lambdaName = Config.getSurescriptsConvertPatientResponseLambdaName();
-  return new SurescriptsConvertPatientResponseHandlerCloud(lambdaName);
+  return new SurescriptsConvertPatientResponseHandlerCloud();
 }

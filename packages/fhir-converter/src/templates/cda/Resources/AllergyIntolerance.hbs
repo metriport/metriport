@@ -43,26 +43,25 @@
                         }
                     ]
         },
+        "code":{{>DataType/CodeableConcept.hbs code=allergyEntry.participant.participantRole.playingEntity.code}},
+        {{#each (toArray allergyEntry.entryRelationship)}}
+            {{#if (contains (toJsonString this.observation.templateId) '"2.16.840.1.113883.10.20.22.4.145"')}}
+                {{>ValueSet/AllergyCriticality.hbs code=this.observation.value.code}}
+            {{/if}}
+        {{/each}}
         "reaction":
         [
             {
                 "substance":{{>DataType/CodeableConcept.hbs code=allergyEntry.participant.participantRole.playingEntity.code}},
 
-                {{#if allergyEntry.entryRelationship }}
+                {{#if (contains (toJsonString allergyEntry.entryRelationship) '"2.16.840.1.113883.10.20.22.4.9"')}}
                   {{#each (toArray allergyEntry.entryRelationship)}}
-
                       {{#if (contains (toJsonString this.observation.templateId) '"2.16.840.1.113883.10.20.22.4.9"')}}
                           "manifestation":
                           [
                             {{>DataType/CodeableConcept.hbs code=this.observation.value canBeUnknown=true}},
                           ],
                           "onset": "{{formatAsDateTime this.observation.effectiveTime.low.value}}",
-
-                      {{else}}
-                          "manifestation":
-                          [
-                            {{>DataType/CodeableConcept.hbs canBeUnknown=true}},
-                          ],
                       {{/if}}
 
                       {{#if (contains (toJsonString this.observation.templateId) '"2.16.840.1.113883.10.20.22.4.8"')}}
@@ -72,7 +71,6 @@
                               {{>ValueSet/AllergySeverity.hbs sev=this.observation.value.displayName}}
                           {{/if}}
                       {{/if}}
-
                   {{/each}}
                 {{else}}
                   "manifestation":

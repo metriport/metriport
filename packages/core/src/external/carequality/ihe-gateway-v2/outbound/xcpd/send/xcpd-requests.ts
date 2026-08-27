@@ -25,6 +25,8 @@ export async function sendSignedXcpdRequest({
   cxId: string;
   index: number;
 }): Promise<XCPDSamlClientResponse> {
+  let xcpdResponse: XCPDSamlClientResponse | undefined;
+
   try {
     const { response } = await sendSignedXml({
       signedXml: request.signedRequest,
@@ -38,28 +40,31 @@ export async function sendSignedXcpdRequest({
       }`
     );
 
-    return {
+    xcpdResponse = {
       gateway: request.gateway,
       response,
       success: true,
       outboundRequest: request.outboundRequest,
     };
+    return xcpdResponse;
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     const msg = "HTTP/SSL Failure Sending Signed XCPD SAML Request";
+    const errorDetails = error?.response?.data
+      ? `error details: ${JSON.stringify(error.response?.data)}`
+      : "";
     log(
-      `${msg}, requestId: ${request.outboundRequest.id}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.oid}, error: ${error}`
+      `${msg}, requestId: ${request.outboundRequest.id}, cxId: ${cxId}, patientId: ${patientId}, ` +
+        `gateway: ${request.gateway.oid}, error: ${error}, ${errorDetails}`
     );
-    if (error?.response?.data) {
-      log(`error details: ${JSON.stringify(error?.response?.data)}`);
-    }
 
     const errorString: string = errorToString(error);
-    return {
+    xcpdResponse = {
       gateway: request.gateway,
       outboundRequest: request.outboundRequest,
       response: errorString,
       success: false,
     };
+    return xcpdResponse;
   }
 }

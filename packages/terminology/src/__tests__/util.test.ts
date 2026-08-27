@@ -30,6 +30,14 @@ describe("normalizeNdcCode", () => {
       expect(normalizeNdcCode("60951-700-8")).toBe("60951070008");
     });
 
+    it("should normalize a 8-digit NDC code in 2-4-2 format", () => {
+      expect(normalizeNdcCode("54-3270-99")).toBe("00054327099");
+    });
+
+    it("should normalize a 7-digit NDC code in 1-4-2 format", () => {
+      expect(normalizeNdcCode("3-0894-21")).toBe("00003089421");
+    });
+
     it("should normalize an NDC code with asterisk", () => {
       expect(normalizeNdcCode("054868-5338-*3")).toBe("54868533803");
     });

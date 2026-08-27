@@ -5,6 +5,7 @@ export const SNOMED_OID = "2.16.840.1.113883.6.96";
 export const LOINC_CODE = "loinc";
 export const LOINC_URL = "http://loinc.org";
 export const LOINC_OID = "2.16.840.1.113883.6.1";
+export const GENERIC_LOINC_LAB_RESULT_CODE = "11502-2";
 
 export const ICD_10_CODE = "icd-10";
 export const ICD_10_URL = "http://hl7.org/fhir/sid/icd-10-cm";
@@ -44,9 +45,15 @@ export const CONDITION_VERIFICATION_STATUS_URL =
 export const CONDITION_CATEGORY_SYSTEM_URL =
   "http://terminology.hl7.org/CodeSystem/condition-category";
 
+export const CONDITION_CCSR_CATEGORY_SYSTEM_URL =
+  "https://hcup-us.ahrq.gov/toolssoftware/ccsr/ccs_refined.jsp";
+
 export const PRACTITIONER_UPIN_URL = "http://hl7.org/fhir/sid/us-upin";
 export const PRACTITIONER_NPI_URL = "http://hl7.org/fhir/sid/us-npi";
 export const PRACTITIONER_ROLE_URL = "http://terminology.hl7.org/CodeSystem/practitioner-role";
+
+export const FAMILY_MEMBER_HISTORY_ROLE_CODE_URL =
+  "http://terminology.hl7.org/CodeSystem/v3-RoleCode";
 
 export const OBSERVATION_CATEGORY_URL =
   "http://terminology.hl7.org/CodeSystem/observation-category";

@@ -2,10 +2,14 @@ import { DocumentReference } from "@medplum/fhirtypes";
 import { errorToString, executeWithNetworkRetries, executeWithRetries } from "@metriport/shared";
 import axios from "axios";
 import { createDocumentFileName } from "../../../domain/document/filename";
-import { createUploadFilePath, createUploadMetadataFilePath } from "../../../shareback/file";
 import { parseFilePath } from "../../../domain/filename";
-import { createAndUploadDocumentMetadataFile } from "../../../shareback/create-and-upload-extrinsic-object";
+import { createAndUploadDocumentMetadataFile } from "../../../shareback/create-and-upload-metadata";
+import {
+  createUploadFilePath,
+  getMetadataFilePathFromDocumentFilePath,
+} from "../../../shareback/file";
 import { MetriportError } from "../../../util/error/metriport-error";
+import { computeS3ObjectSha1 } from "../../../util/hash";
 import { out } from "../../../util/log";
 import { S3Utils } from "../s3";
 
@@ -19,6 +23,7 @@ export type FileData = {
   originalName: string;
   locationUrl: string;
   docId: string;
+  hash?: string | undefined | null;
 };
 
 export async function documentUploaderHandler(
@@ -36,19 +41,19 @@ export async function documentUploaderHandler(
     log(`${message} - sourceKey: ${sourceKey}`);
     throw new MetriportError(message, null, { sourceBucket, sourceKey });
   }
-  const { cxId, patientId, fileId: docId } = s3FileNameParts;
+  const { cxId, patientId, fileId: docFilenameWithoutExtension } = s3FileNameParts;
   const { size, contentType } = await s3Utils.getFileInfoFromS3(sourceKey, sourceBucket);
 
-  const docName = createDocumentFileName(docId, contentType);
-  const metadataFileName = createUploadMetadataFilePath(cxId, patientId, docId);
-
-  const destinationKey = createUploadFilePath(cxId, patientId, docName);
+  const docFilenameWithExtension = createDocumentFileName(docFilenameWithoutExtension, contentType);
+  const destinationKey = createUploadFilePath(cxId, patientId, docFilenameWithExtension);
   const copySource = encodeURI(`${sourceBucket}/${sourceKey}`);
   const params = {
     CopySource: copySource,
     Bucket: destinationBucket,
     Key: destinationKey,
   };
+
+  const metadataS3Key = getMetadataFilePathFromDocumentFilePath(destinationKey);
 
   // Make a copy of the file to the general medical documents bucket
   try {
@@ -70,12 +75,15 @@ export async function documentUploaderHandler(
     });
   }
 
+  const hash = await computeS3ObjectSha1(s3Utils, destinationBucket, destinationKey);
+
   const fileData: FileData = {
     mimeType: contentType,
     size,
     originalName: destinationKey,
     locationUrl: s3Utils.buildFileUrl(destinationBucket, destinationKey),
-    docId,
+    docId: docFilenameWithoutExtension,
+    hash,
   };
 
   try {
@@ -93,12 +101,13 @@ export async function documentUploaderHandler(
         s3Utils,
         cxId,
         patientId,
-        docId: destinationKey,
+        documentS3Key: destinationKey,
         size,
         docRef,
-        metadataFileName,
+        metadataS3Key,
         destinationBucket,
         mimeType: contentType,
+        hash,
       });
     }
     if (size && size > MAXIMUM_UPLOAD_FILE_SIZE) {

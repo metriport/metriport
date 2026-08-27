@@ -23,6 +23,8 @@ export function processAsyncError(
       log(`${msg}: ${getErrorMessage(error)}`);
     }
     if (error instanceof BadRequestError || error instanceof NotFoundError) return;
-    capture.error(useMsgAsTitle ? msg : error, { extra: { message: msg, error } });
+    capture.error(useMsgAsTitle ? msg : error, {
+      extra: { message: msg, error: errorToString(error) },
+    });
   };
 }

@@ -12,8 +12,12 @@ import {
 } from "@medplum/fhirtypes";
 import { Facility, MetriportMedicalApi, PatientDTO } from "@metriport/api-sdk";
 import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";
+import { CohortWithSizeResponseWithoutOverrides } from "@metriport/shared/domain/cohort";
+import { Config } from "../../../shared/config";
 import { getCxIdFromApiKey } from "../../../routes/middlewares/auth";
 import { baseURL, testApiKey } from "../shared";
+
+export const COHORT_SEED_ID = Config.getCohortSeedId();
 
 export const ACCOUNT_PATH = "/internal/admin/cx-account";
 export const CUSTOMER_PATH = "/internal/customer";
@@ -46,6 +50,7 @@ export type ContributedE2eContext = {
 
 export type E2eContext = {
   facility?: Facility | undefined;
+  cohort?: CohortWithSizeResponseWithoutOverrides | undefined;
   patient?: PatientDTO | undefined;
   patientFhir?: PatientWithId | undefined;
   consolidated?: ConsolidatedE2eContext | undefined;

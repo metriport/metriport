@@ -1,5 +1,6 @@
 import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
@@ -15,25 +16,23 @@ import { buildSecret } from "../shared/secrets";
 import { LambdaSettingsWithNameAndEntry, QueueAndLambdaSettings } from "../shared/settings";
 import { createQueue } from "../shared/sqs";
 import { QuestAssets } from "./types";
+import { createBucket } from "../shared/bucket";
 
 const sftpActionTimeout = Duration.seconds(30);
-// This function is only called once a day, and may take a long time to paginate over all patients and upload them over SFTP.
 const rosterUploadLambdaTimeout = Duration.minutes(5);
-// When a response is downloaded, the remote SFTP server deletes it automatically, so this ensures that even a very
-// large response file or slow connection does not result in a time out (and thus get lost in transit).
-const responseDownloadLambdaTimeout = Duration.minutes(5);
-// After downloading a response file, a separate conversion Lambda is triggered for each patient in the response file
-const convertResponseLambdaTimeout = Duration.seconds(30);
-const alarmMaxAgeOfOldestMessage = Duration.hours(1);
-const questFhirConverterMaxConcurrency = 10;
+const ingestAllResponsesLambdaTimeout = Duration.minutes(15);
+const convertPatientResponseAlarmMaxAgeOfOldestMessage = Duration.minutes(30);
+const convertPatientResponseLambdaTimeout = Duration.minutes(15);
+const convertPatientResponseMaxConcurrency = 50;
 
-interface QuestLambdaSettings {
+interface Settings {
   sftpAction: LambdaSettingsWithNameAndEntry;
   rosterUpload: LambdaSettingsWithNameAndEntry;
-  responseDownload: LambdaSettingsWithNameAndEntry;
+  ingestAllResponses: LambdaSettingsWithNameAndEntry;
+  convertPatientResponse: QueueAndLambdaSettings;
 }
 
-const questLambdaSettings: QuestLambdaSettings = {
+const settings: Settings = {
   sftpAction: {
     name: "QuestSftpAction",
     entry: "quest/sftp-action",
@@ -50,36 +49,35 @@ const questLambdaSettings: QuestLambdaSettings = {
       timeout: rosterUploadLambdaTimeout,
     },
   },
-  responseDownload: {
-    name: "QuestDownloadResponse",
-    entry: "quest/download-response",
+  ingestAllResponses: {
+    name: "QuestIngestAllResponses",
+    entry: "quest/ingest-all-responses",
     lambda: {
-      memory: 1024,
-      timeout: responseDownloadLambdaTimeout,
+      memory: 2048,
+      timeout: ingestAllResponsesLambdaTimeout,
     },
   },
-};
-
-const questFhirConverterSettings: QueueAndLambdaSettings = {
-  name: "QuestFhirConverter",
-  entry: "quest/fhir-converter",
-  lambda: {
-    memory: 1024,
-    timeout: convertResponseLambdaTimeout,
+  convertPatientResponse: {
+    name: "QuestConvertPatientResponse",
+    entry: "quest/convert-patient-response",
+    lambda: {
+      memory: 1024,
+      timeout: convertPatientResponseLambdaTimeout,
+    },
+    queue: {
+      alertMaxApproximateAgeOfOldestMessage: convertPatientResponseAlarmMaxAgeOfOldestMessage,
+      alertMaxApproximateNumberOfMessagesVisible: 15_000,
+      maxReceiveCount: 1,
+      visibilityTimeout: Duration.seconds(convertPatientResponseLambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+      maxConcurrency: convertPatientResponseMaxConcurrency,
+    },
+    waitTime: Duration.seconds(0),
   },
-  queue: {
-    alarmMaxAgeOfOldestMessage,
-    maxMessageCountAlarmThreshold: 15_000,
-    maxReceiveCount: 3,
-    visibilityTimeout: Duration.seconds(convertResponseLambdaTimeout.toSeconds() * 2 + 1),
-    createRetryLambda: false,
-  },
-  eventSource: {
-    batchSize: 1,
-    reportBatchItemFailures: true,
-    maxConcurrency: questFhirConverterMaxConcurrency,
-  },
-  waitTime: Duration.seconds(0),
 };
 
 function questEnvironmentVariablesAndSecrets({
@@ -87,11 +85,13 @@ function questEnvironmentVariablesAndSecrets({
   quest,
   questReplicaBucket,
   labConversionBucket,
+  featureFlagsTableName,
 }: {
   nestedStack: QuestNestedStack;
   quest: EnvConfig["quest"];
   questReplicaBucket: s3.Bucket;
   labConversionBucket: s3.Bucket;
+  featureFlagsTableName: string;
 }): { envVars: Record<string, string>; secrets: secret.ISecret[] } {
   if (!quest) {
     return { envVars: {}, secrets: [] };
@@ -105,6 +105,7 @@ function questEnvironmentVariablesAndSecrets({
     LAB_CONVERSION_BUCKET_NAME: labConversionBucket.bucketName,
     QUEST_INCOMING_DIRECTORY_PATH: quest.questIncomingDirectoryPath,
     QUEST_OUTGOING_DIRECTORY_PATH: quest.questOutgoingDirectoryPath,
+    FEATURE_FLAGS_TABLE_NAME: featureFlagsTableName,
   };
 
   const secrets: secret.ISecret[] = [];
@@ -117,16 +118,17 @@ function questEnvironmentVariablesAndSecrets({
 interface QuestNestedStackProps extends NestedStackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
-  alarmAction?: SnsAction;
+  alertAction?: SnsAction;
   lambdaLayers: LambdaLayers;
+  featureFlagsTable: dynamodb.Table;
 }
 
 export class QuestNestedStack extends NestedStack {
   private readonly sftpActionLambda: Lambda;
   private readonly uploadRosterLambda: Lambda;
-  private readonly downloadResponseLambda: Lambda;
-  private readonly questFhirConverterLambda: Lambda;
-  private readonly questFhirConverterQueue: Queue;
+  private readonly ingestAllResponsesLambda: Lambda;
+  private readonly convertPatientResponseLambda: Lambda;
+  private readonly convertPatientResponseQueue: Queue;
   private readonly questReplicaBucket: s3.Bucket;
   private readonly labConversionBucket: s3.Bucket;
 
@@ -134,33 +136,42 @@ export class QuestNestedStack extends NestedStack {
     super(scope, id, props);
 
     this.terminationProtection = true;
+    const questReplicaBucketBucketName = props.config.questReplicaBucketName;
+    if (!questReplicaBucketBucketName) throw new Error("questReplicaBucketBucketName is required");
+    this.questReplicaBucket = createBucket(
+      this,
+      {
+        bucketName: questReplicaBucketBucketName,
+        versioned: true,
+      },
+      "QuestReplicaBucket"
+    );
 
-    this.questReplicaBucket = new s3.Bucket(this, "QuestReplicaBucket", {
-      bucketName: props.config.questReplicaBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-    });
-
-    this.labConversionBucket = new s3.Bucket(this, "LabConversionBucket", {
-      bucketName: props.config.labConversionBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-      // Required for presigned URLs
-      cors: [
-        {
-          allowedOrigins: ["*"],
-          allowedMethods: [s3.HttpMethods.GET],
-        },
-      ],
-    });
+    const labConversionBucketBucketName = props.config.labConversionBucketName;
+    if (!labConversionBucketBucketName)
+      throw new Error("labConversionBucketBucketName is required");
+    this.labConversionBucket = createBucket(
+      this,
+      {
+        bucketName: labConversionBucketBucketName,
+        versioned: true,
+        // Required for presigned URLs
+        cors: [
+          {
+            allowedOrigins: ["*"],
+            allowedMethods: [s3.HttpMethods.GET],
+          },
+        ],
+      },
+      "LabConversionBucket"
+    );
 
     const { envVars, secrets } = questEnvironmentVariablesAndSecrets({
       nestedStack: this,
       quest: props.config.quest,
       questReplicaBucket: this.questReplicaBucket,
       labConversionBucket: this.labConversionBucket,
+      featureFlagsTableName: props.featureFlagsTable.tableName,
     });
 
     const commonConfig = {
@@ -168,7 +179,7 @@ export class QuestNestedStack extends NestedStack {
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      alertAction: props.alertAction,
       quest: props.config.quest,
       systemRootOID: props.config.systemRootOID,
       termServerUrl: props.config.termServerUrl,
@@ -180,40 +191,47 @@ export class QuestNestedStack extends NestedStack {
       ...commonConfig,
       questReplicaBucket: this.questReplicaBucket,
       labConversionBucket: this.labConversionBucket,
+      featureFlagsTable: props.featureFlagsTable,
     });
 
     this.uploadRosterLambda = this.setupLambda("rosterUpload", {
       ...commonConfig,
       questReplicaBucket: this.questReplicaBucket,
       labConversionBucket: this.labConversionBucket,
+      featureFlagsTable: props.featureFlagsTable,
     });
 
-    this.downloadResponseLambda = this.setupLambda("responseDownload", {
+    const { lambda: convertPatientResponseLambda, queue: convertPatientResponseQueue } =
+      this.setupLambdaAndQueue(settings.convertPatientResponse, {
+        ...commonConfig,
+        questReplicaBucket: this.questReplicaBucket,
+        labConversionBucket: this.labConversionBucket,
+        featureFlagsTable: props.featureFlagsTable,
+      });
+    this.convertPatientResponseLambda = convertPatientResponseLambda;
+    this.convertPatientResponseQueue = convertPatientResponseQueue;
+
+    this.ingestAllResponsesLambda = this.setupLambda("ingestAllResponses", {
       ...commonConfig,
       questReplicaBucket: this.questReplicaBucket,
       labConversionBucket: this.labConversionBucket,
+      queues: [
+        {
+          envVarName: "QUEST_CONVERT_PATIENT_RESPONSE_QUEUE_URL",
+          queue: this.convertPatientResponseQueue,
+        },
+      ],
+      featureFlagsTable: props.featureFlagsTable,
     });
-
-    const questFhirConverter = this.setupLambdaAndQueue(questFhirConverterSettings, {
-      ...commonConfig,
-      questReplicaBucket: this.questReplicaBucket,
-      labConversionBucket: this.labConversionBucket,
-    });
-    this.questFhirConverterLambda = questFhirConverter.lambda;
-    this.questFhirConverterQueue = questFhirConverter.queue;
   }
 
   getLambdas(): Lambda[] {
     return [
       this.sftpActionLambda,
       this.uploadRosterLambda,
-      this.downloadResponseLambda,
-      this.questFhirConverterLambda,
+      this.ingestAllResponsesLambda,
+      this.convertPatientResponseLambda,
     ];
-  }
-
-  getQueues(): Queue[] {
-    return [this.questFhirConverterQueue];
   }
 
   getAssets(): QuestAssets {
@@ -228,31 +246,31 @@ export class QuestNestedStack extends NestedStack {
           lambda: this.uploadRosterLambda,
         },
         {
-          envVarName: "QUEST_DOWNLOAD_RESPONSE_LAMBDA_NAME",
-          lambda: this.downloadResponseLambda,
+          envVarName: "QUEST_INGEST_ALL_RESPONSES_LAMBDA_NAME",
+          lambda: this.ingestAllResponsesLambda,
         },
         {
-          envVarName: "QUEST_FHIR_CONVERTER_LAMBDA_NAME",
-          lambda: this.questFhirConverterLambda,
+          envVarName: "QUEST_CONVERT_PATIENT_RESPONSE_LAMBDA_NAME",
+          lambda: this.convertPatientResponseLambda,
         },
       ],
       questQueues: [
         {
-          envVarName: "QUEST_FHIR_CONVERTER_QUEUE_URL",
-          queue: this.questFhirConverterQueue,
+          envVarName: "QUEST_CONVERT_PATIENT_RESPONSE_QUEUE_URL",
+          queue: this.convertPatientResponseQueue,
         },
       ],
       sftpActionLambda: this.sftpActionLambda,
       rosterUploadLambda: this.uploadRosterLambda,
-      responseDownloadLambda: this.downloadResponseLambda,
-      questFhirConverterLambda: this.questFhirConverterLambda,
-      questFhirConverterQueue: this.questFhirConverterQueue,
+      ingestAllResponsesLambda: this.ingestAllResponsesLambda,
+      convertPatientResponseLambda: this.convertPatientResponseLambda,
+      convertPatientResponseQueue: this.convertPatientResponseQueue,
       questReplicaBucket: this.questReplicaBucket,
       labConversionBucket: this.labConversionBucket,
     };
   }
 
-  private setupLambda<T extends keyof QuestLambdaSettings>(
+  private setupLambda<T extends keyof Settings>(
     job: T,
     props: {
       lambdaLayers: LambdaLayers;
@@ -260,15 +278,24 @@ export class QuestNestedStack extends NestedStack {
       envType: EnvType;
       envVars: Record<string, string>;
       sentryDsn: string | undefined;
-      alarmAction: SnsAction | undefined;
+      alertAction: SnsAction | undefined;
       systemRootOID: string;
       questReplicaBucket: s3.Bucket;
       labConversionBucket?: s3.Bucket;
       termServerUrl?: string;
       secrets: secret.ISecret[];
+      lambdas?: {
+        envVarName: string;
+        lambda: Lambda;
+      }[];
+      queues?: {
+        envVarName: string;
+        queue: Queue;
+      }[];
+      featureFlagsTable: dynamodb.Table;
     }
   ): Lambda {
-    const { name, entry, lambda: lambdaSettings } = questLambdaSettings[job];
+    const { name, entry, lambda: lambdaSettings } = settings[job];
 
     const {
       lambdaLayers,
@@ -276,12 +303,15 @@ export class QuestNestedStack extends NestedStack {
       envType,
       envVars,
       sentryDsn,
-      alarmAction,
+      alertAction,
       systemRootOID,
       questReplicaBucket,
       labConversionBucket,
       termServerUrl,
       secrets,
+      lambdas,
+      queues,
+      featureFlagsTable,
     } = props;
 
     const lambda = createLambda({
@@ -295,18 +325,35 @@ export class QuestNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         ...(job === "sftpAction" ? { SFTP_ACTION_LAMBDA: "quest" } : {}),
         ...(termServerUrl ? { TERM_SERVER_URL: termServerUrl } : {}),
+        ...(lambdas ?? []).reduce((acc, lambda) => {
+          acc[lambda.envVarName] = lambda.lambda.functionName;
+          return acc;
+        }, {} as Record<string, string>),
+        ...(queues ?? []).reduce((acc, queue) => {
+          acc[queue.envVarName] = queue.queue.queueUrl;
+          return acc;
+        }, {} as Record<string, string>),
         SYSTEM_ROOT_OID: systemRootOID,
       },
       layers: [lambdaLayers.shared],
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     questReplicaBucket.grantReadWrite(lambda);
     labConversionBucket?.grantReadWrite(lambda);
+    featureFlagsTable.grantReadData(lambda);
 
     for (const secret of secrets) {
       secret.grantRead(lambda);
+    }
+
+    for (const grantedLambda of lambdas ?? []) {
+      grantedLambda.lambda.grantInvoke(lambda);
+    }
+
+    for (const grantedQueue of queues ?? []) {
+      grantedQueue.queue.grantSendMessages(lambda);
     }
 
     return lambda;
@@ -326,11 +373,13 @@ export class QuestNestedStack extends NestedStack {
       envType: EnvType;
       envVars: Record<string, string>;
       sentryDsn: string | undefined;
-      alarmAction: SnsAction | undefined;
+      alertAction: SnsAction | undefined;
       systemRootOID: string;
       questReplicaBucket: s3.Bucket;
       labConversionBucket?: s3.Bucket;
       termServerUrl?: string;
+      secrets: secret.ISecret[];
+      featureFlagsTable: dynamodb.Table;
     }
   ): { lambda: Lambda; queue: Queue } {
     const {
@@ -339,11 +388,13 @@ export class QuestNestedStack extends NestedStack {
       envType,
       envVars,
       sentryDsn,
-      alarmAction,
+      alertAction,
       systemRootOID,
       questReplicaBucket,
       labConversionBucket,
       termServerUrl,
+      secrets,
+      featureFlagsTable,
     } = props;
 
     const queue = createQueue({
@@ -354,7 +405,7 @@ export class QuestNestedStack extends NestedStack {
       createDLQ: true,
       lambdaLayers: [lambdaLayers.shared],
       envType,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     const lambda = createLambda({
@@ -371,11 +422,16 @@ export class QuestNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
+
+    for (const secret of secrets) {
+      secret.grantRead(lambda);
+    }
 
     questReplicaBucket.grantReadWrite(lambda);
     labConversionBucket?.grantReadWrite(lambda);
+    featureFlagsTable.grantReadData(lambda);
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 

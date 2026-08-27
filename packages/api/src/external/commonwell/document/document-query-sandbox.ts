@@ -9,15 +9,22 @@ import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shar
 import { out } from "@metriport/core/util";
 import { getFileExtension } from "@metriport/core/util/mime";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { emptyFunction, sleep } from "@metriport/shared";
+import { emptyFunction, errorToString, sleep } from "@metriport/shared";
+import { cloneDeep } from "lodash";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
 } from "../../../command/medical/document/document-webhook";
+import { processAsyncError } from "@metriport/core/util/error/shared";
+import {
+  DatasourceQueryStatus,
+  hieSpecificSource,
+} from "@metriport/shared/domain/network-query/source";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { recreateConsolidated } from "../../../command/medical/patient/consolidated-recreate";
+import { updateDatasourceQueryStatusByRequestId } from "../../../command/medical/network-query/update-datasource-query-status";
 import { finishSinglePatientImport } from "../../../command/medical/patient/patient-import/finish-single-patient";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
@@ -77,6 +84,13 @@ export async function sandboxGetDocRefsAndUpsert({
       requestId,
       []
     );
+    updateDatasourceQueryStatusByRequestId({
+      cxId,
+      requestId,
+      source: "hie",
+      specificSource: hieSpecificSource,
+      toStatus: DatasourceQueryStatus.Completed,
+    }).catch(processAsyncError("sandbox zero-doc updateDatasourceQueryStatus"));
     finishSinglePatientImport({
       cxId,
       patientId,
@@ -90,10 +104,11 @@ export async function sandboxGetDocRefsAndUpsert({
   log(`Got ${entries.length} doc refs`);
 
   const docsWithContent = entries.map(entry => {
+    const clonedEntry = cloneDeep(entry);
     return {
-      ...entry,
-      originalId: entry.docRef.id,
-      content: { mimeType: entry.docRef.content?.[0]?.attachment?.contentType },
+      ...clonedEntry,
+      originalId: clonedEntry.docRef.id,
+      content: { mimeType: clonedEntry.docRef.content?.[0]?.attachment?.contentType },
     };
   });
 
@@ -169,9 +184,27 @@ export async function sandboxGetDocRefsAndUpsert({
     }
   }
 
-  // After docs are converted (and conversion bundles are stored in S3), we recreate the consolidated
-  // bundle to make sure it's up-to-date.
-  await recreateConsolidated({ patient });
+  // After docs are converted (and conversion bundles are stored in S3), update the network query
+  // status to Converted, then recreate the consolidated bundle to make sure it's up-to-date.
+  try {
+    await updateDatasourceQueryStatusByRequestId({
+      cxId,
+      requestId,
+      source: "hie",
+      specificSource: hieSpecificSource,
+      toStatus: DatasourceQueryStatus.Converted,
+    });
+  } catch (err) {
+    log(
+      `Error updating datasource query status to Converted: ${errorToString(err)}. Continuing...`
+    );
+  }
+
+  await recreateConsolidated({
+    patient,
+    requestId,
+    isDq: true,
+  });
 
   await appendDocQueryProgress({
     patient: { id: patientId, cxId },

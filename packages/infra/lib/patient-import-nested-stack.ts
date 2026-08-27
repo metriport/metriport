@@ -13,6 +13,7 @@ import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { QueueAndLambdaSettings } from "./shared/settings";
 import { createQueue } from "./shared/sqs";
+import { createBucket } from "./shared/bucket";
 
 const waitTimePatientCreate = Duration.seconds(6); // 10 patients/min (assumes single virtual queue across all customers)
 const waitTimePatientQuery = Duration.seconds(0);
@@ -35,8 +36,8 @@ function settings() {
       timeout: patientCreateLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.days(2),
-      maxMessageCountAlarmThreshold: 5_000,
+      alertMaxApproximateAgeOfOldestMessage: Duration.days(2),
+      alertMaxApproximateNumberOfMessagesVisible: 5_000,
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(patientCreateLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
@@ -57,7 +58,7 @@ function settings() {
       timeout: patientQueryLambdaTimeout,
     },
     queue: {
-      alarmMaxAgeOfOldestMessage: Duration.minutes(5),
+      alertMaxApproximateAgeOfOldestMessage: Duration.minutes(5),
       maxReceiveCount: 3,
       visibilityTimeout: Duration.seconds(patientQueryLambdaTimeout.toSeconds() * 2 + 1),
       createRetryLambda: false,
@@ -86,7 +87,7 @@ function settings() {
 interface PatientImportNestedStackProps extends NestedStackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
-  alarmAction?: SnsAction;
+  alertAction?: SnsAction;
   lambdaLayers: LambdaLayers;
 }
 
@@ -115,7 +116,7 @@ export class PatientImportNestedStack extends NestedStack {
       envType: props.config.environmentType,
       bucket: this.bucket,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      alertAction: props.alertAction,
     });
     this.queryLambda = query.lambda;
     this.queryQueue = query.queue;
@@ -127,7 +128,7 @@ export class PatientImportNestedStack extends NestedStack {
       bucket: this.bucket,
       patientQueryQueue: this.queryQueue,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      alertAction: props.alertAction,
     });
     this.createLambda = create.lambda;
     this.createQueue = create.queue;
@@ -138,7 +139,7 @@ export class PatientImportNestedStack extends NestedStack {
       envType: props.config.environmentType,
       bucket: this.bucket,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      alertAction: props.alertAction,
     });
 
     this.parseLambda = this.setupJobParse({
@@ -150,7 +151,7 @@ export class PatientImportNestedStack extends NestedStack {
       patientCreateQueue: this.createQueue,
       notificationUrl: config.notificationUrl,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      alertAction: props.alertAction,
     });
 
     this.setupNotificationLambda({
@@ -161,17 +162,19 @@ export class PatientImportNestedStack extends NestedStack {
       parseLambda: this.parseLambda,
       notificationUrl: config.notificationUrl,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      alertAction: props.alertAction,
     });
   }
 
   private setupBucket({ bucketName }: { bucketName: string }): s3.Bucket {
-    const bucket = new s3.Bucket(this, "PatientImportBucket", {
-      bucketName: bucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-    });
+    const bucket = createBucket(
+      this,
+      {
+        bucketName: bucketName,
+        versioned: true,
+      },
+      "PatientImportBucket"
+    );
     return bucket;
   }
 
@@ -184,7 +187,7 @@ export class PatientImportNestedStack extends NestedStack {
     patientCreateQueue: Queue;
     notificationUrl?: string;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
+    alertAction: SnsAction | undefined;
   }): Lambda {
     if (!ownProps.notificationUrl) throw new Error("Notification URL is required");
 
@@ -196,7 +199,7 @@ export class PatientImportNestedStack extends NestedStack {
       patientCreateQueue,
       resultLambda,
       sentryDsn,
-      alarmAction,
+      alertAction,
     } = ownProps;
     const { name, entry, lambdaMemory, lambdaTimeout } = settings().fileParse;
 
@@ -217,7 +220,7 @@ export class PatientImportNestedStack extends NestedStack {
       memory: lambdaMemory,
       timeout: lambdaTimeout,
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     bucket.grantReadWrite(lambda);
@@ -234,9 +237,9 @@ export class PatientImportNestedStack extends NestedStack {
     envType: EnvType;
     patientQueryQueue: Queue;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
+    alertAction: SnsAction | undefined;
   }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, bucket, patientQueryQueue, envType, sentryDsn, alarmAction } =
+    const { lambdaLayers, vpc, bucket, patientQueryQueue, envType, sentryDsn, alertAction } =
       ownProps;
     const {
       name,
@@ -255,7 +258,7 @@ export class PatientImportNestedStack extends NestedStack {
       createDLQ: true,
       lambdaLayers: [lambdaLayers.shared],
       envType,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     const lambda = createLambda({
@@ -273,7 +276,7 @@ export class PatientImportNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
@@ -292,7 +295,7 @@ export class PatientImportNestedStack extends NestedStack {
     envType: EnvType;
     notificationUrl: string;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
+    alertAction: SnsAction | undefined;
   }): Lambda | undefined {
     const {
       lambdaLayers,
@@ -302,7 +305,7 @@ export class PatientImportNestedStack extends NestedStack {
       envType,
       notificationUrl,
       sentryDsn,
-      alarmAction,
+      alertAction,
     } = ownProps;
 
     const lambda = createLambda({
@@ -319,7 +322,7 @@ export class PatientImportNestedStack extends NestedStack {
       memory: 512,
       timeout: Duration.seconds(30),
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     bucket.grantRead(lambda);
@@ -345,9 +348,9 @@ export class PatientImportNestedStack extends NestedStack {
     bucket: s3.IBucket;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
+    alertAction: SnsAction | undefined;
   }): { lambda: Lambda; queue: Queue } {
-    const { lambdaLayers, vpc, bucket, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, bucket, envType, sentryDsn, alertAction } = ownProps;
     const {
       name,
       entry,
@@ -365,7 +368,7 @@ export class PatientImportNestedStack extends NestedStack {
       createDLQ: true,
       lambdaLayers: [lambdaLayers.shared],
       envType,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     const lambda = createLambda({
@@ -382,7 +385,7 @@ export class PatientImportNestedStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
@@ -398,9 +401,9 @@ export class PatientImportNestedStack extends NestedStack {
     bucket: s3.IBucket;
     envType: EnvType;
     sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
+    alertAction: SnsAction | undefined;
   }): Lambda {
-    const { lambdaLayers, vpc, bucket, envType, sentryDsn, alarmAction } = ownProps;
+    const { lambdaLayers, vpc, bucket, envType, sentryDsn, alertAction } = ownProps;
     const { name, entry, lambdaMemory, lambdaTimeout } = settings().jobResult;
 
     const lambda = createLambda({
@@ -417,7 +420,7 @@ export class PatientImportNestedStack extends NestedStack {
       memory: lambdaMemory,
       timeout: lambdaTimeout,
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     bucket.grantReadWrite(lambda);

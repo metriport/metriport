@@ -38,12 +38,19 @@ const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.passwo
 });
 
 async function main() {
-  const { umzug, migrations, executed, pending, lastExecuted } = await getUmzugWithMeta(sequelize);
+  const { umzug, migrations, executed, pending, pendingCount, lastExecuted } =
+    await getUmzugWithMeta(sequelize);
+  const prefix = `[--- SEQUELIZE ---]`;
   console.log("");
   console.log(
-    `[--- SEQUELIZE ---] Migrations: ${executed} executed, ${pending} pending, ` +
-      `${migrations} total, last executed: ${lastExecuted}`
+    `${prefix} Migrations: ${executed} executed, ${pendingCount} pending, ` + `${migrations} total`
   );
+  console.log(`${prefix} Last executed: ${lastExecuted}`);
+  if (pendingCount > 0) console.log(`${prefix} Pending migrations:`);
+  for (const migration of pending) {
+    console.log(`${prefix} ${migration.name}`);
+  }
+
   console.log("");
   await umzug.runAsCLI();
   process.exit();

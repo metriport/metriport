@@ -61,7 +61,7 @@ export interface LambdaProps extends StackProps {
   /** The maximum number of times to retry when the function returns an error. */
   readonly retryAttempts?: number;
   readonly maxEventAge?: Duration;
-  readonly alarmSnsAction?: SnsAction;
+  readonly alertSnsAction?: SnsAction;
   readonly runtime?: Runtime;
   readonly runtimeManagementMode?: RuntimeManagementMode;
   readonly architecture?: Architecture;
@@ -110,6 +110,7 @@ export function createLambda(props: LambdaProps): Lambda {
     environment: {
       ...props.envVars,
       ENV_TYPE: props.envType,
+      NODE_ENV: getLambdaNodeEnv(props.envType),
       METRICS_NAMESPACE,
       ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
     },
@@ -127,7 +128,7 @@ export function createLambda(props: LambdaProps): Lambda {
     props.stack,
     lambda,
     `${props.name}-GeneralLambdaAlarm`,
-    props.alarmSnsAction
+    props.alertSnsAction
   );
 
   // Setup alarm - OOM (Out Of Memory) errors
@@ -151,7 +152,7 @@ export function createLambda(props: LambdaProps): Lambda {
       alarmDescription: "Alarm if we get an OOM error from the Lambda function",
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-    props.alarmSnsAction && alarm.addAlarmAction(props.alarmSnsAction);
+    props.alertSnsAction && alarm.addAlarmAction(props.alertSnsAction);
   }
 
   return lambda;
@@ -179,6 +180,7 @@ export function createRetryLambda(props: RetryLambdaProps): Lambda {
     envVars: {
       ...props.envVars,
       ENV_TYPE: config.environmentType,
+      NODE_ENV: getLambdaNodeEnv(config.environmentType),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       SOURCE_QUEUE: props.sourceQueue.queueUrl,
       DESTINATION_QUEUE: props.destinationQueue.queueUrl,
@@ -211,4 +213,8 @@ export function addErrorAlarmToLambdaFunc(
 
 export function getLambdaUrl({ arn, region }: { arn: string; region: string }) {
   return `https://lambda.${region}.amazonaws.com/2015-03-31/functions/${arn}/invocations`;
+}
+
+function getLambdaNodeEnv(envType: EnvType): "production" | "development" {
+  return envType === EnvType.development ? "development" : "production";
 }

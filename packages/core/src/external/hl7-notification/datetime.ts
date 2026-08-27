@@ -61,7 +61,8 @@ function utcifyHl7Components(
     if (segment.name !== segmentName) return segment;
 
     let component = segment.getComponent(fieldIndex, componentIndex)?.trim();
-    const isComponentEmpty = !component || component === "";
+    // Some messages have empty datetime fields as `""`
+    const isComponentEmpty = !component || component === "" || component === `""`;
     if (isComponentEmpty) return segment;
 
     const tzOffset = handleTimezoneOffset(component, segmentName, fieldIndex);

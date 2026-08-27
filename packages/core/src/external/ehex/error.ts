@@ -1,0 +1,148 @@
+import {
+  BaseErrorResponse,
+  InboundDocumentQueryReq,
+  InboundDocumentQueryResp,
+  InboundDocumentRetrievalReq,
+  InboundDocumentRetrievalResp,
+  InboundPatientDiscoveryReq,
+  InboundPatientDiscoveryResp,
+} from "@metriport/ihe-gateway-sdk";
+import {
+  CODE_SYSTEM_ERROR,
+  getHttpStatusFromErrorOrServerError,
+  MetriportError,
+  METRIPORT_HOME_COMMUNITY_ID,
+} from "@metriport/shared";
+import { buildDayjs } from "@metriport/shared/common/date";
+import status from "http-status";
+
+export class IHEGatewayError extends MetriportError {
+  constructor(
+    message: string,
+    cause?: unknown,
+    public iheErrorCode?: string,
+    statusCode: number = status.INTERNAL_SERVER_ERROR
+  ) {
+    super(message, cause);
+    this.name = this.constructor.name;
+    this.status = statusCode;
+  }
+}
+
+export class PatientAddressRequestedError extends IHEGatewayError {
+  constructor(message = "Address Line 1 is not defined", cause?: unknown) {
+    super(message, cause, CODE_SYSTEM_ERROR, status.BAD_REQUEST);
+    this.name = this.constructor.name;
+    this.status = status.BAD_REQUEST;
+  }
+}
+
+export class LivingSubjectAdministrativeGenderRequestedError extends IHEGatewayError {
+  constructor(message = "Gender at Birth is not defined", cause?: unknown) {
+    super(message, cause, CODE_SYSTEM_ERROR, status.BAD_REQUEST);
+    this.name = this.constructor.name;
+    this.status = status.BAD_REQUEST;
+  }
+}
+
+export class XDSRegistryError extends IHEGatewayError {
+  constructor(message = "Internal Server Error", cause?: unknown) {
+    super(message, cause, CODE_SYSTEM_ERROR, status.INTERNAL_SERVER_ERROR);
+    this.name = this.constructor.name;
+  }
+}
+
+export class XDSUnknownPatientId extends IHEGatewayError {
+  constructor(message = "Unknown Patient ID", cause?: unknown) {
+    super(message, cause, CODE_SYSTEM_ERROR, status.BAD_REQUEST);
+    this.name = this.constructor.name;
+  }
+}
+
+export class XDSMissingHomeCommunityId extends IHEGatewayError {
+  constructor(message = "Missing Home Community ID", cause?: unknown) {
+    super(message, cause, CODE_SYSTEM_ERROR, status.BAD_REQUEST);
+    this.name = this.constructor.name;
+  }
+}
+
+export class XDSUnknownCommunity extends IHEGatewayError {
+  constructor(message = "Unknown Community", cause?: unknown) {
+    super(message, cause, CODE_SYSTEM_ERROR, status.BAD_REQUEST);
+    this.name = this.constructor.name;
+  }
+}
+
+function constructBaseErrorResponse(
+  payload: InboundDocumentQueryReq | InboundDocumentRetrievalReq | InboundPatientDiscoveryReq,
+  error?: IHEGatewayError
+): BaseErrorResponse {
+  const responseHttpStatusCode = error ? getHttpStatusFromErrorOrServerError(error) : status.OK;
+  const baseResponse: BaseErrorResponse = {
+    id: payload.id,
+    patientId: payload.patientId,
+    timestamp: payload.timestamp,
+    responseTimestamp: buildDayjs().toISOString(),
+    signatureConfirmation: payload.signatureConfirmation,
+    responseHttpStatusCode,
+  };
+  if (error) {
+    baseResponse.operationOutcome = {
+      resourceType: "OperationOutcome",
+      id: payload.id,
+      issue: [
+        {
+          severity: "error",
+          code: "processing",
+          details: {
+            coding: [{ system: CODE_SYSTEM_ERROR, code: error.iheErrorCode ?? error.name }],
+            text: error.message,
+          },
+        },
+      ],
+    };
+  }
+  return baseResponse;
+}
+
+export function constructDQErrorResponse(
+  payload: InboundDocumentQueryReq,
+  error: IHEGatewayError
+): InboundDocumentQueryResp {
+  return {
+    ...constructBaseErrorResponse(payload, error),
+  };
+}
+
+export function constructDRErrorResponse(
+  payload: InboundDocumentRetrievalReq,
+  error: IHEGatewayError
+): InboundDocumentRetrievalResp {
+  return {
+    ...constructBaseErrorResponse(payload, error),
+  };
+}
+
+export function constructPDNoMatchResponse(
+  payload: InboundPatientDiscoveryReq
+): InboundPatientDiscoveryResp {
+  return {
+    ...constructBaseErrorResponse(payload),
+    patientMatch: false,
+    gatewayHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
+  };
+}
+
+export function constructPDErrorResponse(
+  payload: InboundPatientDiscoveryReq,
+  error: IHEGatewayError
+): InboundPatientDiscoveryResp {
+  return {
+    ...constructBaseErrorResponse(payload, error),
+    patientMatch: null,
+    gatewayHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
+  };
+}
+
+export const httpErrorCode = "http-error";
+export const schemaErrorCode = "schema-error";

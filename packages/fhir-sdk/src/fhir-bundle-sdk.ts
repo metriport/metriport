@@ -24,6 +24,7 @@ import {
   SmartRelatedPerson,
   SmartRiskAssessment,
   SmartServiceRequest,
+  ToSmart,
 } from "./types/coding-fields";
 
 import { Smart } from "./types/smart-resources";
@@ -366,17 +367,17 @@ export class FhirBundleSdk {
    * FR-3.5: Lookup operates in O(1) time complexity
    * FR-5.1: Returns smart resource with reference resolution methods
    */
-  getResourceById<T extends Resource>(id: string): Smart<T> | undefined {
+  getResourceById<T extends Resource>(id: string): ToSmart<T> | undefined {
     // First try to find by resource.id
     const resourceById = this.resourcesById.get(id);
     if (resourceById) {
-      return this.createSmartResource(resourceById) as unknown as Smart<T>;
+      return this.createSmartResource(resourceById) as unknown as ToSmart<T>;
     }
 
     // Then try to find by fullUrl
     const resourceByFullUrl = this.resourcesByFullUrl.get(id);
     if (resourceByFullUrl) {
-      return this.createSmartResource(resourceByFullUrl) as unknown as Smart<T>;
+      return this.createSmartResource(resourceByFullUrl) as unknown as ToSmart<T>;
     }
 
     // Return undefined if not found (FR-3.4)
@@ -389,10 +390,10 @@ export class FhirBundleSdk {
   private getResourceByIdAndType<T extends Resource>(
     id: string,
     resourceType: string
-  ): Smart<T> | undefined {
+  ): ToSmart<T> | undefined {
     const resource = this.getResourceById(id);
     if (resource && resource.resourceType === resourceType) {
-      return resource as Smart<T>;
+      return resource as ToSmart<T>;
     }
     return undefined;
   }
@@ -428,16 +429,16 @@ export class FhirBundleSdk {
    * Generic helper method to get all resources of a specific type
    * FR-10.1: Returns references to cached objects, not copies
    */
-  private getResourcesByType<T extends Resource>(resourceType: string): Smart<T>[] {
+  private getResourcesByType<T extends Resource>(resourceType: string): ToSmart<T>[] {
     // Check cache first to maintain array reference identity
     const cached = this.smartResourceArrayCache.get(resourceType);
     if (cached) {
-      return cached as Smart<T>[];
+      return cached as ToSmart<T>[];
     }
 
     const resources = (this.resourcesByType.get(resourceType) || []) as T[];
     const smartResources = resources.map(
-      resource => this.createSmartResource(resource) as Smart<T>
+      resource => this.createSmartResource(resource) as ToSmart<T>
     );
 
     // Cache the array to maintain reference identity
@@ -665,7 +666,7 @@ export class FhirBundleSdk {
   getResourcesReferencingId<T extends Resource = Resource>(
     targetId: string,
     options?: ReverseReferenceOptions
-  ): Smart<T>[] {
+  ): ToSmart<T>[] {
     const reverseRefs = this.reverseReferencesById.get(targetId) ?? [];
 
     let filteredRefs = reverseRefs;
@@ -681,11 +682,11 @@ export class FhirBundleSdk {
     }
 
     // Convert to smart resources
-    const smartResources: Smart<T>[] = [];
+    const smartResources: ToSmart<T>[] = [];
     for (const ref of filteredRefs) {
       const resource = this.getResourceById(ref.sourceResourceId);
       if (resource) {
-        smartResources.push(resource as Smart<T>);
+        smartResources.push(resource as ToSmart<T>);
       }
     }
 
@@ -699,7 +700,7 @@ export class FhirBundleSdk {
    * @param resource - The smart resource to get references from
    * @returns Array of smart resources referenced by the given resource
    */
-  getResourcesReferencedBy<T extends Resource = Resource>(resource: Smart<Resource>): Smart<T>[] {
+  getResourcesReferencedBy<T extends Resource = Resource>(resource: Smart<Resource>): ToSmart<T>[] {
     return resource.getReferencedResources<T>();
   }
 
@@ -710,7 +711,7 @@ export class FhirBundleSdk {
    * @param options - Search options including date range and optional filters
    * @returns Array of smart resources that match the date range criteria
    */
-  searchByDateRange<T extends Resource = Resource>(options: DateRangeSearchOptions): Smart<T>[] {
+  searchByDateRange<T extends Resource = Resource>(options: DateRangeSearchOptions): ToSmart<T>[] {
     const { dateFrom, dateTo, resourceTypes, dateFields } = options;
 
     const fromMs = parseDate(typeof dateFrom === "string" ? dateFrom : dateFrom.toISOString());
@@ -745,11 +746,11 @@ export class FhirBundleSdk {
 
     const resourceIdSet = new Set(filteredRecords.map(record => record.resourceId));
 
-    const smartResources: Smart<T>[] = [];
+    const smartResources: ToSmart<T>[] = [];
     for (const resourceId of resourceIdSet) {
       const resource = this.getResourceById(resourceId);
       if (resource) {
-        smartResources.push(resource as Smart<T>);
+        smartResources.push(resource as ToSmart<T>);
       }
     }
 

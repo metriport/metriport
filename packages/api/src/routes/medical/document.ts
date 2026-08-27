@@ -17,7 +17,7 @@ import { requestLogger } from "../helpers/request-logger";
 import { sanitize } from "../helpers/string";
 import { getPatientInfoOrFail, patientAuthorization } from "../middlewares/patient-authorization";
 import { checkRateLimit } from "../middlewares/rate-limiting";
-import { optionalDateSchema } from "../schemas/date";
+import { optionalDateSchema } from "@metriport/shared";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema, docFileNameSchema } from "./schemas/documents";
@@ -135,7 +135,7 @@ router.post(
   })
 );
 
-// TODO see https://github.com/metriport/metriport-internal/issues/2422
+// TODO
 /**
  * Handles the logic for download url endpoints.
  * If conversionType is specified, the document will be converted to a new format,
@@ -181,7 +181,7 @@ router.get(
   })
 );
 
-// TODO see https://github.com/metriport/metriport-internal/issues/2422
+// TODO
 /** ---------------------------------------------------------------------------
  * GET /document/download-url
  *

@@ -14,11 +14,10 @@ Getting started with our Medical API is pretty easy, you'll just need take the f
 1. [Generate an API key](#2-generate-an-api-key).
 1. [Integrate your app with Metriport](#3-integrate-your-app-with-metriport).
 1. [Create Facilities and Patients](#4-create-facilities-and-patients).
-1. [Query for Patient Documents](#5-query-for-patient-documents).
+1. [Query for Patient Data](#5-query-for-patient-data).
 1. [Get Patient Medical Data](#6-get-patient-medical-data).
 1. [Contribute Medical Data](#7-contribute-medical-data).
 1. [Request API access](#8-request-api-access).
-
 
 Let's get into it! 🤘
 
@@ -38,8 +37,8 @@ After we approve your access request, take the following steps to get your API k
 - On the Developers page, you'll be able to click the `Generate API Key` button.
 
 <Warning>
-  The API key will only be displayed once. Please make sure to save it to a secure location before
-  leaving the page.
+  The API key will only be displayed once. Please make sure
+  to save it to a secure location before leaving the page.
 </Warning>
 
 This API Key will allow you to start making requests to the entire Metriport API on your
@@ -47,8 +46,10 @@ behalf. Treat this like a password, and keep it somewhere safe! You can read the
 Keys](/medical-api/getting-started/api-keys) page to learn more about API key security best practices.
 
 <Tip>
-  If you believe your key has been compromised, you can always revoke it and then generate a new one
-  on the Developers page by clicking the trash button beside the key.
+  If you believe your key has been compromised, you can
+  always revoke it and then generate a new one on the
+  Developers page by clicking the trash button beside the
+  key.
 </Tip>
 
 ---
@@ -64,8 +65,8 @@ Note that there are two ways to receive data from Metriport:
   - your application polls Metriport for Patients' medical data after initiating a query to fetch a Patient's documents;
 
 <Tip>
-  We recommend using Webhooks to ensure you're able to get patient data as quickly and easily as
-  possible.
+  We recommend using Webhooks to ensure you're able to get
+  patient data as quickly and easily as possible.
 </Tip>
 
 ---
@@ -73,8 +74,8 @@ Note that there are two ways to receive data from Metriport:
 ## 4. Create Facilities and Patients
 
 <Info>
-  For the remainder of the steps, you are able to either use the Dashboard UI, or the API - whatever
-  you prefer!
+  For the remainder of the steps, you are able to either use
+  the Dashboard UI, or the API - whatever you prefer!
 </Info>
 
 <Info>
@@ -88,12 +89,17 @@ Now you can now create `Facilities` and `Patients`. First,
 you'll need to create your `Facilities`.
 
 <Info>
-  In Metriport, a `Facility` is a location that a `Patient` receives some form of treatment. You can
-  create multiple `Facilities` to represent each of your care locations. Note that for telehealth
-  practices, these can be virtual locations.
+  In Metriport, a `Facility` is a location that a `Patient`
+  receives some form of treatment. You can create multiple
+  `Facilities` to represent each of your care locations.
+  Note that for telehealth practices, these can be virtual
+  locations.
 </Info>
 
-<Tip>In Sandbox mode, you can use the test NPI `1234567893` when creating Facilities.</Tip>
+<Tip>
+  In Sandbox mode, you can use the test NPI `1234567893`
+  when creating Facilities.
+</Tip>
 
 You can create a `Facility` by either:
 
@@ -109,9 +115,11 @@ See the [Create Facility endpoint](/medical-api/api-reference/facility/create-fa
 Once you've created all of your `Facilities`, you can create the `Patients` that you treat in each facility.
 
 <Tip>
-  In Sandbox mode, you can create Patients with pre-defined patient demographics to simulate a match
-  and pull example clinical data - see our [Sandbox
-  guide](/medical-api/getting-started/sandbox#example-clinical-data) for more details.
+  In Sandbox mode, you can create Patients with pre-defined
+  patient demographics to simulate a match and pull example
+  clinical data - see our [Sandbox
+  guide](/medical-api/getting-started/sandbox#example-clinical-data)
+  for more details.
 </Tip>
 
 You can create `Patients` by either:
@@ -126,62 +134,83 @@ See the [Create Patient endpoint](/medical-api/api-reference/patient/create-pati
 - Fill in the details and submit the form to add your Patient.
 
 <Info>
-  When you create a Patient, Metriport automatically links the Patient to all HIE data sources
-  related to the Patient based on the demographic and/or identification information provided when
-  creating the Patient.
+  When you create a Patient, Metriport automatically links
+  the Patient to all HIE data sources related to the Patient
+  based on the demographic and/or identification information
+  provided when creating the Patient.
 </Info>
 
 ---
 
-## 5. Query for Patient Documents
+## 5. Query for Patient Data
 
-Now, you're able to query for your Patients' medical `Documents` (outside medical records).
+Now, you're able to query for your Patients' medical data from all available health data networks including HIEs, pharmacies, and laboratories.
 
-As we query for Documents, we automatically convert outside records (like XML C-CDA docs) into `FHIR` resources 🔥,
+As we query for data, we automatically convert outside records (like XML C-CDA docs) into `FHIR` resources 🔥,
 deduplicate the data, standardize it, enrich it with medical code lookups and crosswalks, and store the resulting data
 on our servers for you to access at any time through a single endpoint.
 
-To query for a Patient's available `Documents`, you can either:
+To query for a Patient's available data, you can either:
 
-### Query for Documents using the API
+### Query for Patient Data using the API
 
-Start an asynchronous [Document Query](/medical-api/api-reference/document/start-document-query) to initiate a query for the Patient's medical documents from all external sources.
+Start an asynchronous [Network Query](/medical-api/api-reference/network/start-network-query) to initiate a query for the Patient's medical data from all available health data networks.
 
 <Info>
-  When this process completes, we'll send you a `medical.document-conversion` webhook - see [the respective section on the webhooks page](/medical-api/handling-data/webhooks#patient-document-data)
-  for more details.
+  When data from each source is ready, we'll send you
+  webhooks (`network-query.hie`, `network-query.pharmacy`,
+  `network-query.lab`) - see [the webhooks
+  page](/medical-api/handling-data/webhooks-with-nq) for
+  more details.
 </Info>
 
 <Info>
-  If you don't have webhooks integrated, you can use the [Get Document Query Status](/medical-api/api-reference/document/get-document-query) endpoint to check the status of the query.
+  If you don't have webhooks integrated, you can use the
+  [Get Network Query
+  Status](/medical-api/api-reference/network/get-network-query)
+  endpoint to check the status of the query.
 </Info>
 
-### Query for Documents using the Dashboard
+### Query for Patient Data using the Dashboard
 
 - On the `Patients` page, click on the desired Patient row to be taken to their interactive medical record chart summary page.
-- If this is the first time viewing this Patient's chart, Metriport will automatically retrieve the Patient's medical documents from all external sources;
-- Otherwise, you can click `Refresh Patient Data` anytime to get the latest medical documents from external sources.
+- If this is the first time viewing this Patient's chart, Metriport will automatically retrieve the Patient's medical data from all available health data networks;
+- Otherwise, you can click `Refresh Patient Data` anytime to get the latest medical data from external sources.
 
-<Info>Not all Patients will have available Documents, but they should ~95% of the time.</Info>
+<Info>Note: Only ~95% of patients will have data.</Info>
 
 ## 6. Get Patient Medical Data
 
 The aforementioned deduplicated, standardized, and enriched `FHIR` data will allow you to get the source of truth for a Patient's medical data to better understand and treat your Patients.
 We refer to this as `Consolidated Data` in Metriport.
 
+<Info>
+  The Consolidated Data Query retrieves the **cached**
+  result of your most recent Network Query. It does not
+  fetch new data from external sources - use Network Query
+  for that.
+</Info>
+
 <Tip>
-  Read our [FHIR guide](/medical-api/fhir/overview) to learn more about how Metriport leverages FHIR.
+  Read our [FHIR guide](/medical-api/fhir/overview) to learn
+  more about how Metriport leverages FHIR.
 </Tip>
 
-To learn more on how to obtain a Patient's Consolidated data via API, please see the [Start Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post) endpoint - 
+To learn more on how to obtain a Patient's Consolidated data via API, please see the [Start Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post) endpoint -
 note that this same data is also available via the Dashboard.
 
 <Tip>
-  To render this data in a single summary document, refer to the [Medical Record Summary](/medical-api/handling-data/medical-record-summary) guide.
+  To render this data in a single summary document, refer to
+  the [Medical Record
+  Summary](/medical-api/handling-data/medical-record-summary)
+  guide.
 </Tip>
 
 <Tip>
-  If you need to access the raw unprocessed Documents, see the [Start Bulk Get Document URL](/medical-api/api-reference/document/download-url-bulk) endpoint.
+  If you need to access the raw unprocessed Documents, see
+  the [Start Bulk Get Document
+  URL](/medical-api/api-reference/document/download-url-bulk)
+  endpoint.
 </Tip>
 
 ## 7. Contribute Medical Data
@@ -204,8 +233,8 @@ For more details on how to contribute data back, see the [Data Contribution](/me
 ## 8. Request API access
 
 <Warning>
-  Access to our Medical API will require you to make requests on behalf of a covered entity with an
-  [NPI
+  Access to our Medical API will require you to make
+  requests on behalf of a covered entity with an [NPI
   number](https://www.cms.gov/Regulations-and-Guidance/Administrative-Simplification/NationalProvIdentStand)
   for a valid
   [Treatment](https://www.hhs.gov/hipaa/for-professionals/privacy/guidance/disclosures-treatment-payment-health-care-operations/index.html)
@@ -224,7 +253,7 @@ After the call, we will promptly setup your account.
 
 That's it! 🤘
 
-You're now well equiped to use the Metriport API to access, manage, and exchange your Patients' medical data.
+You're now well equipped to use the Metriport API to access, manage, and exchange your Patients' medical data.
 
 As next steps, we'd recommend scoping out our [Medical API Reference](/medical-api/api-reference/organization/create-organization)
 in further detail to see the other things you can do with Metriport.

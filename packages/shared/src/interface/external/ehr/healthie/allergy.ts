@@ -22,3 +22,12 @@ export const allergiesGraphqlSchema = z.object({
   }),
 });
 export type AllergiesGraphql = z.infer<typeof allergiesGraphqlSchema>;
+
+export const createAllergySensitivityGraphqlSchema = z.object({
+  data: z.object({
+    createAllergySensitivity: z.object({
+      allergy_sensitivity: allergySchema.omit({ id: true }),
+    }),
+  }),
+});
+export type CreateAllergySensitivityGraphql = z.infer<typeof createAllergySensitivityGraphqlSchema>;

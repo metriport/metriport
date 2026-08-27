@@ -1,5 +1,6 @@
 import { Duration, NestedStack, NestedStackProps } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
@@ -9,6 +10,7 @@ import { Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { EnvType } from "../env-type";
+import { createBucket } from "../shared/bucket";
 import { createLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { buildSecret } from "../shared/secrets";
@@ -17,136 +19,24 @@ import { createQueue } from "../shared/sqs";
 import { SurescriptsAssets } from "./types";
 
 const sftpActionTimeout = Duration.seconds(30);
-const sendPatientRequestLambdaTimeout = Duration.seconds(30);
-const sendBatchRequestLambdaTimeout = Duration.minutes(5);
-const verifyRequestInHistoryLambdaTimeout = Duration.seconds(30);
-const receiveVerificationLambdaTimeout = Duration.seconds(30);
-const receiveResponseLambdaTimeout = Duration.seconds(30);
-const convertPatientResponseLambdaTimeout = Duration.seconds(30);
-const convertBatchResponseLambdaTimeout = Duration.minutes(5);
-const alarmMaxAgeOfOldestMessage = Duration.hours(1);
+const rosterUploadLambdaTimeout = Duration.minutes(5);
+const ingestAllLambdaTimeout = Duration.minutes(15);
+const convertBatchResponseAlertMaxAgeOfOldestMessage = Duration.minutes(10);
+const convertBatchResponseLambdaTimeout = Duration.minutes(15);
+const convertBatchResponseMaxConcurrency = 10;
+const convertPatientResponseAlertMaxAgeOfOldestMessage = Duration.minutes(30);
+const convertPatientResponseLambdaTimeout = Duration.minutes(15);
+const convertPatientResponseMaxConcurrency = 50;
 
-interface SurescriptsSettings {
-  sendPatientRequest: QueueAndLambdaSettings;
-  sendBatchRequest: QueueAndLambdaSettings;
-  verifyRequestInHistory: QueueAndLambdaSettings;
-  receiveVerification: QueueAndLambdaSettings;
-  receiveResponse: QueueAndLambdaSettings;
-}
-
-interface SurescriptsLambdaSettings {
+interface Settings {
   sftpAction: LambdaSettingsWithNameAndEntry;
-  convertPatientResponse: LambdaSettingsWithNameAndEntry;
-  convertBatchResponse: LambdaSettingsWithNameAndEntry;
+  rosterUpload: LambdaSettingsWithNameAndEntry;
+  ingestAllResponses: LambdaSettingsWithNameAndEntry;
+  convertBatchResponse: QueueAndLambdaSettings;
+  convertPatientResponse: QueueAndLambdaSettings;
 }
 
-const settings: SurescriptsSettings = {
-  sendPatientRequest: {
-    name: "SurescriptsSendPatientRequest",
-    entry: "surescripts/send-patient-request",
-    lambda: {
-      memory: 1024,
-      timeout: sendPatientRequestLambdaTimeout,
-    },
-    queue: {
-      alarmMaxAgeOfOldestMessage,
-      maxMessageCountAlarmThreshold: 15_000,
-      maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(sendPatientRequestLambdaTimeout.toSeconds() * 2 + 1),
-      createRetryLambda: false,
-    },
-    eventSource: {
-      batchSize: 1,
-      reportBatchItemFailures: true,
-    },
-    waitTime: Duration.seconds(0),
-  },
-  sendBatchRequest: {
-    name: "SurescriptsSendBatchRequest",
-    entry: "surescripts/send-batch-request",
-    lambda: {
-      memory: 1024,
-      timeout: sendBatchRequestLambdaTimeout,
-    },
-    queue: {
-      alarmMaxAgeOfOldestMessage,
-      maxMessageCountAlarmThreshold: 15_000,
-      maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(sendBatchRequestLambdaTimeout.toSeconds() * 2 + 1),
-      createRetryLambda: false,
-    },
-    eventSource: {
-      batchSize: 1,
-      reportBatchItemFailures: true,
-    },
-    waitTime: Duration.seconds(0),
-  },
-  verifyRequestInHistory: {
-    name: "SurescriptsVerifyRequestInHistory",
-    entry: "surescripts/verify-request-in-history",
-    lambda: {
-      memory: 512,
-      timeout: verifyRequestInHistoryLambdaTimeout,
-    },
-    queue: {
-      alarmMaxAgeOfOldestMessage,
-      maxMessageCountAlarmThreshold: 15_000,
-      maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(verifyRequestInHistoryLambdaTimeout.toSeconds() * 2 + 1),
-      createRetryLambda: false,
-    },
-    eventSource: {
-      batchSize: 1,
-      reportBatchItemFailures: true,
-      maxConcurrency: 100,
-    },
-    waitTime: Duration.seconds(0),
-  },
-  receiveVerification: {
-    name: "SurescriptsReceiveVerification",
-    entry: "surescripts/receive-verification",
-    lambda: {
-      memory: 512,
-      timeout: receiveVerificationLambdaTimeout,
-    },
-    queue: {
-      alarmMaxAgeOfOldestMessage,
-      maxMessageCountAlarmThreshold: 15_000,
-      maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(receiveVerificationLambdaTimeout.toSeconds() * 2 + 1),
-      createRetryLambda: false,
-    },
-    eventSource: {
-      batchSize: 1,
-      reportBatchItemFailures: true,
-      maxConcurrency: 100,
-    },
-    waitTime: Duration.seconds(0),
-  },
-  receiveResponse: {
-    name: "SurescriptsReceiveResponse",
-    entry: "surescripts/receive-response",
-    lambda: {
-      memory: 1024,
-      timeout: receiveResponseLambdaTimeout,
-    },
-    queue: {
-      alarmMaxAgeOfOldestMessage,
-      maxMessageCountAlarmThreshold: 15_000,
-      maxReceiveCount: 3,
-      visibilityTimeout: Duration.seconds(receiveResponseLambdaTimeout.toSeconds() * 2 + 1),
-      createRetryLambda: false,
-    },
-    eventSource: {
-      batchSize: 1,
-      reportBatchItemFailures: true,
-      maxConcurrency: 100,
-    },
-    waitTime: Duration.seconds(0),
-  },
-};
-
-const surescriptsLambdaSettings: SurescriptsLambdaSettings = {
+const settings: Settings = {
   sftpAction: {
     name: "SurescriptsSftpAction",
     entry: "surescripts/sftp-action",
@@ -155,12 +45,20 @@ const surescriptsLambdaSettings: SurescriptsLambdaSettings = {
       timeout: sftpActionTimeout,
     },
   },
-  convertPatientResponse: {
-    name: "SurescriptsConvertPatientResponse",
-    entry: "surescripts/convert-patient-response",
+  rosterUpload: {
+    name: "SurescriptsUploadRoster",
+    entry: "surescripts/upload-roster",
     lambda: {
       memory: 1024,
-      timeout: convertPatientResponseLambdaTimeout,
+      timeout: rosterUploadLambdaTimeout,
+    },
+  },
+  ingestAllResponses: {
+    name: "SurescriptsIngestAllResponses",
+    entry: "surescripts/ingest-all-responses",
+    lambda: {
+      memory: 1024,
+      timeout: ingestAllLambdaTimeout,
     },
   },
   convertBatchResponse: {
@@ -170,6 +68,40 @@ const surescriptsLambdaSettings: SurescriptsLambdaSettings = {
       memory: 1024,
       timeout: convertBatchResponseLambdaTimeout,
     },
+    queue: {
+      alertMaxApproximateAgeOfOldestMessage: convertBatchResponseAlertMaxAgeOfOldestMessage,
+      alertMaxApproximateNumberOfMessagesVisible: 15_000,
+      maxReceiveCount: 1,
+      visibilityTimeout: Duration.seconds(convertBatchResponseLambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+      maxConcurrency: convertBatchResponseMaxConcurrency,
+    },
+    waitTime: Duration.seconds(0),
+  },
+  convertPatientResponse: {
+    name: "SurescriptsConvertPatientResponse",
+    entry: "surescripts/convert-patient-response",
+    lambda: {
+      memory: 1024,
+      timeout: convertPatientResponseLambdaTimeout,
+    },
+    queue: {
+      alertMaxApproximateAgeOfOldestMessage: convertPatientResponseAlertMaxAgeOfOldestMessage,
+      alertMaxApproximateNumberOfMessagesVisible: 15_000,
+      maxReceiveCount: 1,
+      visibilityTimeout: Duration.seconds(convertPatientResponseLambdaTimeout.toSeconds() * 2 + 1),
+      createRetryLambda: false,
+    },
+    eventSource: {
+      batchSize: 1,
+      reportBatchItemFailures: true,
+      maxConcurrency: convertPatientResponseMaxConcurrency,
+    },
+    waitTime: Duration.seconds(0),
   },
 };
 
@@ -178,11 +110,13 @@ function surescriptsEnvironmentVariablesAndSecrets({
   surescripts,
   surescriptsReplicaBucket,
   pharmacyConversionBucket,
+  featureFlagsTableName,
 }: {
   nestedStack: SurescriptsNestedStack;
   surescripts: EnvConfig["surescripts"];
   surescriptsReplicaBucket: s3.Bucket;
   pharmacyConversionBucket: s3.Bucket;
+  featureFlagsTableName: string;
 }): { envVars: Record<string, string>; secrets: secret.ISecret[] } {
   if (!surescripts) {
     return { envVars: {}, secrets: [] };
@@ -194,6 +128,7 @@ function surescriptsEnvironmentVariablesAndSecrets({
     SURESCRIPTS_SFTP_RECEIVER_ID: surescripts.surescriptsReceiverId,
     SURESCRIPTS_REPLICA_BUCKET_NAME: surescriptsReplicaBucket.bucketName,
     PHARMACY_CONVERSION_BUCKET_NAME: pharmacyConversionBucket.bucketName,
+    FEATURE_FLAGS_TABLE_NAME: featureFlagsTableName,
   };
 
   const secrets: secret.ISecret[] = [];
@@ -221,24 +156,19 @@ function surescriptsEnvironmentVariablesAndSecrets({
 interface SurescriptsNestedStackProps extends NestedStackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
-  alarmAction?: SnsAction;
+  alertAction?: SnsAction;
   lambdaLayers: LambdaLayers;
+  featureFlagsTable: dynamodb.Table;
 }
 
 export class SurescriptsNestedStack extends NestedStack {
   private readonly sftpActionLambda: Lambda;
-  private readonly convertPatientResponseLambda: Lambda;
+  private readonly uploadRosterLambda: Lambda;
+  private readonly ingestAllResponsesLambda: Lambda;
   private readonly convertBatchResponseLambda: Lambda;
-  private readonly sendPatientRequestLambda: Lambda;
-  private readonly sendPatientRequestQueue: Queue;
-  private readonly sendBatchRequestLambda: Lambda;
-  private readonly sendBatchRequestQueue: Queue;
-  private readonly verifyRequestInHistoryLambda: Lambda;
-  private readonly verifyRequestInHistoryQueue: Queue;
-  private readonly receiveVerificationLambda: Lambda;
-  private readonly receiveVerificationQueue: Queue;
-  private readonly receiveResponseLambda: Lambda;
-  private readonly receiveResponseQueue: Queue;
+  private readonly convertBatchResponseQueue: Queue;
+  private readonly convertPatientResponseLambda: Lambda;
+  private readonly convertPatientResponseQueue: Queue;
   private readonly surescriptsReplicaBucket: s3.Bucket;
   private readonly pharmacyConversionBucket: s3.Bucket;
 
@@ -247,25 +177,30 @@ export class SurescriptsNestedStack extends NestedStack {
 
     this.terminationProtection = true;
 
-    this.surescriptsReplicaBucket = new s3.Bucket(this, "SurescriptsReplicaBucket", {
-      bucketName: props.config.surescriptsReplicaBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-    });
+    this.surescriptsReplicaBucket = createBucket(
+      this,
+      {
+        bucketName: props.config.surescriptsReplicaBucketName,
+        versioned: true,
+      },
+      "SurescriptsReplicaBucket"
+    );
 
-    this.pharmacyConversionBucket = new s3.Bucket(this, "PharmacyBundleBucket", {
-      bucketName: props.config.pharmacyConversionBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-    });
+    this.pharmacyConversionBucket = createBucket(
+      this,
+      {
+        bucketName: props.config.pharmacyConversionBucketName,
+        versioned: true,
+      },
+      "PharmacyBundleBucket"
+    );
 
     const { envVars, secrets } = surescriptsEnvironmentVariablesAndSecrets({
       nestedStack: this,
       surescripts: props.config.surescripts,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
       pharmacyConversionBucket: this.pharmacyConversionBucket,
+      featureFlagsTableName: props.featureFlagsTable.tableName,
     });
 
     const commonConfig = {
@@ -273,68 +208,62 @@ export class SurescriptsNestedStack extends NestedStack {
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      alertAction: props.alertAction,
       surescripts: props.config.surescripts,
       systemRootOID: props.config.systemRootOID,
       termServerUrl: props.config.termServerUrl,
       envVars,
+      secrets,
     };
 
-    const sftpAction = this.setupLambda("sftpAction", {
-      ...commonConfig,
-      surescriptsReplicaBucket: this.surescriptsReplicaBucket,
-    });
-    this.sftpActionLambda = sftpAction.lambda;
-
-    const convertPatientResponse = this.setupLambda("convertPatientResponse", {
+    this.sftpActionLambda = this.setupLambda("sftpAction", {
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
       pharmacyConversionBucket: this.pharmacyConversionBucket,
+      featureFlagsTable: props.featureFlagsTable,
     });
-    this.convertPatientResponseLambda = convertPatientResponse.lambda;
 
-    const convertBatchResponse = this.setupLambda("convertBatchResponse", {
+    this.uploadRosterLambda = this.setupLambda("rosterUpload", {
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
       pharmacyConversionBucket: this.pharmacyConversionBucket,
+      featureFlagsTable: props.featureFlagsTable,
     });
-    this.convertBatchResponseLambda = convertBatchResponse.lambda;
 
-    const sendPatientRequest = this.setupLambdaAndQueue("sendPatientRequest", {
-      ...commonConfig,
-      surescriptsReplicaBucket: this.surescriptsReplicaBucket,
-    });
-    this.sendPatientRequestLambda = sendPatientRequest.lambda;
-    this.sendPatientRequestQueue = sendPatientRequest.queue;
+    const { lambda: convertPatientResponseLambda, queue: convertPatientResponseQueue } =
+      this.setupLambdaAndQueue(settings.convertPatientResponse, {
+        ...commonConfig,
+        surescriptsReplicaBucket: this.surescriptsReplicaBucket,
+        pharmacyConversionBucket: this.pharmacyConversionBucket,
+        featureFlagsTable: props.featureFlagsTable,
+      });
+    this.convertPatientResponseLambda = convertPatientResponseLambda;
+    this.convertPatientResponseQueue = convertPatientResponseQueue;
 
-    const sendBatchRequest = this.setupLambdaAndQueue("sendBatchRequest", {
-      ...commonConfig,
-      surescriptsReplicaBucket: this.surescriptsReplicaBucket,
-    });
-    this.sendBatchRequestLambda = sendBatchRequest.lambda;
-    this.sendBatchRequestQueue = sendBatchRequest.queue;
+    const { lambda: convertBatchResponseLambda, queue: convertBatchResponseQueue } =
+      this.setupLambdaAndQueue(settings.convertBatchResponse, {
+        ...commonConfig,
+        surescriptsReplicaBucket: this.surescriptsReplicaBucket,
+        pharmacyConversionBucket: this.pharmacyConversionBucket,
+        featureFlagsTable: props.featureFlagsTable,
+        downstreamQueue: {
+          envVarName: "SURESCRIPTS_CONVERT_PATIENT_RESPONSE_QUEUE_URL",
+          queue: this.convertPatientResponseQueue,
+        },
+      });
+    this.convertBatchResponseLambda = convertBatchResponseLambda;
+    this.convertBatchResponseQueue = convertBatchResponseQueue;
 
-    const verifyRequestInHistory = this.setupLambdaAndQueue("verifyRequestInHistory", {
-      ...commonConfig,
-      surescriptsReplicaBucket: this.surescriptsReplicaBucket,
-    });
-    this.verifyRequestInHistoryLambda = verifyRequestInHistory.lambda;
-    this.verifyRequestInHistoryQueue = verifyRequestInHistory.queue;
-
-    const receiveVerification = this.setupLambdaAndQueue("receiveVerification", {
-      ...commonConfig,
-      surescriptsReplicaBucket: this.surescriptsReplicaBucket,
-    });
-    this.receiveVerificationLambda = receiveVerification.lambda;
-    this.receiveVerificationQueue = receiveVerification.queue;
-
-    const receiveResponse = this.setupLambdaAndQueue("receiveResponse", {
+    this.ingestAllResponsesLambda = this.setupLambda("ingestAllResponses", {
       ...commonConfig,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
       pharmacyConversionBucket: this.pharmacyConversionBucket,
+      downstreamQueue: {
+        envVarName: "SURESCRIPTS_CONVERT_BATCH_RESPONSE_QUEUE_URL",
+        queue: this.convertBatchResponseQueue,
+      },
+      featureFlagsTable: props.featureFlagsTable,
     });
-    this.receiveResponseLambda = receiveResponse.lambda;
-    this.receiveResponseQueue = receiveResponse.queue;
 
     const lambdas = this.getLambdas();
     for (const secret of secrets) {
@@ -347,13 +276,10 @@ export class SurescriptsNestedStack extends NestedStack {
   getLambdas(): Lambda[] {
     return [
       this.sftpActionLambda,
-      this.sendPatientRequestLambda,
-      this.sendBatchRequestLambda,
-      this.verifyRequestInHistoryLambda,
-      this.receiveVerificationLambda,
-      this.receiveResponseLambda,
-      this.convertPatientResponseLambda,
+      this.uploadRosterLambda,
+      this.ingestAllResponsesLambda,
       this.convertBatchResponseLambda,
+      this.convertPatientResponseLambda,
     ];
   }
 
@@ -365,8 +291,12 @@ export class SurescriptsNestedStack extends NestedStack {
           lambda: this.sftpActionLambda,
         },
         {
-          envVarName: "SURESCRIPTS_CONVERT_PATIENT_RESPONSE_LAMBDA_NAME",
-          lambda: this.convertPatientResponseLambda,
+          envVarName: "SURESCRIPTS_UPLOAD_ROSTER_LAMBDA_NAME",
+          lambda: this.uploadRosterLambda,
+        },
+        {
+          envVarName: "SURESCRIPTS_INGEST_ALL_RESPONSES_LAMBDA_NAME",
+          lambda: this.ingestAllResponsesLambda,
         },
         {
           envVarName: "SURESCRIPTS_CONVERT_BATCH_RESPONSE_LAMBDA_NAME",
@@ -375,45 +305,27 @@ export class SurescriptsNestedStack extends NestedStack {
       ],
       surescriptsQueues: [
         {
-          envVarName: "SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL",
-          queue: this.sendPatientRequestQueue,
+          envVarName: "SURESCRIPTS_CONVERT_BATCH_RESPONSE_QUEUE_URL",
+          queue: this.convertBatchResponseQueue,
         },
         {
-          envVarName: "SURESCRIPTS_SEND_BATCH_REQUEST_QUEUE_URL",
-          queue: this.sendBatchRequestQueue,
-        },
-        {
-          envVarName: "SURESCRIPTS_VERIFY_REQUEST_IN_HISTORY_QUEUE_URL",
-          queue: this.verifyRequestInHistoryQueue,
-        },
-        {
-          envVarName: "SURESCRIPTS_RECEIVE_VERIFICATION_QUEUE_URL",
-          queue: this.receiveVerificationQueue,
-        },
-        {
-          envVarName: "SURESCRIPTS_RECEIVE_RESPONSE_QUEUE_URL",
-          queue: this.receiveResponseQueue,
+          envVarName: "SURESCRIPTS_CONVERT_PATIENT_RESPONSE_QUEUE_URL",
+          queue: this.convertPatientResponseQueue,
         },
       ],
       sftpActionLambda: this.sftpActionLambda,
-      sendPatientRequestLambda: this.sendPatientRequestLambda,
-      sendPatientRequestQueue: this.sendPatientRequestQueue,
-      sendBatchRequestLambda: this.sendBatchRequestLambda,
-      sendBatchRequestQueue: this.sendBatchRequestQueue,
-      verifyRequestInHistoryLambda: this.verifyRequestInHistoryLambda,
-      verifyRequestInHistoryQueue: this.verifyRequestInHistoryQueue,
-      receiveVerificationLambda: this.receiveVerificationLambda,
-      receiveVerificationQueue: this.receiveVerificationQueue,
-      receiveResponseLambda: this.receiveResponseLambda,
-      receiveResponseQueue: this.receiveResponseQueue,
+      rosterUploadLambda: this.uploadRosterLambda,
+      ingestAllResponsesLambda: this.ingestAllResponsesLambda,
+      convertBatchResponseLambda: this.convertBatchResponseLambda,
+      convertBatchResponseQueue: this.convertBatchResponseQueue,
+      convertPatientResponseLambda: this.convertPatientResponseLambda,
+      convertPatientResponseQueue: this.convertPatientResponseQueue,
       surescriptsReplicaBucket: this.surescriptsReplicaBucket,
       pharmacyConversionBucket: this.pharmacyConversionBucket,
-      convertPatientResponseLambda: this.convertPatientResponseLambda,
-      convertBatchResponseLambda: this.convertBatchResponseLambda,
     };
   }
 
-  private setupLambda<T extends keyof SurescriptsLambdaSettings>(
+  private setupLambda<T extends keyof Settings>(
     job: T,
     props: {
       lambdaLayers: LambdaLayers;
@@ -421,14 +333,20 @@ export class SurescriptsNestedStack extends NestedStack {
       envType: EnvType;
       envVars: Record<string, string>;
       sentryDsn: string | undefined;
-      alarmAction: SnsAction | undefined;
+      alertAction: SnsAction | undefined;
       systemRootOID: string;
       surescriptsReplicaBucket: s3.Bucket;
       pharmacyConversionBucket?: s3.Bucket;
       termServerUrl?: string;
+      secrets: secret.ISecret[];
+      downstreamQueue?: {
+        envVarName: string;
+        queue: Queue;
+      };
+      featureFlagsTable: dynamodb.Table;
     }
-  ) {
-    const { name, entry, lambda: lambdaSettings } = surescriptsLambdaSettings[job];
+  ): Lambda {
+    const { name, entry, lambda: lambdaSettings } = settings[job];
 
     const {
       lambdaLayers,
@@ -436,11 +354,14 @@ export class SurescriptsNestedStack extends NestedStack {
       envType,
       envVars,
       sentryDsn,
-      alarmAction,
+      alertAction,
       systemRootOID,
       surescriptsReplicaBucket,
       pharmacyConversionBucket,
       termServerUrl,
+      secrets,
+      downstreamQueue,
+      featureFlagsTable,
     } = props;
 
     const lambda = createLambda({
@@ -454,32 +375,56 @@ export class SurescriptsNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         ...(job === "sftpAction" ? { SFTP_ACTION_LAMBDA: "surescripts" } : {}),
         ...(termServerUrl ? { TERM_SERVER_URL: termServerUrl } : {}),
+        ...(downstreamQueue
+          ? { [downstreamQueue.envVarName]: downstreamQueue.queue.queueUrl }
+          : {}),
         SYSTEM_ROOT_OID: systemRootOID,
       },
       layers: [lambdaLayers.shared],
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     surescriptsReplicaBucket.grantReadWrite(lambda);
     pharmacyConversionBucket?.grantReadWrite(lambda);
+    featureFlagsTable.grantReadData(lambda);
 
-    return { lambda };
+    for (const secret of secrets) {
+      secret.grantRead(lambda);
+    }
+
+    if (downstreamQueue) {
+      downstreamQueue.queue.grantSendMessages(lambda);
+    }
+
+    return lambda;
   }
 
-  private setupLambdaAndQueue<T extends keyof SurescriptsSettings>(
-    job: T,
+  private setupLambdaAndQueue(
+    {
+      name,
+      entry,
+      lambda: lambdaSettings,
+      queue: queueSettings,
+      eventSource: eventSourceSettings,
+    }: QueueAndLambdaSettings,
     props: {
       lambdaLayers: LambdaLayers;
       vpc: ec2.IVpc;
       envType: EnvType;
       envVars: Record<string, string>;
       sentryDsn: string | undefined;
-      alarmAction: SnsAction | undefined;
+      alertAction: SnsAction | undefined;
       systemRootOID: string;
       surescriptsReplicaBucket: s3.Bucket;
       pharmacyConversionBucket?: s3.Bucket;
       termServerUrl?: string;
+      secrets: secret.ISecret[];
+      featureFlagsTable: dynamodb.Table;
+      downstreamQueue?: {
+        envVarName: string;
+        queue: Queue;
+      };
     }
   ): { lambda: Lambda; queue: Queue } {
     const {
@@ -488,20 +433,15 @@ export class SurescriptsNestedStack extends NestedStack {
       envType,
       envVars,
       sentryDsn,
-      alarmAction,
+      alertAction,
       systemRootOID,
       surescriptsReplicaBucket,
       pharmacyConversionBucket,
       termServerUrl,
+      secrets,
+      featureFlagsTable,
+      downstreamQueue,
     } = props;
-
-    const {
-      name,
-      entry,
-      lambda: lambdaSettings,
-      queue: queueSettings,
-      eventSource: eventSourceSettings,
-    } = settings[job];
 
     const queue = createQueue({
       ...queueSettings,
@@ -511,7 +451,7 @@ export class SurescriptsNestedStack extends NestedStack {
       createDLQ: true,
       lambdaLayers: [lambdaLayers.shared],
       envType,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     const lambda = createLambda({
@@ -525,14 +465,26 @@ export class SurescriptsNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         ...(termServerUrl ? { TERM_SERVER_URL: termServerUrl } : {}),
         SYSTEM_ROOT_OID: systemRootOID,
+        ...(downstreamQueue
+          ? { [downstreamQueue.envVarName]: downstreamQueue.queue.queueUrl }
+          : {}),
       },
       layers: [lambdaLayers.shared],
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
+
+    for (const secret of secrets) {
+      secret.grantRead(lambda);
+    }
+
+    if (downstreamQueue) {
+      downstreamQueue.queue.grantSendMessages(lambda);
+    }
 
     surescriptsReplicaBucket.grantReadWrite(lambda);
     pharmacyConversionBucket?.grantReadWrite(lambda);
+    featureFlagsTable.grantReadData(lambda);
 
     lambda.addEventSource(new SqsEventSource(queue, eventSourceSettings));
 

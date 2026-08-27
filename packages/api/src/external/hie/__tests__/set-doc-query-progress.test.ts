@@ -1,6 +1,6 @@
 import { DocumentQueryProgress, Progress } from "@metriport/core/domain/document-query";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { PatientExternalData } from "@metriport/core/domain//patient";
+import { PatientExternalData } from "@metriport/core/domain/patient";
 import {
   aggregateAndSetHIEProgresses,
   aggregateStatus,

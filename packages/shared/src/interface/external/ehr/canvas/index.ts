@@ -3,3 +3,4 @@ export * from "./appointment";
 export * from "./note";
 export * from "./allergen";
 export * from "./cx-mapping";
+export * from "./external-event";

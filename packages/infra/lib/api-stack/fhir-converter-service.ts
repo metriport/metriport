@@ -7,13 +7,13 @@ import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import { FargateService } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
-import { Runtime } from "aws-cdk-lib/aws-lambda";
+import { LambdaInsightsVersion, Runtime } from "aws-cdk-lib/aws-lambda";
 import * as nodejs from "aws-cdk-lib/aws-lambda-nodejs";
 import { FilterPattern } from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import { Bucket } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
-import path from "path";
+import * as path from "path";
 import { EnvConfigNonSandbox } from "../../config/env-config";
 import { getConfig, METRICS_NAMESPACE } from "../shared/config";
 import { vCPU } from "../shared/fargate";
@@ -21,6 +21,7 @@ import { addErrorAlarmToLambdaFunc, MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lam
 import { buildLbAccessLogPrefix } from "../shared/s3";
 import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd } from "../shared/util";
+import { createBucket } from "../shared/bucket";
 
 export function settings() {
   const config = getConfig();
@@ -32,8 +33,8 @@ export function settings() {
     cpuAmount,
     cpu: cpuAmount * vCPU,
     memoryLimitMiB: prod ? 8192 : 4096,
-    taskCountMin: prod ? 128 : 1,
-    taskCountMax: prod ? 256 : 4,
+    taskCountMin: prod ? 32 : 1,
+    taskCountMax: prod ? 512 : 4,
     // How long this service can run for
     maxExecutionTimeout: MAXIMUM_LAMBDA_TIMEOUT,
   };
@@ -49,7 +50,7 @@ export function createFHIRConverterService(
   stack: Construct,
   props: FhirConverterServiceProps,
   vpc: ec2.IVpc,
-  alarmAction: SnsAction | undefined
+  alertAction: SnsAction | undefined
 ): { service: FargateService; address: string; lambda: nodejs.NodejsFunction; bucket: s3.Bucket } {
   const { cpu, memoryLimitMiB, taskCountMin, taskCountMax, maxExecutionTimeout } = settings();
 
@@ -83,8 +84,14 @@ export function createFHIRConverterService(
       healthCheckGracePeriod: Duration.seconds(60),
       publicLoadBalancer: false,
       idleTimeout: maxExecutionTimeout,
+      minHealthyPercent: 70,
     }
   );
+
+  // Enable Availability Zone rebalancing for the underlying ECS service
+  (fargateService.service.node.defaultChild as ecs.CfnService).availabilityZoneRebalancing =
+    "ENABLED";
+
   const serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
 
   fargateService.loadBalancer.logAccessLogs(
@@ -101,8 +108,8 @@ export function createFHIRConverterService(
       datapointsToAlarm: 2,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-  alarmAction && fargateCPUAlarm.addAlarmAction(alarmAction);
-  alarmAction && fargateCPUAlarm.addOkAction(alarmAction);
+  alertAction && fargateCPUAlarm.addAlarmAction(alertAction);
+  alertAction && fargateCPUAlarm.addOkAction(alertAction);
 
   const fargateMemoryAlarm = fargateService.service
     .metricMemoryUtilization()
@@ -112,8 +119,8 @@ export function createFHIRConverterService(
       datapointsToAlarm: 2,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-  alarmAction && fargateMemoryAlarm.addAlarmAction(alarmAction);
-  alarmAction && fargateMemoryAlarm.addOkAction(alarmAction);
+  alertAction && fargateMemoryAlarm.addAlarmAction(alertAction);
+  alertAction && fargateMemoryAlarm.addOkAction(alertAction);
 
   // allow the NLB to talk to fargate
   fargateService.service.connections.allowFrom(
@@ -156,19 +163,33 @@ export function createFHIRConverterService(
     targetGroup,
     scope: stack,
     id: "FhirConverter",
-    alarmAction,
+    alertAction,
   });
 
-  const bucket = new s3.Bucket(stack, "FhirConversionBucket", {
-    bucketName: props.config.fhirConversionBucketName,
-    publicReadAccess: false,
-    encryption: s3.BucketEncryption.S3_MANAGED,
-    versioned: true,
-  });
+  const ehrConversionBucket = createBucket(
+    stack,
+    {
+      bucketName: props.config.fhirConversionBucketName,
+      versioned: true,
+    },
+    "FhirConversionBucket"
+  );
+
+  const fhirConverterBucketName = props.config.fhirConverterBucketName;
+  if (!fhirConverterBucketName) throw new Error("fhirConverterBucketName is required");
+  const fhirConverterBucket = s3.Bucket.fromBucketName(
+    stack,
+    "FhirConverterBucket",
+    fhirConverterBucketName
+  );
 
   const name = "FhirConversionNodeJsLambda";
   const lambda = new nodejs.NodejsFunction(stack, name, {
     functionName: name,
+    environment: {
+      FHIR_CONVERTER_S3_BUCKET: fhirConverterBucket.bucketName,
+      EHR_FHIR_CONVERTER_S3_BUCKET: ehrConversionBucket.bucketName,
+    },
     entry: path.join(
       __dirname,
       "..",
@@ -180,9 +201,10 @@ export function createFHIRConverterService(
       "ccda-to-fhir-lambda-nodelambda.js"
     ),
     timeout: Duration.minutes(10),
-    memorySize: 4096,
+    memorySize: 6144,
     handler: "handler",
     runtime: Runtime.NODEJS_18_X,
+    insightsVersion: LambdaInsightsVersion.VERSION_1_0_229_0,
     bundling: {
       sourceMap: true,
       commandHooks: {
@@ -207,8 +229,11 @@ export function createFHIRConverterService(
   // Allow the lambda to publish metrics to cloudwatch
   Metric.grantPutMetricData(lambda);
 
+  ehrConversionBucket.grantReadWrite(lambda);
+  fhirConverterBucket.grantReadWrite(lambda);
+
   // Setup alarm - general errors
-  addErrorAlarmToLambdaFunc(stack, lambda, `${name}-GeneralLambdaAlarm`, alarmAction);
+  addErrorAlarmToLambdaFunc(stack, lambda, `${name}-GeneralLambdaAlarm`, alertAction);
 
   // Setup alarm - OOM (Out Of Memory) errors
   const metricFilter = lambda.logGroup?.addMetricFilter(`${name}-OOMErrorsFilter`, {
@@ -231,13 +256,13 @@ export function createFHIRConverterService(
       alarmDescription: "Alarm if we get an OOM error from the Lambda function",
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-    alarmAction && alarm.addAlarmAction(alarmAction);
+    alertAction && alarm.addAlarmAction(alertAction);
   }
 
   return {
     service: fargateService.service,
     address: serverAddress,
     lambda,
-    bucket,
+    bucket: ehrConversionBucket,
   };
 }

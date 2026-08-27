@@ -27,6 +27,18 @@ const PATIENT_DISCOVERY_RESULT_TABLE_NAME = "patient_discovery_result";
 const DOC_QUERY_RESULT_TABLE_NAME = "document_query_result";
 const DOC_RETRIEVAL_RESULT_TABLE_NAME = "document_retrieval_result";
 
+const ALLOWED_RESULTS_TABLES = new Set([
+  PATIENT_DISCOVERY_RESULT_TABLE_NAME,
+  DOC_QUERY_RESULT_TABLE_NAME,
+  DOC_RETRIEVAL_RESULT_TABLE_NAME,
+]);
+
+function validateResultsTable(tableName: string): void {
+  if (!ALLOWED_RESULTS_TABLES.has(tableName)) {
+    throw new MetriportError("Invalid results table name", undefined, { tableName });
+  }
+}
+
 type PollOutboundResultsWithDbCreds = PollOutboundResults & { dbCreds: string };
 
 export async function pollOutboundPatientDiscoveryResults(
@@ -144,11 +156,13 @@ async function getResultsCount(
   resultsTable: string,
   requestId: string
 ): Promise<number> {
+  validateResultsTable(resultsTable);
   try {
-    const query = `SELECT COUNT(*) FROM ${resultsTable} WHERE ${REQUEST_ID_COLUMN} = '${requestId}';`;
+    const query = `SELECT COUNT(*) FROM ${resultsTable} WHERE ${REQUEST_ID_COLUMN} = :requestId;`;
 
     const [res] = await sequelize.query<{ count: number }>(query, {
       type: QueryTypes.SELECT,
+      replacements: { requestId },
     });
 
     return res?.count || 0;
@@ -163,10 +177,12 @@ async function getResults(
   resultsTable: string,
   requestId: string
 ): Promise<object[]> {
+  validateResultsTable(resultsTable);
   try {
-    const query = `SELECT * FROM ${resultsTable} WHERE ${REQUEST_ID_COLUMN} = '${requestId}' ORDER BY created_at DESC;`;
+    const query = `SELECT * FROM ${resultsTable} WHERE ${REQUEST_ID_COLUMN} = :requestId ORDER BY created_at DESC;`;
     const results = await sequelize.query(query, {
       type: QueryTypes.SELECT,
+      replacements: { requestId },
     });
 
     return results;

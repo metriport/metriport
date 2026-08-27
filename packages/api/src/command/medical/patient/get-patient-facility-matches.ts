@@ -6,10 +6,10 @@ import { CQLink } from "../../../external/carequality/cq-patient-data";
 import { CQDirectoryEntryViewModel } from "../../../external/carequality/models/cq-directory-view";
 import { CQPatientDataModel } from "../../../external/carequality/models/cq-patient-data";
 import { patientResourceToNormalizedLinkDemographics as cqPatientResourceToNormalizedLinkDemographics } from "../../../external/carequality/patient-demographics";
-import { patientNetworkLinkToNormalizedLinkDemographics as cwPatientResourceToNormalizedLinkDemographics } from "../../../external/commonwell-v1/patient-demographics";
-import { orgDirectory } from "../../../external/commonwell-v2/command/directory/org-directory";
 import { networkLinkToLinkDemographics } from "../../../external/commonwell-v2/patient/patient-demographics";
 import { NetworkLink } from "../../../external/commonwell-v2/patient/types";
+import { patientNetworkLinkToNormalizedLinkDemographics as cwPatientResourceToNormalizedLinkDemographics } from "../../../external/commonwell/links/v1/patient-demographics";
+import { CwDirectoryEntryViewModel } from "../../../external/commonwell/models/cw-directory-view";
 import { CwPatientDataModel } from "../../../external/commonwell/models/cw-patient-data";
 import {
   CwLink,
@@ -78,20 +78,20 @@ async function getCqFacilityMatches(cqLinks: CQLink[]): Promise<PatientFacilityM
 }
 
 async function getCwFacilityMatches(cwLinks: CwLink[]): Promise<PatientFacilityMatch[]> {
-  const patientFacilityMatches = cwLinks.reduce((acc: PatientFacilityMatch[], curr) => {
-    const isV1 = isCwLinkV1(curr);
-    const matchDetails = isV1 ? getMatchDetailsV1(curr) : getMatchDetailsV2(curr);
-    if (matchDetails) {
-      acc.push(matchDetails);
-    }
+  const patientFacilityMatches: PatientFacilityMatch[] = [];
 
-    return acc;
-  }, []);
+  for (const cwLink of cwLinks) {
+    const isV1 = isCwLinkV1(cwLink);
+    const matchDetails = isV1 ? await getMatchDetailsV1(cwLink) : await getMatchDetailsV2(cwLink);
+    if (matchDetails) {
+      patientFacilityMatches.push(matchDetails);
+    }
+  }
 
   return patientFacilityMatches;
 }
 
-function getMatchDetailsV1(curr: CwLinkV1): PatientFacilityMatch | undefined {
+async function getMatchDetailsV1(curr: CwLinkV1): Promise<PatientFacilityMatch | undefined> {
   const patient = curr.patient;
   const reference = patient?.provider?.reference;
   const splitReference = reference?.split("/");
@@ -102,7 +102,13 @@ function getMatchDetailsV1(curr: CwLinkV1): PatientFacilityMatch | undefined {
     return undefined;
   }
 
-  const org = orgDirectory.find(org => org.oid === oid);
+  const cwFacility = await CwDirectoryEntryViewModel.findOne({
+    where: { oid },
+  });
+
+  if (!cwFacility) {
+    return undefined;
+  }
 
   const patientMatchDemo = cwPatientResourceToNormalizedLinkDemographics(patient);
 
@@ -111,13 +117,18 @@ function getMatchDetailsV1(curr: CwLinkV1): PatientFacilityMatch | undefined {
     oid,
     patient: patientMatchDemo,
     address: {
-      state: org?.state as USState | undefined,
-      zip: org?.zip,
+      addressLine1: cwFacility.addressLine ?? undefined,
+      city: cwFacility.city ?? undefined,
+      state:
+        cwFacility.state && Object.values(USState).includes(cwFacility.state as USState)
+          ? (cwFacility.state as USState)
+          : undefined,
+      zip: cwFacility.zip ?? undefined,
     },
   };
 }
 
-function getMatchDetailsV2(link: CwLinkV2): PatientFacilityMatch | undefined {
+async function getMatchDetailsV2(link: CwLinkV2): Promise<PatientFacilityMatch | undefined> {
   const patient = link.Patient;
   const oid = patient?.managingOrganization?.identifier[0]?.system;
   const display = patient?.managingOrganization?.name;
@@ -126,7 +137,13 @@ function getMatchDetailsV2(link: CwLinkV2): PatientFacilityMatch | undefined {
     return undefined;
   }
 
-  const org = orgDirectory.find(org => org.oid === oid);
+  const cwFacility = await CwDirectoryEntryViewModel.findOne({
+    where: { oid },
+  });
+
+  if (!cwFacility) {
+    return undefined;
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { version, ...rest } = link;
@@ -140,8 +157,13 @@ function getMatchDetailsV2(link: CwLinkV2): PatientFacilityMatch | undefined {
     oid,
     patient: patientMatchDemo,
     address: {
-      state: org?.state as USState | undefined,
-      zip: org?.zip,
+      addressLine1: cwFacility.addressLine ?? undefined,
+      city: cwFacility.city ?? undefined,
+      state:
+        cwFacility.state && Object.values(USState).includes(cwFacility.state as USState)
+          ? (cwFacility.state as USState)
+          : undefined,
+      zip: cwFacility.zip ?? undefined,
     },
   };
 }

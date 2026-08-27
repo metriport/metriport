@@ -38,6 +38,7 @@ export const oids = {
   familyHistorySection: "2.16.840.1.113883.10.20.22.2.15",
   allergiesSection: "2.16.840.1.113883.10.20.22.2.6.1",
   notesSection: "2.16.840.1.113883.10.20.22.2.65",
+  dischargeInstructionsSection: "2.16.840.1.113883.10.20.22.2.41",
   problemConcernAct: "2.16.840.1.113883.10.20.22.4.3",
   socialHistoryObs: "2.16.840.1.113883.10.20.22.4.38",
   vitalSignsObs: "2.16.840.1.113883.10.20.22.4.27",
@@ -71,10 +72,11 @@ export const clinicalDocumentConstants = {
   realmCode: "US",
   typeIdExtension: "POCD_HD000040",
   typeIdRoot: "2.16.840.1.113883.1.3",
-  templateIds: [
-    { root: "2.16.840.1.113883.10.20.22.1.1", extension: extensionValue2015 },
-    { root: "2.16.840.1.113883.10.20.22.1.9", extension: extensionValue2015 },
-  ],
+  templateIds: {
+    usRealmHeader: { root: "2.16.840.1.113883.10.20.22.1.1", extension: extensionValue2015 }, // US Realm Header
+    progressNote: { root: "2.16.840.1.113883.10.20.22.1.9", extension: extensionValue2015 }, // Progress Note
+    ccd: { root: "2.16.840.1.113883.10.20.22.1.2", extension: extensionValue2015 }, // CCD
+  },
   assigningAuthorityName: "METRIPORT",
   rootOid: metriportOid,
   code: {

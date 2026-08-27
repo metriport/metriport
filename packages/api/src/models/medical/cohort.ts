@@ -1,4 +1,4 @@
-import { Cohort, MonitoringSettings } from "@metriport/core/domain/cohort";
+import { Cohort, CohortColors, Settings } from "@metriport/shared/domain/cohort";
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../_default";
 import { PatientCohortModel } from "./patient-cohort";
@@ -8,7 +8,9 @@ export class CohortModel extends BaseModel<CohortModel> implements Cohort {
 
   declare cxId: string;
   declare name: string;
-  declare monitoring?: MonitoringSettings;
+  declare description: string;
+  declare color: CohortColors;
+  declare settings: Settings;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     CohortModel.init(
@@ -20,7 +22,13 @@ export class CohortModel extends BaseModel<CohortModel> implements Cohort {
         name: {
           type: DataTypes.STRING,
         },
-        monitoring: {
+        description: {
+          type: DataTypes.STRING,
+        },
+        color: {
+          type: DataTypes.STRING,
+        },
+        settings: {
           type: DataTypes.JSONB,
         },
       },

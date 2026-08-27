@@ -234,7 +234,7 @@ router.post(
 /**
  * GET /internal/ehr/:ehrId/patient/:id/secondary-mappings
  *
- * Get the secondary mappings for the practice
+ * Get the secondary mappings for the patient
  *
  * @param req.query.ehrId - The EHR source.
  * @param req.query.cxId - The CX ID of the patient.
@@ -248,11 +248,11 @@ router.get(
     const ehr = getFromQueryOrFail("ehrId", req);
     if (!isEhrSource(ehr)) throw new BadRequestError("Invalid EHR", undefined, { ehr });
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const practiceId = getFrom("params").orFail("id", req);
+    const patientId = getFrom("params").orFail("id", req);
     const secondaryMappings = await getSecondaryMappingsOrFail({
       cxId,
       source: ehr,
-      externalId: practiceId,
+      externalId: patientId,
     });
     return res.status(httpStatus.OK).json({ secondaryMappings });
   })

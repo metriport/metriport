@@ -1,21 +1,21 @@
-import { Config } from "@metriport/core/util/config";
 import { getSecretValue } from "@metriport/core/external/aws/secret-manager";
-import { BadRequestError } from "@metriport/shared";
 import { QuestSftpClient } from "@metriport/core/external/quest/client";
+import { Config } from "@metriport/core/util/config";
+import { BadRequestError } from "@metriport/shared";
 
-export async function buildQuestClient(): Promise<QuestSftpClient> {
-  const { questSftpPassword } = await getQuestSecrets();
+export async function buildQuestClient(questSftpPasswordName: string): Promise<QuestSftpClient> {
+  const { questSftpPassword } = await getQuestSecrets(questSftpPasswordName);
   return new QuestSftpClient({
     password: questSftpPassword,
     logLevel: "info",
   });
 }
 
-export async function getQuestSecrets(): Promise<{
+export async function getQuestSecrets(questSftpPasswordName: string): Promise<{
   questSftpPassword: string;
 }> {
   const region = Config.getAWSRegion();
-  const questSftpPassword = await getSecretValue("QuestSftpPassword", region);
+  const questSftpPassword = await getSecretValue(questSftpPasswordName, region);
   if (!questSftpPassword) throw new BadRequestError("Missing quest sftp password");
   return { questSftpPassword };
 }

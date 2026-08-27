@@ -73,7 +73,8 @@ router.post(
  * @param req.query.patientId The ID of AthenaHealth Patient.
  * @param req.query.practiceId The ID of AthenaHealth Practice.
  * @param req.query.departmentId The ID of AthenaHealth Department.
- * @param req.query.triggerDq Whether to trigger a data quality check.
+ * @param req.query.triggerDq Whether to trigger a data quality check (optional).
+ * @param req.query.isAppointment Whether triggered via an appointment (optional).
  * @returns 200 OK
  */
 router.post(

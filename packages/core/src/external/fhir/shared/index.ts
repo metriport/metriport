@@ -202,6 +202,10 @@ export function isDiagnosticReport(resource: Resource | undefined): resource is 
   return resource?.resourceType === "DiagnosticReport";
 }
 
+export function isDocumentReference(resource: Resource | undefined): resource is DocumentReference {
+  return resource?.resourceType === "DocumentReference";
+}
+
 export function isProcedure(resource: Resource | undefined): resource is Procedure {
   return resource?.resourceType === "Procedure";
 }
@@ -301,6 +305,10 @@ export function findDiagnosticReportResources(fhirBundle: Bundle): DiagnosticRep
 
 export function findEncounterResources(fhirBundle: Bundle): Encounter[] {
   return fhirBundle.entry?.map(e => e.resource).filter(isEncounter) || [];
+}
+
+export function findDocumentReferenceResources(fhirBundle: Bundle): DocumentReference[] {
+  return fhirBundle.entry?.map(e => e.resource).filter(isDocumentReference) || [];
 }
 
 export function findResourceInBundle(bundle: Bundle, reference: string): Resource | undefined {

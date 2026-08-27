@@ -1,9 +1,9 @@
 import { Organization } from "@metriport/core/domain/organization";
 import { metriportCompanyDetails } from "@metriport/shared";
-import { Facility, isOboFacility } from "../../../domain/medical/facility";
+import { Facility, isDelegateFacility } from "../../../domain/medical/facility";
 import { metriportEmail as metriportEmailForCq } from "../constants";
 import { CQDirectoryEntryData } from "../cq-directory";
-import { buildCqOrgNameForFacility, buildCqOrgNameForOboFacility } from "../shared";
+import { buildCqOrgNameForFacility } from "../shared";
 import { metriportIntermediaryOid, metriportOid } from "./cq-organization/constants";
 import {
   createOrUpdateCqOrganization,
@@ -27,23 +27,17 @@ export async function createOrUpdateFacility(
 
 export function getCqCommand(cmd: CreateOrUpdateFacilityCmd): CreateOrUpdateCqOrganizationCmd {
   const { facility, org } = cmd;
-  const isObo = isOboFacility(facility.cqType);
-  const oboOid = isObo ? facility.cqOboOid ?? undefined : undefined;
-  if (isObo && !oboOid) {
-    throw new Error("OBO OID is required for OBO facilities");
+  const isDelegate = isDelegateFacility(facility.principalOid);
+  const principalOid = isDelegate ? facility.principalOid ?? undefined : undefined;
+  if (isDelegate && !principalOid) {
+    throw new Error("Principal OID is required for delegate facilities");
   }
   const cqOrgName = buildCqOrgNameForFacility({
     vendorName: org.data.name,
     orgName: facility.data.name,
   });
-  const oboName = isObo
-    ? buildCqOrgNameForOboFacility({
-        vendorName: org.data.name,
-        orgName: facility.data.name,
-        oboOid: oboOid!, // eslint-disable-line @typescript-eslint/no-non-null-assertion
-      })
-    : undefined;
-  const parentOrgOid = isObo ? metriportIntermediaryOid : metriportOid;
+
+  const parentOrgOid = isDelegate ? metriportIntermediaryOid : metriportOid;
   return {
     cxId: org.cxId,
     name: cqOrgName,
@@ -55,7 +49,7 @@ export function getCqCommand(cmd: CreateOrUpdateFacilityCmd): CreateOrUpdateCqOr
     active: facility.cqActive,
     role: "Connection" as const,
     parentOrgOid,
-    oboOid,
-    oboName,
+    principalOid,
+    delegateOids: org.delegateOids,
   };
 }

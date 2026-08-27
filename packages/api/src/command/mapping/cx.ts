@@ -2,6 +2,7 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { MetriportError, NotFoundError } from "@metriport/shared";
 import {
   removeClientSource,
+  removeRefreshSource,
   removeWebhookSource,
 } from "@metriport/shared/interface/external/ehr/source";
 import {
@@ -15,9 +16,11 @@ import {
 import {
   isEhrClientJwtTokenSource,
   isEhrDashJwtTokenSource,
+  isEhrRefreshJwtTokenSource,
   isEhrWebhookJwtTokenSource,
 } from "../../external/ehr/shared/utils/jwt-token";
 import { CxMappingModel } from "../../models/cx-mapping";
+import { getCohortModelOrFail } from "../medical/cohort/get-cohort";
 
 export type CxMappingParams = CxMappingPerSource;
 
@@ -176,6 +179,32 @@ export async function deleteCxMapping({ cxId, id }: CxMappingLookupByIdParams): 
   await existing.destroy();
 }
 
+export type SetDefaultCohortParams = {
+  cxId: string;
+  source: CxMappingSource;
+  externalId: string;
+  cohortId: string | null;
+};
+
+export async function setDefaultCohortOnCxMapping({
+  cxId,
+  source,
+  externalId,
+  cohortId,
+}: SetDefaultCohortParams): Promise<void> {
+  if (cohortId) {
+    await getCohortModelOrFail({ cxId, cohortId });
+  }
+
+  const [affectedCount] = await CxMappingModel.update(
+    { defaultCohortId: cohortId },
+    { where: { cxId, source, externalId } }
+  );
+  if (affectedCount < 1) {
+    throw new NotFoundError("CxMapping not found", undefined, { cxId, source, externalId });
+  }
+}
+
 export function getCxMappingSourceFromJwtTokenSource(source: string): CxMappingSource {
   const additionalDetails = { source };
   if (isEhrDashJwtTokenSource(source)) {
@@ -191,6 +220,11 @@ export function getCxMappingSourceFromJwtTokenSource(source: string): CxMappingS
     const sourceWithoutWebhook = removeWebhookSource(source);
     if (isCxMappingSource(sourceWithoutWebhook)) return sourceWithoutWebhook;
     throw new MetriportError("Invalid webhook source", undefined, additionalDetails);
+  }
+  if (isEhrRefreshJwtTokenSource(source)) {
+    const sourceWithoutRefresh = removeRefreshSource(source);
+    if (isCxMappingSource(sourceWithoutRefresh)) return sourceWithoutRefresh;
+    throw new MetriportError("Invalid refresh source", undefined, additionalDetails);
   }
   throw new MetriportError("Invalid source", undefined, additionalDetails);
 }

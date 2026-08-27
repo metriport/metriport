@@ -6,14 +6,17 @@ import {
   Condition,
   DiagnosticReport,
   Extension,
+  FamilyMemberHistoryCondition,
   Immunization,
   Medication,
   MedicationAdministration,
   MedicationDispense,
+  MedicationRequest,
   MedicationStatement,
   Observation,
   Procedure,
   Resource,
+  CodeableConcept,
 } from "@medplum/fhirtypes";
 import {
   AdditionalInfo,
@@ -157,9 +160,9 @@ export async function makeRequest<T>({
     `${ehr} makeRequest - cxId ${cxId} patientId ${patientId} method ${method} url ${url}`
   );
   const responsesBucket = Config.getEhrResponsesBucketName();
+  const contentType = headers?.["content-type"] ?? headers?.["Content-Type"];
   const isJsonContentType =
-    headers?.["content-type"] === "application/json" ||
-    headers?.["Content-Type"] === "application/json";
+    contentType === "application/json" || contentType === "application/fhir+json";
   const fullAdditionalInfo = {
     ...additionalInfo,
     cxId,
@@ -403,6 +406,7 @@ export type MedicationWithRefs = {
   administration: MedicationAdministration[];
   dispense: MedicationDispense[];
   statement: MedicationStatement[];
+  requests: MedicationRequest[];
 };
 
 export function createMedicationWithRefs(
@@ -414,6 +418,7 @@ export function createMedicationWithRefs(
     statement,
     administration: [],
     dispense: [],
+    requests: [],
   };
 }
 
@@ -605,7 +610,9 @@ export function getConditionIcd10Code(condition: Condition): string | undefined 
   return icd10Coding.code;
 }
 
-export function getConditionSnomedCoding(condition: Condition): Coding | undefined {
+export function getConditionSnomedCoding(
+  condition: Condition | FamilyMemberHistoryCondition
+): Coding | undefined {
   const code = condition.code;
   const snomedCoding = code?.coding?.find(coding => {
     const system = fetchCodingCodeOrDisplayOrSystem(coding, "system");
@@ -615,7 +622,9 @@ export function getConditionSnomedCoding(condition: Condition): Coding | undefin
   return snomedCoding;
 }
 
-export function getConditionSnomedCode(condition: Condition): string | undefined {
+export function getConditionSnomedCode(
+  condition: Condition | FamilyMemberHistoryCondition
+): string | undefined {
   const snomedCoding = getConditionSnomedCoding(condition);
   if (!snomedCoding) return undefined;
   return snomedCoding.code;
@@ -636,6 +645,56 @@ export function getConditionStatus(condition: Condition): string | undefined {
   const status = condition.clinicalStatus?.text ?? statusFromCoding[0];
   if (status) return status.replace(qualifierSuffix, "").trim();
   return undefined;
+}
+
+const problemListItemCodes = new Set([
+  "problem-list-item",
+  "55607006", // SNOMED
+  "11450-4", // LOINC
+]);
+
+const encounterDiagnosisCodes = new Set([
+  "encounter-diagnosis",
+  "282291009", // SNOMED
+  "29308-4", // LOINC
+]);
+
+export function getConditionCategory(condition: Condition): CodeableConcept[] {
+  const problemListItem = [
+    {
+      coding: [
+        {
+          system: "http://terminology.hl7.org/CodeSystem/condition-category",
+          code: "problem-list-item",
+          display: "Problem List Item",
+        },
+      ],
+      text: "Problem List Item",
+    },
+  ];
+  const encounterDiagnosis = [
+    {
+      coding: [
+        {
+          system: "http://terminology.hl7.org/CodeSystem/condition-category",
+          code: "encounter-diagnosis",
+          display: "Encounter Diagnosis",
+        },
+      ],
+      text: "Encounter Diagnosis",
+    },
+  ];
+  if (condition.category) {
+    const item = condition.category.find(cc =>
+      cc.coding?.some(coding => coding.code && problemListItemCodes.has(coding.code))
+    );
+    if (item) return problemListItem;
+    const diagnosis = condition.category.find(cc =>
+      cc.coding?.some(coding => coding.code && encounterDiagnosisCodes.has(coding.code))
+    );
+    if (diagnosis) return encounterDiagnosis;
+  }
+  return problemListItem;
 }
 
 export function getImmunizationCvxCoding(immunization: Immunization): Coding | undefined {
@@ -890,6 +949,32 @@ export function getAllergyIntoleranceManifestationSnomedCoding(
   return snomedCoding;
 }
 
+export function getAllergyIntoleranceCode(
+  allergyIntolerance: AllergyIntolerance
+): CodeableConcept | undefined {
+  return allergyIntolerance.code ?? allergyIntolerance.reaction?.[0]?.substance;
+}
+
+// TODO: Implement detection for "food", "environment", "latex", and "pet" categories
+// once we append category in the converter
+export function getAllergyIntoleranceCategoryType(
+  allergyIntoleranceReaction: AllergyIntoleranceReaction
+): "drug" | "food" | "environment" | "latex" | "pet" | undefined {
+  const isDrugType = !!getAllergyIntoleranceSubstanceRxnormCoding(allergyIntoleranceReaction);
+  return isDrugType ? "drug" : undefined;
+}
+
+export function getAllergyIntoleranceManifestationText(
+  allergyIntoleranceReaction: AllergyIntoleranceReaction
+): string | undefined {
+  const manifestations = allergyIntoleranceReaction.manifestation;
+  if (!manifestations) return undefined;
+  const manifestationTexts = manifestations
+    .map(manifestation => manifestation.text)
+    .filter(Boolean);
+  return manifestationTexts.length > 0 ? manifestationTexts[0] : undefined;
+}
+
 export function getAllergyIntoleranceOnsetDate(
   allergyIntolerance: AllergyIntolerance
 ): string | undefined {
@@ -898,6 +983,16 @@ export function getAllergyIntoleranceOnsetDate(
     allergyIntolerance.onsetPeriod?.start ??
     allergyIntolerance.onsetPeriod?.end
   );
+}
+
+export function getAllergyIntoleranceClinicalStatus(
+  allergyIntolerance: AllergyIntolerance
+): "active" | "inactive" | "resolved" {
+  const code = allergyIntolerance.clinicalStatus?.coding?.[0]?.code;
+  if (code === "active" || code === "inactive" || code === "resolved") {
+    return code;
+  }
+  return "inactive";
 }
 
 export function getProcedureCptCoding(procedure: Procedure): Coding | undefined {

@@ -12,7 +12,10 @@ export type LambdaConfig = {
 };
 
 export type OpenSearchConnectorConfig = {
-  openSearch: Omit<OpenSearchConstructProps, "region" | "vpc" | "awsAccount"> & {
+  openSearch: Omit<
+    OpenSearchConstructProps,
+    "region" | "vpc" | "awsAccount" | "alertSnsAction" | "alarmSnsAction"
+  > & {
     indexName: string;
     consolidatedIndexName: string;
   };

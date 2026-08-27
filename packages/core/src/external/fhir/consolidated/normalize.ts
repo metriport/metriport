@@ -1,4 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
+import { emptyFunction } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { out } from "../../../util";
 import { EventMessageV1, EventTypes, analyticsAsync } from "../../analytics/posthog";
@@ -8,12 +9,15 @@ export async function normalize({
   cxId,
   patientId,
   bundle,
+  isVerbose = true,
 }: {
   cxId: string;
   patientId: string;
   bundle: Bundle<Resource>;
+  isVerbose?: boolean;
 }): Promise<Bundle<Resource>> {
-  const { log } = out(`Normalize. cx: ${cxId}, pt: ${patientId}`);
+  const { log: logFn } = out(`Normalize. cx: ${cxId}, pt: ${patientId}`);
+  const log = isVerbose ? logFn : emptyFunction;
   const startedAt = new Date();
 
   const normalizedBundle = normalizeFhir(bundle);

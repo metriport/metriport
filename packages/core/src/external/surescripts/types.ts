@@ -1,7 +1,6 @@
-import { Bundle } from "@medplum/fhirtypes";
+import { OrganizationData } from "@metriport/shared/domain/customer";
 import { Patient } from "@metriport/shared/domain/patient";
-import { FacilityData, OrganizationData } from "@metriport/shared/domain/customer";
-import { SftpConfig } from "../sftp/types";
+import { SftpConfig, SftpFile } from "../sftp/types";
 
 export type SurescriptsGender = "M" | "F" | "U";
 
@@ -19,9 +18,16 @@ export interface SurescriptsSftpConfig extends Partial<Omit<SftpConfig, "passwor
   replicaBucketRegion?: string;
 }
 
-export interface SurescriptsRequester {
+export interface SurescriptsRequesterData {
   cxId: string;
-  facilityId: string;
+  org: OrganizationData;
+  facilityNpiMap: Record<string, string>;
+}
+
+export interface SurescriptsBatchRequestData extends SurescriptsRequesterData {
+  populationId: string;
+  patients: Patient[];
+  includeMultipleDemographics: boolean;
 }
 
 export interface SurescriptsFileIdentifier {
@@ -29,32 +35,4 @@ export interface SurescriptsFileIdentifier {
   populationId: string;
 }
 
-export type SurescriptsJob = SurescriptsRequester & SurescriptsFileIdentifier;
-
-export interface SurescriptsRequesterData {
-  cxId: string;
-  org: OrganizationData;
-  facility: FacilityData;
-}
-
-export interface SurescriptsPatientRequest extends SurescriptsRequester {
-  patientId: string;
-}
-
-export interface SurescriptsPatientRequestData extends SurescriptsRequesterData {
-  patient: Patient;
-}
-
-export interface SurescriptsBatchRequest extends SurescriptsRequester {
-  patientIds: string[];
-}
-
-export interface SurescriptsBatchRequestData extends SurescriptsRequesterData {
-  patients: Patient[];
-}
-
-export interface SurescriptsConversionBundle {
-  cxId: string;
-  patientId: string;
-  bundle: Bundle;
-}
+export type SurescriptsSftpFile = SftpFile & SurescriptsFileIdentifier;

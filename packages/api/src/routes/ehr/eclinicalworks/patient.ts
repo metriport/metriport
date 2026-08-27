@@ -15,7 +15,7 @@ const router = Router();
  * @param req.params.id The ID of Eclinicalworks Patient.
  * @param req.query.practiceId The ID of Eclinicalworks Practice.
  * @param req.query.tokenId The ID of Eclinicalworks Token.
- * @returns Metriport Patient if found.
+ * @returns Metriport Patient ID if found.
  */
 router.get(
   "/:id",
@@ -43,7 +43,7 @@ router.get(
  * @param req.params.id The ID of Eclinicalworks Patient.
  * @param req.query.practiceId The ID of Eclinicalworks Practice.
  * @param req.query.tokenId The ID of Eclinicalworks Token.
- * @returns Metriport Patient if found.
+ * @returns Metriport Patient ID if found.
  */
 router.post(
   "/:id",

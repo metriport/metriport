@@ -1,10 +1,9 @@
-import dayjs from "dayjs";
-import { TextOrTextObject } from "./schema";
-import { Slot } from "./schema";
+import { buildDayjs } from "@metriport/shared/common/date";
 import { Name } from "./outbound/xca/process/schema";
+import { Slot, TextOrTextObject } from "./schema";
 
-export function timestampToSoapBody(createdTimestamp: string): string {
-  return dayjs(createdTimestamp).toISOString();
+export function timestampToSoapBody(createdTimestamp: string, format = "YYYYMMDDHHmmss"): string {
+  return buildDayjs(createdTimestamp).format(format);
 }
 
 export function extractText(textOrTextObject: TextOrTextObject): string {

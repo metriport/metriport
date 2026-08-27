@@ -20,3 +20,31 @@ export const medicationsGraphqlSchema = z.object({
   }),
 });
 export type MedicationsGraphql = z.infer<typeof medicationsGraphqlSchema>;
+
+const dosageOptionSchema = z.object({
+  id: z.string(),
+  strength: z.string(),
+});
+
+const medicationOptionSchema = z.object({
+  dosage_options: dosageOptionSchema.array(),
+  id: z.string(),
+  name: z.string(),
+});
+
+export const medicationOptionsResponseGraphqlSchema = z.object({
+  data: z.object({
+    medication_options: medicationOptionSchema.array(),
+  }),
+});
+export type MedicationOptionsResponseGraphql = z.infer<
+  typeof medicationOptionsResponseGraphqlSchema
+>;
+
+export type CreateMedicationParams = {
+  start_date?: string;
+  end_date?: string | undefined;
+  directions?: string | undefined;
+  dosage?: string | undefined;
+  active: boolean;
+};

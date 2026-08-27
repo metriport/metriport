@@ -1,12 +1,18 @@
 import {
   CommonWellAPI,
-  Patient as CommonwellPatient,
   getCwPatientIdFromLinks,
+  Patient as CommonwellPatient,
 } from "@metriport/commonwell-sdk";
 import { decodeCwPatientIdV1, encodeCwPatientId } from "@metriport/commonwell-sdk/common/util";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
+import {
+  MetricAdditionalDimension,
+  MetricName,
+  reportCountMetric,
+  reportDurationMetric,
+} from "@metriport/core/external/aws/cloudwatch";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -53,23 +59,24 @@ function getCWData(data: PatientExternalData | undefined): PatientDataCommonwell
 export async function registerAndLinkPatientInCwV2({
   patient,
   facilityId,
-  getOrgIdExcludeList,
   rerunPdOnNewDemographics,
   requestId,
   startedAt,
   debug,
   initiator,
   update,
+  /** to be used exclusively by updatePatientAndLinksInCwV2 to avoid double error reporting */
+  handleErrors = true,
 }: {
   patient: Patient;
   facilityId: string;
-  getOrgIdExcludeList: () => Promise<string[]>;
   rerunPdOnNewDemographics: boolean;
   requestId: string;
   startedAt: Date;
   debug: typeof console.log;
   initiator?: HieInitiator;
   update: (params: UpdatePatientCmd) => Promise<void>;
+  handleErrors?: boolean;
 }): Promise<{ commonwellPatientId: string } | void> {
   const { log } = out(`registerAndLinkPatientInCW.v2 - patientId ${patient.id}`);
   let commonWell: CommonWellAPI | undefined;
@@ -94,14 +101,12 @@ export async function registerAndLinkPatientInCwV2({
       patient,
       commonwellPatientId,
       context: createContext,
-      getOrgIdExcludeList,
     });
 
     if (rerunPdOnNewDemographics) {
       const startedNewPd = await runNextPdOnNewDemographics({
         patient,
         facilityId,
-        getOrgIdExcludeList,
         requestId,
         cwLinks: validLinks,
         update,
@@ -109,6 +114,16 @@ export async function registerAndLinkPatientInCwV2({
       if (startedNewPd) return;
     }
 
+    reportDurationMetric({
+      name: MetricName.PATIENT_DISCOVERY_DURATION,
+      queryStart: startedAt.getTime(),
+      additionalDimension: MetricAdditionalDimension.COMMONWELL,
+    });
+    reportCountMetric({
+      name: MetricName.PATIENT_DISCOVERY_SUCCESS_COUNT,
+      count: 1,
+      additionalDimension: MetricAdditionalDimension.COMMONWELL,
+    });
     analytics({
       distinctId: patient.cxId,
       event: EventTypes.patientDiscovery,
@@ -129,18 +144,29 @@ export async function registerAndLinkPatientInCwV2({
     if (startedNewPd) return;
 
     await updatePatientDiscoveryStatus({ patient, status: "completed" });
-    await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList });
+    await queryDocsIfScheduled({ patientIds: patient, facilityId });
 
     debug("Completed.");
     return { commonwellPatientId };
   } catch (error) {
+    if (!handleErrors) throw error;
+
     // TODO 1646 Move to a single hit to the DB
     await resetScheduledPatientDiscovery({
       patient,
       source: MedicalDataSource.COMMONWELL,
     });
     await updatePatientDiscoveryStatus({ patient, status: "failed" });
-    await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList, isFailed: true });
+    await queryDocsIfScheduled({
+      patientIds: patient,
+      facilityId,
+      isFailed: true,
+    });
+    reportCountMetric({
+      name: MetricName.PATIENT_DISCOVERY_ERROR_COUNT,
+      count: 1,
+      additionalDimension: MetricAdditionalDimension.COMMONWELL,
+    });
 
     const msg = `Failure while creating patient @ CW`;
     const cwRef = commonWell?.lastTransactionId;
@@ -164,7 +190,6 @@ export async function registerAndLinkPatientInCwV2({
 export async function updatePatientAndLinksInCwV2({
   patient,
   facilityId,
-  getOrgIdExcludeList,
   rerunPdOnNewDemographics,
   requestId,
   startedAt,
@@ -173,7 +198,6 @@ export async function updatePatientAndLinksInCwV2({
 }: {
   patient: Patient;
   facilityId: string;
-  getOrgIdExcludeList: () => Promise<string[]>;
   rerunPdOnNewDemographics: boolean;
   requestId: string;
   startedAt: Date;
@@ -190,12 +214,12 @@ export async function updatePatientAndLinksInCwV2({
       await registerAndLinkPatientInCwV2({
         patient,
         facilityId,
-        getOrgIdExcludeList,
         rerunPdOnNewDemographics,
         requestId,
         startedAt,
         debug,
         update,
+        handleErrors: false,
       });
       return;
     }
@@ -218,20 +242,29 @@ export async function updatePatientAndLinksInCwV2({
       patient,
       commonwellPatientId,
       context: updateContext,
-      getOrgIdExcludeList,
     });
 
     if (rerunPdOnNewDemographics) {
       const startedNewPd = await runNextPdOnNewDemographics({
         patient,
         facilityId,
-        getOrgIdExcludeList,
         requestId,
         cwLinks: validLinks,
         update,
       });
       if (startedNewPd) return;
     }
+
+    reportDurationMetric({
+      name: MetricName.PATIENT_DISCOVERY_DURATION,
+      queryStart: startedAt.getTime(),
+      additionalDimension: MetricAdditionalDimension.COMMONWELL,
+    });
+    reportCountMetric({
+      name: MetricName.PATIENT_DISCOVERY_SUCCESS_COUNT,
+      count: 1,
+      additionalDimension: MetricAdditionalDimension.COMMONWELL,
+    });
 
     analytics({
       distinctId: patient.cxId,
@@ -255,7 +288,7 @@ export async function updatePatientAndLinksInCwV2({
     if (startedNewPd) return;
 
     await updatePatientDiscoveryStatus({ patient, status: "completed" });
-    await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList });
+    await queryDocsIfScheduled({ patientIds: patient, facilityId });
 
     debug("Completed.");
   } catch (error) {
@@ -265,7 +298,17 @@ export async function updatePatientAndLinksInCwV2({
       source: MedicalDataSource.COMMONWELL,
     });
     await updatePatientDiscoveryStatus({ patient, status: "failed" });
-    await queryDocsIfScheduled({ patientIds: patient, getOrgIdExcludeList, isFailed: true });
+    await queryDocsIfScheduled({
+      patientIds: patient,
+      facilityId,
+      isFailed: true,
+    });
+    reportCountMetric({
+      name: MetricName.PATIENT_DISCOVERY_ERROR_COUNT,
+      count: 1,
+      additionalDimension: MetricAdditionalDimension.COMMONWELL,
+    });
+
     const msg = `Failed to update patient @ CW`;
     const cwRef = commonWell?.lastTransactionId;
     log(`${msg} ${patient.id}:. Cause: ${errorToString(error)}. CW Reference: ${cwRef}`);
@@ -286,14 +329,12 @@ export async function updatePatientAndLinksInCwV2({
 async function runNextPdOnNewDemographics({
   patient,
   facilityId,
-  getOrgIdExcludeList,
   requestId,
   cwLinks,
   update,
 }: {
   patient: Patient;
   facilityId: string;
-  getOrgIdExcludeList: () => Promise<string[]>;
   requestId: string;
   cwLinks: NetworkLink[];
   update: (params: UpdatePatientCmd) => Promise<void>;
@@ -332,7 +373,6 @@ async function runNextPdOnNewDemographics({
   update({
     patient: updatedPatient,
     facilityId,
-    getOrgIdExcludeList,
     rerunPdOnNewDemographics: false,
   }).catch(processAsyncError("CW update"));
   analytics({
@@ -373,10 +413,6 @@ async function runNextPdIfScheduled({
   update({
     patient: updatedPatient,
     facilityId: scheduledPdRequest.facilityId,
-    getOrgIdExcludeList: () =>
-      new Promise(resolve => {
-        resolve(scheduledPdRequest.orgIdExcludeList ?? []);
-      }),
     requestId: scheduledPdRequest.requestId,
     forceCWUpdate: scheduledPdRequest.forceCommonwell,
     rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
@@ -396,11 +432,11 @@ async function runNextPdIfScheduled({
 
 async function queryDocsIfScheduled({
   patientIds,
-  getOrgIdExcludeList,
+  facilityId,
   isFailed = false,
 }: {
   patientIds: Pick<Patient, "id" | "cxId">;
-  getOrgIdExcludeList: () => Promise<string[]>;
+  facilityId: string;
   isFailed?: boolean;
 }): Promise<void> {
   const patient = await getPatientOrFail(patientIds);
@@ -429,10 +465,10 @@ async function queryDocsIfScheduled({
   } else {
     queryAndProcessDocuments({
       patient,
+      facilityId,
       requestId: scheduledDocQueryRequestId,
       triggerConsolidated: scheduledDocQueryRequestTriggerConsolidated,
       forceDownload: scheduledDocQueryRequestForceDownload,
-      getOrgIdExcludeList,
     }).catch(processAsyncError("CW queryAndProcessDocuments"));
   }
 }

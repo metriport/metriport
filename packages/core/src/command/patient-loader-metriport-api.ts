@@ -1,9 +1,15 @@
 import { PatientDTO } from "@metriport/api-sdk";
 import { executeWithNetworkRetries, USState } from "@metriport/shared";
 import axios from "axios";
+import http from "http";
+import https from "https";
 import { Patient } from "../domain/patient";
 import { errorToString } from "../util/error/shared";
+import { out } from "../util/log";
 import { FindBySimilarity, GetOne, PatientLoader } from "./patient-loader";
+
+const httpAgent = new http.Agent({ family: 4 });
+const httpsAgent = new https.Agent({ family: 4 });
 
 /**
  * Implementation of the PatientLoader that calls the Metriport API
@@ -58,6 +64,7 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
   }
 
   async findBySimilarityAcrossAllCxs({ data }: Omit<FindBySimilarity, "cxId">): Promise<Patient[]> {
+    const { log } = out("findBySimilarityAcrossAllCxs");
     try {
       const response = await executeWithNetworkRetries(
         () =>
@@ -68,6 +75,9 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
               firstNameInitial: data?.firstNameInitial,
               lastNameInitial: data?.lastNameInitial,
             },
+            // Force IPv4 - sometimes Axios decides to use IPv6, replacing localhost by ::1, which breaks the request since we don't listen for it on the API
+            httpAgent,
+            httpsAgent,
           }),
         { retryOnTimeout: true }
       );
@@ -78,7 +88,7 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
       patients.forEach(validatePatient);
       return patients;
     } catch (error) {
-      console.log(`Failing on request to internal endpoint - ${errorToString(error)}`);
+      log(`Failing on request to internal endpoint - ${errorToString(error)}`);
       throw error;
     }
   }

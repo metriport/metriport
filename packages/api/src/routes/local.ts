@@ -1,6 +1,8 @@
 import { S3Utils } from "@metriport/core/external/aws/s3";
+import { docContributionFileParam } from "@metriport/core/external/commonwell-v1/document/document-contribution";
 import { retrieveDocumentForCommonWellContribution } from "@metriport/core/external/commonwell/contribution/shared-document-retrieval";
 import { log } from "@metriport/core/util/log";
+import { XML_APP_MIME_TYPE } from "@metriport/core/util/mime";
 import { BadRequestError, errorToString } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -33,19 +35,26 @@ router.get(
 
     const startedAt = Date.now();
     try {
-      const fileName = getFrom("query").orFail("fileName", req);
       const s3Utils = new S3Utils(Config.getAWSRegion());
       const bucketName = Config.getMedicalDocumentsBucketName();
 
+      const fileName = getFrom("query").orFail(docContributionFileParam, req);
+      if (fileName.trim().length < 1) {
+        throw new BadRequestError(`Missing ${docContributionFileParam} query parameter`);
+      }
+
       const fileContents = await retrieveDocumentForCommonWellContribution({
-        fileName,
+        documentIdOrFileNameOrFilePath: fileName,
         s3Utils,
         bucketName,
       });
 
       log(`Sending file contents (${fileContents.length} bytes). Took ${Date.now() - startedAt}ms`);
-      return res.status(200).type("application/octet-stream").send(fileContents);
+      return res.status(200).type(XML_APP_MIME_TYPE).send(fileContents);
     } catch (error) {
+      if (error instanceof BadRequestError) {
+        return res.status(400).send(error.message);
+      }
       const msg = `Error processing DR from CW`;
       console.log(`${msg}: ${errorToString(error)}`);
       return res.status(500).send("Internal Server Error");

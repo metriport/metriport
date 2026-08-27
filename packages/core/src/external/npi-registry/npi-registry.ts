@@ -85,46 +85,54 @@ export async function getFacilityByNpiOrFail(npi: string): Promise<NpiRegistryFa
 /**
  * Translates a NpiRegistryFacility to FacilityInternalDetails
  * @param npiFacility the NpiRegistryFacility you want to be translated
- * @param additionalInfo extra required information to translate the name, if it is OBO, and the cqOboOid + cwOboOid
+ * @param additionalInfo extra required information to translate the name, and the type and principalOid (if applicable)
  * @returns the translated FacilityInternalDetails
  */
-export function translateNpiFacilityToMetriportFacility(
-  npiFacility: NpiRegistryFacility,
-  additionalInfo: AdditionalInformationInternalFacility
-): FacilityInternalDetails {
+export function buildInternalFacilityFromNpiFacility({
+  npiFacility,
+  additionalInfo,
+}: {
+  npiFacility: NpiRegistryFacility;
+  additionalInfo: AdditionalInformationInternalFacility;
+}): FacilityInternalDetails {
   const address = npiFacility.addresses[0];
   if (!address) {
     throw new MetriportError("NPI Registry facility has no address.", undefined, {
       npiFacilityNumber: npiFacility?.number,
     });
   }
-  const isObo = additionalInfo.facilityType === "obo";
-
-  const type = isObo ? FacilityType.initiatorOnly : FacilityType.initiatorAndResponder;
   const zip = normalizeZipCodeNew(address.postal_code);
+  const cqActive = additionalInfo.cqActive;
+  const cwActive = additionalInfo.cwActive;
+  const { principalOid, type, facilityName } = additionalInfo;
 
   const internalFacility: FacilityInternalDetails = {
     city: normalizeCity(address.city),
     state: normalizeState(address.state),
-    nameInMetriport: toTitleCase(additionalInfo.facilityName),
+    nameInMetriport: toTitleCase(facilityName),
     npi: npiFacility.number,
-    cqType: type,
-    cwType: type,
+    cqApproved: cqActive,
+    cwApproved: cwActive,
+    cqActive,
+    cwActive,
+    type,
     addressLine1: toTitleCase(address.address_1),
     zip,
     country: "USA",
   };
 
-  if (isObo) {
-    if (!additionalInfo.cqOboOid || !additionalInfo.cwOboOid) {
-      throw new MetriportError(`If type is "obo" must provide cqOboOid and cwOboOid`, undefined, {
-        isObo,
-        cqOboOid: additionalInfo.cqOboOid,
-        cwOboOid: additionalInfo.cwOboOid,
-      });
+  if (type === FacilityType.initiatorOnly) {
+    if (!principalOid) {
+      throw new MetriportError(
+        `If type is "initiator_only", the principalOid must be provided`,
+        undefined,
+        {
+          type,
+          principalOid: principalOid,
+        }
+      );
     }
-    internalFacility.cqOboOid = additionalInfo.cqOboOid;
-    internalFacility.cwOboOid = additionalInfo.cwOboOid;
+    internalFacility.principalOid = principalOid;
   }
   return internalFacility;
 }

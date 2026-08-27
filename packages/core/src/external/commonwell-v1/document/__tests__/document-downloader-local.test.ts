@@ -48,6 +48,7 @@ describe("document-downloader-local", () => {
         sizeInBytes: 0,
         contentType: faker.system.mimeType(),
         createdAt: undefined,
+        updatedAt: undefined,
         metadata: undefined,
       });
       const mockedCapture = mockCapture();

@@ -123,6 +123,37 @@ describe("AdtRosterGenerator", () => {
     });
   });
 
+  describe("cleanName", () => {
+    it("should strip accents from letters", () => {
+      expect(rosterGeneratorModule.cleanName("José")).toBe("Jose");
+      expect(rosterGeneratorModule.cleanName("Muñoz")).toBe("Munoz");
+      expect(rosterGeneratorModule.cleanName("García")).toBe("Garcia");
+      expect(rosterGeneratorModule.cleanName("François")).toBe("Francois");
+    });
+
+    it("should keep only letters and spaces", () => {
+      expect(rosterGeneratorModule.cleanName("John")).toBe("John");
+      expect(rosterGeneratorModule.cleanName("Mary-Jane")).toBe("MaryJane");
+      expect(rosterGeneratorModule.cleanName("O'Brien")).toBe("OBrien");
+      expect(rosterGeneratorModule.cleanName("Smith Jr.")).toBe("Smith Jr");
+    });
+
+    it("should collapse multiple spaces and trim", () => {
+      expect(rosterGeneratorModule.cleanName("  John   Doe  ")).toBe("John Doe");
+      expect(rosterGeneratorModule.cleanName("  Single  ")).toBe("Single");
+    });
+
+    it("should remove numbers and special characters", () => {
+      expect(rosterGeneratorModule.cleanName("John123")).toBe("John");
+      expect(rosterGeneratorModule.cleanName("Test@Name")).toBe("TestName");
+    });
+
+    it("should return empty string when only non-letters", () => {
+      expect(rosterGeneratorModule.cleanName("123-45")).toBe("");
+      expect(rosterGeneratorModule.cleanName("  ---  ")).toBe("");
+    });
+  });
+
   describe("createRosterRow", () => {
     it("should convert all fields correctly including multiple addresses and identifiers", () => {
       const patient = makePatient({

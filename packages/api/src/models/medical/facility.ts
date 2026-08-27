@@ -1,12 +1,8 @@
+import { FacilityType } from "@metriport/core/domain/facility";
 import { OID_ID_START } from "@metriport/core/domain/oid";
 import { DataTypes, Sequelize } from "sequelize";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import {
-  Facility,
-  FacilityData,
-  FacilityType,
-  makeFacilityOid,
-} from "../../domain/medical/facility";
+import { Facility, FacilityData, makeFacilityOid } from "../../domain/medical/facility";
 import { BaseModel, ModelSetup } from "../../models/_default";
 import { executeOnDBTx } from "../transaction-wrapper";
 
@@ -18,12 +14,12 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
   declare data: FacilityData;
   declare cqActive: boolean;
   declare cwActive: boolean;
-  declare cqOboOid: string | null;
-  declare cwOboOid: string | null;
-  declare cwType: FacilityType;
-  declare cqType: FacilityType;
+  declare principalOid: string | null;
+  declare type: FacilityType;
   declare cqApproved: boolean;
   declare cwApproved: boolean;
+  declare ehexActive: boolean;
+  declare ehexApproved: boolean;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     FacilityModel.init(
@@ -50,19 +46,11 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
           type: DataTypes.BOOLEAN,
           defaultValue: false,
         },
-        cqOboOid: {
+        principalOid: {
           type: DataTypes.STRING,
           allowNull: true,
         },
-        cwOboOid: {
-          type: DataTypes.STRING,
-          allowNull: true,
-        },
-        cwType: {
-          type: DataTypes.ENUM(...Object.values(FacilityType)),
-          defaultValue: FacilityType.initiatorAndResponder,
-        },
-        cqType: {
+        type: {
           type: DataTypes.ENUM(...Object.values(FacilityType)),
           defaultValue: FacilityType.initiatorAndResponder,
         },
@@ -72,6 +60,16 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
           allowNull: false,
         },
         cwApproved: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
+          allowNull: false,
+        },
+        ehexActive: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
+          allowNull: false,
+        },
+        ehexApproved: {
           type: DataTypes.BOOLEAN,
           defaultValue: false,
           allowNull: false,

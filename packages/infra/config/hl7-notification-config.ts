@@ -1,6 +1,10 @@
 import { HieConfig, VpnlessHieConfig } from "@metriport/core/command/hl7v2-subscriptions/types";
 import { HieSftpConfig } from "@metriport/core/external/sftp/types";
 
+/**
+ * WARNING Updating this config requires updating file: @metriport/packages/api/src/routes/internal/schemas/hie-config.ts
+ *
+ */
 export interface Hl7NotificationConfig {
   secrets: {
     HL7_BASE64_SCRAMBLER_SEED: string;

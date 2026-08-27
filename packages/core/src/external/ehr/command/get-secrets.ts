@@ -10,6 +10,7 @@ import {
   EhrPerPracticeParams,
 } from "../environment";
 import { getHealthieEnv } from "../healthie/environment";
+import { getPracticeFusionEnv } from "../practicefusion/environment";
 import { EhrSourceWithDynamicSecrets } from "../secrets";
 
 /**
@@ -44,6 +45,7 @@ const secretsMethodsBy: GetSecretsFnMap = {
   [EhrSources.athena]: getAthenaEnv,
   [EhrSources.elation]: getElationEnv,
   [EhrSources.healthie]: getHealthieEnv,
+  [EhrSources.practicefusion]: getPracticeFusionEnv,
 };
 
 function getSecretsHandler(ehr: EhrSourceWithDynamicSecrets): GetSecretsFn<EhrEnv> {

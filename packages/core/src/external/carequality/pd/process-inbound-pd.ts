@@ -3,13 +3,14 @@ import {
   InboundPatientDiscoveryResp,
   PatientResource,
 } from "@metriport/ihe-gateway-sdk";
+import { METRIPORT_HOME_COMMUNITY_ID } from "@metriport/shared";
 import { Address } from "../../../domain/address";
 import { getStateEnum } from "../../../domain/geographic-locations";
 import { Patient, PatientData } from "../../../domain/patient";
 import { MPI } from "../../../mpi/mpi";
 import { normalizePatient } from "../../../mpi/normalize-patient";
-import { mapFhirToMetriportGender } from "../../fhir/patient/conversion";
 import { patientMPIToPartialPatient } from "../../../mpi/shared";
+import { mapFhirToMetriportGender } from "../../fhir/patient/conversion";
 import {
   constructPDErrorResponse,
   constructPDNoMatchResponse,
@@ -17,7 +18,6 @@ import {
   XDSRegistryError,
 } from "../error";
 import { toIheGatewayPatientResource } from "../ihe-gateway-v2/patient";
-import { METRIPORT_HOME_COMMUNITY_ID } from "../shared";
 import { validateFHIRAndExtractPatient } from "./validating-pd";
 
 function constructMatchResponse(

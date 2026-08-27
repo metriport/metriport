@@ -1,4 +1,4 @@
-import { isHealthcareItVendor } from "@metriport/core/domain/organization";
+import { isDelegateOrganization, isHealthcareItVendor } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
@@ -22,15 +22,27 @@ export async function getHieInitiator(
   const { organization, facilities } = await getPatientWithDependencies(patient);
   const facility = getPatientsFacility(patient.id, facilities, facilityId);
 
-  if (isHealthcareItVendor(organization.type)) {
+  const isItVendor = isHealthcareItVendor(organization.type);
+
+  if (isItVendor) {
     return {
       oid: facility.oid,
       name: facility.data.name,
       npi: facility.data.npi,
       facilityId: facility.id,
       orgName: organization.data.name,
-      // Used downstream to craft delegated requests
-      queryGrantorOid: isDoaEnabled ? facility.cqOboOid ?? undefined : undefined,
+      queryGrantorOid: isDoaEnabled ? facility.principalOid ?? undefined : undefined,
+    };
+  }
+
+  if (isDelegateOrganization(organization)) {
+    return {
+      oid: organization.oid,
+      name: organization.data.name,
+      npi: facility.data.npi,
+      facilityId: facility.id,
+      orgName: organization.data.name,
+      queryGrantorOid: isDoaEnabled ? organization.principalOid ?? undefined : undefined,
     };
   }
   return {
@@ -45,7 +57,7 @@ export async function getHieInitiator(
 export async function isHieEnabledToQuery(
   facilityId: string | undefined,
   patient: Pick<Patient, "id" | "cxId">,
-  hie: MedicalDataSource.COMMONWELL | MedicalDataSource.CAREQUALITY
+  hie: MedicalDataSource.COMMONWELL | MedicalDataSource.CAREQUALITY | MedicalDataSource.EHEX
 ): Promise<boolean> {
   const { organization, facilities } = await getPatientWithDependencies(patient);
 
@@ -56,7 +68,6 @@ export async function isHieEnabledToQuery(
       return false;
     }
   }
-
   return true;
 }
 

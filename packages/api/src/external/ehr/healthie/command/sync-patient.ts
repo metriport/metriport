@@ -1,3 +1,4 @@
+import { disableWHMetadata } from "@metriport/core/domain/document-query/trigger-and-query";
 import { PatientDemoData } from "@metriport/core/domain/patient";
 import HealthieApi from "@metriport/core/external/ehr/healthie";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -11,6 +12,7 @@ import {
   normalizeGender,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import { HealthieSecondaryMappings } from "@metriport/shared/interface/external/ehr/healthie/cx-mapping";
 import { healthieDashSource } from "@metriport/shared/interface/external/ehr/healthie/jwt-token";
 import { Patient as HealthiePatient } from "@metriport/shared/interface/external/ehr/healthie/patient";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
@@ -25,6 +27,7 @@ import { queryDocumentsAcrossHIEs } from "../../../../command/medical/document/d
 import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 import { getPatientPrimaryFacilityIdOrFail } from "../../../../command/medical/patient/get-patient-facilities";
 import { Config } from "../../../../shared/config";
+import { getCxMappingAndParsedSecondaryMappings } from "../../shared/command/mapping/get-cx-mapping-and-secondary-mappings";
 import { getOrCreateMetriportPatient } from "../../shared/command/patient/get-or-create-metriport-patient";
 import { isDqCooldownExpired } from "../../shared/utils/patient";
 import { createAddresses, createContacts, createHealthieClient, createNames } from "../shared";
@@ -56,6 +59,13 @@ export async function syncHealthiePatientIntoMetriport({
   const { log } = out(
     `syncHealthiePatientIntoMetriport - practId: ${healthiePracticeId} ptId: ${healthiePatientId}`
   );
+  const { parsedSecondaryMappings } =
+    await getCxMappingAndParsedSecondaryMappings<HealthieSecondaryMappings>({
+      ehr: EhrSources.healthie,
+      practiceId: healthiePracticeId,
+    });
+  const shouldDisableWebhooks = !parsedSecondaryMappings.sendDocumentQueryWebhookEnabled;
+
   const existingMapping = await getPatientMapping({
     cxId,
     externalId: healthiePatientId,
@@ -79,6 +89,7 @@ export async function syncHealthiePatientIntoMetriport({
         cxId,
         patientId: metriportPatientId,
         facilityId,
+        ...(shouldDisableWebhooks && { cxDocumentRequestMetadata: disableWHMetadata }),
       }).catch(processAsyncError(`Healthie queryDocumentsAcrossHIEs`));
     }
     await updateHealthiePatientQuickNotes({
@@ -114,6 +125,7 @@ export async function syncHealthiePatientIntoMetriport({
         cxId,
         patientId: metriportPatientId,
         facilityId,
+        ...(shouldDisableWebhooks && { cxDocumentRequestMetadata: disableWHMetadata }),
       }).catch(processAsyncError(`Healthie queryDocumentsAcrossHIEs`));
     }
     await Promise.all([

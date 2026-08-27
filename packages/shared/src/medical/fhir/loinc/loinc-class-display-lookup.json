@@ -1,0 +1,1730 @@
+{
+  "ADMIN": {
+    "displayValue": "Administrative",
+    "partCode": "LP212481-8"
+  },
+  "ADMIN.DEMOG": {
+    "displayValue": "Demographics",
+    "partCode": "LP212480-0"
+  },
+  "ADMIN.FACILITY": {
+    "displayValue": "Facility",
+    "partCode": "LP248694-4"
+  },
+  "ADMIN.ID": {
+    "displayValue": "Identification numbers",
+    "partCode": "LP248697-7"
+  },
+  "ADMIN.PATIENT": {
+    "displayValue": "ADMIN.PATIENT",
+    "partCode": "LP345159-0"
+  },
+  "ADMIN.PATIENT.DEMOG": {
+    "displayValue": "Patient demographics",
+    "partCode": "LP410757-1"
+  },
+  "ADMIN.PATIENT.ID": {
+    "displayValue": "ADMIN.PATIENT.ID",
+    "partCode": "LP345160-8"
+  },
+  "APTA": {
+    "displayValue": "American Physical Therapy Association (APTA)",
+    "partCode": "LP188761-3"
+  },
+  "ART": {
+    "displayValue": "Antiretroviral therapy",
+    "partCode": "LP66375-4"
+  },
+  "AUDIO": {
+    "displayValue": "Audiology",
+    "partCode": "LP266551-3"
+  },
+  "BDYCRC.ATOM": {
+    "displayValue": "General body circumference",
+    "partCode": "LP7766-1"
+  },
+  "BDYCRC.MOLEC": {
+    "displayValue": "Specific body circumference",
+    "partCode": "LP7767-9"
+  },
+  "BDYHGT.ATOM": {
+    "displayValue": "General body height (length)",
+    "partCode": "LP7768-7"
+  },
+  "BDYHGT.MOLEC": {
+    "displayValue": "Specific body height (length)",
+    "partCode": "LP7769-5"
+  },
+  "BDYSURF.ATOM": {
+    "displayValue": "General body surface area",
+    "partCode": "LP7770-3"
+  },
+  "BDYTMP.ATOM": {
+    "displayValue": "General body temperature",
+    "partCode": "LP7771-1"
+  },
+  "BDYTMP.MOLEC": {
+    "displayValue": "Specific body temperature",
+    "partCode": "LP7772-9"
+  },
+  "BDYTMP.TIMED.MOLEC": {
+    "displayValue": "Timed specific body temperature",
+    "partCode": "LP7773-7"
+  },
+  "BDYWGT.ATOM": {
+    "displayValue": "General body weight",
+    "partCode": "LP7774-5"
+  },
+  "BDYWGT.MOLEC": {
+    "displayValue": "Specific body weight",
+    "partCode": "LP7775-2"
+  },
+  "BP.ATOM": {
+    "displayValue": "General blood pressure",
+    "partCode": "LP7777-8"
+  },
+  "BP.CENT.MOLEC": {
+    "displayValue": "Specific central blood pressure",
+    "partCode": "LP7778-6"
+  },
+  "BP.MOLEC": {
+    "displayValue": "Specific blood pressure",
+    "partCode": "LP7779-4"
+  },
+  "BP.PSTN.MOLEC": {
+    "displayValue": "Specific position blood pressure",
+    "partCode": "LP7780-2"
+  },
+  "BP.TIMED.MOLEC": {
+    "displayValue": "Timed specific blood pressure",
+    "partCode": "LP7781-0"
+  },
+  "BP.VENOUS.MOLEC": {
+    "displayValue": "Specific venous blood pressure",
+    "partCode": "LP7782-8"
+  },
+  "CARD.PROC": {
+    "displayValue": "Cardiac procedures",
+    "partCode": "LP200320-2"
+  },
+  "CARD.RISK": {
+    "displayValue": "Cardiac risk",
+    "partCode": "LP121306-7"
+  },
+  "CARD.US": {
+    "displayValue": "Cardiac ultrasound",
+    "partCode": "LP29672-0"
+  },
+  "CARD.US.DICOM": {
+    "displayValue": "DICOM Simplified Adult Echo Report concepts",
+    "partCode": "LP203309-2"
+  },
+  "CARDIO-PULM": {
+    "displayValue": "Cardiopulmonary",
+    "partCode": "LP172861-9"
+  },
+  "CLIN": {
+    "displayValue": "Clinical",
+    "partCode": "LP7787-7"
+  },
+  "CLIN.RISK": {
+    "displayValue": "Clinical risk",
+    "partCode": "LP267621-3"
+  },
+  "CLIN.VET": {
+    "displayValue": "Clinical veterinary terms",
+    "partCode": "LP412177-0"
+  },
+  "CLINTRIAL": {
+    "displayValue": "Clinical trials",
+    "partCode": "LP231796-6"
+  },
+  "DENTAL": {
+    "displayValue": "Dental",
+    "partCode": "LP31759-1"
+  },
+  "DEVICES": {
+    "displayValue": "Devices",
+    "partCode": "LP35960-1"
+  },
+  "DOC.ADMIN": {
+    "displayValue": "Administrative document",
+    "partCode": "LP111151-9"
+  },
+  "DOC.MISC": {
+    "displayValue": "Miscellaneous document",
+    "partCode": "LP76349-7"
+  },
+  "DOC.ONTOLOGY": {
+    "displayValue": "Document ontology",
+    "partCode": "LP32519-8"
+  },
+  "DOC.PUBLICHEALTH": {
+    "displayValue": "Public health document",
+    "partCode": "LP121010-5"
+  },
+  "DOC.QUALITY": {
+    "displayValue": "Quality document",
+    "partCode": "LP96830-2"
+  },
+  "DOC.REF": {
+    "displayValue": "Reference document",
+    "partCode": "LP32520-6"
+  },
+  "DOC.REF.CTP": {
+    "displayValue": "Clinical Trial Protocol reference document",
+    "partCode": "LP33258-2"
+  },
+  "DOCUMENT.REGULATORY": {
+    "displayValue": "Regulatory document",
+    "partCode": "LP32521-4"
+  },
+  "ED": {
+    "displayValue": "Emergency Department (DEEDS) variables",
+    "partCode": "LP7792-7"
+  },
+  "EKG.ATOM": {
+    "displayValue": "General EKG",
+    "partCode": "LP7793-5"
+  },
+  "EKG.IMP": {
+    "displayValue": "Impression",
+    "partCode": "LP7794-3"
+  },
+  "EKG.MEAS": {
+    "displayValue": "EKG measurements",
+    "partCode": "LP7795-0"
+  },
+  "ENDO.GI": {
+    "displayValue": "Endoscopy",
+    "partCode": "LP7796-8"
+  },
+  "ENDO.PULM": {
+    "displayValue": "ENDO.PULM",
+    "partCode": "LP432299-8"
+  },
+  "EYE": {
+    "displayValue": "Ophthalmology and Optometry",
+    "partCode": "LP7797-6"
+  },
+  "EYE.ANGIO": {
+    "displayValue": "Eye angiography",
+    "partCode": "LP201633-7"
+  },
+  "EYE.ANGIO.NEI": {
+    "displayValue": "NEI eyeGENE angiography",
+    "partCode": "LP203646-7"
+  },
+  "EYE.CONTACT_LENS": {
+    "displayValue": "Contact lens",
+    "partCode": "LP29673-8"
+  },
+  "EYE.EOG.NEI": {
+    "displayValue": "NEI eyeGENE electrooculogram",
+    "partCode": "LP203647-5"
+  },
+  "EYE.ERG": {
+    "displayValue": "Electroretinogram",
+    "partCode": "LP201214-6"
+  },
+  "EYE.ERG.NEI": {
+    "displayValue": "NEI eyeGENE electroretinogram",
+    "partCode": "LP203648-3"
+  },
+  "EYE.GLASSES": {
+    "displayValue": "Eyeglasses",
+    "partCode": "LP29674-6"
+  },
+  "EYE.HETEROPHORIA": {
+    "displayValue": "Heterophoria",
+    "partCode": "LP29675-3"
+  },
+  "EYE.HX": {
+    "displayValue": "Eye history",
+    "partCode": "LP201226-0"
+  },
+  "EYE.HX.NEI": {
+    "displayValue": "NEI eyeGENE eye history",
+    "partCode": "LP203649-1"
+  },
+  "EYE.LENSOMETRY": {
+    "displayValue": "Lensometry",
+    "partCode": "LP418652-6"
+  },
+  "EYE.OCT": {
+    "displayValue": "Ophthalmic optical coherence tomography",
+    "partCode": "LP97024-1"
+  },
+  "EYE.OCT.NEI": {
+    "displayValue": "NEI eyeGENE optical coherence tomography",
+    "partCode": "LP203651-7"
+  },
+  "EYE.PX": {
+    "displayValue": "Eye physical exam",
+    "partCode": "LP29676-1"
+  },
+  "EYE.PX.NEI": {
+    "displayValue": "NEI eyeGENE eye physical exam",
+    "partCode": "LP203650-9"
+  },
+  "EYE.REFRACTION": {
+    "displayValue": "Refraction",
+    "partCode": "LP29677-9"
+  },
+  "EYE.REFRACTION.NEI": {
+    "displayValue": "NEI eyeGENE refraction",
+    "partCode": "LP203652-5"
+  },
+  "EYE.RETINAL_RX": {
+    "displayValue": "Retinal laser photocoagulation",
+    "partCode": "LP29678-7"
+  },
+  "EYE.SLITLAMP.NEI": {
+    "displayValue": "NEI eyeGENE slit lamp biomicroscopy",
+    "partCode": "LP203653-3"
+  },
+  "EYE.SPECULAR MICROSCOPY": {
+    "displayValue": "EYE.SPECULAR MICROSCOPY",
+    "partCode": "LP431273-4"
+  },
+  "EYE.TONOMETRY": {
+    "displayValue": "Tonometry",
+    "partCode": "LP29679-5"
+  },
+  "EYE.TONOMETRY.NEI": {
+    "displayValue": "NEI eyeGENE tonometry",
+    "partCode": "LP203654-1"
+  },
+  "EYE.US": {
+    "displayValue": "Eye ultrasound",
+    "partCode": "LP29680-3"
+  },
+  "EYE.VISUAL_FIELD": {
+    "displayValue": "Visual field",
+    "partCode": "LP29681-1"
+  },
+  "EYE.VISUAL_FIELD.NEI": {
+    "displayValue": "NEI eyeGENE visual field",
+    "partCode": "LP203655-8"
+  },
+  "FUNCTION": {
+    "displayValue": "Physical function",
+    "partCode": "LP7799-2"
+  },
+  "GEN.US": {
+    "displayValue": "General ultrasound",
+    "partCode": "LP32523-0"
+  },
+  "GI": {
+    "displayValue": "Gastroenterology",
+    "partCode": "LP29710-8"
+  },
+  "H&P.HX": {
+    "displayValue": "History",
+    "partCode": "LP7800-8"
+  },
+  "H&P.PX": {
+    "displayValue": "Physical exam",
+    "partCode": "LP7801-6"
+  },
+  "H&P.SURG PROC": {
+    "displayValue": "Surgical procedures history",
+    "partCode": "LP7802-4"
+  },
+  "HEMODYN.ATOM": {
+    "displayValue": "General hemodynamics",
+    "partCode": "LP7804-0"
+  },
+  "HEMODYN.MOLEC": {
+    "displayValue": "Specific hemodynamics",
+    "partCode": "LP7805-7"
+  },
+  "HL7.CCDA": {
+    "displayValue": "HL7 Consolidated Clinical Document Architecture (CCDA)",
+    "partCode": "LP184336-8"
+  },
+  "HL7.SMP": {
+    "displayValue": "HL7 Standardization Medication Profile (SMP)",
+    "partCode": "LP438357-8"
+  },
+  "HRTRATE.ATOM": {
+    "displayValue": "General heart rate",
+    "partCode": "LP7807-3"
+  },
+  "HRTRATE.MOLEC": {
+    "displayValue": "Specific heart rate",
+    "partCode": "LP7808-1"
+  },
+  "HRTRATE.PSTN.MOLEC": {
+    "displayValue": "Heart rate taken in specific position",
+    "partCode": "LP135721-1"
+  },
+  "HRTRATE.TIMED.MOL": {
+    "displayValue": "Timed specific heart rate",
+    "partCode": "LP7809-9"
+  },
+  "ICU": {
+    "displayValue": "ICU",
+    "partCode": "LP438374-3"
+  },
+  "IEEE Rosetta": {
+    "displayValue": "IEEE Rosetta",
+    "partCode": "LP101870-6"
+  },
+  "IO_IN_SALTS+CALS": {
+    "displayValue": "Intake of salts + calories",
+    "partCode": "LP7815-6"
+  },
+  "IO_IN.ATOM": {
+    "displayValue": "General intake",
+    "partCode": "LP7811-5"
+  },
+  "IO_IN.INFUS": {
+    "displayValue": "Infusion pump intake",
+    "partCode": "LP201887-9"
+  },
+  "IO_IN.MOLEC": {
+    "displayValue": "Specific intake",
+    "partCode": "LP7812-3"
+  },
+  "IO_IN.SUMMARY": {
+    "displayValue": "Intake summary",
+    "partCode": "LP7813-1"
+  },
+  "IO_IN.TIMED.MOLEC": {
+    "displayValue": "Timed specific intake",
+    "partCode": "LP7814-9"
+  },
+  "IO_OUT.ATOM": {
+    "displayValue": "General output",
+    "partCode": "LP7816-4"
+  },
+  "IO_OUT.MOLEC": {
+    "displayValue": "Specific output",
+    "partCode": "LP7817-2"
+  },
+  "IO_OUT.TIMED.MOLE": {
+    "displayValue": "Timed specific output",
+    "partCode": "LP7818-0"
+  },
+  "IO.TUBE": {
+    "displayValue": "Intake and Output - tube",
+    "partCode": "LP7810-7"
+  },
+  "MEDS": {
+    "displayValue": "Medications",
+    "partCode": "LP230280-2"
+  },
+  "NEMSIS": {
+    "displayValue": "National Emergency Medical Services Information System (NEMSIS)",
+    "partCode": "LP133214-9"
+  },
+  "NEONAT": {
+    "displayValue": "Neonatalology",
+    "partCode": "LP7829-7"
+  },
+  "NEURO": {
+    "displayValue": "Neurology",
+    "partCode": "LP201883-8"
+  },
+  "NIH.COGNITIVE": {
+    "displayValue": "NIH - cognitive",
+    "partCode": "LP234857-3"
+  },
+  "NIH.MOTOR": {
+    "displayValue": "NIH - motor",
+    "partCode": "LP232486-3"
+  },
+  "NIH.SENSORY": {
+    "displayValue": "NIH - sensory",
+    "partCode": "LP234772-4"
+  },
+  "NUTRITION&DIETETICS": {
+    "displayValue": "Nutrition and Dietetics",
+    "partCode": "LP185381-3"
+  },
+  "OB.US": {
+    "displayValue": "OB ultrasound",
+    "partCode": "LP7830-5"
+  },
+  "OBGYN": {
+    "displayValue": "Obstetrics and Gynecology",
+    "partCode": "LP7831-3"
+  },
+  "ONCOLOGY": {
+    "displayValue": "Oncology",
+    "partCode": "LP186995-9"
+  },
+  "PANEL.ADMIN": {
+    "displayValue": "Administrative information panel",
+    "partCode": "LP267194-1"
+  },
+  "PANEL.APTA": {
+    "displayValue": "American Physical Therapy Association (APTA) panels",
+    "partCode": "LP189424-7"
+  },
+  "PANEL.ART": {
+    "displayValue": "Antiretroviral therapy Panels",
+    "partCode": "LP66376-2"
+  },
+  "PANEL.BDYTMP": {
+    "displayValue": "Temperature Panel",
+    "partCode": "LP33028-9"
+  },
+  "PANEL.BP": {
+    "displayValue": "Blood pressure Panels",
+    "partCode": "LP31907-6"
+  },
+  "PANEL.CARDIAC": {
+    "displayValue": "Cardiac Panels",
+    "partCode": "LP31905-0"
+  },
+  "PANEL.CLIN": {
+    "displayValue": "Clinical panels",
+    "partCode": "LP94654-8"
+  },
+  "PANEL.CLIN.RISK": {
+    "displayValue": "Clinical Risk Panel",
+    "partCode": "LP267622-1"
+  },
+  "PANEL.CLIN.VET": {
+    "displayValue": "PANEL.CLIN.VET",
+    "partCode": "LP437545-9"
+  },
+  "PANEL.CV": {
+    "displayValue": "CV Panels",
+    "partCode": "LP57530-5"
+  },
+  "PANEL.DEVICES": {
+    "displayValue": "Panel.devices",
+    "partCode": "LP36380-1"
+  },
+  "PANEL.DOC": {
+    "displayValue": "Document panels",
+    "partCode": "LP96828-6"
+  },
+  "PANEL.ED": {
+    "displayValue": "Emergency Department (DEEDS) panel",
+    "partCode": "LP93489-0"
+  },
+  "PANEL.EYE": {
+    "displayValue": "Ophthalmic panels",
+    "partCode": "LP97037-3"
+  },
+  "PANEL.FUNCTION": {
+    "displayValue": "Function panel",
+    "partCode": "LP33030-5"
+  },
+  "PANEL.H&P": {
+    "displayValue": "HandP panels",
+    "partCode": "LP33024-8"
+  },
+  "PANEL.HL7.CCDA": {
+    "displayValue": "HL7 Consolidated Clinical Document Architecture (CCDA) set",
+    "partCode": "LP184353-3"
+  },
+  "PANEL.IEEE ROSETTA": {
+    "displayValue": "IEEE Rosetta panels",
+    "partCode": "LP186239-2"
+  },
+  "PANEL.IO": {
+    "displayValue": "IO Panels",
+    "partCode": "LP31906-8"
+  },
+  "PANEL.MEDS": {
+    "displayValue": "PANEL.MEDS",
+    "partCode": "LP241884-8"
+  },
+  "PANEL.NEMSIS": {
+    "displayValue": "National Emergency Medical Services Information System (NEMSIS) panels",
+    "partCode": "LP134033-2"
+  },
+  "PANEL.NEONAT": {
+    "displayValue": "Neonatal Apgar Panels",
+    "partCode": "LP62408-7"
+  },
+  "PANEL.NEURO": {
+    "displayValue": "Neurology panels",
+    "partCode": "LP429497-3"
+  },
+  "PANEL.NIH.COGNITIVE": {
+    "displayValue": "PANEL.NIH.COGNITIVE",
+    "partCode": "LP234856-5"
+  },
+  "PANEL.NIH.MOTOR": {
+    "displayValue": "PANEL.NIH.MOTOR",
+    "partCode": "LP234847-4"
+  },
+  "PANEL.NUTRITION&DIET": {
+    "displayValue": "Nutrition and Dietetics panels",
+    "partCode": "LP185383-9"
+  },
+  "PANEL.OB.US": {
+    "displayValue": "Ob Ultrasound Panel",
+    "partCode": "LP33029-7"
+  },
+  "PANEL.ONCO": {
+    "displayValue": "Oncology panels",
+    "partCode": "LP186996-7"
+  },
+  "PANEL.PATIENT SAFETY": {
+    "displayValue": "Patient Safety panel",
+    "partCode": "LP63173-6"
+  },
+  "PANEL.PHENX": {
+    "displayValue": "Consensus measures for Phenotypes and eXposures (PhenX) panels",
+    "partCode": "LP95319-7"
+  },
+  "PANEL.PHR": {
+    "displayValue": "Patient Health Record Panels",
+    "partCode": "LP94734-8"
+  },
+  "PANEL.PULM": {
+    "displayValue": "Pulmonary panels",
+    "partCode": "LP145628-6"
+  },
+  "PANEL.RAD": {
+    "displayValue": "Radiology Panels",
+    "partCode": "LP66342-4"
+  },
+  "PANEL.SURG": {
+    "displayValue": "Surgery panels",
+    "partCode": "LP212450-3"
+  },
+  "PANEL.TRAUMA": {
+    "displayValue": "Trauma panel sets",
+    "partCode": "LP264341-1"
+  },
+  "PANEL.TUMRRGT": {
+    "displayValue": "Tumor Registry Panels",
+    "partCode": "LP57531-3"
+  },
+  "PANEL.UPDRS": {
+    "displayValue": "PANEL.UPDRS",
+    "partCode": "LP234175-0"
+  },
+  "PANEL.US.URO": {
+    "displayValue": "Urology US Panel",
+    "partCode": "LP33027-1"
+  },
+  "PANEL.VACCIN": {
+    "displayValue": "Vaccination records panel",
+    "partCode": "LP93356-1"
+  },
+  "PANEL.VITALS": {
+    "displayValue": "Vital Signs Panels",
+    "partCode": "LP31904-3"
+  },
+  "PATIENT SAFETY": {
+    "displayValue": "Patient safety",
+    "partCode": "LP36122-7"
+  },
+  "PHENX": {
+    "displayValue": "Consensus measures for Phenotypes and eXposures (PhenX)",
+    "partCode": "LP95321-3"
+  },
+  "PUBLICHEALTH": {
+    "displayValue": "Public health",
+    "partCode": "LP94254-7"
+  },
+  "PULM": {
+    "displayValue": "Respiratory measures and Ventilator management",
+    "partCode": "LP7840-4"
+  },
+  "RAD": {
+    "displayValue": "Radiology",
+    "partCode": "LP29684-5"
+  },
+  "RESP.ATOM": {
+    "displayValue": "General respiratory",
+    "partCode": "LP7841-2"
+  },
+  "RESP.MOLEC": {
+    "displayValue": "Specific respiratory",
+    "partCode": "LP7842-0"
+  },
+  "RESP.TIMED.MOLEC": {
+    "displayValue": "Timed specific respiratory",
+    "partCode": "LP7843-8"
+  },
+  "SKNFLD.MOLEC": {
+    "displayValue": "Specific skin fold",
+    "partCode": "LP7845-3"
+  },
+  "SURG": {
+    "displayValue": "Surgery",
+    "partCode": "LP209048-0"
+  },
+  "TRAUMA": {
+    "displayValue": "Trauma",
+    "partCode": "LP174433-5"
+  },
+  "TRNSPLNT.ORGAN": {
+    "displayValue": "Organ transplant",
+    "partCode": "LP36771-1"
+  },
+  "TUMRRGT": {
+    "displayValue": "Tumor registry (NAACCR)",
+    "partCode": "LP7850-3"
+  },
+  "UPDRS": {
+    "displayValue": "UPDRS",
+    "partCode": "LP262343-9"
+  },
+  "US.URO": {
+    "displayValue": "Ultrasound",
+    "partCode": "LP7853-7"
+  },
+  "VACCIN": {
+    "displayValue": "Vaccination records",
+    "partCode": "LP29692-8"
+  },
+  "VOLUME.MOLEC": {
+    "displayValue": "Specific volume",
+    "partCode": "LP7854-5"
+  },
+  "ABXBACT": {
+    "displayValue": "Antibiotic susceptibilities",
+    "partCode": "LP7755-4"
+  },
+  "ALLERGY": {
+    "displayValue": "Allergy",
+    "partCode": "LP7756-2"
+  },
+  "BLDBK": {
+    "displayValue": "Blood bank",
+    "partCode": "LP7776-0"
+  },
+  "BLDBK.GENOTYPING": {
+    "displayValue": "Blood bank genotyping",
+    "partCode": "LP343632-8"
+  },
+  "CELLMARK": {
+    "displayValue": "Cell markers",
+    "partCode": "LP7783-6"
+  },
+  "CHAL": {
+    "displayValue": "Chemistry - challenge",
+    "partCode": "LP7784-4"
+  },
+  "CHAL.ROUTINE": {
+    "displayValue": "Chemistry - routine challenge",
+    "partCode": "LP234174-3"
+  },
+  "CHALSKIN": {
+    "displayValue": "Skin challenge",
+    "partCode": "LP7785-1"
+  },
+  "CHEM": {
+    "displayValue": "Chemistry - non-challenge",
+    "partCode": "LP7786-9"
+  },
+  "COAG": {
+    "displayValue": "Coagulation",
+    "partCode": "LP7788-5"
+  },
+  "CYTO": {
+    "displayValue": "Cytology",
+    "partCode": "LP7789-3"
+  },
+  "DRUG/TOX": {
+    "displayValue": "Drug toxicology",
+    "partCode": "LP7790-1"
+  },
+  "DRUGDOSE": {
+    "displayValue": "Drug doses",
+    "partCode": "LP7791-9"
+  },
+  "FERT": {
+    "displayValue": "Fertility testing",
+    "partCode": "LP7798-4"
+  },
+  "H&P.HX.LAB": {
+    "displayValue": "History relevant to laboratory testing",
+    "partCode": "LP175679-2"
+  },
+  "HEM/BC": {
+    "displayValue": "Hematology and Cell counts",
+    "partCode": "LP7803-2"
+  },
+  "HL7.CYTOGEN": {
+    "displayValue": "HL7 cytogenetics",
+    "partCode": "LP111381-2"
+  },
+  "HL7.GENETICS": {
+    "displayValue": "HL7 genetics",
+    "partCode": "LP70593-6"
+  },
+  "HLA": {
+    "displayValue": "HLA antigens",
+    "partCode": "LP7806-5"
+  },
+  "HNA": {
+    "displayValue": "HNA",
+    "partCode": "LP158133-1"
+  },
+  "HPA": {
+    "displayValue": "HPA antigen",
+    "partCode": "LP65557-8"
+  },
+  "LABORDERS": {
+    "displayValue": "Laboratory orders",
+    "partCode": "LP94892-4"
+  },
+  "LABORDERS.ONTOLOGY": {
+    "displayValue": "LABORDERS.ONTOLOGY",
+    "partCode": "LP448291-7"
+  },
+  "MICRO": {
+    "displayValue": "Microbiology",
+    "partCode": "LP7819-8"
+  },
+  "MISC": {
+    "displayValue": "Miscellaneous tests",
+    "partCode": "LP7820-6"
+  },
+  "MOLPATH": {
+    "displayValue": "Molecular pathology",
+    "partCode": "LP7822-2"
+  },
+  "MOLPATH.DEL": {
+    "displayValue": "Deletions",
+    "partCode": "LP7823-0"
+  },
+  "MOLPATH.DELDUP": {
+    "displayValue": "Deletions or Duplications",
+    "partCode": "LP190353-5"
+  },
+  "MOLPATH.INV": {
+    "displayValue": "Inversions",
+    "partCode": "LP146061-9"
+  },
+  "MOLPATH.MISC": {
+    "displayValue": "Miscellaneous molecular pathology",
+    "partCode": "LP121011-3"
+  },
+  "MOLPATH.MUT": {
+    "displayValue": "Mutations",
+    "partCode": "LP7824-8"
+  },
+  "MOLPATH.NUCREPEAT": {
+    "displayValue": "Nucleotide repeats",
+    "partCode": "LP193279-9"
+  },
+  "MOLPATH.PHARMG": {
+    "displayValue": "Pharmacogenomics",
+    "partCode": "LP202929-8"
+  },
+  "MOLPATH.REARRANGE": {
+    "displayValue": "Rearrangements",
+    "partCode": "LP7825-5"
+  },
+  "MOLPATH.TRISOMY": {
+    "displayValue": "Trisomies",
+    "partCode": "LP7827-1"
+  },
+  "MOLPATH.TRNLOC": {
+    "displayValue": "Translocations",
+    "partCode": "LP7828-9"
+  },
+  "NR STATS": {
+    "displayValue": "Normal range statistics",
+    "partCode": "LP62148-9"
+  },
+  "PANEL.ABXBACT": {
+    "displayValue": "Antibiotic Susceptibility Panels",
+    "partCode": "LP29682-9"
+  },
+  "PANEL.ALLERGY": {
+    "displayValue": "Allergy Panels",
+    "partCode": "LP33267-3"
+  },
+  "PANEL.BLDBK": {
+    "displayValue": "Blood Bank Panels",
+    "partCode": "LP31894-6"
+  },
+  "PANEL.BLDBK.GENOTYPE": {
+    "displayValue": "Blood bank genotyping panel",
+    "partCode": "LP345096-4"
+  },
+  "PANEL.CELLMARK": {
+    "displayValue": "Cellmarker Panels",
+    "partCode": "LP36900-6"
+  },
+  "PANEL.CHAL": {
+    "displayValue": "Challenge Bank Panels",
+    "partCode": "LP31895-3"
+  },
+  "PANEL.CHEM": {
+    "displayValue": "Chemistry Panels",
+    "partCode": "LP7834-7"
+  },
+  "PANEL.COAG": {
+    "displayValue": "Coagulation Panels",
+    "partCode": "LP31893-8"
+  },
+  "PANEL.DRUG/TOX": {
+    "displayValue": "Drug and Toxicology Panels",
+    "partCode": "LP29683-7"
+  },
+  "PANEL.FERT": {
+    "displayValue": "Fertility Panels",
+    "partCode": "LP36844-6"
+  },
+  "PANEL.HEDIS": {
+    "displayValue": "HEDIS panels",
+    "partCode": "LP71800-4"
+  },
+  "PANEL.HEM/BC": {
+    "displayValue": "Hematology and Cell Count Panels",
+    "partCode": "LP7833-9"
+  },
+  "PANEL.HL7.CYTOGEN": {
+    "displayValue": "HL7 cytogenetics panels",
+    "partCode": "LP111373-9"
+  },
+  "PANEL.HL7.GENETICS": {
+    "displayValue": "HL7 genetics panels",
+    "partCode": "LP70592-8"
+  },
+  "PANEL.HLA": {
+    "displayValue": "HLA Panels",
+    "partCode": "LP36817-2"
+  },
+  "PANEL.HNA": {
+    "displayValue": "HNA panels",
+    "partCode": "LP171373-6"
+  },
+  "PANEL.HPA": {
+    "displayValue": "HPA Panels",
+    "partCode": "LP65574-3"
+  },
+  "PANEL.MICRO": {
+    "displayValue": "Microbiology Panels",
+    "partCode": "LP7835-4"
+  },
+  "PANEL.MISC": {
+    "displayValue": "Miscellaneous lab panels",
+    "partCode": "LP67155-9"
+  },
+  "PANEL.MOLPATH": {
+    "displayValue": "Molecular Pathology Panels",
+    "partCode": "LP62072-1"
+  },
+  "PANEL.MOLPATH.PHARMG": {
+    "displayValue": "Pharmacogenomics Panels",
+    "partCode": "LP411304-1"
+  },
+  "PANEL.OBS": {
+    "displayValue": "Obstetrical Panels",
+    "partCode": "LP7836-2"
+  },
+  "PANEL.PATH": {
+    "displayValue": "Pathology panels",
+    "partCode": "LP116676-0"
+  },
+  "PANEL.SERO": {
+    "displayValue": "Serology Panels",
+    "partCode": "LP7837-0"
+  },
+  "PANEL.SPEC": {
+    "displayValue": "Specimen panels",
+    "partCode": "LP135665-0"
+  },
+  "PANEL.UA": {
+    "displayValue": "Urinalysis Panels",
+    "partCode": "LP7838-8"
+  },
+  "PATH": {
+    "displayValue": "Pathology",
+    "partCode": "LP7839-6"
+  },
+  "PATH.HISTO": {
+    "displayValue": "Histology",
+    "partCode": "LP261286-1"
+  },
+  "PATH.PROTOCOLS.BRST": {
+    "displayValue": "Pathology protocols - breast",
+    "partCode": "LP36753-9"
+  },
+  "PATH.PROTOCOLS.GENER": {
+    "displayValue": "Pathology protocols - general",
+    "partCode": "LP36751-3"
+  },
+  "PATH.PROTOCOLS.PROST": {
+    "displayValue": "Pathology protocols - prostate",
+    "partCode": "LP36752-1"
+  },
+  "PATH.PROTOCOLS.SKIN": {
+    "displayValue": "Pathology protocols - skin",
+    "partCode": "LP36754-7"
+  },
+  "SERO": {
+    "displayValue": "Serology - non-micro",
+    "partCode": "LP7844-6"
+  },
+  "SPEC": {
+    "displayValue": "Specimen information",
+    "partCode": "LP7846-1"
+  },
+  "UA": {
+    "displayValue": "Urinalysis",
+    "partCode": "LP7851-1"
+  },
+  "ATTACH": {
+    "displayValue": "HIPAA Attachments",
+    "partCode": "LP7757-0"
+  },
+  "ATTACH.AMB": {
+    "displayValue": "Ambulance attachments",
+    "partCode": "LP7758-8"
+  },
+  "ATTACH.CARD": {
+    "displayValue": "Cardiac",
+    "partCode": "LP29659-7"
+  },
+  "ATTACH.CLINRPT": {
+    "displayValue": "Clinical report attachments",
+    "partCode": "LP7759-6"
+  },
+  "ATTACH.CPHS": {
+    "displayValue": "Children's Preventative Health System Attachments",
+    "partCode": "LP35152-5"
+  },
+  "ATTACH.ED": {
+    "displayValue": "Emergency visit attachments",
+    "partCode": "LP7760-4"
+  },
+  "ATTACH.GI": {
+    "displayValue": "Gastrointestinal",
+    "partCode": "LP29660-5"
+  },
+  "ATTACH.LAB": {
+    "displayValue": "Laboratory data attachment set",
+    "partCode": "LP7761-2"
+  },
+  "ATTACH.MEDS": {
+    "displayValue": "Medication attachments",
+    "partCode": "LP7762-0"
+  },
+  "ATTACH.MODIFIER": {
+    "displayValue": "HIPAA attachment request modifier codes",
+    "partCode": "LP7763-8"
+  },
+  "ATTACH.OBS": {
+    "displayValue": "Obstetrical",
+    "partCode": "LP29661-3"
+  },
+  "ATTACH.PERIODONTAL": {
+    "displayValue": "Periodontal attachments",
+    "partCode": "LP173666-1"
+  },
+  "ATTACH.REHAB": {
+    "displayValue": "Rehabilitation attachments",
+    "partCode": "LP7764-6"
+  },
+  "ATTACH.REHAB.ABUSE": {
+    "displayValue": "Alcohol and substance abuse rehabilitation attachments",
+    "partCode": "LP29662-1"
+  },
+  "ATTACH.REHAB.CARDIAC": {
+    "displayValue": "Cardiac rehabilitation attachments",
+    "partCode": "LP29663-9"
+  },
+  "ATTACH.REHAB.NURS": {
+    "displayValue": "Skilled nursing rehabilitation attachments",
+    "partCode": "LP29664-7"
+  },
+  "ATTACH.REHAB.OT": {
+    "displayValue": "Occupational therapy rehabilitation attachments",
+    "partCode": "LP29665-4"
+  },
+  "ATTACH.REHAB.PSYCH": {
+    "displayValue": "Psychiatric rehabilitation attachments",
+    "partCode": "LP29666-2"
+  },
+  "ATTACH.REHAB.PT": {
+    "displayValue": "Physical therapy rehabilitation attachments",
+    "partCode": "LP29667-0"
+  },
+  "ATTACH.REHAB.PULM": {
+    "displayValue": "Pulmonary rehabilitation attachments",
+    "partCode": "LP68332-3"
+  },
+  "ATTACH.REHAB.RT": {
+    "displayValue": "Respiratory therapy rehabilitation attachments",
+    "partCode": "LP29668-8"
+  },
+  "ATTACH.REHAB.SOCIAL": {
+    "displayValue": "Medical social work rehabilitation attachments",
+    "partCode": "LP29669-6"
+  },
+  "ATTACH.REHAB.SPEECH": {
+    "displayValue": "Speech therapy rehabilitation attachments",
+    "partCode": "LP29670-4"
+  },
+  "ATTACH.RESP": {
+    "displayValue": "Respiratory",
+    "partCode": "LP29671-2"
+  },
+  "PANEL.ATTACH.MOD": {
+    "displayValue": "HIPAA attachment request modifier code sets",
+    "partCode": "LP212320-8"
+  },
+  "PANEL.SURVEY.ACT": {
+    "displayValue": "PANEL.SURVEY.ACT",
+    "partCode": "LP221228-2"
+  },
+  "PANEL.SURVEY.ADVAULT": {
+    "displayValue": "ADVault survey set",
+    "partCode": "LP186147-7"
+  },
+  "PANEL.SURVEY.AHRQ": {
+    "displayValue": "Agency for Healthcare Research and Quality (AHRQ) survey panels",
+    "partCode": "LP173700-8"
+  },
+  "PANEL.SURVEY.ALSFRSR": {
+    "displayValue": "PANEL.SURVEY.ALSFRSR",
+    "partCode": "LP253520-3"
+  },
+  "PANEL.SURVEY.AMNART": {
+    "displayValue": "American National Adult Reading Test (AmNART) set",
+    "partCode": "LP191417-7"
+  },
+  "PANEL.SURVEY.BDI": {
+    "displayValue": "PANEL.SURVEY.BDI",
+    "partCode": "LP266766-7"
+  },
+  "PANEL.SURVEY.BIMS": {
+    "displayValue": "Brief Interview for Mental Status (BIMS) panels",
+    "partCode": "LP68338-0"
+  },
+  "PANEL.SURVEY.BPI": {
+    "displayValue": "Brief Pain Inventory (BPI) set",
+    "partCode": "LP191921-8"
+  },
+  "PANEL.SURVEY.BRIEF": {
+    "displayValue": "BRIEF Health Literacy Screening Tool Panel",
+    "partCode": "LP419959-4"
+  },
+  "PANEL.SURVEY.CAM": {
+    "displayValue": "Confusion Assessment Method (CAM) panels",
+    "partCode": "LP68339-8"
+  },
+  "PANEL.SURVEY.CARE": {
+    "displayValue": "Continuity Assessment Record and Evaluation (CARE) panels",
+    "partCode": "LP68336-4"
+  },
+  "PANEL.SURVEY.CBS-8": {
+    "displayValue": "PANEL.SURVEY.CBS-8",
+    "partCode": "LP430765-0"
+  },
+  "PANEL.SURVEY.CDC": {
+    "displayValue": "Centers for Disease Control Panels",
+    "partCode": "LP135709-6"
+  },
+  "PANEL.SURVEY.CESD": {
+    "displayValue": "PANEL.SURVEY.CESD",
+    "partCode": "LP266774-1"
+  },
+  "PANEL.SURVEY.CHILD-PUGH": {
+    "displayValue": "PANEL.SURVEY.Child-Pugh",
+    "partCode": "LP428314-1"
+  },
+  "PANEL.SURVEY.CMS": {
+    "displayValue": "Centers for Medicaid and Medicare (CMS) Pnl",
+    "partCode": "LP149246-3"
+  },
+  "PANEL.SURVEY.CNPI": {
+    "displayValue": "PANEL.SURVEY.CNPI",
+    "partCode": "LP431638-8"
+  },
+  "PANEL.SURVEY.COOP": {
+    "displayValue": "Dartmouth Cooperative Functional Status Test (COOP) set",
+    "partCode": "LP186129-5"
+  },
+  "PANEL.SURVEY.COVID": {
+    "displayValue": "PANEL.SURVEY.COVID",
+    "partCode": "LP428371-1"
+  },
+  "PANEL.SURVEY.CSSRS": {
+    "displayValue": "PANEL.SURVEY.CSSRS",
+    "partCode": "LP415697-4"
+  },
+  "PANEL.SURVEY.DAST": {
+    "displayValue": "PANEL.SURVEY.DAST",
+    "partCode": "LP221229-0"
+  },
+  "PANEL.SURVEY.DUKE-AD": {
+    "displayValue": "PANEL.SURVEY.DUKE-AD",
+    "partCode": "LP270010-4"
+  },
+  "PANEL.SURVEY.EPDS": {
+    "displayValue": "Edinburgh Postnatal Depression Scale (EPDS) Pnl",
+    "partCode": "LP149218-2"
+  },
+  "PANEL.SURVEY.ESRD": {
+    "displayValue": "End Stage Renal Disease (ESRD) panels",
+    "partCode": "LP121006-3"
+  },
+  "PANEL.SURVEY.GDS": {
+    "displayValue": "Geriatric Depression Scale (GDS) panels",
+    "partCode": "LP62737-9"
+  },
+  "PANEL.SURVEY.GNHLTH": {
+    "displayValue": "General Health Survey panels",
+    "partCode": "LP146498-3"
+  },
+  "PANEL.SURVEY.GPCOG": {
+    "displayValue": "General Practitioner Assessment of Cognition (GPCOG) set",
+    "partCode": "LP200140-4"
+  },
+  "PANEL.SURVEY.HAQ": {
+    "displayValue": "Health Assessment Questionnaire (HAQ) set",
+    "partCode": "LP186207-9"
+  },
+  "PANEL.SURVEY.HARK": {
+    "displayValue": "Humiliation, Afraid, Rape, and Kick (HARK) survey",
+    "partCode": "LP189610-1"
+  },
+  "PANEL.SURVEY.HENDRICH": {
+    "displayValue": "PANEL.SURVEY.HENDRICH",
+    "partCode": "LP438519-3"
+  },
+  "PANEL.SURVEY.HHCC": {
+    "displayValue": "Home Health Care Classification (HHCC) panels",
+    "partCode": "LP62739-5"
+  },
+  "PANEL.SURVEY.HHS": {
+    "displayValue": "Health and Human Services (HHS) panel",
+    "partCode": "LP145577-5"
+  },
+  "PANEL.SURVEY.HITS": {
+    "displayValue": "PANEL.SURVEY.HITS",
+    "partCode": "LP422018-4"
+  },
+  "PANEL.SURVEY.HIV-SSC": {
+    "displayValue": "HIV-Signs and Symptoms Checklist (SSC) panel",
+    "partCode": "LP64589-2"
+  },
+  "PANEL.SURVEY.IPAQ": {
+    "displayValue": "International Physical Activity Questionnaire (IPAQ) set",
+    "partCode": "LP191414-4"
+  },
+  "PANEL.SURVEY.LIV-HIV": {
+    "displayValue": "Living with HIV panels",
+    "partCode": "LP62743-7"
+  },
+  "PANEL.SURVEY.LKSS": {
+    "displayValue": "PANEL.SURVEY.LKSS",
+    "partCode": "LP430561-3"
+  },
+  "PANEL.SURVEY.MDS": {
+    "displayValue": "Minimum Data Set (MDS) for Nursing Home Resident Assessment and Care Screening Panels",
+    "partCode": "LP40269-0"
+  },
+  "PANEL.SURVEY.MFS": {
+    "displayValue": "Morse Fall Scale (MFS) panels",
+    "partCode": "LP100239-5"
+  },
+  "PANEL.SURVEY.MLHFQ": {
+    "displayValue": "Minnesota Living with Heart Failure Questionnaire (MLHFQ) set",
+    "partCode": "LP248520-1"
+  },
+  "PANEL.SURVEY.MTLHLTH": {
+    "displayValue": "Mental Health Survey panel",
+    "partCode": "LP145936-3"
+  },
+  "PANEL.SURVEY.NEURO": {
+    "displayValue": "Neurological Survey panel",
+    "partCode": "LP145897-7"
+  },
+  "PANEL.SURVEY.NEUROQ": {
+    "displayValue": "Quality of Life Outcomes in Neurological Disorders (NEURO-Qol) panels",
+    "partCode": "LP134157-9"
+  },
+  "PANEL.SURVEY.NHANES": {
+    "displayValue": "National Health and Nutrition Examination Survey (NHANES) set",
+    "partCode": "LP189611-9"
+  },
+  "PANEL.SURVEY.NICHQ": {
+    "displayValue": "ADHD Questionnaire panels",
+    "partCode": "LP443020-5"
+  },
+  "PANEL.SURVEY.NIDA": {
+    "displayValue": "PANEL.SURVEY.NIDA",
+    "partCode": "LP419639-2"
+  },
+  "PANEL.SURVEY.NIH.EMO": {
+    "displayValue": "PANEL.SURVEY.NIH.EMO",
+    "partCode": "LP238881-9"
+  },
+  "PANEL.SURVEY.NMMDS": {
+    "displayValue": "Nursing Management Minimum Data Set (NMMDS) panels",
+    "partCode": "LP69882-6"
+  },
+  "PANEL.SURVEY.NORTON": {
+    "displayValue": "Norton Scale panel",
+    "partCode": "LP184269-1"
+  },
+  "PANEL.SURVEY.NSRAS": {
+    "displayValue": "Neonatal Skin Risk Assessment Scale panel",
+    "partCode": "LP172758-7"
+  },
+  "PANEL.SURVEY.OASIS": {
+    "displayValue": "Outcome and Assessment Information Set (OASIS) set",
+    "partCode": "LP40482-9"
+  },
+  "PANEL.SURVEY.OMAHA": {
+    "displayValue": "OMAHA panels",
+    "partCode": "LP62741-1"
+  },
+  "PANEL.SURVEY.OPTIMAL": {
+    "displayValue": "Outpatient physical therapy improvement in movement assessment log (OPTIMAL) panel",
+    "partCode": "LP136325-0"
+  },
+  "PANEL.SURVEY.ORTHOPEDICS": {
+    "displayValue": "PANEL.SURVEY.ORTHOPEDICS",
+    "partCode": "LP431402-9"
+  },
+  "PANEL.SURVEY.PAIN": {
+    "displayValue": "PANEL.SURVEY.PAIN",
+    "partCode": "LP431404-5"
+  },
+  "PANEL.SURVEY.PAS": {
+    "displayValue": "Patient Activity Scale (PAS) set",
+    "partCode": "LP186131-1"
+  },
+  "PANEL.SURVEY.PASII": {
+    "displayValue": "Patient Activity Scale II (PASII) set",
+    "partCode": "LP186132-9"
+  },
+  "PANEL.SURVEY.PCORI": {
+    "displayValue": "Patient-Centered Outcomes Research Institute (PCORI) set",
+    "partCode": "LP185825-9"
+  },
+  "PANEL.SURVEY.PCORNET": {
+    "displayValue": "Patient Centered Outcomes Research Network (PCORnet) Common Data Model (CDM) set",
+    "partCode": "LP186213-7"
+  },
+  "PANEL.SURVEY.PHQ": {
+    "displayValue": "Patient Health Questionnaire (PHQ)panels",
+    "partCode": "LP140592-9"
+  },
+  "PANEL.SURVEY.PNDS": {
+    "displayValue": "PANEL.SURVEY.PNDS",
+    "partCode": "LP430693-4"
+  },
+  "PANEL.SURVEY.PROMIS": {
+    "displayValue": "Patient Reported Outcomes Information System (PROMIS) panels",
+    "partCode": "LP102766-5"
+  },
+  "PANEL.SURVEY.PROWL": {
+    "displayValue": "PANEL.SURVEY.PROWL",
+    "partCode": "LP429827-1"
+  },
+  "PANEL.SURVEY.QAM": {
+    "displayValue": "Quality Audit Marker panels",
+    "partCode": "LP62746-0"
+  },
+  "PANEL.SURVEY.QRDA": {
+    "displayValue": "Qualty Reporting Document Architecture (QRDA) panels",
+    "partCode": "LP93739-8"
+  },
+  "PANEL.SURVEY.R-OUTCOMES": {
+    "displayValue": "R-Outcomes panels",
+    "partCode": "LP422422-8"
+  },
+  "PANEL.SURVEY.RFC": {
+    "displayValue": "Residual Functional Capacity Assessment (RFC) Set",
+    "partCode": "LP40485-2"
+  },
+  "PANEL.SURVEY.RMDQ": {
+    "displayValue": "PANEL.SURVEY.RMDQ",
+    "partCode": "LP429904-8"
+  },
+  "PANEL.SURVEY.RSS": {
+    "displayValue": "Ramsay Sedation Scale panel",
+    "partCode": "LP441553-7"
+  },
+  "PANEL.SURVEY.RUDAS": {
+    "displayValue": "Rowland Universal Dementia Assessment Scale panel",
+    "partCode": "LP428276-2"
+  },
+  "PANEL.SURVEY.SAMHSA": {
+    "displayValue": "Substance Abuse and Mental Health Services Administration (SAMHSA) panels",
+    "partCode": "LP135592-6"
+  },
+  "PANEL.SURVEY.SDOH": {
+    "displayValue": "PANEL.SURVEY.SDOH",
+    "partCode": "LP422015-0"
+  },
+  "PANEL.SURVEY.SEEK": {
+    "displayValue": "PANEL.SURVEY.SEEK",
+    "partCode": "LP419121-1"
+  },
+  "PANEL.SURVEY.SLP": {
+    "displayValue": "Speech-language pathology (SLP) related survey panels",
+    "partCode": "LP431355-9"
+  },
+  "PANEL.SURVEY.UNMETHELNEED": {
+    "displayValue": "PANEL.SURVEY.UNMETHELNEED",
+    "partCode": "LP439253-8"
+  },
+  "PANEL.SURVEY.USSGFHT": {
+    "displayValue": "US Surgeon General's family history tool panels",
+    "partCode": "LP76363-8"
+  },
+  "PANEL.SURVEY.WELLRX": {
+    "displayValue": "PANEL.SURVEY.WELLRX",
+    "partCode": "LP411940-2"
+  },
+  "PANEL.SURVEY.WHYMPI": {
+    "displayValue": "PANEL.SURVEY.WHYMPI",
+    "partCode": "LP443545-1"
+  },
+  "PANEL.TIMP": {
+    "displayValue": "Test of Infant Motor Performance (TIMP) panels",
+    "partCode": "LP101817-7"
+  },
+  "SURVEY.AAOS": {
+    "displayValue": "American Association of Orthopaedic Surgeons (AAOS)",
+    "partCode": "LP149839-5"
+  },
+  "SURVEY.ACT": {
+    "displayValue": "SURVEY.ACT",
+    "partCode": "LP221227-4"
+  },
+  "SURVEY.ADHD": {
+    "displayValue": "Attention Deficit Hyperactivity Disorder (ADHD)",
+    "partCode": "LP199487-2"
+  },
+  "SURVEY.ADVAULT": {
+    "displayValue": "ADVault survey",
+    "partCode": "LP186146-9"
+  },
+  "SURVEY.AHRQ": {
+    "displayValue": "Agency for Healthcare Research and Quality (AHRQ) forms",
+    "partCode": "LP173650-5"
+  },
+  "SURVEY.ALSFRSR": {
+    "displayValue": "SURVEY.ALSFRSR",
+    "partCode": "LP230010-3"
+  },
+  "SURVEY.AMNART": {
+    "displayValue": "American National Adult Reading Test (AmNART)",
+    "partCode": "LP191416-9"
+  },
+  "SURVEY.BCAT": {
+    "displayValue": "SURVEY.BCAT",
+    "partCode": "LP420254-7"
+  },
+  "SURVEY.BDI": {
+    "displayValue": "SURVEY.BDI",
+    "partCode": "LP266765-9"
+  },
+  "SURVEY.BPI": {
+    "displayValue": "Brief Pain Inventory (BPI)",
+    "partCode": "LP191920-0"
+  },
+  "SURVEY.BRIEF": {
+    "displayValue": "SURVEY.BRIEF",
+    "partCode": "LP422019-2"
+  },
+  "SURVEY.CARE": {
+    "displayValue": "Continuity Assessment Record and Evaluation (CARE) survey",
+    "partCode": "LP68337-2"
+  },
+  "SURVEY.CBS-8": {
+    "displayValue": "SURVEY.CBS-8",
+    "partCode": "LP430758-5"
+  },
+  "SURVEY.CDC": {
+    "displayValue": "Centers for Disease Control (CDC) surveys",
+    "partCode": "LP135481-2"
+  },
+  "SURVEY.CERNER": {
+    "displayValue": "Cerner survey",
+    "partCode": "LP136009-0"
+  },
+  "SURVEY.CESD": {
+    "displayValue": "SURVEY.CESD",
+    "partCode": "LP266773-3"
+  },
+  "SURVEY.CHILD-PUGH": {
+    "displayValue": "SURVEY.CHILD-PUGH",
+    "partCode": "LP428312-5"
+  },
+  "SURVEY.CMS": {
+    "displayValue": "SURVEY.CMS",
+    "partCode": "LP231645-5"
+  },
+  "SURVEY.CNPI": {
+    "displayValue": "SURVEY.CNPI",
+    "partCode": "LP429868-5"
+  },
+  "SURVEY.COOP": {
+    "displayValue": "Dartmouth Cooperative Functional Status Test (COOP)",
+    "partCode": "LP186067-7"
+  },
+  "SURVEY.COVID": {
+    "displayValue": "SURVEY.COVID",
+    "partCode": "LP428372-9"
+  },
+  "SURVEY.CSSRS": {
+    "displayValue": "SURVEY.CSSRS",
+    "partCode": "LP415696-6"
+  },
+  "SURVEY.DAST": {
+    "displayValue": "SURVEY.DAST",
+    "partCode": "LP253522-9"
+  },
+  "SURVEY.DUKE-AD": {
+    "displayValue": "SURVEY.DUKE-AD",
+    "partCode": "LP270009-6"
+  },
+  "SURVEY.EPDS": {
+    "displayValue": "Edinburgh Postnatal Depression Scale",
+    "partCode": "LP149207-5"
+  },
+  "SURVEY.ESRD": {
+    "displayValue": "End Stage Renal Disease (ESRD) survey",
+    "partCode": "LP116201-7"
+  },
+  "SURVEY.GDS": {
+    "displayValue": "Geriatric Depression Scale (GDS) survey",
+    "partCode": "LP62736-1"
+  },
+  "SURVEY.GNHLTH": {
+    "displayValue": "General Health Survey",
+    "partCode": "LP146111-2"
+  },
+  "SURVEY.GPCOG": {
+    "displayValue": "General Practitioner Assessment of Cognition (GPCOG)",
+    "partCode": "LP200139-6"
+  },
+  "SURVEY.HAQ": {
+    "displayValue": "Health Assessment Questionnaire (HAQ)",
+    "partCode": "LP186206-1"
+  },
+  "SURVEY.HARK": {
+    "displayValue": "\"Humiliation",
+    "partCode": " Afraid"
+  },
+  "SURVEY.HHS": {
+    "displayValue": "Health and Human Services Department (HHS)",
+    "partCode": "LP145407-5"
+  },
+  "SURVEY.HITS": {
+    "displayValue": "SURVEY.HITS",
+    "partCode": "LP422017-6"
+  },
+  "SURVEY.HWS": {
+    "displayValue": "Healthy Weight Summary",
+    "partCode": "LP189613-5"
+  },
+  "SURVEY.IPAQ": {
+    "displayValue": "International Physical Activity Questionnaire (IPAQ)",
+    "partCode": "LP191415-1"
+  },
+  "SURVEY.LKSS": {
+    "displayValue": "SURVEY.LKSS",
+    "partCode": "LP430563-9"
+  },
+  "SURVEY.MDS": {
+    "displayValue": "Minimum Data Set (MDS) for Nursing Home Resident Assessment and Care Screening",
+    "partCode": "LP40268-2"
+  },
+  "SURVEY.MFS": {
+    "displayValue": "Morse Fall Scale (MFS)",
+    "partCode": "LP100242-9"
+  },
+  "SURVEY.MISC": {
+    "displayValue": "Miscellaneous survey",
+    "partCode": "LP175703-0"
+  },
+  "SURVEY.MLHFQ": {
+    "displayValue": "Minnesota Living with Heart Failure Questionnaire (MLHFQ)",
+    "partCode": "LP248518-5"
+  },
+  "SURVEY.MTLHLTH": {
+    "displayValue": "Mental Health Survey",
+    "partCode": "LP145934-8"
+  },
+  "SURVEY.NEURO": {
+    "displayValue": "Neurological Survey",
+    "partCode": "LP145899-3"
+  },
+  "SURVEY.NEUROQ": {
+    "displayValue": "Quality of Life Outcomes in Neurological Disorders (NEURO-Qol)",
+    "partCode": "LP134184-3"
+  },
+  "SURVEY.NHANES": {
+    "displayValue": "National Health and Nutrition Examination Survey (NHANES)",
+    "partCode": "LP189612-7"
+  },
+  "SURVEY.NHCS": {
+    "displayValue": "National Health Care Survey (NHCS)",
+    "partCode": "LP193853-1"
+  },
+  "SURVEY.NICHQ": {
+    "displayValue": "ADHD Questionnaire",
+    "partCode": "LP443019-7"
+  },
+  "SURVEY.NIDA": {
+    "displayValue": "SURVEY.NIDA",
+    "partCode": "LP419587-3"
+  },
+  "SURVEY.NIH_TOOLBOX": {
+    "displayValue": "NIH Toolbox",
+    "partCode": "LP185814-3"
+  },
+  "SURVEY.NIH.EMO": {
+    "displayValue": "SURVEY.NIH.EMO",
+    "partCode": "LP238880-1"
+  },
+  "SURVEY.NMMDS": {
+    "displayValue": "Nursing Management Minimum Data Set (NMMDS)",
+    "partCode": "LP69883-4"
+  },
+  "SURVEY.NORTON": {
+    "displayValue": "Norton Scale",
+    "partCode": "LP184270-9"
+  },
+  "SURVEY.NSRAS": {
+    "displayValue": "Neonatal Skin Risk Assessment Scale (NSRAS)",
+    "partCode": "LP172759-5"
+  },
+  "SURVEY.NURSE.HHCC": {
+    "displayValue": "Home Health Care Classification (HHCC)",
+    "partCode": "LP29687-8"
+  },
+  "SURVEY.NURSE.HIV-SSC": {
+    "displayValue": "Signs and Symptoms Checklist for Persons with HIV",
+    "partCode": "LP29688-6"
+  },
+  "SURVEY.NURSE.LIV-HIV": {
+    "displayValue": "Living with HIV",
+    "partCode": "LP29689-4"
+  },
+  "SURVEY.NURSE.OMAHA": {
+    "displayValue": "OMAHA",
+    "partCode": "LP29690-2"
+  },
+  "SURVEY.NURSE.QAM": {
+    "displayValue": "Quality Audit Marker",
+    "partCode": "LP29691-0"
+  },
+  "SURVEY.OASIS": {
+    "displayValue": "Outcome and Assessment Information Set (OASIS)",
+    "partCode": "LP40481-1"
+  },
+  "SURVEY.OPTIMAL": {
+    "displayValue": "Outpatient physical therapy improvement in movement assessment log (OPTIMAL)",
+    "partCode": "LP136321-9"
+  },
+  "SURVEY.ORTHOPEDICS": {
+    "displayValue": "SURVEY.ORTHOPEDICS",
+    "partCode": "LP431401-1"
+  },
+  "SURVEY.PAIN": {
+    "displayValue": "SURVEY.PAIN",
+    "partCode": "LP431403-7"
+  },
+  "SURVEY.PAS": {
+    "displayValue": "Patient Activity Scale (PAS)",
+    "partCode": "LP186014-9"
+  },
+  "SURVEY.PASII": {
+    "displayValue": "Patient Activity Scale II (PASII)",
+    "partCode": "LP186015-6"
+  },
+  "SURVEY.PCORNET": {
+    "displayValue": "Patient Centered Outcomes Research Network (PCORnet) Common Data Model (CDM)",
+    "partCode": "LP185871-3"
+  },
+  "SURVEY.PEG": {
+    "displayValue": "SURVEY.PEG",
+    "partCode": "LP269362-2"
+  },
+  "SURVEY.PHQ": {
+    "displayValue": "PHQ Patient Health Questionnaire",
+    "partCode": "LP36709-1"
+  },
+  "SURVEY.PNDS": {
+    "displayValue": "SURVEY.PNDS",
+    "partCode": "LP430695-9"
+  },
+  "SURVEY.PRAPARE": {
+    "displayValue": "Protocol for Responding to and Assessing Patients' Assets, Risks, and Experiences (PRAPARE)",
+    "partCode": "LP410758-9"
+  },
+  "SURVEY.PROMIS": {
+    "displayValue": "Patient Reported Outcomes Information System (PROMIS)",
+    "partCode": "LP102768-1"
+  },
+  "SURVEY.PROWL": {
+    "displayValue": "SURVEY.PROWL",
+    "partCode": "LP429471-8"
+  },
+  "SURVEY.QRDA": {
+    "displayValue": "Qualty Reporting Document Architecture (QRDA)",
+    "partCode": "LP93741-4"
+  },
+  "SURVEY.R-OUTCOMES": {
+    "displayValue": "R-Outcomes",
+    "partCode": "LP422423-6"
+  },
+  "SURVEY.RFC": {
+    "displayValue": "Residual Functional Capacity Assessment (RFC)",
+    "partCode": "LP40487-8"
+  },
+  "SURVEY.RMDQ": {
+    "displayValue": "SURVEY.RMDQ",
+    "partCode": "LP429903-0"
+  },
+  "SURVEY.RSS": {
+    "displayValue": "Ramsay Sedation Scale",
+    "partCode": "LP441559-4"
+  },
+  "SURVEY.RUDAS": {
+    "displayValue": "Rowland Universal Dementia Assessment Scale",
+    "partCode": "LP428277-0"
+  },
+  "SURVEY.SAMHSA": {
+    "displayValue": "Substance Abuse and Mental Health Services Administration (SAMHSA) survey",
+    "partCode": "LP135494-5"
+  },
+  "SURVEY.SDOH": {
+    "displayValue": "SURVEY.SDOH",
+    "partCode": "LP422016-8"
+  },
+  "SURVEY.SEEK": {
+    "displayValue": "SURVEY.SEEK",
+    "partCode": "LP417561-0"
+  },
+  "SURVEY.SLP": {
+    "displayValue": "Speech-language pathology (SLP) related surveys",
+    "partCode": "LP431240-3"
+  },
+  "SURVEY.UNMETHELNEED": {
+    "displayValue": "SURVEY.UNMETHELNEED",
+    "partCode": "LP438348-7"
+  },
+  "SURVEY.USSGFHT": {
+    "displayValue": "US Surgeon General's family history tool",
+    "partCode": "LP76360-4"
+  },
+  "SURVEY.WELLRX": {
+    "displayValue": "SURVEY.WELLRX",
+    "partCode": "LP411939-4"
+  },
+  "SURVEY.WHYMPI": {
+    "displayValue": "SURVEY.WHYMPI",
+    "partCode": "LP443558-4"
+  },
+  "TIMP": {
+    "displayValue": "Test of Infant Motor Performance (TIMP)",
+    "partCode": "LP101819-3"
+  }
+}

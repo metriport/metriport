@@ -14,9 +14,8 @@ const maxNumberOfParallelRequestsToCW = 10;
  * Implementation of the PatientUpdater that executes the logic on CommonWell.
  */
 export class PatientUpdaterCommonWell extends PatientUpdater {
-  constructor(private readonly orgIdExcludeList: () => Promise<string[]>) {
+  constructor() {
     super();
-    this.orgIdExcludeList = orgIdExcludeList;
   }
 
   public async updateAll(
@@ -30,7 +29,7 @@ export class PatientUpdaterCommonWell extends PatientUpdater {
       patientIds,
     });
     // Promise that will be executed for each patient
-    const updatePatient = async (patient: Patient) => {
+    async function updatePatient(patient: Patient) {
       try {
         const facilityId = getFacilityIdOrFail(patient);
         await getFacilityOrFail({ cxId, id: facilityId });
@@ -39,7 +38,6 @@ export class PatientUpdaterCommonWell extends PatientUpdater {
         await update({
           patient,
           facilityId,
-          getOrgIdExcludeList: this.orgIdExcludeList,
         });
       } catch (error) {
         failedUpdateCount++;
@@ -47,7 +45,7 @@ export class PatientUpdaterCommonWell extends PatientUpdater {
         console.log(`${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}`);
         capture.message(msg, { extra: { cxId, patientId: patient.id }, level: "error" });
       }
-    };
+    }
     // Execute the promises in parallel
     await executeAsynchronously(patients, async patient => updatePatient(patient), {
       numberOfParallelExecutions: maxNumberOfParallelRequestsToCW,

@@ -6,9 +6,13 @@ import {
   ICD_10_URL,
   SNOMED_URL,
 } from "@metriport/shared/medical";
+import _ from "lodash";
 import { isUnknownCoding } from "../../../../fhir-deduplication/shared";
 import { capture } from "../../../../util/notifications";
-import { crosswalkCode } from "../../../term-server";
+import { crosswalkCode, lookupByDisplay } from "../../../term-server";
+import { isUsefulDisplay } from "../../codeable-concept";
+import { buildCcsrCategoriesFromCodes, buildCcsrCoding } from "../../shared/ccsr";
+import { getCcsrCodesForIcd10Code } from "../../shared/ccsr-map";
 
 export const PROBLEM_LIST_CATEGORY_CODE = "problem-list-item";
 export const PROBLEM_LIST_CATEGORY_DISPLAY = "Problem List Item";
@@ -34,18 +38,47 @@ const clinicalStatusCodeToHl7CodeMap: Record<string, string> = {
 
 const knownBlacklistedClinicalStatuses = ["w"];
 
+const vagueConditionDisplays = new Set([
+  "ambulatory",
+  "complaint",
+  "condition",
+  "diagnosis",
+  "disease",
+  "disorder",
+  "finding",
+  "history",
+  "inflammation",
+  "intra-abdominal",
+  "mental health",
+  "none",
+  "observation",
+  "other",
+  "other condition",
+  "pain",
+  "problem",
+  "status",
+  "symptom",
+  "unknown",
+]);
+
 /**
  * This function hydrates the Condition resources by
  * - crosswalking the SNOMED code to the ICD-10 code
  * - adding the HL7 clinical status code to the Condition.clinicalStatus
  * - adding the HL7 category to the Condition.category
  */
-export async function dangerouslyHydrateCondition(
-  condition: Condition,
-  encounters: Encounter[],
-  patientId?: string | undefined
-): Promise<void> {
-  await dangerouslyHydrateCode(condition);
+export async function dangerouslyHydrateCondition({
+  condition,
+  encounters,
+  patientId,
+  lookupCodeByDisplay = false,
+}: {
+  condition: Condition;
+  encounters: Encounter[];
+  patientId?: string | undefined;
+  lookupCodeByDisplay?: boolean;
+}): Promise<void> {
+  await dangerouslyHydrateCode(condition, lookupCodeByDisplay);
 
   checkClinicalStatusCodes(condition.clinicalStatus, patientId);
   const updatedClinicalStatus = buildUpdatedClinicalStatus(condition.clinicalStatus);
@@ -59,7 +92,26 @@ export async function dangerouslyHydrateCondition(
   }
 }
 
-async function dangerouslyHydrateCode(condition: Condition): Promise<void> {
+/**
+ * Hydrates the condition code by:
+ * - Crosswalking the SNOMED code to the ICD-10 code
+ * - Looking up an ICD-10 code by display text if crosswalk didn't produce one
+ * - Adding the CCSR codes to the condition code.
+ *   NOTE: It's important to keep this order since the CCSR code lookup is based on the ICD-10 codes.
+ */
+async function dangerouslyHydrateCode(
+  condition: Condition,
+  lookupConditionCodeByDisplay: boolean
+): Promise<void> {
+  await dangerouslyHydrateIcd10Code(condition);
+  if (lookupConditionCodeByDisplay) {
+    await dangerouslyHydrateIcd10CodeByDisplay(condition);
+  }
+
+  dangerouslyHydrateCcsrCode(condition);
+}
+
+async function dangerouslyHydrateIcd10Code(condition: Condition): Promise<void> {
   const snomedCode = condition.code?.coding?.find(coding => coding.system === SNOMED_URL);
   if (!snomedCode || !snomedCode.code) return;
 
@@ -81,6 +133,52 @@ async function dangerouslyHydrateCode(condition: Condition): Promise<void> {
     condition.code.coding.push(icd10Code);
   }
   return;
+}
+
+async function dangerouslyHydrateIcd10CodeByDisplay(condition: Condition): Promise<void> {
+  const codes = condition.code;
+  if (!codes) return;
+
+  const existingIcd10Code = codes.coding?.find(coding => coding.system === ICD_10_URL);
+  if (existingIcd10Code && !isUnknownCoding(existingIcd10Code)) return;
+
+  const display =
+    codes.coding?.find(c => c.display && isUsefulDisplay(c.display))?.display ?? codes.text;
+  if (!display || !isUsefulDisplay(display)) return;
+  if (isVagueConditionDisplay(display)) return;
+
+  const icd10Coding = await lookupByDisplay({ display, system: ICD_10_URL });
+  if (!icd10Coding) return;
+
+  if (!codes.coding || codes.coding.length === 0) {
+    codes.coding = [icd10Coding];
+  } else {
+    codes.coding.push(icd10Coding);
+  }
+}
+
+function dangerouslyHydrateCcsrCode(condition: Condition): void {
+  const codings = condition.code?.coding;
+  if (!codings) return;
+
+  const ccsrCodings = _(codings)
+    .filter(coding => coding.system?.toLowerCase().trim() === ICD_10_URL)
+    .flatMap(coding => (coding.code ? getCcsrCodesForIcd10Code(coding.code) : []))
+    .map(buildCcsrCoding)
+    .value();
+
+  const newCodings = _.differenceBy(
+    ccsrCodings,
+    codings,
+    coding => `${coding.system}_${coding.code}`
+  );
+
+  if (newCodings.length > 0) {
+    condition.code = {
+      ...condition.code,
+      coding: [...codings, ...newCodings],
+    };
+  }
 }
 
 function checkClinicalStatusCodes(
@@ -174,15 +272,29 @@ function buildUpdatedCategory(
   }
 
   const hl7Category = buildHl7CategoryBasedOnHeuristics(condition, encounters);
+  const ccsrCategories = buildCcsrCategoriesFromCodes(condition.code?.coding ?? []);
 
   // We specifically put the Hl7 category into a separate element of the category
   // array because its semantic meaning is likely different from other systems' categories.
   const categories = [
     hl7Category ? { coding: [hl7Category] } : undefined,
+    ...(ccsrCategories ?? []),
     ...(condition.category ?? []),
   ].filter(Boolean) as CodeableConcept[];
 
-  return categories.length > 0 ? categories : undefined;
+  if (categories.length < 1) return undefined;
+
+  return _(categories).filter(hasCode).uniqBy(buildCategoryHash).value();
+}
+
+function hasCode(category: CodeableConcept): boolean {
+  return !!category.coding?.[0]?.code;
+}
+
+function buildCategoryHash(category: CodeableConcept): string {
+  const { system, code } = category.coding?.[0] ?? {};
+  if (!system || !code) return "";
+  return `${system}_${code}`;
 }
 
 /**
@@ -237,4 +349,8 @@ function buildConditionCategoryCoding(code: string, display: string): Coding {
     code,
     display,
   };
+}
+
+function isVagueConditionDisplay(display: string): boolean {
+  return vagueConditionDisplays.has(display.trim().toLowerCase());
 }

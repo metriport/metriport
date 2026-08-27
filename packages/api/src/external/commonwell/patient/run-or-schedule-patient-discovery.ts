@@ -1,24 +1,23 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { schedulePatientDiscovery } from "../../hie/schedule-patient-discovery";
-import { getCWData } from "../../commonwell-v1/patient";
-import { update } from "./patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { schedulePatientDiscovery } from "../../hie/schedule-patient-discovery";
+import { getCWData, update } from "./patient";
 
 export async function runOrScheduleCwPatientDiscovery({
   patient,
   facilityId,
   requestId,
-  getOrgIdExcludeList,
   rerunPdOnNewDemographics,
+  forcePd,
   forceCommonwell,
 }: {
   patient: Patient;
   facilityId: string;
   requestId: string;
-  getOrgIdExcludeList: () => Promise<string[]>;
   rerunPdOnNewDemographics?: boolean;
+  forcePd?: boolean;
   // START TODO #1572 - remove
   forceCommonwell?: boolean;
   // END TODO #1572 - remove
@@ -27,6 +26,16 @@ export async function runOrScheduleCwPatientDiscovery({
     id: patient.id,
     cxId: patient.cxId,
   });
+  if (forcePd) {
+    update({
+      patient: existingPatient,
+      facilityId,
+      requestId,
+      forceCWUpdate: forceCommonwell,
+      rerunPdOnNewDemographics,
+    }).catch(processAsyncError("CW update"));
+    return;
+  }
   const cwData = getCWData(patient.data.externalData);
 
   const statusCw = cwData?.status;
@@ -38,7 +47,6 @@ export async function runOrScheduleCwPatientDiscovery({
       source: MedicalDataSource.COMMONWELL,
       facilityId,
       requestId,
-      orgIdExcludeList: await getOrgIdExcludeList(),
       rerunPdOnNewDemographics,
       forceCommonwell,
     });
@@ -47,9 +55,8 @@ export async function runOrScheduleCwPatientDiscovery({
       patient: existingPatient,
       facilityId,
       requestId,
-      getOrgIdExcludeList,
       forceCWUpdate: forceCommonwell,
       rerunPdOnNewDemographics,
-    }).catch(processAsyncError("CW create"));
+    }).catch(processAsyncError("CW update"));
   }
 }

@@ -54,7 +54,7 @@ service:
         Can be used in to check the progress when the final status 
         of the document query is taking longer than expected.
         See more on [Start Document Query](/medical-api/api-reference/document/start-document-query).
-      method: POST
+      method: GET
       path: /query
       request:
         name: GetDocumentQueryStatusRequest

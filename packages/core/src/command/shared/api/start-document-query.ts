@@ -1,7 +1,16 @@
+import { internalDocumentQueryParamsSchema } from "@metriport/shared/interface/internal/document-query";
 import axios from "axios";
+import { z } from "zod";
 import { disableWHMetadata } from "../../../domain/document-query/trigger-and-query";
 import { Config } from "../../../util/config";
 import { withDefaultApiErrorHandling } from "./shared";
+
+export const startDocumentQueryParamsSchema = internalDocumentQueryParamsSchema.extend({
+  context: z.string().optional(),
+  disableWebhooks: z.boolean().optional(),
+});
+
+export type StartDocumentQueryParams = z.infer<typeof startDocumentQueryParamsSchema>;
 
 /**
  * Starts the document query for a patient.
@@ -9,34 +18,38 @@ import { withDefaultApiErrorHandling } from "./shared";
  * @param cxId - The customer ID.
  * @param patientId - The patient ID.
  * @param requestId - The data pipeline request ID.
- * @param disableWebhooks - Whether to disable webhooks.
- * @param triggerConsolidated - Whether to trigger consolidated to generate a PDF.
- * @param context - The context of the document query.
+ * @param facilityId - The facility ID. Optional.
+ * @param forceDownload - Whether to force download. Optional.
+ * @param forcePatientDiscovery - Whether to force patient discovery. Optional.
+ * @param cqManagingOrgName - The name of the managing organization. Optional.
+ * @param triggerConsolidated - Whether to trigger consolidated to generate a PDF. Optional.
+ * @param context - The context of the document query. Optional.
+ * @param disableWebhooks - Whether to disable webhooks. Optional.
  */
 export async function startDocumentQuery({
   cxId,
   patientId,
   requestId,
+  facilityId,
+  forceDownload,
+  forcePatientDiscovery,
+  cqManagingOrgName,
   triggerConsolidated,
-  disableWebhooks,
-  context,
-  forceDownload = false,
-}: {
-  cxId: string;
-  patientId: string;
+  context = "default",
+  disableWebhooks = false,
+}: StartDocumentQueryParams): Promise<{
   requestId: string;
-  triggerConsolidated: boolean;
-  disableWebhooks: boolean;
-  context: string;
-  forceDownload?: boolean;
-}): Promise<{ requestId: string }> {
+}> {
   const api = axios.create({ baseURL: Config.getApiUrl() });
   const dqUrl = buildDocumentQueryUrl({
     cxId,
     patientId,
+    facilityId,
     requestId,
-    triggerConsolidated,
     forceDownload,
+    forcePatientDiscovery,
+    cqManagingOrgName,
+    triggerConsolidated,
   });
   const payload = disableWebhooks ? { metadata: disableWHMetadata } : {};
 
@@ -58,22 +71,35 @@ export async function startDocumentQuery({
 function buildDocumentQueryUrl({
   cxId,
   patientId,
+  facilityId,
   requestId,
-  triggerConsolidated,
   forceDownload,
+  forcePatientDiscovery,
+  cqManagingOrgName,
+  triggerConsolidated,
 }: {
   cxId: string;
   patientId: string;
-  requestId: string;
-  triggerConsolidated: boolean;
-  forceDownload: boolean;
+  facilityId?: string | undefined;
+  requestId?: string | undefined;
+  forceDownload?: boolean | undefined;
+  forcePatientDiscovery?: boolean | undefined;
+  cqManagingOrgName?: string | undefined;
+  triggerConsolidated?: boolean | undefined;
 }) {
   const urlParams = new URLSearchParams({
     cxId,
     patientId,
-    requestId,
-    triggerConsolidated: triggerConsolidated.toString(),
-    forceDownload: forceDownload.toString(),
+    ...(facilityId ? { facilityId } : {}),
+    ...(requestId ? { requestId } : {}),
+    ...(forceDownload !== undefined ? { forceDownload: forceDownload.toString() } : {}),
+    ...(forcePatientDiscovery !== undefined
+      ? { forcePatientDiscovery: forcePatientDiscovery.toString() }
+      : {}),
+    ...(cqManagingOrgName ? { cqManagingOrgName } : {}),
+    ...(triggerConsolidated !== undefined
+      ? { triggerConsolidated: triggerConsolidated.toString() }
+      : {}),
   });
   return `/internal/docs/query?${urlParams.toString()}`;
 }

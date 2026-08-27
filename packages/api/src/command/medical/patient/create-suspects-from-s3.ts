@@ -30,7 +30,6 @@ export async function createSuspectsFromS3({
   key,
 }: CreateSuspectsFromS3Params): Promise<void> {
   const bucket = Config.getAnalyticsBucketName();
-  if (!bucket) throw new MetriportError("Analytics platform bucket name is not set");
   const s3Client = new S3Utils(region);
   const csvAsString = await s3Client.getFileContentsAsString(bucket, key);
   let numberOfRows = 0;
@@ -89,10 +88,23 @@ export async function createSuspectsFromS3({
     };
   });
 
-  await SuspectModel.bulkCreate(suspectsToInsert, {
-    ignoreDuplicates: false,
-    returning: false,
-  });
+  const sequelize = SuspectModel.sequelize;
+  if (!sequelize) {
+    throw new MetriportError("Sequelize instance not available");
+  }
+
+  const transaction = await sequelize.transaction();
+  try {
+    await SuspectModel.bulkCreate(suspectsToInsert, {
+      ignoreDuplicates: false,
+      returning: false,
+      transaction,
+    });
+    await transaction.commit();
+  } catch (error) {
+    await transaction.rollback();
+    throw error;
+  }
 }
 
 function csvRecordToSuspect(data: Record<string, string>, rowNumber: number): SuspectCreate {

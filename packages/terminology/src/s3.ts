@@ -1,5 +1,7 @@
 import { S3Client } from "@aws-sdk/client-s3";
 import * as AWS from "aws-sdk";
+import { errorToString } from "@metriport/shared";
+import { out } from "./log";
 
 export function makeS3Client(region: string): AWS.S3 {
   return new AWS.S3({ signatureVersion: "v4", region });
@@ -27,6 +29,7 @@ export class S3Utils {
     return this._s3Client;
   }
   async downloadFile({ bucket, key }: { bucket: string; key: string }): Promise<Buffer> {
+    const { log } = out("S3Utils downloadFile");
     const params = {
       Bucket: bucket,
       Key: key,
@@ -35,7 +38,7 @@ export class S3Utils {
       const resp = await this._s3.getObject(params).promise();
       return resp.Body as Buffer;
     } catch (error) {
-      console.log(`Error during download: ${error}`);
+      log(`Error during download: ${errorToString(error)}`);
       throw error;
     }
   }

@@ -1,7 +1,4 @@
-import {
-  isCQDirectEnabledForCx,
-  isStalePatientUpdateEnabledForCx,
-} from "@metriport/core/command/feature-flags/domain-ffs";
+import { isCQDirectEnabledForCx } from "@metriport/core/command/feature-flags/domain-ffs";
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
@@ -37,7 +34,7 @@ export async function getDocumentsFromCQ({
   triggerConsolidated = false,
 }: {
   requestId: string;
-  facilityId?: string;
+  facilityId: string | undefined;
   patient: Patient;
   forceDownload?: boolean;
   cqManagingOrgName?: string;
@@ -81,15 +78,12 @@ export async function getDocumentsFromCQ({
     const patientCQData = getCQData(currentPatient.data.externalData);
     const hasNoCQStatus = !patientCQData || !patientCQData.discoveryStatus;
     const isProcessing = patientCQData?.discoveryStatus === "processing";
-    const updateStalePatients = await isStalePatientUpdateEnabledForCx(cxId);
     const now = buildDayjs(new Date());
     const patientCreatedAt = buildDayjs(patient.createdAt);
     const pdStartedAt = patientCQData?.discoveryParams?.startedAt
       ? buildDayjs(patientCQData.discoveryParams.startedAt)
       : undefined;
-    const isStale =
-      updateStalePatients &&
-      (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackWeeks, "weeks");
+    const isStale = (pdStartedAt ?? patientCreatedAt) < now.subtract(staleLookbackWeeks, "weeks");
 
     if (hasNoCQStatus || isProcessing || forcePatientDiscovery || isStale) {
       log(

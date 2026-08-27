@@ -1,12 +1,12 @@
-import * as Sentry from "@sentry/serverless";
+import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
 import { PDRequestGatewayV2Params } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/ihe-gateway-v2";
 import { createSignSendProcessXCPDRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/ihe-gateway-v2-logic";
+import { getEnvType, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
-import { getEnvVarOrFail, getEnvType } from "@metriport/core/util/env-var";
-import { getSamlCertsAndKeys } from "./shared/secrets";
+import * as Sentry from "@sentry/serverless";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
-import { FeatureFlags } from "@metriport/core/command/feature-flags/ffs-on-dynamodb";
+import { getSamlCertsAndKeys } from "./shared/secrets";
 
 capture.init();
 const { log } = out("ihe-gateway-v2-outbound-patient-discovery");

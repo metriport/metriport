@@ -1,0 +1,30 @@
+<ResponseField name="id" type="string" required>
+  The unique identifier for the cohort (UUID format, e.g., `00000000-0000-0000-0000-000000000000`).
+</ResponseField>
+
+<ResponseField name="eTag" type="string" required>
+  The entity tag for optimistic concurrency control.
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  The unique name of the cohort within your organization.
+</ResponseField>
+
+<ResponseField name="description" type="string" required>
+  The description of the cohort.
+</ResponseField>
+
+<ResponseField name="color" type="string" required>
+  The color associated with the cohort.
+</ResponseField>
+
+<ResponseField name="settings" type="object" required>
+  Configuration settings for the cohort.
+  <Expandable title="Settings properties">
+    <Snippet file="cohort-settings.mdx" />
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="size" type="number" required>
+  The number of patients assigned to this cohort.
+</ResponseField>

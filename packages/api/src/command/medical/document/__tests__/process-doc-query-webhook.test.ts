@@ -13,6 +13,7 @@ import * as reportUsageCmd from "../../../internal-server/report-usage";
 import * as webhook from "../../../webhook/webhook";
 import * as webhookRequest from "../../../webhook/webhook-request";
 import * as getPatient from "../../patient/get-patient";
+import * as getNetworkQuery from "../../network-query/get-network-query";
 import * as finishPatient from "../../patient/patient-import/finish-single-patient";
 import * as documentWebhook from "../document-webhook";
 import * as processDocQueryWebhook from "../process-doc-query-webhook";
@@ -39,6 +40,7 @@ beforeEach(() => {
   jest.spyOn(webhook, "processRequest").mockImplementation();
   jest.spyOn(reportUsageCmd, "reportUsage").mockImplementation(() => undefined);
   jest.spyOn(finishPatient, "finishSinglePatientImport").mockImplementation();
+  jest.spyOn(getNetworkQuery, "getNetworkQueryByRequestId").mockResolvedValue(undefined);
 });
 
 afterEach(() => {

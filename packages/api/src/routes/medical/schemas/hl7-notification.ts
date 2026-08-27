@@ -29,6 +29,14 @@ export const hl7NotificationSchema = z.object({
   whenSourceSent: z.string(),
   admitTimestamp: z.string().optional(),
   dischargeTimestamp: z.string().optional(),
+  isSendWebhook: z
+    .union([z.boolean(), z.string()])
+    .optional()
+    .transform(val => {
+      if (val === undefined) return undefined;
+      if (typeof val === "boolean") return val;
+      return val.toLowerCase().trim() === "true";
+    }),
 });
 
 const hl7NotificationWebhookSchema = hl7NotificationSchema.extend({

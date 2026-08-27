@@ -1,3 +1,4 @@
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { S3EventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import * as s3 from "aws-cdk-lib/aws-s3";
@@ -15,6 +16,7 @@ export function createLambda({
   medicalDocumentsUploadBucket,
   medicalDocumentsBucket,
   sentryDsn,
+  docIdToFilepathMappingTable,
 }: {
   lambdaLayers: LambdaLayers;
   stack: Construct;
@@ -24,6 +26,7 @@ export function createLambda({
   medicalDocumentsBucket: s3.IBucket;
   medicalDocumentsUploadBucket: s3.Bucket;
   sentryDsn: string | undefined;
+  docIdToFilepathMappingTable: dynamodb.ITable;
 }) {
   const documentUploaderLambda = defaultCreateLambda({
     stack,
@@ -35,12 +38,14 @@ export function createLambda({
     envVars: {
       API_URL: `http://${apiAddress}`,
       MEDICAL_DOCUMENTS_DESTINATION_BUCKET: medicalDocumentsBucket.bucketName,
+      DOC_ID_MAPPING_TABLE_NAME: docIdToFilepathMappingTable.tableName,
       ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
     },
   });
 
   medicalDocumentsUploadBucket.grantReadWrite(documentUploaderLambda);
   medicalDocumentsBucket.grantReadWrite(documentUploaderLambda);
+  docIdToFilepathMappingTable.grantReadWriteData(documentUploaderLambda);
 
   documentUploaderLambda.addEventSource(
     new S3EventSource(medicalDocumentsUploadBucket, {

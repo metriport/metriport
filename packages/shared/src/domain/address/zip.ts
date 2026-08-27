@@ -41,6 +41,15 @@ export function isValidZipCodeStrict(zipCode: string): boolean {
 }
 
 // TODO 2330 Move/merge this to normalizeZipCode
+export function normalizeZipCodeRelaxed(
+  zipCode?: string | undefined,
+  normalizeFn = normalizeZipCodeNew
+): string | undefined {
+  if (!zipCode) return undefined;
+  return normalizeFn(zipCode);
+}
+
+// TODO 2330 Move/merge this to normalizeZipCode
 export function normalizeZipCodeNew(
   zipCode: string,
   normalizeFn = normalizeZipCodeNewSafe

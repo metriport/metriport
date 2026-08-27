@@ -2,7 +2,7 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { CQOrgBasicDetails } from "./command/cq-directory/search-cq-directory";
 
-export async function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): Promise<XCPDGateway[]> {
+export function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): XCPDGateway[] {
   const v2Gateways: XCPDGateway[] = [];
 
   for (const org of cqOrgs) {

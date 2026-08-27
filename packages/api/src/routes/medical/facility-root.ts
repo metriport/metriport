@@ -1,4 +1,5 @@
-import { TreatmentType } from "@metriport/shared";
+import { FacilityType } from "@metriport/core/domain/facility";
+import { BadRequestError, OrganizationBizType, TreatmentType } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -17,8 +18,10 @@ const router = Router();
 /** ---------------------------------------------------------------------------
  * POST /facility
  *
- * Creates a new facility.
+ * Creates a new facility with type set to initiatorAndResponder.
+ * Note: initiatorOnly facility creation is reserved for internal use.
  *
+ * @deprecated
  * @return {FacilityDTO} The facility.
  */
 router.post(
@@ -27,9 +30,12 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityData = facilityCreateSchema.parse(req.body);
+    const existingOrg = await getOrganization({ cxId });
+    if (existingOrg?.type === OrganizationBizType.healthcareITVendor) {
+      throw new BadRequestError("IT vendors cannot create facilities. Please contact support.");
+    }
 
     if (Config.isSandbox()) {
-      const existingOrg = await getOrganization({ cxId });
       if (!existingOrg) {
         await createOrganization({
           cxId,
@@ -44,6 +50,7 @@ router.post(
 
     const facility = await createFacility({
       cxId,
+      type: FacilityType.initiatorAndResponder,
       data: {
         ...facilityData,
         tin: facilityData.tin ?? undefined,

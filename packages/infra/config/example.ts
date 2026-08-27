@@ -142,6 +142,10 @@ export const config: EnvConfigNonSandbox = {
         volumeType: EbsDeviceVolumeType.GENERAL_PURPOSE_SSD_GP3,
       },
       encryptionAtRest: true,
+      alarmThresholds: {
+        alarmFreeStorageMB: 5_000,
+        alertFreeStorageMB: 10_000,
+      },
       indexName: "test-index-name",
       consolidatedIndexName: "test-lexical-index-name",
     },
@@ -210,6 +214,7 @@ export const config: EnvConfigNonSandbox = {
         gatewayPublicIp: "200.1.1.1",
         internalCidrBlocks: ["10.10.0.0/16"],
         subscriptions: ["adt"],
+        checklyId: "your-checkly-heartbeat-id",
         mapping: {
           ID: "scrambledId",
           "FIRST NAME": "firstName",
@@ -249,8 +254,16 @@ export const config: EnvConfigNonSandbox = {
   iheResponsesBucketName: "test-ihe-responses-bucket",
   iheParsedResponsesBucketName: "test-ihe-parsed-responses-bucket",
   iheRequestsBucketName: "test-ihe-requests-bucket",
+  ehexResponsesBucketName: "test-ehex-responses-bucket",
+  ehexParsedResponsesBucketName: "test-ehex-parsed-responses-bucket",
+  ehexRequestsBucketName: "test-ehex-requests-bucket",
+  fhirConverterConnectorMaxConcurrency: 2,
   fhirConversionBucketName: "test-fhir-conversion-bucket",
   engineeringCxId: "12345678-1234-1234-1234-123456789012",
+  checklySecrets: {
+    checklyAccountId: "your-checkly-account-id",
+    checklyHeartbeatApiKey: "your-checkly-heartbeat-api-key",
+  },
   slack: {
     SLACK_ALERT_URL: "url-to-slack-alert",
     SLACK_NOTIFICATION_URL: "url-to-slack-notification",
@@ -264,8 +277,11 @@ export const config: EnvConfigNonSandbox = {
   analyticsPlatform: {
     bucketName: "test-bucket",
     secretNames: {
-      SNOWFLAKE_CREDS: "name-of-secret",
+      SNOWFLAKE_CREDS: "name-of-secret", // TODO eng-954 remove this
+      SNOWFLAKE_CREDS_FOR_ALL_REGIONS: "name-of-secret",
+      SNOWFLAKE_SETTINGS_FOR_ALL_CXS: "name-of-secret",
       FHIR_TO_CSV_DB_PASSWORD: "name-of-secret",
+      RAW_TO_CORE_DB_PASSWORD: "name-of-secret",
     },
     snowflake: {
       warehouse: "test-warehouse",
@@ -288,8 +304,19 @@ export const config: EnvConfigNonSandbox = {
         volumeWriteIops: 2_000,
       },
       fhirToCsvDbUsername: "my_db_user",
+      rawToCoreDbUsername: "my_db_user",
     },
   },
+  alarms: {
+    secrets: {
+      pagerdutyUrl: "your-pagerduty-integration-url",
+    },
+    slackChannelId: "your-alarms-slack-channel-id",
+    slackWorkspaceId: "your-alarms-slack-workspace-id",
+  },
   aiBriefBucketName: "your-ai-brief-bucket-name",
+  auditLogs: {
+    bucketName: "test-audit-logs-bucket",
+  },
 };
 export default config;

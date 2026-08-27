@@ -9,7 +9,6 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer,
   ignoreFhirConversionAndUpsert,
   requestId,
-  getOrgIdExcludeList,
   triggerConsolidated = false,
 }: {
   patient: Patient;
@@ -19,7 +18,6 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
-  getOrgIdExcludeList: () => Promise<string[]>;
   triggerConsolidated?: boolean;
 }): Promise<void> {
   await queryAndProcessDocumentsV2({
@@ -30,7 +28,6 @@ export async function queryAndProcessDocuments({
     ignoreDocRefOnFHIRServer,
     ignoreFhirConversionAndUpsert,
     requestId,
-    getOrgIdExcludeList,
     triggerConsolidated,
   });
 }

@@ -4,12 +4,19 @@ import { isEndpoint, isLocation } from "@metriport/core/external/fhir/shared/ind
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import {
-  MetriportError,
   isValidUrl,
+  MetriportError,
   normalizeUSStateForAddressSafe,
   normalizeZipCodeNewSafe,
 } from "@metriport/shared";
 import { buildDayjs } from "@metriport/shared/common/date";
+import {
+  TransactionType,
+  XCA_DQ_STRING,
+  XCA_DR_STRING,
+  XCPD_STRING,
+  XDR_STRING,
+} from "@metriport/shared/external/ihe/constants";
 import stringify from "json-stringify-safe";
 import { CQDirectoryEntryData } from "../../cq-directory";
 import { CQOrgUrls } from "../../shared";
@@ -18,11 +25,7 @@ import { getParentOid } from "./get-parent-org";
 import { transactionUrl } from "./organization-template";
 
 const EARTH_RADIUS = 6378168;
-const XCPD_STRING = "ITI-55";
-const XCA_DQ_STRING = "ITI-38";
-const XCA_DR_STRING = "ITI-39";
-const XDR_STRING = "ITI-41";
-type ChannelUrl = typeof XCPD_STRING | typeof XCA_DQ_STRING | typeof XCA_DR_STRING;
+type ChannelUrl = TransactionType;
 
 export async function parseCQOrganization(
   org: Organization,

@@ -19,4 +19,6 @@ The organization table contains information about healthcare organizations, incl
 | state | varchar | State or province |
 | country | varchar | Country |
 | zip_code | varchar | ZIP or postal code |
-| data_source | varchar | Source of the organization data |
+| meta_source | varchar | Source document filename from FHIR meta.source |
+| data_source | varchar | **Deprecated.** Use `meta_source` instead. |
+| data_source_ext | varchar | Integration source of the data, derived from FHIR extension |

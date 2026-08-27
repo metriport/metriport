@@ -1,3 +1,7 @@
+import {
+  invokeHl7v2RosterLambda,
+  invokeHl7v2RosterLambdaDirect,
+} from "@metriport/core/command/hl7v2-subscriptions/upload-roster/invoke-hl7v2-roster-lambda";
 import { BadRequestError, EhrSources } from "@metriport/shared";
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
@@ -7,6 +11,7 @@ import {
   deleteCxMapping,
   findOrCreateCxMapping,
   getCxMappingsByCustomer,
+  setDefaultCohortOnCxMapping,
   setExternalIdOnCxMappingById,
   setSecondaryMappingsOnCxMappingById,
 } from "../../command/mapping/cx";
@@ -33,6 +38,7 @@ import {
 import { isFacilityMappingSource } from "../../domain/facility-mapping";
 import { subscribeToAllWebhooks as subscribeToElationWebhooks } from "../../external/ehr/elation/command/subscribe-to-webhook";
 import { subscribeToAllWebhooks as subscribeToHealthieWebhooks } from "../../external/ehr/healthie/command/subscribe-to-webhook";
+import { Config } from "../../shared/config";
 import userRoutes from "../devices/internal-user";
 import { requestLogger } from "../helpers/request-logger";
 import { internalDtoFromModel as facilityInternalDto } from "../medical/dtos/facilityDTO";
@@ -44,28 +50,38 @@ import ehr from "./ehr";
 import hieRoutes from "./hie";
 import carequalityRoutes from "./hie/carequality";
 import commonwellRoutes from "./hie/commonwell";
+import ehexRoutes from "./hie/ehex";
 import questRoutes from "./integration/quest";
+import surescriptsRoutes from "./integration/surescripts";
 import jwtToken from "./jwt-token";
+import careGapRoutes from "./medical/care-gap";
+import cohortRoutes from "./medical/cohort";
 import docsRoutes from "./medical/docs";
 import facilityRoutes from "./medical/facility";
 import ffsRoutes from "./medical/feature-flags";
 import feedbackRoutes from "./medical/feedback";
 import mpiRoutes from "./medical/mpi";
+import networkQueryRoutes from "./medical/network-query";
 import organizationRoutes from "./medical/organization";
 import patientRoutes from "./medical/patient";
-import tcmEncounter from "./medical/tcm-encounter";
+import patientMonitoringRoutes from "./medical/patient-monitoring";
+import rosterRoutes from "./medical/roster";
 import suspectRoutes from "./medical/suspect";
+import tcmEncounter from "./medical/tcm-encounter";
+import { hieConfigOrVpnlessSchema } from "./schemas/hie-config";
 
 const router = Router();
 
 router.use("/feature-flags", ffsRoutes);
 router.use("/docs", docsRoutes);
 router.use("/patient", patientRoutes);
+router.use("/patient-monitoring", patientMonitoringRoutes);
 router.use("/facility", facilityRoutes);
 router.use("/organization", organizationRoutes);
 router.use("/user", userRoutes);
 router.use("/commonwell", commonwellRoutes);
 router.use("/carequality", carequalityRoutes);
+router.use("/ehex", ehexRoutes);
 router.use("/mpi", mpiRoutes);
 router.use("/hie", hieRoutes);
 router.use("/feedback", feedbackRoutes);
@@ -74,7 +90,12 @@ router.use("/ehr", ehr);
 router.use("/tcm/encounter", tcmEncounter);
 router.use("/analytics-platform", analyticsPlatformRoutes);
 router.use("/quest", questRoutes);
+router.use("/surescripts", surescriptsRoutes);
 router.use("/suspect", suspectRoutes);
+router.use("/roster", rosterRoutes);
+router.use("/care-gap", careGapRoutes);
+router.use("/cohort", cohortRoutes);
+router.use("/network-query", networkQueryRoutes);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/mapi-access
@@ -209,8 +230,11 @@ router.get(
  * @param req.query.cxId - The cutomer's ID.
  * @param req.query.cwEnabled - Whether to enabled CommonWell.
  * @param req.query.cqEnabled - Whether to enabled CareQuality.
+ * @param req.query.ehexEnabled - Whether to enabled eHealth Exchange.
  * @param req.query.epicEnabled - Whether to enabled Epic.
  * @param req.query.demoAugEnabled - Whether to enabled Demo Aug.
+ * @param req.query.adtRosterUploadEnabledFeatureFlag - Whether to enabled ADT Roster Upload.
+ * @param req.query.adtDataVisibleEnabledFeatureFlag - Whether to let the customer see the ADT data.
  */
 router.put(
   "/cx-ff-status",
@@ -219,14 +243,20 @@ router.put(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const cwEnabled = getFromQueryAsBoolean("cwEnabled", req);
     const cqEnabled = getFromQueryAsBoolean("cqEnabled", req);
+    const ehexEnabled = getFromQueryAsBoolean("ehexEnabled", req);
     const epicEnabled = getFromQueryAsBoolean("epicEnabled", req);
     const demoAugEnabled = getFromQueryAsBoolean("demoAugEnabled", req);
+    const adtRosterUploadStatus = getFromQueryAsBoolean("adtRosterUploadEnabledFeatureFlag", req);
+    const adtDataVisibleStatus = getFromQueryAsBoolean("adtDataVisibleEnabledFeatureFlag", req);
     const result = await updateCxHieEnabledFFs({
       cxId,
       cwEnabled,
       cqEnabled,
+      ehexEnabled,
       epicEnabled,
       demoAugEnabled,
+      adtRosterUploadStatus,
+      adtDataVisibleStatus,
     });
     return res.status(httpStatus.OK).json(result);
   })
@@ -380,6 +410,35 @@ router.put(
 );
 
 /**
+ * PUT /internal/cx-mapping/default-cohort
+ *
+ * Set the default cohort for a cx mapping.
+ *
+ * @param req.query.cxId - The customer's ID.
+ * @param req.query.source - The mapping source.
+ * @param req.query.externalId - The external ID (practice ID) of the cx mapping.
+ * @param req.query.cohortId - The cohort ID to set (null to unset the default cohort).
+ *
+ * @return status 200 on success.
+ */
+router.put(
+  "/cx-mapping/default-cohort",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const source = getFromQueryOrFail("source", req);
+    const externalId = getFromQueryOrFail("externalId", req);
+    const cohortIdRaw = getFromQueryOrFail("cohortId", req);
+    const cohortId = cohortIdRaw === "null" ? null : cohortIdRaw;
+    if (!isCxMappingSource(source)) {
+      throw new BadRequestError(`Invalid source for cx mapping`, undefined, { source });
+    }
+    await setDefaultCohortOnCxMapping({ cxId, source, externalId, cohortId });
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
  * POST /internal/facility-mapping
  *
  * Create facility mapping
@@ -477,6 +536,29 @@ router.delete(
       cxId,
       id,
     });
+    return res.sendStatus(httpStatus.NO_CONTENT);
+  })
+);
+
+/**
+ * POST /internal/adts/roster-upload
+ *
+ * Uploads a roster to a HIE via the HL7v2 roster lambda.
+ *
+ * @param req.body - The HieConfig or VpnlessHieConfig to upload the roster for.
+ *
+ * @return status 204 on success.
+ */
+router.post(
+  "/adts/roster-upload",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const hieConfig = hieConfigOrVpnlessSchema.parse(req.body);
+    if (Config.getEnvType() === Config.DEV_ENV) {
+      await invokeHl7v2RosterLambdaDirect(hieConfig);
+    } else {
+      await invokeHl7v2RosterLambda(hieConfig);
+    }
     return res.sendStatus(httpStatus.NO_CONTENT);
   })
 );

@@ -1,20 +1,20 @@
 import {
   Aspects,
+  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
-  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
-import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as iam from "aws-cdk-lib/aws-iam";
@@ -28,16 +28,12 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { ITopic } from "aws-cdk-lib/aws-sns";
-import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvConfig, EnvConfigSandbox } from "../config/env-config";
 import { AnalyticsPlatformsNestedStack } from "./analytics-platform/analytics-platform-stack";
 import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
-import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
-import { createScheduledDBMaintenance } from "./api-stack/db-maintenance";
-import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import { TerminologyServerNestedStack } from "./api-stack/terminology-server-service";
@@ -46,23 +42,23 @@ import { EnvType } from "./env-type";
 import { FeatureFlagsNestedStack } from "./feature-flags-nested-stack";
 import { Hl7NotificationWebhookSenderNestedStack } from "./hl7-notification-webhook-sender-nested-stack";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
-import { createJobsScheduler } from "./jobs/jobs-scheduler";
 import { JobsNestedStack } from "./jobs/jobs-stack";
 import { LambdasLayersNestedStack } from "./lambda-layers-nested-stack";
-import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
+import { LambdasNestedStack } from "./lambdas-nested-stack";
 import { PatientImportNestedStack } from "./patient-import-nested-stack";
-import { PatientMonitoringNestedStack } from "./patient-monitoring-nested-stack";
+import { PatientMonitoringNestedStack } from "./patient-monitoring/patient-monitoring-nested-stack";
 import { QuestNestedStack } from "./quest/quest-stack";
-import {
-  createDownloadResponseScheduledLambda,
-  createUploadRosterScheduledLambda,
-} from "./quest/scheduled-lambda";
 import { RateLimitingNestedStack } from "./rate-limiting-nested-stack";
+import { ScheduledLambdasNestedStack } from "./scheduled-lambdas-stack";
 import { SDEStack } from "./sde/sde-stack";
+import { SharebackNestedStack } from "./shareback-nested-stack/shareback-nested-stack";
+import { setupAlarmSnsAction } from "./shared/alarm";
 import { DailyBackup } from "./shared/backup";
-import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { createBucket } from "./shared/bucket";
+import { addDynamoPerformanceAlerts } from "./shared/ddb";
+import { addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
-import { addDBClusterPerformanceAlarms } from "./shared/rds";
+import { addDBClusterAlertsAndAlarms } from "./shared/rds";
 import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
@@ -78,7 +74,10 @@ interface APIStackProps extends StackProps {
 
 export class APIStack extends Stack {
   public readonly vpc: ec2.IVpc;
-  public readonly alarmAction: SnsAction | undefined;
+  /**
+   * This is the ALERT sns action. It's used to send alerts to Slack not alarms.
+   */
+  public readonly alertAction: SnsAction | undefined;
 
   constructor(scope: Construct, id: string, props: APIStackProps) {
     super(scope, id, props);
@@ -94,7 +93,12 @@ export class APIStack extends Stack {
     const secrets = getSecrets(this, props.config);
 
     const slackNotification = setupSlackNotifSnsTopic(this, props.config);
-    this.alarmAction = slackNotification?.alarmAction;
+    this.alertAction = slackNotification?.alertAction;
+
+    /**
+     * This is the real ALARM sns action. It's used to send alerts to Slack and PagerDuty.
+     */
+    const alarmSnsAction = setupAlarmSnsAction({ stack: this, config: props.config });
 
     //-------------------------------------------
     // VPC + NAT Gateway.
@@ -116,13 +120,78 @@ export class APIStack extends Stack {
     const dnsZones = { privateZone, publicZone };
 
     //-------------------------------------------
-    // Vpc Endpoints
+    // Vpc Endpoints - direct access between services to avoid NAT Gateway fees.
+    // Note: Cognito VPC endpoint NOT added - user pool has a custom domain which
+    // is incompatible with PrivateLink. Cognito traffic must use NAT.
     //-------------------------------------------
     new ec2.InterfaceVpcEndpoint(this, "ApiVpcSqsEndpoint", {
       vpc: this.vpc,
       service: ec2.InterfaceVpcEndpointAwsService.SQS,
       privateDnsEnabled: true,
     });
+    this.vpc.addGatewayEndpoint("S3Endpoint", {
+      service: ec2.GatewayVpcEndpointAwsService.S3,
+    });
+    this.vpc.addGatewayEndpoint("DynamoDBEndpoint", {
+      service: ec2.GatewayVpcEndpointAwsService.DYNAMODB,
+    });
+    new ec2.InterfaceVpcEndpoint(this, "EcrApiEndpoint", {
+      vpc: this.vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.ECR,
+      privateDnsEnabled: true,
+    });
+    new ec2.InterfaceVpcEndpoint(this, "EcrDockerEndpoint", {
+      vpc: this.vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.ECR_DOCKER,
+      privateDnsEnabled: true,
+    });
+    new ec2.InterfaceVpcEndpoint(this, "CloudWatchLogsEndpoint", {
+      vpc: this.vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH_LOGS,
+      privateDnsEnabled: true,
+    });
+    new ec2.InterfaceVpcEndpoint(this, "CloudWatchMonitoringEndpoint", {
+      vpc: this.vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.CLOUDWATCH_MONITORING,
+      privateDnsEnabled: true,
+    });
+    new ec2.InterfaceVpcEndpoint(this, "SecretsManagerEndpoint", {
+      vpc: this.vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
+      privateDnsEnabled: true,
+    });
+    new ec2.InterfaceVpcEndpoint(this, "LambdaEndpoint", {
+      vpc: this.vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.LAMBDA,
+      privateDnsEnabled: true,
+    });
+    new ec2.InterfaceVpcEndpoint(this, "BedrockRuntimeEndpoint", {
+      vpc: this.vpc,
+      service: new ec2.InterfaceVpcEndpointService(`com.amazonaws.${this.region}.bedrock-runtime`),
+      privateDnsEnabled: true,
+    });
+    new ec2.InterfaceVpcEndpoint(this, "SnsEndpoint", {
+      vpc: this.vpc,
+      service: ec2.InterfaceVpcEndpointAwsService.SNS,
+      privateDnsEnabled: true,
+    });
+    // TODO ENG-1926: Add or remove these, ECS endpoints are NOT enabled yet - validate with VPC
+    // Flow Logs that ECS traffic exceeds 480 GB/month before adding (~$648/month cost).
+    // new ec2.InterfaceVpcEndpoint(this, "EcsEndpoint", {
+    //   vpc: this.vpc,
+    //   service: ec2.InterfaceVpcEndpointAwsService.ECS,
+    //   privateDnsEnabled: true,
+    // });
+    // new ec2.InterfaceVpcEndpoint(this, "EcsAgentEndpoint", {
+    //   vpc: this.vpc,
+    //   service: ec2.InterfaceVpcEndpointAwsService.ECS_AGENT,
+    //   privateDnsEnabled: true,
+    // });
+    // new ec2.InterfaceVpcEndpoint(this, "EcsTelemetryEndpoint", {
+    //   vpc: this.vpc,
+    //   service: ec2.InterfaceVpcEndpointAwsService.ECS_TELEMETRY,
+    //   privateDnsEnabled: true,
+    // });
 
     //-------------------------------------------
     // Buckets
@@ -143,7 +212,10 @@ export class APIStack extends Stack {
     const certificate = new cert.DnsValidatedCertificate(this, "APICert", {
       domainName: props.config.domain,
       hostedZone: publicZone,
-      subjectAlternativeNames: [`*.${props.config.domain}`],
+      subjectAlternativeNames: [
+        `*.${props.config.domain}`,
+        `*.${props.config.subdomain}.${props.config.domain}`, // Covers *.api.staging.metriport.com
+      ],
     });
 
     // add error alarming to CDK-generated lambdas
@@ -154,7 +226,7 @@ export class APIStack extends Stack {
       this,
       certificateRequestorLambda,
       "APICertificateCertificateRequestorFunctionAlarm",
-      slackNotification?.alarmAction
+      slackNotification?.alertAction
     );
 
     // Web application firewall for enhanced security
@@ -175,7 +247,12 @@ export class APIStack extends Stack {
     //-------------------------------------------
     const { featureFlagsTable } = new FeatureFlagsNestedStack(this, "FeatureFlags", {
       config: props.config,
-      alarmAction: slackNotification?.alarmAction,
+      alarmAction: slackNotification?.alertAction,
+    });
+
+    const { docIdToFilepathMappingTable } = new SharebackNestedStack(this, "SharebackNestedStack", {
+      config: props.config,
+      alarmAction: slackNotification?.alertAction,
     });
 
     //-------------------------------------------
@@ -239,13 +316,14 @@ export class APIStack extends Stack {
         }
       },
     });
-    addDBClusterPerformanceAlarms(
-      this,
+    addDBClusterAlertsAndAlarms({
+      scope: this,
       dbCluster,
       dbClusterName,
       dbConfig,
-      slackNotification?.alarmAction
-    );
+      alertAction: slackNotification?.alertAction,
+      alarmAction: alarmSnsAction,
+    });
 
     //----------------------------------------------------------
     // DynamoDB
@@ -268,58 +346,84 @@ export class APIStack extends Stack {
       },
       projectionType: dynamodb.ProjectionType.ALL,
     });
-    this.addDynamoPerformanceAlarms(
-      dynamoDBTokenTable,
+    addDynamoPerformanceAlerts({
+      scope: this,
+      table: dynamoDBTokenTable,
       dynamoConstructName,
-      slackNotification?.alarmAction
-    );
+      alertAction: slackNotification?.alertAction,
+    });
+
+    const patientStateTableConstructName = "PatientState";
+    const patientStateTable = new dynamodb.Table(this, patientStateTableConstructName, {
+      partitionKey: { name: "PK", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "SK", type: dynamodb.AttributeType.STRING },
+      replicationRegions: this.isProd(props) ? ["us-east-1"] : ["ca-central-1"],
+      replicationTimeout: Duration.hours(3),
+      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      pointInTimeRecovery: true,
+      timeToLiveAttribute: "ttl",
+    });
+    addDynamoPerformanceAlerts({
+      scope: this,
+      table: patientStateTable,
+      dynamoConstructName: patientStateTableConstructName,
+      alertAction: slackNotification?.alertAction,
+    });
 
     //-------------------------------------------
     // S3 buckets
     //-------------------------------------------
-    const generalBucket = new s3.Bucket(this, "GeneralBucket", {
-      bucketName: props.config.generalBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-    });
+    const generalBucket = createBucket(
+      this,
+      {
+        bucketName: props.config.generalBucketName,
+        versioned: true,
+      },
+      "GeneralBucket"
+    );
 
-    const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
-      bucketName: props.config.medicalDocumentsBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-      cors: [
-        {
-          allowedOrigins: ["*"],
-          allowedMethods: [s3.HttpMethods.GET],
-        },
-      ],
-    });
+    const medicalDocumentsBucket = createBucket(
+      this,
+      {
+        bucketName: props.config.medicalDocumentsBucketName,
+        versioned: true,
+        cors: [
+          {
+            allowedOrigins: ["*"],
+            allowedMethods: [s3.HttpMethods.GET],
+          },
+        ],
+      },
+      "APIMedicalDocumentsBucket"
+    );
 
-    const medicalDocumentsUploadBucket = new s3.Bucket(this, "APIMedicalDocumentsUploadBucket", {
-      bucketName: props.config.medicalDocumentsUploadBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-      cors: [
-        {
-          allowedOrigins: ["*"],
-          allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
-        },
-      ],
-    });
+    const medicalDocumentsUploadBucket = createBucket(
+      this,
+      {
+        bucketName: props.config.medicalDocumentsUploadBucketName,
+        versioned: true,
+        cors: [
+          {
+            allowedOrigins: ["*"],
+            allowedMethods: [s3.HttpMethods.PUT, s3.HttpMethods.POST],
+          },
+        ],
+      },
+      "APIMedicalDocumentsUploadBucket"
+    );
 
     let hl7ConversionBucket: s3.Bucket | undefined;
     let incomingHl7NotificationBucket: s3.IBucket | undefined;
     if (!isSandbox(props.config) && props.config.hl7Notification.hl7ConversionBucketName) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      hl7ConversionBucket = new s3.Bucket(this, "HL7ConversionBucket", {
-        bucketName: props.config.hl7Notification.hl7ConversionBucketName,
-        publicReadAccess: false,
-        encryption: s3.BucketEncryption.S3_MANAGED,
-        versioned: true,
-      });
+      hl7ConversionBucket = createBucket(
+        this,
+        {
+          bucketName: props.config.hl7Notification.hl7ConversionBucketName,
+          versioned: true,
+        },
+        "HL7ConversionBucket"
+      );
 
       incomingHl7NotificationBucket = s3.Bucket.fromBucketName(
         this,
@@ -329,13 +433,16 @@ export class APIStack extends Stack {
     }
 
     let ehrResponsesBucket: s3.Bucket | undefined;
-    if (!isSandbox(props.config)) {
-      ehrResponsesBucket = new s3.Bucket(this, "EhrResponsedBucket", {
-        bucketName: props.config.ehrResponsesBucketName,
-        publicReadAccess: false,
-        encryption: s3.BucketEncryption.S3_MANAGED,
-        versioned: true,
-      });
+    const ehrResponsesBucketName = props.config.ehrResponsesBucketName;
+    if (!isSandbox(props.config) && ehrResponsesBucketName) {
+      ehrResponsesBucket = createBucket(
+        this,
+        {
+          bucketName: ehrResponsesBucketName,
+          versioned: true,
+        },
+        "EhrResponsedBucket"
+      );
     }
 
     const getSandboxSeedDataBucket = (sandboxConfig: EnvConfigSandbox) => {
@@ -347,34 +454,35 @@ export class APIStack extends Stack {
           sandboxConfig.sandboxSeedDataBucketName
         );
       } catch (error) {
-        return new s3.Bucket(this, seedBucketCfnName, {
-          bucketName: sandboxConfig.sandboxSeedDataBucketName,
-          publicReadAccess: false,
-          encryption: s3.BucketEncryption.S3_MANAGED,
-          cors: [
-            {
-              allowedOrigins: ["*"],
-              allowedMethods: [s3.HttpMethods.GET],
-            },
-          ],
-        });
+        return createBucket(
+          this,
+          {
+            bucketName: sandboxConfig.sandboxSeedDataBucketName,
+            cors: [
+              {
+                allowedOrigins: ["*"],
+                allowedMethods: [s3.HttpMethods.GET],
+              },
+            ],
+          },
+          seedBucketCfnName
+        );
       }
     };
 
-    let aiBriefBucket: s3.Bucket | undefined;
-    if (!isSandbox(props.config)) {
-      aiBriefBucket = new s3.Bucket(this, "AiBriefBucket", {
+    const aiBriefBucket = createBucket(
+      this,
+      {
         bucketName: props.config.aiBriefBucketName,
-        publicReadAccess: false,
-        encryption: s3.BucketEncryption.S3_MANAGED,
         cors: [
           {
             allowedOrigins: ["*"],
             allowedMethods: [s3.HttpMethods.GET],
           },
         ],
-      });
-    }
+      },
+      "AiBriefBucket"
+    );
 
     const sandboxSeedDataBucket = isSandbox(props.config)
       ? getSandboxSeedDataBucket(props.config)
@@ -401,7 +509,8 @@ export class APIStack extends Stack {
       ccdaS3Bucket: medicalDocumentsBucket,
       lambdaLayers,
       envType: props.config.environmentType,
-      alarmSnsAction: slackNotification?.alarmAction,
+      alertSnsAction: slackNotification?.alertAction,
+      alarmSnsAction: alarmSnsAction,
     });
 
     //-------------------------------------------
@@ -412,8 +521,9 @@ export class APIStack extends Stack {
       surescriptsStack = new SurescriptsNestedStack(this, "SurescriptsNestedStack", {
         config: props.config,
         vpc: this.vpc,
-        alarmAction: slackNotification?.alarmAction,
+        alertAction: slackNotification?.alertAction,
         lambdaLayers,
+        featureFlagsTable,
       });
     }
 
@@ -429,8 +539,9 @@ export class APIStack extends Stack {
       questStack = new QuestNestedStack(this, "QuestNestedStack", {
         config: props.config,
         vpc: this.vpc,
-        alarmAction: slackNotification?.alarmAction,
+        alertAction: slackNotification?.alertAction,
         lambdaLayers,
+        featureFlagsTable,
       });
     }
 
@@ -439,7 +550,7 @@ export class APIStack extends Stack {
       sdeStack = new SDEStack(this, "SDEStack", {
         config: props.config,
         vpc: this.vpc,
-        alarmAction: slackNotification?.alarmAction,
+        alertAction: slackNotification?.alertAction,
         lambdaLayers,
       });
     }
@@ -455,151 +566,8 @@ export class APIStack extends Stack {
         lambdaLayers,
         medicalDocumentsBucket,
         featureFlagsTable,
-      });
-    }
-
-    //-------------------------------------------
-    // General lambdas
-    //-------------------------------------------
-    const {
-      cdaToVisualizationLambda,
-      documentDownloaderLambda,
-      fhirToCdaConverterLambda,
-      outboundPatientDiscoveryLambda,
-      outboundDocumentQueryLambda,
-      outboundDocumentRetrievalLambda,
-      fhirToBundleLambda,
-      fhirToBundleCountLambda,
-      fhirConverterConnector: {
-        queue: fhirConverterQueue,
-        lambda: fhirConverterLambda,
-        bucket: fhirConverterBucket,
-      },
-      hl7v2RosterUploadLambdas,
-      conversionResultNotifierLambda,
-      consolidatedSearchLambda,
-      consolidatedIngestionLambda,
-      consolidatedIngestionQueue,
-      reconversionKickoffLambda,
-    } = new LambdasNestedStack(this, "LambdasNestedStack", {
-      config: props.config,
-      vpc: this.vpc,
-      lambdaLayers,
-      dbCluster,
-      secrets,
-      medicalDocumentsBucket,
-      pharmacyBundleBucket: surescriptsStack?.getAssets()?.pharmacyConversionBucket,
-      labBundleBucket: questStack?.getAssets()?.labConversionBucket,
-      structuredDataBucket: sdeStack?.getAssets()?.structuredDataBucket,
-      hl7ConversionBucket,
-      sandboxSeedDataBucket,
-      alarmAction: slackNotification?.alarmAction,
-      bedrock: props.config.bedrock,
-      featureFlagsTable,
-      openSearch: {
-        endpoint: searchDomainEndpoint,
-        auth: {
-          userName: searchDomainUserName,
-          secret: searchDomainSecret,
-        },
-        consolidatedIndexName: props.config.openSearch.openSearch.consolidatedIndexName,
-        documentIndexName: props.config.openSearch.openSearch.indexName,
-      },
-      analyticsQueue: analyticsPlatformStack?.getAssets()?.fhirToCsvIncrementalQueue,
-      aiBriefBucket,
-    });
-
-    //-------------------------------------------
-    // Rate Limiting
-    //-------------------------------------------
-    const { rateLimitTable, outboundRateLimitTable } = new RateLimitingNestedStack(
-      this,
-      "RateLimitingNestedStack",
-      {
-        config: props.config,
-        alarmAction: slackNotification?.alarmAction,
-      }
-    );
-
-    //-------------------------------------------
-    // HL7 Notification Webhook Sender
-    //-------------------------------------------
-    let hl7NotificationWebhookSenderLambda: lambda.Function | undefined;
-    if (props.config.hl7Notification && outgoingHl7NotificationBucket && hl7ConversionBucket) {
-      const { lambda } = new Hl7NotificationWebhookSenderNestedStack(
-        this,
-        "Hl7NotificationWebhookSenderNestedStack",
-        {
-          config: props.config,
-          lambdaLayers,
-          vpc: this.vpc,
-          alarmAction: slackNotification?.alarmAction,
-          outgoingHl7NotificationBucket,
-          hl7ConversionBucket,
-          secrets,
-          incomingHl7NotificationBucket,
-          outboundRateLimitTable,
-        }
-      );
-
-      hl7NotificationWebhookSenderLambda = lambda;
-    }
-
-    //-------------------------------------------
-    // Patient Monitoring
-    //-------------------------------------------
-    let dischargeRequeryLambda: lambda.Function | undefined;
-    let dischargeRequeryQueue: IQueue | undefined;
-    if (props.config.hl7Notification) {
-      const { dischargeRequeryLambda: lambda, dischargeRequeryQueue: queue } =
-        new PatientMonitoringNestedStack(this, "PatientMonitoringNestedStack", {
-          config: props.config,
-          lambdaLayers,
-          vpc: this.vpc,
-          alarmAction: slackNotification?.alarmAction,
-          secrets,
-        });
-
-      dischargeRequeryLambda = lambda;
-      dischargeRequeryQueue = queue;
-    }
-
-    //-------------------------------------------
-    // Patient Import
-    //-------------------------------------------
-    const {
-      parseLambda: patientImportParseLambda,
-      createLambda: patientImportCreateLambda,
-      queryLambda: patientImportQueryLambda,
-      resultLambda: patientImportResultLambda,
-      bucket: patientImportBucket,
-    } = new PatientImportNestedStack(this, "PatientImportNestedStack", {
-      config: props.config,
-      lambdaLayers,
-      vpc: this.vpc,
-      alarmAction: slackNotification?.alarmAction,
-    });
-
-    //-------------------------------------------
-    // Jobs
-    //-------------------------------------------
-    const jobsStack = new JobsNestedStack(this, "JobsNestedStack", {
-      config: props.config,
-      vpc: this.vpc,
-      alarmAction: slackNotification?.alarmAction,
-      lambdaLayers,
-    });
-
-    //-------------------------------------------
-    // Terminology Server Service
-    //-------------------------------------------
-    if (!isSandbox(props.config)) {
-      new TerminologyServerNestedStack(this, "TerminologyServerNestedStack", {
-        config: props.config,
-        version: props.version,
-        generalBucket: generalBucket,
-        vpc: this.vpc,
-        alarmAction: slackNotification?.alarmAction,
+        alertAction: slackNotification?.alertAction,
+        alarmAction: alarmSnsAction,
       });
     }
 
@@ -616,24 +584,159 @@ export class APIStack extends Stack {
           generalBucket,
         },
         this.vpc,
-        slackNotification?.alarmAction
+        slackNotification?.alertAction
       );
     }
 
-    let fhirToMedicalRecordLambda2: Lambda | undefined = undefined;
+    //-------------------------------------------
+    // General lambdas
+    //-------------------------------------------
+    const {
+      cdaToVisualizationLambda,
+      documentDownloaderLambda,
+      fhirToCdaConverterLambda,
+      outboundPatientDiscoveryLambda,
+      outboundDocumentQueryLambda,
+      outboundDocumentRetrievalLambda,
+      fhirToBundleLambda,
+      fhirToBundleCountLambda,
+      fhirToBundleQueuedLambda,
+      fhirConverterConnector: {
+        queue: fhirConverterQueue,
+        lambda: fhirConverterLambda,
+        bucket: fhirConverterBucket,
+      },
+      hl7v2RosterUploadLambdas,
+      conversionResultNotifierLambda,
+      consolidatedSearchLambda,
+      consolidatedIngestionLambda,
+      consolidatedIngestionQueue,
+      reconversionKickoffLambda,
+      documentQueryLambda,
+      documentQueryQueue,
+      fhirToMedicalRecordLambda,
+    } = new LambdasNestedStack(this, "LambdasNestedStack", {
+      config: props.config,
+      vpc: this.vpc,
+      lambdaLayers,
+      dbCluster,
+      secrets,
+      medicalDocumentsBucket,
+      pharmacyBundleBucket: surescriptsStack?.getAssets()?.pharmacyConversionBucket,
+      labBundleBucket: questStack?.getAssets()?.labConversionBucket,
+      structuredDataBucket: sdeStack?.getAssets()?.structuredDataBucket,
+      hl7ConversionBucket,
+      sandboxSeedDataBucket,
+      alertAction: slackNotification?.alertAction,
+      alarmSnsAction: alarmSnsAction,
+      bedrock: props.config.bedrock,
+      featureFlagsTable,
+      openSearch: {
+        endpoint: searchDomainEndpoint,
+        auth: {
+          userName: searchDomainUserName,
+          secret: searchDomainSecret,
+        },
+        consolidatedIndexName: props.config.openSearch.openSearch.consolidatedIndexName,
+        documentIndexName: props.config.openSearch.openSearch.indexName,
+      },
+      analyticsQueue: analyticsPlatformStack?.getAssets()?.fhirToCsvIncrementalQueue,
+      aiBriefBucket,
+      ...(!isSandbox(props.config) && { dashUrl: props.config.dashUrl }),
+      fhirConverterLambda: fhirConverter?.lambda,
+    });
+
+    //-------------------------------------------
+    // Rate Limiting
+    //-------------------------------------------
+    const { rateLimitTable, outboundRateLimitTable } = new RateLimitingNestedStack(
+      this,
+      "RateLimitingNestedStack",
+      {
+        config: props.config,
+        alertAction: slackNotification?.alertAction,
+      }
+    );
+
+    //-------------------------------------------
+    // HL7 Notification Webhook Sender
+    //-------------------------------------------
+    let hl7NotificationWebhookSenderLambda: lambda.Function | undefined;
+    if (props.config.hl7Notification && outgoingHl7NotificationBucket && hl7ConversionBucket) {
+      const { lambda } = new Hl7NotificationWebhookSenderNestedStack(
+        this,
+        "Hl7NotificationWebhookSenderNestedStack",
+        {
+          config: props.config,
+          lambdaLayers,
+          vpc: this.vpc,
+          alertAction: slackNotification?.alertAction,
+          outgoingHl7NotificationBucket,
+          hl7ConversionBucket,
+          secrets,
+          incomingHl7NotificationBucket,
+          outboundRateLimitTable,
+          featureFlagsTable,
+        }
+      );
+
+      hl7NotificationWebhookSenderLambda = lambda;
+    }
+
+    //-------------------------------------------
+    // Patient Monitoring
+    //-------------------------------------------
+    const {
+      dischargeRequeryLambda,
+      dischargeRequeryQueue,
+      scheduledQueriesLambda,
+      scheduledQueriesQueue,
+    } = new PatientMonitoringNestedStack(this, "PatientMonitoringNestedStack", {
+      config: props.config,
+      documentQueryQueue,
+      lambdaLayers,
+      vpc: this.vpc,
+      alertAction: slackNotification?.alertAction,
+      secrets,
+    });
+
+    //-------------------------------------------
+    // Patient Import
+    //-------------------------------------------
+    const {
+      parseLambda: patientImportParseLambda,
+      createLambda: patientImportCreateLambda,
+      queryLambda: patientImportQueryLambda,
+      resultLambda: patientImportResultLambda,
+      bucket: patientImportBucket,
+    } = new PatientImportNestedStack(this, "PatientImportNestedStack", {
+      config: props.config,
+      lambdaLayers,
+      vpc: this.vpc,
+      alertAction: slackNotification?.alertAction,
+    });
+
+    //-------------------------------------------
+    // Jobs
+    //-------------------------------------------
+    const jobsStack = new JobsNestedStack(this, "JobsNestedStack", {
+      config: props.config,
+      vpc: this.vpc,
+      alertAction: slackNotification?.alertAction,
+      lambdaLayers,
+    });
+
+    //-------------------------------------------
+    // Terminology Server Service
+    //-------------------------------------------
     if (!isSandbox(props.config)) {
-      const lambdas = this.setupFhirToMedicalRecordLambda({
-        lambdaLayers,
+      new TerminologyServerNestedStack(this, "TerminologyServerNestedStack", {
+        config: props.config,
+        version: props.version,
+        generalBucket: generalBucket,
         vpc: this.vpc,
-        medicalDocumentsBucket,
-        envType: props.config.environmentType,
-        dashUrl: props.config.dashUrl,
-        sentryDsn: props.config.lambdasSentryDSN,
-        alarmAction: slackNotification?.alarmAction,
-        featureFlagsTable,
-        ...props.config.fhirToMedicalLambda,
+        alertAction: slackNotification?.alertAction,
       });
-      fhirToMedicalRecordLambda2 = lambdas.fhirToMedicalRecordLambda2;
     }
 
     //-------------------------------------------
@@ -659,12 +762,20 @@ export class APIStack extends Stack {
       config: props.config,
       lambdaLayers,
       vpc: this.vpc,
-      alarmAction: slackNotification?.alarmAction,
+      alertAction: slackNotification?.alertAction,
       ehrResponsesBucket,
       fhirConverterLambda: fhirConverter?.lambda,
       fhirConverterBucket: fhirConverter?.bucket,
       medicalDocumentsBucket,
     });
+
+    const ehexTrustStoreBucket = props.config.ehexGateway?.trustStoreBucketName
+      ? s3.Bucket.fromBucketName(
+          this,
+          "EhexTrustStoreBucket",
+          props.config.ehexGateway?.trustStoreBucketName
+        )
+      : undefined;
 
     //-------------------------------------------
     // ECR + ECS + Fargate for Backend Servers
@@ -684,7 +795,8 @@ export class APIStack extends Stack {
       dbReadReplicaEndpoint: dbCluster.clusterReadEndpoint,
       dynamoDBTokenTable,
       outboundRateLimitTable,
-      alarmAction: slackNotification?.alarmAction,
+      patientStateTable,
+      alertAction: slackNotification?.alertAction,
       dnsZones,
       fhirServerUrl: props.config.fhirServerUrl,
       fhirConverterQueueUrl: fhirConverterQueue.queueUrl,
@@ -698,6 +810,8 @@ export class APIStack extends Stack {
       patientImportResultLambda,
       patientImportBucket,
       dischargeRequeryQueue,
+      scheduledQueriesQueue,
+      documentQueryQueue,
       ehrSyncPatientQueue,
       elationLinkPatientQueue,
       healthieLinkPatientQueue,
@@ -707,11 +821,12 @@ export class APIStack extends Stack {
       ehrGetAppointmentsLambda,
       ehrBundleBucket,
       generalBucket,
+      ehexTrustStoreBucket,
       incomingHl7NotificationBucket,
       conversionBucket: fhirConverterBucket,
       medicalDocumentsUploadBucket,
       ehrResponsesBucket,
-      fhirToMedicalRecordLambda2,
+      fhirToMedicalRecordLambda,
       fhirToCdaConverterLambda,
       fhirToBundleLambda,
       fhirToBundleCountLambda,
@@ -723,12 +838,14 @@ export class APIStack extends Stack {
       searchAuth: { userName: searchDomainUserName, secret: searchDomainSecret },
       searchIndexName: ccdaSearchIndexName,
       featureFlagsTable,
+      docIdToFilepathMappingTable,
       surescriptsAssets: surescriptsStack?.getAssets(),
       questAssets: questStack?.getAssets(),
       sdeAssets: sdeStack?.getAssets(),
       jobAssets: jobsStack.getAssets(),
       analyticsPlatformAssets: analyticsPlatformStack?.getAssets(),
     });
+
     const apiLoadBalancerAddress = apiLoadBalancer.loadBalancerDnsName;
 
     if (props.config.iheGateway) {
@@ -754,13 +871,30 @@ export class APIStack extends Stack {
         sentryDsn: props.config.lambdasSentryDSN,
         iheResponsesBucketName: props.config.iheResponsesBucketName,
         iheParsedResponsesBucketName: props.config.iheParsedResponsesBucketName,
-        alarmAction: slackNotification?.alarmAction,
+        alarmAction: slackNotification?.alertAction,
         featureFlagsTable,
       });
     }
 
     // Access grant for Aurora DB
     dbCluster.connections.allowDefaultPortFrom(apiService.service);
+    // Grant API service access to Analytics DB
+    // Import security group by ID (string) to avoid cross-stack circular dependencies
+    if (analyticsPlatformStack) {
+      const apiServiceSecurityGroup = apiService.service.connections.securityGroups[0];
+      if (apiServiceSecurityGroup) {
+        const analyticsDbSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(
+          this,
+          "AnalyticsDbSecurityGroup",
+          analyticsPlatformStack.dbSecurityGroupId
+        );
+        analyticsDbSecurityGroup.addIngressRule(
+          apiServiceSecurityGroup,
+          ec2.Port.tcp(5432),
+          "Allow API service to connect to Analytics DB"
+        );
+      }
+    }
 
     // setup a private link so the API GW can talk to the API's LB
     const link = new apig.VpcLink(this, "link", {
@@ -791,16 +925,19 @@ export class APIStack extends Stack {
 
     // Add ENV after the API service is created
     const lambdasToGetApiUrl: (lambda.Function | undefined)[] = [
-      fhirToMedicalRecordLambda2,
+      fhirToMedicalRecordLambda,
       outboundPatientDiscoveryLambda,
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
       fhirToBundleLambda,
       fhirToBundleCountLambda,
+      fhirToBundleQueuedLambda,
       ...(hl7v2RosterUploadLambdas ?? []),
       reconversionKickoffLambda,
       hl7NotificationWebhookSenderLambda,
       dischargeRequeryLambda,
+      documentQueryLambda,
+      scheduledQueriesLambda,
       patientImportCreateLambda,
       patientImportParseLambda,
       patientImportQueryLambda,
@@ -822,6 +959,7 @@ export class APIStack extends Stack {
       ...(sdeStack?.getLambdas() ?? []),
       jobsStack.getAssets().runPatientJobLambda,
       analyticsPlatformStack?.getAssets().fhirToCsvBulkLambda,
+      analyticsPlatformStack?.getAssets().fhirToCsvIncrementalLambda,
     ];
     const apiUrl = `http://${apiDirectUrl}`;
     lambdasToGetApiUrl.forEach(lambda => lambda?.addEnvironment("API_URL", apiUrl));
@@ -838,39 +976,17 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantRead(ehrComputeResourceDiffBundlesLambda);
     medicalDocumentsBucket.grantRead(ehrWriteBackResourceDiffBundlesLambda);
 
-    createDocQueryChecker({
+    hl7v2RosterUploadLambdas?.forEach(lambda =>
+      lambda.grantInvoke(apiService.taskDefinition.taskRole)
+    );
+
+    new ScheduledLambdasNestedStack(this, "ScheduledLambdasNestedStack", {
       lambdaLayers,
-      stack: this,
+      alertAction: slackNotification?.alertAction,
       vpc: this.vpc,
-      apiAddress: apiDirectUrl,
-      alarmSnsAction: slackNotification?.alarmAction,
+      config: props.config,
+      apiDirectUrl,
     });
-
-    createJobsScheduler({
-      lambdaLayers,
-      stack: this,
-      vpc: this.vpc,
-      apiAddress: apiDirectUrl,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
-
-    if (props.config.quest) {
-      createUploadRosterScheduledLambda({
-        lambdaLayers,
-        stack: this,
-        vpc: this.vpc,
-        apiAddress: apiDirectUrl,
-        alarmSnsAction: slackNotification?.alarmAction,
-      });
-
-      createDownloadResponseScheduledLambda({
-        lambdaLayers,
-        stack: this,
-        vpc: this.vpc,
-        apiAddress: apiDirectUrl,
-        alarmSnsAction: slackNotification?.alarmAction,
-      });
-    }
 
     //-------------------------------------------
     // API Gateway
@@ -918,6 +1034,21 @@ export class APIStack extends Stack {
       recordName: apiServerUrl,
       zone: publicZone,
       target: r53.RecordTarget.fromAlias(new r53_targets.ApiGateway(api)),
+    });
+
+    // Additional API subdomains (e.g., practicefusion.api.staging.metriport.com)
+    props.config.additionalApiSubdomains?.forEach(subdomain => {
+      const fullDomain = `${subdomain}.${apiServerUrl}`;
+      api.addDomainName(`APIDomain-${subdomain}`, {
+        domainName: fullDomain,
+        certificate: certificate,
+        securityPolicy: apig.SecurityPolicy.TLS_1_2,
+      });
+      new r53.ARecord(this, `APIDomainRecord-${subdomain}`, {
+        recordName: fullDomain,
+        zone: publicZone,
+        target: r53.RecordTarget.fromAlias(new r53_targets.ApiGateway(api)),
+      });
     });
 
     // add basic usage plan
@@ -972,7 +1103,7 @@ export class APIStack extends Stack {
     const tokenAuth = this.setupTokenAuthLambda(
       lambdaLayers,
       dynamoDBTokenTable,
-      slackNotification?.alarmAction,
+      slackNotification?.alertAction,
       props.config.environmentType,
       props.config.lambdasSentryDSN
     );
@@ -991,11 +1122,12 @@ export class APIStack extends Stack {
     this.setupCWDocContribution({
       baseResource: contributionResource,
       lambdaLayers,
-      alarmAction: slackNotification?.alarmAction,
+      alarmAction: slackNotification?.alertAction,
       authorizer: oauthAuth,
       oauthScopes: oauthScopes,
       envType: props.config.environmentType,
       bucket: medicalDocumentsBucket,
+      docIdToFilepathMappingTable,
     });
 
     // TODO move this to its own stack/nested stack, name it accordingly so it doesn't
@@ -1011,6 +1143,7 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       code: lambda.DockerImageCode.fromImageAsset("../fhir-converter", {
         file: "Dockerfile.lambda",
+        platform: ecr_assets.Platform.LINUX_AMD64,
       }),
       timeout: Duration.minutes(1),
       memorySize: 1024,
@@ -1031,6 +1164,7 @@ export class APIStack extends Stack {
       medicalDocumentsBucket,
       medicalDocumentsUploadBucket,
       sentryDsn: props.config.lambdasSentryDSN,
+      docIdToFilepathMappingTable,
     });
 
     this.setupBulkUrlSigningLambda({
@@ -1041,7 +1175,7 @@ export class APIStack extends Stack {
       fhirServerUrl: props.config.fhirServerUrl,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: slackNotification?.alarmAction,
+      alarmAction: slackNotification?.alertAction,
       searchEndpoint: searchDomainEndpoint,
       searchIndex: ccdaSearchIndexName,
       searchUserName: searchDomainUserName,
@@ -1132,19 +1266,6 @@ export class APIStack extends Stack {
         limit: this.isProd(props) ? 10000 : 500,
         period: apig.Period.DAY,
       },
-    });
-
-    createScheduledAPIQuotaChecker({
-      stack: this,
-      lambdaLayers,
-      vpc: this.vpc,
-      apiAddress: apiDirectUrl,
-    });
-    createScheduledDBMaintenance({
-      stack: this,
-      lambdaLayers,
-      vpc: this.vpc,
-      apiAddress: apiDirectUrl,
     });
 
     //-------------------------------------------
@@ -1559,7 +1680,7 @@ export class APIStack extends Stack {
       memory: 512,
       timeout: Duration.minutes(5),
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alarmAction,
     });
 
     isSandboxSeed && medicalSeedDocumentsBucket.grantRead(bulkUrlSigningLambda);
@@ -1567,59 +1688,6 @@ export class APIStack extends Stack {
     bulkUrlSigningLambda.grantInvoke(apiTaskRole);
 
     return bulkUrlSigningLambda;
-  }
-
-  private setupFhirToMedicalRecordLambda(ownProps: {
-    lambdaLayers: LambdaLayers;
-    vpc: ec2.IVpc;
-    medicalDocumentsBucket: s3.Bucket;
-    envType: EnvType;
-    dashUrl: string;
-    sentryDsn: string | undefined;
-    alarmAction: SnsAction | undefined;
-    featureFlagsTable: dynamodb.Table;
-  }): { fhirToMedicalRecordLambda2: Lambda } {
-    const {
-      lambdaLayers,
-      vpc,
-      sentryDsn,
-      envType,
-      dashUrl,
-      alarmAction,
-      medicalDocumentsBucket,
-      featureFlagsTable,
-    } = ownProps;
-
-    const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
-    const axiosTimeout = lambdaTimeout.minus(Duration.seconds(5));
-
-    const fhirToMedicalRecordLambda2 = createLambda({
-      stack: this,
-      name: "FhirToMedicalRecord2",
-      runtime: lambda.Runtime.NODEJS_18_X,
-      entry: "fhir-to-medical-record2",
-      envType,
-      envVars: {
-        AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
-        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
-        PDF_CONVERT_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
-        FEATURE_FLAGS_TABLE_NAME: featureFlagsTable.tableName,
-        DASH_URL: dashUrl,
-        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-      },
-      layers: [lambdaLayers.shared, lambdaLayers.langchain, lambdaLayers.wkHtmlToPdf],
-      memory: 4096,
-      timeout: lambdaTimeout,
-      isEnableInsights: true,
-      vpc,
-      alarmSnsAction: alarmAction,
-    });
-
-    featureFlagsTable.grantReadData(fhirToMedicalRecordLambda2);
-
-    medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda2);
-
-    return { fhirToMedicalRecordLambda2 };
   }
 
   private setupCWDocContribution(ownProps: {
@@ -1630,9 +1698,18 @@ export class APIStack extends Stack {
     oauthScopes: cognito.OAuthScope[];
     envType: EnvType;
     bucket: s3.Bucket;
+    docIdToFilepathMappingTable: dynamodb.Table;
   }): Lambda {
-    const { baseResource, lambdaLayers, alarmAction, authorizer, oauthScopes, envType, bucket } =
-      ownProps;
+    const {
+      baseResource,
+      lambdaLayers,
+      alarmAction,
+      authorizer,
+      oauthScopes,
+      envType,
+      bucket,
+      docIdToFilepathMappingTable,
+    } = ownProps;
 
     const cwLambda = createLambda({
       stack: this,
@@ -1640,12 +1717,13 @@ export class APIStack extends Stack {
       runtime: lambda.Runtime.NODEJS_18_X,
       entry: "cw-doc-contribution",
       layers: [lambdaLayers.shared],
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alarmAction,
       envType,
       envVars: {
         ...(bucket && {
           MEDICAL_DOCUMENTS_BUCKET_NAME: bucket.bucketName,
         }),
+        DOC_ID_MAPPING_TABLE_NAME: docIdToFilepathMappingTable.tableName,
       },
     });
 
@@ -1656,6 +1734,7 @@ export class APIStack extends Stack {
     });
 
     bucket.grantReadWrite(cwLambda);
+    docIdToFilepathMappingTable.grantReadWriteData(cwLambda);
 
     return cwLambda;
   }
@@ -1678,7 +1757,7 @@ export class APIStack extends Stack {
         TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alarmAction,
     });
 
     const tokenAuth = new apig.RequestAuthorizer(this, "APITokenAuth", {
@@ -1828,38 +1907,6 @@ export class APIStack extends Stack {
     return oauthResource;
   }
 
-  private addDynamoPerformanceAlarms(
-    table: dynamodb.Table,
-    dynamoConstructName: string,
-    alarmAction?: SnsAction
-  ) {
-    const readUnitsMetric = table.metricConsumedReadCapacityUnits();
-    const readAlarm = readUnitsMetric.createAlarm(
-      this,
-      `${dynamoConstructName}ConsumedReadCapacityUnitsAlarm`,
-      {
-        threshold: 10_000, // units per second
-        evaluationPeriods: 1,
-        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-      }
-    );
-    alarmAction && readAlarm.addAlarmAction(alarmAction);
-    alarmAction && readAlarm.addOkAction(alarmAction);
-
-    const writeUnitsMetric = table.metricConsumedWriteCapacityUnits();
-    const writeAlarm = writeUnitsMetric.createAlarm(
-      this,
-      `${dynamoConstructName}ConsumedWriteCapacityUnitsAlarm`,
-      {
-        threshold: 10_000, // units per second
-        evaluationPeriods: 1,
-        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-      }
-    );
-    alarmAction && writeAlarm.addAlarmAction(alarmAction);
-    alarmAction && writeAlarm.addOkAction(alarmAction);
-  }
-
   private isProd(props: APIStackProps): boolean {
     return isProd(props.config);
   }
@@ -1868,7 +1915,7 @@ export class APIStack extends Stack {
 function setupSlackNotifSnsTopic(
   stack: Stack,
   config: EnvConfig
-): { snsTopic: ITopic; alarmAction: SnsAction } | undefined {
+): { snsTopic: ITopic; alertAction: SnsAction } | undefined {
   if (!config.slack) return undefined;
 
   const slackNotifSnsTopic = new sns.Topic(stack, "SlackSnsTopic", {
@@ -1880,6 +1927,6 @@ function setupSlackNotifSnsTopic(
     channelId: config.slack.alertsChannelId,
     topics: [slackNotifSnsTopic],
   });
-  const alarmAction = new SnsAction(slackNotifSnsTopic);
-  return { snsTopic: slackNotifSnsTopic, alarmAction };
+  const alertAction = new SnsAction(slackNotifSnsTopic);
+  return { snsTopic: slackNotifSnsTopic, alertAction };
 }

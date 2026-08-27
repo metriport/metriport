@@ -2,9 +2,8 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
-import { capture } from "@metriport/core/util";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
-import { errorToString } from "@metriport/shared";
 import httpStatus from "http-status";
 import { z } from "zod";
 import { getHieOverview } from "../../../command/medical/admin/hie-overview";
@@ -51,9 +50,10 @@ router.get(
  *
  * Unlinks a patient from a facility and removes all data associated with it.
  *
+ * @param req.query.cxId - The customer ID.
  * @param req.query.patientId - The patient's ID.
  * @param req.query.oid - The oid of the facility to unlink from.
- * @param req.query.dryRun - If true, will only simulate the unlink operation.
+ * @param req.query.dryRun - If true, will only simulate the unlink operation. Optional, default is false.
  */
 router.post(
   "/unlink",
@@ -71,11 +71,7 @@ router.post(
       patientId,
       oid,
       dryRun,
-    }).catch(err => {
-      const msg = `Error unlinking patient from organization`;
-      log(`${msg}: ${errorToString(err)}`);
-      capture.error(msg, { extra: { cxId, patientId, oid, err } });
-    });
+    }).catch(processAsyncError("Error unlinking patient from organization", log, true));
 
     return res.status(httpStatus.OK).json({
       processing: true,

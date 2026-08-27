@@ -1,39 +1,36 @@
-with subject_reference as (
-    {{ get_single_reference(
-        'stage__observation', 
-        'observation_id', 
-        'subject', 
-        'subject_reference'
-    ) }}
-),
-encounter_reference as (
-    {{ get_single_reference(
-        'stage__observation', 
-        'observation_id', 
-        'encounter', 
-        'encounter_reference'
-    ) }}
-),
-performer_references as (
-    {{ get_multiple_references(
-        'stage__observation', 
-        2, 
-        'observation_id', 
-        'performer', 
-        'performer', 
-        'reference'
-    ) }}
-),
-all_references as (
-    select * from subject_reference
-    union all
-    select * from encounter_reference
-    union all
-    select * from performer_references
-)
+{{ config(unique_key='m_patient_id') }}
+
 select
-        observation_id
-    ,   property
-    ,   reference_id
-    ,   reference_type
-from all_references
+        s.id as observation_id
+    ,   t.property
+    ,   {{ get_reference_id('t.reference_value') }} as reference_id
+    ,   {{ get_reference_type('t.reference_value') }} as reference_type
+    ,   s.m_patient_id
+    ,   s.m_job_id
+    ,   s.m_created_at
+    ,   s.m_updated_at
+    ,   s.m_deleted_at
+    ,   s.raw_to_core_job_id
+from {{ref('stage__observation')}} s
+cross join lateral unnest(
+    array[
+        s.subject_reference,
+        s.encounter_reference,
+        s.performer_0_reference,
+        s.performer_1_reference,
+        s.performer_2_reference
+    ],
+    array[
+        'subject',
+        'encounter',
+        'performer',
+        'performer',
+        'performer'
+    ]
+) with ordinality as t(reference_value, property, reference_index)
+where t.reference_value is not null
+    and t.reference_value != ''
+    and (
+        s.subject_reference is not null or s.encounter_reference is not null or
+        s.performer_0_reference is not null or s.performer_1_reference is not null or s.performer_2_reference is not null
+    )

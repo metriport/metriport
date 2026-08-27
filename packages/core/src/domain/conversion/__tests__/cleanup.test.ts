@@ -4,10 +4,12 @@ import {
   GREATER_THAN,
   LESS_THAN,
   cleanUpTranslationCode,
-  replaceXmlTagChars,
-  xmlTranslationCodeRegex,
+  normalizeHtmlTags,
+  removeXlinkHrefNamespace,
   replaceAmpersand,
   replaceNullFlavor,
+  replaceXmlTagChars,
+  xmlTranslationCodeRegex,
 } from "../cleanup";
 
 describe("cleanUpTranslationCode", () => {
@@ -166,6 +168,25 @@ describe("replaceXmlTagChars", () => {
   });
 });
 
+describe("normalizeHtmlTags", () => {
+  test("should normalize uppercase table tags to lowercase", () => {
+    const input = "<TABLE><TR><TD>content</TD></TR></TABLE>";
+    const expected = "<table><tr><td>content</td></tr></table>";
+    expect(normalizeHtmlTags(input)).toBe(expected);
+  });
+
+  test("should handle BR tags", () => {
+    const input = "line1<BR/>line2<BR></BR>";
+    const expected = "line1<br/>line2<br></br>";
+    expect(normalizeHtmlTags(input)).toBe(expected);
+  });
+
+  test("should preserve already lowercase tags", () => {
+    const input = "<table><tr><td>content</td></tr></table>";
+    expect(normalizeHtmlTags(input)).toBe(input);
+  });
+});
+
 describe("replaceNullFlavor", () => {
   test('should replace <id nullFlavor="NI" with <id extension="1" root="1"', () => {
     const input = '<id nullFlavor="NI">';
@@ -221,6 +242,27 @@ describe("replaceNullFlavor", () => {
     const input = '<id nullFlavor="ni">';
     const expected = '<id extension="1" root="1">';
     expect(replaceNullFlavor(input)).toBe(expected);
+  });
+});
+
+describe("removeXlinkHrefNamespace", () => {
+  test("should replace xlink:href with href", () => {
+    const imageTag = `<image xlink:href="https://example.com">`;
+    expect(removeXlinkHrefNamespace(createTestCase(imageTag))).toBe(
+      createTestCase(imageTag.replace("xlink:href", "href"))
+    );
+  });
+
+  test("should replace many instances of xlink:href", () => {
+    const imageTag = `<image xlink:href="https://example.com"><br/><image xlink:href="https://example2.com">`;
+    expect(removeXlinkHrefNamespace(createTestCase(imageTag))).toBe(
+      createTestCase(imageTag.replace(/xlink:href/g, "href"))
+    );
+  });
+
+  test("should keep original if no xlink:href", () => {
+    const imageTag = `<image href="https://example.com">`;
+    expect(removeXlinkHrefNamespace(createTestCase(imageTag))).toBe(createTestCase(imageTag));
   });
 });
 

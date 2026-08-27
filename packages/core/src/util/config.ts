@@ -1,7 +1,15 @@
+import { MetriportError } from "@metriport/shared";
 import { getEnvVarAsRecordOrFail } from "@metriport/shared/common/env-var";
+import { DbCreds, dbCredsSchema } from "@metriport/shared/domain/db";
 import { ROSTER_UPLOAD_SFTP_PASSWORD } from "@metriport/shared/domain/tcm-encounter";
 import type { BedrockRegion } from "../external/bedrock/client";
 import { SftpConfig } from "../external/sftp/types";
+import {
+  SnowflakeCreds,
+  snowflakeCredsSchema,
+  SnowflakeSettingsForAllCxs,
+  snowflakeSettingsForAllCxsSchema,
+} from "../external/snowflake/creds";
 import { getEnvVar, getEnvVarOrFail } from "./env-var";
 
 /**
@@ -17,7 +25,7 @@ export class Config {
   static readonly STAGING_ENV = "staging";
 
   static isCloudEnv(): boolean {
-    return process.env.NODE_ENV === this.PROD_ENV;
+    return process.env["NODE_ENV"] === this.PROD_ENV;
   }
 
   static isProduction(): boolean {
@@ -56,6 +64,9 @@ export class Config {
 
   static getGeneralBucketName(): string {
     return getEnvVarOrFail("GENERAL_BUCKET_NAME");
+  }
+  static getAuditLogsBucketName(): string {
+    return getEnvVarOrFail("AUDIT_LOGS_BUCKET_NAME");
   }
 
   static getSearchEndpoint(): string {
@@ -121,6 +132,9 @@ export class Config {
     return getEnvVarOrFail("HL7_NOTIFICATION_QUEUE_URL");
   }
   static getHieConfigDictionary(): Record<string, unknown> {
+    if (Config.isSandbox()) {
+      return { SandboxTestHie: { timezone: "America/New_York" } };
+    }
     return getEnvVarAsRecordOrFail("HIE_CONFIG_DICTIONARY");
   }
 
@@ -144,6 +158,10 @@ export class Config {
   static getCqTrustBundleBucketName(): string {
     return getEnvVarOrFail("CQ_TRUST_BUNDLE_BUCKET_NAME");
   }
+  static getEhexTrustBundleBucketName(): string {
+    return getEnvVarOrFail("EHEX_TRUST_BUNDLE_BUCKET_NAME");
+  }
+
   static getApiUrl(): string {
     return getEnvVarOrFail("API_URL");
   }
@@ -167,6 +185,36 @@ export class Config {
     return getEnvVar("IHE_PARSED_RESPONSES_BUCKET_NAME");
   }
 
+  static getEhexOutboundBucketName(): string | undefined {
+    return getEnvVar("EHEX_RESPONSES_BUCKET_NAME");
+  }
+
+  static getEhexInboundBucketName(): string | undefined {
+    return getEnvVar("EHEX_REQUESTS_BUCKET_NAME");
+  }
+
+  static getEhexParsedResponsesBucketName(): string | undefined {
+    return getEnvVar("EHEX_PARSED_RESPONSES_BUCKET_NAME");
+  }
+
+  // TODO ENG-1601 Duplicate of Config.getEhexOrgUrls() on packages/api, keep this one here.
+  static getEhexServiceOwnUrls(): string | undefined {
+    return getEnvVar("EHEX_SERVICE_OWN_URLS");
+  }
+
+  static getEhexOrgPrivateKey(): string {
+    return getEnvVarOrFail("EHEX_ORG_PRIVATE_KEY");
+  }
+  static getEhexOrgPrivateKeyPassword(): string {
+    return getEnvVarOrFail("EHEX_ORG_PRIVATE_KEY_PASSWORD");
+  }
+  static getEhexOrgCertificate(): string {
+    return getEnvVarOrFail("EHEX_ORG_CERTIFICATE");
+  }
+  static getEhexOrgCertificateIntermediate(): string {
+    return getEnvVarOrFail("EHEX_ORG_CERTIFICATE_INTERMEDIATE");
+  }
+
   static getFHIRtoBundleLambdaName(): string {
     return getEnvVarOrFail("FHIR_TO_BUNDLE_LAMBDA_NAME");
   }
@@ -182,20 +230,44 @@ export class Config {
     return getEnvVar("BEDROCK_VERSION");
   }
 
+  static getBedrockApiKeySecretName(): string | undefined {
+    return getEnvVar("BEDROCK_API_KEY_SECRET");
+  }
+
+  static getBedrockApiKey(): string | undefined {
+    return getEnvVar("BEDROCK_API_KEY");
+  }
+
+  static getBedrockBaseUrl(): string {
+    return getEnvVarOrFail("BEDROCK_BASE_URL");
+  }
+
   static getComprehendRegion(): string {
     return getEnvVar("COMPREHEND_REGION") ?? Config.getAWSRegion();
+  }
+
+  static getBasetenApiKeySecretName(): string | undefined {
+    return getEnvVar("BASETEN_API_KEY_SECRET");
+  }
+
+  static getBasetenApiKey(): string | undefined {
+    return getEnvVar("BASETEN_API_KEY");
+  }
+
+  static getBasetenBaseUrl(): string {
+    return getEnvVarOrFail("BASETEN_BASE_URL");
   }
 
   static getAiBriefModelId(): string | undefined {
     return getEnvVar("AI_BRIEF_MODEL_ID");
   }
 
-  static getGroqApiKey(): string {
-    return getEnvVarOrFail("GROQ_API_KEY");
-  }
-
   static getFeatureFlagsTableName(): string {
     return getEnvVarOrFail("FEATURE_FLAGS_TABLE_NAME");
+  }
+
+  static getPatientStateTableName(): string {
+    return getEnvVarOrFail("PATIENT_STATE_TABLE_NAME");
   }
 
   static getEhrResponsesBucketName(): string | undefined {
@@ -216,6 +288,20 @@ export class Config {
   }
   static getPatientImportResultLambdaName(): string {
     return getEnvVarOrFail("PATIENT_IMPORT_RESULT_LAMBDA_NAME");
+  }
+  static getPatientMonitoringScheduledQueriesQueueUrl(): string {
+    return getEnvVarOrFail("PATIENT_MONITORING_SCHEDULED_QUERIES_QUEUE_URL");
+  }
+
+  static getDocumentQueryQueueUrl(): string {
+    return getEnvVarOrFail("DOCUMENT_QUERY_QUEUE_URL");
+  }
+
+  static getWaitTimeInMillis(): number {
+    const fallbackWaitTime = 5000;
+    const waitTimeRaw = getEnvVar("WAIT_TIME_IN_MILLIS");
+    const waitTime = waitTimeRaw ? parseInt(waitTimeRaw) : fallbackWaitTime;
+    return Number.isNaN(waitTime) ? fallbackWaitTime : waitTime;
   }
 
   static getDischargeRequeryQueueUrl(): string {
@@ -264,8 +350,19 @@ export class Config {
     return getEnvVar("SFTP_ACTION_LAMBDA") != undefined;
   }
 
+  static isDebugModeEnabled(): boolean {
+    return getEnvVar("DEBUG_MODE_ENABLED") === "true";
+  }
+
   static getSurescriptsHost(): string {
     return getEnvVarOrFail("SURESCRIPTS_SFTP_HOST");
+  }
+  static getSurescriptsPort(): number {
+    const port = Number.parseInt(getEnvVarOrFail("SURESCRIPTS_SFTP_PORT"));
+    if (isFinite(port)) {
+      return port;
+    }
+    throw new Error("SURESCRIPTS_SFTP_PORT is not a valid number");
   }
   static getSurescriptsSftpSenderId(): string {
     return getEnvVarOrFail("SURESCRIPTS_SFTP_SENDER_ID");
@@ -282,35 +379,26 @@ export class Config {
   static getSurescriptsSftpPrivateKey(): string {
     return getEnvVarOrFail("SURESCRIPTS_SFTP_PRIVATE_KEY");
   }
+  static getSurescriptsSftpActionLambdaName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_SFTP_ACTION_LAMBDA_NAME");
+  }
+  static getSurescriptsUploadRosterLambdaName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_UPLOAD_ROSTER_LAMBDA_NAME");
+  }
+  static getSurescriptsIngestAllResponsesLambdaName(): string {
+    return getEnvVarOrFail("SURESCRIPTS_INGEST_ALL_RESPONSES_LAMBDA_NAME");
+  }
+  static getSurescriptsConvertBatchResponseQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_CONVERT_BATCH_RESPONSE_QUEUE_URL");
+  }
+  static getSurescriptsConvertPatientResponseQueueUrl(): string {
+    return getEnvVarOrFail("SURESCRIPTS_CONVERT_PATIENT_RESPONSE_QUEUE_URL");
+  }
   static getSurescriptsReplicaBucketName(): string {
     return getEnvVarOrFail("SURESCRIPTS_REPLICA_BUCKET_NAME");
   }
   static getPharmacyConversionBucketName(): string | undefined {
     return getEnvVar("PHARMACY_CONVERSION_BUCKET_NAME");
-  }
-  static getSurescriptsSftpActionLambdaName(): string {
-    return getEnvVarOrFail("SURESCRIPTS_SFTP_ACTION_LAMBDA_NAME");
-  }
-  static getSurescriptsConvertPatientResponseLambdaName(): string {
-    return getEnvVarOrFail("SURESCRIPTS_CONVERT_PATIENT_RESPONSE_LAMBDA_NAME");
-  }
-  static getSurescriptsConvertBatchResponseLambdaName(): string {
-    return getEnvVarOrFail("SURESCRIPTS_CONVERT_BATCH_RESPONSE_LAMBDA_NAME");
-  }
-  static getSurescriptsSendPatientRequestQueueUrl(): string {
-    return getEnvVarOrFail("SURESCRIPTS_SEND_PATIENT_REQUEST_QUEUE_URL");
-  }
-  static getSurescriptsSendBatchRequestQueueUrl(): string {
-    return getEnvVarOrFail("SURESCRIPTS_SEND_BATCH_REQUEST_QUEUE_URL");
-  }
-  static getSurescriptsVerifyRequestInHistoryQueueUrl(): string {
-    return getEnvVarOrFail("SURESCRIPTS_VERIFY_REQUEST_IN_HISTORY_QUEUE_URL");
-  }
-  static getSurescriptsReceiveVerificationQueueUrl(): string {
-    return getEnvVarOrFail("SURESCRIPTS_RECEIVE_VERIFICATION_QUEUE_URL");
-  }
-  static getSurescriptsReceiveResponseQueueUrl(): string {
-    return getEnvVarOrFail("SURESCRIPTS_RECEIVE_RESPONSE_QUEUE_URL");
   }
 
   static getQuestSftpHost(): string {
@@ -341,14 +429,11 @@ export class Config {
   static getQuestUploadRosterLambdaName(): string {
     return getEnvVarOrFail("QUEST_UPLOAD_ROSTER_LAMBDA_NAME");
   }
-  static getQuestDownloadResponseLambdaName(): string {
-    return getEnvVarOrFail("QUEST_DOWNLOAD_RESPONSE_LAMBDA_NAME");
+  static getQuestIngestAllResponsesLambdaName(): string {
+    return getEnvVarOrFail("QUEST_INGEST_ALL_RESPONSES_LAMBDA_NAME");
   }
-  static getQuestFhirConverterQueueUrl(): string {
-    return getEnvVarOrFail("QUEST_FHIR_CONVERTER_QUEUE_URL");
-  }
-  static getQuestFhirConverterLambdaName(): string {
-    return getEnvVarOrFail("QUEST_FHIR_CONVERTER_LAMBDA_NAME");
+  static getQuestConvertPatientResponseQueueUrl(): string {
+    return getEnvVarOrFail("QUEST_CONVERT_PATIENT_RESPONSE_QUEUE_URL");
   }
   static getQuestReplicaBucketName(): string | undefined {
     return getEnvVar("QUEST_REPLICA_BUCKET_NAME");
@@ -397,6 +482,14 @@ export class Config {
     return getEnvVar("EHR_SALESFORCE_ENVIRONMENT");
   }
 
+  static getPracticeFusionEnv(): string | undefined {
+    return getEnvVar("EHR_PRACTICEFUSION_ENVIRONMENT");
+  }
+
+  static getPracticeFusionClientKeySecretMap(): string | undefined {
+    return getEnvVar("PRACTICEFUSION_CLIENT_KEY_AND_SECRET_MAP");
+  }
+
   static getRunPatientJobQueueUrl(): string {
     return getEnvVarOrFail("RUN_PATIENT_JOB_QUEUE_URL");
   }
@@ -411,12 +504,36 @@ export class Config {
     return getEnvVarOrFail("FHIR_CONVERTER_BUCKET_NAME");
   }
 
-  static getAnalyticsBucketName(): string | undefined {
-    return getEnvVar("ANALYTICS_BUCKET_NAME");
+  static getAnalyticsBucketName(): string {
+    return getEnvVarOrFail("ANALYTICS_BUCKET_NAME");
   }
-  /** For development only - cloud should call a lambda that has it setup differently */
-  static getAnalyticsDbCreds(): string {
-    return getEnvVarOrFail("ANALYTICS_DB_CREDS");
+  static getAnalyticsDbCreds(): DbCreds {
+    try {
+      return dbCredsSchema.parse(JSON.parse(getEnvVarOrFail("ANALYTICS_DB_CREDS")));
+    } catch (error) {
+      throw new MetriportError("Error parsing analytics db creds", error);
+    }
+  }
+  static getAnalyticsDbReaderHost(): string {
+    return getEnvVarOrFail("ANALYTICS_DB_READER_HOST");
+  }
+  static getAnalyticsDbReaderCname(): string {
+    return getEnvVarOrFail("ANALYTICS_DB_READER_CNAME");
+  }
+  static getCreateFhirTablesLambdaName(): string {
+    return getEnvVarOrFail("CREATE_FHIR_TABLES_LAMBDA_NAME");
+  }
+  static getFhirToCsvDbUsername(): string {
+    return getEnvVarOrFail("FHIR_TO_CSV_DB_USERNAME");
+  }
+  static getFhirToCsvDbPassword(): string {
+    return getEnvVarOrFail("FHIR_TO_CSV_DB_PASSWORD");
+  }
+  static getRawToCoreDbUsername(): string {
+    return getEnvVarOrFail("RAW_TO_CORE_DB_USERNAME");
+  }
+  static getRawToCoreDbPassword(): string {
+    return getEnvVarOrFail("RAW_TO_CORE_DB_PASSWORD");
   }
 
   // ENG-536 remove this once we automatically find the discharge summary
@@ -437,11 +554,88 @@ export class Config {
     return getEnvVar("FHIR_TO_CSV_TRANSFORM_HTTP_ENDPOINT") ?? "http://localhost:8001";
   }
 
-  static getCoreTransformBatchJobQueueArn(): string {
-    return getEnvVarOrFail("CORE_TRANSFORM_BATCH_JOB_QUEUE_ARN");
+  static getCqlTransformQueueUrl(): string {
+    return getEnvVarOrFail("CQL_TRANSFORM_QUEUE_URL");
   }
-  static getCoreTransformBatchJobDefinitionArn(): string {
-    return getEnvVarOrFail("CORE_TRANSFORM_BATCH_JOB_DEFINITION_ARN");
+  static getHedisCliLambdaName(): string {
+    return getEnvVarOrFail("HEDIS_CLI_LAMBDA_NAME");
+  }
+  static getHedisCliTransformHttpEndpoint(): string {
+    return getEnvVar("HEDIS_CLI_TRANSFORM_HTTP_ENDPOINT") ?? "http://localhost:8002";
+  }
+
+  static getRawToCoreTriggerQueueUrl(): string {
+    return getEnvVarOrFail("RAW_TO_CORE_TRIGGER_QUEUE_URL");
+  }
+  static getRawToCoreCompletionTopicArn(): string | undefined {
+    return getEnvVar("RAW_TO_CORE_COMPLETION_TOPIC_ARN");
+  }
+  static getRawToCoreBatchJobQueueArn(): string {
+    return getEnvVarOrFail("RAW_TO_CORE_BATCH_JOB_QUEUE_ARN");
+  }
+  static getRawToCoreBatchJobDefinitionArn(): string {
+    return getEnvVarOrFail("RAW_TO_CORE_BATCH_JOB_DEFINITION_ARN");
+  }
+  static getRawToCoreHttpEndpoint(): string {
+    return getEnvVar("RAW_TO_CORE_TRANSFORM_HTTP_ENDPOINT") ?? "http://localhost:8003";
+  }
+  static getCoreToHedisTriggerQueueUrl(): string {
+    return getEnvVarOrFail("CORE_TO_HEDIS_TRIGGER_QUEUE_URL");
+  }
+  static getCoreToHedisCompletionTopicArn(): string | undefined {
+    return getEnvVar("CORE_TO_HEDIS_COMPLETION_TOPIC_ARN");
+  }
+  static getCoreToHedisBatchJobQueueArn(): string {
+    return getEnvVarOrFail("CORE_TO_HEDIS_BATCH_JOB_QUEUE_ARN");
+  }
+  static getCoreToHedisBatchJobDefinitionArn(): string {
+    return getEnvVarOrFail("CORE_TO_HEDIS_BATCH_JOB_DEFINITION_ARN");
+  }
+  static getCoreToHedisHttpEndpoint(): string {
+    return getEnvVar("CORE_TO_HEDIS_TRANSFORM_HTTP_ENDPOINT") ?? "http://localhost:8004";
+  }
+  static getExportCoreFromFwhToS3QueueUrl(): string {
+    return getEnvVarOrFail("EXPORT_CORE_FROM_FWH_TO_S3_QUEUE_URL");
+  }
+  static getExportCoreFromFwhToS3CompletionTopicArn(): string | undefined {
+    return getEnvVar("EXPORT_CORE_FROM_FWH_TO_S3_COMPLETION_TOPIC_ARN");
+  }
+  static getExportCoreFromFwhToS3BatchJobQueueArn(): string {
+    return getEnvVarOrFail("EXPORT_CORE_FROM_FWH_TO_S3_BATCH_JOB_QUEUE_ARN");
+  }
+  static getExportCoreFromFwhToS3BatchJobDefinitionArn(): string {
+    return getEnvVarOrFail("EXPORT_CORE_FROM_FWH_TO_S3_BATCH_JOB_DEFINITION_ARN");
+  }
+  // Connector ingestion
+  static getSnowflakeConnectorQueueUrl(): string {
+    return getEnvVarOrFail("SNOWFLAKE_CONNECTOR_QUEUE_URL");
+  }
+  static getSnowflakeConnectorBatchJobQueueArn(): string {
+    return getEnvVarOrFail("SNOWFLAKE_CONNECTOR_BATCH_JOB_QUEUE_ARN");
+  }
+  static getSnowflakeConnectorBatchJobDefinitionArn(): string {
+    return getEnvVarOrFail("SNOWFLAKE_CONNECTOR_BATCH_JOB_DEFINITION_ARN");
+  }
+  static getConnectorIngestionCompleteTopicArn(): string | undefined {
+    return getEnvVar("CONNECTOR_INGESTION_COMPLETE_TOPIC_ARN");
+  }
+  static getSnowflakeCredsForAllRegions(): SnowflakeCreds {
+    try {
+      return snowflakeCredsSchema.parse(
+        JSON.parse(getEnvVarOrFail("SNOWFLAKE_CREDS_FOR_ALL_REGIONS"))
+      );
+    } catch (error) {
+      throw new MetriportError("Error parsing snowflake creds", error);
+    }
+  }
+  static getSnowflakeSettingsForAllCustomers(): SnowflakeSettingsForAllCxs {
+    try {
+      return snowflakeSettingsForAllCxsSchema.parse(
+        JSON.parse(getEnvVarOrFail("SNOWFLAKE_SETTINGS_FOR_ALL_CXS"))
+      );
+    } catch (error) {
+      throw new MetriportError("Error parsing snowflake settings for all customers", error);
+    }
   }
 
   static getRosterUploadSftpPasswordName(): string {
@@ -530,5 +724,21 @@ export class Config {
 
   static getOutboundRateLimitTableName(): string | undefined {
     return getEnvVar("OUTBOUND_RATE_LIMIT_TABLE_NAME");
+  }
+
+  static getHeartbeatCheckId(): string {
+    return getEnvVarOrFail("HEARTBEAT_CHECK_ID");
+  }
+
+  static getChecklyApiKey(): string {
+    return getEnvVarOrFail("CHECKLY_API_KEY_SECRET");
+  }
+
+  static getChecklyAccountId(): string {
+    return getEnvVarOrFail("CHECKLY_ACCOUNT_ID_SECRET");
+  }
+
+  static getDocIdMappingTableName(): string {
+    return getEnvVarOrFail("DOC_ID_MAPPING_TABLE_NAME");
   }
 }

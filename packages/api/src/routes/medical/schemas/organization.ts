@@ -25,9 +25,14 @@ export const organizationInternalDetailsSchema = z
     // CQ
     cqApproved: z.boolean().optional(),
     cqActive: z.boolean().optional(),
+    principalOid: z.string().nullable().optional(),
+    delegateOids: z.array(z.string()).default([]),
     // CW
     cwApproved: z.boolean().optional(),
     cwActive: z.boolean().optional(),
+    // EHEX
+    ehexApproved: z.boolean().optional(),
+    ehexActive: z.boolean().optional(),
   })
   .and(
     z.union([

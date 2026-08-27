@@ -16,4 +16,6 @@ The practitioner table contains information on healthcare providers who deliver 
 | first_name | varchar | Practitioner's first name |
 | last_name | varchar | Practitioner's last name |
 | specialty | varchar | Medical specialty |
-| data_source | varchar | Source of the practitioner data |
+| meta_source | varchar | Source document filename from FHIR meta.source |
+| data_source | varchar | **Deprecated.** Use `meta_source` instead. |
+| data_source_ext | varchar | Integration source of the data, derived from FHIR extension |

@@ -2,6 +2,7 @@ import {
   BadRequestError,
   errorToString,
   GenderAtBirth,
+  isValidUuid,
   MetriportError,
   normalizeDobSafe,
   normalizeExternalId as normalizeExternalIdFromShared,
@@ -18,6 +19,7 @@ import {
 } from "../../../domain/patient";
 import { PatientPayload } from "../patient-import";
 import { mapCsvAddresses } from "./address";
+import { mapCsvCohorts } from "./cohort";
 import { mapCsvContacts } from "./contact";
 import { ParsingError } from "./shared";
 
@@ -35,6 +37,8 @@ const genderFieldNameLower = genderFieldName.toLowerCase();
 const ssnFieldNameLower = ssnFieldName.toLowerCase();
 const externalIdFieldNameLower = externalIdFieldName.toLowerCase();
 const externalId2FieldNameLower = externalId2FieldName.toLowerCase();
+const facilityIdFieldName = "facilityId";
+const facilityIdFieldNameLower = facilityIdFieldName.toLowerCase();
 
 const driversLicensePrefixUS = "driversLicense"; // licenSe
 const driversLicensePrefixGB = "driversLicence"; // licenCe
@@ -119,6 +123,16 @@ export function mapCsvPatientToMetriportPatient(
   errors.push(...driversLicenseErrors);
   const personalIdentifiers: PersonalIdentifier[] = [ssn, driversLicense].flatMap(filterTruthy);
 
+  const { cohortIds, errors: cohortErrors } = mapCsvCohorts(csvPatient);
+  errors.push(...cohortErrors);
+
+  let facilityId: string | undefined = undefined;
+  try {
+    facilityId = getFacilityIdFromCsv(csvPatient);
+  } catch (error) {
+    errors.push({ field: facilityIdFieldName, error: errorToString(error) });
+  }
+
   if (errors.length > 0) {
     return errors;
   }
@@ -135,6 +149,8 @@ export function mapCsvPatientToMetriportPatient(
     address: addresses,
     contact: contacts,
     personalIdentifiers,
+    cohortIds,
+    facilityId,
   };
   // TODO ENG-467 Enable this when we move the validate to packages/core
   // validate(ptCreate);
@@ -222,4 +238,15 @@ function getDriversLicenseState(
     }
   }
   return value;
+}
+
+function getFacilityIdFromCsv(csvPatient: Record<string, string | undefined>): string | undefined {
+  const raw = csvPatient[facilityIdFieldNameLower];
+  const facilityId = raw?.trim();
+  if (!facilityId) return undefined;
+
+  if (!isValidUuid(facilityId)) {
+    throw new BadRequestError(`Invalid facility ID (must be a valid UUID)`);
+  }
+  return facilityId;
 }

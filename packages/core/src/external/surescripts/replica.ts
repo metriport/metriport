@@ -1,9 +1,12 @@
+import { SurescriptsRosterType } from "@metriport/shared/interface/external/surescripts/roster";
+import { decompressGzip } from "../../util/compression";
 import { Config } from "../../util/config";
 import { S3Replica } from "../sftp/replica/s3";
-import { SurescriptsFileIdentifier, SurescriptsSftpConfig } from "./types";
-import { buildRequestFileName, buildResponseFileNamePrefix } from "./file/file-names";
-import { decompressGzip } from "../../util/compression";
 import { INCOMING_NAME } from "./constants";
+import { buildPatientResponseFileName, buildResponseFileNamePrefix } from "./file/file-names";
+import { SurescriptsFileIdentifier, SurescriptsSftpConfig } from "./types";
+
+export const SURESCRIPTS_PATIENT_RESPONSE_DIRECTORY = "surescripts_patient_response_files";
 
 export class SurescriptsReplica extends S3Replica {
   constructor(config: Pick<SurescriptsSftpConfig, "replicaBucket" | "replicaBucketRegion"> = {}) {
@@ -11,19 +14,6 @@ export class SurescriptsReplica extends S3Replica {
       bucketName: config.replicaBucket ?? Config.getSurescriptsReplicaBucketName(),
       region: config.replicaBucketRegion ?? Config.getAWSRegion(),
     });
-  }
-
-  async getRawVerificationFile(transmissionId: string): Promise<Buffer | undefined> {
-    const requestFileName = buildRequestFileName(transmissionId);
-    const verificationFileNames = await this.listFileNamesWithPrefix(
-      INCOMING_NAME,
-      requestFileName
-    );
-    const verificationFile = verificationFileNames[0];
-    if (!verificationFile) {
-      return undefined;
-    }
-    return await this.readFile(verificationFile);
   }
 
   /**
@@ -38,35 +28,56 @@ export class SurescriptsReplica extends S3Replica {
     const prefix = buildResponseFileNamePrefix(transmissionId, populationId);
     const responseFileNames = await this.listFileNamesWithPrefix(INCOMING_NAME, prefix);
     const responseFile = responseFileNames[0];
-    if (!responseFile) {
-      return undefined;
-    }
+    if (!responseFile) return undefined;
     const fileContent = await this.readFile(responseFile);
     return decompressGzip(fileContent);
   }
 
-  async getRawResponseFileByKey(key: string): Promise<Buffer | undefined> {
-    const fileContent = await this.readFile(key);
-    return decompressGzip(fileContent);
+  async uploadPatientResponseFile({
+    cxId,
+    patientId,
+    transmissionId,
+    populationId,
+    rosterType,
+    fileContent,
+  }: {
+    cxId: string;
+    patientId: string;
+    transmissionId: string;
+    populationId: string;
+    rosterType: SurescriptsRosterType;
+    fileContent: Buffer;
+  }): Promise<void> {
+    const fileName = buildPatientResponseFileName({
+      cxId,
+      patientId,
+      transmissionId,
+      populationId,
+      rosterType,
+    });
+    await this.writeFile(`${SURESCRIPTS_PATIENT_RESPONSE_DIRECTORY}/${fileName}`, fileContent);
   }
 
-  async listResponseFiles(): Promise<
-    Array<{ key: string; transmissionId: string; patientId: string }>
-  > {
-    const responseFiles = await this.listFileNames(INCOMING_NAME);
-    const startIndex = INCOMING_NAME.length + 1;
-    return responseFiles
-      .filter(key => {
-        return key.charAt(startIndex + 10) === "_" && key.charAt(startIndex + 47) === "_";
-      })
-      .map(key => {
-        const transmissionId = key.substring(startIndex, startIndex + 10);
-        const patientId = key.substring(startIndex + 11, startIndex + 47);
-        return {
-          key,
-          transmissionId,
-          patientId,
-        };
-      });
+  async getPatientResponseFile({
+    cxId,
+    patientId,
+    transmissionId,
+    populationId,
+    rosterType,
+  }: {
+    cxId: string;
+    patientId: string;
+    transmissionId: string;
+    populationId: string;
+    rosterType: SurescriptsRosterType;
+  }): Promise<Buffer> {
+    const fileName = buildPatientResponseFileName({
+      cxId,
+      patientId,
+      transmissionId,
+      populationId,
+      rosterType,
+    });
+    return await this.readFile(`${SURESCRIPTS_PATIENT_RESPONSE_DIRECTORY}/${fileName}`);
   }
 }

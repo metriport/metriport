@@ -8,15 +8,17 @@ import { EnvType } from "../env-type";
 import { EnvConfig } from "../../config/env-config";
 import { LambdaLayers } from "../shared/lambda-layers";
 import { createLambda } from "../shared/lambda";
+import { buildSecret } from "../shared/secrets";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { SDEAssets } from "./types";
+import { createBucket } from "../shared/bucket";
 
 const extractDocumentLambdaTimeout = Duration.minutes(5);
 
 interface SDENestedStackProps extends NestedStackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
-  alarmAction?: SnsAction;
+  alertAction?: SnsAction;
   lambdaLayers: LambdaLayers;
 }
 
@@ -42,15 +44,23 @@ export class SDEStack extends NestedStack {
   constructor(scope: Construct, id: string, props: SDENestedStackProps) {
     super(scope, id, props);
 
-    this.structuredDataBucket = new s3.Bucket(this, "StructuredDataBucket", {
-      bucketName: props.config.structuredDataBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      versioned: true,
-    });
+    const structuredDataBucketName = props.config.structuredDataBucketName;
+    if (!structuredDataBucketName) throw new Error("structuredDataBucketName is required");
+    this.structuredDataBucket = createBucket(
+      this,
+      {
+        bucketName: structuredDataBucketName,
+        versioned: true,
+      },
+      "StructuredDataBucket"
+    );
 
     const envVars: Record<string, string> = {
       STRUCTURED_DATA_BUCKET_NAME: this.structuredDataBucket.bucketName,
+      ...(props.config.baseten && {
+        BASETEN_API_KEY_SECRET: props.config.baseten.secretNames.BASETEN_API_KEY,
+        BASETEN_BASE_URL: props.config.baseten.basetenBaseUrl,
+      }),
     };
 
     const commonConfig = {
@@ -58,7 +68,7 @@ export class SDEStack extends NestedStack {
       vpc: props.vpc,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: props.alarmAction,
+      alertAction: props.alertAction,
       quest: props.config.quest,
       systemRootOID: props.config.systemRootOID,
       termServerUrl: props.config.termServerUrl,
@@ -69,6 +79,14 @@ export class SDEStack extends NestedStack {
       ...commonConfig,
       structuredDataBucket: this.structuredDataBucket,
     });
+
+    if (props.config.baseten) {
+      const basetenApiKeySecret = buildSecret(
+        this,
+        props.config.baseten.secretNames.BASETEN_API_KEY
+      );
+      basetenApiKeySecret.grantRead(this.extractDocumentLambda);
+    }
   }
 
   getLambdas(): Lambda[] {
@@ -90,7 +108,7 @@ export class SDEStack extends NestedStack {
       envType: EnvType;
       envVars: Record<string, string>;
       sentryDsn: string | undefined;
-      alarmAction: SnsAction | undefined;
+      alertAction: SnsAction | undefined;
       systemRootOID: string;
       structuredDataBucket: s3.Bucket;
     }
@@ -103,7 +121,7 @@ export class SDEStack extends NestedStack {
       envType,
       envVars,
       sentryDsn,
-      alarmAction,
+      alertAction,
       systemRootOID,
       structuredDataBucket,
     } = props;
@@ -121,7 +139,7 @@ export class SDEStack extends NestedStack {
       },
       layers: [lambdaLayers.shared],
       vpc,
-      alarmSnsAction: alarmAction,
+      alertSnsAction: alertAction,
     });
 
     structuredDataBucket.grantReadWrite(lambda);

@@ -9,13 +9,11 @@ import {
   canvasClientSource,
   CanvasDashJwtTokenData,
   canvasDashSource,
+  CanvasPluginJwtTokenData,
+  canvasPluginSource,
   CanvasWebhookJwtTokenData,
   canvasWebhookSource,
 } from "@metriport/shared/interface/external/ehr/canvas/jwt-token";
-import {
-  SalesforceDashJwtTokenData,
-  salesforceDashSource,
-} from "@metriport/shared/interface/external/ehr/salesforce/jwt-token";
 import {
   EClinicalWorksDashJwtTokenData,
   eclinicalworksDashSource,
@@ -27,9 +25,23 @@ import {
   elationDashSource,
 } from "@metriport/shared/interface/external/ehr/elation/jwt-token";
 import {
+  EmbedDashJwtTokenData,
+  embedDashSource,
+} from "@metriport/shared/interface/external/ehr/embed/jwt-token";
+import {
   HealthieDashJwtTokenData,
   healthieDashSource,
 } from "@metriport/shared/interface/external/ehr/healthie/jwt-token";
+import {
+  PracticeFusionDashJwtTokenData,
+  practicefusionDashSource,
+  PracticefusionRefreshJwtTokenData,
+  practicefusionRefreshSource,
+} from "@metriport/shared/interface/external/ehr/practicefusion/jwt-token";
+import {
+  SalesforceDashJwtTokenData,
+  salesforceDashSource,
+} from "@metriport/shared/interface/external/ehr/salesforce/jwt-token";
 import { findOrCreateJwtToken, getJwtToken } from "../../../../command/jwt-token";
 import { JwtTokenData, JwtTokenSource } from "../../../../domain/jwt-token";
 
@@ -40,6 +52,8 @@ export const ehrDashJwtTokenSources = [
   healthieDashSource,
   eclinicalworksDashSource,
   salesforceDashSource,
+  practicefusionDashSource,
+  embedDashSource,
 ] as const;
 export type EhrDashJwtTokenSource = (typeof ehrDashJwtTokenSources)[number];
 export function isEhrDashJwtTokenSource(source: string): source is EhrDashJwtTokenSource {
@@ -52,7 +66,9 @@ export type EhrDashJwtTokenData =
   | ElationDashJwtTokenData
   | HealthieDashJwtTokenData
   | EClinicalWorksDashJwtTokenData
-  | SalesforceDashJwtTokenData;
+  | SalesforceDashJwtTokenData
+  | PracticeFusionDashJwtTokenData
+  | EmbedDashJwtTokenData;
 
 export const ehrClientJwtTokenSources = [
   athenaClientSource,
@@ -76,6 +92,22 @@ export function isEhrWebhookJwtTokenSource(source: string): source is EhrWebhook
 }
 
 export type EhrWebhookJwtTokenData = CanvasWebhookJwtTokenData;
+
+export const ehrRefreshJwtTokenSources = [practicefusionRefreshSource] as const;
+export type EhrRefreshJwtTokenSource = (typeof ehrRefreshJwtTokenSources)[number];
+export function isEhrRefreshJwtTokenSource(source: string): source is EhrRefreshJwtTokenSource {
+  return ehrRefreshJwtTokenSources.includes(source as EhrRefreshJwtTokenSource);
+}
+
+export type EhrRefreshJwtTokenData = PracticefusionRefreshJwtTokenData;
+
+export const ehrPluginJwtTokenSources = [canvasPluginSource] as const;
+export type EhrPluginJwtTokenSource = (typeof ehrPluginJwtTokenSources)[number];
+export function isEhrPluginJwtTokenSource(source: string): source is EhrPluginJwtTokenSource {
+  return ehrPluginJwtTokenSources.includes(source as EhrPluginJwtTokenSource);
+}
+
+export type EhrPluginJwtTokenData = CanvasPluginJwtTokenData;
 
 export async function checkJwtToken({
   token,

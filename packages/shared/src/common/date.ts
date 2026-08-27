@@ -246,3 +246,7 @@ export function basicToExtendedIso8601(basicIso8601: string): string {
 
   return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
 }
+
+export function buildTtlForXDays(days: number): number {
+  return Math.floor(Date.now() / 1000) + days * 24 * 60 * 60;
+}

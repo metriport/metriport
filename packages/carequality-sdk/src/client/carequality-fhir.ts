@@ -75,7 +75,7 @@ export class CarequalityManagementApiFhir implements CarequalityManagementApi {
       baseURL: baseUrl,
     });
 
-    // TODO: #1536 - improved retry logic. Issue: https://github.com/metriport/metriport-internal/issues/1536
+    // TODO: #1536 - improved retry logic.
     axiosRetry(this.api, {
       retries: options?.retries ?? DEFAULT_MAX_RETRIES,
       retryDelay: retryCount => {

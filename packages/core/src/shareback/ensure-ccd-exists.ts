@@ -1,17 +1,18 @@
 import { executeWithNetworkRetries } from "@metriport/shared";
-import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { CCD_SUFFIX, createUploadFilePath } from "../shareback/file";
 import { S3Utils } from "../external/aws/s3";
+import { createCcdDocumentPath } from "../shareback/file";
+import { makeAxiosInstance } from "../util/axios";
 import { Config } from "../util/config";
+import { processAsyncError } from "../util/error/shared";
 
 dayjs.extend(duration);
 
 const apiUrl = Config.getApiLoadBalancerAddress();
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
-const api = axios.create();
+const api = makeAxiosInstance();
 const bucket = Config.getMedicalDocumentsBucketName();
 
 export async function ensureCcdExists({
@@ -23,7 +24,7 @@ export async function ensureCcdExists({
   patientId: string;
   log: typeof console.log;
 }): Promise<void> {
-  const destinationKey = createUploadFilePath(cxId, patientId, `${CCD_SUFFIX}.xml`);
+  const destinationKey = createCcdDocumentPath({ cxId, patientId });
   const ccdExists = await s3Utils.fileExists(bucket, destinationKey);
   if (ccdExists) return;
 
@@ -43,9 +44,9 @@ export async function ensureCcdExists({
 
   executeWithNetworkRetries(async () => api.post(`${apiUrl}/internal/docs/ccd?${params}`), {
     log,
-  });
+  }).catch(processAsyncError("Failed to trigger CCD generation", log, true));
 
-  log("CCD generated.");
+  log(`Empty CCD generated at ${destinationKey}`);
 
   return;
 }

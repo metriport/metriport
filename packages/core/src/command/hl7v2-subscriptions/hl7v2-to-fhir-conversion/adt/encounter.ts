@@ -7,9 +7,20 @@ import {
 import { Hl7MessageType, getHl7MessageTypeOrFail } from "../msh";
 import { getConditions, getEncounterReason } from "./condition";
 import { getLocationFromAdt } from "./location";
-import { DEFAULT_ENCOUNTER_CLASS, adtToFhirEncounterClassMap, isAdtPatientClass } from "./mappings";
+import {
+  DEFAULT_ENCOUNTER_CLASS,
+  DISCHARGE_DISPOSITION_SYSTEM,
+  adtToFhirEncounterClassMap,
+  isAdtPatientClass,
+  mapDischargeDisposition,
+} from "./mappings";
 import { getParticipantsFromAdt } from "./practitioner";
-import { createEncounterId, getEncounterPeriod, getPatientClassCode } from "./utils";
+import {
+  createEncounterId,
+  getDischargeDisposition,
+  getEncounterPeriod,
+  getPatientClassCode,
+} from "./utils";
 
 export function convertAdtToFhirResources(
   adt: Hl7Message,
@@ -28,6 +39,7 @@ export function convertAdtToFhirResources(
     buildConditionReference({ resource: condition })
   );
   const location = getLocationFromAdt(adt, hieName);
+  const hospitalization = getHospitalization(adt);
 
   const encounter: Encounter = {
     id: encounterId,
@@ -40,6 +52,7 @@ export function convertAdtToFhirResources(
     subject: buildPatientReference(patientId),
     ...(participants ? { participant: participants.references } : undefined),
     ...(location ? { location: [location.locationReference] } : undefined),
+    ...(hospitalization ? { hospitalization } : undefined),
   };
 
   return [
@@ -48,6 +61,31 @@ export function convertAdtToFhirResources(
     ...(participants?.practitioners ?? []),
     ...(location ? [location.location] : []),
   ];
+}
+
+/**
+ * Builds the hospitalization component with discharge disposition from PV1.36.
+ * !Warning! We should NOT rely on having an accurate discharge disposition for any HIE other than Bamboo.
+ */
+function getHospitalization(adt: Hl7Message): Encounter["hospitalization"] | undefined {
+  const rawDisposition = getDischargeDisposition(adt);
+  const disposition = mapDischargeDisposition(rawDisposition);
+
+  if (!disposition) return undefined;
+
+  return {
+    //TODO 1823: add more hospitalization fields
+    dischargeDisposition: {
+      coding: [
+        {
+          system: DISCHARGE_DISPOSITION_SYSTEM,
+          code: disposition.code,
+          display: disposition.display,
+        },
+      ],
+      text: disposition.display,
+    },
+  };
 }
 
 /**

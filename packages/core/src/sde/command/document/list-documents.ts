@@ -5,7 +5,7 @@ import { out } from "../../../util/log";
 import { S3Utils } from "../../../external/aws/s3";
 import {
   createDocumentFilePathPrefix,
-  parseDocumentFileName,
+  parseDocumentFilePath,
 } from "../../../domain/document/filename";
 
 const documentKeySuffix = ".xml.json";
@@ -34,7 +34,7 @@ export async function listDocumentIds({
     .compact()
     .filter(key => key.endsWith(documentKeySuffix))
     .map(key => {
-      const { docId } = parseDocumentFileName(key);
+      const { docId } = parseDocumentFilePath(key);
       return path.basename(docId, ".xml");
     })
     .compact()
