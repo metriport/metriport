@@ -40,7 +40,7 @@
         "intent": "original-order",
         "code":{{>DataType/CodeableConcept.hbs code=serviceEntry.code}},   
         "priority":"{{serviceEntry.priorityCode.displayName}}",
-        "occuranceDateTime":"{{formatAsDateTime serviceEntry.effectiveTime.value}}",
+        "occurrenceDateTime":"{{formatAsDateTime serviceEntry.effectiveTime.value}}",
     },
     "request":{
         "method":"PUT",
