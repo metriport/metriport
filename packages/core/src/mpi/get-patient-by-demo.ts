@@ -43,7 +43,7 @@ export async function getPatientByDemo({
   });
 
   foundPatients.sort(
-    (a: Patient, b: Patient) => a.createdAt.getMilliseconds() - b.createdAt.getMilliseconds()
+    (a: Patient, b: Patient) => a.createdAt.getTime() - b.createdAt.getTime()
   );
 
   // Convert patients to proper datatype
