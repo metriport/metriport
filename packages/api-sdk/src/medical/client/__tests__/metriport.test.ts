@@ -1,6 +1,30 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
+import { faker } from "@faker-js/faker";
+import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
 import crypto from "crypto";
+import { mocked } from "jest-mock";
 import { MetriportMedicalApi } from "../metriport";
+import { Demographics } from "../../models/demographics";
+
+jest.mock("axios");
+
+/**
+ * jest.mock("axios") auto-mocks isAxiosError too. Delegate it to the real
+ * implementation so tests can distinguish real AxiosErrors from plain
+ * error-shaped objects, same as the code under test does.
+ */
+const actualAxios: typeof import("axios") = jest.requireActual("axios");
+
+function makeAxiosError(status: number): AxiosError {
+  const response: AxiosResponse<undefined, undefined> = {
+    data: undefined,
+    status,
+    statusText: "Request failed",
+    headers: {},
+    config: { headers: new actualAxios.AxiosHeaders() },
+  };
+  return new actualAxios.AxiosError("Request failed", undefined, undefined, undefined, response);
+}
 
 describe("api-sdk client", () => {
   describe("verifyWebhookSignature", () => {
@@ -120,6 +144,109 @@ describe("api-sdk client", () => {
         expect(mockTimingSafeEqual).toHaveBeenCalled();
         expect(result).toBe(false);
       });
+    });
+  });
+
+  describe("getPatientByExternalId", () => {
+    const apiKey = faker.string.uuid();
+    const mockedAxios = mocked(axios);
+
+    function newClientWithMockedApi(): MetriportMedicalApi {
+      const client = new MetriportMedicalApi(apiKey);
+      (client as unknown as { api: AxiosInstance }).api = mockedAxios;
+      return client;
+    }
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockedAxios.isAxiosError.mockImplementation(actualAxios.isAxiosError);
+    });
+
+    it("returns the patient when found", async () => {
+      const client = newClientWithMockedApi();
+      const patient = { id: faker.string.uuid() };
+      mockedAxios.get.mockResolvedValueOnce({ data: patient });
+
+      const result = await client.getPatientByExternalId("external-id-123");
+
+      expect(result).toEqual(patient);
+    });
+
+    it("returns undefined when the patient is not found (404)", async () => {
+      const client = newClientWithMockedApi();
+      mockedAxios.get.mockRejectedValueOnce(makeAxiosError(404));
+
+      const result = await client.getPatientByExternalId("external-id-123");
+
+      expect(result).toBeUndefined();
+    });
+
+    it("rethrows non-404 AxiosErrors", async () => {
+      const client = newClientWithMockedApi();
+      const serverError = makeAxiosError(500);
+      mockedAxios.get.mockRejectedValueOnce(serverError);
+
+      await expect(client.getPatientByExternalId("external-id-123")).rejects.toBe(serverError);
+    });
+
+    it("rethrows a plain 404-shaped object that is not a real AxiosError", async () => {
+      const client = newClientWithMockedApi();
+      const notAnAxiosError = { response: { status: 404 } };
+      mockedAxios.get.mockRejectedValueOnce(notAnAxiosError);
+
+      await expect(client.getPatientByExternalId("external-id-123")).rejects.toBe(notAnAxiosError);
+    });
+  });
+
+  describe("matchPatient", () => {
+    const apiKey = faker.string.uuid();
+    const mockedAxios = mocked(axios);
+    const demographics = {} as Demographics;
+
+    function newClientWithMockedApi(): MetriportMedicalApi {
+      const client = new MetriportMedicalApi(apiKey);
+      (client as unknown as { api: AxiosInstance }).api = mockedAxios;
+      return client;
+    }
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockedAxios.isAxiosError.mockImplementation(actualAxios.isAxiosError);
+    });
+
+    it("returns the patient when found", async () => {
+      const client = newClientWithMockedApi();
+      const patient = { id: faker.string.uuid() };
+      mockedAxios.post.mockResolvedValueOnce({ data: patient });
+
+      const result = await client.matchPatient(demographics);
+
+      expect(result).toEqual(patient);
+    });
+
+    it("returns undefined when no match is found (404)", async () => {
+      const client = newClientWithMockedApi();
+      mockedAxios.post.mockRejectedValueOnce(makeAxiosError(404));
+
+      const result = await client.matchPatient(demographics);
+
+      expect(result).toBeUndefined();
+    });
+
+    it("rethrows non-404 AxiosErrors", async () => {
+      const client = newClientWithMockedApi();
+      const serverError = makeAxiosError(500);
+      mockedAxios.post.mockRejectedValueOnce(serverError);
+
+      await expect(client.matchPatient(demographics)).rejects.toBe(serverError);
+    });
+
+    it("rethrows a plain 404-shaped object that is not a real AxiosError", async () => {
+      const client = newClientWithMockedApi();
+      const notAnAxiosError = { response: { status: 404 } };
+      mockedAxios.post.mockRejectedValueOnce(notAnAxiosError);
+
+      await expect(client.matchPatient(demographics)).rejects.toBe(notAnAxiosError);
     });
   });
 });
