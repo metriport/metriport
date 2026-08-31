@@ -139,21 +139,40 @@ module.exports = class cda extends dataHandler {
       if (typeof data === "string" && data.includes("nonXMLBody")) {
         return reject(new Error("Can not convert unstructured CDA with nonXMLBody"));
       }
-      let minifiedData = minifyXML.minify(data, {
+      const b64Map = new Map();
+      let b64Counter = 0;
+      const b64Regex = /(<(?:\w+:)?(?:text|value)[^>]*\brepresentation=["']B64["'][^>]*>)([\s\S]*?)(<\/(?:\w+:)?(?:text|value)>)/gi;
+      const maskedData =
+        typeof data === "string"
+          ? data.replace(b64Regex, (match, openTag, content, closeTag) => {
+            const token = `__B64_TOKEN_${b64Counter++}__`;
+            b64Map.set(token, content);
+            return `${openTag}${token}${closeTag}`;
+          })
+          : data;
+
+      let minifiedData = minifyXML.minify(maskedData, {
         removeComments: true,
         removeWhitespaceBetweenTags: false, // Keep whitespace between tags to preserve spacing in text nodes
         considerPreserveWhitespace: true,
-        collapseWhitespaceInTags: true,
+        collapseWhitespaceInTags: false,
         collapseEmptyElements: true,
         trimWhitespaceFromTexts: false, // Don't trim - preserves formatting
         collapseWhitespaceInTexts: false, // Don't collapse - preserves line breaks and spacing
-        collapseWhitespaceInProlog: true,
+        collapseWhitespaceInProlog: false,
         collapseWhitespaceInDocType: true,
         removeUnusedNamespaces: true,
         removeUnusedDefaultNamespace: true,
         shortenNamespaces: true,
         ignoreCData: true,
       });
+
+      if (b64Map.size > 0) {
+        for (const [token, content] of b64Map.entries()) {
+          minifiedData = minifiedData.replace(token, content);
+        }
+      }
+
       minifiedData = this.preProcessData(minifiedData);
       // fs.writeFileSync(`../../minified.xml`, JSON.stringify(minifiedData, null, 2));
       const parseOptions = {
