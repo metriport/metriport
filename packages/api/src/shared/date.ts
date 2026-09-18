@@ -3,6 +3,7 @@ import {
   ISO_DATE_TIME,
   isValidISODateTime,
   isValidISODate as isValidISODateShared,
+  toIsoDate,
 } from "@metriport/shared/common/date";
 import dayjs from "dayjs";
 
@@ -38,11 +39,20 @@ export const secondsToISODateTime = (unixTime: number): string => {
   return dayjs.unix(unixTime).toISOString();
 };
 
+/**
+ * Parses a query/body date field as `YYYY-MM-DD`.
+ *
+ * ISO dateTime values (e.g. `2024-06-01T11:14:17.452Z`) are accepted and
+ * coerced to their calendar date so clients that send timestamps on date
+ * filters don't get a 400.
+ */
 export function parseISODate(date?: string): string | undefined {
-  if (date && !isValidISODate(date)) {
+  if (date === undefined) return date;
+  const normalized = toIsoDate(date);
+  if (!normalized) {
     throw new BadRequestError(`Date must be in format ${ISO_DATE} - got ${date}`);
   }
-  return date;
+  return normalized;
 }
 
 export function validateISODateOrDateTime(date?: string): string | undefined {

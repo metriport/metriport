@@ -4,6 +4,8 @@ import {
   convertDateToTimeString,
   isValidISODate,
   isValidISODateTime,
+  optionalDateSchema,
+  toIsoDate,
   validateDateIsAfter1900,
   validateDateOfBirth,
   ValidateDobFn,
@@ -15,6 +17,45 @@ describe("shared date functions", () => {
     it("returns true for dates from E2E tests", async () => {
       expect(isValidISODate("2024-12-18T03:50:00.006Z")).toEqual(true);
       expect(isValidISODate("2024-12-18T04:18:01.263Z")).toEqual(true);
+    });
+  });
+
+  describe("toIsoDate", () => {
+    it("returns YYYY-MM-DD dates unchanged", () => {
+      expect(toIsoDate("2024-06-01")).toEqual("2024-06-01");
+    });
+
+    it("coerces ISO dateTime to the calendar date prefix", () => {
+      expect(toIsoDate("2024-06-01T11:14:17.452Z")).toEqual("2024-06-01");
+    });
+
+    it("trims surrounding whitespace before coercing", () => {
+      expect(toIsoDate("  2024-06-01T11:14:17.452Z  ")).toEqual("2024-06-01");
+    });
+
+    it("returns undefined for invalid values", () => {
+      expect(toIsoDate("not-a-date")).toBeUndefined();
+      expect(toIsoDate("06/01/2024")).toBeUndefined();
+      expect(toIsoDate("")).toBeUndefined();
+    });
+  });
+
+  describe("optionalDateSchema", () => {
+    it("parses ISO dates", () => {
+      expect(optionalDateSchema.parse("2024-06-01")).toEqual("2024-06-01");
+    });
+
+    it("coerces dateTime values to ISO dates", () => {
+      expect(optionalDateSchema.parse("2024-06-01T11:14:17.452Z")).toEqual("2024-06-01");
+    });
+
+    it("allows missing values", () => {
+      expect(optionalDateSchema.parse(undefined)).toBeUndefined();
+      expect(optionalDateSchema.parse(null)).toBeNull();
+    });
+
+    it("rejects invalid values", () => {
+      expect(() => optionalDateSchema.parse("not-a-date")).toThrow("Invalid ISO date");
     });
   });
 

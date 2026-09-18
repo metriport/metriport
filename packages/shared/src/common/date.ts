@@ -19,8 +19,28 @@ export function isValidISODateTime(date: string): boolean {
   return buildDayjs(date, ISO_DATE_TIME, true).isValid();
 }
 
+const ISO_DATE_PREFIX_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Coerces an ISO date or dateTime string to `YYYY-MM-DD`.
+ *
+ * Callers often send dateTime values (e.g. `new Date().toISOString()`) on
+ * properties that are documented as dates. Using the calendar-date prefix
+ * preserves the date the client wrote instead of shifting it across a UTC
+ * day boundary.
+ *
+ * @returns the ISO date, or `undefined` if the value is not a date/dateTime
+ */
+export function toIsoDate(date: string): string | undefined {
+  const trimmed = date.trim();
+  if (!isValidISODate(trimmed) && !isValidISODateTime(trimmed)) return undefined;
+  const datePart = trimmed.substring(0, 10);
+  if (!ISO_DATE_PREFIX_REGEX.test(datePart)) return undefined;
+  return datePart;
+}
+
 function isValidISODateOptional(date: string | undefined | null): boolean {
-  return date ? isValidISODate(date) : true;
+  return date ? toIsoDate(date) != null : true;
 }
 
 export type ValidateDobFn = (date: string) => boolean;
@@ -87,7 +107,11 @@ export const optionalDateSchema = z
   .string()
   .trim()
   .nullish()
-  .refine(isValidISODateOptional, invalidIsoMsg);
+  .refine(isValidISODateOptional, invalidIsoMsg)
+  .transform(val => {
+    if (val == null) return val;
+    return toIsoDate(val) ?? val;
+  });
 
 export const dateSchema = z.string().trim().refine(isValidISODate, invalidIsoMsg);
 
