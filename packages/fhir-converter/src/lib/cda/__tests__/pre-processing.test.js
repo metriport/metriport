@@ -1,6 +1,20 @@
 const cda = require('../cda');
 
 describe("preProcessData", function () {
+  it("removes the empty placeholder time with a UTC offset", function () {
+    const cdaInstance = new cda();
+    const data = '<effectiveTime><time value="00010101000000+0000" /></effectiveTime>';
+
+    expect(cdaInstance.preProcessData(data)).toBe("<effectiveTime></effectiveTime>");
+  });
+
+  it("marks an empty placeholder value as unknown even with whitespace before the closing tag", function () {
+    const cdaInstance = new cda();
+    const data = '<low value="0001010100000000" />';
+
+    expect(cdaInstance.preProcessData(data)).toBe('<low nullFlavor="NI" />');
+  });
+
   it("returns the same data if no ampersands present", function (done) {
     const cdaInstance = new cda();
     const data = '<XML data>';

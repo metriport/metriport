@@ -29,9 +29,9 @@ let dataHandler = require("../dataHandler/dataHandler");
 let minifyXML = require("minify-xml");
 const { XMLParser } = require("fast-xml-parser");
 
-const elementTime00010101Regex = new RegExp('<time value="00010101000000+0000"s*/>', "g");
+const elementTime00010101Regex = /<time value="00010101000000\+0000"\s*\/>/g;
 const elementTime00010101Replacement = "";
-const valueTime00010101Regex = new RegExp('value="00010101000000*"s*/>', "g");
+const valueTime00010101Regex = /value="00010101000000*"\s*\/>/g;
 const valueTime00010101Replacement = 'nullFlavor="NI" />';
 
 const ampersandRegex = new RegExp("&(?!(?:#\\d+|#x[\\da-fA-F]+|amp|lt|gt|quot|apos);)", "g");
