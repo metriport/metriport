@@ -3,6 +3,7 @@ import {
   DeduplicationResult,
   dangerouslyAssignMostDescriptiveStatus,
   combineResources,
+  createMedicationConceptKey,
   createRef,
   deduplicateWithinMap,
   getDateFromString,
@@ -66,7 +67,9 @@ export function groupSameMedRequests(medRequests: MedicationRequest[]): {
   const danglingReferences = new Set<string>();
 
   for (const medRequest of medRequests) {
-    const medRef = medRequest.medicationReference?.reference;
+    const medRef =
+      medRequest.medicationReference?.reference ??
+      createMedicationConceptKey(medRequest.medicationCodeableConcept);
     const date = medRequest.authoredOn;
 
     if (medRef && date) {

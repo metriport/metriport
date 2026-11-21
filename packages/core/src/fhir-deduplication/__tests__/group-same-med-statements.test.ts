@@ -37,4 +37,33 @@ describe("groupSameMedStatements", () => {
     const { medStatementsMap } = groupSameMedStatements([medStatementNoDate1, medStatementNoDate2]);
     expect(medStatementsMap.size).toBe(1);
   });
+  it("keeps and groups medStatements with an inline medicationCodeableConcept", () => {
+    const medicationCodeableConcept = {
+      coding: [
+        { system: "canvas_compound", code: "tirzepatide-2-5", display: "Tirzepatide 2.5 mg" },
+      ],
+      text: "Tirzepatide 2.5 mg/0.5 mL injection",
+    };
+    delete medStatement.medicationReference;
+    delete medStatement2.medicationReference;
+    medStatement.medicationCodeableConcept = medicationCodeableConcept;
+    medStatement2.medicationCodeableConcept = medicationCodeableConcept;
+
+    const { medStatementsMap, danglingReferences } = groupSameMedStatements([
+      medStatement,
+      medStatement2,
+    ]);
+    expect(medStatementsMap.size).toBe(1);
+    expect(danglingReferences.size).toBe(0);
+  });
+
+  it("does not group medStatements with different inline medications", () => {
+    delete medStatement.medicationReference;
+    delete medStatement2.medicationReference;
+    medStatement.medicationCodeableConcept = { text: "Tirzepatide 2.5 mg" };
+    medStatement2.medicationCodeableConcept = { text: "Semaglutide 0.25 mg" };
+
+    const { medStatementsMap } = groupSameMedStatements([medStatement, medStatement2]);
+    expect(medStatementsMap.size).toBe(2);
+  });
 });

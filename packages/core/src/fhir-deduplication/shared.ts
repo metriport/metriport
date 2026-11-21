@@ -416,6 +416,20 @@ export function hasBlacklistedText(concept: CodeableConcept | undefined): boolea
   return concept?.text?.toLowerCase().includes(NO_KNOWN_SUBSTRING) ?? !knownCodings?.length;
 }
 
+/**
+ * Dedup key for a medication given inline as medicationCodeableConcept instead of a reference.
+ */
+export function createMedicationConceptKey(
+  concept: CodeableConcept | undefined
+): string | undefined {
+  const codes = concept?.coding
+    ?.flatMap(coding => (coding.system && coding.code ? `${coding.system}|${coding.code}` : []))
+    .sort();
+  if (codes?.length) return `concept:${codes.join(",")}`;
+  const text = concept?.text?.trim().toLowerCase();
+  return text ? `concept:${text}` : undefined;
+}
+
 export function createRef<T extends Resource>(res: T): string {
   if (!res.id) throw new Error("FHIR Resource has no ID");
   return `${res.resourceType}/${res.id}`;

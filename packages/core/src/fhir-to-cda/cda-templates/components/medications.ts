@@ -1,4 +1,10 @@
-import { Bundle, Dosage, DosageDoseAndRate, MedicationStatement } from "@medplum/fhirtypes";
+import {
+  Bundle,
+  Dosage,
+  DosageDoseAndRate,
+  Medication,
+  MedicationStatement,
+} from "@medplum/fhirtypes";
 import { BadRequestError } from "@metriport/shared";
 import { encodeToHtml } from "@metriport/shared/common/html";
 import {
@@ -150,12 +156,30 @@ function createAugmentedMedicationStatements(
   return medicationStatements.map(statement => {
     const ref = statement.medicationReference?.reference;
     const refResource = ref ? findResourceInBundle(fhirBundle, ref) : undefined;
-    const medication = isMedication(refResource) ? refResource : undefined;
+    const medication = isMedication(refResource)
+      ? refResource
+      : buildMedicationFromConcept(statement);
     if (!medication) {
       throw new BadRequestError("MedicationStatement must reference an existing Medication");
     }
     return new AugmentedMedicationStatement(medicationsSectionName, statement, medication);
   });
+}
+
+function buildMedicationFromConcept(statement: MedicationStatement): Medication | undefined {
+  const concept = statement.medicationCodeableConcept;
+  if (!concept) return undefined;
+  // Codings without a URI system (e.g. a local EHR code) have no CDA code system to map to
+  const coding = concept.coding?.filter(c => c.system?.includes(":"));
+  const text = concept.text ?? concept.coding?.find(c => c.display)?.display;
+  return {
+    resourceType: "Medication",
+    ...(statement.id ? { id: statement.id } : {}),
+    code: {
+      ...(coding?.length ? { coding } : {}),
+      ...(text ? { text } : {}),
+    },
+  };
 }
 
 function getDosageFromMedicationStatement(statement: MedicationStatement): string {

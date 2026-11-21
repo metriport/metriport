@@ -10,7 +10,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { dangerouslyDeduplicate } from "@metriport/core/external/fhir/consolidated/deduplicate";
 import { toFHIR as toFhirOrganization } from "@metriport/core/external/fhir/organization/conversion";
-import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { isCustomerDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { out } from "@metriport/core/util/log";
 import { JSON_APP_MIME_TYPE } from "@metriport/core/util/mime";
 import { capture } from "@metriport/core/util/notifications";
@@ -80,10 +80,7 @@ async function getFhirResourcesForCcd(
     if (resource) {
       // All new FHIR data coming from our CX will now have extensions.
       if ("extension" in resource) {
-        return resource.extension?.some(
-          (extension: { valueCoding?: { code?: string } }) =>
-            extension.valueCoding?.code === metriportDataSourceExtension.valueCoding.code
-        );
+        return resource.extension?.some(isCustomerDataSourceExtension);
       }
       // We used to not add extensions to CX-contributed resources. So this will allow us to include those.
       // This is taking advantage of how all the resources resulting from external CDAs have extensions.
