@@ -76,7 +76,7 @@ function postProcessXml(xml: string, oid: string): string {
 }
 
 const textNodeRegex = />([^<]+)</g;
-const escapedTagRegex = /&lt;(\/?[A-Za-z][\w:-]*(?:\s(?:[^&<>]|&quot;|&amp;)*?)?\/?)&gt;/g;
+const escapedTagRegex = /&lt;(\/?[A-Za-z][\w:-]*(?:\s(?:[^&<>]|&quot;|&apos;|&amp;)*?)?\/?)&gt;/g;
 
 /**
  * Narrative text can carry markup from the source, such as a note's HTML table, which the builder

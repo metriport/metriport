@@ -340,10 +340,16 @@ describe("generateCdaFromFhirBundle - results", () => {
     expect(xml).toContain(`<interpretationCode code="&lt;"`);
   });
 
-  it("still renders a note's HTML table as markup", () => {
+  it.each([
+    ["a plain table", '<table border="1"><tr><td>Plan</td><td>Rest</td></tr></table>', undefined],
+    [
+      "an attribute with an apostrophe",
+      `<table><tr><td title="Patient's result">Normal</td></tr></table>`,
+      '<td title="Patient&apos;s result">Normal</td>',
+    ],
+  ])("still renders a note's HTML table as markup: %s", (_label, html, expected) => {
     const patient = makePatient();
     const organization = makeOrganization();
-    const html = '<table border="1"><tr><td>Plan</td><td>Rest</td></tr></table>';
     const note = makeDiagnosticReport({
       status: "final",
       subject: { reference: `Patient/${patient.id}` },
@@ -355,6 +361,6 @@ describe("generateCdaFromFhirBundle - results", () => {
 
     const xml = generateCdaFromFhirBundle("cx-id", bundle, "1.2.3", true);
     expect(XMLValidator.validate(xml)).toBe(true);
-    expect(xml).toContain(html);
+    expect(xml).toContain(expected ?? html);
   });
 });
