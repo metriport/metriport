@@ -78,6 +78,17 @@ describe("groupSameMedStatements", () => {
     expect(medStatementsMap.size).toBe(2);
   });
 
+  it("keeps an inline medication whose local code contains unk", () => {
+    delete medStatement.medicationReference;
+    medStatement.medicationCodeableConcept = {
+      coding: [{ system: "https://ehr.example/medications", code: "chunk-001" }],
+    };
+
+    const { medStatementsMap, danglingReferences } = groupSameMedStatements([medStatement]);
+    expect(medStatementsMap.size).toBe(1);
+    expect(danglingReferences.size).toBe(0);
+  });
+
   it("keeps an inline medication named only by its coding display", () => {
     delete medStatement.medicationReference;
     medStatement.medicationCodeableConcept = {

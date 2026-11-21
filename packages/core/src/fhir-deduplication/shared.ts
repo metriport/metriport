@@ -422,7 +422,7 @@ export function hasBlacklistedText(concept: CodeableConcept | undefined): boolea
 export function createMedicationConceptKey(
   concept: CodeableConcept | undefined
 ): string | undefined {
-  const knownCodings = concept?.coding?.filter(coding => !isUnknownCoding(coding)) ?? [];
+  const knownCodings = concept?.coding?.filter(coding => !isUnknownPlaceholder(coding)) ?? [];
   const codes = knownCodings
     .flatMap(coding => (coding.system && coding.code ? `${coding.system}|${coding.code}` : []))
     .sort();
@@ -431,6 +431,17 @@ export function createMedicationConceptKey(
     ?.trim()
     .toLowerCase();
   return text ? `concept:${text}` : undefined;
+}
+
+/**
+ * Only the unknown placeholder itself. isUnknownCoding also matches any code containing "unk",
+ * which would drop a local medication code such as "chunk-001".
+ */
+function isUnknownPlaceholder(coding: Coding): boolean {
+  return (
+    coding.system === unknownCoding.system ||
+    coding.code?.trim().toUpperCase() === unknownCoding.code
+  );
 }
 
 export function createRef<T extends Resource>(res: T): string {
