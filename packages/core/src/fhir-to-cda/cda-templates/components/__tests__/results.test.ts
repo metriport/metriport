@@ -341,6 +341,43 @@ describe("generateCdaFromFhirBundle - results", () => {
   });
 
   it.each([
+    ["Results", "lab report"],
+    ["Progress Notes", "progress note"],
+  ])("restores a multiline note's table as one unit in %s", (_section, kind) => {
+    const patient = makePatient();
+    const organization = makeOrganization();
+    const subject = { reference: `Patient/${patient.id}` };
+    const html = '<table border="1">\n<tr><td>Glucose</td></tr>\n</table>';
+    const presentedForm = [
+      { contentType: "text/html", data: Buffer.from(html).toString("base64") },
+    ];
+    const a1c = makeA1c({ subject });
+    const report =
+      kind === "lab report"
+        ? makeLabReport([a1c], { subject, presentedForm })
+        : makeDiagnosticReport({
+            status: "final",
+            subject,
+            code: {
+              coding: [{ system: "http://loinc.org", code: "11506-3", display: "Progress note" }],
+            },
+            effectiveDateTime,
+            presentedForm,
+          });
+    bundle.entry?.push(
+      { resource: patient },
+      { resource: organization },
+      { resource: a1c },
+      { resource: report }
+    );
+
+    const xml = generateCdaFromFhirBundle("cx-id", bundle, "1.2.3", true);
+    expect(XMLValidator.validate(xml)).toBe(true);
+    expect(xml).toContain('<table border="1"><br/><tr><td>Glucose</td></tr><br/></table>');
+    expect(xml).not.toContain("&lt;table");
+  });
+
+  it.each([
     ["a plain table", '<table border="1"><tr><td>Plan</td><td>Rest</td></tr></table>', true],
     [
       "an apostrophe in a double-quoted attribute",
@@ -361,6 +398,8 @@ describe("generateCdaFromFhirBundle - results", () => {
     ["an attribute with no value", "<table><tr><td nowrap>x</td></tr></table>", false],
     ["an HTML entity", "<table><tr><td>a&nbsp;b</td></tr></table>", false],
     ["unbalanced tags", "<table><tr><td>x</table>", false],
+    ["a comment", "<table><tr><td>x</td></tr></table><!-- note -->", true],
+    ["a CDATA section", "<table><tr><td>x</td></tr></table><![CDATA[raw]]>", true],
   ])("keeps the CCD valid for a note with %s", (_label, html, rendersAsMarkup) => {
     const patient = makePatient();
     const organization = makeOrganization();

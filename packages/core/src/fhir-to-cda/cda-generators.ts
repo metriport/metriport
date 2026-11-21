@@ -67,29 +67,33 @@ export function generateCdaFromFhirBundle(
 }
 
 function postProcessXml(xml: string, oid: string): string {
-  const fullXml = prependStyling(unescapeEmbeddedMarkup(xml));
+  const withLineBreaks = xml.replace(/<br>/g, "<br/>").replace(/<\/br>/g, "");
   const orgPlaceholderRegex = new RegExp(placeholderOrgOid, "g");
-  return fullXml
-    .replace(/<br>/g, "<br/>")
-    .replace(/<\/br>/g, "")
+  return prependStyling(unescapeEmbeddedMarkup(withLineBreaks))
     .replace(orgPlaceholderRegex, oid)
     .replace(/<\/text><text>/g, "");
 }
 
-const textNodeRegex = />([^<]+)</g;
+// A run of text and line breaks between two other tags: one note's narrative, spanning its lines.
+const textRunRegex = />((?:[^<]|<br\/>)+)</g;
 const escapedTagRegex = /&lt;(\/?[A-Za-z][\w:-]*(?:\s(?:[^&<>]|&quot;|&apos;|&amp;)*?)?\/?)&gt;/g;
+const escapedCommentOrCdataRegex = /&lt;(!--[\s\S]*?--|!\[CDATA\[[\s\S]*?\]\])&gt;/g;
 
 /**
  * Narrative text can carry markup from the source, such as a note's HTML table, which the builder
- * escapes. Turn escaped tags in text nodes back into markup. A text node whose restored markup is
- * not well-formed XML stays escaped and reads as text, so the document stays valid whatever the
- * source HTML looks like. Attribute values are never touched.
+ * escapes. Turn escaped tags back into markup, one note at a time across its line breaks. A note
+ * whose restored markup is not well-formed XML stays escaped and reads as text, so the document
+ * stays valid whatever the source HTML looks like. Attribute values are never touched.
  */
 function unescapeEmbeddedMarkup(xml: string): string {
-  return xml.replace(textNodeRegex, (_match, text: string) => {
-    const plainText = text.replace(/&gt;/g, ">").replace(/&quot;/g, '"');
-    if (!text.includes("&lt;")) return `>${plainText}<`;
-    const restored = text
+  return xml.replace(textRunRegex, (_match, run: string) => {
+    const plainRun = run.replace(/&gt;/g, ">").replace(/&quot;/g, '"');
+    if (!run.includes("&lt;")) return `>${plainRun}<`;
+    const restored = run
+      .replace(
+        escapedCommentOrCdataRegex,
+        (_section, inner: string) => `<${inner.replace(/&lt;/g, "<").replace(/&gt;/g, ">")}>`
+      )
       .replace(
         escapedTagRegex,
         (_tag, inner: string) => `<${inner.replace(/&quot;/g, '"').replace(/&apos;/g, "'")}>`
@@ -98,8 +102,8 @@ function unescapeEmbeddedMarkup(xml: string): string {
       .replace(/&quot;/g, '"')
       .replace(/<br>/g, "<br/>")
       .replace(/<\/br>/g, "");
-    const isWellFormed = XMLValidator.validate(`<fragment>${restored}</fragment>`) === true;
-    return `>${isWellFormed ? restored : text}<`;
+    const isWellFormed = XMLValidator.validate(`<note>${restored}</note>`) === true;
+    return `>${isWellFormed ? restored : run}<`;
   });
 }
 
