@@ -1,5 +1,6 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { BadRequestError } from "@metriport/shared";
+import { XMLValidator } from "fast-xml-parser";
 import {
   findCompositionResource,
   findOrganizationResource,
@@ -80,19 +81,25 @@ const escapedTagRegex = /&lt;(\/?[A-Za-z][\w:-]*(?:\s(?:[^&<>]|&quot;|&apos;|&am
 
 /**
  * Narrative text can carry markup from the source, such as a note's HTML table, which the builder
- * escapes. Turn escaped tags in text nodes back into markup. Attribute values, and a "<" that
- * doesn't open a tag (e.g. a result of "<0.1"), stay escaped so the document is well-formed.
+ * escapes. Turn escaped tags in text nodes back into markup. A text node whose restored markup is
+ * not well-formed XML stays escaped and reads as text, so the document stays valid whatever the
+ * source HTML looks like. Attribute values are never touched.
  */
 function unescapeEmbeddedMarkup(xml: string): string {
   return xml.replace(textNodeRegex, (_match, text: string) => {
-    const unescaped = text
+    const plainText = text.replace(/&gt;/g, ">").replace(/&quot;/g, '"');
+    if (!text.includes("&lt;")) return `>${plainText}<`;
+    const restored = text
       .replace(
         escapedTagRegex,
         (_tag, inner: string) => `<${inner.replace(/&quot;/g, '"').replace(/&apos;/g, "'")}>`
       )
       .replace(/&gt;/g, ">")
-      .replace(/&quot;/g, '"');
-    return `>${unescaped}<`;
+      .replace(/&quot;/g, '"')
+      .replace(/<br>/g, "<br/>")
+      .replace(/<\/br>/g, "");
+    const isWellFormed = XMLValidator.validate(`<fragment>${restored}</fragment>`) === true;
+    return `>${isWellFormed ? restored : text}<`;
   });
 }
 

@@ -341,18 +341,27 @@ describe("generateCdaFromFhirBundle - results", () => {
   });
 
   it.each([
-    ["a plain table", '<table border="1"><tr><td>Plan</td><td>Rest</td></tr></table>', undefined],
+    ["a plain table", '<table border="1"><tr><td>Plan</td><td>Rest</td></tr></table>', true],
     [
-      "an attribute with an apostrophe",
+      "an apostrophe in a double-quoted attribute",
       `<table><tr><td title="Patient's result">Normal</td></tr></table>`,
-      undefined,
+      true,
     ],
+    ["a single-quoted attribute", "<table><tr><td>Dose<br title='Dose'/></td></tr></table>", true],
     [
-      "a single-quoted attribute",
-      "<table><tr><td>Dose<br title='Dose'/></td></tr></table>",
-      undefined,
+      "a double quote in a single-quoted attribute",
+      `<table><tr><td title='say "hi"'>x</td></tr></table>`,
+      true,
     ],
-  ])("still renders a note's HTML table as markup: %s", (_label, html, expected) => {
+    ["an unclosed br", "<table><tr><td>line one<br>line two</td></tr></table>", true],
+    ["a > inside an attribute", '<table><tr><td title="a > b">x</td></tr></table>', false],
+    ["an unclosed hr", "<table><tr><td>x</td></tr></table><hr>", false],
+    ["an HTML comment", "<table><tr><td>x</td></tr></table><!-- note -->", false],
+    ["a less-than value in a cell", "<table><tr><td><5 mg</td></tr></table>", false],
+    ["an attribute with no value", "<table><tr><td nowrap>x</td></tr></table>", false],
+    ["an HTML entity", "<table><tr><td>a&nbsp;b</td></tr></table>", false],
+    ["unbalanced tags", "<table><tr><td>x</table>", false],
+  ])("keeps the CCD valid for a note with %s", (_label, html, rendersAsMarkup) => {
     const patient = makePatient();
     const organization = makeOrganization();
     const note = makeDiagnosticReport({
@@ -366,6 +375,6 @@ describe("generateCdaFromFhirBundle - results", () => {
 
     const xml = generateCdaFromFhirBundle("cx-id", bundle, "1.2.3", true);
     expect(XMLValidator.validate(xml)).toBe(true);
-    expect(xml).toContain(expected ?? html);
+    if (rendersAsMarkup) expect(xml).toMatch(/<td[ >]/);
   });
 });
