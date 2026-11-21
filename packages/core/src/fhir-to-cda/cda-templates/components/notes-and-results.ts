@@ -118,20 +118,58 @@ function assignSectionName(report: DiagnosticReport) {
     }
   }
 
+  // Lab reports are often coded with their analytes' LOINCs, not a section code
+  if (isLaboratoryReport(report)) return "30954-2";
+
   return "34109-9";
 }
+
+function isLaboratoryReport(report: DiagnosticReport): boolean {
+  return (
+    report.category?.some(category =>
+      category.coding?.some(coding => {
+        const code = coding.code?.trim().toLowerCase();
+        return code === "lab" || code === "laboratory";
+      })
+    ) ?? false
+  );
+}
+
+// Panels (e.g. from Canvas) point to a parent Observation that holds the analytes in `hasMember`
+const MAX_MEMBER_DEPTH = 3;
 
 function getReferencedObservations(
   report: DiagnosticReport,
   fhirBundle: Bundle
 ): Observation[] | undefined {
-  return report.result?.flatMap(result => {
-    if (result.reference?.includes("Observation")) {
-      const referencedObs = findResourceInBundle(fhirBundle, result.reference);
-      if (referencedObs) return referencedObs as Observation;
-    }
+  const seen = new Set<string>();
+  return report.result?.flatMap(result =>
+    collectObservations(result.reference, fhirBundle, seen, 0)
+  );
+}
+
+function collectObservations(
+  reference: string | undefined,
+  fhirBundle: Bundle,
+  seen: Set<string>,
+  depth: number
+): Observation[] {
+  if (!reference?.includes("Observation") || seen.has(reference) || depth > MAX_MEMBER_DEPTH) {
     return [];
-  });
+  }
+  seen.add(reference);
+  const observation = findResourceInBundle(fhirBundle, reference) as Observation | undefined;
+  if (!observation) return [];
+
+  const members = (observation.hasMember ?? []).flatMap(member =>
+    collectObservations(member.reference, fhirBundle, seen, depth + 1)
+  );
+  if (members.length > 0 && !hasObservationValue(observation)) return members;
+  return [observation, ...members];
+}
+
+function hasObservationValue(observation: Observation): boolean {
+  return Object.keys(observation).some(key => key.startsWith("value"));
 }
 
 function combineObs(

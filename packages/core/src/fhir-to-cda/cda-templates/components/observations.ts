@@ -1,6 +1,8 @@
-import { Observation, ObservationComponent } from "@medplum/fhirtypes";
+import { Observation, ObservationComponent, Quantity } from "@medplum/fhirtypes";
 import {
   ActStatusCode,
+  CdaCodeCe,
+  CdaValueIvlPq,
   CdaValuePq,
   ObservationEntry,
   ObservationEntryRelationship,
@@ -22,6 +24,8 @@ import {
   withoutNullFlavorObject,
 } from "../commons";
 import {
+  _xmlnsXsiAttribute,
+  _xmlnsXsiValue,
   _xsiTypeAttribute,
   extensionValue2015,
   loincCodeSystem,
@@ -37,6 +41,7 @@ export function createObservations(
 ): { component: ObservationEntry }[] {
   return observations.map(observation => {
     const effectiveTime = observation.effectiveDateTime?.replace(TIMESTAMP_CLEANUP_REGEX, "");
+    const valueQuantity = buildResultValueQuantity(observation.valueQuantity);
     const valueSt = buildValueSt(observation.valueString);
     const valueEd = buildValueEd(referenceId);
 
@@ -64,11 +69,68 @@ export function createObservations(
             low: withoutNullFlavorObject(effectiveTime, "_value"),
             high: withoutNullFlavorObject(effectiveTime, "_value"),
           },
-          value: valueSt ?? valueEd,
+          value: valueQuantity ?? valueSt ?? valueEd,
+          interpretationCode: buildInterpretationCodes(observation),
         },
       },
     };
   });
+}
+
+const ucumSystem = "http://unitsofmeasure.org";
+
+/**
+ * PQ for a numeric result, IVL_PQ when it has a comparator (e.g. "<0.1").
+ */
+export function buildResultValueQuantity(
+  quantity: Quantity | undefined
+): CdaValuePq | CdaValueIvlPq | undefined {
+  if (quantity?.value == undefined) return undefined;
+  const unit = quantity.system === ucumSystem && quantity.code ? quantity.code : quantity.unit;
+  const bound = { _value: quantity.value, ...(unit ? { _unit: unit } : {}) };
+  const xsi = { [_xmlnsXsiAttribute]: _xmlnsXsiValue };
+
+  switch (quantity.comparator) {
+    case "<":
+    case "<=":
+      return {
+        [_xsiTypeAttribute]: "IVL_PQ",
+        ...xsi,
+        high: { ...bound, _inclusive: quantity.comparator === "<=" ? "true" : "false" },
+      };
+    case ">":
+    case ">=":
+      return {
+        [_xsiTypeAttribute]: "IVL_PQ",
+        ...xsi,
+        low: { ...bound, _inclusive: quantity.comparator === ">=" ? "true" : "false" },
+      };
+    default:
+      return { [_xsiTypeAttribute]: "PQ", ...xsi, ...bound };
+  }
+}
+
+/** Narrative value, e.g. "<0.1 mg/dL". */
+export function formatObservationValue(observation: Observation): string | undefined {
+  const quantity = observation.valueQuantity;
+  if (quantity?.value != undefined) {
+    const unit = quantity.unit ?? quantity.code;
+    return `${quantity.comparator ?? ""}${quantity.value}${unit ? ` ${unit}` : ""}`;
+  }
+  if (observation.valueString?.trim()) return observation.valueString.trim();
+  return (
+    observation.valueCodeableConcept?.coding?.[0]?.display ?? observation.valueCodeableConcept?.text
+  );
+}
+
+function buildInterpretationCodes(observation: Observation): CdaCodeCe[] | undefined {
+  const codes = observation.interpretation?.flatMap(
+    interpretation =>
+      interpretation.coding?.map(coding =>
+        buildCodeCe({ code: coding.code, codeSystem: coding.system, displayName: coding.display })
+      ) ?? []
+  );
+  return codes?.length ? codes : undefined;
 }
 
 export function createTableRowsFromObservation(

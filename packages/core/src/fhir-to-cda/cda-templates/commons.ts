@@ -40,6 +40,7 @@ import {
   extensionValue2014,
   fdasisSystemCode,
   hl7ActCode,
+  hl7ObservationInterpretation,
   icd10SystemCode,
   loincCodeSystem,
   loincSystemCode,
@@ -66,6 +67,10 @@ CODING_MAP.set("http://www.nlm.nih.gov/research/umls/rxnorm", nlmNihSystemCode);
 CODING_MAP.set("http://www.ama-assn.org/go/cpt", amaAssnSystemCode);
 CODING_MAP.set("http://fdasis.nlm.nih.gov", fdasisSystemCode);
 CODING_MAP.set("http://terminology.hl7.org/codesystem/v3-actcode", hl7ActCode);
+CODING_MAP.set(
+  "http://terminology.hl7.org/codesystem/v3-observationinterpretation",
+  hl7ObservationInterpretation
+);
 CODING_MAP.set("http://nucc.org/provider-taxonomy", providerTaxonomy);
 CODING_MAP.set("http://hl7.org/fhir/sid/cvx", vaccineAdministeredCodeSet);
 CODING_MAP.set(ICD_10_URL, ICD_10_OID);
