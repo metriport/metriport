@@ -173,6 +173,46 @@ describe("buildVariousNotesAndResults - results", () => {
     expect(xml).not.toContain(`extension="${panel.id}"`);
   });
 
+  it("omits both valueless panels when they share an analyte", () => {
+    const a1c = makeA1c();
+    const panelCode = { coding: [] };
+    const panel1 = makeObservation({
+      code: panelCode,
+      hasMember: [{ reference: `Observation/${a1c.id}` }],
+    });
+    const panel2 = makeObservation({
+      code: panelCode,
+      hasMember: [{ reference: `Observation/${a1c.id}` }],
+    });
+    const report = makeLabReport([a1c], {
+      result: [
+        { reference: `Observation/${panel1.id}` },
+        { reference: `Observation/${panel2.id}` },
+      ],
+    });
+    bundle.entry?.push(
+      { resource: a1c },
+      { resource: panel1 },
+      { resource: panel2 },
+      { resource: report }
+    );
+
+    const xml = buildXml();
+    expect(xml.match(/<td>7\.9 %<\/td>/g)).toHaveLength(1);
+    expect(xml).not.toContain(`extension="${panel1.id}"`);
+    expect(xml).not.toContain(`extension="${panel2.id}"`);
+  });
+
+  it("does not write a non-UCUM unit into a PQ", () => {
+    const obs = makeA1c({ valueQuantity: { value: 25, unit: "customUnits" }, interpretation: [] });
+    bundle.entry?.push({ resource: obs }, { resource: makeLabReport([obs]) });
+
+    const xml = buildXml();
+    expect(xml).not.toContain(`xsi:type="PQ"`);
+    expect(xml).not.toContain(`unit="customUnits"`);
+    expect(xml).toContain("<td>25 customUnits</td>");
+  });
+
   it("does not loop on observations that reference each other", () => {
     const a1c = makeA1c();
     const panel = makeObservation({ code: { coding: [] } });

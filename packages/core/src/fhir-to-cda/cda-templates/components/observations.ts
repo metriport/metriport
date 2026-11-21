@@ -81,12 +81,15 @@ const ucumSystem = "http://unitsofmeasure.org";
 
 /**
  * PQ for a numeric result, IVL_PQ when it has a comparator (e.g. "<0.1").
+ * CDA units must be UCUM, so a quantity with a non-UCUM unit is left to the text fallback.
  */
 export function buildResultValueQuantity(
   quantity: Quantity | undefined
 ): CdaValuePq | CdaValueIvlPq | undefined {
   if (quantity?.value == undefined) return undefined;
-  const unit = quantity.system === ucumSystem && quantity.code ? quantity.code : quantity.unit;
+  const isUcum = quantity.system === ucumSystem;
+  if (!isUcum && (quantity.unit || quantity.code)) return undefined;
+  const unit = isUcum ? quantity.code ?? quantity.unit : undefined;
   const bound = { _value: quantity.value, ...(unit ? { _unit: unit } : {}) };
   const xsi = { [_xmlnsXsiAttribute]: _xmlnsXsiValue };
 
