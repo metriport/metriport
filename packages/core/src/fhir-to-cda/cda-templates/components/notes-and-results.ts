@@ -161,7 +161,10 @@ function collectObservations(
   const observation = findResourceInBundle(fhirBundle, reference) as Observation | undefined;
   if (!observation) return [];
 
-  const memberRefs = observation.hasMember?.flatMap(member => member.reference ?? []) ?? [];
+  const memberRefs =
+    observation.hasMember?.flatMap(member =>
+      member.reference?.includes("Observation") ? member.reference : []
+    ) ?? [];
   const hasResolvedMembers = memberRefs.some(ref => findResourceInBundle(fhirBundle, ref));
   const members = memberRefs.flatMap(ref => collectObservations(ref, fhirBundle, seen, depth + 1));
   if (hasResolvedMembers && !hasObservationValue(observation)) return members;

@@ -213,6 +213,25 @@ describe("buildVariousNotesAndResults - results", () => {
     expect(xml).toContain("<td>25 customUnits</td>");
   });
 
+  it("keeps a valueless panel whose only member is not an Observation", () => {
+    const questionnaireResponse = {
+      resourceType: "QuestionnaireResponse" as const,
+      id: "qr-1",
+      status: "completed" as const,
+    };
+    const panel = makeA1c({ hasMember: [{ reference: "QuestionnaireResponse/qr-1" }] });
+    delete panel.valueQuantity;
+    const report = makeLabReport([panel]);
+    bundle.entry?.push(
+      { resource: questionnaireResponse },
+      { resource: panel },
+      { resource: report }
+    );
+
+    const xml = buildXml();
+    expect(xml).toContain(`extension="${panel.id}"`);
+  });
+
   it("does not loop on observations that reference each other", () => {
     const a1c = makeA1c();
     const panel = makeObservation({ code: { coding: [] } });
