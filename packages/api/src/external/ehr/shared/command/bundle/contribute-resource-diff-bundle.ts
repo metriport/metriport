@@ -6,6 +6,10 @@ import {
   fetchBundle,
   FetchBundleParams,
 } from "@metriport/core/external/ehr/bundle/command/fetch-bundle";
+import {
+  isUnsignedCanvasEncounter,
+  matchClinicalNotesToEncounters,
+} from "@metriport/core/external/ehr/canvas/clinical-notes";
 import { createOrReplaceDocument } from "@metriport/core/external/ehr/document/command/create-or-replace-document";
 import { fetchDocument } from "@metriport/core/external/ehr/document/command/fetch-document";
 import { DocumentType } from "@metriport/core/external/ehr/document/document-shared";
@@ -16,11 +20,16 @@ import { log, out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { errorToString, MetriportError } from "@metriport/shared";
+import { createUuidFromText } from "@metriport/shared/common/uuid";
 import { athenaSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/athenahealth/cx-mapping";
+import { canvasSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/canvas/cx-mapping";
 import { createBundleFromResourceList } from "@metriport/shared/interface/external/ehr/fhir-resource";
 import { healthieSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/healthie/cx-mapping";
+import { patientMappingSecondaryMappingsSchema } from "@metriport/shared/interface/external/ehr/shared";
 import { EhrSources } from "@metriport/shared/interface/external/ehr/source";
 import axios from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { partition } from "lodash";
 import { getCxMappingOrFail, getCxMappingsByCustomer } from "../../../../../command/mapping/cx";
 import { getPatientMappingOrFail } from "../../../../../command/mapping/patient";
@@ -28,9 +37,13 @@ import { getUploadUrlAndCreateDocRef } from "../../../../../command/medical/docu
 import { handleDataContribution } from "../../../../../command/medical/patient/data-contribution/handle-data-contributions";
 import { getPatientOrFail } from "../../../../../command/medical/patient/get-patient";
 import { getAthenaPracticeIdFromPatientId } from "../../../athenahealth/shared";
+import { createCanvasClient } from "../../../canvas/shared";
 import { ContributeBundleParams } from "../../utils/bundle/types";
 
+dayjs.extend(duration);
+
 const uploadJobId = "upload";
+const noteUploadTimeout = dayjs.duration(60, "seconds");
 
 /**
  * Contribute the resource diff bundle
@@ -103,8 +116,10 @@ export async function contributeResourceDiffBundle({
       });
     }
     const secondaryMappings = athenaSecondaryMappingsSchema.parse(cxMapping.secondaryMappings);
-    if (secondaryMappings.contributionEncounterAppointmentTypesBlacklist) {
-      await dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
+    const blacklistedAppointmentTypes =
+      secondaryMappings.contributionEncounterAppointmentTypesBlacklist;
+    if (blacklistedAppointmentTypes) {
+      await dangerouslyRemoveEncounterEntries({
         ehr,
         cxId,
         metriportPatientId,
@@ -112,8 +127,11 @@ export async function contributeResourceDiffBundle({
         resourceType,
         jobId,
         bundle: bundle.bundle,
-        blacklistedAppointmentTypes:
-          secondaryMappings.contributionEncounterAppointmentTypesBlacklist,
+        shouldRemove: encounter => {
+          const appointmentTypeExtension = getEncounterAppointmentTypeIdExtension(encounter);
+          if (!appointmentTypeExtension || !appointmentTypeExtension.valueString) return true;
+          return blacklistedAppointmentTypes.includes(appointmentTypeExtension.valueString);
+        },
       });
     }
     if (secondaryMappings.contributionEncounterSummariesEnabled && resourceType === "Encounter") {
@@ -124,6 +142,44 @@ export async function contributeResourceDiffBundle({
         ehrPatientId,
         bundle: bundle.bundle,
       });
+    }
+  }
+  if (ehr === EhrSources.canvas && resourceType === "Encounter") {
+    const { practiceId } = patientMappingSecondaryMappingsSchema.parse(
+      patientMapping.secondaryMappings ?? {}
+    );
+    if (!practiceId) {
+      out(`contributeResourceDiffBundle - cxId ${cxId} ehrPatientId ${ehrPatientId}`).log(
+        "Canvas patient mapping has no practiceId, skipping encounter notes"
+      );
+    } else {
+      const cxMapping = await getCxMappingOrFail({
+        externalId: practiceId,
+        source: EhrSources.canvas,
+      });
+      const secondaryMappings = canvasSecondaryMappingsSchema.parse(
+        cxMapping.secondaryMappings ?? {}
+      );
+      if (secondaryMappings.contributionEncounterNotesEnabled) {
+        // An unsigned encounter waits for a later run, so it goes out with its note.
+        await dangerouslyRemoveEncounterEntries({
+          ehr,
+          cxId,
+          metriportPatientId,
+          ehrPatientId,
+          resourceType,
+          jobId,
+          bundle: bundle.bundle,
+          shouldRemove: isUnsignedCanvasEncounter,
+        });
+        await uploadCanvasEncounterNotes({
+          cxId,
+          practiceId,
+          metriportPatientId,
+          ehrPatientId,
+          bundle: bundle.bundle,
+        });
+      }
     }
   }
   await handleDataContribution({
@@ -139,12 +195,10 @@ export async function contributeResourceDiffBundle({
 }
 
 /**
- * Removes Encounter entries from the bundle whose appointment types are blacklisted or who do not
- * have the appointment type extension.
+ * Removes Encounter entries from the bundle that match `shouldRemove`.
  *
- * This function mutates the provided bundle by filtering out Encounter resources that have
- * appointment types present in the blacklist. It also removes any resources referenced by
- * those Encounters.
+ * This function mutates the provided bundle by filtering out matching Encounter resources. It also
+ * removes any resources that reference those Encounters.
  *
  * @param ehr - The EHR source.
  * @param cxId - The CX ID of the patient.
@@ -153,9 +207,9 @@ export async function contributeResourceDiffBundle({
  * @param resourceType - The resource type.
  * @param jobId - The job ID.
  * @param params.bundle - The FHIR Bundle to mutate.
- * @param params.blacklistedAppointmentTypes - The list of appointment types to exclude.
+ * @param params.shouldRemove - Whether an Encounter is removed.
  */
-async function dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
+async function dangerouslyRemoveEncounterEntries({
   ehr,
   cxId,
   metriportPatientId,
@@ -163,7 +217,7 @@ async function dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
   resourceType,
   jobId,
   bundle,
-  blacklistedAppointmentTypes,
+  shouldRemove,
 }: {
   ehr: EhrSources;
   cxId: string;
@@ -172,7 +226,7 @@ async function dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
   resourceType: string;
   jobId: string;
   bundle: Bundle;
-  blacklistedAppointmentTypes: string[];
+  shouldRemove: (encounter: Encounter) => boolean;
 }): Promise<void> {
   if (!bundle.entry || bundle.entry.length < 1) return;
   const encounters: Encounter[] = bundle.entry
@@ -180,17 +234,11 @@ async function dangerouslyRemoveEncounterEntriesWithBlacklistedAppointmentType({
     .map(entry => entry.resource as Encounter);
   if (encounters.length < 1) return;
   const encountersToRemoveReferences: string[] = [];
-  const encountersToRemoveIds = encounters
-    .filter((encounter: Encounter) => {
-      const appointmentTypeExtension = getEncounterAppointmentTypeIdExtension(encounter);
-      if (!appointmentTypeExtension || !appointmentTypeExtension.valueString) return true;
-      return blacklistedAppointmentTypes.includes(appointmentTypeExtension.valueString);
-    })
-    .flatMap(encounter => {
-      if (!encounter.id) return [];
-      encountersToRemoveReferences.push(buildResourceReference(encounter));
-      return [encounter.id];
-    });
+  const encountersToRemoveIds = encounters.filter(shouldRemove).flatMap(encounter => {
+    if (!encounter.id) return [];
+    encountersToRemoveReferences.push(buildResourceReference(encounter));
+    return [encounter.id];
+  });
   const setOfResourceIdsToRemove = new Set<string>(encountersToRemoveIds);
   for (const entry of bundle.entry) {
     if (!entry.resource || !entry.resource.id) continue;
@@ -428,6 +476,124 @@ async function uploadEncounterSummaries({
         uploadEncounterSummariesErrorsCount: uploadEncounterSummariesErrors.length,
         errors: uploadEncounterSummariesErrors,
         context: `${ehr}.upload-encounter-summaries`,
+      },
+      level: "warning",
+    });
+  }
+}
+
+/**
+ * Uploads the PDF of each Canvas note linked to an Encounter in the bundle, as a progress note
+ * DocumentReference on that Encounter. Each Canvas DocumentReference is uploaded once.
+ *
+ * @param cxId - The CX ID of the patient.
+ * @param practiceId - The Canvas practice ID.
+ * @param metriportPatientId - The Metriport patient ID.
+ * @param ehrPatientId - The patient id of the EHR patient.
+ * @param bundle - The FHIR bundle containing the encounters.
+ */
+async function uploadCanvasEncounterNotes({
+  cxId,
+  practiceId,
+  metriportPatientId,
+  ehrPatientId,
+  bundle,
+}: {
+  cxId: string;
+  practiceId: string;
+  metriportPatientId: string;
+  ehrPatientId: string;
+  bundle: Bundle;
+}): Promise<void> {
+  const encounters = (bundle.entry ?? []).flatMap(entry => {
+    const resource = entry.resource;
+    if (!resource || resource.resourceType !== "Encounter" || !resource.id) return [];
+    const canvasEncounterId = getPredecessorExtensionValue(resource);
+    return canvasEncounterId ? [{ encounter: resource, canvasEncounterId }] : [];
+  });
+  if (encounters.length < 1) return;
+  const client = await createCanvasClient({ cxId, practiceId });
+  const documentReferences = await client.getClinicalNoteDocumentReferences({
+    cxId,
+    patientId: ehrPatientId,
+  });
+  const notesToUpload = matchClinicalNotesToEncounters(encounters, documentReferences);
+  if (notesToUpload.length < 1) return;
+  const uploadNotesErrors: { documentReferenceId: string; error: unknown }[] = [];
+  await executeAsynchronously(
+    notesToUpload,
+    async ({ encounter, documentReference }) => {
+      try {
+        const documentParams = {
+          ehr: EhrSources.canvas,
+          cxId,
+          metriportPatientId,
+          ehrPatientId,
+          documentType: DocumentType.PDF,
+          resourceType: "DocumentReference",
+          resourceId: documentReference.id,
+          jobId: uploadJobId,
+        };
+        const uploadedNote = await fetchDocument(documentParams);
+        if (uploadedNote) return;
+        const pdf = await client.getClinicalNotePdf({
+          cxId,
+          patientId: ehrPatientId,
+          documentReference,
+        });
+        const { uploadUrl } = await getUploadUrlAndCreateDocRef({
+          cxId,
+          patientId: metriportPatientId,
+          // Same id on a retry, so a failed upload doesn't leave a second DocumentReference
+          docRefId: createUuidFromText(
+            `${EhrSources.canvas}_${metriportPatientId}_${documentReference.id}`
+          ),
+          docRefDraft: {
+            resourceType: "DocumentReference",
+            status: "current",
+            docStatus: "final",
+            description: "Progress note",
+            type: {
+              text: "Progress note",
+              coding: [{ code: "11506-3", system: "http://loinc.org", display: "Progress note" }],
+            },
+            context: {
+              period: {
+                start: encounter.period?.start,
+                end: encounter.period?.end,
+              },
+              facilityType: {
+                text: encounter.location?.[0]?.location?.display,
+              },
+              encounter: [{ reference: `Encounter/${encounter.id}` }],
+            },
+          },
+        });
+        await axios.put(uploadUrl, pdf, {
+          headers: {
+            "Content-Length": pdf.length,
+            "Content-Type": "application/pdf",
+          },
+          timeout: noteUploadTimeout.asMilliseconds(),
+        });
+        await createOrReplaceDocument({ ...documentParams, payload: pdf });
+      } catch (error) {
+        log(`Failed to upload Canvas note ${documentReference.id}. Cause: ${errorToString(error)}`);
+        uploadNotesErrors.push({ error, documentReferenceId: documentReference.id });
+      }
+    },
+    {
+      numberOfParallelExecutions: 1,
+    }
+  );
+  if (uploadNotesErrors.length > 0) {
+    const msg = `Failure while uploading some encounter notes @ ${EhrSources.canvas}`;
+    capture.message(msg, {
+      extra: {
+        uploadNotesArgsCount: notesToUpload.length,
+        uploadNotesErrorsCount: uploadNotesErrors.length,
+        errors: uploadNotesErrors,
+        context: `${EhrSources.canvas}.upload-encounter-notes`,
       },
       level: "warning",
     });

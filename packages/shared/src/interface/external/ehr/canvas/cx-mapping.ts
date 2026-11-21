@@ -5,6 +5,7 @@ export const canvasSecondaryMappingsSchema = z
   .object({
     webhookPatientPatientProcessingEnabled: z.boolean().optional(),
     adtProcessingEnabled: z.boolean().optional(),
+    contributionEncounterNotesEnabled: z.boolean().optional(),
   })
   .merge(writeBackFiltersSchema)
   .merge(documentQueryWebhookFiltersSchema);

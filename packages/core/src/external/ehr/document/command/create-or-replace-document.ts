@@ -13,7 +13,7 @@ import {
 } from "../document-shared";
 
 export type CreateOrReplaceDocumentParams = DocumentKeyBaseParams & {
-  payload: string;
+  payload: string | Buffer;
 };
 
 /**
@@ -67,7 +67,7 @@ export async function createOrReplaceDocument({
       await s3Utils.uploadFile({
         bucket: s3BucketName,
         key,
-        file: Buffer.from(payload, "utf8"),
+        file: typeof payload === "string" ? Buffer.from(payload, "utf8") : payload,
         contentType: createKeyAndExtension.extension,
       });
     });
