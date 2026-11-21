@@ -66,16 +66,31 @@ export function generateCdaFromFhirBundle(
 }
 
 function postProcessXml(xml: string, oid: string): string {
-  const fullXml = prependStyling(xml);
+  const fullXml = prependStyling(unescapeEmbeddedMarkup(xml));
   const orgPlaceholderRegex = new RegExp(placeholderOrgOid, "g");
   return fullXml
     .replace(/<br>/g, "<br/>")
     .replace(/<\/br>/g, "")
     .replace(orgPlaceholderRegex, oid)
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
     .replace(/<\/text><text>/g, "");
+}
+
+const textNodeRegex = />([^<]+)</g;
+const escapedTagRegex = /&lt;(\/?[A-Za-z][\w:-]*(?:\s(?:[^&<>]|&quot;|&amp;)*?)?\/?)&gt;/g;
+
+/**
+ * Narrative text can carry markup from the source, such as a note's HTML table, which the builder
+ * escapes. Turn escaped tags in text nodes back into markup. Attribute values, and a "<" that
+ * doesn't open a tag (e.g. a result of "<0.1"), stay escaped so the document is well-formed.
+ */
+function unescapeEmbeddedMarkup(xml: string): string {
+  return xml.replace(textNodeRegex, (_match, text: string) => {
+    const unescaped = text
+      .replace(escapedTagRegex, (_tag, inner: string) => `<${inner.replace(/&quot;/g, '"')}>`)
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"');
+    return `>${unescaped}<`;
+  });
 }
 
 function prependStyling(xml: string): string {

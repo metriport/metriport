@@ -151,7 +151,7 @@ describe("buildVariousNotesAndResults - results", () => {
     const xml = buildXml();
     expect(xml).toContain(`<value xsi:type="IVL_PQ"`);
     expect(xml).toContain(`<high value="0.1" unit="mg/dL" inclusive="false"></high>`);
-    expect(xml).toContain("<td>less than 0.1 mg/dL</td>");
+    expect(xml).toContain("<td>&lt;0.1 mg/dL</td>");
   });
 
   it("uses the text value when there is no quantity", () => {
@@ -162,6 +162,36 @@ describe("buildVariousNotesAndResults - results", () => {
     const xml = buildXml();
     expect(xml).toContain("<td>QNS</td>");
     expect(xml).not.toContain("undefined");
+  });
+
+  it("names a coded value by its code when no coding has a display", () => {
+    const blood = makeA1c({
+      interpretation: [],
+      valueCodeableConcept: { coding: [{ system: "http://snomed.info/sct", code: "260385009" }] },
+    });
+    delete blood.valueQuantity;
+    bundle.entry?.push({ resource: blood }, { resource: makeLabReport([blood]) });
+
+    const xml = buildXml();
+    expect(xml).toContain("<td>260385009</td>");
+  });
+
+  it("prefers a later coding's display over the concept text", () => {
+    const blood = makeA1c({
+      interpretation: [],
+      valueCodeableConcept: {
+        text: "neg",
+        coding: [
+          { system: "urn:oid:1.2.3", code: "N1" },
+          { system: "http://snomed.info/sct", code: "260385009", display: "Negative" },
+        ],
+      },
+    });
+    delete blood.valueQuantity;
+    bundle.entry?.push({ resource: blood }, { resource: makeLabReport([blood]) });
+
+    const xml = buildXml();
+    expect(xml).toContain("<td>Negative</td>");
   });
 
   it("follows hasMember from a panel observation that has no value of its own", () => {
@@ -185,7 +215,7 @@ describe("buildVariousNotesAndResults - results", () => {
 
     const xml = buildXml();
     expect(xml).toContain("<td>7.9 %</td>");
-    expect(xml).toContain("<td>less than 0.1 mg/dL</td>");
+    expect(xml).toContain("<td>&lt;0.1 mg/dL</td>");
     expect(xml).not.toContain(`extension="${panel.id}"`);
   });
 
@@ -278,5 +308,53 @@ describe("generateCdaFromFhirBundle - results", () => {
 
     const xml = generateCdaFromFhirBundle("cx-id", bundle, "1.2.3", true);
     expect(XMLValidator.validate(xml)).toBe(true);
+    expect(xml).toContain("<td>&lt;0.1 mg/dL</td>");
+  });
+
+  it("keeps an off scale low interpretation code escaped in its attribute", () => {
+    const patient = makePatient();
+    const organization = makeOrganization();
+    const crp = makeCrp({
+      subject: { reference: `Patient/${patient.id}` },
+      interpretation: [
+        {
+          coding: [
+            {
+              system: "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+              code: "<",
+              display: "Off scale low",
+            },
+          ],
+        },
+      ],
+    });
+    bundle.entry?.push(
+      { resource: patient },
+      { resource: organization },
+      { resource: crp },
+      { resource: makeLabReport([crp]) }
+    );
+
+    const xml = generateCdaFromFhirBundle("cx-id", bundle, "1.2.3", true);
+    expect(XMLValidator.validate(xml)).toBe(true);
+    expect(xml).toContain(`<interpretationCode code="&lt;"`);
+  });
+
+  it("still renders a note's HTML table as markup", () => {
+    const patient = makePatient();
+    const organization = makeOrganization();
+    const html = '<table border="1"><tr><td>Plan</td><td>Rest</td></tr></table>';
+    const note = makeDiagnosticReport({
+      status: "final",
+      subject: { reference: `Patient/${patient.id}` },
+      code: { coding: [{ system: "http://loinc.org", code: "11506-3", display: "Progress note" }] },
+      effectiveDateTime,
+      presentedForm: [{ contentType: "text/html", data: Buffer.from(html).toString("base64") }],
+    });
+    bundle.entry?.push({ resource: patient }, { resource: organization }, { resource: note });
+
+    const xml = generateCdaFromFhirBundle("cx-id", bundle, "1.2.3", true);
+    expect(XMLValidator.validate(xml)).toBe(true);
+    expect(xml).toContain(html);
   });
 });
