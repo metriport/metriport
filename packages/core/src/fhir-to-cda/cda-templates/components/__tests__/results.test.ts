@@ -345,7 +345,12 @@ describe("generateCdaFromFhirBundle - results", () => {
     [
       "an attribute with an apostrophe",
       `<table><tr><td title="Patient's result">Normal</td></tr></table>`,
-      '<td title="Patient&apos;s result">Normal</td>',
+      undefined,
+    ],
+    [
+      "a single-quoted attribute",
+      "<table><tr><td>Dose<br title='Dose'/></td></tr></table>",
+      undefined,
     ],
   ])("still renders a note's HTML table as markup: %s", (_label, html, expected) => {
     const patient = makePatient();

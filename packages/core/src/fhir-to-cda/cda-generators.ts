@@ -86,7 +86,10 @@ const escapedTagRegex = /&lt;(\/?[A-Za-z][\w:-]*(?:\s(?:[^&<>]|&quot;|&apos;|&am
 function unescapeEmbeddedMarkup(xml: string): string {
   return xml.replace(textNodeRegex, (_match, text: string) => {
     const unescaped = text
-      .replace(escapedTagRegex, (_tag, inner: string) => `<${inner.replace(/&quot;/g, '"')}>`)
+      .replace(
+        escapedTagRegex,
+        (_tag, inner: string) => `<${inner.replace(/&quot;/g, '"').replace(/&apos;/g, "'")}>`
+      )
       .replace(/&gt;/g, ">")
       .replace(/&quot;/g, '"');
     return `>${unescaped}<`;
