@@ -1,4 +1,10 @@
-import { Bundle, Dosage, DosageDoseAndRate, MedicationStatement } from "@medplum/fhirtypes";
+import {
+  Bundle,
+  Dosage,
+  DosageDoseAndRate,
+  Medication,
+  MedicationStatement,
+} from "@medplum/fhirtypes";
 import { BadRequestError } from "@metriport/shared";
 import { encodeToHtml } from "@metriport/shared/common/html";
 import {
@@ -22,6 +28,7 @@ import {
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
   getDisplaysFromCodeableConcepts,
+  hasCdaCodeSystem,
   notOnFilePlaceholder,
   withNullFlavor,
   withoutNullFlavorObject,
@@ -150,12 +157,30 @@ function createAugmentedMedicationStatements(
   return medicationStatements.map(statement => {
     const ref = statement.medicationReference?.reference;
     const refResource = ref ? findResourceInBundle(fhirBundle, ref) : undefined;
-    const medication = isMedication(refResource) ? refResource : undefined;
+    const medication = isMedication(refResource)
+      ? refResource
+      : buildMedicationFromConcept(statement);
     if (!medication) {
       throw new BadRequestError("MedicationStatement must reference an existing Medication");
     }
     return new AugmentedMedicationStatement(medicationsSectionName, statement, medication);
   });
+}
+
+function buildMedicationFromConcept(statement: MedicationStatement): Medication | undefined {
+  const concept = statement.medicationCodeableConcept;
+  if (!concept) return undefined;
+  // A coding goes out only with a code and a system CDA can name. Otherwise the medication goes out by name.
+  const coding = concept.coding?.filter(c => c.code?.trim() && hasCdaCodeSystem(c.system));
+  const text = concept.text ?? concept.coding?.find(c => c.display?.trim())?.display;
+  return {
+    resourceType: "Medication",
+    ...(statement.id ? { id: statement.id } : {}),
+    code: {
+      ...(coding?.length ? { coding } : {}),
+      ...(text ? { text } : {}),
+    },
+  };
 }
 
 function getDosageFromMedicationStatement(statement: MedicationStatement): string {
@@ -199,10 +224,9 @@ function createEntryFromStatement(
   statement: AugmentedMedicationStatement,
   referenceId: string
 ): SubstanceAdministationEntry {
-  const manufacturedMaterialCode = buildCodeCvFromCodeableConcept(
-    statement.medication?.code,
-    referenceId
-  );
+  const builtCode = buildCodeCvFromCodeableConcept(statement.medication?.code, referenceId);
+  const manufacturedMaterialCode =
+    builtCode && !builtCode._code ? { _nullFlavor: "NI", ...builtCode } : builtCode;
   return {
     substanceAdministration: {
       _classCode: "SBADM",

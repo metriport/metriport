@@ -416,6 +416,34 @@ export function hasBlacklistedText(concept: CodeableConcept | undefined): boolea
   return concept?.text?.toLowerCase().includes(NO_KNOWN_SUBSTRING) ?? !knownCodings?.length;
 }
 
+/**
+ * Dedup key for a medication given inline as medicationCodeableConcept instead of a reference.
+ */
+export function createMedicationConceptKey(
+  concept: CodeableConcept | undefined
+): string | undefined {
+  const knownCodings = concept?.coding?.filter(coding => !isUnknownPlaceholder(coding)) ?? [];
+  const codes = knownCodings
+    .flatMap(coding => (coding.system && coding.code ? `${coding.system}|${coding.code}` : []))
+    .sort();
+  if (codes.length) return `concept:${codes.join(",")}`;
+  const text = (concept?.text ?? knownCodings.find(coding => coding.display?.trim())?.display)
+    ?.trim()
+    .toLowerCase();
+  return text ? `concept:${text}` : undefined;
+}
+
+/**
+ * Only the unknown placeholder itself. isUnknownCoding also matches any code containing "unk",
+ * which would drop a local medication code such as "chunk-001".
+ */
+function isUnknownPlaceholder(coding: Coding): boolean {
+  return (
+    coding.system === unknownCoding.system ||
+    coding.code?.trim().toUpperCase() === unknownCoding.code
+  );
+}
+
 export function createRef<T extends Resource>(res: T): string {
   if (!res.id) throw new Error("FHIR Resource has no ID");
   return `${res.resourceType}/${res.id}`;

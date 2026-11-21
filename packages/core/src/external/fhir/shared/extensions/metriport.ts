@@ -1,4 +1,5 @@
 import { Coding, DocumentReference, DocumentReferenceContent, Extension } from "@medplum/fhirtypes";
+import { isEhrSource } from "@metriport/shared/interface/external/ehr/source";
 import { DeepRequired } from "ts-essentials";
 import { METRIPORT } from "../../../../util/constants";
 import { out } from "../../../../util/log";
@@ -6,7 +7,7 @@ import { capture } from "../../../../util/notifications";
 import { isCarequalityContent } from "../../../carequality/extension";
 import { isCommonwellContent } from "../../../commonwell/extension";
 import { BASE_EXTENSION_URL } from "./base-extension";
-import { dataSourceExtensionDefaults } from "./extension";
+import { DATA_SOURCE_EXTENSION_URL, dataSourceExtensionDefaults } from "./extension";
 
 export const CX_ID_EXTENSION_URL = `${BASE_EXTENSION_URL}/customer-id`;
 
@@ -26,6 +27,17 @@ export const metriportDataSourceExtension: MetriportDataSourceExtension = {
 
 export function isMetriportExtension(e: Extension): boolean {
   return e.valueCoding?.code === metriportDataSourceExtension.valueCoding.code;
+}
+
+/**
+ * Data the customer contributed, either directly (METRIPORT) or pulled from their EHR
+ * (tagged with the EHR source, e.g. CANVAS), as opposed to data received from the HIEs.
+ */
+export function isCustomerDataSourceExtension(e: Extension): boolean {
+  if (isMetriportExtension(e)) return true;
+  if (e.url !== DATA_SOURCE_EXTENSION_URL) return false;
+  const code = e.valueCoding?.code;
+  return code ? isEhrSource(code.toLowerCase()) : false;
 }
 export function isMetriportContent(content: DocumentReferenceContent): boolean {
   // Metriport is the fallback/default.

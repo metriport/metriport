@@ -3,6 +3,7 @@ import {
   DeduplicationResult,
   dangerouslyAssignMostDescriptiveStatus,
   combineResources,
+  createMedicationConceptKey,
   createRef,
   deduplicateWithinMap,
   getDateFromResource,
@@ -67,7 +68,9 @@ export function groupSameMedStatements(medStatements: MedicationStatement[]): {
 
   for (const medStatement of medStatements) {
     const datetime = getDateFromResource(medStatement, "datetime");
-    const medRef = medStatement.medicationReference?.reference;
+    const medRef =
+      medStatement.medicationReference?.reference ??
+      createMedicationConceptKey(medStatement.medicationCodeableConcept);
     const dosage = medStatement.dosage;
     if (medRef && datetime && dosage) {
       const key = JSON.stringify({ medRef, datetime, dosage });

@@ -504,6 +504,17 @@ function cleanUpCoding(primaryCodingRaw: Coding | undefined) {
   }
 }
 
+const oidUrnRegex = /^urn:oid:[0-2](\.(0|[1-9]\d*))+$/;
+
+/**
+ * Whether a FHIR coding system can be written as a CDA codeSystem OID.
+ */
+export function hasCdaCodeSystem(system: string | undefined): boolean {
+  const systemLowerCase = system?.trim().toLowerCase();
+  if (!systemLowerCase) return false;
+  return CODING_MAP.has(systemLowerCase) || oidUrnRegex.test(systemLowerCase);
+}
+
 export function mapCodingSystem(system: string | undefined): string | undefined {
   if (!system) return undefined;
   const systemLowerCase = system.toLowerCase();
