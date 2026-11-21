@@ -66,4 +66,26 @@ describe("groupSameMedStatements", () => {
     const { medStatementsMap } = groupSameMedStatements([medStatement, medStatement2]);
     expect(medStatementsMap.size).toBe(2);
   });
+
+  it("does not group inline medications that share only an unknown coding", () => {
+    const unknown = { system: "http://terminology.hl7.org/ValueSet/v3-Unknown", code: "UNK" };
+    delete medStatement.medicationReference;
+    delete medStatement2.medicationReference;
+    medStatement.medicationCodeableConcept = { coding: [unknown], text: "Tirzepatide 2.5 mg" };
+    medStatement2.medicationCodeableConcept = { coding: [unknown], text: "Semaglutide 0.25 mg" };
+
+    const { medStatementsMap } = groupSameMedStatements([medStatement, medStatement2]);
+    expect(medStatementsMap.size).toBe(2);
+  });
+
+  it("keeps an inline medication named only by its coding display", () => {
+    delete medStatement.medicationReference;
+    medStatement.medicationCodeableConcept = {
+      coding: [{ code: "tirzepatide-2-5", display: "Tirzepatide 2.5 mg" }],
+    };
+
+    const { medStatementsMap, danglingReferences } = groupSameMedStatements([medStatement]);
+    expect(medStatementsMap.size).toBe(1);
+    expect(danglingReferences.size).toBe(0);
+  });
 });

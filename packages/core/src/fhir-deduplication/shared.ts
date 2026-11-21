@@ -422,11 +422,14 @@ export function hasBlacklistedText(concept: CodeableConcept | undefined): boolea
 export function createMedicationConceptKey(
   concept: CodeableConcept | undefined
 ): string | undefined {
-  const codes = concept?.coding
-    ?.flatMap(coding => (coding.system && coding.code ? `${coding.system}|${coding.code}` : []))
+  const knownCodings = concept?.coding?.filter(coding => !isUnknownCoding(coding)) ?? [];
+  const codes = knownCodings
+    .flatMap(coding => (coding.system && coding.code ? `${coding.system}|${coding.code}` : []))
     .sort();
-  if (codes?.length) return `concept:${codes.join(",")}`;
-  const text = concept?.text?.trim().toLowerCase();
+  if (codes.length) return `concept:${codes.join(",")}`;
+  const text = (concept?.text ?? knownCodings.find(coding => coding.display?.trim())?.display)
+    ?.trim()
+    .toLowerCase();
   return text ? `concept:${text}` : undefined;
 }
 

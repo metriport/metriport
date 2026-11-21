@@ -28,6 +28,7 @@ import {
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
   getDisplaysFromCodeableConcepts,
+  hasCdaCodeSystem,
   notOnFilePlaceholder,
   withNullFlavor,
   withoutNullFlavorObject,
@@ -169,9 +170,9 @@ function createAugmentedMedicationStatements(
 function buildMedicationFromConcept(statement: MedicationStatement): Medication | undefined {
   const concept = statement.medicationCodeableConcept;
   if (!concept) return undefined;
-  // Codings without a URI system (e.g. a local EHR code) have no CDA code system to map to
-  const coding = concept.coding?.filter(c => c.system?.includes(":"));
-  const text = concept.text ?? concept.coding?.find(c => c.display)?.display;
+  // A coding goes out only with a code and a system CDA can name. Otherwise the medication goes out by name.
+  const coding = concept.coding?.filter(c => c.code?.trim() && hasCdaCodeSystem(c.system));
+  const text = concept.text ?? concept.coding?.find(c => c.display?.trim())?.display;
   return {
     resourceType: "Medication",
     ...(statement.id ? { id: statement.id } : {}),
@@ -223,10 +224,9 @@ function createEntryFromStatement(
   statement: AugmentedMedicationStatement,
   referenceId: string
 ): SubstanceAdministationEntry {
-  const manufacturedMaterialCode = buildCodeCvFromCodeableConcept(
-    statement.medication?.code,
-    referenceId
-  );
+  const builtCode = buildCodeCvFromCodeableConcept(statement.medication?.code, referenceId);
+  const manufacturedMaterialCode =
+    builtCode && !builtCode._code ? { _nullFlavor: "NI", ...builtCode } : builtCode;
   return {
     substanceAdministration: {
       _classCode: "SBADM",
