@@ -2,6 +2,7 @@ import { Encounter } from "@medplum/fhirtypes";
 import { ClinicalNoteDocumentReference } from "@metriport/shared/interface/external/ehr/canvas/document-reference";
 import {
   getClinicalNoteFileUrl,
+  getClinicalNoteSignedUrl,
   isUnsignedCanvasEncounter,
   matchClinicalNotesToEncounters,
 } from "../clinical-notes";
@@ -115,5 +116,41 @@ describe("getClinicalNoteFileUrl", () => {
     expect(() => getClinicalNoteFileUrl(makeNote("note-1", { url }), fhirBaseUrl)).toThrow(
       /not on Canvas/
     );
+  });
+});
+
+describe("getClinicalNoteSignedUrl", () => {
+  const signed = "X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Signature=abc";
+
+  it("accepts a pre-signed S3 URL", () => {
+    const location = `https://canvas-client-media.s3.amazonaws.com/note.pdf?${signed}`;
+    expect(getClinicalNoteSignedUrl(location, "note-1").toString()).toBe(location);
+  });
+
+  it("accepts regional and path-style S3 hosts", () => {
+    for (const host of [
+      "bucket.s3.us-west-2.amazonaws.com",
+      "bucket.s3-us-west-2.amazonaws.com",
+      "s3.us-west-2.amazonaws.com",
+    ]) {
+      expect(getClinicalNoteSignedUrl(`https://${host}/note.pdf`, "note-1").hostname).toBe(host);
+    }
+  });
+
+  it("refuses a missing location", () => {
+    expect(() => getClinicalNoteSignedUrl(undefined, "note-1")).toThrow("has no location");
+    expect(() => getClinicalNoteSignedUrl("", "note-1")).toThrow("has no location");
+  });
+
+  it("refuses plain http, a private address and a look-alike host", () => {
+    for (const location of [
+      "http://canvas-client-media.s3.amazonaws.com/note.pdf",
+      "https://169.254.169.254/latest/meta-data/",
+      "https://localhost/note.pdf",
+      "https://s3.amazonaws.com.example.com/note.pdf",
+      "https://bucket.s3.amazonaws.com@example.com/note.pdf",
+    ]) {
+      expect(() => getClinicalNoteSignedUrl(location, "note-1")).toThrow("not to S3");
+    }
   });
 });

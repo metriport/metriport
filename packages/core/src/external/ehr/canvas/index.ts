@@ -86,7 +86,11 @@ import {
   saveEhrReferenceBundle,
 } from "../shared";
 import { convertCodeAndValue } from "../unit-conversion";
-import { canvasDomainExtension, getClinicalNoteFileUrl } from "./clinical-notes";
+import {
+  canvasDomainExtension,
+  getClinicalNoteFileUrl,
+  getClinicalNoteSignedUrl,
+} from "./clinical-notes";
 import { isCanvasSupportedAdtEvent } from "./shared";
 
 dayjs.extend(duration);
@@ -1252,7 +1256,13 @@ class CanvasApi {
     const documentReferences: ClinicalNoteDocumentReference[] = [];
     const requestedUrls = new Set<string>();
     let url: string | undefined = `/DocumentReference?${params.toString()}`;
-    while (url && !requestedUrls.has(url)) {
+    while (url) {
+      if (requestedUrls.has(url)) {
+        throw new MetriportError("Clinical note pagination repeats a page", undefined, {
+          ...additionalInfo,
+          url,
+        });
+      }
       requestedUrls.add(url);
       const bundle: ClinicalNoteDocumentReferenceBundle =
         await this.makeRequest<ClinicalNoteDocumentReferenceBundle>({
@@ -1307,19 +1317,16 @@ class CanvasApi {
         timeout: clinicalNoteDownloadTimeout.asMilliseconds(),
       })
     );
-    const signedUrl = response.headers["location"];
     const isRedirect = response.status >= 300;
-    if (isRedirect && (typeof signedUrl !== "string" || !signedUrl)) {
-      throw new MetriportError("Clinical note redirect has no location", undefined, {
-        ...additionalInfo,
-        status: response.status,
-      });
-    }
-    const content = isRedirect
+    const signedUrl = isRedirect
+      ? getClinicalNoteSignedUrl(response.headers["location"], documentReference.id)
+      : undefined;
+    const content = signedUrl
       ? (
           await executeWithNetworkRetries(() =>
-            axios.get<ArrayBuffer>(signedUrl, {
+            axios.get<ArrayBuffer>(signedUrl.toString(), {
               responseType: "arraybuffer",
+              maxRedirects: 0,
               timeout: clinicalNoteDownloadTimeout.asMilliseconds(),
             })
           )

@@ -39,6 +39,32 @@ export function getClinicalNoteFileUrl(
   return url;
 }
 
+// Virtual-hosted and path-style S3 hosts, with or without a region.
+const s3HostRegex = /^(?:[a-z0-9.-]+\.)?s3(?:[.-][a-z0-9-]+)*\.amazonaws\.com$/;
+
+/**
+ * The pre-signed S3 URL a note's file URL redirects to. It is fetched with no token, so it must be
+ * https on S3.
+ *
+ * @param location - The redirect's Location header.
+ * @param documentReferenceId - The Canvas DocumentReference id, for errors.
+ */
+export function getClinicalNoteSignedUrl(location: unknown, documentReferenceId: string): URL {
+  if (typeof location !== "string" || !location) {
+    throw new MetriportError("Clinical note redirect has no location", undefined, {
+      documentReferenceId,
+    });
+  }
+  const url = new URL(location);
+  if (url.protocol !== "https:" || !s3HostRegex.test(url.hostname)) {
+    throw new MetriportError("Clinical note redirect is not to S3", undefined, {
+      documentReferenceId,
+      host: url.hostname,
+    });
+  }
+  return url;
+}
+
 /**
  * Pairs each encounter with the notes whose context points to it.
  *
