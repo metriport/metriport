@@ -42,7 +42,9 @@ export function createObservations(
   return observations.map(observation => {
     const effectiveTime = observation.effectiveDateTime?.replace(TIMESTAMP_CLEANUP_REGEX, "");
     const valueQuantity = buildResultValueQuantity(observation.valueQuantity);
-    const valueSt = buildValueSt(observation.valueString);
+    const valueSt = buildValueSt(
+      observation.valueString ? spellOutLessThan(observation.valueString) : undefined
+    );
     const valueEd = buildValueEd(referenceId);
 
     return {
@@ -113,17 +115,27 @@ export function buildResultValueQuantity(
   }
 }
 
-/** Narrative value, e.g. "<0.1 mg/dL". */
+/**
+ * Narrative value, e.g. "less than 0.1 mg/dL". A "<" is spelled out because postProcessXml
+ * turns "&lt;" back into "<", which would leave the document invalid.
+ */
 export function formatObservationValue(observation: Observation): string | undefined {
   const quantity = observation.valueQuantity;
   if (quantity?.value != undefined) {
     const unit = quantity.unit ?? quantity.code;
-    return `${quantity.comparator ?? ""}${quantity.value}${unit ? ` ${unit}` : ""}`;
+    return spellOutLessThan(
+      `${quantity.comparator ?? ""}${quantity.value}${unit ? ` ${unit}` : ""}`
+    );
   }
-  if (observation.valueString?.trim()) return observation.valueString.trim();
-  return (
-    observation.valueCodeableConcept?.coding?.[0]?.display ?? observation.valueCodeableConcept?.text
-  );
+  if (observation.valueString?.trim()) return spellOutLessThan(observation.valueString.trim());
+  const text =
+    observation.valueCodeableConcept?.coding?.[0]?.display ??
+    observation.valueCodeableConcept?.text;
+  return text ? spellOutLessThan(text) : undefined;
+}
+
+function spellOutLessThan(text: string): string {
+  return text.replace(/<=\s*/g, "≤ ").replace(/<\s*/g, "less than ");
 }
 
 function buildInterpretationCodes(observation: Observation): CdaCodeCe[] | undefined {

@@ -1,9 +1,13 @@
 import { Bundle, DiagnosticReport, Observation } from "@medplum/fhirtypes";
+import { XMLValidator } from "fast-xml-parser";
+import { generateCdaFromFhirBundle } from "../../../cda-generators";
 import { removeEmptyFields } from "../../clinical-document/clinical-document";
 import { xmlBuilder } from "../../clinical-document/shared";
 import { buildVariousNotesAndResults } from "../notes-and-results";
 import { makeDiagnosticReport } from "./make-diagnostic-report";
 import { makeObservation } from "./make-observation";
+import { makeOrganization } from "./make-organization";
+import { makePatient } from "./make-patient";
 import { createEmptyBundle } from "./shared";
 
 const labCategory = [
@@ -135,7 +139,7 @@ describe("buildVariousNotesAndResults - results", () => {
     const xml = buildXml();
     expect(xml).toContain(`<value xsi:type="IVL_PQ"`);
     expect(xml).toContain(`<high value="0.1" unit="mg/dL" inclusive="false"></high>`);
-    expect(xml).toContain("<td>&lt;0.1 mg/dL</td>");
+    expect(xml).toContain("<td>less than 0.1 mg/dL</td>");
   });
 
   it("uses the text value when there is no quantity", () => {
@@ -169,7 +173,7 @@ describe("buildVariousNotesAndResults - results", () => {
 
     const xml = buildXml();
     expect(xml).toContain("<td>7.9 %</td>");
-    expect(xml).toContain("<td>&lt;0.1 mg/dL</td>");
+    expect(xml).toContain("<td>less than 0.1 mg/dL</td>");
     expect(xml).not.toContain(`extension="${panel.id}"`);
   });
 
@@ -241,5 +245,26 @@ describe("buildVariousNotesAndResults - results", () => {
     bundle.entry?.push({ resource: a1c }, { resource: panel }, { resource: report });
 
     expect(() => buildXml()).not.toThrow();
+  });
+});
+
+describe("generateCdaFromFhirBundle - results", () => {
+  it("produces valid XML when a result has a comparator", () => {
+    const patient = makePatient();
+    const organization = makeOrganization();
+    const crp = makeCrp({ subject: { reference: `Patient/${patient.id}` } });
+    const textCrp = makeCrp({ subject: { reference: `Patient/${patient.id}` } });
+    delete textCrp.valueQuantity;
+    textCrp.valueString = "<0.1 mg/dL";
+    bundle.entry?.push(
+      { resource: patient },
+      { resource: organization },
+      { resource: crp },
+      { resource: textCrp },
+      { resource: makeLabReport([crp, textCrp]) }
+    );
+
+    const xml = generateCdaFromFhirBundle("cx-id", bundle, "1.2.3", true);
+    expect(XMLValidator.validate(xml)).toBe(true);
   });
 });
