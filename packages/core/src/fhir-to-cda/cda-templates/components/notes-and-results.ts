@@ -92,7 +92,8 @@ function buildAssembledNotes(fhirBundle: Bundle) {
   diagnosticReports.forEach(report => {
     const sectionName = assignSectionName(report);
     const observations = getReferencedObservations(report, fhirBundle);
-    const addedObservation = createObsForPresentedForm(report);
+    const hasResults = sectionName === "30954-2" && (observations?.length ?? 0) > 0;
+    const addedObservation = hasResults ? undefined : createObsForPresentedForm(report);
     const combinedObservations = combineObs(observations, addedObservation);
     const procedures = getProceduresWithReference(fhirBundle, report.id);
     assembledNotes.push(new AssembledNote(sectionName, report, combinedObservations, procedures));

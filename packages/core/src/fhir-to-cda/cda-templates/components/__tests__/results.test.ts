@@ -111,6 +111,18 @@ describe("buildVariousNotesAndResults - results", () => {
     expect(xml).not.toContain("MISCELLANEOUS NOTES");
   });
 
+  it("does not add a placeholder Note row for a lab report's attached document", () => {
+    const a1c = makeA1c();
+    const report = makeLabReport([a1c], {
+      presentedForm: [{ contentType: "application/pdf", url: "https://example.com/report.pdf" }],
+    });
+    bundle.entry?.push({ resource: a1c }, { resource: report });
+
+    const xml = buildXml();
+    expect(xml).toContain("<td>7.9 %</td>");
+    expect(xml).not.toContain("<td>Note</td>");
+  });
+
   it("keeps a report with no lab category and no known code in Miscellaneous Notes", () => {
     const a1c = makeA1c();
     const report = makeLabReport([a1c]);
