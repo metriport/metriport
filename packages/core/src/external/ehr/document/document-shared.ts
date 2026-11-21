@@ -5,6 +5,7 @@ import { createPrefix, CreatePrefixParams } from "../shared";
 
 const globalCcdaPrefix = "ccda";
 const globalHtmlPrefix = "html";
+const globalPdfPrefix = "pdf";
 const region = Config.getAWSRegion();
 
 type CreateDocumentPrefixParams = CreatePrefixParams & {
@@ -19,6 +20,10 @@ function createHtmlPrefix({ resourceId, ...rest }: CreateDocumentPrefixParams): 
   return `${createPrefix(globalHtmlPrefix, rest)}${resourceId ? `/resourceid=${resourceId}` : ""}`;
 }
 
+function createPdfPrefix({ resourceId, ...rest }: CreateDocumentPrefixParams): string {
+  return `${createPrefix(globalPdfPrefix, rest)}${resourceId ? `/resourceid=${resourceId}` : ""}`;
+}
+
 export function createFileKeyCcda(params: CreateDocumentPrefixParams): string {
   return `${createCcdaPrefix(params)}/ccda.xml`;
 }
@@ -27,9 +32,14 @@ export function createFileKeyHtml(params: CreateDocumentPrefixParams): string {
   return `${createHtmlPrefix(params)}/html.html`;
 }
 
+export function createFileKeyPdf(params: CreateDocumentPrefixParams): string {
+  return `${createPdfPrefix(params)}/document.pdf`;
+}
+
 export enum DocumentType {
   CCDA = "ccda",
   HTML = "html",
+  PDF = "pdf",
 }
 
 export const createKeyAndExtensionMap: Record<
@@ -38,6 +48,7 @@ export const createKeyAndExtensionMap: Record<
 > = {
   [DocumentType.CCDA]: { key: createFileKeyCcda, extension: "application/xml" },
   [DocumentType.HTML]: { key: createFileKeyHtml, extension: "text/html" },
+  [DocumentType.PDF]: { key: createFileKeyPdf, extension: "application/pdf" },
 };
 
 export function getS3UtilsInstance(): S3Utils {

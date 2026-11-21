@@ -27,6 +27,9 @@ import {
   AppointmentListResponse,
   appointmentListResponseSchema,
   canvasClientJwtTokenResponseSchema,
+  ClinicalNoteDocumentReference,
+  ClinicalNoteDocumentReferenceBundle,
+  clinicalNoteDocumentReferenceBundleSchema,
   CreateExternalEventParams,
   Note,
   NoteListResponse,
@@ -83,6 +86,7 @@ import {
   saveEhrReferenceBundle,
 } from "../shared";
 import { convertCodeAndValue } from "../unit-conversion";
+import { canvasDomainExtension, getClinicalNoteFileUrl } from "./clinical-notes";
 import { isCanvasSupportedAdtEvent } from "./shared";
 
 dayjs.extend(duration);
@@ -96,7 +100,6 @@ interface CanvasApiConfig extends ApiConfig {
   pluginToken?: string;
 }
 
-const canvasDomainExtension = ".canvasmedical.com";
 const canvasDateFormat = "YYYY-MM-DD";
 const canvasDateTimeFormat = "YYYY-MM-DDTHH:mm:ss.SSSZ";
 const canvasNoteTitle = "Metriport Chart Import";
@@ -107,6 +110,10 @@ const utcToEstOffset = dayjs.duration(-5, "hours");
 const defaultCountOrLimit = 1000;
 export type CanvasEnv = string;
 const canvasAdtUrl = `/plugin-io/api/metriport_app/routes/adt`;
+const canvasClinicalNoteCategory =
+  "http://schemas.canvasmedical.com/fhir/document-reference-category|clinical-note";
+const clinicalNoteDownloadTimeout = dayjs.duration(60, "seconds");
+const pdfSignature = "%PDF-";
 
 export const supportedCanvasResources: ResourceType[] = [
   "AllergyIntolerance",
@@ -1217,6 +1224,112 @@ class CanvasApi {
       useCachedBundle,
     });
     return bundle;
+  }
+
+  /**
+   * Lists the current PDFs of the patient's locked notes. An amended note's older PDFs are
+   * superseded and left out.
+   *
+   * @see https://docs.canvasmedical.com/api/documentreference/
+   */
+  async getClinicalNoteDocumentReferences({
+    cxId,
+    patientId,
+  }: {
+    cxId: string;
+    patientId: string;
+  }): Promise<ClinicalNoteDocumentReference[]> {
+    const { debug } = out(
+      `Canvas getClinicalNoteDocumentReferences - cxId ${cxId} practiceId ${this.practiceId} patientId ${patientId}`
+    );
+    const params = new URLSearchParams({
+      patient: `Patient/${patientId}`,
+      category: canvasClinicalNoteCategory,
+      status: "current",
+      _count: defaultCountOrLimit.toString(),
+    });
+    const additionalInfo = { cxId, practiceId: this.practiceId, patientId };
+    const documentReferences: ClinicalNoteDocumentReference[] = [];
+    const requestedUrls = new Set<string>();
+    let url: string | undefined = `/DocumentReference?${params.toString()}`;
+    while (url && !requestedUrls.has(url)) {
+      requestedUrls.add(url);
+      const bundle: ClinicalNoteDocumentReferenceBundle =
+        await this.makeRequest<ClinicalNoteDocumentReferenceBundle>({
+          cxId,
+          patientId,
+          s3Path: this.createFhirPath("DocumentReference"),
+          method: "GET",
+          url,
+          schema: clinicalNoteDocumentReferenceBundleSchema,
+          additionalInfo,
+          debug,
+          useFhir: true,
+        });
+      documentReferences.push(...(bundle.entry ?? []).map(entry => entry.resource));
+      url = bundle.link?.find(link => link.relation === "next")?.url;
+    }
+    return documentReferences;
+  }
+
+  /**
+   * Downloads a locked note's PDF. The attachment URL needs the Bearer token and redirects to a
+   * pre-signed S3 URL, which is fetched without the token, since S3 rejects a request that carries
+   * both.
+   *
+   * @see https://docs.canvasmedical.com/api/accessing-resource-attachment-files/
+   */
+  async getClinicalNotePdf({
+    cxId,
+    patientId,
+    documentReference,
+  }: {
+    cxId: string;
+    patientId: string;
+    documentReference: ClinicalNoteDocumentReference;
+  }): Promise<Buffer> {
+    const additionalInfo = {
+      cxId,
+      practiceId: this.practiceId,
+      patientId,
+      documentReferenceId: documentReference.id,
+    };
+    const url = getClinicalNoteFileUrl(
+      documentReference,
+      this.axiosInstanceFhirApi.defaults.baseURL
+    );
+    const response = await executeWithNetworkRetries(() =>
+      this.axiosInstanceFhirApi.get<ArrayBuffer>(url.toString(), {
+        headers: { Accept: "*/*" },
+        responseType: "arraybuffer",
+        maxRedirects: 0,
+        validateStatus: status => status >= 200 && status < 400,
+        timeout: clinicalNoteDownloadTimeout.asMilliseconds(),
+      })
+    );
+    const signedUrl = response.headers["location"];
+    const isRedirect = response.status >= 300;
+    if (isRedirect && (typeof signedUrl !== "string" || !signedUrl)) {
+      throw new MetriportError("Clinical note redirect has no location", undefined, {
+        ...additionalInfo,
+        status: response.status,
+      });
+    }
+    const content = isRedirect
+      ? (
+          await executeWithNetworkRetries(() =>
+            axios.get<ArrayBuffer>(signedUrl, {
+              responseType: "arraybuffer",
+              timeout: clinicalNoteDownloadTimeout.asMilliseconds(),
+            })
+          )
+        ).data
+      : response.data;
+    const pdf = Buffer.from(content);
+    if (pdf.subarray(0, pdfSignature.length).toString("latin1") !== pdfSignature) {
+      throw new MetriportError("Clinical note content is not a PDF", undefined, additionalInfo);
+    }
+    return pdf;
   }
 
   async getAppointments({
