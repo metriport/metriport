@@ -15,7 +15,7 @@ import {
 import { NOT_SPECIFIED, extensionValue2015, oids, placeholderOrgOid } from "../constants";
 import { AssembledNote } from "./augmented-resources";
 import { SectionDetails } from "./notes-and-results";
-import { createObservations } from "./observations";
+import { createObservations, formatObservationValue } from "./observations";
 import { initiateSectionTable } from "../table";
 
 const resultsTableHeaders = ["Measurement", "Value and Unit", "Score", "Date Recorded"];
@@ -103,8 +103,7 @@ function createTableRowFromObservation(
   const scoreValue = intValue != undefined && !isNaN(intValue) ? intValue.toString() : undefined;
   const scoreDisplay = scoreValue ?? score;
 
-  const valueAndUnit =
-    `${observation.valueQuantity?.value} ${observation.valueQuantity?.unit}`.trim();
+  const valueAndUnit = formatObservationValue(observation);
 
   return {
     tr: {

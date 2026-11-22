@@ -19,6 +19,7 @@ import {
   CdaOriginalText,
   CdaValueCd,
   CdaValueEd,
+  CdaValueIvlPq,
   CdaValuePq,
   CdaValueSt,
   ConcernActEntryAct,
@@ -63,7 +64,7 @@ type MediaTypeProvider = {
   _mediaType?: string;
 };
 
-type ObservationValueElement = CdaValuePq | CdaValueCd | CdaValueEd | CdaValueSt;
+type ObservationValueElement = CdaValuePq | CdaValueIvlPq | CdaValueCd | CdaValueEd | CdaValueSt;
 
 function hasTextContent(value: ObservationValueElement): value is CdaValueEd | CdaValueSt {
   return "#text" in value;

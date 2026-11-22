@@ -92,7 +92,8 @@ function buildAssembledNotes(fhirBundle: Bundle) {
   diagnosticReports.forEach(report => {
     const sectionName = assignSectionName(report);
     const observations = getReferencedObservations(report, fhirBundle);
-    const addedObservation = createObsForPresentedForm(report);
+    const hasResults = sectionName === "30954-2" && (observations?.length ?? 0) > 0;
+    const addedObservation = hasResults ? undefined : createObsForPresentedForm(report);
     const combinedObservations = combineObs(observations, addedObservation);
     const procedures = getProceduresWithReference(fhirBundle, report.id);
     assembledNotes.push(new AssembledNote(sectionName, report, combinedObservations, procedures));
@@ -118,20 +119,61 @@ function assignSectionName(report: DiagnosticReport) {
     }
   }
 
+  // Lab reports are often coded with their analytes' LOINCs, not a section code
+  if (isLaboratoryReport(report)) return "30954-2";
+
   return "34109-9";
 }
+
+function isLaboratoryReport(report: DiagnosticReport): boolean {
+  return (
+    report.category?.some(category =>
+      category.coding?.some(coding => {
+        const code = coding.code?.trim().toLowerCase();
+        return code === "lab" || code === "laboratory";
+      })
+    ) ?? false
+  );
+}
+
+// Panels (e.g. from Canvas) point to a parent Observation that holds the analytes in `hasMember`
+const MAX_MEMBER_DEPTH = 3;
 
 function getReferencedObservations(
   report: DiagnosticReport,
   fhirBundle: Bundle
 ): Observation[] | undefined {
-  return report.result?.flatMap(result => {
-    if (result.reference?.includes("Observation")) {
-      const referencedObs = findResourceInBundle(fhirBundle, result.reference);
-      if (referencedObs) return referencedObs as Observation;
-    }
+  const seen = new Set<string>();
+  return report.result?.flatMap(result =>
+    collectObservations(result.reference, fhirBundle, seen, 0)
+  );
+}
+
+function collectObservations(
+  reference: string | undefined,
+  fhirBundle: Bundle,
+  seen: Set<string>,
+  depth: number
+): Observation[] {
+  if (!reference?.includes("Observation") || seen.has(reference) || depth > MAX_MEMBER_DEPTH) {
     return [];
-  });
+  }
+  seen.add(reference);
+  const observation = findResourceInBundle(fhirBundle, reference) as Observation | undefined;
+  if (!observation) return [];
+
+  const memberRefs =
+    observation.hasMember?.flatMap(member =>
+      member.reference?.includes("Observation") ? member.reference : []
+    ) ?? [];
+  const hasResolvedMembers = memberRefs.some(ref => findResourceInBundle(fhirBundle, ref));
+  const members = memberRefs.flatMap(ref => collectObservations(ref, fhirBundle, seen, depth + 1));
+  if (hasResolvedMembers && !hasObservationValue(observation)) return members;
+  return [observation, ...members];
+}
+
+function hasObservationValue(observation: Observation): boolean {
+  return Object.keys(observation).some(key => key.startsWith("value"));
 }
 
 function combineObs(

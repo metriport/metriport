@@ -169,8 +169,23 @@ export type CdaValueCd = {
 
 export type CdaValuePq = {
   [_xsiTypeAttribute]?: "PQ";
+  [_xmlnsXsiAttribute]?: string;
   _unit?: string | undefined;
   _value: string | number;
+};
+
+export type CdaIvlPqBound = {
+  _value: string | number;
+  _unit?: string | undefined;
+  _inclusive: "true" | "false";
+};
+
+// IVL_PQ: an interval of physical quantities, used for results like "<0.1 mg/dL".
+export type CdaValueIvlPq = {
+  [_xsiTypeAttribute]: "IVL_PQ";
+  [_xmlnsXsiAttribute]?: string;
+  low?: CdaIvlPqBound;
+  high?: CdaIvlPqBound;
 };
 
 // Cv (CV) stands for Coded Value
@@ -261,6 +276,7 @@ export type ObservationEntry = {
     value?:
       | CdaValuePq
       | CdaValuePq[]
+      | CdaValueIvlPq
       | CdaValueCd
       | CdaValueCd[]
       | CdaValueEd

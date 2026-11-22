@@ -1,5 +1,6 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { BadRequestError } from "@metriport/shared";
+import { XMLValidator } from "fast-xml-parser";
 import {
   findCompositionResource,
   findOrganizationResource,
@@ -66,16 +67,60 @@ export function generateCdaFromFhirBundle(
 }
 
 function postProcessXml(xml: string, oid: string): string {
-  const fullXml = prependStyling(xml);
+  const withLineBreaks = xml.replace(/<br>/g, "<br/>").replace(/<\/br>/g, "");
   const orgPlaceholderRegex = new RegExp(placeholderOrgOid, "g");
-  return fullXml
-    .replace(/<br>/g, "<br/>")
-    .replace(/<\/br>/g, "")
+  return prependStyling(unescapeEmbeddedMarkup(withLineBreaks))
     .replace(orgPlaceholderRegex, oid)
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
     .replace(/<\/text><text>/g, "");
+}
+
+// A run of text and line breaks between two other tags: one note's narrative, spanning its lines.
+const textRunRegex = />((?:[^<]|<br\/>)+)</g;
+// A tag's name and attributes. A quoted value is matched whole, so a ">" inside it doesn't end the tag.
+const escapedTagRegex =
+  /&lt;(\/?[A-Za-z][\w:-]*(?:\s(?:[^&<>]|&quot;(?:(?!&quot;)[^<])*?&quot;|&apos;(?:(?!&apos;)[^<])*?&apos;|&amp;)*?)?\/?)&gt;/g;
+const escapedCommentOrCdataRegex = /&lt;(!--[\s\S]*?--|!\[CDATA\[[\s\S]*?\]\])&gt;/g;
+
+/**
+ * Narrative text can carry markup from the source, such as a note's HTML table, which the builder
+ * escapes. Turn escaped tags back into markup, one note at a time across its line breaks. A note
+ * whose restored markup is not well-formed XML stays escaped and reads as text, so the document
+ * stays valid whatever the source HTML looks like. Text between the tags stays escaped, since
+ * "]]>" is not allowed there. Attribute values are never touched.
+ */
+function unescapeEmbeddedMarkup(xml: string): string {
+  return xml.replace(textRunRegex, (match, run: string) => {
+    if (!run.includes("&lt;")) return match;
+    const restored = run
+      .replace(escapedCommentOrCdataRegex, (section, inner: string) => {
+        // Entities aren't expanded inside a comment or CDATA, so its content is fully decoded.
+        const unescaped = inner
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/&quot;/g, '"')
+          .replace(/&apos;/g, "'")
+          .replace(/&amp;/g, "&");
+        return isValidCommentOrCdata(unescaped) ? `<${unescaped}>` : section;
+      })
+      .replace(
+        escapedTagRegex,
+        (_tag, inner: string) => `<${inner.replace(/&quot;/g, '"').replace(/&apos;/g, "'")}>`
+      )
+      .replace(/<br>/g, "<br/>")
+      .replace(/<\/br>/g, "");
+    const isWellFormed = XMLValidator.validate(`<note>${restored}</note>`) === true;
+    return `>${isWellFormed ? restored : run}<`;
+  });
+}
+
+/**
+ * XML forbids "--" inside a comment and a comment ending in "-". The validator above doesn't check
+ * either, so a comment that breaks the rule stays escaped.
+ */
+function isValidCommentOrCdata(inner: string): boolean {
+  if (!inner.startsWith("!--")) return true;
+  const body = inner.slice(3, -2);
+  return !body.includes("--") && !body.endsWith("-");
 }
 
 function prependStyling(xml: string): string {

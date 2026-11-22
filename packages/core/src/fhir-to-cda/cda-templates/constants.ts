@@ -11,6 +11,7 @@ export const nlmNihSystemCode = "2.16.840.1.113883.6.88";
 export const amaAssnSystemCode = "2.16.840.1.113883.6.12";
 export const fdasisSystemCode = "2.16.840.1.113883.4.9";
 export const hl7ActCode = "2.16.840.1.113883.5.4";
+export const hl7ObservationInterpretation = "2.16.840.1.113883.5.83";
 export const providerTaxonomy = "2.16.840.1.113883.6.101";
 export const vaccineAdministeredCodeSet = "2.16.840.1.113883.12.292";
 export const icd10SystemCode = "2.16.840.1.113883.6.90";
