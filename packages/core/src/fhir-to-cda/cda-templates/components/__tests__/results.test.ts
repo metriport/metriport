@@ -417,6 +417,29 @@ describe("generateCdaFromFhirBundle - results", () => {
     if (rendersAsMarkup) expect(xml).toMatch(/<td[ >]/);
   });
 
+  it("keeps a CDATA section's text as written", () => {
+    const patient = makePatient();
+    const organization = makeOrganization();
+    const cdata = `<![CDATA["negative" it's a & b < c > d &amp;]]>`;
+    const note = makeDiagnosticReport({
+      status: "final",
+      subject: { reference: `Patient/${patient.id}` },
+      code: { coding: [{ system: "http://loinc.org", code: "11506-3", display: "Progress note" }] },
+      effectiveDateTime,
+      presentedForm: [
+        {
+          contentType: "text/html",
+          data: Buffer.from(`<table><tr><td>x</td></tr></table>${cdata}`).toString("base64"),
+        },
+      ],
+    });
+    bundle.entry?.push({ resource: patient }, { resource: organization }, { resource: note });
+
+    const xml = generateCdaFromFhirBundle("cx-id", bundle, "1.2.3", true);
+    expect(xml).toContain(`<td>x</td></tr></table>${cdata}`);
+    expect(XMLValidator.validate(xml)).toBe(true);
+  });
+
   it.each([
     ["plain text", "Ratio ]]> 1"],
     ["a table", "<table><tr><td>Ratio ]]> 1</td></tr></table>"],

@@ -93,7 +93,13 @@ function unescapeEmbeddedMarkup(xml: string): string {
     if (!run.includes("&lt;")) return match;
     const restored = run
       .replace(escapedCommentOrCdataRegex, (section, inner: string) => {
-        const unescaped = inner.replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+        // Entities aren't expanded inside a comment or CDATA, so its content is fully decoded.
+        const unescaped = inner
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/&quot;/g, '"')
+          .replace(/&apos;/g, "'")
+          .replace(/&amp;/g, "&");
         return isValidCommentOrCdata(unescaped) ? `<${unescaped}>` : section;
       })
       .replace(
