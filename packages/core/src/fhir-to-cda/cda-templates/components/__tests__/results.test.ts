@@ -391,9 +391,9 @@ describe("generateCdaFromFhirBundle - results", () => {
       true,
     ],
     ["an unclosed br", "<table><tr><td>line one<br>line two</td></tr></table>", true],
-    ["a > inside an attribute", '<table><tr><td title="a > b">x</td></tr></table>', false],
+    ["a > inside an attribute", '<table><tr><td title="a > b">x</td></tr></table>', true],
+    ["a < inside an attribute", '<table><tr><td title="a < b">x</td></tr></table>', true],
     ["an unclosed hr", "<table><tr><td>x</td></tr></table><hr>", false],
-    ["an HTML comment", "<table><tr><td>x</td></tr></table><!-- note -->", false],
     ["a less-than value in a cell", "<table><tr><td><5 mg</td></tr></table>", false],
     ["an attribute with no value", "<table><tr><td nowrap>x</td></tr></table>", false],
     ["an HTML entity", "<table><tr><td>a&nbsp;b</td></tr></table>", false],
@@ -415,5 +415,47 @@ describe("generateCdaFromFhirBundle - results", () => {
     const xml = generateCdaFromFhirBundle("cx-id", bundle, "1.2.3", true);
     expect(XMLValidator.validate(xml)).toBe(true);
     if (rendersAsMarkup) expect(xml).toMatch(/<td[ >]/);
+  });
+
+  it.each([
+    ["plain text", "Ratio ]]> 1"],
+    ["a table", "<table><tr><td>Ratio ]]> 1</td></tr></table>"],
+  ])('keeps "]]>" escaped in %s', (_label, html) => {
+    const patient = makePatient();
+    const organization = makeOrganization();
+    const note = makeDiagnosticReport({
+      status: "final",
+      subject: { reference: `Patient/${patient.id}` },
+      code: { coding: [{ system: "http://loinc.org", code: "11506-3", display: "Progress note" }] },
+      effectiveDateTime,
+      presentedForm: [{ contentType: "text/html", data: Buffer.from(html).toString("base64") }],
+    });
+    bundle.entry?.push({ resource: patient }, { resource: organization }, { resource: note });
+
+    const xml = generateCdaFromFhirBundle("cx-id", bundle, "1.2.3", true);
+    expect(xml).toContain("Ratio ]]&gt; 1");
+    expect(xml).not.toContain("]]>");
+  });
+
+  it.each([
+    ["a double hyphen", "<!-- a -- b -->"],
+    ["a trailing hyphen", "<!-- a --->"],
+  ])("keeps a comment with %s escaped", (_label, comment) => {
+    const patient = makePatient();
+    const organization = makeOrganization();
+    const html = `<table><tr><td>x</td></tr></table>${comment}`;
+    const note = makeDiagnosticReport({
+      status: "final",
+      subject: { reference: `Patient/${patient.id}` },
+      code: { coding: [{ system: "http://loinc.org", code: "11506-3", display: "Progress note" }] },
+      effectiveDateTime,
+      presentedForm: [{ contentType: "text/html", data: Buffer.from(html).toString("base64") }],
+    });
+    bundle.entry?.push({ resource: patient }, { resource: organization }, { resource: note });
+
+    const xml = generateCdaFromFhirBundle("cx-id", bundle, "1.2.3", true);
+    expect(xml).toMatch(/<td>x<\/td>/);
+    expect(xml).toContain(comment.replace(/</g, "&lt;").replace(/>/g, "&gt;"));
+    expect(xml).not.toContain("<!--");
   });
 });
