@@ -87,7 +87,11 @@
                             },
                         ],
                     },           
-                	"preferred":"{{this.preferenceInd.value}}",
+                	{{#if (eq (toLower this.preferenceInd.value) "true")}}
+                	"preferred":true,
+                	{{else if (eq (toLower this.preferenceInd.value) "false")}}
+                	"preferred":false,
+                	{{/if}}
                 },
             {{/each}}         
         ],
